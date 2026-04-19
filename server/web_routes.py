@@ -182,24 +182,26 @@ async def link_verify(
         raise HTTPException(status_code=404, detail="Code not found or expired")
 
     hwid = link.hwid
-    await db.delete(link)
 
     bot_result = await db.execute(select(User).where(User.hwid == hwid))
     bot_user = bot_result.scalar_one_or_none()
 
-    if bot_user and bot_user.id != web_user.id:
-        web_user.credits     += bot_user.credits
-        web_user.ref_credits += bot_user.ref_credits
-        if bot_user.trial_used:
-            web_user.trial_used = True
-        await db.execute(update(Hunt).where(Hunt.user_id == bot_user.id).values(user_id=web_user.id))
-        await db.execute(update(Transaction).where(Transaction.user_id == bot_user.id).values(user_id=web_user.id))
-        await db.delete(bot_user)
+    async with db.begin_nested():
+        await db.delete(link)
 
-    web_user.hwid = hwid
-    db.add(HwidHistory(hwid=hwid, user_id=web_user.id))
+        if bot_user and bot_user.id != web_user.id:
+            web_user.credits     += bot_user.credits
+            web_user.ref_credits += bot_user.ref_credits
+            if bot_user.trial_used:
+                web_user.trial_used = True
+            await db.execute(update(Hunt).where(Hunt.user_id == bot_user.id).values(user_id=web_user.id))
+            await db.execute(update(Transaction).where(Transaction.user_id == bot_user.id).values(user_id=web_user.id))
+            await db.delete(bot_user)
+
+        web_user.hwid = hwid
+        db.add(HwidHistory(hwid=hwid, user_id=web_user.id))
+
     await db.commit()
-
     return BasicResponse(success=True, message="HWID linked successfully")
 
 
@@ -227,10 +229,11 @@ async def hwid_reset(
                 },
             )
 
-    web_user.hwid          = None
-    web_user.hwid_reset_at = now
-    await db.commit()
+    async with db.begin_nested():
+        web_user.hwid          = None
+        web_user.hwid_reset_at = now
 
+    await db.commit()
     return HwidResetResponse(success=True, message="HWID unlinked. Link new device with a code from the bot.")
 
 
@@ -299,9 +302,10 @@ async def web_referral_transfer(
 ):
     if web_user.ref_credits <= 0:
         return BasicResponse(success=False, message="Referral balance is empty", credits=web_user.credits)
-    amount               = web_user.ref_credits
-    web_user.credits    += amount
-    web_user.ref_credits = 0
-    db.add(Transaction(user_id=web_user.id, type="ref_transfer", amount=amount, meta={"from": "ref_credits"}))
+    amount = web_user.ref_credits
+    async with db.begin_nested():
+        web_user.credits    += amount
+        web_user.ref_credits = 0
+        db.add(Transaction(user_id=web_user.id, type="ref_transfer", amount=amount, meta={"from": "ref_credits"}))
     await db.commit()
     return BasicResponse(success=True, message=f"Transferred {amount} credits", credits=web_user.credits)
