@@ -88,3 +88,220 @@ def _verify_google_token(token: str) -> dict:
     return google_id_token.verify_oauth2_token(
         token, google_requests.Request(), GOOGLE_CLIENT_ID
     )
+
+
+import secrets as _secrets
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /web/auth/google
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/auth/google", response_model=WebAuthResponse)
+async def auth_google(req: GoogleAuthRequest, db: AsyncSession = Depends(get_db)):
+    try:
+        claims = _verify_google_token(req.id_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    email    = claims["email"]
+    username = claims.get("name")
+
+    async with db.begin():
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        if user is None:
+            ref_code = _secrets.token_urlsafe(6)
+            user = User(email=email, username=username, ref_code=ref_code)
+            db.add(user)
+            await db.flush()
+        elif username and user.username != username:
+            user.username = username
+
+    return WebAuthResponse(
+        jwt=create_jwt(user.id, email),
+        email=email,
+        username=user.username,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /web/me
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/me", response_model=WebMeResponse)
+async def web_me(user: User = Depends(get_web_user)):
+    return WebMeResponse(
+        id=user.id,
+        email=user.email or "",
+        username=user.username,
+        credits=user.credits,
+        ref_credits=user.ref_credits,
+        ref_code=user.ref_code,
+        hwid=user.hwid,
+        hwid_reset_at=user.hwid_reset_at.isoformat() if user.hwid_reset_at else None,
+        trial_used=user.trial_used,
+        created_at=user.created_at.isoformat() if user.created_at else "",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /web/link/generate + /web/link/verify
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/link/generate", response_model=LinkGenerateResponse)
+async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get_db)):
+    code = _generate_link_code()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+
+    async with db.begin():
+        existing = await db.execute(select(LinkCode).where(LinkCode.hwid == req.hwid))
+        for row in existing.scalars().all():
+            await db.delete(row)
+        db.add(LinkCode(hwid=req.hwid, code=code, expires_at=expires_at))
+
+    return LinkGenerateResponse(code=code, expires_in_seconds=600)
+
+
+@router.post("/link/verify", response_model=BasicResponse)
+async def link_verify(
+    req: LinkVerifyRequest,
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    now = datetime.now(timezone.utc)
+
+    result = await db.execute(
+        select(LinkCode).where(
+            LinkCode.code == req.code,
+            LinkCode.expires_at > now,
+        )
+    )
+    link = result.scalar_one_or_none()
+    if not link:
+        raise HTTPException(status_code=404, detail="Code not found or expired")
+
+    hwid = link.hwid
+    await db.delete(link)
+
+    bot_result = await db.execute(select(User).where(User.hwid == hwid))
+    bot_user = bot_result.scalar_one_or_none()
+
+    if bot_user and bot_user.id != web_user.id:
+        web_user.credits     += bot_user.credits
+        web_user.ref_credits += bot_user.ref_credits
+        if bot_user.trial_used:
+            web_user.trial_used = True
+        await db.execute(update(Hunt).where(Hunt.user_id == bot_user.id).values(user_id=web_user.id))
+        await db.execute(update(Transaction).where(Transaction.user_id == bot_user.id).values(user_id=web_user.id))
+        await db.delete(bot_user)
+
+    web_user.hwid = hwid
+    db.add(HwidHistory(hwid=hwid, user_id=web_user.id))
+    await db.commit()
+
+    return BasicResponse(success=True, message="HWID linked successfully")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /web/hwid/reset
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/hwid/reset", response_model=HwidResetResponse)
+async def hwid_reset(
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    if not web_user.hwid:
+        raise HTTPException(status_code=400, detail="No HWID linked to this account")
+
+    now = datetime.now(timezone.utc)
+    if web_user.hwid_reset_at:
+        next_allowed = web_user.hwid_reset_at + timedelta(days=7)
+        if now < next_allowed:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "message": "HWID reset available once per 7 days",
+                    "next_reset_available": next_allowed.isoformat(),
+                },
+            )
+
+    web_user.hwid          = None
+    web_user.hwid_reset_at = now
+    await db.commit()
+
+    return HwidResetResponse(success=True, message="HWID unlinked. Link new device with a code from the bot.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /web/hunts
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/hunts", response_model=HuntsResponse)
+async def web_hunts(
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    from sqlalchemy import func
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start  = now - timedelta(days=7)
+
+    today = (await db.execute(
+        select(func.count(Hunt.id)).where(Hunt.user_id == web_user.id, Hunt.created_at >= today_start)
+    )).scalar()
+    week = (await db.execute(
+        select(func.count(Hunt.id)).where(Hunt.user_id == web_user.id, Hunt.created_at >= week_start)
+    )).scalar()
+    total = (await db.execute(
+        select(func.count(Hunt.id)).where(Hunt.user_id == web_user.id)
+    )).scalar()
+
+    rows = (await db.execute(
+        select(Hunt).where(Hunt.user_id == web_user.id).order_by(Hunt.created_at.desc()).limit(100)
+    )).scalars().all()
+
+    return HuntsResponse(
+        today=today, week=week, total=total,
+        items=[HuntEntry(hunt_type=h.hunt_type, created_at=h.created_at.isoformat()) for h in rows],
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /web/transactions
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/transactions", response_model=TransactionsResponse)
+async def web_transactions(
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    rows = (await db.execute(
+        select(Transaction)
+        .where(Transaction.user_id == web_user.id)
+        .order_by(Transaction.created_at.desc())
+        .limit(100)
+    )).scalars().all()
+    return TransactionsResponse(
+        items=[TransactionEntry(type=t.type, amount=t.amount, created_at=t.created_at.isoformat()) for t in rows]
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /web/referral/transfer
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/referral/transfer", response_model=BasicResponse)
+async def web_referral_transfer(
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    if web_user.ref_credits <= 0:
+        return BasicResponse(success=False, message="Referral balance is empty", credits=web_user.credits)
+    amount               = web_user.ref_credits
+    web_user.credits    += amount
+    web_user.ref_credits = 0
+    db.add(Transaction(user_id=web_user.id, type="ref_transfer", amount=amount, meta={"from": "ref_credits"}))
+    await db.commit()
+    return BasicResponse(success=True, message=f"Transferred {amount} credits", credits=web_user.credits)

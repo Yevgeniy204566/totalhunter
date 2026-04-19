@@ -8,12 +8,14 @@ Naming convention: предсказуемые имена для индексов
 """
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, Column, ForeignKey, Integer,
-    MetaData, Numeric, String, Text, text,
+    Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
+    JSON, MetaData, Numeric, String, Text, text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
+
+# Use timezone-aware DateTime — works with both PostgreSQL and SQLite (tests)
+TIMESTAMP = DateTime
 
 
 # ── Naming convention — предсказуемые имена индексов/ключей для Alembic ──────
@@ -56,7 +58,7 @@ class User(Base):
     )
 
     id            = Column(Integer, primary_key=True)
-    hwid          = Column(String(16),  unique=True, nullable=False, index=True)
+    hwid          = Column(String(16),  unique=True, nullable=True,  index=True)
     email         = Column(String(255), unique=True, index=True)
     username      = Column(String(50))
     credits       = Column(Integer, nullable=False, server_default=text('0'))
@@ -108,7 +110,7 @@ class Transaction(Base):
     amount     = Column(Integer, nullable=False)
     usd_amount = Column(Numeric(10, 2))
     package    = Column(String(10))
-    meta       = Column(JSONB)
+    meta       = Column(JSON)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=func.now(), index=True)
 

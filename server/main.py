@@ -37,6 +37,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import AppSetting, Broadcast, Hunt, Log, Transaction, User
+from web_routes import router as web_router
 from schemas import (
     BasicResponse,
     CheckAuthResponse,
@@ -60,6 +61,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(web_router)
 
 # Стоимость действий в кредитах
 CREDIT_COST = {
