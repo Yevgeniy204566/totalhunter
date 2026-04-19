@@ -68,6 +68,7 @@ class User(Base):
     bot_version   = Column(String(20))
     ip_address    = Column(String(45))   # последний IP (IPv4 до 15, IPv6 до 45 символов)
     last_seen     = Column(TIMESTAMP(timezone=True))
+    hwid_reset_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at    = Column(TIMESTAMP(timezone=True), nullable=False,
                            server_default=func.now())
 
@@ -188,3 +189,32 @@ class AppSetting(Base):
     value      = Column(Text, nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=func.now(), onupdate=func.now())
+
+
+# ─────────────────────────────────────────────
+# LinkCodes — HWID linking via 6-digit code
+# ─────────────────────────────────────────────
+
+class LinkCode(Base):
+    __tablename__ = "link_codes"
+
+    id         = Column(Integer, primary_key=True)
+    hwid       = Column(String(16), nullable=False, index=True)
+    code       = Column(String(6), nullable=False, unique=True)
+    expires_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                        server_default=func.now())
+
+
+# ─────────────────────────────────────────────
+# HwidHistory — anti-abuse: one trial per hardware
+# ─────────────────────────────────────────────
+
+class HwidHistory(Base):
+    __tablename__ = "hwid_history"
+
+    id        = Column(Integer, primary_key=True)
+    hwid      = Column(String(16), nullable=False, index=True)
+    user_id   = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    linked_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                       server_default=func.now())
