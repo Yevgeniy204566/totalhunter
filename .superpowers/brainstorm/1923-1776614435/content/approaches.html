@@ -1,0 +1,47 @@
+<h2>Архитектура Web Platform — 3 варианта</h2>
+<p class="subtitle">Выбери подход для фронтенда на Vercel</p>
+
+<div class="options">
+  <div class="option" data-choice="vanilla" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Чистый HTML + JS (без фреймворка)</h3>
+      <p>Один HTML-файл, Google Identity Services, fetch к API. Деплой — просто закинуть файл на Vercel.</p>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Плюсы</h4><ul><li>Нет сборки, нет npm</li><li>Максимально просто запустить</li><li>Легко читать и менять</li></ul></div>
+        <div class="cons"><h4>Минусы</h4><ul><li>Быстро превращается в «спагетти»</li><li>Трудно масштабировать</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option selected" data-choice="react" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>⭐ React + Vite (рекомендую)</h3>
+      <p>Современный SPA. Google OAuth через библиотеку. Vercel деплоит автоматически из GitHub.</p>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Плюсы</h4><ul><li>Компоненты — легко добавлять экраны</li><li>Отличная экосистема для SaaS</li><li>Vercel + GitHub = деплой за 30 сек</li></ul></div>
+        <div class="cons"><h4>Минусы</h4><ul><li>Нужен Node.js локально</li><li>Немного сложнее стартовать</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="nextjs" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Next.js + NextAuth</h3>
+      <p>SSR + встроенный Google OAuth через NextAuth. Серверные компоненты.</p>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Плюсы</h4><ul><li>OAuth «из коробки» — 10 строк кода</li><li>SEO, быстрый первый экран</li></ul></div>
+        <div class="cons"><h4>Минусы</h4><ul><li>Избыточно для личного кабинета</li><li>Нужен домен для продакшн OAuth</li><li>Сложнее дебажить</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px; padding: 16px; background: rgba(255,200,0,0.08); border-left: 3px solid #ffcc00; border-radius: 4px;">
+  <strong>⚠️ Важно для всех вариантов:</strong><br>
+  Google OAuth требует HTTPS на callback URL. Vercel даёт HTTPS бесплатно (<code>total-hunter.vercel.app</code>), поэтому OAuth будет работать. Бэкенд на GCP (HTTP) выступает как API — туда уходит уже <em>верифицированный токен</em> от Google, а не редирект.
+</div>
+
+<p class="subtitle" style="margin-top:16px">Нажми выбранный вариант → подтверди в терминале</p>

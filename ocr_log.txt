@@ -1,0 +1,603 @@
+OK: 2m:165 → 2с
+OK: 4m:40s → 280с
+OK: 5m:06s → 306с
+OK: 5m:15s → 315с
+OK: 5m: 48s → 348с
+OK: 2m: 49s → 169с
+OK: 2m:01s → 121с
+OK: 2m: 20s → 140с
+OK: 2dk:41sn Qo → 161с
+OK: 2dk:36sn Qa → 156с
+OK: 59s → 59с
+OK: 5m.: 245 → 324с
+OK: 3 53:04 #4 → 184с
+OK: 45}: 32% → 45с
+OK: 3 53 5h : 03 → 303с
+OK: 3 Sih: 43 → 223с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ES 533m: 10 ta»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ES 533m: 10 Fa»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«as 338: 10a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ES 533m: 10 ta»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ES 533m: 10 Fa»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«as 338: 10a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ES 533m: 10 ta»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ES 533m: 10 Fa»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«as 338: 10a»→0с
+---
+OK: D2 53a : 07 → 127с
+OK: D1 338 17 or → 77с
+OK: 2 5} ia : 37 → 337с
+OK: 4 5338 : 01 → 241с
+OK: 3:25 → 205с
+OK: = 9 9t = → 9с
+OK: mit: 2k → 2с
+OK: 45:55 x → 45с
+OK: 1:43 2% → 103с
+OK: 2H :122% → 132с
+OK: 27 :134 → 1633с
+OK: 2%:29% ga → 149с
+OK: 12-15% → 735с
+OK: 3%:47% aa → 227с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«—»→0с
+thresh/3=«a»→0с
+inverted/6=«»→0с
+inverted/7=«—»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«——»→0с
+scaled/3=«a»→0с
+---
+OK: 24.33 Ga → 1473с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 12:25 Qo → 745с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 3: 465 → 226с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 1%:27% Ga → 87с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«epee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«epee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 4%:07% Ga → 247с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 12%:524% Qo → 772с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 5 → 5с
+OK: 5 → 5с
+OK: 5 → 5с
+OK: ok Ne if :04% → 4с
+OK: ok Ne if :04% → 4с
+OK: ok Ne if :04% → 4с
+OK: 10a → 10с
+OK: 10a → 10с
+OK: 10a → 10с
+OK: 17t:302: z= → 1050с
+OK: 1l1zt 332 → 1с
+OK: 1l1zt 332 → 1с
+OK: 1l1zt 332 → 1с
+OK: lt :32 → 32с
+FAIL:
+thresh/6=«SS ea»→0с
+thresh/7=«| SS ea»→0с
+thresh/3=«ee»→0с
+inverted/6=«SS ea»→0с
+inverted/7=«| SS ea»→0с
+inverted/3=«ee»→0с
+scaled/6=«\, =‘ oh»→0с
+scaled/7=«| \, =‘ oh»→0с
+scaled/3=«ener ener»→0с
+---
+FAIL:
+thresh/6=«_ - ee ee eo:»→0с
+thresh/7=«| oO ew”»→0с
+thresh/3=«ee»→0с
+inverted/6=«_ - ee ee eo:»→0с
+inverted/7=«| oo ew”»→0с
+inverted/3=«ee»→0с
+scaled/6=«= - [i _: ees»→0с
+scaled/7=«| ,,  —. por’»→0с
+scaled/3=«Eonar»→0с
+---
+OK: 1T:55 => a → 115с
+FAIL:
+thresh/6=«~ .»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«~ .»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«a ‘»→0с
+scaled/7=«»→0с
+scaled/3=«eer errr»→0с
+---
+FAIL:
+thresh/6=«~ .»→0с
+thresh/7=«»→0с
+thresh/3=«ne»→0с
+inverted/6=«~ .»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«e ‘»→0с
+scaled/7=«»→0с
+scaled/3=«eer errr»→0с
+---
+OK: 27:16 → 1636с
+OK: 27:03 - → 1623с
+OK: =e! 2 7332 : 49 Va → 169с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«Reger»→0с
+---
+OK: ee) 3 Jie : 03 → 183с
+FAIL:
+thresh/6=«Ho»→0с
+thresh/7=«»→0с
+thresh/3=«i»→0с
+inverted/6=«ee»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«eens»→0с
+scaled/7=«»→0с
+scaled/3=«Serre errr»→0с
+---
+OK: eens LV 1 We ee ee → 1с
+OK: Soe) 2 7338: 40 Va → 160с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ne»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«sa»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ne»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«sa»→0с
+---
+OK: meee] JI8E : 07 17 → 487с
+OK: ee) 5 7132: 44 a → 344с
+FAIL:
+thresh/6=«: s ” _—_»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«: s ” —_—»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«. e w —_—»→0с
+scaled/7=«»→0с
+scaled/3=«sa»→0с
+---
+FAIL:
+thresh/6=«s ” _—_»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«s ” —_—»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«e w —_—»→0с
+scaled/7=«»→0с
+scaled/3=«sa»→0с
+---
+OK: meee) JIS : 37 17 → 1057с
+OK: mee? JI8E : 20 17 → 500с
+OK: =eee!5 738: 44 → 344с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«rere»→0с
+---
+OK: eee} 1 7738: 57 Va → 117с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ne»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«Ree rne rrr»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ne»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«Ree rne rere»→0с
+---
+OK: 1 Shhh : 47 → 107с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 3 53S : 26 → 206с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: me 3 5} Sh 15 Fe → 185с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«ee»→0с
+thresh/3=«a»→0с
+inverted/6=«»→0с
+inverted/7=«OO»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«eae nee ee RE EE EE AE EO»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«ee»→0с
+thresh/3=«a»→0с
+inverted/6=«»→0с
+inverted/7=«OO»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«eae nee ee RE EEE A SE Eo»→0с
+scaled/3=«a»→0с
+---
+OK: 2 5} : 06 → 306с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: me 3 5}: 03 Tae → 303с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 2M:01¢C → 121с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«ee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 2M:12C¢ → 132с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 2M :30C → 150с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«ee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«a»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 2M :31¢ → 151с
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+FAIL:
+thresh/6=«»→0с
+thresh/7=«»→0с
+thresh/3=«eee»→0с
+inverted/6=«»→0с
+inverted/7=«»→0с
+inverted/3=«eee»→0с
+scaled/6=«»→0с
+scaled/7=«»→0с
+scaled/3=«a»→0с
+---
+OK: 2M :31¢ → 151с
+OK: 1M:12C¢ → 72с
+OK: 3M:06C → 186с

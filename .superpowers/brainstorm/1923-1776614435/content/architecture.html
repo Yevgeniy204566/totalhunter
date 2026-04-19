@@ -1,0 +1,74 @@
+<h2>Архитектура Web Platform</h2>
+<p class="subtitle">Как связаны Vercel, GCP и Google OAuth</p>
+
+<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+
+  <!-- Auth Flow -->
+  <div style="flex:1;min-width:280px;background:rgba(255,255,255,0.04);border-radius:8px;padding:16px;border:1px solid rgba(255,255,255,0.1)">
+    <div class="label">Поток авторизации</div>
+    <div style="margin-top:12px;line-height:2.2;font-size:14px">
+      <div style="background:rgba(66,133,244,0.15);border-radius:6px;padding:8px 12px;margin:4px 0">
+        🌐 <strong>Vercel</strong> — total-hunter.vercel.app<br>
+        <span style="font-size:12px;opacity:0.7">React SPA, Google OAuth кнопка</span>
+      </div>
+      <div style="text-align:center;opacity:0.5">↕ ID Token (Google)</div>
+      <div style="background:rgba(234,67,53,0.15);border-radius:6px;padding:8px 12px;margin:4px 0">
+        🔑 <strong>Google OAuth 2.0</strong><br>
+        <span style="font-size:12px;opacity:0.7">Верифицирует пользователя → возвращает ID Token</span>
+      </div>
+      <div style="text-align:center;opacity:0.5">↕ ID Token → JWT</div>
+      <div style="background:rgba(52,168,83,0.15);border-radius:6px;padding:8px 12px;margin:4px 0">
+        ⚡ <strong>FastAPI GCP :8000</strong><br>
+        <span style="font-size:12px;opacity:0.7">Проверяет токен, выдаёт JWT, хранит сессию</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HWID Linking -->
+  <div style="flex:1;min-width:280px;background:rgba(255,255,255,0.04);border-radius:8px;padding:16px;border:1px solid rgba(255,255,255,0.1)">
+    <div class="label">Привязка HWID (код из бота)</div>
+    <div style="margin-top:12px;font-size:13px;line-height:1.8">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07)">
+        <span style="background:#ffcc00;color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;flex-shrink:0">1</span>
+        Бот генерирует 6-значный код → отправляет на сервер вместе с HWID
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07)">
+        <span style="background:#ffcc00;color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;flex-shrink:0">2</span>
+        Код живёт 10 минут в БД (link_codes таблица)
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07)">
+        <span style="background:#ffcc00;color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;flex-shrink:0">3</span>
+        Пользователь вводит код на сайте (залогинен через Google)
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+        <span style="background:#ffcc00;color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;flex-shrink:0">4</span>
+        Сервер пишет HWID в запись пользователя → аккаунты связаны ✅
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- New API Endpoints -->
+<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:16px;border:1px solid rgba(255,255,255,0.1);margin-bottom:16px">
+  <div class="label">Новые эндпоинты FastAPI (добавляем к существующим)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:13px">
+    <div style="padding:8px;background:rgba(52,168,83,0.1);border-radius:4px"><code>POST /web/auth/google</code><br><span style="opacity:0.6">ID Token → JWT сессия</span></div>
+    <div style="padding:8px;background:rgba(52,168,83,0.1);border-radius:4px"><code>GET /web/me</code><br><span style="opacity:0.6">Профиль, баланс</span></div>
+    <div style="padding:8px;background:rgba(52,168,83,0.1);border-radius:4px"><code>GET /web/hunts</code><br><span style="opacity:0.6">История охот</span></div>
+    <div style="padding:8px;background:rgba(52,168,83,0.1);border-radius:4px"><code>GET /web/transactions</code><br><span style="opacity:0.6">История транзакций</span></div>
+    <div style="padding:8px;background:rgba(66,133,244,0.1);border-radius:4px"><code>POST /web/link/generate</code><br><span style="opacity:0.6">Бот: создать код привязки</span></div>
+    <div style="padding:8px;background:rgba(66,133,244,0.1);border-radius:4px"><code>POST /web/link/verify</code><br><span style="opacity:0.6">Сайт: ввести код</span></div>
+    <div style="padding:8px;background:rgba(234,67,53,0.1);border-radius:4px"><code>POST /web/hwid/reset</code><br><span style="opacity:0.6">Сброс HWID (1×/7 дней)</span></div>
+    <div style="padding:8px;background:rgba(234,67,53,0.1);border-radius:4px"><code>POST /web/referral/transfer</code><br><span style="opacity:0.6">ref_credits → credits</span></div>
+  </div>
+</div>
+
+<!-- DB changes -->
+<div style="background:rgba(255,200,0,0.06);border-left:3px solid #ffcc00;padding:12px 16px;border-radius:4px;font-size:13px">
+  <strong>БД: 2 изменения</strong><br>
+  • Новая таблица <code>link_codes</code> (hwid, code, expires_at) — для привязки<br>
+  • Колонка <code>hwid_reset_at</code> в <code>users</code> — для контроля 1×/неделю
+</div>
+
+<p class="subtitle" style="margin-top:20px">Архитектура понятна? Скажи в терминале — или задай вопросы</p>

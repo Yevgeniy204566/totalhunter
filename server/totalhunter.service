@@ -1,0 +1,29 @@
+[Unit]
+Description=Total Hunter API (FastAPI + uvicorn)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/totalhunter/server
+
+# DATABASE_URL — единственное место где хранится пароль БД
+Environment="DATABASE_URL=postgresql+asyncpg://hunter:CHANGE_ME@localhost:5432/totalhunter"
+
+ExecStart=/opt/totalhunter/venv/bin/uvicorn main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --log-level info
+
+# Автоперезапуск при падении
+Restart=on-failure
+RestartSec=5s
+
+# Логи → journald (смотреть: journalctl -u totalhunter -f)
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

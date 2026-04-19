@@ -1,0 +1,54 @@
+<h2>Что показывать в личном кабинете?</h2>
+<p class="subtitle">Выбери все разделы, которые нужны на дашборде (можно несколько)</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="balance" onclick="toggleSelect(this)">
+    <div class="letter">💰</div>
+    <div class="content">
+      <h3>Баланс кредитов</h3>
+      <p>Основной баланс + реферальный баланс. Кнопка «Пополнить».</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hunts" onclick="toggleSelect(this)">
+    <div class="letter">🎯</div>
+    <div class="content">
+      <h3>История охот</h3>
+      <p>Таблица: дата, тип (биржа/склеп), кол-во за сегодня/неделю/всего.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="referral" onclick="toggleSelect(this)">
+    <div class="letter">👥</div>
+    <div class="content">
+      <h3>Рефералы</h3>
+      <p>Мой реф-код (скопировать), кол-во приглашённых, реф-баланс → перевести.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hwid" onclick="toggleSelect(this)">
+    <div class="letter">🔑</div>
+    <div class="content">
+      <h3>HWID / Устройства</h3>
+      <p>Привязанный HWID, кнопка «Сбросить» (1× в неделю), дата следующего сброса.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="transactions" onclick="toggleSelect(this)">
+    <div class="letter">📋</div>
+    <div class="content">
+      <h3>История транзакций</h3>
+      <p>Пополнения, списания, реф-бонусы — полная лента операций.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="profile" onclick="toggleSelect(this)">
+    <div class="letter">👤</div>
+    <div class="content">
+      <h3>Профиль</h3>
+      <p>Фото из Google, имя, email, статус аккаунта (trial / pro).</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:24px">Отметь нужные → скажи в терминале что выбрал (или просто напиши)</p>

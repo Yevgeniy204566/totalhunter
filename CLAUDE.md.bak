@@ -1,0 +1,378 @@
+# BattleBot — Total Battle Hunter
+
+## 1. Проект
+Бот для игры **Total Battle** (Python + OpenCV + YOLO).
+Автоматический поиск Бирж (Exchange) и Склепов (Crypts) на карте королевства.
+
+## 2. Навигация — Виртуальный Джойстик (Мини-карта)
+
+Мини-карта = джойстик. Клик на ±STEP пикселей от центра = сдвиг карты на 1 экран.
+
+### Параметры
+- `CENTER_X = 90`, `CENTER_Y = 925` — центр джойстика
+- `JOYSTICK_STEP = 13` — вертикальный шаг (10–17px). Горизонтальный = `round(step * 1920/1080)` = 23px.
+
+### Направления
+- Вправо: `(CENTER_X + STEP_X, CENTER_Y)` / Влево: `(CENTER_X - STEP_X, CENTER_Y)`
+- Вниз: `(CENTER_X, CENTER_Y + STEP_Y)` / Вверх: `(CENTER_X, CENTER_Y - STEP_Y)`
+
+### Калибровка — красная точка
+`_show_calibration_dot()` → `tkinter.Toplevel` 16×16 `overrideredirect=True` на точке CENTER_X/Y. Гаснет через 3 сек.
+
+### OCR координат из игры
+Формат `K: ### X: ### Y: ###` — зона `(0, 1000, 250, 1080)` → масштаб x4 → pytesseract → regex `X:\s*(\d+)\s*Y:\s*(\d+)`
+
+## 3. Правила разработки
+- **TDD обязателен** — Superpowers TDD workflow перед любым новым кодом
+- **Трекинг задач** — через Beads (`bd`)
+- Перед реализацией — brainstorm через Superpowers
+
+## 4. Безопасность (анти-детект)
+- Паузы: **0.4–0.9 сек** между действиями
+- Смещение кликов: **5–8 пикселей** (случайное)
+
+## 5. Файлы
+- `main.py` — GUI (CustomTkinter)
+- `engine.py` — HuntEngine → PacmanEngine
+- `navigator.py` — CompassNavigator + CoastalSnakeNavigator + OCR
+- `minimap_reader.py` — анализ мини-карты: центроид воды → угол берега, конус-детекция воды/суши
+- `minimap_debug.py` — диагностический инструмент (live вывод coast_angle, inland, ocean/river)
+- `auth.py` — лицензии, кредиты
+- `crypt_hunter.py` — CryptHunter (склепы)
+- `button_finder.py` — HSV-детект кнопок
+- `coord_manager.py` — 2-точечная калибровка координат (заменил window_scaler.py)
+- `calibration_ui.py` — GUI-лупа для калибровки якорных точек
+- `calibration.py` — автокалибровка джойстика навигации
+- `profiles/` — JSON-профили калибровки: `profile_client.json`, `profile_chrome.json` (Browser 1), `profile_firefox.json` (Browser 2)
+- `gui_config.json` — настройки GUI (center_x, center_y, step, conf, scan_interval, move_wait, last_calibration_profile, nav_inland_steps, nav_ocean_ratio, nav_water_px, crypt_scroll_speed)
+- `test_coastal_snake.py` — 31 unit-тестов CoastalSnakeNavigator ✅
+- `test_minimap_reader.py` — 15 unit-тестов minimap_reader ✅
+
+## 6. Система координат — 2-точечная калибровка (`coord_manager.py`)
+
+**Вместо `window_scaler.py`** — глобальный синглтон `coord_manager` из `coord_manager.py`.
+
+### Якорные точки (эталон 1920×1080)
+- **REF_A** = `(90, 925)` — центр мини-карты (лево-низ)
+- **REF_B** = `(648, 47)` — крестик «+» при наведении на Серебро (право-верх) ⚠️ уточнить в игре
+
+### Математика
+```python
+scale_x = (B_user_x - A_user_x) / 558   # dx_ref = 648-90
+scale_y = (B_user_y - A_user_y) / (-878) # dy_ref = 47-925
+x_screen = anchor_x + (x_ref - 90) * scale_x
+y_screen = anchor_y + (y_ref - 925) * scale_y
+```
+
+### Использование
+```python
+from coord_manager import coord_manager
+sx, sy = coord_manager.to_screen(689, 941)        # точка
+x, y, w, h = coord_manager.to_region(597, 242, 721, 575)  # регион
+```
+
+### Калибровка пользователем
+- Вкладка «КАЛИБРОВКА» в main.py → выбор профиля → кнопка «Калибровать»
+- `calibration_ui.py` показывает лупу 600% последовательно для точки А, затем Б
+- Красная точка 16×16 на реальном экране, spinbox X/Y + клик в лупе
+- Профили: `profiles/profile_client.json`, `profile_chrome.json`, `profile_firefox.json`
+- Автозагрузка последнего профиля при старте
+
+### Известный баг (решён)
+Нельзя создавать `tk.Tk()` в `calibration_ui` — CTkApp уже является root. Использовать `run_calibration(parent=self)` и `tk.IntVar(master=root, ...)`.
+
+### Тесты
+- `test_coord_manager.py` — 14 unit-тестов ✅
+- Калибровка протестирована пользователем ✅ (2026-04-09)
+
+## 7. Алгоритм навигации «Рикошет» (CompassNavigator) — устаревший
+
+```
+НЫРОК вглубь ГОСа → [берег обнаружен] → СДВИГ вдоль берега
+→ ВОЗВРАТ назад → [берег обнаружен] → СДВИГ → новый НЫРОК → ...
+```
+
+Состояния: `INIT` → `DIVING` → `RETURNING`. Глубина нефиксирована — идём до реального берега.
+
+**Детекция берега:** `MIN_COAST_STEPS=3` (первые 3 шага вода игнорируется), `WATER_STREAK_STOP=2` (2 водных кадра подряд = берег), `MAX_STEPS_SAFETY=80`.
+
+**Детекция воды:** `is_water_center_screen(radius=120)` — `blue > green×1.2 && blue > red×1.2`.
+
+**INIT:** скриншот мини-карты 180×180px → считаем воду в 4 секторах → больше воды сверху = нырять вниз; fallback: вниз+вправо.
+
+## 7b. Алгоритм навигации «Прибрежная Змейка» (CoastalSnakeNavigator) ✅ 2026-04-13
+
+**Концепция:** бот читает ВСЮ воду мини-карты как один вектор, нырок строго ⊥ к берегу.
+
+```
+HOMING → [берег найден] → DIVING (вглубь ⊥) → [max глубина]
+→ СДВИГ ⊥ к нырку → RETURNING (назад ⊥) → [берег] → СДВИГ → HOMING → ...
+```
+
+**ЗАПРЕТ на движение вдоль берега:**
+- Все перемещения бота — только `±inland_vec` (строго ⊥ к водной глади).
+- `_move_perpendicular(toward_water)` — единственный метод движения в HOMING/DIVING/RETURNING.
+- `_shift_click()` — единственное исключение: 1 клик ⊥ к нырку (= вдоль берега) между полосами.
+- Assert в `_shift_click`: `dot(shift, inland) < 1e-9` — нарушение = падение программы.
+
+### Определение направления (minimap_reader.py)
+`detect_coast_angle(mm)` — **вся вода → центроид → угол:**
+1. Берём все пиксели воды (не граничные — ВСЕ)
+2. Центроид воды относительно центра мини-карты → `water_angle = atan2(row, col)`
+3. `coast_angle = water_angle + π/2` (берег ⊥ воде)
+4. `inland_vec = coast_angle + π/2` = прочь от воды → в сторону суши
+5. Fallback 0.0 если воды < `MIN_WATER_PX_CENTROID=50` или центроид < `CENTROID_MIN_OFFSET=5px`
+
+### Состояния
+**Бот читает карту ТОЛЬКО в двух случаях:**
+1. **HOMING** — перед нырком: `_read_minimap()` определяет угол берега и `inland_vec`
+2. **RETURNING, зрячая фаза** — с предпоследнего шага до касания берега: `_is_at_coast_now()` каждый шаг
+
+Во всех остальных случаях бот слепой — только счётчики шагов.
+
+- `HOMING` — зрячий: `_read_minimap()` каждый шаг; hard-stop если `fwd.is_ocean` при `homing_steps >= homing_max_steps`
+- `DIVING` — **слепой**: только счётчик `inland_steps`; переход в RETURNING при `inland_steps >= max_inland_steps`
+- `RETURNING` — две фазы:
+  - **Слепая** (`_return_blind_steps = round((max_inland-1) * blind_factor)`): карту не читаем — реки внутри ГОСа игнорируются
+  - **Зрячая** (оставшиеся шаги): `_is_at_coast_now()` каждый шаг — идём пока не коснёмся настоящего берега
+  - Cap: `max_inland_steps + 15` — safety net
+  - **Мягкая диагональ**: `angle_ratio = min(|vx|,|vy|)/max(|vx|,|vy|)`, `blind_factor = 1.0 - angle_ratio * diagonal_blind_coeff`
+  - При 45°, coeff=0.5: blind_steps вдвое меньше чем при кардинальном направлении
+
+### Сдвиг (гарантированно ⊥)
+`_shift_click()` вычисляет `sv = (-inland_vec[1], inland_vec[0])` — 90° CCW поворот.
+Не использует хранимый `_shift_vec`. Каждый вызов — свежий расчёт от текущего `inland_vec`.
+
+### Счётчик-стена (force_shift_after)
+`force_shift_after=N` → принудительный `_shift_click()` если `_steps_since_shift >= N`.
+Default=0 (выключен). Рекомендуется: `max_inland_steps * 2 + 10`.
+
+### Параметры (настраиваются в GUI)
+```python
+max_inland_steps     = 5     # глубина нырка (1–10 шагов)
+ocean_land_ratio     = 0.03  # Граница океан/суша % (1–15%, %/100) — только HOMING
+min_water_px         = 500   # Мин. размер водоёма (100–2000) — только HOMING
+homing_max_steps     = 10    # hard-stop HOMING
+coast_ema_alpha      = 0.3   # сглаживание угла берега (EMA)
+force_shift_after    = 0     # стена-счётчик (0=выкл)
+diagonal_blind_coeff = 0.5   # Коэф. диагонали возврата (0.0–1.0)
+coast_detect_radius  = 50    # Радиус конуса детекции берега в _is_at_coast_now() (10–90px)
+                             # ⚠️ БАГ: бот останавливается на 1 шаг раньше берега.
+                             # Уменьшить до ~25 чтобы подходить ближе к воде.
+                             # Настраивается ползунком «Конус детекции берега» в GUI.
+```
+
+### Слайдеры GUI (nav_frame, вкладка БИРЖИ) — названия 2026-04-14
+- "Глубина нырка (экранов)" → max_inland_steps
+- "Граница океан/суша (%)" → ocean_land_ratio
+- "Мин. размер водоёма" → min_water_px
+- "Коэф. диагонали возврата" → diagonal_blind_coeff (новый)
+
+### Константы minimap_reader.py
+`MIN_WATER_PX_CENTROID=50`, `CENTROID_MIN_OFFSET=5.0`, `MIN_WATER_PX=500`, `OCEAN_LAND_RATIO=0.03`
+
+### Тесты (57 total ✅ 2026-04-14)
+- `test_coastal_snake.py` — 42 теста (state machine + perpendicular invariant + force-shift + blind phase)
+- `test_minimap_reader.py` — 15 тестов (centroid angle, конус-анализ)
+
+## 8. Стек
+Python + OpenCV + PyAutoGUI + MSS + YOLO (ultralytics) + CustomTkinter + Google OAuth
+
+---
+
+## 9. Реализация
+
+### `main.py` — GUI (обновлено 2026-04-17)
+- `TotalHunterApp` (460×1010, тёмная тема), **2 языка: RU + EN**
+- Вкладки: «БИРЖИ» (EN: EXCHANGE), «СКЛЕПЫ», «РЕФЕРАЛЫ», «КАЛИБРОВКА»
+- **Шапка (одна строка):** «On top: [switch]» слева + «[RU▼]» справа — switch всегда виден
+- **Профили калибровки:** Client / Browser 1 (`profile_chrome.json`) / Browser 2 (`profile_firefox.json`)
+- **Слайдеры навигации** (вкладка БИРЖИ, в `nav_frame`):
+  - Шаг джойстика + Скорость (сек/шаг) — вне scroll-зоны, всегда видны
+  - Coastal snake параметры — в **`nav_sliders_frame = CTkScrollableFrame(height=200)`** внутри `nav_frame`:
+    - `nav_inland_slider` — Глубина нырка 1–10 (default 5)
+    - `nav_ocean_slider` — Граница океан/суша 1–15% (default 3%)
+    - `nav_waterpx_slider` — Мин. размер водоёма 100–2000 (default 500)
+    - `nav_diagblind_slider` — Коэф. диагонали возврата 0.0–1.0 (default 0.5)
+    - `nav_coastrad_slider` — Конус детекции берега 10–90 px (default 50)
+    - `nav_footprint_slider` — Память следов 10–300 с (default 120)
+  - Кнопка «Сохранить настройки» — вне scroll-зоны
+- **Порядок вкладок (обновлено 2026-04-17):** СКЛЕПЫ → БИРЖИ → РЕФЕРАЛЫ → КАЛИБРОВКА
+- **Вкладка СКЛЕПЫ** (обновлено 2026-04-17):
+  - `settings_frame` → **`CTkScrollableFrame(height=220)`** — показывает ~4 ползунка, остальные скроллятся
+  - scroll_frame height=**195**, credits label **36pt**
+  - Слайдер «Точность поиска» (было «нейросети»)
+  - Слайдер «Ускорение марша **(0–5)**» (было «Ускорений Картера 1–5»; 0 = без ускорений)
+  - Слайдер «Дальность марша Картера» **5–30 мин** (default 15); надпись: только `"{N} мин"` — сохраняется в `gui_config.json` как `crypt_max_march_min`
+  - Слайдер «Скорость скроллинга» 0.0–4.0 сек (default **1.0**); подпись: `"скан Y с"` где Y = scrollspeed+0.2
+  - Таймер обратного отсчёта (золотой, **26pt**) — над кнопкой Старт
+  - Детализация под ним: `→ X с  +  ← X с  +  Y с  =  Z с`
+  - Статус «Жду Картера: X с / Z с» **убран** — только золотой таймер
+  - Одна кнопка **`💾 Сохранить настройки`** (`_save_crypt_settings_all`) — сохраняет ползунки + микроподстройку (dialog_offset_y) за одно нажатие
+  - Метка смещения → **«Микроподстройка кликов ↑↓:»**
+- **Вкладка КАЛИБРОВКА** (обновлено 2026-04-15):
+  - Кнопка **КАЛИБРОВАТЬ** — красная (`#c0392b`), высота 56px, во всю ширину, ВВЕРХУ
+  - **[💾 Сохранить] [📂 Загрузить]** — в одну строку под ней, равная ширина
+  - **TODO:** добавить детальное описание с картинками (Точка А → Точка Б) — место есть
+- Always-on-top: snap вправо (`winfo_screenwidth() - 460`), исключает окно из YOLO
+- ESC → аварийный стоп (`keyboard.hook`) — хук проверяет `event.name == 'esc' and event.event_type == 'down'`
+- `self.after(0, ...)` для UI-обновлений из callbacks
+- `_update_credits_display(n)` — обновляет ОБЕ вкладки
+
+### `auth.py`
+- `get_hwid()` → MAC → SHA256 → 16 символов
+- `check_license()` → POST `/check_auth` → credits, email, ref_id, broadcast, banned
+- `spend_credit()` → POST `/use_credit`
+- `AUTH_DOMAIN` (nip.io) для Google OAuth; `SERVER_URL` — прямой IP
+
+### `navigator.py`
+- `PositionReader` — 24 варианта OCR (4 кропа × 2 обработки × 3 psm)
+- `CompassNavigator` — рикошет (старый), `p_range_x = round(step * screen_w/screen_h)`
+- `CoastalSnakeNavigator` — новый, центроид воды→угол, нырок строго ⊥ берегу, force-shift стена
+- `PacmanEngine` — основной цикл: grab → water_check → YOLO (throttle scan_interval) → joystick.step
+  - Создаёт `CoastalSnakeNavigator` вместо `CompassNavigator`
+  - Принимает `max_inland_steps`, `ocean_land_ratio`, `min_water_px`, `force_shift_after`
+
+### `engine.py`
+- Загружает `exchange.pt` в `__init__`
+- `start(conf, center_x, center_y, joystick_step, scan_interval, reset_minutes, move_wait, navigation_enabled, max_inland_steps, ocean_land_ratio, min_water_px)`
+
+### `calibration.py`
+- `Calibrator.run()`: стартовая позиция → RIGHT → X → DOWN → Y → сохраняет `nav_config.json`
+
+### Схема зависимостей
+```
+main.py
+  ├── auth.py
+  ├── engine.py → navigator.py → minimap_reader.py
+  └── crypt_hunter.py
+calibration.py → navigator.py
+minimap_debug.py → navigator.py, minimap_reader.py
+```
+
+---
+
+## 10. Модуль Склепов — `crypt_hunter.py`
+
+**Статус: Слепой склеп — детерминированная логика ✅ (2026-04-17)**
+OCR времени марша **УДАЛЁН** полностью. Ждём по формуле `T_one_way = T_max / 2^N`.
+
+### Файлы
+- `crypt_hunter.py` — класс `CryptHunter`
+- `test_crypt_hunter.py` — unit-тесты (31 passing, 2026-04-17)
+- `targets/crypts.pt` — YOLO-модель
+- `button_finder.py` — HSV-детект кнопок
+
+### Типы склепов (31)
+- **Ordinary 1–12** → YOLO: crypt_0..crypt_11
+- **Epic 2–18** → YOLO: crypt_12..crypt_28
+- **R 1–2** → YOLO: crypt_29..crypt_30 (требуют «Открыть» ДО «Исследовать»)
+
+Маппинг: `YOLO_TO_GUI`, `GUI_TO_YOLO` в `crypt_hunter.py`.
+
+### Полный цикл
+```
+[1]  _open_watchtower() → template pipe.png в 300×200 вокруг WT_ICON
+[2]  _select_crypts_tab() → УБРАНА. Пользователь заранее переходит на вкладку
+     «Склепы и арены» вручную перед запуском бота.
+[3]  _scroll_and_find(selected) → YOLO+фильтр MENU_SCAN_REGION
+     → нашли иконку → ищем transition.png в полосе cy±35px напротив иконки
+     → кнопка есть → кликаем по ней (template, не cy+17)
+     → кнопки нет → иконка видна частично → скроллим дальше
+[4]  Конец списка / нет склепов → детект по неподвижности меню при скролле:
+     если после N скроллей меню не сдвинулось (сравнить скриншоты до/после) →
+     _reset_search() (WT_ARENA_TAB ×2) → sleep(10-15 сек) → повтор поиска.
+     НЕ использовать счётчик сбросов как критерий конца — только неподвижность меню.
+[5]  sleep(2.0) — телепорт
+[6]  _detect_on_map(crypt_type) → YOLO, ближайший к (960,540)
+[7]  _read_oil() → None = пропуск; < 70к = СТОП
+[8]  _send_captain() → клик по CRYPT_STUDY_BTN (координаты, без template)
+     R-типы: сначала CRYPT_OPEN_BTN → потом CRYPT_STUDY_BTN
+[9]  Если N > 0 (ускорители):
+     _click_captain_event() → открывает Carter overlay
+     _accelerate(N) → N кликов по ACCEL_USE_BTN, пауза 0.8–1.2с между ними
+[10] Ждём Картера: T_one_way = T_max / 2^N (если N=0: T_one_way = T_max)
+     total_wait = int(T_one_way * 2) + break_sec±20%
+     Статус: "Ждём Картера: Xс туда + Xс обратно + Yс пауза"
+[11] on_found_callback → spend_credit()
+[12] _random_pause(1.5, 3.0) → [1]
+```
+
+### Скролл-поиск `_scroll_and_find` (обновлено 2026-04-15)
+- Параметр `scroll_speed` (float, default 0.5) — пауза после каждого скролла
+- Пауза между шагами: `_interruptible_sleep(scroll_speed + 0.2)` — **прерываемая**, бот останавливается мгновенно
+- **Доскролл при нижнем крае:** если YOLO нашёл склеп в нижних 28% меню (`cy > ms_y + ms_h * 0.72`):
+  1. `pyautogui.scroll(-2)` — ещё чуть вниз, склеп открывается целиком
+  2. `_interruptible_sleep(0.35)` — ждём
+  3. Re-YOLO → уточняем cy → кнопка «Перейти» теперь полностью видна
+  Fallback: если re-YOLO не нашёл — используем исходный cy
+
+### Логика конца списка склепов
+`_scroll_and_find` стартует с **текущей позиции меню** (без прокрутки в начало).
+Скролит вниз, image-diff на `MENU_SCAN_REGION` — если `no_move_count >= 3` подряд → `return None`.
+`_run_cycle` при None:
+1. Ждёт **30 сек** (`_interruptible_sleep(30)`)
+2. Затем `_reset_search()` — два клика по Арена с паузой ~1 сек между ними
+3. Повтор поиска (меню сброшено в начало)
+
+### Поиск кнопок диалога — `_find_dialog_button(ref, pick)`
+Метод изолирует поиск от игрового фона двумя шагами:
+1. **Template** `btn_issledovat.png` в узком регионе `(ref_x±120, ref_y±40)`
+2. **HSV green** в горизонтальной полосе `(700, ref_y±35, 600, 70)`
+
+`pick='rightmost'` → «Исследовать», `pick='leftmost'` → «Открыть».
+
+### Ускорение и ожидание (обновлено 2026-04-17)
+OCR времени марша полностью удалён. Детерминированная формула:
+```python
+t_one_way = _max_march_sec / (2 ** n)
+_buf = int(_break_sec * random.uniform(0.8, 1.2))
+total_wait = int(t_one_way * 2) + _buf
+```
+
+### Координаты (1920×1080)
+```python
+WT_ICON            = (689, 941)
+WT_CRYPTS_TAB      = (684, 462)
+WT_ARENA_TAB       = (1242, 347)
+WT_SCROLL_AREA     = (948, 600)
+WT_GOTO_BTN_X      = 1208
+MENU_SCAN_REGION   = (597, 242, 721, 575)
+CRYPT_OIL_REGION   = (1010, 541, 200, 30)
+CRYPT_STUDY_BTN    = (1137, 777)
+CRYPT_OPEN_BTN     = (963, 771)
+CARTER_EVENT_BAR   = (1126, 113)
+ACCEL_USE_BTN      = (1117, 460)
+ACCEL_CLOSE_CLICK  = (1400, 478)
+OIL_STOP_THRESHOLD = 70_000
+```
+
+### HSV-диапазоны (button_finder.py)
+```python
+'green':  ((35, 40, 40),  (85, 255, 200))
+'purple': ((125, 50, 50), (160, 255, 255))
+```
+
+---
+
+## 11. SaaS-инфраструктура — Total Hunter Cloud API
+
+**Сервер:** GCP Compute Engine `34.68.86.57:8000` | Ubuntu 22.04 | FastAPI + PostgreSQL
+
+### API Endpoints
+- `POST /check_auth` — HWID → credits/email/ref_id/broadcast/banned
+- `POST /use_credit` — списание; HTTP 402 если credits < cost
+- `POST /claim_trial` — 300 кредитов новому HWID (once)
+- `POST /heartbeat` — тихий пинг каждые 2 мин
+- `POST /log_error` — логирование ошибок
+- `POST /activate_referral` — привязка ref_id + бонусы
+- `POST /transfer_referral_balance` — ref_credits → credits
+- Admin endpoints: `/admin/stats`, `/admin/users`, `/admin/ban`, `/admin/adjust_credits`, `/admin/broadcast`, `/admin/logs`
+
+### 4 модуля Master Plan
+| Модуль | Статус |
+|---|---|
+| 1: Cloud API (бэкенд) | ✅ Реализован, деплой в процессе |
+| 2: User Dashboard | ⏳ Запланирован |
+| 3: Admin Panel | ✅ Реализован |
+| 4: Free-Kassa + реферальная экономика | ⏳ Запланирован |
