@@ -60,3 +60,72 @@ class BasicResponse(BaseModel):
     success: bool
     message: str = ""
     credits: Optional[int] = None     # новый баланс после операции
+
+
+# ── Web Platform Schemas ──────────────────────────────────────────────────────
+
+class GoogleAuthRequest(BaseModel):
+    """Frontend sends Google ID token; backend verifies and returns JWT."""
+    id_token: str
+
+
+class WebAuthResponse(BaseModel):
+    jwt: str
+    email: str
+    username: Optional[str] = None
+
+
+class WebMeResponse(BaseModel):
+    id: int
+    email: str
+    username: Optional[str] = None
+    credits: int
+    ref_credits: int
+    ref_code: str
+    hwid: Optional[str] = None
+    hwid_reset_at: Optional[str] = None
+    trial_used: bool
+    created_at: str
+
+
+class LinkGenerateRequest(BaseModel):
+    """Bot calls this to create a 6-digit code for HWID linking."""
+    hwid: str
+
+
+class LinkGenerateResponse(BaseModel):
+    code: str
+    expires_in_seconds: int
+
+
+class LinkVerifyRequest(BaseModel):
+    """Web user submits the 6-digit code shown in the bot."""
+    code: str
+
+
+class HwidResetResponse(BaseModel):
+    success: bool
+    message: str
+    next_reset_available: Optional[str] = None
+
+
+class HuntEntry(BaseModel):
+    hunt_type: str
+    created_at: str
+
+
+class HuntsResponse(BaseModel):
+    today: int
+    week: int
+    total: int
+    items: list[HuntEntry]
+
+
+class TransactionEntry(BaseModel):
+    type: str
+    amount: int
+    created_at: str
+
+
+class TransactionsResponse(BaseModel):
+    items: list[TransactionEntry]
