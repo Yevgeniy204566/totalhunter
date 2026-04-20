@@ -5,7 +5,7 @@ schemas.py — Pydantic request/response models.
 Совместимо с существующим auth.py в боте.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -139,4 +139,4 @@ class GlobalStatsResponse(BaseModel):
 
 
 class FeedbackRequest(BaseModel):
-    text: str
+    text: str = Field(min_length=1, max_length=1000)

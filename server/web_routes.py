@@ -198,10 +198,8 @@ async def send_feedback(
     db: AsyncSession = Depends(get_db),
     web_user: User = Depends(get_web_user),
 ):
-    if not req.text or not req.text.strip():
-        raise HTTPException(status_code=422, detail="Feedback text cannot be empty")
     async with db.begin_nested():
-        db.add(Feedback(user_id=web_user.id, text=req.text.strip()[:1000]))
+        db.add(Feedback(user_id=web_user.id, text=req.text.strip()))
     await db.commit()
     return BasicResponse(success=True, message="Thank you for your feedback!")
 
