@@ -220,3 +220,18 @@ class HwidHistory(Base):
     user_id   = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     linked_at = Column(TIMESTAMP(timezone=True), nullable=False,
                        server_default=func.now())
+
+
+# ─────────────────────────────────────────────
+# Feedback — user suggestions & ideas
+# ─────────────────────────────────────────────
+
+class Feedback(Base):
+    """User-submitted suggestions stored for analysis."""
+    __tablename__ = "feedback"
+
+    id         = Column(Integer, primary_key=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    text       = Column(Text, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                        server_default=func.now())
