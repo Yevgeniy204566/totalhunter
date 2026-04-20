@@ -578,8 +578,7 @@ class CoastalSnakeNavigator:
                 # PCA returned the opposite end of the same line — flip it
                 new_angle = new_angle + np.pi
                 diff_raw  = (new_angle - a + np.pi) % (2 * np.pi) - np.pi
-            clamped_diff = np.clip(diff_raw, -0.2, 0.2)  # cap ~11° per step — prevents sudden jumps from noisy minimap
-            self._coast_angle = (a + self.coast_ema_alpha * clamped_diff) % (2 * np.pi)
+            self._coast_angle = (a + self.coast_ema_alpha * diff_raw) % (2 * np.pi)
 
         ca = self._coast_angle
         self._coast_vec  = (float(np.cos(ca)),           float(np.sin(ca)))

@@ -33,6 +33,7 @@ THEMES = {
         "green_btn": "#1A4A30", "green_hover": "#123520",
         "blue_btn": "#025E8E", "blue_hover": "#036A9E",
         "tab_selected": "#025E8E", "tab_selected_hover": "#036A9E",
+        "value_text": "#0D94D0",
     },
     "Deep Night": {
         # Sapphire magic — иссиня-чёрный + deep sapphire gem
@@ -44,6 +45,7 @@ THEMES = {
         "green_btn": "#0F3A2A", "green_hover": "#0A2A1E",
         "blue_btn": "#1B3A82", "blue_hover": "#2A4A9E",
         "tab_selected": "#1B3A82", "tab_selected_hover": "#2A4A9E",
+        "value_text": "#88AAFF",
     },
     "Ocean": {
         "bg": "#0D1B2A", "card": "#1B2A3B", "elevated": "#1E3448",
@@ -54,6 +56,7 @@ THEMES = {
         "green_btn": "#065F46", "green_hover": "#064E3B",
         "blue_btn": "#1E40AF", "blue_hover": "#1E3A8A",
         "tab_selected": "#0369A1", "tab_selected_hover": "#0284C7",
+        "value_text": "#38BDF8",
     },
     "Light": {
         # Wet Asphalt & Sand — dark matte asphalt bg + warm sandy accents
@@ -65,6 +68,7 @@ THEMES = {
         "green_btn": "#1A4A30", "green_hover": "#123520",
         "blue_btn": "#2A3A4A", "blue_hover": "#354A5E",
         "tab_selected": "#8A7040", "tab_selected_hover": "#A08050",
+        "value_text": "#D4B483",
     },
 }
 
@@ -266,7 +270,7 @@ class TotalHunterApp(ctk.CTk):
         self.acc_lb.pack(side="left")
         self.acc_val_lb = ctk.CTkLabel(self.acc_frame, text="70%",
                                        font=ctk.CTkFont(size=14, weight="bold"),
-                                       text_color=MD3["primary"])
+                                       text_color=MD3["value_text"])
         self.acc_val_lb.pack(side="right")
         self.conf_slider = ctk.CTkSlider(self.tab_hunt, from_=0.1, to=0.9,
                                          command=self.update_slider_labels,
@@ -287,7 +291,7 @@ class TotalHunterApp(ctk.CTk):
         self.speed_val_lb = ctk.CTkLabel(self.speed_frame,
                                          text=f"0.6 {LANGS[self.current_lang]['sec']}",
                                          font=ctk.CTkFont(size=14, weight="bold"),
-                                         text_color=MD3["primary"])
+                                         text_color=MD3["value_text"])
         self.speed_val_lb.pack(side="right")
         self.speed_slider = ctk.CTkSlider(self.tab_hunt, from_=0.1, to=5.0,
                                           command=self.update_slider_labels,
@@ -361,7 +365,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_step_val = ctk.CTkLabel(self.nav_step_frame, text="13 px",
                                          font=ctk.CTkFont(size=14, weight="bold"),
-                                         text_color=MD3["primary"])
+                                         text_color=MD3["value_text"])
         self.nav_step_val.pack(side="right")
         self.nav_step_slider = ctk.CTkSlider(self.nav_frame, from_=10, to=17,
                                               command=self._update_nav_labels_and_dot,
@@ -379,7 +383,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="2.0 с",
                                          font=ctk.CTkFont(size=14, weight="bold"),
-                                         text_color=MD3["primary"])
+                                         text_color=MD3["value_text"])
         self.nav_wait_val.pack(side="right")
         self.nav_wait_slider = ctk.CTkSlider(self.nav_frame, from_=0.5, to=5.0,
                                              command=self._update_nav_labels,
@@ -405,7 +409,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_inland_val = ctk.CTkLabel(self.nav_inland_frame, text="5",
                                            font=ctk.CTkFont(size=14, weight="bold"),
-                                           text_color=MD3["primary"])
+                                           text_color=MD3["value_text"])
         self.nav_inland_val.pack(side="right")
         self.nav_inland_slider = ctk.CTkSlider(
             nav_sliders_frame, from_=1, to=10, number_of_steps=9,
@@ -424,7 +428,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_ocean_val = ctk.CTkLabel(self.nav_ocean_frame, text="3%",
                                           font=ctk.CTkFont(size=14, weight="bold"),
-                                          text_color=MD3["primary"])
+                                          text_color=MD3["value_text"])
         self.nav_ocean_val.pack(side="right")
         self.nav_ocean_slider = ctk.CTkSlider(
             nav_sliders_frame, from_=1, to=15, number_of_steps=14,
@@ -443,7 +447,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_waterpx_val = ctk.CTkLabel(self.nav_waterpx_frame, text="500",
                                             font=ctk.CTkFont(size=14, weight="bold"),
-                                            text_color=MD3["primary"])
+                                            text_color=MD3["value_text"])
         self.nav_waterpx_val.pack(side="right")
         self.nav_waterpx_slider = ctk.CTkSlider(
             nav_sliders_frame, from_=100, to=2000, number_of_steps=19,
@@ -462,7 +466,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_diagblind_val = ctk.CTkLabel(self.nav_diagblind_frame, text="0.50",
                                               font=ctk.CTkFont(size=14, weight="bold"),
-                                              text_color=MD3["primary"])
+                                              text_color=MD3["value_text"])
         self.nav_diagblind_val.pack(side="right")
         self.nav_diagblind_slider = ctk.CTkSlider(
             nav_sliders_frame, from_=0.0, to=1.0, number_of_steps=10,
@@ -481,7 +485,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_coastrad_val = ctk.CTkLabel(self.nav_coastrad_frame, text="50",
                                              font=ctk.CTkFont(size=14, weight="bold"),
-                                             text_color=MD3["primary"])
+                                             text_color=MD3["value_text"])
         self.nav_coastrad_val.pack(side="right")
         self.nav_coastrad_slider = ctk.CTkSlider(
             nav_sliders_frame, from_=10, to=90, number_of_steps=16,
@@ -500,7 +504,7 @@ class TotalHunterApp(ctk.CTk):
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_footprint_val = ctk.CTkLabel(self.nav_footprint_frame, text="120 с",
                                               font=ctk.CTkFont(size=14, weight="bold"),
-                                              text_color=MD3["primary"])
+                                              text_color=MD3["value_text"])
         self.nav_footprint_val.pack(side="right")
         self.nav_footprint_slider = ctk.CTkSlider(
             nav_sliders_frame, from_=10, to=300, number_of_steps=29,
@@ -623,7 +627,7 @@ class TotalHunterApp(ctk.CTk):
                          text_color=MD3["on_surface2"]).pack(side="left")
             val = ctk.CTkLabel(row, text=default_text,
                                font=ctk.CTkFont(size=14, weight="bold"),
-                               text_color=MD3["primary"])
+                               text_color=MD3["value_text"])
             val.pack(side="right")
             return val
 
