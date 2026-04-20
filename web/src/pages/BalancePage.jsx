@@ -2,43 +2,64 @@ import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 
 export default function BalancePage() {
-  const [user, setUser]       = useState(null)
-  const [msg, setMsg]         = useState('')
-  const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState(null)
 
   useEffect(() => { api.me().then(setUser) }, [])
-
-  async function transfer() {
-    setLoading(true)
-    try {
-      const res = await api.referralTransfer()
-      setMsg(res.message)
-      const updated = await api.me()
-      setUser(updated)
-    } catch (e) {
-      setMsg(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (!user) return <div className="page-content text-muted">Loading...</div>
 
   return (
     <div className="page-content">
-      <h2 style={{ marginBottom: 24 }}>Balance</h2>
+      <h2 style={{ marginBottom: 24, fontSize: 22, fontWeight: 700 }}>Balance</h2>
+
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
         <StatCard title="Credits"          value={user.credits} />
         <StatCard title="Referral balance" value={user.ref_credits} />
       </div>
-      {user.ref_credits > 0 && (
-        <button className="btn-primary" onClick={transfer} disabled={loading}>
-          {loading ? 'Transferring...' : `Transfer ${user.ref_credits} ref credits → main balance`}
+
+      {/* Daily Bonus stub */}
+      <div className="card" style={{ maxWidth: 480, marginBottom: 16 }}>
+        <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>Daily Bonus</div>
+        <div className="text-muted" style={{ marginBottom: 16 }}>
+          Watch a short ad and get 3–7 free credits. Up to 3 times per day.
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button className="btn-primary" disabled title="Coming soon"
+                  style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+            Watch Ad → Get Credits
+          </button>
+          <span className="text-muted">0 / 3 today</span>
+        </div>
+        <div className="text-muted" style={{ marginTop: 10, fontSize: 12 }}>
+          Coming soon
+        </div>
+      </div>
+
+      {/* Buy Credits stub */}
+      <div className="card" style={{ maxWidth: 480 }}>
+        <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 16 }}>Buy Credits</div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+          {[
+            { label: '50 credits', price: '$2.99' },
+            { label: '100 credits', price: '$4.99' },
+            { label: '500 credits', price: '$19.99' },
+          ].map(pkg => (
+            <div key={pkg.label} className="card"
+                 style={{ flex: 1, minWidth: 120, textAlign: 'center',
+                          background: 'var(--elevated)' }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>{pkg.label}</div>
+              <div className="text-muted">{pkg.price}</div>
+            </div>
+          ))}
+        </div>
+        <button className="btn-primary" disabled title="Coming soon"
+                style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+          Buy via Free-Kassa
         </button>
-      )}
-      {msg && <div className="text-muted" style={{ marginTop: 12 }}>{msg}</div>}
-      <div className="separator" />
-      <p className="text-muted">To top up your balance, use the referral system or contact support.</p>
+        <div className="text-muted" style={{ marginTop: 10, fontSize: 12 }}>
+          Coming soon
+        </div>
+      </div>
     </div>
   )
 }
@@ -47,7 +68,7 @@ function StatCard({ title, value }) {
   return (
     <div className="card" style={{ minWidth: 160 }}>
       <div className="text-muted" style={{ marginBottom: 8 }}>{title}</div>
-      <div style={{ fontSize: 32, fontWeight: 600 }}>{value}</div>
+      <div style={{ fontSize: 32, fontWeight: 700 }}>{value}</div>
     </div>
   )
 }
