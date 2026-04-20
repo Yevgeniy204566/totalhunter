@@ -578,7 +578,8 @@ class CoastalSnakeNavigator:
                 # PCA returned the opposite end of the same line — flip it
                 new_angle = new_angle + np.pi
                 diff_raw  = (new_angle - a + np.pi) % (2 * np.pi) - np.pi
-            self._coast_angle = a + self.coast_ema_alpha * diff_raw
+            clamped_diff = np.clip(diff_raw, -0.2, 0.2)  # cap ~11° per step — prevents sudden jumps from noisy minimap
+            self._coast_angle = (a + self.coast_ema_alpha * clamped_diff) % (2 * np.pi)
 
         ca = self._coast_angle
         self._coast_vec  = (float(np.cos(ca)),           float(np.sin(ca)))
@@ -706,9 +707,10 @@ class CoastalSnakeNavigator:
                     sv = (-iv[1], iv[0])
                     self._footprint.draw_ray(iv, sv)
                     self._footprint.draw_ray(iv, sv, extra_coast_steps=2)
-                self._state        = 'DIVING'
-                self._inland_steps = 0
-                self._homing_steps = 0
+                self._state             = 'DIVING'
+                self._inland_steps      = 0
+                self._homing_steps      = 0
+                self._steps_since_shift = 0
                 # fall through to DIVING in same call
 
             elif self._homing_steps >= self.homing_max_steps:
@@ -722,9 +724,10 @@ class CoastalSnakeNavigator:
                 if not self._shift_vec_set:
                     self._shift_vec     = tuple(self._coast_vec)
                     self._shift_vec_set = True
-                self._state        = 'DIVING'
-                self._inland_steps = 0
-                self._homing_steps = 0
+                self._state             = 'DIVING'
+                self._inland_steps      = 0
+                self._homing_steps      = 0
+                self._steps_since_shift = 0
                 # fall through to DIVING in same call
 
             else:
@@ -748,8 +751,9 @@ class CoastalSnakeNavigator:
             if self._inland_steps >= self.max_inland_steps:
                 # Max depth: shift ⊥ to dive, then return.
                 self._shift_click()
-                self._state        = 'RETURNING'
-                self._return_steps = self.max_inland_steps + 15
+                self._state             = 'RETURNING'
+                self._return_steps      = self.max_inland_steps + 15
+                self._steps_since_shift = 0
                 # Soft angle dependency: diagonal coast → shorter blind phase.
                 # angle_ratio: 0.0 = cardinal, 1.0 = 45° diagonal
                 vx = abs(self._inland_vec[0])
