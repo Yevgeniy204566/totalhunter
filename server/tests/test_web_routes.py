@@ -129,3 +129,16 @@ async def test_transactions_returns_list(fake_google_claims):
         resp = await client.get("/web/transactions", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
     assert isinstance(resp.json()["items"], list)
+
+
+# ─── Task 3: GET /web/stats/global ───────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_global_stats_returns_zeroes_on_empty_db():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/stats/global")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["exchanges_today"] == 0
+    assert data["crypts_today"] == 0
+    assert data["active_hunters"] == 0

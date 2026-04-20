@@ -16,13 +16,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import Hunt, HwidHistory, LinkCode, Transaction, User
 from schemas import (
     BasicResponse,
+    GlobalStatsResponse,
     GoogleAuthRequest,
     HuntsResponse,
     HuntEntry,
@@ -146,6 +147,34 @@ async def web_me(user: User = Depends(get_web_user)):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# GET /web/stats/global  (no auth required)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/stats/global", response_model=GlobalStatsResponse)
+async def global_stats(db: AsyncSession = Depends(get_db)):
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    rows = await db.execute(
+        select(Hunt.hunt_type, func.count().label("cnt"))
+        .where(Hunt.created_at >= today_start)
+        .group_by(Hunt.hunt_type)
+    )
+    counts = {row.hunt_type: row.cnt for row in rows}
+
+    active_row = await db.execute(
+        select(func.count(func.distinct(Hunt.user_id)))
+        .where(Hunt.created_at >= today_start)
+    )
+    active_hunters = active_row.scalar() or 0
+
+    return GlobalStatsResponse(
+        exchanges_today=counts.get("exchange", 0),
+        crypts_today=counts.get("crypt", 0),
+        active_hunters=active_hunters,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # POST /web/link/generate + /web/link/verify
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -246,7 +275,6 @@ async def web_hunts(
     db: AsyncSession = Depends(get_db),
     web_user: User = Depends(get_web_user),
 ):
-    from sqlalchemy import func
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start  = now - timedelta(days=7)
