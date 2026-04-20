@@ -162,6 +162,28 @@ async def test_auth_google_ignores_unknown_ref_code(fake_google_claims):
     assert resp.status_code == 200  # unknown ref_code is silently ignored
 
 
+# ─── Task 5: POST /web/feedback ──────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_send_feedback_saves_to_db(fake_google_claims):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        jwt_token = await _get_jwt(client, fake_google_claims)
+        resp = await client.post(
+            "/web/feedback",
+            json={"text": "Please add dark mode"},
+            headers={"Authorization": f"Bearer {jwt_token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["message"] == "Thank you for your feedback!"
+
+
+@pytest.mark.asyncio
+async def test_send_feedback_requires_auth():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/web/feedback", json={"text": "test"})
+    assert resp.status_code in (401, 403)
+
+
 # ─── Task 3: GET /web/stats/global ───────────────────────────────────────────
 
 @pytest.mark.asyncio

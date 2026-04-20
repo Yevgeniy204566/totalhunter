@@ -20,9 +20,10 @@ from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import Hunt, HwidHistory, LinkCode, Transaction, User
+from models import Feedback, Hunt, HwidHistory, LinkCode, Transaction, User
 from schemas import (
     BasicResponse,
+    FeedbackRequest,
     GlobalStatsResponse,
     GoogleAuthRequest,
     HuntsResponse,
@@ -185,6 +186,24 @@ async def global_stats(db: AsyncSession = Depends(get_db)):
         crypts_today=counts.get("crypt", 0),
         active_hunters=active_hunters,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /web/feedback
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/feedback", response_model=BasicResponse)
+async def send_feedback(
+    req: FeedbackRequest,
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    if not req.text or not req.text.strip():
+        raise HTTPException(status_code=422, detail="Feedback text cannot be empty")
+    async with db.begin_nested():
+        db.add(Feedback(user_id=web_user.id, text=req.text.strip()[:1000]))
+    await db.commit()
+    return BasicResponse(success=True, message="Thank you for your feedback!")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
