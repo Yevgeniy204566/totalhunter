@@ -25,11 +25,13 @@ async function request(method, path, body) {
 }
 
 export const api = {
-  authGoogle:       (id_token) => request('POST', '/web/auth/google', { id_token }),
+  authGoogle:       (id_token, ref_code = null) => request('POST', '/web/auth/google', { id_token, ref_code }),
   me:               ()         => request('GET',  '/web/me'),
   hunts:            ()         => request('GET',  '/web/hunts'),
   transactions:     ()         => request('GET',  '/web/transactions'),
   linkVerify:       (code)     => request('POST', '/web/link/verify', { code }),
   hwidReset:        ()         => request('POST', '/web/hwid/reset'),
   referralTransfer: ()         => request('POST', '/web/referral/transfer'),
+  globalStats:      ()         => request('GET',  '/web/stats/global'),
+  sendFeedback:     (text)     => request('POST', '/web/feedback', { text }),
 }
