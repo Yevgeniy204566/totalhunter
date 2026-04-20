@@ -36,7 +36,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AppSetting, Broadcast, Hunt, Log, Transaction, User
+from models import AppSetting, Broadcast, Feedback, Hunt, Log, Transaction, User
 from web_routes import router as web_router
 from schemas import (
     BasicResponse,
@@ -60,6 +60,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:3000",
     ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -577,6 +578,33 @@ async def admin_broadcast(message: str, db: AsyncSession = Depends(get_db)):
         await db.execute(update(Broadcast).values(is_active=False))
         db.add(Broadcast(message=message, is_active=True))
     return {"success": True, "message": message}
+
+
+# ── GET /admin/feedback/unread ────────────────────────────────────────────────
+
+@app.get("/admin/feedback/unread", dependencies=[Depends(require_admin)])
+async def feedback_unread(db: AsyncSession = Depends(get_db)):
+    """Количество записей обратной связи от пользователей."""
+    row = await db.execute(select(func.count()).select_from(Feedback))
+    return {"count": row.scalar() or 0}
+
+
+@app.get("/admin/feedback/list", dependencies=[Depends(require_admin)])
+async def feedback_list(db: AsyncSession = Depends(get_db), limit: int = 100):
+    """Список всех записей обратной связи (новые первыми)."""
+    result = await db.execute(
+        select(Feedback).order_by(Feedback.created_at.desc()).limit(limit)
+    )
+    items = result.scalars().all()
+    return [
+        {
+            "id":         f.id,
+            "user_id":    f.user_id,
+            "text":       f.text,
+            "created_at": f.created_at.isoformat() if f.created_at else None,
+        }
+        for f in items
+    ]
 
 
 # ── GET /admin/logs ───────────────────────────────────────────────────────────

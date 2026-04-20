@@ -365,6 +365,10 @@
     <div class="nav-item" :class="{active: page==='broadcast'}" @click="page='broadcast'">
       <span class="material-symbols-rounded">campaign</span> Broadcast
     </div>
+    <div class="nav-item" :class="{active: page==='feedback'}" @click="page='feedback'; loadFeedback()">
+      <span class="material-symbols-rounded">feedback</span> Feedback
+      <span id="feedback-badge" style="background:#e53935;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;display:none;"></span>
+    </div>
   </nav>
 
   <!-- ── Main ─────────────────────────────────────────────────── -->
@@ -580,6 +584,46 @@
       </div>
     </template>
 
+    <!-- FEEDBACK -->
+    <template x-if="page==='feedback'">
+      <div>
+        <div class="page-title">Feedback</div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Обратная связь от пользователей</div>
+            <button class="btn btn-ghost btn-sm" @click="loadFeedback()">
+              <span class="material-symbols-rounded" style="font-size:16px">refresh</span>
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Время</th>
+                  <th>User ID</th>
+                  <th>Сообщение</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="f in feedbackItems" :key="f.id">
+                  <tr>
+                    <td style="font-size:11px;white-space:nowrap;color:var(--md-on-surface-dim)" x-text="formatDate(f.created_at)"></td>
+                    <td style="font-family:monospace;font-size:12px" x-text="f.user_id"></td>
+                    <td style="font-size:13px" x-text="f.text"></td>
+                  </tr>
+                </template>
+                <tr x-show="feedbackItems.length === 0">
+                  <td colspan="3" style="text-align:center;color:var(--md-on-surface-dim);padding:24px">
+                    Нет записей
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+
   </main>
 
   <!-- Toast -->
@@ -607,6 +651,7 @@
       search: '',
       logs: [],
       broadcastMsg: '',
+      feedbackItems: [],
 
       // ── Init ─────────────────────────────────────────────────
       async init() {
@@ -694,6 +739,12 @@
         if (r.ok) { this.showToast('Broadcast отправлен!'); this.broadcastMsg = ''; }
       },
 
+      // ── Feedback ──────────────────────────────────────────────
+      async loadFeedback() {
+        const r = await fetch(`${API}/admin/feedback/list`, { headers: this.headers() });
+        if (r.ok) this.feedbackItems = await r.json();
+      },
+
       // ── Helpers ───────────────────────────────────────────────
       formatDate(iso) {
         if (!iso) return '—';
@@ -706,6 +757,25 @@
       },
     };
   }
+</script>
+
+<script>
+async function loadFeedbackBadge() {
+  try {
+    const token = localStorage.getItem('admin_token') || '';
+    const r = await fetch('/admin/feedback/unread', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const d = await r.json();
+    const badge = document.getElementById('feedback-badge');
+    if (badge) {
+      badge.textContent = d.count;
+      badge.style.display = d.count > 0 ? 'inline-block' : 'none';
+    }
+  } catch {}
+}
+loadFeedbackBadge();
+setInterval(loadFeedbackBadge, 30000);
 </script>
 </body>
 </html>
