@@ -39,7 +39,7 @@ THEMES = {
         "bg": "#050810", "card": "#0A0F1E", "elevated": "#0F1528",
         "primary": "#1B3A82", "primary_dim": "#2A4A9E",
         "secondary": "#2040A0", "error": "#7A2020", "error_hover": "#5E1818",
-        "error_text": "#C08080", "on_surface": "#C8D8F0", "on_surface2": "#8090B8",
+        "error_text": "#C08080", "on_surface": "#FFFFFF", "on_surface2": "#CCDDFF",
         "outline": "#1A2440", "separator": "#0A1020",
         "green_btn": "#0F3A2A", "green_hover": "#0A2A1E",
         "blue_btn": "#1B3A82", "blue_hover": "#2A4A9E",
@@ -261,10 +261,11 @@ class TotalHunterApp(ctk.CTk):
         self.acc_frame.pack(fill="x", padx=40, pady=(10, 0))
         self.acc_lb = ctk.CTkLabel(self.acc_frame,
                                    text=LANGS[self.current_lang]["accuracy"],
+                                   font=ctk.CTkFont(size=13),
                                    text_color=MD3["on_surface2"])
         self.acc_lb.pack(side="left")
         self.acc_val_lb = ctk.CTkLabel(self.acc_frame, text="70%",
-                                       font=ctk.CTkFont(weight="bold"),
+                                       font=ctk.CTkFont(size=14, weight="bold"),
                                        text_color=MD3["primary"])
         self.acc_val_lb.pack(side="right")
         self.conf_slider = ctk.CTkSlider(self.tab_hunt, from_=0.1, to=0.9,
@@ -280,11 +281,12 @@ class TotalHunterApp(ctk.CTk):
         self.speed_frame.pack(fill="x", padx=40, pady=(0, 0))
         self.speed_lb = ctk.CTkLabel(self.speed_frame,
                                      text=LANGS[self.current_lang]["scan_rate"],
+                                     font=ctk.CTkFont(size=13),
                                      text_color=MD3["on_surface2"])
         self.speed_lb.pack(side="left")
         self.speed_val_lb = ctk.CTkLabel(self.speed_frame,
                                          text=f"0.6 {LANGS[self.current_lang]['sec']}",
-                                         font=ctk.CTkFont(weight="bold"),
+                                         font=ctk.CTkFont(size=14, weight="bold"),
                                          text_color=MD3["primary"])
         self.speed_val_lb.pack(side="right")
         self.speed_slider = ctk.CTkSlider(self.tab_hunt, from_=0.1, to=5.0,
@@ -305,7 +307,7 @@ class TotalHunterApp(ctk.CTk):
         self.nav_header_frame.pack(fill="x", padx=10, pady=(4, 2))
         self.nav_lb = ctk.CTkLabel(self.nav_header_frame,
                                    text="Навигация (мини-карта)",
-                                   font=ctk.CTkFont(size=12, weight="bold"),
+                                   font=ctk.CTkFont(size=14, weight="bold"),
                                    text_color=MD3["on_surface"])
         self.nav_lb.pack(side="left")
         self.nav_enabled_var = ctk.BooleanVar(value=True)
@@ -315,7 +317,7 @@ class TotalHunterApp(ctk.CTk):
             variable=self.nav_enabled_var,
             onvalue=True, offvalue=False,
             command=self._on_nav_toggle,
-            font=ctk.CTkFont(size=11),
+            font=ctk.CTkFont(size=13),
             text_color=MD3["on_surface2"],
             button_color=MD3["primary"],
             button_hover_color=MD3["primary_dim"],
@@ -327,9 +329,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_xy_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
         self.nav_xy_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_xy_frame, text="Center X:",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left", padx=(0,2))
         self.nav_cx_entry = ctk.CTkEntry(self.nav_xy_frame, width=55, justify="center",
+                                         font=ctk.CTkFont(size=13),
                                          fg_color=MD3["card"],
                                          border_color=MD3["outline"],
                                          text_color=MD3["on_surface"],
@@ -338,9 +341,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_cx_entry.pack(side="left", padx=(0, 10))
         self.nav_cx_entry.bind('<KeyRelease>', self._show_calibration_dot)
         ctk.CTkLabel(self.nav_xy_frame, text="Center Y:",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left", padx=(0,2))
         self.nav_cy_entry = ctk.CTkEntry(self.nav_xy_frame, width=55, justify="center",
+                                         font=ctk.CTkFont(size=13),
                                          fg_color=MD3["card"],
                                          border_color=MD3["outline"],
                                          text_color=MD3["on_surface"],
@@ -353,10 +357,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_step_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
         self.nav_step_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_step_frame, text="Шаг джойстика:",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_step_val = ctk.CTkLabel(self.nav_step_frame, text="13 px",
-                                         font=ctk.CTkFont(weight="bold"),
+                                         font=ctk.CTkFont(size=14, weight="bold"),
                                          text_color=MD3["primary"])
         self.nav_step_val.pack(side="right")
         self.nav_step_slider = ctk.CTkSlider(self.nav_frame, from_=10, to=17,
@@ -371,10 +375,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_wait_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
         self.nav_wait_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_wait_frame, text="Скорость (сек/шаг):",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="2.0 с",
-                                         font=ctk.CTkFont(weight="bold"),
+                                         font=ctk.CTkFont(size=14, weight="bold"),
                                          text_color=MD3["primary"])
         self.nav_wait_val.pack(side="right")
         self.nav_wait_slider = ctk.CTkSlider(self.nav_frame, from_=0.5, to=5.0,
@@ -397,10 +401,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_inland_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_inland_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_inland_frame, text="Глубина нырка (экранов):",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_inland_val = ctk.CTkLabel(self.nav_inland_frame, text="5",
-                                           font=ctk.CTkFont(weight="bold"),
+                                           font=ctk.CTkFont(size=14, weight="bold"),
                                            text_color=MD3["primary"])
         self.nav_inland_val.pack(side="right")
         self.nav_inland_slider = ctk.CTkSlider(
@@ -416,10 +420,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_ocean_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_ocean_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_ocean_frame, text="Граница океан/суша (%):",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_ocean_val = ctk.CTkLabel(self.nav_ocean_frame, text="3%",
-                                          font=ctk.CTkFont(weight="bold"),
+                                          font=ctk.CTkFont(size=14, weight="bold"),
                                           text_color=MD3["primary"])
         self.nav_ocean_val.pack(side="right")
         self.nav_ocean_slider = ctk.CTkSlider(
@@ -435,10 +439,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_waterpx_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_waterpx_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_waterpx_frame, text="Мин. размер водоёма:",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_waterpx_val = ctk.CTkLabel(self.nav_waterpx_frame, text="500",
-                                            font=ctk.CTkFont(weight="bold"),
+                                            font=ctk.CTkFont(size=14, weight="bold"),
                                             text_color=MD3["primary"])
         self.nav_waterpx_val.pack(side="right")
         self.nav_waterpx_slider = ctk.CTkSlider(
@@ -454,10 +458,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_diagblind_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_diagblind_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_diagblind_frame, text="Коэф. диагонали возврата:",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_diagblind_val = ctk.CTkLabel(self.nav_diagblind_frame, text="0.50",
-                                              font=ctk.CTkFont(weight="bold"),
+                                              font=ctk.CTkFont(size=14, weight="bold"),
                                               text_color=MD3["primary"])
         self.nav_diagblind_val.pack(side="right")
         self.nav_diagblind_slider = ctk.CTkSlider(
@@ -473,10 +477,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_coastrad_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_coastrad_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_coastrad_frame, text="Конус детекции берега (px):",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_coastrad_val = ctk.CTkLabel(self.nav_coastrad_frame, text="50",
-                                             font=ctk.CTkFont(weight="bold"),
+                                             font=ctk.CTkFont(size=14, weight="bold"),
                                              text_color=MD3["primary"])
         self.nav_coastrad_val.pack(side="right")
         self.nav_coastrad_slider = ctk.CTkSlider(
@@ -492,10 +496,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_footprint_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_footprint_frame.pack(fill="x", padx=10, pady=(0, 2))
         ctk.CTkLabel(self.nav_footprint_frame, text="Память следов (сек):",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_footprint_val = ctk.CTkLabel(self.nav_footprint_frame, text="120 с",
-                                              font=ctk.CTkFont(weight="bold"),
+                                              font=ctk.CTkFont(size=14, weight="bold"),
                                               text_color=MD3["primary"])
         self.nav_footprint_val.pack(side="right")
         self.nav_footprint_slider = ctk.CTkSlider(
@@ -549,7 +553,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ─── Сетка иконок склепов ────────────────────────────
         icons_label = ctk.CTkLabel(self.tab_crypt, text="Выберите типы склепов:",
-                                   font=ctk.CTkFont(size=12),
+                                   font=ctk.CTkFont(size=13),
                                    text_color=MD3["on_surface2"])
         icons_label.pack(pady=(2, 1))
 
@@ -615,10 +619,10 @@ class TotalHunterApp(ctk.CTk):
             """Хелпер: строка-заголовок слайдера."""
             row = ctk.CTkFrame(settings_frame, fg_color="transparent")
             row.pack(fill="x", padx=10, pady=(4, 0))
-            ctk.CTkLabel(row, text=label_text, font=ctk.CTkFont(size=12),
+            ctk.CTkLabel(row, text=label_text, font=ctk.CTkFont(size=13),
                          text_color=MD3["on_surface2"]).pack(side="left")
             val = ctk.CTkLabel(row, text=default_text,
-                               font=ctk.CTkFont(weight="bold"),
+                               font=ctk.CTkFont(size=14, weight="bold"),
                                text_color=MD3["primary"])
             val.pack(side="right")
             return val
@@ -677,7 +681,7 @@ class TotalHunterApp(ctk.CTk):
         # ── Профиль калибровки ────────────────────────────────────
         misc_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
         misc_row.pack(fill="x", padx=10, pady=(2, 0))
-        ctk.CTkLabel(misc_row, text="Профиль:", font=ctk.CTkFont(size=11),
+        ctk.CTkLabel(misc_row, text="Профиль:", font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         ctk.CTkOptionMenu(misc_row, values=list(self._PROFILES.keys()),
                           variable=self._cal_profile_var, width=100,
@@ -690,7 +694,7 @@ class TotalHunterApp(ctk.CTk):
         offset_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
         offset_row.pack(fill="x", padx=10, pady=(2, 0))
         ctk.CTkLabel(offset_row, text="Микроподстройка кликов ↑↓:",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         ctk.CTkButton(offset_row, text="−", width=28, height=24,
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
@@ -726,7 +730,7 @@ class TotalHunterApp(ctk.CTk):
         # Разбивка времени: туда + обратно + буфер
         self.crypt_timer_detail_label = ctk.CTkLabel(
             self.tab_crypt, text="",
-            font=ctk.CTkFont(size=11), text_color=MD3["outline"],
+            font=ctk.CTkFont(size=13), text_color=MD3["outline"],
         )
         self.crypt_timer_detail_label.pack(pady=(0, 2))
 
@@ -917,7 +921,7 @@ class TotalHunterApp(ctk.CTk):
         self.ref_title_lb.pack(pady=20)
         self.share_lb = ctk.CTkLabel(self.tab_ref,
                                      text=LANGS[self.current_lang]["share_text"],
-                                     font=ctk.CTkFont(size=11),
+                                     font=ctk.CTkFont(size=13),
                                      text_color=MD3["on_surface2"], wraplength=350)
         self.share_lb.pack(pady=(0, 15))
 
@@ -1294,7 +1298,7 @@ class TotalHunterApp(ctk.CTk):
             self.tab_calibration,
             text="Выберите профиль и нажмите «Калибровать».\n"
                  "Кликните Точку А (мини-карта), затем Точку Б (серебро).",
-            font=ctk.CTkFont(size=11),
+            font=ctk.CTkFont(size=13),
             text_color=MD3["on_surface2"],
             justify="center",
         ).pack(pady=(0, 12))
@@ -1319,7 +1323,7 @@ class TotalHunterApp(ctk.CTk):
         self._cal_status_label = ctk.CTkLabel(
             self.tab_calibration,
             text="Не откалиброван",
-            font=ctk.CTkFont(size=11),
+            font=ctk.CTkFont(size=13),
             text_color="#FFB300",
         )
         self._cal_status_label.pack(pady=8)
