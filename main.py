@@ -33,7 +33,7 @@ THEMES = {
         "green_btn": "#1A4A30", "green_hover": "#123520",
         "blue_btn": "#025E8E", "blue_hover": "#036A9E",
         "tab_selected": "#025E8E", "tab_selected_hover": "#036A9E",
-        "value_text": "#0D94D0",
+        "value_text": "#0D94D0", "checkbox": "#0C85BC", "checkbox_hover": "#0D94D0",
     },
     "Deep Night": {
         # Sapphire magic — иссиня-чёрный + deep sapphire gem
@@ -45,7 +45,7 @@ THEMES = {
         "green_btn": "#0F3A2A", "green_hover": "#0A2A1E",
         "blue_btn": "#1B3A82", "blue_hover": "#2A4A9E",
         "tab_selected": "#1B3A82", "tab_selected_hover": "#2A4A9E",
-        "value_text": "#88AAFF",
+        "value_text": "#88AAFF", "checkbox": "#3D6EFF", "checkbox_hover": "#5580FF",
     },
     "Ocean": {
         "bg": "#0D1B2A", "card": "#1B2A3B", "elevated": "#1E3448",
@@ -56,7 +56,7 @@ THEMES = {
         "green_btn": "#065F46", "green_hover": "#064E3B",
         "blue_btn": "#1E40AF", "blue_hover": "#1E3A8A",
         "tab_selected": "#0369A1", "tab_selected_hover": "#0284C7",
-        "value_text": "#38BDF8",
+        "value_text": "#38BDF8", "checkbox": "#0EA5E9", "checkbox_hover": "#38BDF8",
     },
     "Light": {
         # Wet Asphalt & Sand — dark matte asphalt bg + warm sandy accents
@@ -68,7 +68,7 @@ THEMES = {
         "green_btn": "#1A4A30", "green_hover": "#123520",
         "blue_btn": "#2A3A4A", "blue_hover": "#354A5E",
         "tab_selected": "#8A7040", "tab_selected_hover": "#A08050",
-        "value_text": "#D4B483",
+        "value_text": "#D4B483", "checkbox": "#C8A96E", "checkbox_hover": "#D4B483",
     },
 }
 
@@ -608,8 +608,8 @@ class TotalHunterApp(ctk.CTk):
             self._crypt_vars[crypt_name] = var
             ctk.CTkCheckBox(cell, text="", variable=var, width=20,
                             checkmark_color=MD3["bg"],
-                            fg_color=MD3["primary"],
-                            hover_color=MD3["primary_dim"],
+                            fg_color=MD3["checkbox"],
+                            hover_color=MD3["checkbox_hover"],
                             border_color=MD3["outline"]).pack()
 
         # ─── Настройки ───────────────────────────────────────
