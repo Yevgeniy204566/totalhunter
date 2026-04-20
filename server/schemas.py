@@ -67,6 +67,7 @@ class BasicResponse(BaseModel):
 class GoogleAuthRequest(BaseModel):
     """Frontend sends Google ID token; backend verifies and returns JWT."""
     id_token: str
+    ref_code: str | None = None
 
 
 class WebAuthResponse(BaseModel):

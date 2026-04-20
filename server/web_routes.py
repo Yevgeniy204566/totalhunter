@@ -112,8 +112,21 @@ async def auth_google(req: GoogleAuthRequest, db: AsyncSession = Depends(get_db)
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
         if user is None:
-            ref_code = _secrets.token_urlsafe(6)
-            user = User(email=email, username=username, ref_code=ref_code)
+            new_ref_code = _secrets.token_urlsafe(6)
+            invited_by_id = None
+            if req.ref_code:
+                ref_row = await db.execute(
+                    select(User).where(User.ref_code == req.ref_code)
+                )
+                referrer = ref_row.scalar_one_or_none()
+                if referrer:
+                    invited_by_id = referrer.id
+            user = User(
+                email=email,
+                username=username,
+                ref_code=new_ref_code,
+                invited_by_id=invited_by_id,
+            )
             db.add(user)
             await db.flush()
         elif username and user.username != username:

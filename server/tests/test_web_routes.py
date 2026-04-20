@@ -131,6 +131,37 @@ async def test_transactions_returns_list(fake_google_claims):
     assert isinstance(resp.json()["items"], list)
 
 
+# ─── Task 4: auth/google accepts ref_code ────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_auth_google_with_valid_ref_code(fake_google_claims):
+    # Register referrer first
+    referrer_claims = {**fake_google_claims, "email": "referrer@example.com", "sub": "ref-sub-999"}
+    with patch("web_routes._verify_google_token", return_value=referrer_claims):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/web/auth/google", json={"id_token": "ref-tok"})
+    assert resp.status_code == 200
+
+    # Register new user with null ref_code — should succeed without invited_by
+    new_claims = {**fake_google_claims, "email": "newuser@example.com", "sub": "new-sub-111"}
+    with patch("web_routes._verify_google_token", return_value=new_claims):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/web/auth/google", json={"id_token": "new-tok", "ref_code": None})
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_auth_google_ignores_unknown_ref_code(fake_google_claims):
+    new_claims = {**fake_google_claims, "email": "another@example.com", "sub": "anon-999"}
+    with patch("web_routes._verify_google_token", return_value=new_claims):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/web/auth/google",
+                json={"id_token": "tok", "ref_code": "INVALID"}
+            )
+    assert resp.status_code == 200  # unknown ref_code is silently ignored
+
+
 # ─── Task 3: GET /web/stats/global ───────────────────────────────────────────
 
 @pytest.mark.asyncio
