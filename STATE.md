@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-04-20 (Хангоф #6)
+> Последнее обновление: 2026-04-21 (Хангоф #7)
 
 ---
 
@@ -16,18 +16,20 @@
 | CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 31 тест, скролл до конца списка | 2026-04-18 |
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
 | Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
-| Admin Panel | server/admin/index.html | ✅ Feedback badge + таблица записей | 2026-04-20 |
-| Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ Phase 2A завершена, задеплоена | 2026-04-20 |
-| Economy (Free-Kassa + рефералы) | — | ⏳ Следующий (Phase 2B) | — |
+| Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
+| Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ Phase 2A завершена, HWID anti-fraud | 2026-04-21 |
+| Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена, задеплоена на GCP | 2026-04-21 |
 
 ---
 
-## Текущая работа (2026-04-20)
+## Текущая работа (2026-04-21)
 
 - **Бот 100% функционально завершён** — все модули работают
 - **GCP деплой актуален** — FastAPI + PostgreSQL + systemd на `34.68.86.57:8000` ✅
-- **Phase 2A — ЗАВЕРШЕНА** ✅ (все 17 задач, commits до `605259f`, задеплоено на GCP + Vercel)
-- **Phase 2B (Economy)** — следующий этап
+- **Phase 2A — ЗАВЕРШЕНА** ✅ (commits до `605259f`, задеплоено на GCP + Vercel)
+- **Phase 2B — ЗАВЕРШЕНА** ✅ (9 коммитов, commit `e4a205b`, задеплоено на GCP + Vercel)
+- **Ожидает:** FK_MERCHANT_ID / FK_SECRET_WORD / FK_SECRET_WORD2 в systemd (Free-Kassa не зарегистрирован)
+- **Phase 2C (Community)** — следующий этап
 
 ---
 
@@ -63,19 +65,29 @@
 - Все 3 профиля работают: client, chrome, firefox
 
 ### Серверный API ✅
-- Web: 10+ роутов /web/*, JWT, Google OAuth, HWID linking, feedback
+- Web: `/payment/create`, `/payment/webhook`, 10+ роутов /web/*, JWT, Google OAuth, HWID anti-fraud
 - Bot: 18 роутов (bot API + admin API)
-- Admin: `/admin/feedback/unread`, `/admin/feedback/list` с badge в UI
+- Admin: `/admin/leaderboard?period=alltime|month|week`, `/admin/feedback/*` с badge
 - HTTP 402 при нехватке кредитов
 - Heartbeat: daemon thread, 12×10s sleep для мгновенной остановки
-- 7 таблиц БД: User, Transaction, Hunt, Log, Broadcast, AppSetting, Feedback
+- **8 таблиц БД:** User, Transaction, Hunt, Log, Broadcast, AppSetting, Feedback, **Order**
 
-### Web Platform ✅ (Phase 2A завершена)
+### Web Platform ✅ (Phase 2A + 2B завершены)
 - Vercel proxy `/api/*` → GCP:8000 (решает Mixed Content)
 - Google Auth → ref_code cookie → invited_by_id в БД
-- Страницы: Dashboard (global stats), Profile, Balance (stubs), Hunts, Referrals (link+transfer), Feedback, Devices, Transactions, Guide, Legal
+- HWID anti-fraud: бонусы только при первом HWID (проверка по hwid_history)
+- Страницы: Dashboard, Profile, Balance (**реальные пакеты lite/pro/ultra**), Hunts, Referrals, Feedback, Devices, Transactions, Guide, Legal
+- BalancePage: 3 пакета ($1/$5/$10), кнопка → POST /payment/create → redirect FK
 - Ad slots: top `.ad-slot` + footer `.ad-slot-footer` в Layout.jsx
-- `/ref/:code` → cookie `th_ref` (30 дней) → redirect /login
+
+### Economy ✅ (Phase 2B завершена)
+- **Пакеты:** lite=$1/300cr, pro=$5/2000cr, ultra=$10/5000cr
+- **Free-Kassa:** HMAC MD5 подпись (FK_SECRET_WORD для ссылки, FK_SECRET_WORD2 для вебхука)
+- **Вебхук идемпотентен:** `order.status == "paid"` — защита от двойного зачисления
+- **Реферальная каскад:** L1=10%, L2=5%, L3=1% от `credits_total` (включая бонусы)
+- **Забаненный реферер** скипается, цепочка продолжается к следующему уровню
+- **24 теста** — cascade, idempotency, webhook, leaderboard
+- **Ожидает настройки:** FK_MERCHANT_ID/FK_SECRET_WORD/FK_SECRET_WORD2 в systemd + webhook URL в кабинете FK
 
 ---
 
@@ -83,6 +95,8 @@
 
 | Приоритет | Баг/TODO | Файл |
 |---|---|---|
+| **HIGH** | Ввести FK_MERCHANT_ID/FK_SECRET_WORD/FK_SECRET_WORD2 в systemd и перезапустить сервис | /etc/systemd/system/battlebot.service |
+| **HIGH** | Прописать webhook URL в кабинете Free-Kassa: `http://34.68.86.57:8000/web/payment/webhook` | FK merchant dashboard |
 | **MED** | Task 4 тест: добавить happy path invited_by_id | server/tests/test_web_routes.py |
 | LOW | КАЛИБРОВКА: добавить описание с картинками (Точка А/Б) | calibration_ui.py / main.py |
 | LOW | force_update bot-side обработка из app_settings | engine.py / auth.py |
@@ -91,10 +105,7 @@
 
 ## SaaS Master Plan — следующие модули
 
-**Phase 2B (Economy / Модуль 4):**
-- Free-Kassa вебхуки → `/purchase` endpoint
-- L1/L2/L3 % от покупок рефералов (10%/5%/1%)
-- Leaderboard TOP-50 в admin dashboard
+**~~Phase 2B (Economy / Модуль 4)~~ — ЗАВЕРШЕНА** ✅
 
 **Phase 2C (Community):**
 - Публичный leaderboard
@@ -106,6 +117,14 @@
 ---
 
 ## Архив закрытого
+
+### Закрыто (Хангоф #7 — 2026-04-21)
+- ~~СКЛЕПЫ tab: CTkScrollableFrame contour~~ — `border_width=1`, `corner_radius=12`, MD3 outline, прозрачный scrollbar track, разделитель 1px
+- ~~HWID anti-fraud~~ — бонусы только при первом HWID (hwid_history), дубликат пишет Transaction("hwid_duplicate_blocked")
+- ~~Phase 2B Economy~~ — payments.py, Order модель, /payment/create, /payment/webhook (идемпотентный), 3-уровневый каскад, leaderboard, BalancePage реальные кнопки
+- ~~Alembic migration orders~~ — `server_default=sa.text("'pending'")`, `sa.text('now()')` — корректный синтаксис
+- ~~SQLAlchemy expire bug~~ — `order_id_str` захватывается внутри транзакции до commit
+- ~~Admin leaderboard~~ — GET /admin/leaderboard?period=alltime|month|week, Alpine.js UI, nav item
 
 ### Закрыто (Хангоф #6 — 2026-04-20)
 - ~~Phase 2A Tasks 5–17~~ — все задачи выполнены и задеплоены
