@@ -2,22 +2,36 @@
 
 /* Deep Night theme — source of truth: docs/color_palettes.md */
 :root {
-  --bg:           #050810;
-  --card:         #0A0F1E;
-  --elevated:     #0F1528;
-  --primary:      #1B3A82;
-  --primary-dim:  #2A4A9E;
-  --secondary:    #2040A0;
-  --error:        #7A2020;
-  --error-text:   #C08080;
-  --on-surface:   #C8D8F0;
-  --on-surface2:  #8090B8;
-  --outline:      #1A2440;
-  --separator:    #0A1020;
-  --green-btn:    #0F3A2A;
-  --green-hover:  #0A2A1E;
-  --blue-btn:     #1B3A82;
-  --blue-hover:   #2A4A9E;
+  --bg:            #050810;
+  --card:          #0A0F1E;
+  --elevated:      #0F1528;
+  --primary:       #1B3A82;
+  --primary-dim:   #2A4A9E;
+  --secondary:     #2040A0;
+  --error:         #7A2020;
+  --error-text:    #C08080;
+  --on-surface:    #C8D8F0;
+  --on-surface2:   #8090B8;
+  --outline:       #1A2440;
+  --separator:     #0A1020;
+  --green-btn:     #0F3A2A;
+  --green-hover:   #0A2A1E;
+  --blue-btn:      #1B3A82;
+  --blue-hover:    #2A4A9E;
+
+  /* Layout chrome */
+  --header-height: 64px;
+  --sidebar-width: 220px;
+  --header-bg:     rgba(5, 8, 16, 0.92);
+
+  /* Accent — bright electric blue for glow & active states */
+  --accent:        #3D7FFF;
+  --accent-glow:   rgba(61, 127, 255, 0.18);
+  --accent-faint:  rgba(61, 127, 255, 0.08);
+
+  /* Credits */
+  --credits-gold:  #FFD166;
+  --credits-glow:  rgba(255, 209, 102, 0.15);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,6 +51,11 @@ a:hover { color: var(--on-surface); }
   border: 1px solid var(--outline);
   border-radius: 8px;
   padding: 20px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.card:hover {
+  box-shadow: 0 0 20px var(--accent-glow);
+  border-color: rgba(61, 127, 255, 0.3);
 }
 
 .btn-primary {
@@ -130,4 +149,71 @@ a:hover { color: var(--on-surface); }
   max-width: 900px;
   margin: 0 auto;
   padding: 24px 16px;
+}
+
+/* ── Sidebar navigation ──────────────────────────────────────── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+  font-size: 14px;
+  color: var(--on-surface2);
+  border-left: 3px solid transparent;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.nav-item:hover {
+  background: var(--accent-faint);
+  color: var(--on-surface);
+}
+.nav-item--active {
+  color: var(--on-surface);
+  background: rgba(61, 127, 255, 0.12);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+.nav-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* ── Header chrome ───────────────────────────────────────────── */
+.header-btn {
+  background: transparent;
+  border: 1px solid var(--outline);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: var(--on-surface2);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.header-btn:hover {
+  border-color: var(--on-surface2);
+  color: var(--on-surface);
+}
+.header-btn--logout:hover {
+  border-color: var(--error);
+  color: var(--error-text);
+}
+
+.credits-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--credits-gold);
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--credits-glow);
+  border: 1px solid rgba(255, 209, 102, 0.22);
+  border-radius: 8px;
+  padding: 6px 12px;
+  letter-spacing: 0.2px;
 }
