@@ -116,8 +116,9 @@ async def payment_create(
         db.add(order)
         await db.flush()
         order.freekassa_order_id = str(order.id)
+        order_id_str = str(order.id)  # capture before commit expires the object
 
-    redirect_url = build_fk_url(order_id=str(order.id), amount=pkg["usd"])
+    redirect_url = build_fk_url(order_id=order_id_str, amount=pkg["usd"])
     return PaymentCreateResponse(redirect_url=redirect_url)
 
 
