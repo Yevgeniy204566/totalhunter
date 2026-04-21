@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { isLoggedIn } from './auth.js'
 import Layout from './components/Layout.jsx'
+import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import BalancePage from './pages/BalancePage.jsx'
@@ -21,6 +22,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/"           element={<LandingPage />} />
         <Route path="/login"      element={<LoginPage />} />
         <Route path="/guide"      element={<GuidePage />} />
         <Route path="/legal"      element={<LegalPage />} />
@@ -34,7 +36,7 @@ export default function App() {
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="feedback"     element={<FeedbackPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
