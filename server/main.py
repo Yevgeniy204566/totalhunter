@@ -32,7 +32,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import func, select, update
+from sqlalchemy import Integer, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -43,6 +43,8 @@ from schemas import (
     BasicResponse,
     CheckAuthResponse,
     HwidRequest,
+    LeaderboardEntry,
+    LeaderboardResponse,
     LogErrorRequest,
     ReferralRequest,
     UseCreditsRequest,
@@ -400,7 +402,7 @@ async def transfer_referral_balance(req: HwidRequest, db: AsyncSession = Depends
 
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 
-ADMIN_TOKEN = os.environ.get("ADMIN_SECRET_KEY", "change-me-before-deploy")
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "dev-admin-token")
 _bearer = HTTPBearer()
 
 
@@ -607,6 +609,59 @@ async def feedback_list(db: AsyncSession = Depends(get_db), limit: int = 100):
         }
         for f in items
     ]
+
+
+# ── GET /admin/leaderboard ────────────────────────────────────────────────────
+
+@app.get("/admin/leaderboard", response_model=LeaderboardResponse,
+         dependencies=[Depends(require_admin)])
+async def admin_leaderboard(
+    period: str = "alltime",
+    db: AsyncSession = Depends(get_db),
+):
+    now = datetime.now(timezone.utc)
+    if period == "week":
+        period_start = now - timedelta(days=7)
+    elif period == "month":
+        period_start = now - timedelta(days=30)
+    else:
+        period_start = None
+
+    hunt_q = (
+        select(
+            Hunt.user_id,
+            func.count(Hunt.id).label("hunts_total"),
+            func.sum(
+                func.cast(Hunt.hunt_type == "exchange", Integer)
+            ).label("exchanges"),
+            func.sum(
+                func.cast(Hunt.hunt_type == "crypt", Integer)
+            ).label("crypts"),
+        )
+        .group_by(Hunt.user_id)
+        .order_by(func.count(Hunt.id).desc())
+        .limit(50)
+    )
+    if period_start:
+        hunt_q = hunt_q.where(Hunt.created_at >= period_start)
+
+    rows = (await db.execute(hunt_q)).all()
+
+    items = []
+    for rank, row in enumerate(rows, start=1):
+        user_result = await db.execute(select(User).where(User.id == row.user_id))
+        user = user_result.scalar_one_or_none()
+        items.append(LeaderboardEntry(
+            rank=rank,
+            username=user.username if user else None,
+            hwid=user.hwid if user else None,
+            hunts_total=row.hunts_total,
+            exchanges=row.exchanges or 0,
+            crypts=row.crypts or 0,
+            last_seen=user.last_seen.isoformat() if user and user.last_seen else None,
+        ))
+
+    return LeaderboardResponse(items=items)
 
 
 # ── GET /admin/logs ───────────────────────────────────────────────────────────
