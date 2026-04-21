@@ -369,6 +369,9 @@
       <span class="material-symbols-rounded">feedback</span> Feedback
       <span id="feedback-badge" style="background:#e53935;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;display:none;"></span>
     </div>
+    <div class="nav-item" :class="{active: page==='leaderboard'}" @click="page='leaderboard'; loadLeaderboard()">
+      <span class="material-symbols-rounded">leaderboard</span> Leaderboard
+    </div>
   </nav>
 
   <!-- ── Main ─────────────────────────────────────────────────── -->
@@ -624,6 +627,67 @@
       </div>
     </template>
 
+    <!-- LEADERBOARD -->
+    <template x-if="page==='leaderboard'">
+      <div>
+        <div class="page-title">Leaderboard TOP-50</div>
+
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <button class="btn btn-sm"
+                  :class="lbPeriod==='alltime' ? 'btn-primary' : 'btn-ghost'"
+                  @click="lbPeriod='alltime'; loadLeaderboard()">All time</button>
+          <button class="btn btn-sm"
+                  :class="lbPeriod==='month' ? 'btn-primary' : 'btn-ghost'"
+                  @click="lbPeriod='month'; loadLeaderboard()">Month</button>
+          <button class="btn btn-sm"
+                  :class="lbPeriod==='week' ? 'btn-primary' : 'btn-ghost'"
+                  @click="lbPeriod='week'; loadLeaderboard()">Week</button>
+          <button class="btn btn-ghost btn-sm" @click="loadLeaderboard()">
+            <span class="material-symbols-rounded" style="font-size:16px">refresh</span>
+          </button>
+        </div>
+
+        <div class="section">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Username / HWID</th>
+                  <th>Exchanges</th>
+                  <th>Crypts</th>
+                  <th>Total</th>
+                  <th>Last seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="row in leaderboard" :key="row.rank">
+                  <tr>
+                    <td style="color:var(--md-on-surface-dim);font-weight:600" x-text="row.rank"></td>
+                    <td>
+                      <div style="font-weight:500" x-text="row.username || '—'"></div>
+                      <div style="font-size:11px;color:var(--md-on-surface-dim);font-family:monospace"
+                           x-text="row.hwid || '—'"></div>
+                    </td>
+                    <td style="color:var(--md-primary)" x-text="row.exchanges"></td>
+                    <td style="color:var(--md-secondary)" x-text="row.crypts"></td>
+                    <td style="font-weight:600" x-text="row.hunts_total"></td>
+                    <td style="font-size:12px;color:var(--md-on-surface-dim)"
+                        x-text="row.last_seen ? formatDate(row.last_seen) : '—'"></td>
+                  </tr>
+                </template>
+                <tr x-show="leaderboard.length === 0">
+                  <td colspan="6" style="text-align:center;color:var(--md-on-surface-dim);padding:24px">
+                    Нет данных
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+
   </main>
 
   <!-- Toast -->
@@ -652,6 +716,8 @@
       logs: [],
       broadcastMsg: '',
       feedbackItems: [],
+      leaderboard: [],
+      lbPeriod: 'alltime',
 
       // ── Init ─────────────────────────────────────────────────
       async init() {
@@ -743,6 +809,12 @@
       async loadFeedback() {
         const r = await fetch(`${API}/admin/feedback/list`, { headers: this.headers() });
         if (r.ok) this.feedbackItems = await r.json();
+      },
+
+      // ── Leaderboard ───────────────────────────────────────────
+      async loadLeaderboard() {
+        const r = await fetch(`${API}/admin/leaderboard?period=${this.lbPeriod}`, { headers: this.headers() });
+        if (r.ok) { const data = await r.json(); this.leaderboard = data.items; }
       },
 
       // ── Helpers ───────────────────────────────────────────────
