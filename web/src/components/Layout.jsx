@@ -62,23 +62,32 @@ export default function Layout() {
             </div>
           )}
 
-          <Link to="/dashboard/balance" title="Получить бесплатные кредиты" style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '6px 11px', borderRadius: 6, fontSize: 12,
-            background: 'rgba(74,222,128,0.10)',
-            border: '1px solid rgba(74,222,128,0.30)',
-            color: '#4ADE80', fontWeight: 700, textDecoration: 'none',
-            transition: 'background 0.15s, box-shadow 0.15s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(74,222,128,0.18)'
-            e.currentTarget.style.boxShadow  = '0 0 12px rgba(74,222,128,0.25)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'rgba(74,222,128,0.10)'
-            e.currentTarget.style.boxShadow  = 'none'
-          }}>
-            ▶ +3 КР
+          <Link
+            to="/dashboard/balance"
+            title="Посмотри короткий ролик и получи кредиты для охоты"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '8px 14px', borderRadius: 8, fontSize: 14,
+              background: 'rgba(74,222,128,0.10)',
+              border: '1px solid rgba(74,222,128,0.35)',
+              color: '#4ADE80', fontWeight: 800, textDecoration: 'none',
+              letterSpacing: '0.2px',
+              transition: 'background 0.15s, box-shadow 0.15s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(74,222,128,0.20)'
+              e.currentTarget.style.boxShadow  = '0 0 16px rgba(74,222,128,0.35)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(74,222,128,0.10)'
+              e.currentTarget.style.boxShadow  = 'none'
+            }}
+          >
+            {/* Faucet / water-drop icon */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+              <path d="M12 2C12 2 4 10 4 15a8 8 0 0 0 16 0C20 10 12 2 12 2z"/>
+            </svg>
+            +5 КР
           </Link>
 
           <button className="header-btn" title="Language (coming soon)">RU</button>

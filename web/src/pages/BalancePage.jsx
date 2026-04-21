@@ -264,32 +264,11 @@ export default function BalancePage() {
         </div>
       )}
 
-      {/* Daily Bonus */}
-      <div className="card" style={{ maxWidth: 480, borderRadius: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-            background: 'rgba(255,209,102,0.12)',
-            border: '1px solid rgba(255,209,102,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-          }}>
-            🎁
-          </div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF' }}>Daily Bonus</div>
-            <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>До 3 раз в день</div>
-          </div>
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 16, lineHeight: 1.65 }}>
-          Посмотри короткую рекламу и получи 3–7 бесплатных кредитов.
-        </div>
-        <button disabled style={{
-          padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 700,
-          background: 'var(--elevated)', color: 'var(--on-surface2)',
-          border: '1px solid var(--outline)', cursor: 'not-allowed', fontFamily: 'inherit',
-        }}>
-          Скоро...
-        </button>
+      {/* Secure payment note */}
+      <div style={{ textAlign: 'center', marginTop: 8 }}>
+        <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
+          🔒 Безопасная оплата · Free-Kassa · Кредиты не сгорают
+        </span>
       </div>
 
     </div>
