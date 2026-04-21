@@ -45,7 +45,7 @@ export default function Layout() {
         zIndex: 100,
         boxShadow: '0 2px 32px var(--accent-glow)',
       }}>
-        <Link to="/" style={{
+        <Link to="/dashboard" style={{
           display: 'flex', alignItems: 'center', gap: 10,
           textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
         }}>

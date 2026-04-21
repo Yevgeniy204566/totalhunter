@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api.js'
+import { isLoggedIn } from '../auth.js'
 import { LANDING } from '../constants.js'
 import { useCounter } from '../hooks/useCounter.js'
 
@@ -82,13 +83,13 @@ export default function LandingPage() {
           }} title="Language (coming soon)">
             RU
           </button>
-          <Link to="/login" className="btn-pulse" style={{
+          <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
             padding: '9px 22px', borderRadius: 8, fontSize: 14,
             background: 'var(--accent)', color: '#FFFFFF',
             fontWeight: 700, textDecoration: 'none',
             display: 'inline-block',
           }}>
-            Войти
+            {isLoggedIn() ? 'Dashboard →' : 'Войти'}
           </Link>
         </div>
       </nav>
@@ -151,12 +152,12 @@ export default function LandingPage() {
           </p>
 
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/login" className="btn-pulse" style={{
+            <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
               padding: '17px 40px', borderRadius: 10, fontSize: 17,
               background: 'var(--accent)', color: '#FFFFFF',
               fontWeight: 700, textDecoration: 'none', display: 'inline-block',
             }}>
-              {LANDING.ctaPrimary}
+              {isLoggedIn() ? 'Перейти в Dashboard →' : LANDING.ctaPrimary}
             </Link>
             <a href="#features" style={{
               padding: '17px 32px', borderRadius: 10, fontSize: 17,
@@ -264,12 +265,12 @@ export default function LandingPage() {
           <p style={{ fontSize: 16, color: '#C8D8F0', marginBottom: 44, lineHeight: 1.65 }}>
             {LANDING.ctaSub}
           </p>
-          <Link to="/login" className="btn-pulse" style={{
+          <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
             padding: '18px 52px', borderRadius: 12, fontSize: 18,
             background: 'var(--accent)', color: '#FFFFFF',
             fontWeight: 700, textDecoration: 'none', display: 'inline-block',
           }}>
-            {LANDING.ctaBtn}
+            {isLoggedIn() ? 'Перейти в Dashboard →' : LANDING.ctaBtn}
           </Link>
         </div>
       </section>
