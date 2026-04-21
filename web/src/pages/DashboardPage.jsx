@@ -26,10 +26,10 @@ function StatTile({ label, color, rawValue }) {
   const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
   return (
     <div style={{
-      flex: '1 1 150px',
+      flex: '1 1 180px',
       background: 'var(--elevated)',
       border: '1px solid var(--outline)',
-      borderRadius: 12, padding: '18px 16px',
+      borderRadius: 14, padding: '28px 20px',
       textAlign: 'center',
       transition: 'box-shadow 0.2s, border-color 0.2s',
     }}
@@ -42,13 +42,13 @@ function StatTile({ label, color, rawValue }) {
       e.currentTarget.style.borderColor = 'var(--outline)'
     }}>
       <div style={{
-        fontSize: 42, fontWeight: 800, color, lineHeight: 1, marginBottom: 6,
-        textShadow: `0 0 24px ${color}88`,
+        fontSize: 54, fontWeight: 900, color, lineHeight: 1, marginBottom: 10,
+        textShadow: `0 0 28px ${color}88`,
         fontVariantNumeric: 'tabular-nums',
       }}>
         {rawValue != null ? animated : '—'}
       </div>
-      <div style={{ fontSize: 12, color: '#C8D8F0', fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#C8D8F0', fontWeight: 600, letterSpacing: '0.3px' }}>{label}</div>
     </div>
   )
 }

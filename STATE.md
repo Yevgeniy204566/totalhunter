@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-04-21 (Хангоф #7)
+> Последнее обновление: 2026-04-21 (Хангоф #8)
 
 ---
 
@@ -28,8 +28,10 @@
 - **GCP деплой актуален** — FastAPI + PostgreSQL + systemd на `34.68.86.57:8000` ✅
 - **Phase 2A — ЗАВЕРШЕНА** ✅ (commits до `605259f`, задеплоено на GCP + Vercel)
 - **Phase 2B — ЗАВЕРШЕНА** ✅ (9 коммитов, commit `e4a205b`, задеплоено на GCP + Vercel)
+- **Phase 2D (UI Polish) — в процессе** — Dashboard, Landing, Balance, Hunts, Referrals, Transactions, Feedback отполированы
+- **Auth persistence пофикшен** — `isLoggedIn()` теперь корректно декодирует base64url JWT (коммит `c53cd1b`)
 - **Ожидает:** FK_MERCHANT_ID / FK_SECRET_WORD / FK_SECRET_WORD2 в systemd (Free-Kassa не зарегистрирован)
-- **Phase 2C (Community)** — следующий этап
+- **Phase 2C (Community)** — следующий этап после UI polish
 
 ---
 
@@ -117,6 +119,11 @@
 ---
 
 ## Архив закрытого
+
+### Закрыто (Хангоф #8 — 2026-04-21)
+- ~~Auth persistence bug~~ — `atob()` не умеет base64url; добавлен `.replace(/-/g,'+').replace(/_/g,'/')` в `isLoggedIn()`
+- ~~Умная навигация~~ — логотип Layout → `/dashboard`, App.jsx `/` редиректит залогиненных, LandingPage кнопки адаптивны
+- ~~Dashboard stat tiles~~ — увеличены: padding 28px, fontSize 54px, font-weight 900, label 13px bold
 
 ### Закрыто (Хангоф #7 — 2026-04-21)
 - ~~СКЛЕПЫ tab: CTkScrollableFrame contour~~ — `border_width=1`, `corner_radius=12`, MD3 outline, прозрачный scrollbar track, разделитель 1px
