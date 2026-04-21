@@ -235,3 +235,30 @@ class Feedback(Base):
     text       = Column(Text, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=func.now())
+
+
+# ─────────────────────────────────────────────
+# Orders — payment records
+# ─────────────────────────────────────────────
+
+class Order(Base):
+    """
+    One row per payment attempt.
+    status: pending → paid (or failed).
+    freekassa_order_id = str(order.id) — our PK sent to FK as merchant order id.
+    Idempotency: webhook checks status == 'paid' before crediting.
+    """
+    __tablename__ = "orders"
+
+    id                  = Column(Integer, primary_key=True)
+    user_id             = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    package             = Column(String(10), nullable=False)
+    usd_amount          = Column(Numeric(10, 2), nullable=False)
+    credits_total       = Column(Integer, nullable=False)
+    freekassa_order_id  = Column(String(50), unique=True, nullable=True)
+    status              = Column(String(10), nullable=False, server_default=text("'pending'"))
+    idempotency_key     = Column(String(36), unique=True, nullable=False)
+    created_at          = Column(TIMESTAMP(timezone=True), nullable=False,
+                                 server_default=func.now())
+
+    user = relationship("User", backref="orders")

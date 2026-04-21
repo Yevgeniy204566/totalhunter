@@ -140,3 +140,26 @@ class GlobalStatsResponse(BaseModel):
 
 class FeedbackRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
+
+
+# ── Payments ──────────────────────────────────────────────────────────────────
+
+class PaymentCreateRequest(BaseModel):
+    package: str   # "lite" | "pro" | "ultra"
+
+class PaymentCreateResponse(BaseModel):
+    redirect_url: str
+
+# ── Leaderboard ───────────────────────────────────────────────────────────────
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    username: Optional[str]
+    hwid: Optional[str]
+    hunts_total: int
+    exchanges: int
+    crypts: int
+    last_seen: Optional[str]
+
+class LeaderboardResponse(BaseModel):
+    items: list[LeaderboardEntry]
