@@ -19,8 +19,8 @@ const PACKAGES = [
     credits: 1500,
     bonus: 500,
     price: '$5.00',
-    color: '#B060FF',
-    glow: 'rgba(176,96,255,0.25)',
+    color: '#4ADE80',
+    glow: 'rgba(74,222,128,0.25)',
     featured: true,
   },
   {
@@ -62,7 +62,7 @@ function PackageCard({ pkg, buying, onBuy }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         flex: '1 1 200px',
-        background: pkg.featured ? 'linear-gradient(160deg, rgba(176,96,255,0.08) 0%, rgba(61,127,255,0.08) 100%)' : 'var(--elevated)',
+        background: pkg.featured ? 'linear-gradient(160deg, rgba(74,222,128,0.08) 0%, rgba(61,127,255,0.06) 100%)' : 'var(--elevated)',
         border: `1px solid ${hovered || pkg.featured ? pkg.color : 'var(--outline)'}`,
         borderRadius: 14, padding: pkg.featured ? '28px 20px' : '24px 20px',
         position: 'relative',
@@ -85,28 +85,50 @@ function PackageCard({ pkg, buying, onBuy }) {
         </div>
       )}
 
+      {/* Pack name */}
       <div style={{
-        fontSize: 20, fontWeight: 800, color: pkg.color, marginBottom: 6,
+        fontSize: 20, fontWeight: 800, color: pkg.color, marginBottom: 12,
         textShadow: `0 0 16px ${pkg.glow}`,
       }}>
         {pkg.name}
       </div>
 
-      <div style={{ fontSize: 36, fontWeight: 800, color: '#FFFFFF', lineHeight: 1, marginBottom: 4 }}>
-        {total}
+      {/* Base credits */}
+      <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 2 }}>
+        {pkg.credits.toLocaleString()} кредитов
       </div>
-      <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: 4 }}>кредитов</div>
 
+      {/* BONUS — hero element */}
+      {pkg.bonus ? (
+        <div style={{
+          fontSize: 32, fontWeight: 800,
+          color: 'var(--credits-gold)',
+          textShadow: '0 0 20px rgba(255,209,102,0.7)',
+          lineHeight: 1, marginBottom: 4,
+        }}>
+          +{pkg.bonus.toLocaleString()}
+        </div>
+      ) : (
+        <div style={{ height: 40 }} />
+      )}
       {pkg.bonus && (
         <div style={{
-          fontSize: 12, fontWeight: 600, color: pkg.color,
-          marginBottom: 16, letterSpacing: '0.3px',
+          fontSize: 11, fontWeight: 700, letterSpacing: '1.2px',
+          color: 'var(--credits-gold)', marginBottom: 10,
+          textTransform: 'uppercase',
         }}>
-          +{pkg.bonus.toLocaleString()} бонусных кредитов
+          🎁 BONUS
         </div>
       )}
-      {!pkg.bonus && <div style={{ marginBottom: 16 }} />}
 
+      {/* Total */}
+      <div style={{
+        fontSize: 13, color: 'var(--on-surface2)', marginBottom: 16,
+      }}>
+        = {total} итого
+      </div>
+
+      {/* Price */}
       <div style={{
         fontSize: 28, fontWeight: 700, color: '#FFFFFF', marginBottom: 20,
       }}>

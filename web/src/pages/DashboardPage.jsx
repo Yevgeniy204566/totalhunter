@@ -22,14 +22,14 @@ function timeAgo(iso) {
   return `${Math.floor(diff / 86400)} дн назад`
 }
 
-function StatTile({ icon, label, color, rawValue }) {
+function StatTile({ label, color, rawValue }) {
   const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
   return (
     <div style={{
-      flex: '1 1 160px',
+      flex: '1 1 150px',
       background: 'var(--elevated)',
       border: '1px solid var(--outline)',
-      borderRadius: 12, padding: '24px 20px',
+      borderRadius: 12, padding: '18px 16px',
       textAlign: 'center',
       transition: 'box-shadow 0.2s, border-color 0.2s',
     }}
@@ -41,15 +41,14 @@ function StatTile({ icon, label, color, rawValue }) {
       e.currentTarget.style.boxShadow = ''
       e.currentTarget.style.borderColor = 'var(--outline)'
     }}>
-      <div style={{ fontSize: 24, marginBottom: 10 }}>{icon}</div>
       <div style={{
-        fontSize: 40, fontWeight: 800, color, lineHeight: 1, marginBottom: 8,
+        fontSize: 42, fontWeight: 800, color, lineHeight: 1, marginBottom: 6,
         textShadow: `0 0 24px ${color}88`,
         fontVariantNumeric: 'tabular-nums',
       }}>
         {rawValue != null ? animated : '—'}
       </div>
-      <div style={{ fontSize: 13, color: '#C8D8F0', fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 12, color: '#C8D8F0', fontWeight: 500 }}>{label}</div>
     </div>
   )
 }
@@ -81,8 +80,8 @@ export default function DashboardPage() {
 
       {/* ── Global stat tiles ─────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 36, flexWrap: 'wrap' }}>
-        {STAT_TILES.map(({ key, icon, label, color }) => (
-          <StatTile key={key} icon={icon} label={label} color={color}
+        {STAT_TILES.map(({ key, label, color }) => (
+          <StatTile key={key} label={label} color={color}
                     rawValue={stats ? stats[key] : null} />
         ))}
       </div>
