@@ -563,9 +563,17 @@ class TotalHunterApp(ctk.CTk):
 
         scroll_frame = ctk.CTkScrollableFrame(self.tab_crypt, height=195,
                                                fg_color=MD3["card"],
+                                               corner_radius=12,
+                                               border_width=1,
+                                               border_color=MD3["outline"],
+                                               scrollbar_fg_color="transparent",
                                                scrollbar_button_color=MD3["outline"],
-                                               scrollbar_button_hover_color=MD3["primary"])
-        scroll_frame.pack(padx=20, pady=3, fill="x")
+                                               scrollbar_button_hover_color=MD3["value_text"])
+        scroll_frame.pack(padx=20, pady=(3, 0), fill="x")
+
+        ctk.CTkFrame(self.tab_crypt, height=1, fg_color=MD3["outline"]).pack(
+            fill="x", padx=20, pady=(5, 0)
+        )
 
         targets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'targets')
         # Порядок: Ordinary 1-12, Epic 2-18, R 1-2
@@ -615,8 +623,11 @@ class TotalHunterApp(ctk.CTk):
         # ─── Настройки ───────────────────────────────────────
         settings_frame = ctk.CTkScrollableFrame(self.tab_crypt, fg_color=MD3["elevated"],
                                                  corner_radius=12, height=220,
+                                                 border_width=1,
+                                                 border_color=MD3["outline"],
+                                                 scrollbar_fg_color="transparent",
                                                  scrollbar_button_color=MD3["outline"],
-                                                 scrollbar_button_hover_color=MD3["primary"])
+                                                 scrollbar_button_hover_color=MD3["value_text"])
         settings_frame.pack(fill="x", padx=20, pady=4)
 
         def _slider_row(label_text, default_text):

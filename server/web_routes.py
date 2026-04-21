@@ -222,6 +222,9 @@ async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get
     return LinkGenerateResponse(code=code, expires_in_seconds=600)
 
 
+TRIAL_CREDITS    = 100
+REFERRAL_REWARD  = 50
+
 @router.post("/link/verify", response_model=BasicResponse)
 async def link_verify(
     req: LinkVerifyRequest,
@@ -242,6 +245,12 @@ async def link_verify(
 
     hwid = link.hwid
 
+    # Check if this HWID has ever been used for bonuses
+    history_result = await db.execute(
+        select(HwidHistory).where(HwidHistory.hwid == hwid).limit(1)
+    )
+    hwid_is_new = history_result.scalar_one_or_none() is None
+
     bot_result = await db.execute(select(User).where(User.hwid == hwid))
     bot_user = bot_result.scalar_one_or_none()
 
@@ -259,6 +268,40 @@ async def link_verify(
 
         web_user.hwid = hwid
         db.add(HwidHistory(hwid=hwid, user_id=web_user.id))
+
+        if hwid_is_new and not web_user.trial_used:
+            # First time this hardware links — grant trial bonus
+            web_user.credits    += TRIAL_CREDITS
+            web_user.trial_used  = True
+            db.add(Transaction(
+                user_id=web_user.id,
+                type="trial",
+                amount=TRIAL_CREDITS,
+                meta={"hwid": hwid, "reason": "first_hwid_link"},
+            ))
+
+            # Reward referrer if present
+            if web_user.invited_by_id:
+                referrer_result = await db.execute(
+                    select(User).where(User.id == web_user.invited_by_id)
+                )
+                referrer = referrer_result.scalar_one_or_none()
+                if referrer:
+                    referrer.ref_credits += REFERRAL_REWARD
+                    db.add(Transaction(
+                        user_id=referrer.id,
+                        type="ref_welcome",
+                        amount=REFERRAL_REWARD,
+                        meta={"ref_from_user_id": web_user.id, "hwid": hwid},
+                    ))
+        elif not hwid_is_new:
+            # Duplicate HWID — link without bonuses, log the attempt
+            db.add(Transaction(
+                user_id=web_user.id,
+                type="hwid_duplicate_blocked",
+                amount=0,
+                meta={"hwid": hwid, "reason": "duplicate_hwid_bonus_blocked"},
+            ))
 
     await db.commit()
     return BasicResponse(success=True, message="HWID linked successfully")
