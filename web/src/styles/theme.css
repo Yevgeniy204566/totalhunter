@@ -204,6 +204,20 @@ a:hover { color: var(--on-surface); }
   color: var(--error-text);
 }
 
+/* ── Custom scrollbars ───────────────────────────────────────── */
+::-webkit-scrollbar              { width: 5px; height: 5px; }
+::-webkit-scrollbar-track        { background: transparent; }
+::-webkit-scrollbar-thumb        { background: var(--outline); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover  { background: var(--on-surface2); }
+
+/* ── Gradient text ───────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #C8D8F0 0%, var(--accent) 55%, #B060FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* ── Animations ──────────────────────────────────────────────── */
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 14px rgba(61,127,255,0.45); }

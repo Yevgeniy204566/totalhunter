@@ -1,33 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { LANDING } from '../constants.js'
-
-/* Animated counter — counts from 0 to `target` over `duration` ms */
-function useCounter(target, duration = 1400) {
-  const [value, setValue] = useState(0)
-  const raf = useRef(null)
-
-  useEffect(() => {
-    if (target === null || target === undefined) return
-    const start = performance.now()
-    const from = 0
-
-    function tick(now) {
-      const elapsed = now - start
-      const progress = Math.min(elapsed / duration, 1)
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setValue(Math.round(from + (target - from) * eased))
-      if (progress < 1) raf.current = requestAnimationFrame(tick)
-    }
-
-    raf.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf.current)
-  }, [target, duration])
-
-  return value
-}
+import { useCounter } from '../hooks/useCounter.js'
 
 function StatCard({ icon, label, color, rawValue }) {
   const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
