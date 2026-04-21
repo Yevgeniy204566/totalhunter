@@ -34,4 +34,5 @@ export const api = {
   referralTransfer: ()         => request('POST', '/web/referral/transfer'),
   globalStats:      ()         => request('GET',  '/web/stats/global'),
   sendFeedback:     (text)     => request('POST', '/web/feedback', { text }),
+  paymentCreate:    (pkg)      => request('POST', '/web/payment/create', { package: pkg }),
 }
