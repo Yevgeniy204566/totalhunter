@@ -181,10 +181,18 @@ async def global_stats(db: AsyncSession = Depends(get_db)):
     )
     active_hunters = active_row.scalar() or 0
 
+    total_rows = await db.execute(
+        select(Hunt.hunt_type, func.count().label("cnt"))
+        .group_by(Hunt.hunt_type)
+    )
+    totals = {row.hunt_type: row.cnt for row in total_rows}
+
     return GlobalStatsResponse(
         exchanges_today=counts.get("exchange", 0),
         crypts_today=counts.get("crypt", 0),
         active_hunters=active_hunters,
+        total_exchanges=totals.get("exchange", 0),
+        total_crypts=totals.get("crypt", 0),
     )
 
 

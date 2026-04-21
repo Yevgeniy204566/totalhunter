@@ -136,6 +136,8 @@ class GlobalStatsResponse(BaseModel):
     exchanges_today: int
     crypts_today: int
     active_hunters: int
+    total_exchanges: int
+    total_crypts: int
 
 
 class FeedbackRequest(BaseModel):
