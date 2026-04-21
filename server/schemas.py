@@ -154,12 +154,12 @@ class PaymentCreateResponse(BaseModel):
 
 class LeaderboardEntry(BaseModel):
     rank: int
-    username: Optional[str]
-    hwid: Optional[str]
+    username: Optional[str] = None
+    hwid: Optional[str] = None
     hunts_total: int
     exchanges: int
     crypts: int
-    last_seen: Optional[str]
+    last_seen: Optional[str] = None
 
 class LeaderboardResponse(BaseModel):
     items: list[LeaderboardEntry]
