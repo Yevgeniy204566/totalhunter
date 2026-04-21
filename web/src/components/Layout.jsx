@@ -13,6 +13,8 @@ const NAV = [
   { to: '/dashboard/feedback',     icon: '✦', label: 'Feedback' },
 ]
 
+const STICKY_AD_HEIGHT = 72
+
 export default function Layout() {
   const navigate = useNavigate()
   const [credits, setCredits] = useState(null)
@@ -43,21 +45,16 @@ export default function Layout() {
         zIndex: 100,
         boxShadow: '0 2px 32px var(--accent-glow)',
       }}>
-
-        {/* Logo */}
         <Link to="/" style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          textDecoration: 'none',
-          fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
+          textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
         }}>
           <span style={{ fontSize: 20, color: 'var(--accent)' }}>⚔</span>
           <span style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
           <span style={{ color: 'var(--on-surface)' }}>Hunter</span>
         </Link>
 
-        {/* Right area */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-
           {credits !== null && (
             <div className="credits-badge">
               <span style={{ fontSize: 13 }}>◈</span>
@@ -65,95 +62,84 @@ export default function Layout() {
             </div>
           )}
 
-          {/* Daily bonus quick button */}
           <Link to="/dashboard/balance" title="Получить бесплатные кредиты" style={{
             display: 'flex', alignItems: 'center', gap: 5,
             padding: '6px 11px', borderRadius: 6, fontSize: 12,
             background: 'rgba(74,222,128,0.10)',
             border: '1px solid rgba(74,222,128,0.30)',
             color: '#4ADE80', fontWeight: 700, textDecoration: 'none',
-            letterSpacing: '0.2px',
             transition: 'background 0.15s, box-shadow 0.15s',
           }}
           onMouseEnter={e => {
             e.currentTarget.style.background = 'rgba(74,222,128,0.18)'
-            e.currentTarget.style.boxShadow = '0 0 12px rgba(74,222,128,0.25)'
+            e.currentTarget.style.boxShadow  = '0 0 12px rgba(74,222,128,0.25)'
           }}
           onMouseLeave={e => {
             e.currentTarget.style.background = 'rgba(74,222,128,0.10)'
-            e.currentTarget.style.boxShadow = 'none'
+            e.currentTarget.style.boxShadow  = 'none'
           }}>
             ▶ +3 КР
           </Link>
 
           <button className="header-btn" title="Language (coming soon)">RU</button>
-
-          <button className="header-btn header-btn--logout" onClick={logout}>
-            Выйти
-          </button>
-
+          <button className="header-btn header-btn--logout" onClick={logout}>Выйти</button>
         </div>
       </header>
 
       {/* ── Fixed Sidebar ─────────────────────────────────────── */}
       <nav style={{
         position: 'fixed',
-        top: 'var(--header-height)',
-        left: 0,
+        top: 'var(--header-height)', left: 0,
         width: 'var(--sidebar-width)',
-        height: 'calc(100vh - var(--header-height))',
+        height: `calc(100vh - var(--header-height) - ${STICKY_AD_HEIGHT}px)`,
         background: 'var(--card)',
         borderRight: '1px solid var(--outline)',
         display: 'flex', flexDirection: 'column',
         paddingTop: 12,
         zIndex: 50,
       }}>
-
         {NAV.map(({ to, icon, label }) => (
           <NavLink
-            key={to}
-            to={to}
-            end
+            key={to} to={to} end
             className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`}
           >
             <span className="nav-icon">{icon}</span>
             {label}
           </NavLink>
         ))}
-
         <div style={{ flex: 1 }} />
-
-        {/* Guide link */}
         <a href="/guide" className="nav-item" style={{ borderTop: '1px solid var(--outline)', marginTop: 8 }}>
           <span className="nav-icon" style={{ fontSize: 14 }}>📖</span>
           Guide
         </a>
-
-        {/* Ad slot — always visible */}
-        <div style={{
-          margin: '10px 12px 12px',
-          height: 80,
-          background: 'var(--elevated)',
-          border: '1px solid var(--outline)',
-          borderRadius: 10,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--on-surface2)', fontSize: 11,
-          letterSpacing: '1px', flexShrink: 0,
-        }}>
-          AD
-        </div>
-
       </nav>
 
       {/* ── Main content ─────────────────────────────────────── */}
       <main style={{
         marginLeft: 'var(--sidebar-width)',
         marginTop: 'var(--header-height)',
-        minHeight: 'calc(100vh - var(--header-height))',
+        minHeight: `calc(100vh - var(--header-height))`,
+        paddingBottom: STICKY_AD_HEIGHT,
         overflowY: 'auto',
       }}>
         <Outlet />
       </main>
+
+      {/* ── Sticky Bottom Ad Bar ──────────────────────────────── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        height: STICKY_AD_HEIGHT,
+        background: 'rgba(5, 8, 16, 0.88)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderTop: '1px solid var(--outline)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 90,
+        boxShadow: '0 -4px 28px rgba(0,0,0,0.45)',
+        color: 'var(--on-surface2)', fontSize: 12, letterSpacing: '2px',
+      }}>
+        AD
+      </div>
 
     </div>
   )

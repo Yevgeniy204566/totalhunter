@@ -4,33 +4,39 @@ import { useCounter } from '../hooks/useCounter.js'
 
 const PACKAGES = [
   {
-    id: 'lite',
-    name: 'Lite',
-    credits: 300,
-    price: '$1.00',
-    bonus: null,
-    color: 'var(--accent)',
-    glow: 'rgba(61,127,255,0.25)',
+    id:       'lite',
+    name:     'SCOUT',
+    credits:  300,
+    bonus:    null,
+    total:    300,
+    price:    '$1.00',
+    color:    '#3D7FFF',
+    glow:     'rgba(61,127,255,0.30)',
+    bg:       'rgba(61,127,255,0.06)',
     featured: false,
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    credits: 1500,
-    bonus: 500,
-    price: '$5.00',
-    color: '#4ADE80',
-    glow: 'rgba(74,222,128,0.25)',
+    id:       'pro',
+    name:     'STALKER',
+    credits:  1500,
+    bonus:    500,
+    total:    2000,
+    price:    '$5.00',
+    color:    '#4ADE80',
+    glow:     'rgba(74,222,128,0.30)',
+    bg:       'rgba(74,222,128,0.07)',
     featured: true,
   },
   {
-    id: 'ultra',
-    name: 'Ultra',
-    credits: 4000,
-    bonus: 1000,
-    price: '$10.00',
-    color: 'var(--credits-gold)',
-    glow: 'rgba(255,209,102,0.25)',
+    id:       'ultra',
+    name:     'RAIDER',
+    credits:  4000,
+    bonus:    1000,
+    total:    5000,
+    price:    '$10.00',
+    color:    '#FFD166',
+    glow:     'rgba(255,209,102,0.30)',
+    bg:       'rgba(255,209,102,0.06)',
     featured: false,
   },
 ]
@@ -38,13 +44,18 @@ const PACKAGES = [
 function BalanceCard({ title, value, color }) {
   const animated = useCounter(typeof value === 'number' ? value : null)
   return (
-    <div className="card" style={{ flex: '1 1 160px', borderRadius: 12, textAlign: 'center', padding: '24px 20px' }}>
-      <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 10 }}>{title}</div>
+    <div className="card" style={{
+      flex: '1 1 160px', borderRadius: 14, textAlign: 'center', padding: '22px 20px',
+    }}>
+      <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: 8,
+                    fontWeight: 600, letterSpacing: '0.5px' }}>
+        {title}
+      </div>
       <div style={{
-        fontSize: 42, fontWeight: 800,
-        color: color ?? 'var(--accent)',
-        textShadow: `0 0 20px ${color ?? 'var(--accent)'}88`,
+        fontSize: 44, fontWeight: 900, color,
+        textShadow: `0 0 22px ${color}99`,
         fontVariantNumeric: 'tabular-nums',
+        lineHeight: 1,
       }}>
         {value != null ? animated.toLocaleString() : '—'}
       </div>
@@ -54,32 +65,35 @@ function BalanceCard({ title, value, color }) {
 
 function PackageCard({ pkg, buying, onBuy }) {
   const [hovered, setHovered] = useState(false)
-  const total = (pkg.credits + (pkg.bonus ?? 0)).toLocaleString()
+  const isActive = hovered || pkg.featured
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        flex: '1 1 200px',
-        background: pkg.featured ? 'linear-gradient(160deg, rgba(74,222,128,0.08) 0%, rgba(61,127,255,0.06) 100%)' : 'var(--elevated)',
-        border: `1px solid ${hovered || pkg.featured ? pkg.color : 'var(--outline)'}`,
-        borderRadius: 14, padding: pkg.featured ? '28px 20px' : '24px 20px',
+        flex: '1 1 210px',
         position: 'relative',
-        transition: 'box-shadow 0.2s, border-color 0.2s, transform 0.15s',
-        boxShadow: hovered ? `0 0 28px ${pkg.glow}` : pkg.featured ? `0 0 16px ${pkg.glow}` : 'none',
-        transform: pkg.featured ? 'scale(1.03)' : 'scale(1)',
+        background: `linear-gradient(160deg, ${pkg.bg} 0%, rgba(5,8,16,0.95) 100%)`,
+        border: `1px solid ${isActive ? pkg.color : 'var(--outline)'}`,
+        borderRadius: 18,
+        padding: pkg.featured ? '36px 24px 24px' : '28px 20px 20px',
         textAlign: 'center',
+        transition: 'box-shadow 0.25s, border-color 0.25s, transform 0.2s',
+        boxShadow: isActive
+          ? `0 0 36px ${pkg.glow}, inset 0 1px 0 ${pkg.color}33`
+          : 'none',
+        transform: pkg.featured ? 'scale(1.04)' : hovered ? 'scale(1.01)' : 'scale(1)',
       }}
     >
       {/* Featured badge */}
       {pkg.featured && (
         <div style={{
-          position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)',
-          background: 'linear-gradient(90deg, var(--accent), #B060FF)',
-          color: '#FFFFFF', fontSize: 11, fontWeight: 700,
-          padding: '4px 14px', borderRadius: 20, letterSpacing: '0.5px',
-          whiteSpace: 'nowrap',
+          position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
+          background: `linear-gradient(90deg, #4ADE80, #3D7FFF)`,
+          color: '#000', fontSize: 11, fontWeight: 900,
+          padding: '5px 18px', borderRadius: 20, letterSpacing: '0.8px',
+          whiteSpace: 'nowrap', textTransform: 'uppercase',
         }}>
           ⭐ Выбор охотника
         </div>
@@ -87,71 +101,84 @@ function PackageCard({ pkg, buying, onBuy }) {
 
       {/* Pack name */}
       <div style={{
-        fontSize: 20, fontWeight: 800, color: pkg.color, marginBottom: 12,
-        textShadow: `0 0 16px ${pkg.glow}`,
+        fontSize: 22, fontWeight: 900, color: pkg.color,
+        letterSpacing: '2px', textTransform: 'uppercase',
+        textShadow: `0 0 20px ${pkg.glow}`,
+        marginBottom: 20,
       }}>
         {pkg.name}
       </div>
 
-      {/* Base credits */}
-      <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 2 }}>
-        {pkg.credits.toLocaleString()} кредитов
+      {/* BONUS — the hook */}
+      {pkg.bonus ? (
+        <>
+          <div style={{
+            fontSize: 62, fontWeight: 900, lineHeight: 1,
+            color: '#FFD166',
+            textShadow: '0 0 30px rgba(255,209,102,0.85), 0 0 60px rgba(255,209,102,0.35)',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: 4,
+          }}>
+            +{pkg.bonus.toLocaleString()}
+          </div>
+          <div style={{
+            fontSize: 11, fontWeight: 900, letterSpacing: '2px',
+            color: '#FFD166', opacity: 0.9,
+            textTransform: 'uppercase', marginBottom: 18,
+          }}>
+            🎁 бонус кредитов
+          </div>
+        </>
+      ) : (
+        <div style={{ height: 88 }} />
+      )}
+
+      {/* Total — secondary hero */}
+      <div style={{
+        fontSize: 34, fontWeight: 900, color: '#FFFFFF', lineHeight: 1,
+        textShadow: '0 0 14px rgba(255,255,255,0.55)',
+        fontVariantNumeric: 'tabular-nums',
+        marginBottom: 6,
+      }}>
+        = {pkg.total.toLocaleString()} КР
       </div>
 
-      {/* BONUS — hero element */}
+      {/* Base credits strikethrough */}
       {pkg.bonus ? (
         <div style={{
-          fontSize: 32, fontWeight: 800,
-          color: 'var(--credits-gold)',
-          textShadow: '0 0 20px rgba(255,209,102,0.7)',
-          lineHeight: 1, marginBottom: 4,
+          fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22,
         }}>
-          +{pkg.bonus.toLocaleString()}
+          <span style={{ textDecoration: 'line-through', opacity: 0.55 }}>
+            {pkg.credits.toLocaleString()}
+          </span>
+          {' '}базовых
         </div>
       ) : (
-        <div style={{ height: 40 }} />
-      )}
-      {pkg.bonus && (
-        <div style={{
-          fontSize: 11, fontWeight: 700, letterSpacing: '1.2px',
-          color: 'var(--credits-gold)', marginBottom: 10,
-          textTransform: 'uppercase',
-        }}>
-          🎁 BONUS
+        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22 }}>
+          кредитов на охоту
         </div>
       )}
 
-      {/* Total */}
-      <div style={{
-        fontSize: 13, color: 'var(--on-surface2)', marginBottom: 16,
-      }}>
-        = {total} итого
-      </div>
-
-      {/* Price */}
-      <div style={{
-        fontSize: 28, fontWeight: 700, color: '#FFFFFF', marginBottom: 20,
-      }}>
-        {pkg.price}
-      </div>
-
+      {/* Buy button */}
       <button
         disabled={!!buying}
         onClick={() => onBuy(pkg.id)}
         style={{
-          width: '100%', padding: '12px 0',
-          background: buying === pkg.id ? 'var(--elevated)' : pkg.color,
+          width: '100%', padding: '14px 0',
+          background: buying === pkg.id
+            ? 'var(--elevated)'
+            : `linear-gradient(135deg, ${pkg.color}, ${pkg.color}cc)`,
           color: buying === pkg.id ? 'var(--on-surface2)' : '#000',
-          border: 'none', borderRadius: 8,
-          fontSize: 14, fontWeight: 700,
+          border: 'none', borderRadius: 10,
+          fontSize: 15, fontWeight: 900,
           cursor: buying ? 'not-allowed' : 'pointer',
-          opacity: buying && buying !== pkg.id ? 0.5 : 1,
-          transition: 'opacity 0.15s, box-shadow 0.15s',
-          boxShadow: buying === pkg.id ? 'none' : `0 0 14px ${pkg.glow}`,
-          fontFamily: 'inherit',
+          opacity: buying && buying !== pkg.id ? 0.4 : 1,
+          transition: 'opacity 0.15s, box-shadow 0.2s',
+          boxShadow: buying === pkg.id ? 'none' : `0 0 20px ${pkg.glow}`,
+          fontFamily: 'inherit', letterSpacing: '0.3px',
         }}
       >
-        {buying === pkg.id ? 'Переход к оплате...' : 'Купить →'}
+        {buying === pkg.id ? 'Переход...' : `Купить — ${pkg.price}`}
       </button>
     </div>
   )
@@ -181,62 +208,83 @@ export default function BalancePage() {
   return (
     <div style={{
       minHeight: '100%',
-      background: 'radial-gradient(ellipse 100% 50% at 50% 0%, rgba(176,96,255,0.06) 0%, transparent 55%)',
-      padding: '32px 24px', maxWidth: 960, margin: '0 auto',
+      background: `
+        radial-gradient(ellipse 80% 40% at 20% 0%, rgba(74,222,128,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 0%, rgba(61,127,255,0.05) 0%, transparent 60%),
+        var(--bg)
+      `,
+      padding: '32px 24px', maxWidth: 980, margin: '0 auto',
     }}>
 
-      <h2 className="gradient-text" style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>
+      <h2 className="gradient-text" style={{ fontSize: 22, fontWeight: 900, marginBottom: 24 }}>
         Баланс
       </h2>
 
       {/* Balance overview */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 40, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 44, flexWrap: 'wrap' }}>
         <BalanceCard title="Кредиты"           value={user.credits}     color="var(--accent)" />
         <BalanceCard title="Реферальный баланс" value={user.ref_credits} color="var(--credits-gold)" />
       </div>
 
-      {/* Packages */}
-      <h3 style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>
-        Купить кредиты
-      </h3>
-      <p style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 28 }}>
-        Оплата через Free-Kassa. Кредиты зачисляются мгновенно после оплаты.
-      </p>
+      {/* Section title */}
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: '3px',
+          color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 10,
+        }}>
+          ⬡ Выбери свой арсенал
+        </div>
+        <h3 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', marginBottom: 6 }}>
+          Пополнение кредитов
+        </h3>
+        <p style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
+          Оплата через Free-Kassa · Зачисление мгновенно
+        </p>
+      </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: 32 }}>
+      {/* Package cards */}
+      <div style={{
+        display: 'flex', gap: 20, flexWrap: 'wrap',
+        alignItems: 'flex-start',
+        paddingTop: 20,   /* space for featured badge */
+        marginBottom: 36,
+      }}>
         {PACKAGES.map(pkg => (
           <PackageCard key={pkg.id} pkg={pkg} buying={buying} onBuy={handleBuy} />
         ))}
       </div>
 
       {error && (
-        <div style={{ color: 'var(--error-text)', fontSize: 14, marginBottom: 20,
-                      padding: '10px 16px', background: 'rgba(122,32,32,0.2)',
-                      borderRadius: 8, border: '1px solid var(--error)' }}>
+        <div style={{
+          color: 'var(--error-text)', fontSize: 14, marginBottom: 24,
+          padding: '12px 16px', background: 'rgba(122,32,32,0.2)',
+          borderRadius: 10, border: '1px solid var(--error)',
+        }}>
           {error}
         </div>
       )}
 
-      {/* Daily Bonus stub */}
+      {/* Daily Bonus */}
       <div className="card" style={{ maxWidth: 480, borderRadius: 14 }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12,
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 10,
+            width: 44, height: 44, borderRadius: 10, flexShrink: 0,
             background: 'rgba(255,209,102,0.12)',
             border: '1px solid rgba(255,209,102,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
           }}>
             🎁
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF' }}>Daily Bonus</div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF' }}>Daily Bonus</div>
+            <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>До 3 раз в день</div>
+          </div>
         </div>
-        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 16, lineHeight: 1.6 }}>
-          Посмотри короткую рекламу и получи 3–7 бесплатных кредитов. До 3 раз в день.
+        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 16, lineHeight: 1.65 }}>
+          Посмотри короткую рекламу и получи 3–7 бесплатных кредитов.
         </div>
         <button disabled style={{
-          padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600,
+          padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 700,
           background: 'var(--elevated)', color: 'var(--on-surface2)',
           border: '1px solid var(--outline)', cursor: 'not-allowed', fontFamily: 'inherit',
         }}>
