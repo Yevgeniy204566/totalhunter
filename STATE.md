@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-04-21 (Хангоф #8)
+> Последнее обновление: 2026-04-22 (Хангоф #10)
 
 ---
 
@@ -9,7 +9,7 @@
 
 | Модуль | Файл | Статус | Дата |
 |---|---|---|---|
-| GUI | main.py | ✅ Готов, 2 языка, 4 вкладки, 4 темы, шрифты +15%, Deep Night фикс | 2026-04-20 |
+| GUI | main.py | ✅ Готов, 2 языка, 4 вкладки, 4 темы, Diamond Rebrand: ◆ справа от баланса, info_banner, кр→◆ | 2026-04-22 |
 | Движок бирж | engine.py + navigator.py | ✅ Готов, EMA нормализация исправлена | 2026-04-20 |
 | CoastalSnakeNavigator | navigator.py | ✅ Готов, 42 теста, EMA clamp убран | 2026-04-20 |
 | MiniMap Reader | minimap_reader.py | ✅ Готов, 15 тестов | 2026-04-13 |
@@ -17,21 +17,19 @@
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
 | Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
-| Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ Phase 2A завершена, HWID anti-fraud | 2026-04-21 |
-| Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена, задеплоена на GCP | 2026-04-21 |
+| Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ Phase 2D + Diamond Rebrand: Guide gambling redesign, BalancePage алмазы, LITE/PRO/ULTRA | 2026-04-22 |
+| Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена, FK env vars добавлены в systemd | 2026-04-21 |
 
 ---
 
-## Текущая работа (2026-04-21)
+## Текущая работа (2026-04-22)
 
 - **Бот 100% функционально завершён** — все модули работают
 - **GCP деплой актуален** — FastAPI + PostgreSQL + systemd на `34.68.86.57:8000` ✅
-- **Phase 2A — ЗАВЕРШЕНА** ✅ (commits до `605259f`, задеплоено на GCP + Vercel)
-- **Phase 2B — ЗАВЕРШЕНА** ✅ (9 коммитов, commit `e4a205b`, задеплоено на GCP + Vercel)
-- **Phase 2D (UI Polish) — в процессе** — Dashboard, Landing, Balance, Hunts, Referrals, Transactions, Feedback отполированы
-- **Auth persistence пофикшен** — `isLoggedIn()` теперь корректно декодирует base64url JWT (коммит `c53cd1b`)
-- **Ожидает:** FK_MERCHANT_ID / FK_SECRET_WORD / FK_SECRET_WORD2 в systemd (Free-Kassa не зарегистрирован)
-- **Phase 2C (Community)** — следующий этап после UI polish
+- **Phase 2A/2B/2D — ЗАВЕРШЕНЫ** ✅ задеплоено на GCP + Vercel
+- **Diamond Rebrand — ЗАВЕРШЁН** ✅ (коммиты `67aa5c1`, `3e80743`) — кредиты→алмазы на сайте и в программе
+- **Ожидает:** прописать webhook URL в кабинете Free-Kassa: `http://34.68.86.57:8000/web/payment/webhook`
+- **Phase 2C (Community)** — следующий этап
 
 ---
 
@@ -97,10 +95,10 @@
 
 | Приоритет | Баг/TODO | Файл |
 |---|---|---|
-| **HIGH** | Ввести FK_MERCHANT_ID/FK_SECRET_WORD/FK_SECRET_WORD2 в systemd и перезапустить сервис | /etc/systemd/system/battlebot.service |
 | **HIGH** | Прописать webhook URL в кабинете Free-Kassa: `http://34.68.86.57:8000/web/payment/webhook` | FK merchant dashboard |
+| **MED** | Вставить дополнительные иллюстрации в GuidePage (скрины калибровки уже есть) | web/src/pages/GuidePage.jsx |
 | **MED** | Task 4 тест: добавить happy path invited_by_id | server/tests/test_web_routes.py |
-| LOW | КАЛИБРОВКА: добавить описание с картинками (Точка А/Б) | calibration_ui.py / main.py |
+| LOW | КАЛИБРОВКА: картинки и описания точек А/Б уже есть, можно добавить ещё деталей | main.py |
 | LOW | force_update bot-side обработка из app_settings | engine.py / auth.py |
 
 ---
@@ -119,6 +117,18 @@
 ---
 
 ## Архив закрытого
+
+### Закрыто (Хангоф #10 — 2026-04-22)
+- ~~Diamond Rebrand (сайт)~~ — GuidePage: Diamond/NeonCard компоненты, кредиты→алмазы, убраны черепа/мечи, gambling-стиль Ultra, L1/L2/L3 glow (фикс L1 hex цвет), Smart Coastline Scouting
+- ~~Diamond Rebrand (программа)~~ — "Купить кредиты" убраны из табов, ◆ справа от баланса (оба таба), +5кр→+5, баланс 46px унифицирован, Google login → глобальный info_banner
+- ~~BalancePage~~ — SCOUT/STALKER/RAIDER → LITE/PRO/ULTRA, кредиты→алмазы, Diamond компонент со свечением, КР→◆
+- ~~GuidePage~~  — полный контент из GKB_Gemini (10 секций), калибровочные скрины подключены
+
+### Закрыто (Хангоф #9 — 2026-04-21)
+- ~~LoginPage~~ — полный редизайн в Deep Night стиле: gradient bg, card с glow, feature pills, loading state, error box
+- ~~GuidePage~~ — полный редизайн: sticky TOC sidebar, 7 секций с контентом, карточки пакетов, FAQ, CTA
+- ~~docs/guide_knowledge_base.md~~ — база знаний бота (сырьё для гайда и модерации платёжных систем)
+- ~~FK env vars~~ — инструкция + sed-скрипт для добавления в systemd на GCP
 
 ### Закрыто (Хангоф #8 — 2026-04-21)
 - ~~Auth persistence bug~~ — `atob()` не умеет base64url; добавлен `.replace(/-/g,'+').replace(/_/g,'/')` в `isLoggedIn()`
