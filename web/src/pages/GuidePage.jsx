@@ -417,14 +417,11 @@ export default function GuidePage() {
                     <div style={{ fontSize: 15, fontWeight: 700, color, marginBottom: 2 }}>{label}</div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--on-surface2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>{sublabel}</div>
                     <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.65 }}>{desc}</div>
-                    <div style={{
-                      marginTop: 12, height: 80, borderRadius: 8,
-                      background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, color: 'rgba(255,255,255,0.2)',
-                    }}>
-                      [скриншот]
-                    </div>
+                    <img
+                      src={label === 'Точка A' ? '/img/calib_point_a.png' : '/img/calib_point_b.png'}
+                      alt={label}
+                      style={{ marginTop: 12, width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', display: 'block' }}
+                    />
                   </div>
                 ))}
               </div>

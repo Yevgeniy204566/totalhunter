@@ -13,6 +13,7 @@ from coord_manager import coord_manager, REF_A, REF_B
 import tkinter.messagebox as messagebox
 import sys
 import keyboard
+import webbrowser
 
 GUI_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gui_config.json')
 
@@ -142,8 +143,8 @@ class TotalHunterApp(ctk.CTk):
         _header = ctk.CTkFrame(self, fg_color="transparent")
         _header.pack(fill="x", padx=20, pady=(10, 4))
         self.always_on_top_var = ctk.BooleanVar(value=False)
-        ctk.CTkLabel(_header, text="On top:", font=ctk.CTkFont(size=11),
-                     text_color=MD3["on_surface2"]).pack(side="left")
+        ctk.CTkLabel(_header, text="On top:", font=ctk.CTkFont(size=14, weight="bold"),
+                     text_color=MD3["on_surface"]).pack(side="left")
         ctk.CTkSwitch(_header, text="", variable=self.always_on_top_var,
                       onvalue=True, offvalue=False, command=self._on_always_on_top,
                       width=46,
@@ -175,6 +176,13 @@ class TotalHunterApp(ctk.CTk):
             command=self._on_theme_change,
         )
         self.theme_menu.pack(side="right", padx=(0, 4))
+        ctk.CTkButton(
+            _header, text="+5 кр", width=44, height=24,
+            fg_color="#1A5C2A", hover_color="#226B33",
+            text_color="#4ADE80", corner_radius=6,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            command=lambda: webbrowser.open("https://totalhunter.pro/dashboard"),
+        ).pack(side="right", padx=(0, 2))
 
 
         # Заголовок и HWID
@@ -235,12 +243,19 @@ class TotalHunterApp(ctk.CTk):
 
 
     def setup_hunt_tab(self):
-        # Баланс
-        self.credits_label = ctk.CTkLabel(self.tab_hunt, text="0",
+        # Баланс + кнопка Купить
+        _bal_row = ctk.CTkFrame(self.tab_hunt, fg_color="transparent")
+        _bal_row.pack(pady=(10, 2))
+        ctk.CTkButton(_bal_row, text="Купить\nкредиты", width=70, height=58,
+                      fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
+                      text_color=MD3["on_surface"], corner_radius=10,
+                      font=ctk.CTkFont(size=11),
+                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
+                      ).pack(side="left", padx=(0, 10))
+        self.credits_label = ctk.CTkLabel(_bal_row, text="0",
                                           font=ctk.CTkFont(size=56, weight="bold"),
                                           text_color="#4ADE80")
-        self.credits_label.pack(pady=(10, 5))
-
+        self.credits_label.pack(side="left")
 
         # Объявления (Broadcast)
         self.broadcast_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
@@ -260,9 +275,17 @@ class TotalHunterApp(ctk.CTk):
         self.login_button.pack(pady=10, padx=40, fill="x")
 
 
-        # Ползунок Точности нейросети
-        self.acc_frame = ctk.CTkFrame(self.tab_hunt, fg_color="transparent")
-        self.acc_frame.pack(fill="x", padx=40, pady=(10, 0))
+        # ─── Карточка «Нейросеть» ────────────────────────────────────────
+        nn_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
+                                corner_radius=12, border_width=1,
+                                border_color=MD3["outline"])
+        nn_frame.pack(fill="x", padx=20, pady=(8, 4))
+        ctk.CTkLabel(nn_frame, text="Нейросеть",
+                     font=ctk.CTkFont(size=14, weight="bold"),
+                     text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(8, 2))
+
+        self.acc_frame = ctk.CTkFrame(nn_frame, fg_color="transparent")
+        self.acc_frame.pack(fill="x", padx=12, pady=(4, 0))
         self.acc_lb = ctk.CTkLabel(self.acc_frame,
                                    text=LANGS[self.current_lang]["accuracy"],
                                    font=ctk.CTkFont(size=13),
@@ -272,17 +295,16 @@ class TotalHunterApp(ctk.CTk):
                                        font=ctk.CTkFont(size=14, weight="bold"),
                                        text_color=MD3["value_text"])
         self.acc_val_lb.pack(side="right")
-        self.conf_slider = ctk.CTkSlider(self.tab_hunt, from_=0.1, to=0.9,
+        self.conf_slider = ctk.CTkSlider(nn_frame, from_=0.1, to=0.9,
                                          command=self.update_slider_labels,
                                          button_color=MD3["primary"],
                                          button_hover_color=MD3["primary_dim"],
                                          progress_color=MD3["primary"])
         self.conf_slider.set(0.7)
-        self.conf_slider.pack(padx=40, pady=(5, 10), fill="x")
+        self.conf_slider.pack(padx=12, pady=(2, 6), fill="x")
 
-        # Ползунок Частоты сканирования нейросети
-        self.speed_frame = ctk.CTkFrame(self.tab_hunt, fg_color="transparent")
-        self.speed_frame.pack(fill="x", padx=40, pady=(0, 0))
+        self.speed_frame = ctk.CTkFrame(nn_frame, fg_color="transparent")
+        self.speed_frame.pack(fill="x", padx=12, pady=(0, 0))
         self.speed_lb = ctk.CTkLabel(self.speed_frame,
                                      text=LANGS[self.current_lang]["scan_rate"],
                                      font=ctk.CTkFont(size=13),
@@ -293,13 +315,13 @@ class TotalHunterApp(ctk.CTk):
                                          font=ctk.CTkFont(size=14, weight="bold"),
                                          text_color=MD3["value_text"])
         self.speed_val_lb.pack(side="right")
-        self.speed_slider = ctk.CTkSlider(self.tab_hunt, from_=0.1, to=5.0,
+        self.speed_slider = ctk.CTkSlider(nn_frame, from_=0.1, to=5.0,
                                           command=self.update_slider_labels,
                                           button_color=MD3["primary"],
                                           button_hover_color=MD3["primary_dim"],
                                           progress_color=MD3["primary"])
         self.speed_slider.set(0.6)
-        self.speed_slider.pack(padx=40, pady=(5, 10), fill="x")
+        self.speed_slider.pack(padx=12, pady=(2, 10), fill="x")
 
 
         # Калибровка джойстика (мини-карта)
@@ -548,12 +570,20 @@ class TotalHunterApp(ctk.CTk):
         """Вкладка «Склепы» — выбор типов, настройки, старт/стоп."""
         from PIL import Image
 
-        # Баланс кредитов
+        # Баланс кредитов + кнопка Купить
+        _crypt_bal_row = ctk.CTkFrame(self.tab_crypt, fg_color="transparent")
+        _crypt_bal_row.pack(pady=(4, 2))
+        ctk.CTkButton(_crypt_bal_row, text="Купить\nкредиты", width=70, height=46,
+                      fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
+                      text_color=MD3["on_surface"], corner_radius=10,
+                      font=ctk.CTkFont(size=11),
+                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
+                      ).pack(side="left", padx=(0, 10))
         self.crypt_credits_label = ctk.CTkLabel(
-            self.tab_crypt, text="0",
+            _crypt_bal_row, text="0",
             font=ctk.CTkFont(size=36, weight="bold"), text_color="#4ADE80"
         )
-        self.crypt_credits_label.pack(pady=(4, 2))
+        self.crypt_credits_label.pack(side="left")
 
         # ─── Сетка иконок склепов ────────────────────────────
         icons_label = ctk.CTkLabel(self.tab_crypt, text="Выберите типы склепов:",
@@ -933,12 +963,32 @@ class TotalHunterApp(ctk.CTk):
                                          text=LANGS[self.current_lang]["ref_title"],
                                          font=ctk.CTkFont(size=20, weight="bold"),
                                          text_color=MD3["primary"])
-        self.ref_title_lb.pack(pady=20)
+        self.ref_title_lb.pack(pady=(16, 4))
+
+        # ── Реферальный баланс ────────────────────────────────────────────
+        ref_bal_card = ctk.CTkFrame(self.tab_ref, fg_color=MD3["elevated"],
+                                    corner_radius=12, border_width=1,
+                                    border_color=MD3["outline"])
+        ref_bal_card.pack(padx=30, pady=(0, 10), fill="x")
+        ctk.CTkLabel(ref_bal_card, text="Реферальный баланс",
+                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+                     ).pack(pady=(10, 0))
+        self.ref_balance_label = ctk.CTkLabel(ref_bal_card, text="0 кр",
+                                              font=ctk.CTkFont(size=28, weight="bold"),
+                                              text_color="#FFD700")
+        self.ref_balance_label.pack(pady=(2, 6))
+        ctk.CTkButton(ref_bal_card, text="💸  Перевести на баланс  →",
+                      height=32, corner_radius=8,
+                      fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
+                      text_color=MD3["on_surface"],
+                      command=lambda: webbrowser.open("https://totalhunter.pro/dashboard/referrals"),
+                      ).pack(padx=10, pady=(0, 10), fill="x")
+
         self.share_lb = ctk.CTkLabel(self.tab_ref,
                                      text=LANGS[self.current_lang]["share_text"],
                                      font=ctk.CTkFont(size=13),
                                      text_color=MD3["on_surface2"], wraplength=350)
-        self.share_lb.pack(pady=(0, 15))
+        self.share_lb.pack(pady=(0, 8))
 
 
         # Свой код
@@ -1021,6 +1071,8 @@ class TotalHunterApp(ctk.CTk):
             if data.get("my_ref_id"):
                 self.my_ref_id = data["my_ref_id"]
                 self.my_code_val.configure(text=self.my_ref_id)
+            ref_credits = data.get("ref_credits", 0)
+            self.ref_balance_label.configure(text=f"{ref_credits} кр")
             if data.get("is_referred"):
                 self.ref_entry.pack_forget(); self.ref_btn.pack_forget()
                 self.friend_code_lb.configure(text=LANGS[self.current_lang]["ref_used"], text_color="#4ADE80", font=ctk.CTkFont(size=14, weight="bold"))
@@ -1134,6 +1186,10 @@ class TotalHunterApp(ctk.CTk):
 
     def toggle_bot(self):
         if not self.is_running:
+            # Отключаем On Top — бот должен видеть весь экран без перекрытия
+            if self.always_on_top_var.get():
+                self.always_on_top_var.set(False)
+                self._on_always_on_top()
             # TODO: re-enable credits check before commercial launch
             # if self.current_credits <= 0:
             #     messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
@@ -1300,23 +1356,63 @@ class TotalHunterApp(ctk.CTk):
     # ── calibration tab ─────────────────────────────────────────────────────
 
     def setup_calibration_tab(self):
+        from PIL import Image
         PROFILES = self._PROFILES
+        _assets = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
 
         ctk.CTkLabel(
             self.tab_calibration,
-            text="Калибровка координат",
+            text="Калибровка экрана",
             font=ctk.CTkFont(size=16, weight="bold"),
             text_color=MD3["on_surface"],
-        ).pack(pady=(16, 4))
+        ).pack(pady=(12, 2))
 
         ctk.CTkLabel(
             self.tab_calibration,
-            text="Выберите профиль и нажмите «Калибровать».\n"
-                 "Кликните Точку А (мини-карта), затем Точку Б (серебро).",
-            font=ctk.CTkFont(size=13),
+            text="Откройте игру в привычном режиме, затем установите две точки.",
+            font=ctk.CTkFont(size=12),
             text_color=MD3["on_surface2"],
             justify="center",
-        ).pack(pady=(0, 12))
+        ).pack(pady=(0, 6))
+
+        # ── Фото + описание точек ─────────────────────────────────────────
+        points_frame = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
+        points_frame.pack(fill="x", padx=16, pady=(0, 6))
+
+        for col, (fname, pt_label, pt_desc, color) in enumerate([
+            ("calib_point_a.png", "Точка A — мини-карта",
+             "Уменьшите зум\nмини-карты до мин.\nКликните по центру.", MD3["primary"]),
+            ("calib_point_b.png", "Точка B — Серебро",
+             "Наведите на иконку\nСеребра до появления «+».\nКликните по «+».", "#B060FF"),
+        ]):
+            card = ctk.CTkFrame(points_frame, fg_color=MD3["elevated"],
+                                corner_radius=10, border_width=1,
+                                border_color=MD3["outline"])
+            card.grid(row=0, column=col, padx=(0, 6) if col == 0 else (6, 0), sticky="nsew")
+            points_frame.grid_columnconfigure(col, weight=1)
+
+            ctk.CTkLabel(card, text=pt_label,
+                         font=ctk.CTkFont(size=12, weight="bold"),
+                         text_color=color).pack(pady=(8, 2))
+            try:
+                pil_img = Image.open(os.path.join(_assets, fname))
+                w, h = pil_img.size
+                new_w = 175
+                new_h = int(h * new_w / w)
+                pil_img = pil_img.resize((new_w, new_h), Image.LANCZOS)
+                ctk_img = ctk.CTkImage(pil_img, size=(new_w, new_h))
+                ctk.CTkLabel(card, image=ctk_img, text="").pack(padx=4)
+                # держим ссылку
+                if not hasattr(self, '_cal_images'):
+                    self._cal_images = []
+                self._cal_images.append(ctk_img)
+            except Exception:
+                ctk.CTkLabel(card, text="[фото]", height=80,
+                             text_color=MD3["on_surface2"]).pack()
+            ctk.CTkLabel(card, text=pt_desc,
+                         font=ctk.CTkFont(size=11),
+                         text_color=MD3["on_surface2"],
+                         justify="center").pack(pady=(4, 8))
 
         # ── Profile dropdown ──────────────────────────────────────────────
         profile_frame = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
