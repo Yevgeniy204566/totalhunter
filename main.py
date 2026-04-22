@@ -177,13 +177,6 @@ class TotalHunterApp(ctk.CTk):
         )
         self.theme_menu.pack(side="right", padx=(0, 4))
         ctk.CTkButton(
-            _header, text="◆", width=28, height=24,
-            fg_color="#1A1A3A", hover_color="#1A2A5E",
-            text_color="#00CFFF", corner_radius=6,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
-        ).pack(side="right", padx=(0, 2))
-        ctk.CTkButton(
             _header, text="+5", width=36, height=24,
             fg_color="#1A5C2A", hover_color="#226B33",
             text_color="#4ADE80", corner_radius=6,
@@ -270,11 +263,19 @@ class TotalHunterApp(ctk.CTk):
 
 
     def setup_hunt_tab(self):
-        # Баланс ◆
-        self.credits_label = ctk.CTkLabel(self.tab_hunt, text="0",
+        # Баланс + алмаз рядом
+        _bal_row = ctk.CTkFrame(self.tab_hunt, fg_color="transparent")
+        _bal_row.pack(pady=(10, 2))
+        self.credits_label = ctk.CTkLabel(_bal_row, text="0",
                                           font=ctk.CTkFont(size=46, weight="bold"),
                                           text_color="#4ADE80")
-        self.credits_label.pack(pady=(10, 2))
+        self.credits_label.pack(side="left")
+        ctk.CTkButton(_bal_row, text="◆", width=36, height=40,
+                      fg_color="#0A0F1E", hover_color="#1A2A5E",
+                      text_color="#00CFFF", corner_radius=8,
+                      font=ctk.CTkFont(size=22, weight="bold"),
+                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
+                      ).pack(side="left", padx=(8, 0))
 
 
         # ─── Карточка «Нейросеть» ────────────────────────────────────────
@@ -572,12 +573,20 @@ class TotalHunterApp(ctk.CTk):
         """Вкладка «Склепы» — выбор типов, настройки, старт/стоп."""
         from PIL import Image
 
-        # Баланс ◆
+        # Баланс + алмаз рядом
+        _crypt_bal_row = ctk.CTkFrame(self.tab_crypt, fg_color="transparent")
+        _crypt_bal_row.pack(pady=(4, 2))
         self.crypt_credits_label = ctk.CTkLabel(
-            self.tab_crypt, text="0",
+            _crypt_bal_row, text="0",
             font=ctk.CTkFont(size=46, weight="bold"), text_color="#4ADE80"
         )
-        self.crypt_credits_label.pack(pady=(4, 2))
+        self.crypt_credits_label.pack(side="left")
+        ctk.CTkButton(_crypt_bal_row, text="◆", width=36, height=40,
+                      fg_color="#0A0F1E", hover_color="#1A2A5E",
+                      text_color="#00CFFF", corner_radius=8,
+                      font=ctk.CTkFont(size=22, weight="bold"),
+                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
+                      ).pack(side="left", padx=(8, 0))
 
         # ─── Сетка иконок склепов ────────────────────────────
         icons_label = ctk.CTkLabel(self.tab_crypt, text="Выберите типы склепов:",
@@ -967,7 +976,7 @@ class TotalHunterApp(ctk.CTk):
         ctk.CTkLabel(ref_bal_card, text="Реферальный баланс",
                      font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
                      ).pack(pady=(10, 0))
-        self.ref_balance_label = ctk.CTkLabel(ref_bal_card, text="0 кр",
+        self.ref_balance_label = ctk.CTkLabel(ref_bal_card, text="0 ◆",
                                               font=ctk.CTkFont(size=28, weight="bold"),
                                               text_color="#FFD700")
         self.ref_balance_label.pack(pady=(2, 6))
@@ -1067,7 +1076,7 @@ class TotalHunterApp(ctk.CTk):
                 self.my_ref_id = data["my_ref_id"]
                 self.my_code_val.configure(text=self.my_ref_id)
             ref_credits = data.get("ref_credits", 0)
-            self.ref_balance_label.configure(text=f"{ref_credits} кр")
+            self.ref_balance_label.configure(text=f"{ref_credits} ◆")
             if data.get("is_referred"):
                 self.ref_entry.pack_forget(); self.ref_btn.pack_forget()
                 self.friend_code_lb.configure(text=LANGS[self.current_lang]["ref_used"], text_color="#4ADE80", font=ctk.CTkFont(size=14, weight="bold"))

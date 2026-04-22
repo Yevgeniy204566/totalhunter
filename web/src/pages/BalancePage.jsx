@@ -5,7 +5,7 @@ import { useCounter } from '../hooks/useCounter.js'
 const PACKAGES = [
   {
     id:       'lite',
-    name:     'SCOUT',
+    name:     'LITE',
     credits:  300,
     bonus:    null,
     total:    300,
@@ -17,7 +17,7 @@ const PACKAGES = [
   },
   {
     id:       'pro',
-    name:     'STALKER',
+    name:     'PRO',
     credits:  1500,
     bonus:    500,
     total:    2000,
@@ -29,7 +29,7 @@ const PACKAGES = [
   },
   {
     id:       'ultra',
-    name:     'RAIDER',
+    name:     'ULTRA',
     credits:  4000,
     bonus:    1000,
     total:    5000,
@@ -41,6 +41,19 @@ const PACKAGES = [
   },
 ]
 
+function Diamond({ size = 22 }) {
+  return (
+    <span style={{
+      fontSize: size, lineHeight: 1,
+      background: 'linear-gradient(135deg, #B060FF 0%, #3D7FFF 50%, #00CFFF 100%)',
+      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      filter: 'drop-shadow(0 0 6px rgba(61,127,255,0.7))',
+      display: 'inline-block',
+    }}>◆</span>
+  )
+}
+
 function BalanceCard({ title, value, color }) {
   const animated = useCounter(typeof value === 'number' ? value : null)
   return (
@@ -51,13 +64,16 @@ function BalanceCard({ title, value, color }) {
                     fontWeight: 600, letterSpacing: '0.5px' }}>
         {title}
       </div>
-      <div style={{
-        fontSize: 44, fontWeight: 900, color,
-        textShadow: `0 0 22px ${color}99`,
-        fontVariantNumeric: 'tabular-nums',
-        lineHeight: 1,
-      }}>
-        {value != null ? animated.toLocaleString() : '—'}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <Diamond size={28} />
+        <div style={{
+          fontSize: 44, fontWeight: 900, color,
+          textShadow: `0 0 22px ${color}99`,
+          fontVariantNumeric: 'tabular-nums',
+          lineHeight: 1,
+        }}>
+          {value != null ? animated.toLocaleString() : '—'}
+        </div>
       </div>
     </div>
   )
@@ -126,7 +142,7 @@ function PackageCard({ pkg, buying, onBuy }) {
             color: '#FFD166', opacity: 0.9,
             textTransform: 'uppercase', marginBottom: 18,
           }}>
-            🎁 бонус кредитов
+            🎁 бонус алмазов
           </div>
         </>
       ) : (
@@ -140,7 +156,7 @@ function PackageCard({ pkg, buying, onBuy }) {
         fontVariantNumeric: 'tabular-nums',
         marginBottom: 6,
       }}>
-        = {pkg.total.toLocaleString()} КР
+        = {pkg.total.toLocaleString()} ◆
       </div>
 
       {/* Base credits strikethrough */}
@@ -151,11 +167,11 @@ function PackageCard({ pkg, buying, onBuy }) {
           <span style={{ textDecoration: 'line-through', opacity: 0.55 }}>
             {pkg.credits.toLocaleString()}
           </span>
-          {' '}базовых
+          {' '}базовых ◆
         </div>
       ) : (
         <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22 }}>
-          кредитов на охоту
+          алмазов на охоту
         </div>
       )}
 
@@ -222,8 +238,8 @@ export default function BalancePage() {
 
       {/* Balance overview */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 44, flexWrap: 'wrap' }}>
-        <BalanceCard title="Кредиты"           value={user.credits}     color="var(--accent)" />
-        <BalanceCard title="Реферальный баланс" value={user.ref_credits} color="var(--credits-gold)" />
+        <BalanceCard title="Алмазы"              value={user.credits}     color="#00CFFF" />
+        <BalanceCard title="Реферальный баланс" value={user.ref_credits} color="#FFD166" />
       </div>
 
       {/* Section title */}
@@ -235,7 +251,7 @@ export default function BalancePage() {
           ⬡ Выбери свой арсенал
         </div>
         <h3 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', marginBottom: 6 }}>
-          Пополнение кредитов
+          Пополнение алмазов
         </h3>
         <p style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
           Оплата через Free-Kassa · Зачисление мгновенно
@@ -267,7 +283,7 @@ export default function BalancePage() {
       {/* Secure payment note */}
       <div style={{ textAlign: 'center', marginTop: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
-          🔒 Безопасная оплата · Free-Kassa · Кредиты не сгорают
+          🔒 Безопасная оплата · Free-Kassa · Алмазы не сгорают
         </span>
       </div>
 

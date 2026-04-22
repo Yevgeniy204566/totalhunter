@@ -506,7 +506,7 @@ export default function GuidePage() {
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
                 {[
-                  { level: 'L1', pct: '10%', desc: 'Ваши друзья',      color: 'var(--credits-gold)' },
+                  { level: 'L1', pct: '10%', desc: 'Ваши друзья',      color: '#FFD166' },
                   { level: 'L2', pct: '5%',  desc: 'Их рефералы',      color: '#00CFFF' },
                   { level: 'L3', pct: '1%',  desc: 'Следующий круг',   color: '#B060FF' },
                 ].map(({ level, pct, desc, color }) => (
