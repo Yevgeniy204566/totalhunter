@@ -177,7 +177,14 @@ class TotalHunterApp(ctk.CTk):
         )
         self.theme_menu.pack(side="right", padx=(0, 4))
         ctk.CTkButton(
-            _header, text="+5 кр", width=44, height=24,
+            _header, text="◆", width=28, height=24,
+            fg_color="#1A1A3A", hover_color="#1A2A5E",
+            text_color="#00CFFF", corner_radius=6,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
+        ).pack(side="right", padx=(0, 2))
+        ctk.CTkButton(
+            _header, text="+5", width=36, height=24,
             fg_color="#1A5C2A", hover_color="#226B33",
             text_color="#4ADE80", corner_radius=6,
             font=ctk.CTkFont(size=11, weight="bold"),
@@ -199,6 +206,26 @@ class TotalHunterApp(ctk.CTk):
                                         text_color=MD3["primary"])
         self.label_email.pack()
 
+        # ── Глобальный инфо-баннер (логин / объявления) ──────────────────
+        self.info_banner = ctk.CTkFrame(self, fg_color=MD3["elevated"],
+                                        corner_radius=10)
+        self.info_banner.pack(fill="x", padx=20, pady=(4, 0))
+
+        # Кнопка Google Входа — видна пока не авторизован
+        self.login_button = ctk.CTkButton(self.info_banner,
+                                          text=LANGS[self.current_lang]["login_btn"],
+                                          fg_color="#C62828", hover_color="#B71C1C",
+                                          text_color=MD3["on_surface"],
+                                          height=40, corner_radius=8,
+                                          command=self.handle_login)
+        self.login_button.pack(pady=6, padx=10, fill="x")
+
+        # Объявления (broadcast) — видны после авторизации
+        self.broadcast_frame = ctk.CTkFrame(self.info_banner, fg_color="transparent",
+                                            corner_radius=0)
+        self.broadcast_label = ctk.CTkLabel(self.broadcast_frame, text="",
+                                            font=ctk.CTkFont(size=13, slant="italic"),
+                                            text_color="#FFD740", wraplength=380)
 
         # Вкладки
         self.tabview = ctk.CTkTabview(self, width=420, height=780,
@@ -243,36 +270,11 @@ class TotalHunterApp(ctk.CTk):
 
 
     def setup_hunt_tab(self):
-        # Баланс + кнопка Купить
-        _bal_row = ctk.CTkFrame(self.tab_hunt, fg_color="transparent")
-        _bal_row.pack(pady=(10, 2))
-        ctk.CTkButton(_bal_row, text="Купить\nкредиты", width=70, height=58,
-                      fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
-                      text_color=MD3["on_surface"], corner_radius=10,
-                      font=ctk.CTkFont(size=11),
-                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
-                      ).pack(side="left", padx=(0, 10))
-        self.credits_label = ctk.CTkLabel(_bal_row, text="0",
-                                          font=ctk.CTkFont(size=56, weight="bold"),
+        # Баланс ◆
+        self.credits_label = ctk.CTkLabel(self.tab_hunt, text="0",
+                                          font=ctk.CTkFont(size=46, weight="bold"),
                                           text_color="#4ADE80")
-        self.credits_label.pack(side="left")
-
-        # Объявления (Broadcast)
-        self.broadcast_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
-                                            corner_radius=10)
-        self.broadcast_label = ctk.CTkLabel(self.broadcast_frame, text="",
-                                            font=ctk.CTkFont(size=13, slant="italic"),
-                                            text_color="#FFD740", wraplength=380)
-
-
-        # Кнопка Google Входа
-        self.login_button = ctk.CTkButton(self.tab_hunt,
-                                          text=LANGS[self.current_lang]["login_btn"],
-                                          fg_color="#C62828", hover_color="#B71C1C",
-                                          text_color=MD3["on_surface"],
-                                          height=40, corner_radius=8,
-                                          command=self.handle_login)
-        self.login_button.pack(pady=10, padx=40, fill="x")
+        self.credits_label.pack(pady=(10, 2))
 
 
         # ─── Карточка «Нейросеть» ────────────────────────────────────────
@@ -570,20 +572,12 @@ class TotalHunterApp(ctk.CTk):
         """Вкладка «Склепы» — выбор типов, настройки, старт/стоп."""
         from PIL import Image
 
-        # Баланс кредитов + кнопка Купить
-        _crypt_bal_row = ctk.CTkFrame(self.tab_crypt, fg_color="transparent")
-        _crypt_bal_row.pack(pady=(4, 2))
-        ctk.CTkButton(_crypt_bal_row, text="Купить\nкредиты", width=70, height=46,
-                      fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
-                      text_color=MD3["on_surface"], corner_radius=10,
-                      font=ctk.CTkFont(size=11),
-                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
-                      ).pack(side="left", padx=(0, 10))
+        # Баланс ◆
         self.crypt_credits_label = ctk.CTkLabel(
-            _crypt_bal_row, text="0",
-            font=ctk.CTkFont(size=36, weight="bold"), text_color="#4ADE80"
+            self.tab_crypt, text="0",
+            font=ctk.CTkFont(size=46, weight="bold"), text_color="#4ADE80"
         )
-        self.crypt_credits_label.pack(side="left")
+        self.crypt_credits_label.pack(pady=(4, 2))
 
         # ─── Сетка иконок склепов ────────────────────────────
         icons_label = ctk.CTkLabel(self.tab_crypt, text="Выберите типы склепов:",
@@ -1067,6 +1061,7 @@ class TotalHunterApp(ctk.CTk):
             if data.get("email"):
                 self.user_email = data.get("email")
                 self.label_email.configure(text=f"User: {self.user_email}")
+                # Авторизован — скрываем кнопку логина в баннере
                 self.login_button.pack_forget()
             if data.get("my_ref_id"):
                 self.my_ref_id = data["my_ref_id"]
@@ -1077,10 +1072,15 @@ class TotalHunterApp(ctk.CTk):
                 self.ref_entry.pack_forget(); self.ref_btn.pack_forget()
                 self.friend_code_lb.configure(text=LANGS[self.current_lang]["ref_used"], text_color="#4ADE80", font=ctk.CTkFont(size=14, weight="bold"))
             if data.get("broadcast"):
-                self.broadcast_frame.pack(padx=30, pady=5, fill="x", after=self.credits_label)
+                self.broadcast_frame.pack(fill="x", padx=0, pady=0)
                 self.broadcast_label.pack(padx=10, pady=5)
                 self.broadcast_label.configure(text=f"📢 {data['broadcast']}")
-            else: self.broadcast_frame.pack_forget()
+                self.info_banner.pack(fill="x", padx=20, pady=(4, 0))
+            else:
+                self.broadcast_frame.pack_forget()
+                # Прячем баннер полностью если нет broadcast и пользователь авторизован
+                if data.get("email"):
+                    self.info_banner.pack_forget()
         except: pass
 
 

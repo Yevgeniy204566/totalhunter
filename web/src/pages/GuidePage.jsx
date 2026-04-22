@@ -1,6 +1,20 @@
 import { Link } from 'react-router-dom'
 import { isLoggedIn } from '../auth.js'
 
+// ── Diamond icon (gradient ◆) ────────────────────────────────────────────────
+function Diamond({ size = 28, style = {} }) {
+  return (
+    <span style={{
+      fontSize: size, lineHeight: 1,
+      background: 'linear-gradient(135deg, #B060FF 0%, #3D7FFF 50%, #00CFFF 100%)',
+      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      filter: 'drop-shadow(0 0 8px rgba(61,127,255,0.7))',
+      display: 'inline-block', ...style,
+    }}>◆</span>
+  )
+}
+
 const SECTIONS = [
   { id: 'what-is',      label: 'Что такое Total Hunter' },
   { id: 'algorithm',   label: 'Алгоритм поиска' },
@@ -8,43 +22,31 @@ const SECTIONS = [
   { id: 'install',     label: 'Установка' },
   { id: 'calibration', label: 'Калибровка' },
   { id: 'modes',       label: 'Режимы работы' },
-  { id: 'credits',     label: 'Экономика и тарифы' },
+  { id: 'credits',     label: 'Алмазы и тарифы' },
   { id: 'referrals',   label: 'Рефералы' },
   { id: 'security',    label: 'Безопасность' },
   { id: 'faq',         label: 'FAQ' },
 ]
 
 const PACKAGES = [
-  { name: 'Lite',  price: '$1',  credits: '300',   bonus: '',              color: '#64B5F6' },
-  { name: 'Pro',   price: '$5',  credits: '2 000', bonus: '+33%',          color: 'var(--accent)' },
-  { name: 'Ultra', price: '$10', credits: '5 000', bonus: '+66% Макс. выгода', color: 'var(--credits-gold)', popular: true },
+  { name: 'Lite',  price: '$1',  diamonds: '300',   bonus: '',              color: '#64B5F6' },
+  { name: 'Pro',   price: '$5',  diamonds: '2 000', bonus: '+33%',          color: '#3D7FFF' },
+  { name: 'Ultra', price: '$10', diamonds: '5 000', bonus: 'МАКС. ВЫГОДА',  color: '#00CFFF', popular: true },
 ]
 
 const FAQ = [
-  {
-    q: 'Можно ли пользоваться компьютером, пока работает бот?',
-    a: 'Так как бот управляет курсором мыши и клавиатурой, мы рекомендуем запускать его в то время, когда вы не пользуетесь ПК, либо использовать для этого отдельный ноутбук.',
-  },
-  {
-    q: 'Нужен ли боту доступ к моему игровому паролю?',
-    a: 'Нет. Бот работает поверх уже запущенной вами игры. Нам не нужны ваши учётные данные от Total Battle — безопасность вашего аккаунта гарантирована.',
-  },
-  {
-    q: 'Что такое HWID и зачем он нужен?',
-    a: 'Hardware ID — это уникальный «отпечаток» вашего компьютера. Лицензия и бесплатный триал привязываются к вашему железу, чтобы исключить злоупотребления и обеспечить честное использование софта.',
-  },
-  {
-    q: 'Можно ли перенести аккаунт на другой ПК?',
-    a: 'Да. Если вы сменили компьютер, зайдите в Личный кабинет на сайте в раздел «Устройства», отвяжите старый HWID и авторизуйтесь на новом устройстве.',
-  },
-  {
-    q: 'Как работают кредиты при ошибке или сбое интернета?',
-    a: 'Кредиты списываются только за успешный результат (нахождение Биржи или отправку Картера в Склеп). Если бот не нашёл объект или произошёл сбой связи до фиксации цели — ваш баланс останется прежним.',
-  },
-  {
-    q: 'Могут ли меня забанить?',
-    a: 'Мы внедрили все возможные методы маскировки (рандомизация пауз, отклонение кликов). Это делает риск минимальным, однако мы обязаны предупредить: любое использование стороннего ПО в играх несёт в себе теоретические риски. Используйте бота разумно.',
-  },
+  { q: 'Можно ли пользоваться компьютером, пока работает бот?',
+    a: 'Так как бот управляет курсором мыши и клавиатурой, рекомендуем запускать его в то время, когда вы не пользуетесь ПК, либо использовать отдельный ноутбук.' },
+  { q: 'Нужен ли боту доступ к моему игровому паролю?',
+    a: 'Нет. Бот работает поверх уже запущенной вами игры. Нам не нужны учётные данные от Total Battle — безопасность вашего аккаунта гарантирована.' },
+  { q: 'Что такое HWID и зачем он нужен?',
+    a: 'Hardware ID — уникальный «отпечаток» вашего компьютера. Лицензия и бесплатный триал привязываются к железу, чтобы исключить злоупотребления.' },
+  { q: 'Можно ли перенести аккаунт на другой ПК?',
+    a: 'Да. Зайдите в Личный кабинет → раздел «Устройства», отвяжите старый HWID и авторизуйтесь на новом устройстве.' },
+  { q: 'Как работают алмазы при ошибке или сбое интернета?',
+    a: 'Алмазы списываются только за успешный результат (нахождение Биржи или отправку Картера в Склеп). Если бот не нашёл объект или произошёл сбой — ваш баланс останется прежним.' },
+  { q: 'Могут ли меня забанить?',
+    a: 'Мы внедрили все возможные методы маскировки: рандомизация пауз (0.4–0.9 с) и случайное отклонение кликов (±5–8 пкс). Риск минимален, однако любое использование стороннего ПО несёт теоретические риски. Используйте бота разумно.' },
 ]
 
 function Section({ id, icon, title, children }) {
@@ -54,8 +56,7 @@ function Section({ id, icon, title, children }) {
         <div style={{
           width: 40, height: 40, borderRadius: 10,
           background: 'rgba(61,127,255,0.1)', border: '1px solid rgba(61,127,255,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-          flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
         }}>
           {icon}
         </div>
@@ -66,11 +67,28 @@ function Section({ id, icon, title, children }) {
   )
 }
 
-function Card({ children, style }) {
+function Card({ children, style, glow }) {
   return (
     <div style={{
       background: 'var(--elevated)', border: '1px solid var(--outline)',
-      borderRadius: 14, padding: '24px 28px', ...style,
+      borderRadius: 14, padding: '24px 28px',
+      boxShadow: glow ? `0 0 32px ${glow}` : 'none',
+      ...style,
+    }}>
+      {children}
+    </div>
+  )
+}
+
+// Карточка с неоновой рамкой (для симметричных пар)
+function NeonCard({ children, color, style }) {
+  return (
+    <div style={{
+      borderRadius: 14, padding: '20px',
+      background: `${color}08`,
+      border: `1px solid ${color}44`,
+      boxShadow: `0 0 18px ${color}18`,
+      ...style,
     }}>
       {children}
     </div>
@@ -85,9 +103,7 @@ function Step({ n, title, desc, note }) {
         background: 'rgba(61,127,255,0.15)', border: '1px solid rgba(61,127,255,0.4)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 13, fontWeight: 700, color: 'var(--accent)',
-      }}>
-        {n}
-      </div>
+      }}>{n}</div>
       <div>
         <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{title}</div>
         <div style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.7 }}>{desc}</div>
@@ -96,24 +112,20 @@ function Step({ n, title, desc, note }) {
             marginTop: 8, padding: '7px 12px', borderRadius: 8, fontSize: 12,
             background: 'rgba(61,127,255,0.07)', border: '1px solid rgba(61,127,255,0.18)',
             color: '#A0B8D8',
-          }}>
-            {note}
-          </div>
+          }}>{note}</div>
         )}
       </div>
     </div>
   )
 }
 
-function Note({ children, color = 'rgba(255,209,102,0.07)', border = 'rgba(255,209,102,0.25)', textColor = '#FFD166' }) {
+function Note({ children }) {
   return (
     <div style={{
       padding: '12px 16px', borderRadius: 10, marginTop: 16,
-      background: color, border: `1px solid ${border}`,
-      fontSize: 13, color: textColor, lineHeight: 1.6,
-    }}>
-      {children}
-    </div>
+      background: 'rgba(255,209,102,0.07)', border: '1px solid rgba(255,209,102,0.25)',
+      fontSize: 13, color: '#FFD166', lineHeight: 1.6,
+    }}>{children}</div>
   )
 }
 
@@ -124,30 +136,22 @@ export default function GuidePage() {
       {/* Nav */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(5, 8, 16, 0.92)',
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(5,8,16,0.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--outline)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 32px', height: 64,
         boxShadow: '0 2px 32px var(--accent-glow)',
       }}>
-        <Link to="/" style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          textDecoration: 'none', fontWeight: 700, fontSize: 18,
-        }}>
-          <span style={{ color: 'var(--accent)', fontSize: 20 }}>⚔</span>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', fontWeight: 700, fontSize: 18 }}>
+          <Diamond size={22} />
           <span style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
           <span style={{ color: '#FFFFFF' }}>Hunter</span>
         </Link>
-        <Link
-          to={isLoggedIn() ? '/dashboard' : '/login'}
-          style={{
-            padding: '9px 22px', borderRadius: 8, fontSize: 14,
-            background: 'var(--accent)', color: '#FFFFFF',
-            fontWeight: 700, textDecoration: 'none',
-            boxShadow: '0 0 14px var(--accent-glow)',
-          }}
-        >
+        <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
+          padding: '9px 22px', borderRadius: 8, fontSize: 14,
+          background: 'var(--accent)', color: '#FFFFFF', fontWeight: 700, textDecoration: 'none',
+          boxShadow: '0 0 14px var(--accent-glow)',
+        }}>
           {isLoggedIn() ? 'Dashboard →' : 'Войти'}
         </Link>
       </nav>
@@ -156,27 +160,18 @@ export default function GuidePage() {
       <div style={{
         padding: '64px 24px 48px',
         background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(61,127,255,0.1) 0%, transparent 60%)',
-        borderBottom: '1px solid var(--outline)',
-        textAlign: 'center',
+        borderBottom: '1px solid var(--outline)', textAlign: 'center',
       }}>
         <div style={{
           display: 'inline-block', padding: '5px 16px', borderRadius: 20,
           background: 'rgba(61,127,255,0.1)', border: '1px solid rgba(61,127,255,0.3)',
-          fontSize: 11, fontWeight: 700, letterSpacing: '1.5px',
-          color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 20,
-        }}>
-          Документация
-        </div>
-        <h1 style={{
-          fontSize: 'clamp(32px, 5vw, 54px)', fontWeight: 800,
-          color: '#FFFFFF', marginBottom: 16, letterSpacing: '-1px',
-        }}>
+          fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)',
+          textTransform: 'uppercase', marginBottom: 20,
+        }}>Документация</div>
+        <h1 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 16, letterSpacing: '-1px' }}>
           Руководство пользователя
         </h1>
-        <p style={{
-          fontSize: 17, color: '#C8D8F0', maxWidth: 560, margin: '0 auto',
-          lineHeight: 1.7,
-        }}>
+        <p style={{ fontSize: 17, color: '#C8D8F0', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
           Полное описание работы Total Hunter — от установки до первой находки.
         </p>
       </div>
@@ -184,30 +179,23 @@ export default function GuidePage() {
       {/* Layout: TOC + Content */}
       <div style={{
         maxWidth: 1060, margin: '0 auto', padding: '48px 24px',
-        display: 'grid', gridTemplateColumns: '220px 1fr', gap: 48,
-        alignItems: 'start',
+        display: 'grid', gridTemplateColumns: '220px 1fr', gap: 48, alignItems: 'start',
       }}>
 
         {/* Sidebar TOC */}
         <div style={{ position: 'sticky', top: 80 }}>
-          <div style={{
-            background: 'var(--elevated)', border: '1px solid var(--outline)',
-            borderRadius: 14, padding: '20px',
-          }}>
+          <div style={{ background: 'var(--elevated)', border: '1px solid var(--outline)', borderRadius: 14, padding: '20px' }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 16 }}>
               Содержание
             </div>
             {SECTIONS.map(({ id, label }) => (
               <a key={id} href={`#${id}`} style={{
                 display: 'block', padding: '7px 10px', borderRadius: 8,
-                fontSize: 13, color: 'var(--on-surface2)', textDecoration: 'none',
-                fontWeight: 500, transition: 'color 0.15s, background 0.15s',
+                fontSize: 13, color: 'var(--on-surface2)', textDecoration: 'none', fontWeight: 500,
               }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.background = 'rgba(61,127,255,0.08)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--on-surface2)'; e.currentTarget.style.background = 'transparent' }}
-              >
-                {label}
-              </a>
+              onMouseEnter={e => { e.currentTarget.style.color='#FFFFFF'; e.currentTarget.style.background='rgba(61,127,255,0.08)' }}
+              onMouseLeave={e => { e.currentTarget.style.color='var(--on-surface2)'; e.currentTarget.style.background='transparent' }}
+              >{label}</a>
             ))}
           </div>
         </div>
@@ -216,136 +204,108 @@ export default function GuidePage() {
         <div>
 
           {/* 1. Что такое Total Hunter */}
-          <Section id="what-is" icon="🎮" title="Что такое Total Hunter">
+          <Section id="what-is" icon={<Diamond size={18}/>} title="Что такое Total Hunter">
             <Card style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 20 }}>
-                <strong style={{ color: '#FFFFFF' }}>Total Hunter</strong> — это десктопный бот-помощник для автоматизации
+                <strong style={{ color: '#FFFFFF' }}>Total Hunter</strong> — десктопный бот-помощник для автоматизации
                 игровых процессов в <strong style={{ color: '#FFFFFF' }}>Total Battle</strong>. Программа берёт на себя
                 рутинный поиск и взаимодействие с объектами на карте:
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                {[
-                  {
-                    icon: '⚔',
-                    color: 'var(--accent)',
-                    name: 'Биржа (Exchange)',
-                    desc: 'Бот сканирует береговые линии королевств для обнаружения рынков наёмников. При нахождении цели подаёт звуковой сигнал и автоматически останавливает поиск.',
-                  },
-                  {
-                    icon: '💀',
-                    color: '#B060FF',
-                    name: 'Склеп (Crypt)',
-                    desc: 'Бот находит в игровом меню выбранные вами типы склепов (Обычные, Редкие или Эпические) и автоматически отправляет на их местоположение вашего «Картера» для сбора, используя ускорения марша.',
-                  },
-                ].map(({ icon, color, name, desc }) => (
-                  <div key={name} style={{
-                    padding: '16px', borderRadius: 12,
-                    background: `${color}0D`, border: `1px solid ${color}33`,
-                  }}>
-                    <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{name}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{desc}</div>
+                <NeonCard color="#00CFFF">
+                  <div style={{ fontSize: 22, marginBottom: 8 }}>🔍</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>Биржа (Exchange)</div>
+                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+                    Бот сканирует береговые линии королевств для обнаружения рынков наёмников. При нахождении цели подаёт звуковой сигнал и останавливает поиск.
                   </div>
-                ))}
+                </NeonCard>
+                <NeonCard color="#B060FF">
+                  <div style={{ fontSize: 22, marginBottom: 8 }}>🏆</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>Склеп (Crypt)</div>
+                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+                    Бот находит в меню выбранные типы склепов (Обычные, Редкие, Эпические) и отправляет вашего «Картера» для сбора, используя ускорения марша.
+                  </div>
+                </NeonCard>
               </div>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginTop: 20, marginBottom: 0 }}>
-                Программа работает поверх окна браузера или официального игрового клиента. Бот полностью имитирует
-                действия реального пользователя, управляя курсором мыши и клавиатурой, что обеспечивает
-                естественность и безопасность автоматизации.
+                Программа работает поверх браузера или клиента Total Battle, полностью имитируя действия реального пользователя.
               </p>
             </Card>
           </Section>
 
           {/* 2. Алгоритм поиска */}
-          <Section id="algorithm" icon="🧠" title="Алгоритм поиска (The Core)">
+          <Section id="algorithm" icon="🧠" title="Алгоритм поиска">
             <Card style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                2.1 Навигация по карте — CoastalSnakeNavigator
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                Smart Coastline Scouting — интеллектуальный сканер побережья
               </div>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
-                Для максимально эффективного обхода территорий бот использует уникальный алгоритм <strong style={{ color: '#FFFFFF' }}>«Прибрежная змея»</strong> (CoastalSnakeNavigator),
-                который имитирует логику опытного разведчика:
+                Для максимально эффективного обхода территорий бот использует уникальный алгоритм <strong style={{ color: '#FFFFFF' }}>«Прибрежная змея»</strong>,
+                имитирующий логику опытного разведчика:
               </p>
               {[
                 { n: '1', title: 'Анализ местности', desc: 'Бот в реальном времени считывает мини-карту, определяя границы воды и суши.' },
-                { n: '2', title: 'Вектор движения', desc: 'Программа вычисляет траекторию, перпендикулярную берегу, чтобы эффективно прочёсывать прибрежные зоны в поисках Бирж.' },
-                { n: '3', title: 'Интеллектуальные фазы', desc: 'Поиск (Homing) — движение к цели с постоянной корректировкой курса. Глубокое сканирование (Diving) — проход вглубь территории. Возврат (Returning) — безопасный выход обратно к береговой линии.' },
-                { n: '4', title: 'Стабилизация', desc: 'Система сглаживания (EMA) убирает «дрожание» курсора, делая движения бота плавными и естественными, как у человека.' },
+                { n: '2', title: 'Вектор движения', desc: 'Программа вычисляет траекторию, перпендикулярную берегу, для эффективного прочёсывания прибрежных зон.' },
+                { n: '3', title: 'Интеллектуальные фазы', desc: 'Homing — движение к цели. Diving — глубокое сканирование территории. Returning — безопасный возврат к берегу.' },
+                { n: '4', title: 'Стабилизация (EMA)', desc: 'Система сглаживания убирает «дрожание» курсора, делая движения бота плавными и естественными.' },
               ].map(s => <Step key={s.n} {...s} />)}
-              <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
-                Благодаря двухточечной калибровке, управление джойстиком автоматически адаптируется под любое разрешение вашего монитора.
+              <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.7, marginBottom: 0 }}>
+                Благодаря двухточечной калибровке, управление автоматически адаптируется под любое разрешение монитора.
               </p>
             </Card>
 
             <Card style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                2.2 Детекция объектов — Нейросеть
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                Детекция объектов — нейросеть
               </div>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
-                Total Hunter не просто ищет цвета на экране — он «видит» объекты с помощью нейросетевых моделей,
-                обученных специально под графику Total Battle:
-              </p>
-              {[
-                { icon: '⚔', color: 'var(--accent)', name: 'Модель «Биржа»', desc: 'Безошибочно распознаёт рынок наёмников на любом фоне. При обнаружении бот мгновенно реагирует и подаёт звуковой сигнал.' },
-                { icon: '💀', color: '#B060FF', name: 'Модель «Склепы»', desc: 'Идентифицирует нужные типы склепов для организации непрерывного сбора.' },
-              ].map(({ icon, color, name, desc }) => (
-                <div key={name} style={{
-                  display: 'flex', gap: 14, marginBottom: 14, padding: '14px',
-                  borderRadius: 10, background: `${color}0A`, border: `1px solid ${color}22`,
-                }}>
-                  <div style={{ fontSize: 20, flexShrink: 0 }}>{icon}</div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{name}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{desc}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                <NeonCard color="#00CFFF">
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>Модель «Биржа»</div>
+                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+                    Безошибочно распознаёт рынок наёмников на любом фоне. При обнаружении бот мгновенно реагирует и подаёт сигнал.
                   </div>
-                </div>
-              ))}
+                </NeonCard>
+                <NeonCard color="#B060FF">
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>Модель «Склепы»</div>
+                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+                    Идентифицирует нужные типы склепов для организации непрерывного автоматического сбора.
+                  </div>
+                </NeonCard>
+              </div>
               <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.7, marginBottom: 0 }}>
-                Как только нейросеть подтверждает цель, бот переходит к активным действиям: кликает по объекту, открывает меню и отправляет марш по заданным вами параметрам.
+                Как только нейросеть подтверждает цель, бот кликает по объекту, открывает меню и отправляет марш.
               </p>
             </Card>
 
             <Card>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                2.3 Автоматизация сбора Склепов
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                Автоматизация сбора Склепов
               </div>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
-                Процесс сбора полностью автоматизирован и базируется на точных настройках вашего аккаунта:
-              </p>
-              <Step n="1" title="Обнаружение" desc="Бот находит нужный Склеп на экране с помощью нейросети и открывает его игровое меню." />
-              <Step n="2" title="Интеллектуальная система расчёта времени"
-                desc="Дальность марша: вы задаёте время (в минутах), которое требуется вашему «Картеру», чтобы дойти до самого дальнего склепа в Королевстве. Ускорение марша: слайдер (0–5) — каждое деление сокращает расчётное время пути ровно в два раза."
-              />
-              <Step n="3" title="Безопасный цикл ожидания"
-                desc="Программа рассчитывает время пути в обе стороны и добавляет Добавочную паузу (до 300 секунд). Это гарантирует, что бот начнёт поиск следующей цели только после того, как Картер гарантированно вернётся в город."
-              />
+              <Step n="1" title="Обнаружение" desc="Бот находит нужный Склеп через нейросеть и открывает его игровое меню." />
+              <Step n="2" title="Расчёт времени"
+                desc="Дальность марша: время хода Картера до самого дальнего склепа (в минутах). Ускорение 0–5: каждый уровень сокращает время вдвое." />
+              <Step n="3" title="Цикл ожидания"
+                desc="Программа рассчитывает время туда+обратно и добавляет Добавочную паузу (до 300 с). Бот ждёт гарантированного возврата Картера." />
               <Step n="4" title="Сброс списка"
-                desc="Если список доступных склепов в меню закончился, бот выполняет автоматический сброс через переход на вкладку «Арена», после чего продолжает цикл поиска."
-              />
-              <Note>
-                ⚠ <strong>Важное условие:</strong> для корректной работы функции на аккаунте должно быть не менее <strong>70 000 единиц масла</strong>. Если запас опустится ниже этого порога, бот автоматически прекратит сбор.
-              </Note>
+                desc="Если список склепов закончился — автоматический сброс через вкладку «Арена», после чего цикл продолжается." />
+              <Note>⚠ Требуется не менее <strong>70 000 единиц масла</strong> на аккаунте. Ниже порога — бот автоматически остановит сбор.</Note>
             </Card>
           </Section>
 
-          {/* 3. Технические требования */}
+          {/* 3. Требования */}
           <Section id="requirements" icon="💻" title="Технические требования">
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
-                Для стабильной работы нейросетевых алгоритмов и корректного захвата экрана ваш ПК должен соответствовать следующим характеристикам:
-              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { param: 'ОС', value: 'Windows 10 / 11 (64-bit)' },
-                  { param: 'Разрешение', value: '1920×1080 (Full HD) — для идеальной точности' },
-                  { param: 'Браузер', value: 'Chrome, Firefox или официальный клиент Total Battle' },
-                  { param: 'ОЗУ', value: 'от 4 ГБ и выше' },
-                  { param: 'Сеть', value: 'Постоянное соединение (для проверки лицензии и связи с API)' },
-                  { param: 'Аккаунт', value: 'Наличие активного игрового профиля Total Battle' },
+                  { param: 'ОС',          value: 'Windows 10 / 11 (64-bit)' },
+                  { param: 'Разрешение',  value: '1920×1080 (Full HD) — для идеальной точности' },
+                  { param: 'Браузер',     value: 'Chrome, Firefox или официальный клиент Total Battle' },
+                  { param: 'ОЗУ',         value: 'от 4 ГБ и выше' },
+                  { param: 'Сеть',        value: 'Постоянное соединение (для проверки лицензии)' },
+                  { param: 'Аккаунт',     value: 'Активный игровой профиль Total Battle' },
                 ].map(({ param, value }) => (
                   <div key={param} style={{
-                    display: 'flex', gap: 16, alignItems: 'flex-start',
-                    padding: '10px 14px', borderRadius: 8,
+                    display: 'flex', gap: 16, padding: '10px 14px', borderRadius: 8,
                     background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
                   }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', minWidth: 100, flexShrink: 0 }}>{param}</div>
@@ -362,25 +322,14 @@ export default function GuidePage() {
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 24 }}>
                 Весь процесс от регистрации до первой «охоты» занимает не более <strong style={{ color: '#FFFFFF' }}>5 минут</strong>.
               </p>
-              <Step n="1" title="Регистрация"
-                desc="Создайте аккаунт на сайте TotalHunter.pro, используя ваш Google-аккаунт."
-              />
-              <Step n="2" title="Тестовый период"
-                desc="Получите 100 бесплатных кредитов в Личном кабинете (Dashboard), чтобы сразу проверить бота в деле."
-                note="Триал выдаётся один раз на устройство (HWID-верификация)"
-              />
-              <Step n="3" title="Загрузка"
-                desc="Скачайте актуальную версию TotalHunter.exe по ссылке в вашем кабинете."
-              />
-              <Step n="4" title="Запуск"
-                desc="Запустите файл. Установка дополнительных библиотек не требуется — Python и нейросетевые модели уже включены в сборку."
-              />
-              <Step n="5" title="Авторизация"
-                desc="Войдите в приложение через Google (используйте те же данные, что и на сайте)."
-              />
-              <Step n="6" title="Настройка"
-                desc="После входа бот сразу предложит перейти на вкладку КАЛИБРОВКА для адаптации под ваш монитор."
-              />
+              <Step n="1" title="Регистрация" desc="Создайте аккаунт на TotalHunter.pro, используя Google-аккаунт." />
+              <Step n="2" title="Бесплатные алмазы"
+                desc="Получите 100 бесплатных алмазов в Личном кабинете (Dashboard) — сразу проверьте бота."
+                note="Триал выдаётся один раз на устройство (HWID-верификация)" />
+              <Step n="3" title="Загрузка" desc="Скачайте TotalHunter.exe по ссылке в личном кабинете." />
+              <Step n="4" title="Запуск" desc="Запустите файл. Python и нейросетевые модели уже включены — дополнительная установка не нужна." />
+              <Step n="5" title="Авторизация" desc="Войдите в приложение через Google (те же данные, что и на сайте)." />
+              <Step n="6" title="Настройка" desc="После входа бот предложит перейти на вкладку КАЛИБРОВКА для адаптации под ваш монитор." />
             </Card>
           </Section>
 
@@ -388,175 +337,152 @@ export default function GuidePage() {
           <Section id="calibration" icon="🎯" title="Калибровка экрана (Обязательный шаг)">
             <Card style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
-                Чтобы нейросеть и система навигации точно считывали координаты на вашем мониторе, необходимо один раз
-                настроить <strong style={{ color: '#FFFFFF' }}>две опорные точки</strong>. Это адаптирует бота под ваш привычный режим игры.
-              </p>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
-                <strong style={{ color: '#FFFFFF' }}>Подготовка:</strong> Откройте игру именно так, как вы привыкли в неё играть
-                (в окне браузера, в полноэкранном режиме или через клиент). Бот запомнит эти настройки.
+                Необходимо один раз настроить <strong style={{ color: '#FFFFFF' }}>две опорные точки</strong>.
+                Откройте игру именно так, как привыкли играть — бот запомнит эти настройки.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
                 {[
-                  {
-                    label: 'Точка A',
-                    sublabel: 'Центр мини-карты',
-                    desc: 'В игре максимально отдалите зум на мини-карте (уменьшите масштаб до минимума), затем кликните ровно по центру прямоугольника мини-карты.',
-                    color: 'var(--accent)',
-                  },
-                  {
-                    label: 'Точка B',
-                    sublabel: 'Зона ресурсов — Серебро',
-                    desc: 'Найдите в интерфейсе игры иконку Серебра. Наведите на неё курсор, чтобы появился символ «+». Кликните точно по этому символу.',
-                    color: '#B060FF',
-                  },
-                ].map(({ label, sublabel, desc, color }) => (
-                  <div key={label} style={{
-                    padding: '16px', borderRadius: 12,
-                    background: `${color}0D`, border: `1px solid ${color}33`,
-                  }}>
+                  { label: 'Точка A', sublabel: 'Центр мини-карты', color: '#00CFFF',
+                    desc: 'Уменьшите зум мини-карты до минимума. Кликните точно по центру прямоугольника мини-карты.',
+                    img: '/img/calib_point_a.png' },
+                  { label: 'Точка B', sublabel: 'Зона ресурсов — Серебро', color: '#B060FF',
+                    desc: 'Найдите иконку Серебра, наведите курсор до появления «+». Кликните точно по символу «+».',
+                    img: '/img/calib_point_b.png' },
+                ].map(({ label, sublabel, color, desc, img }) => (
+                  <NeonCard key={label} color={color}>
                     <div style={{ fontSize: 15, fontWeight: 700, color, marginBottom: 2 }}>{label}</div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--on-surface2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>{sublabel}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.65 }}>{desc}</div>
-                    <img
-                      src={label === 'Точка A' ? '/img/calib_point_a.png' : '/img/calib_point_b.png'}
-                      alt={label}
-                      style={{ marginTop: 12, width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', display: 'block' }}
-                    />
-                  </div>
+                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: 10 }}>{desc}</div>
+                    <img src={img} alt={label} style={{ width: '100%', borderRadius: 8, border: `1px solid ${color}33`, display: 'block' }} />
+                  </NeonCard>
                 ))}
               </div>
-
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 Шаги калибровки
               </div>
-              <Step n="1" title="Откройте игру" desc="Запустите Total Battle именно так, как привыкли играть (браузер, полный экран или клиент)." />
+              <Step n="1" title="Откройте игру" desc="Запустите Total Battle: браузер, полный экран или клиент." />
               <Step n="2" title="Вкладка КАЛИБРОВКА" desc="В боте перейдите на вкладку КАЛИБРОВКА." />
-              <Step n="3" title="Установите точку A" desc='Уменьшите зум мини-карты до минимума. Нажмите «Установить точку A» → расположите перекрестие по центру мини-карты и кликните.' />
-              <Step n="4" title="Установите точку B" desc='Найдите иконку Серебра, наведите курсор до появления «+». Нажмите «Установить точку B» → кликните по символу «+».' />
-              <Step n="5" title="Сохраните профиль" desc='Выберите нужный слот и нажмите «Сохранить профиль». Теперь бот полностью синхронизирован с вашим экраном.' />
-
+              <Step n="3" title="Установите точку A" desc='Уменьшите зум мини-карты. Нажмите «Установить точку A» → кликните по центру мини-карты.' />
+              <Step n="4" title="Установите точку B" desc='Найдите иконку Серебра, наведите до появления «+». Нажмите «Установить точку B» → кликните по «+».' />
+              <Step n="5" title="Сохраните профиль" desc='Выберите слот и нажмите «Сохранить профиль».' />
               <div style={{
-                marginTop: 8, padding: '14px 16px', borderRadius: 10,
+                padding: '12px 16px', borderRadius: 10, marginTop: 8,
                 background: 'rgba(61,127,255,0.06)', border: '1px solid rgba(61,127,255,0.15)',
                 fontSize: 13, color: '#A0B8D8', lineHeight: 1.7,
               }}>
-                💡 <strong style={{ color: '#FFFFFF' }}>3 слота памяти:</strong> Слот 1 — клиент игры, Слот 2 — браузер (вариант 1), Слот 3 — браузер (вариант 2). Удобно, если вы играете в разных режимах.
+                💡 <strong style={{ color: '#FFFFFF' }}>3 слота:</strong> Слот 1 — клиент игры, Слот 2 — браузер (вариант 1), Слот 3 — браузер (вариант 2).
               </div>
             </Card>
           </Section>
 
-          {/* 6. Режимы работы */}
+          {/* 6. Режимы */}
           <Section id="modes" icon="⚡" title="Режимы работы">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-              <Card>
-                <div style={{ fontSize: 24, marginBottom: 12 }}>⚔</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>Охота на Биржи (Exchange)</div>
-                <div style={{
-                  display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 16,
-                  background: 'rgba(61,127,255,0.15)', border: '1px solid rgba(61,127,255,0.3)',
-                  fontSize: 12, color: 'var(--accent)', fontWeight: 600,
-                }}>
-                  5 кредитов / находка
+              <NeonCard color="#00CFFF">
+                <div style={{ fontSize: 24, marginBottom: 10 }}>🔍</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>Охота на Биржи</div>
+                <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 14, background: 'rgba(0,207,255,0.15)', border: '1px solid rgba(0,207,255,0.3)', fontSize: 12, color: '#00CFFF', fontWeight: 600 }}>
+                  5 алмазов / находка
                 </div>
                 {[
-                  { label: 'Логика', text: 'Программа непрерывно сканирует береговую линию по алгоритму «змейка».' },
-                  { label: 'Результат', text: 'При обнаружении Биржи бот подаёт громкий звуковой сигнал и мгновенно останавливает поиск, чтобы вы могли вручную выкупить нужные войска.' },
-                  { label: 'Настройки', text: '«Дальность» — 100% (для полного охвата королевства), «Скорость» — на максимум.' },
-                ].map(({ label, text }) => (
-                  <div key={label} style={{ marginBottom: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{label}: </span>
-                    <span style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{text}</span>
+                  { l: 'Логика', t: 'Непрерывное сканирование береговой линии по алгоритму «змейка».' },
+                  { l: 'Результат', t: 'Звуковой сигнал + остановка → вы выкупаете войска вручную.' },
+                  { l: 'Настройки', t: '«Дальность» 100%, «Скорость» на максимум.' },
+                ].map(({ l, t }) => (
+                  <div key={l} style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#00CFFF' }}>{l}: </span>
+                    <span style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{t}</span>
                   </div>
                 ))}
-              </Card>
-
-              <Card>
-                <div style={{ fontSize: 24, marginBottom: 12 }}>💀</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>Сбор Склепов (Crypt)</div>
-                <div style={{
-                  display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 16,
-                  background: 'rgba(176,96,255,0.15)', border: '1px solid rgba(176,96,255,0.3)',
-                  fontSize: 12, color: '#B060FF', fontWeight: 600,
-                }}>
-                  1 кредит / находка
+              </NeonCard>
+              <NeonCard color="#B060FF">
+                <div style={{ fontSize: 24, marginBottom: 10 }}>🏆</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>Сбор Склепов</div>
+                <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 14, background: 'rgba(176,96,255,0.15)', border: '1px solid rgba(176,96,255,0.3)', fontSize: 12, color: '#B060FF', fontWeight: 600 }}>
+                  1 алмаз / находка
                 </div>
                 {[
-                  { label: 'Логика', text: 'Бот самостоятельно находит в игровом меню выбранные вами типы склепов и отправляет на них вашего Картера.' },
-                  { label: 'Цикл', text: 'После отправки марша бот ждёт возвращения Картера в город (время = Дальность ÷ 2^Ускорение × 2 + ваша пауза), после чего ищет следующую цель.' },
-                  { label: 'Параметры', text: '«Дальность марша» (время хода Картера до самой дальней точки в минутах) и «Ускорение» (0–5 уровней).' },
-                ].map(({ label, text }) => (
-                  <div key={label} style={{ marginBottom: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#B060FF' }}>{label}: </span>
-                    <span style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{text}</span>
+                  { l: 'Логика', t: 'Бот находит склепы в меню и отправляет Картера.' },
+                  { l: 'Цикл', t: 'Ждёт возвращения Картера по рассчитанному времени.' },
+                  { l: 'Параметры', t: 'Дальность марша (мин) + Ускорение (0–5 уровней).' },
+                ].map(({ l, t }) => (
+                  <div key={l} style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#B060FF' }}>{l}: </span>
+                    <span style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{t}</span>
                   </div>
                 ))}
-                <Note color="rgba(176,96,255,0.07)" border="rgba(176,96,255,0.25)" textColor="#C090FF">
-                  Требуется не менее 70 000 единиц масла на аккаунте.
-                </Note>
-              </Card>
+                <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(176,96,255,0.08)', border: '1px solid rgba(176,96,255,0.2)', fontSize: 12, color: '#C090FF' }}>
+                  ⚠ Требуется ≥ 70 000 единиц масла
+                </div>
+              </NeonCard>
             </div>
-
             <Card>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.7, margin: 0 }}>
-                <strong style={{ color: '#FFFFFF' }}>Экстренная остановка:</strong> нажмите <kbd style={{
-                  padding: '2px 8px', borderRadius: 5, background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.2)', fontSize: 13, fontWeight: 700,
-                }}>ESC</kbd> — бот мгновенно прекращает все действия и возвращает управление вам.
+                <strong style={{ color: '#FFFFFF' }}>Экстренная остановка:</strong> нажмите{' '}
+                <kbd style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', fontSize: 13, fontWeight: 700 }}>ESC</kbd>
+                {' '}— бот мгновенно прекращает все действия.
               </p>
             </Card>
           </Section>
 
-          {/* 7. Экономика и тарифы */}
-          <Section id="credits" icon="💎" title="Экономика и тарифы">
+          {/* 7. Алмазы */}
+          <Section id="credits" icon={<Diamond size={18}/>} title="Алмазы и тарифы">
             <Card style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 0 }}>
-                В системе Total Hunter используются <strong style={{ color: '#FFFFFF' }}>кредиты</strong> — внутренняя валюта,
+                В системе Total Hunter используются <strong style={{ color: '#FFFFFF' }}>◆ алмазы</strong> — внутренняя валюта,
                 которая расходуется только за успешные действия бота.
               </p>
             </Card>
+
+            {/* Packages — gambling style */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 16 }}>
-              {PACKAGES.map(({ name, price, credits, bonus, color, popular }) => (
-                <Card key={name} style={{
-                  textAlign: 'center', position: 'relative',
-                  border: popular ? `1px solid ${color}55` : '1px solid var(--outline)',
-                  boxShadow: popular ? `0 0 24px ${color}18` : 'none',
+              {PACKAGES.map(({ name, price, diamonds, bonus, color, popular }) => (
+                <div key={name} style={{
+                  position: 'relative', borderRadius: 16, padding: '28px 20px', textAlign: 'center',
+                  background: popular
+                    ? 'linear-gradient(160deg, rgba(0,207,255,0.08) 0%, rgba(61,127,255,0.12) 50%, rgba(176,96,255,0.08) 100%)'
+                    : 'var(--elevated)',
+                  border: `1px solid ${color}55`,
+                  boxShadow: popular ? `0 0 40px ${color}30, 0 0 80px ${color}10` : `0 0 12px ${color}10`,
                 }}>
                   {popular && (
                     <div style={{
-                      position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                      padding: '3px 12px', borderRadius: 20,
-                      background: color, color: '#000', fontSize: 10, fontWeight: 800,
-                      whiteSpace: 'nowrap', letterSpacing: '0.5px',
-                    }}>
-                      ЛУЧШИЙ ВЫБОР
-                    </div>
+                      position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
+                      padding: '4px 16px', borderRadius: 20,
+                      background: `linear-gradient(90deg, #B060FF, #3D7FFF, #00CFFF)`,
+                      color: '#FFF', fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: '1px',
+                    }}>ЛУЧШИЙ ВЫБОР</div>
                   )}
-                  <div style={{ fontSize: 28, fontWeight: 800, color, marginBottom: 4 }}>{price}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{name}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color, marginBottom: 4 }}>{credits}</div>
-                  <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>кредитов</div>
+                  <div style={{ fontSize: 32, fontWeight: 900, color, marginBottom: 2,
+                    textShadow: popular ? `0 0 20px ${color}` : 'none' }}>{price}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>{name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+                    <Diamond size={popular ? 22 : 18} />
+                    <span style={{ fontSize: popular ? 28 : 22, fontWeight: 900, color,
+                      textShadow: popular ? `0 0 16px ${color}` : 'none' }}>{diamonds}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: bonus ? 12 : 0 }}>алмазов</div>
                   {bonus && (
                     <div style={{
-                      marginTop: 10, padding: '3px 10px', borderRadius: 20, display: 'inline-block',
-                      background: `${color}18`, border: `1px solid ${color}33`,
-                      fontSize: 12, color, fontWeight: 700,
-                    }}>
-                      {bonus}
-                    </div>
+                      display: 'inline-block', padding: '4px 12px', borderRadius: 20,
+                      background: `linear-gradient(90deg, ${color}22, ${color}44)`,
+                      border: `1px solid ${color}55`, fontSize: 12, color, fontWeight: 800,
+                    }}>{bonus}</div>
                   )}
-                </Card>
+                </div>
               ))}
             </div>
+
             <Card>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                Расход кредитов
+                Расход алмазов
               </div>
               <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 20 }}>
                 {[
-                  { label: 'Найдена Биржа', cost: '−5 кредитов', color: 'var(--accent)' },
-                  { label: 'Сбор Склепа', cost: '−1 кредит', color: '#B060FF' },
-                  { label: 'Объект не найден', cost: 'бесплатно', color: 'var(--on-surface2)' },
-                  { label: 'Триал при регистрации', cost: '+100 кредитов', color: 'var(--credits-gold)' },
+                  { label: 'Найдена Биржа', cost: '−5 алмазов', color: '#00CFFF' },
+                  { label: 'Сбор Склепа',   cost: '−1 алмаз',   color: '#B060FF' },
+                  { label: 'Не найдено',    cost: 'бесплатно',  color: 'var(--on-surface2)' },
+                  { label: 'Триал',         cost: '+100 алмазов', color: 'var(--credits-gold)' },
                 ].map(({ label, cost, color }) => (
                   <div key={label}>
                     <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: 4 }}>{label}</div>
@@ -565,41 +491,43 @@ export default function GuidePage() {
                 ))}
               </div>
               <Note>
-                ⚠ <strong>Бесплатный период (Trial):</strong> каждый новый пользователь получает <strong>100 бесплатных кредитов</strong> сразу после регистрации.
-                Система триала привязана к идентификатору вашего оборудования (HWID) — бесплатный пакет выдаётся один раз на один компьютер.
+                ⚠ <strong>Бесплатный триал:</strong> каждый новый пользователь получает <strong>100 алмазов</strong> после регистрации.
+                Привязка к HWID — один раз на устройство.
               </Note>
             </Card>
           </Section>
 
-          {/* 8. Реферальная система */}
-          <Section id="referrals" icon="◈" title="Реферальная система (Multi-Level)">
+          {/* 8. Рефералы */}
+          <Section id="referrals" icon="◈" title="Реферальная система">
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 24 }}>
-                Зарабатывайте вместе с Total Hunter, приглашая других игроков. Вы будете получать <strong style={{ color: '#FFFFFF' }}>процент от каждого пополнения баланса</strong> вашими рефералами на постоянной основе.
+              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 28 }}>
+                Приглашайте игроков и получайте <strong style={{ color: '#FFFFFF' }}>процент от каждой их покупки навсегда</strong>.
+                Трёхуровневая реферальная цепочка.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
                 {[
-                  { level: 'L1', pct: '10%', desc: 'Ваши друзья', color: 'var(--credits-gold)' },
-                  { level: 'L2', pct: '5%',  desc: 'Рефералы друзей', color: 'var(--accent)' },
-                  { level: 'L3', pct: '1%',  desc: 'Следующий круг',  color: '#B060FF' },
+                  { level: 'L1', pct: '10%', desc: 'Ваши друзья',      color: 'var(--credits-gold)' },
+                  { level: 'L2', pct: '5%',  desc: 'Их рефералы',      color: '#00CFFF' },
+                  { level: 'L3', pct: '1%',  desc: 'Следующий круг',   color: '#B060FF' },
                 ].map(({ level, pct, desc, color }) => (
                   <div key={level} style={{
-                    textAlign: 'center', padding: '20px 12px',
-                    borderRadius: 12, background: `${color}0D`,
-                    border: `1px solid ${color}33`,
+                    textAlign: 'center', padding: '24px 12px', borderRadius: 14,
+                    background: `${color}0A`, border: `1px solid ${color}44`,
+                    boxShadow: `0 0 20px ${color}14`,
                   }}>
-                    <div style={{ fontSize: 11, color, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>{level}</div>
-                    <div style={{ fontSize: 32, fontWeight: 800, color, lineHeight: 1, marginBottom: 8 }}>{pct}</div>
-                    <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>{desc}</div>
+                    <div style={{ fontSize: 13, color, fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 10 }}>{level}</div>
+                    <div style={{ fontSize: 44, fontWeight: 900, color, lineHeight: 1, marginBottom: 10,
+                      textShadow: `0 0 20px ${color}` }}>{pct}</div>
+                    <div style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{desc}</div>
                   </div>
                 ))}
               </div>
               <div style={{
-                padding: '12px 16px', borderRadius: 10,
+                padding: '14px 16px', borderRadius: 10,
                 background: 'rgba(61,127,255,0.06)', border: '1px solid rgba(61,127,255,0.15)',
                 fontSize: 13, color: '#A0B8D8', lineHeight: 1.6,
               }}>
-                💡 Реферальные вознаграждения зачисляются на ваш баланс мгновенно в виде кредитов сразу после оплаты заказа вашим рефералом.
+                💡 Алмазы зачисляются мгновенно после оплаты реферала.
                 Реферальную ссылку найдёте в разделе <strong style={{ color: '#FFFFFF' }}>«Рефералы»</strong> личного кабинета.
               </div>
             </Card>
@@ -609,33 +537,16 @@ export default function GuidePage() {
           <Section id="security" icon="🛡" title="Безопасность и анти-бан">
             <Card>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
-                <strong style={{ color: '#FFFFFF' }}>Total Hunter</strong> спроектирован так, чтобы его действия были неотличимы
-                от поведения опытного игрока. Мы используем многоуровневую систему защиты:
+                <strong style={{ color: '#FFFFFF' }}>Total Hunter</strong> спроектирован так, чтобы его действия были неотличимы от поведения опытного игрока:
               </p>
               {[
-                {
-                  icon: '⏱',
-                  title: 'Случайные паузы',
-                  desc: 'Между каждым движением и кликом бот выдерживает паузу от 0.4 до 0.9 секунды, которая генерируется случайным образом.',
-                },
-                {
-                  icon: '🖱',
-                  title: 'Имитация руки (Human Click)',
-                  desc: 'Бот никогда не кликает в одну и ту же точку дважды. Каждое нажатие имеет случайное смещение в ±5–8 пикселей, что полностью имитирует естественное дрожание человеческой руки.',
-                },
-                {
-                  icon: '🛑',
-                  title: 'Экстренная остановка',
-                  desc: 'В любой момент вы можете мгновенно остановить работу бота и вернуть управление себе, нажав клавишу ESC.',
-                },
-                {
-                  icon: '🔒',
-                  title: 'Прямое взаимодействие',
-                  desc: 'Бот работает только с открытым окном игры. Он не использует скрытые API-запросы, которые легко отслеживаются разработчиками игры.',
-                },
+                { icon: '⏱', title: 'Случайные паузы', desc: 'Между каждым движением — пауза 0.4–0.9 с, генерируется случайным образом.' },
+                { icon: '🖱', title: 'Имитация руки', desc: 'Каждый клик имеет случайное смещение ±5–8 пкс — полная имитация человеческой руки.' },
+                { icon: '🛑', title: 'Экстренная остановка', desc: 'Клавиша ESC — мгновенная остановка бота и возврат управления вам.' },
+                { icon: '🔒', title: 'Прямое взаимодействие', desc: 'Бот работает только с открытым окном игры, без скрытых API-запросов.' },
               ].map(({ icon, title, desc }) => (
                 <div key={title} style={{
-                  display: 'flex', gap: 14, marginBottom: 16, padding: '14px',
+                  display: 'flex', gap: 14, marginBottom: 14, padding: '14px',
                   borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
                 }}>
                   <div style={{ fontSize: 20, flexShrink: 0 }}>{icon}</div>
@@ -663,25 +574,23 @@ export default function GuidePage() {
           {/* CTA */}
           <div style={{
             textAlign: 'center', padding: '48px 32px',
-            background: 'var(--elevated)', border: '1px solid var(--outline)',
-            borderRadius: 20,
-            boxShadow: '0 0 48px rgba(61,127,255,0.06)',
+            background: 'linear-gradient(160deg, rgba(0,207,255,0.06) 0%, rgba(61,127,255,0.08) 50%, rgba(176,96,255,0.06) 100%)',
+            border: '1px solid rgba(61,127,255,0.25)', borderRadius: 20,
+            boxShadow: '0 0 60px rgba(61,127,255,0.08)',
           }}>
+            <Diamond size={48} style={{ marginBottom: 16 }} />
             <div style={{ fontSize: 22, fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>
               Готов начать охоту?
             </div>
             <p style={{ fontSize: 14, color: 'var(--on-surface2)', marginBottom: 28, lineHeight: 1.7 }}>
-              100 кредитов бесплатно при регистрации. Никакой кредитки не нужно.
+              100 алмазов бесплатно при регистрации. Никакой кредитки не нужно.
             </p>
-            <Link
-              to={isLoggedIn() ? '/dashboard' : '/login'}
-              style={{
-                display: 'inline-block', padding: '14px 40px', borderRadius: 10,
-                background: 'var(--accent)', color: '#FFFFFF',
-                fontSize: 16, fontWeight: 700, textDecoration: 'none',
-                boxShadow: '0 0 24px var(--accent-glow)',
-              }}
-            >
+            <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
+              display: 'inline-block', padding: '14px 40px', borderRadius: 10,
+              background: 'linear-gradient(90deg, #3D7FFF, #00CFFF)',
+              color: '#FFFFFF', fontSize: 16, fontWeight: 700, textDecoration: 'none',
+              boxShadow: '0 0 30px rgba(0,207,255,0.35)',
+            }}>
               {isLoggedIn() ? 'Перейти в Dashboard →' : 'Начать бесплатно →'}
             </Link>
           </div>
