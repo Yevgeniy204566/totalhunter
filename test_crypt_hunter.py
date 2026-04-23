@@ -5,32 +5,6 @@ Run: python -m pytest test_crypt_hunter.py -v
 import pytest
 
 
-class TestParseOil:
-    def test_millions_with_slash(self):
-        from crypt_hunter import parse_oil
-        assert parse_oil("6,5м/74,7к") == 6_500_000
-
-    def test_thousands_with_slash(self):
-        from crypt_hunter import parse_oil
-        assert parse_oil("74,7к/74,7к") == 74_700
-
-    def test_millions_only(self):
-        from crypt_hunter import parse_oil
-        assert parse_oil("1,06м") == 1_060_000
-
-    def test_below_threshold_thousands(self):
-        from crypt_hunter import parse_oil
-        assert parse_oil("65к/74,7к") == 65_000
-
-    def test_integer_thousands(self):
-        from crypt_hunter import parse_oil
-        assert parse_oil("50к") == 50_000
-
-    def test_returns_zero_on_garbage(self):
-        from crypt_hunter import parse_oil
-        assert parse_oil("no text") == 0.0
-
-
 
 
 class TestCryptHunterInit:
@@ -273,20 +247,6 @@ class TestMapDetection:
                 result = hunter._detect_on_map('Ordinary_1')
         assert result is False
 
-    def test_read_oil_below_threshold(self):
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        with patch.object(hunter, '_ocr_region', return_value='65к/74,7к'):
-            oil = hunter._read_oil()
-        assert oil < 70_000
-
-    def test_read_oil_above_threshold(self):
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        with patch.object(hunter, '_ocr_region', return_value='6,5м/74,7к'):
-            oil = hunter._read_oil()
-        assert oil >= 70_000
-
     def test_send_captain_rare_crypt_clicks_open_first(self):
         from unittest.mock import patch
         import crypt_hunter as ch
@@ -426,13 +386,12 @@ class TestRunCycleEndOfList:
                     with patch.object(hunter, '_open_watchtower'):
                         with patch.object(hunter, '_select_crypts_tab'):
                             with patch.object(hunter, '_detect_on_map', return_value=True):
-                                with patch.object(hunter, '_read_oil', return_value=None):
-                                    with patch.object(hunter, '_send_captain', return_value=True):
-                                        with patch.object(hunter, '_click_captain_event'):
-                                            with patch.object(hunter, '_accelerate', return_value=0.0):
-                                                with patch.object(hunter, '_close_dialog'):
-                                                    with patch.object(hunter, '_random_pause'):
-                                                        hunter._run_cycle()
+                                with patch.object(hunter, '_send_captain', return_value=True):
+                                    with patch.object(hunter, '_click_captain_event'):
+                                        with patch.object(hunter, '_accelerate', return_value=0.0):
+                                            with patch.object(hunter, '_close_dialog'):
+                                                with patch.object(hunter, '_random_pause'):
+                                                    hunter._run_cycle()
 
         mock_reset.assert_called_once()
         # Должен быть один sleep 10-15 сек после reset
@@ -453,13 +412,12 @@ class TestRunCycleEndOfList:
                     with patch.object(hunter, '_open_watchtower'):
                         with patch.object(hunter, '_select_crypts_tab'):
                             with patch.object(hunter, '_detect_on_map', return_value=True):
-                                with patch.object(hunter, '_read_oil', return_value=None):
-                                    with patch.object(hunter, '_send_captain', return_value=True):
-                                        with patch.object(hunter, '_click_captain_event'):
-                                            with patch.object(hunter, '_accelerate', return_value=0.0):
-                                                with patch.object(hunter, '_close_dialog'):
-                                                    with patch.object(hunter, '_random_pause'):
-                                                        hunter._run_cycle()
+                                with patch.object(hunter, '_send_captain', return_value=True):
+                                    with patch.object(hunter, '_click_captain_event'):
+                                        with patch.object(hunter, '_accelerate', return_value=0.0):
+                                            with patch.object(hunter, '_close_dialog'):
+                                                with patch.object(hunter, '_random_pause'):
+                                                    hunter._run_cycle()
 
         assert 60.0 not in sleep_calls, f"Нашёл sleep(60) — старый механизм не удалён: {sleep_calls}"
 

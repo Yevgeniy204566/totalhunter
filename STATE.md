@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-04-22 (Хангоф #10)
+> Последнее обновление: 2026-04-24 (Хангоф #11)
 
 ---
 
@@ -13,7 +13,7 @@
 | Движок бирж | engine.py + navigator.py | ✅ Готов, EMA нормализация исправлена | 2026-04-20 |
 | CoastalSnakeNavigator | navigator.py | ✅ Готов, 42 теста, EMA clamp убран | 2026-04-20 |
 | MiniMap Reader | minimap_reader.py | ✅ Готов, 15 тестов | 2026-04-13 |
-| CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 31 тест, скролл до конца списка | 2026-04-18 |
+| CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 23 теста, OCR масла удалён | 2026-04-24 |
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
 | Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
@@ -22,7 +22,7 @@
 
 ---
 
-## Текущая работа (2026-04-22)
+## Текущая работа (2026-04-24)
 
 - **Бот 100% функционально завершён** — все модули работают
 - **GCP деплой актуален** — FastAPI + PostgreSQL + systemd на `34.68.86.57:8000` ✅
@@ -117,6 +117,9 @@
 ---
 
 ## Архив закрытого
+
+### Закрыто (Хангоф #11 — 2026-04-24)
+- ~~OCR-проверка масла~~ — `OIL_STOP_THRESHOLD`, `parse_oil()`, `_read_oil()` удалены из CryptHunter. OCR путал «М» с «К» → ложный стоп при 6.06М. Игра сама защищает от нулевого масла через `_send_captain`. ANTI-PATTERNS #21.
 
 ### Закрыто (Хангоф #10 — 2026-04-22)
 - ~~Diamond Rebrand (сайт)~~ — GuidePage: Diamond/NeonCard компоненты, кредиты→алмазы, убраны черепа/мечи, gambling-стиль Ultra, L1/L2/L3 glow (фикс L1 hex цвет), Smart Coastline Scouting

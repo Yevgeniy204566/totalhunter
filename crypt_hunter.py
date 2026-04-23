@@ -59,7 +59,6 @@ WT_SCROLL_AREA     = (1040, 613)
 WT_GOTO_BTN_X      = 1218
 
 # Диалог склепа (после клика на карте)
-CRYPT_OIL_REGION   = (1064, 544, 185, 36)  # (x, y, w, h) — OCR масла (1064/544 → 1249/580)
 CRYPT_STUDY_BTN    = (1137, 785)   # кнопка «Исследовать»
 CRYPT_OPEN_BTN     = (963, 779)    # кнопка «Открыть» (только R-типы)
 # ACCEL_CLOSE_CLICK убран — окно закрывается автоматически когда Картер добирается до склепа
@@ -72,33 +71,10 @@ CARTER_EVENT_BAR   = (1239, 122)   # полоса события Картера 
 ACCEL_USE_BTN      = (1125, 466)   # кнопка «Использовать» в диалоге ускорения
 ACCEL_TIME_REGION  = (980, 295, 340, 80)  # OCR времени внутри Carter overlay (y≈295)
 
-# Порог масла для остановки
-OIL_STOP_THRESHOLD = 70_000
 
 # ══════════════════════════════════════════════════════════════
 #  ЧИСТЫЕ ФУНКЦИИ (легко тестировать)
 # ══════════════════════════════════════════════════════════════
-
-def parse_oil(text: str) -> float:
-    """
-    Парсит количество масла из OCR-строки.
-    Берём только первую часть до «/».
-    Примеры: «6,5м/74,7к» → 6_500_000
-             «74,7к»      → 74_700
-             «1,06м»      → 1_060_000
-    """
-    text = text.split('/')[0].strip()
-    text = text.replace(',', '.')
-    m = re.search(r'([\d.]+)\s*([мМmM]|[кКkK])', text)
-    if not m:
-        return 0.0
-    value = float(m.group(1))
-    suffix = m.group(2).lower()
-    if suffix in ('м', 'm'):
-        return value * 1_000_000
-    if suffix in ('к', 'k'):
-        return value * 1_000
-    return 0.0
 
 
 
@@ -564,25 +540,6 @@ class CryptHunter:
             self._random_pause(1.0, 1.5)
         return False
 
-    def _read_oil(self, retries: int = 3) -> float | None:
-        """
-        OCR зоны масла в диалоге склепа.
-        Возвращает float если прочитано, None если OCR провалился (не останавливать бота).
-        Берём максимум из всех попыток — защита от ошибки «М» прочитана как «к».
-        """
-        readings = []
-        oil_region = scale_dialog_region(*CRYPT_OIL_REGION) if _VISUAL_NAV_AVAILABLE else CRYPT_OIL_REGION
-        for attempt in range(retries):
-            text = self._ocr_region(oil_region)
-            oil = parse_oil(text)
-            self._status(f"OCR масло попытка {attempt + 1}: «{text.strip()}» → {oil:.0f}")
-            if oil > 0:
-                readings.append(oil)
-            if attempt < retries - 1:
-                time.sleep(random.uniform(0.5, 0.8))
-        if not readings:
-            return None
-        return max(readings)
 
     def _find_dialog_button(self, ref: tuple, pick: str) -> tuple | None:
         """
@@ -738,16 +695,7 @@ class CryptHunter:
             time.sleep(0.4)
             pyautogui.moveTo(sc_open[0], sc_open[1] - random.randint(450, 550))
 
-        # [7-8] Проверяем масло
-        oil = self._read_oil()
-        if oil is None:
-            # OCR не смог прочитать — не останавливаемся, продолжаем
-            self._status("OCR масла: не удалось прочитать — пропускаю проверку")
-        elif oil < OIL_STOP_THRESHOLD:
-            self._emergency_stop(f"OIL_LOW:{oil:.0f}")
-            return
-
-        # [9] Отправляем Капитана
+        # [7] Отправляем Капитана
         if not self._send_captain(crypt_type):
             self._status("Капитан не отправлен — перезапуск цикла")
             return
