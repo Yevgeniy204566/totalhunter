@@ -75,3 +75,54 @@ class TestReplaceDoc(unittest.TestCase):
         service = self._make_service(end_index=10)
         replace_doc(service, "doc123", "hello")
         service.documents.return_value.batchUpdate.return_value.execute.assert_called_once()
+
+
+class TestSync(unittest.TestCase):
+
+    def _tmp_file(self, tmpdir, name, content=""):
+        path = os.path.join(tmpdir, name)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return path
+
+    @patch("sync_to_gemini.time.sleep")
+    @patch("sync_to_gemini.replace_doc")
+    def test_skips_empty_file(self, mock_replace, mock_sleep):
+        service = MagicMock()
+        with tempfile.TemporaryDirectory() as tmp:
+            empty = self._tmp_file(tmp, "empty.md", "")
+            with patch("sync_to_gemini.FILES", [(empty, "doc1")]):
+                sync(service)
+        mock_replace.assert_not_called()
+
+    @patch("sync_to_gemini.time.sleep")
+    @patch("sync_to_gemini.replace_doc")
+    def test_skips_missing_file(self, mock_replace, mock_sleep):
+        service = MagicMock()
+        with patch("sync_to_gemini.FILES", [(r"C:\nonexistent\fake.md", "doc1")]):
+            sync(service)
+        mock_replace.assert_not_called()
+
+    @patch("sync_to_gemini.time.sleep")
+    @patch("sync_to_gemini.replace_doc")
+    def test_continues_after_api_error(self, mock_replace, mock_sleep):
+        mock_replace.side_effect = [Exception("API down"), None]
+        service = MagicMock()
+        with tempfile.TemporaryDirectory() as tmp:
+            f1 = self._tmp_file(tmp, "a.md", "content A")
+            f2 = self._tmp_file(tmp, "b.md", "content B")
+            with patch("sync_to_gemini.FILES", [(f1, "doc1"), (f2, "doc2")]):
+                sync(service)
+        self.assertEqual(mock_replace.call_count, 2)
+
+    @patch("sync_to_gemini.time.sleep")
+    @patch("sync_to_gemini.replace_doc")
+    def test_sleeps_between_files(self, mock_replace, mock_sleep):
+        service = MagicMock()
+        with tempfile.TemporaryDirectory() as tmp:
+            f1 = self._tmp_file(tmp, "a.md", "A")
+            f2 = self._tmp_file(tmp, "b.md", "B")
+            with patch("sync_to_gemini.FILES", [(f1, "doc1"), (f2, "doc2")]):
+                sync(service)
+        self.assertEqual(mock_sleep.call_count, 2)
+        mock_sleep.assert_called_with(1)

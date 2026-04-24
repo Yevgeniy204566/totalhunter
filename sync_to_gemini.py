@@ -49,7 +49,22 @@ def replace_doc(service, doc_id, content):
 
 
 def sync(service):
-    raise NotImplementedError
+    ok = 0
+    for path, doc_id in FILES:
+        name = os.path.basename(path)
+        content = read_local(path)
+        if content is None:
+            print(f"  [SKIP] {name}")
+            time.sleep(1)
+            continue
+        try:
+            replace_doc(service, doc_id, content)
+            print(f"  [OK]   {name}")
+            ok += 1
+        except Exception as e:
+            print(f"  [ERR]  {name} → {e}")
+        time.sleep(1)
+    print(f"\n  Готово: {ok}/{len(FILES)}")
 
 
 def build_service():
