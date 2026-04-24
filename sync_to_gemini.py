@@ -18,7 +18,12 @@ FILES = [
 
 
 def read_local(path):
-    raise NotImplementedError
+    if not os.path.exists(path):
+        return None
+    if os.path.getsize(path) == 0:
+        return None
+    with open(path, encoding="utf-8") as f:
+        return f.read()
 
 
 def replace_doc(service, doc_id, content):
