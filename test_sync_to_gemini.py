@@ -33,3 +33,45 @@ class TestReadLocal(unittest.TestCase):
             self.assertEqual(result, "# Hello\nworld")
         finally:
             os.unlink(path)
+
+
+class TestReplaceDoc(unittest.TestCase):
+
+    def _make_service(self, end_index):
+        service = MagicMock()
+        service.documents.return_value.get.return_value.execute.return_value = {
+            "body": {"content": [{"endIndex": end_index}]}
+        }
+        return service
+
+    def test_normal_replace_sends_delete_then_insert(self):
+        service = self._make_service(end_index=50)
+        replace_doc(service, "doc123", "new content")
+
+        call = service.documents.return_value.batchUpdate.call_args
+        requests = call.kwargs["body"]["requests"]
+
+        self.assertEqual(len(requests), 2)
+        self.assertEqual(
+            requests[0]["deleteContentRange"]["range"],
+            {"startIndex": 1, "endIndex": 49},
+        )
+        self.assertEqual(
+            requests[1]["insertText"],
+            {"location": {"index": 1}, "text": "new content"},
+        )
+
+    def test_empty_doc_skips_delete(self):
+        service = self._make_service(end_index=2)
+        replace_doc(service, "doc123", "content")
+
+        call = service.documents.return_value.batchUpdate.call_args
+        requests = call.kwargs["body"]["requests"]
+
+        self.assertEqual(len(requests), 1)
+        self.assertIn("insertText", requests[0])
+
+    def test_calls_execute_on_batch_update(self):
+        service = self._make_service(end_index=10)
+        replace_doc(service, "doc123", "hello")
+        service.documents.return_value.batchUpdate.return_value.execute.assert_called_once()

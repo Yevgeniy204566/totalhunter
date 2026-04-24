@@ -27,7 +27,25 @@ def read_local(path):
 
 
 def replace_doc(service, doc_id, content):
-    raise NotImplementedError
+    doc = service.documents().get(documentId=doc_id).execute()
+    end_index = doc["body"]["content"][-1]["endIndex"]
+    requests = []
+    if end_index > 2:
+        requests.append({
+            "deleteContentRange": {
+                "range": {"startIndex": 1, "endIndex": end_index - 1}
+            }
+        })
+    requests.append({
+        "insertText": {
+            "location": {"index": 1},
+            "text": content,
+        }
+    })
+    service.documents().batchUpdate(
+        documentId=doc_id,
+        body={"requests": requests},
+    ).execute()
 
 
 def sync(service):
