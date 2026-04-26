@@ -327,6 +327,72 @@ class TotalHunterApp(ctk.CTk):
         self.speed_slider.pack(padx=12, pady=(2, 10), fill="x")
 
 
+        # ─── Карточка «Навигация» — три главных ползунка ─────────────────────
+        nav_main_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
+                                      corner_radius=12, border_width=1,
+                                      border_color=MD3["outline"])
+        nav_main_frame.pack(fill="x", padx=20, pady=(4, 4))
+        ctk.CTkLabel(nav_main_frame, text="Навигация",
+                     font=ctk.CTkFont(size=14, weight="bold"),
+                     text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(8, 2))
+
+        # Шаг джойстика
+        self.nav_step_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
+        self.nav_step_frame.pack(fill="x", padx=12, pady=(4, 0))
+        ctk.CTkLabel(self.nav_step_frame, text="Шаг:",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_step_val = ctk.CTkLabel(self.nav_step_frame, text="13 px",
+                                         font=ctk.CTkFont(size=14, weight="bold"),
+                                         text_color=MD3["value_text"])
+        self.nav_step_val.pack(side="right")
+        self.nav_step_slider = ctk.CTkSlider(nav_main_frame, from_=10, to=20,
+                                              number_of_steps=10,
+                                              command=self._update_nav_labels_and_dot,
+                                              button_color=MD3["primary"],
+                                              button_hover_color=MD3["primary_dim"],
+                                              progress_color=MD3["primary"])
+        self.nav_step_slider.set(13)
+        self.nav_step_slider.pack(padx=12, pady=(2, 4), fill="x")
+
+        # Скорость (ожидание после шага)
+        self.nav_wait_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
+        self.nav_wait_frame.pack(fill="x", padx=12, pady=(4, 0))
+        ctk.CTkLabel(self.nav_wait_frame, text="Скорость (сек/шаг):",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="2.0 с",
+                                         font=ctk.CTkFont(size=14, weight="bold"),
+                                         text_color=MD3["value_text"])
+        self.nav_wait_val.pack(side="right")
+        self.nav_wait_slider = ctk.CTkSlider(nav_main_frame, from_=0.5, to=5.0,
+                                             command=self._update_nav_labels,
+                                             button_color=MD3["primary"],
+                                             button_hover_color=MD3["primary_dim"],
+                                             progress_color=MD3["primary"])
+        self.nav_wait_slider.set(2.0)
+        self.nav_wait_slider.pack(padx=12, pady=(2, 4), fill="x")
+
+        # Глубина нырка
+        self.nav_inland_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
+        self.nav_inland_frame.pack(fill="x", padx=12, pady=(4, 0))
+        ctk.CTkLabel(self.nav_inland_frame, text="Глубина нырка (экранов):",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_inland_val = ctk.CTkLabel(self.nav_inland_frame, text="5",
+                                           font=ctk.CTkFont(size=14, weight="bold"),
+                                           text_color=MD3["value_text"])
+        self.nav_inland_val.pack(side="right")
+        self.nav_inland_slider = ctk.CTkSlider(
+            nav_main_frame, from_=1, to=10, number_of_steps=9,
+            command=self._update_nav_labels,
+            button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
+            progress_color=MD3["primary"],
+        )
+        self.nav_inland_slider.set(5)
+        self.nav_inland_slider.pack(padx=12, pady=(2, 8), fill="x")
+
+
         # Калибровка джойстика (мини-карта)
         self.nav_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
                                       corner_radius=12)
@@ -335,7 +401,7 @@ class TotalHunterApp(ctk.CTk):
         self.nav_header_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
         self.nav_header_frame.pack(fill="x", padx=10, pady=(4, 2))
         self.nav_lb = ctk.CTkLabel(self.nav_header_frame,
-                                   text="Навигация (мини-карта)",
+                                   text="Дополнительно",
                                    font=ctk.CTkFont(size=14, weight="bold"),
                                    text_color=MD3["on_surface"])
         self.nav_lb.pack(side="left")
@@ -382,42 +448,6 @@ class TotalHunterApp(ctk.CTk):
         self.nav_cy_entry.pack(side="left")
         self.nav_cy_entry.bind('<KeyRelease>', self._show_calibration_dot)
 
-        # Шаг джойстика
-        self.nav_step_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
-        self.nav_step_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_step_frame, text="Шаг джойстика:",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_step_val = ctk.CTkLabel(self.nav_step_frame, text="13 px",
-                                         font=ctk.CTkFont(size=14, weight="bold"),
-                                         text_color=MD3["value_text"])
-        self.nav_step_val.pack(side="right")
-        self.nav_step_slider = ctk.CTkSlider(self.nav_frame, from_=10, to=17,
-                                              command=self._update_nav_labels_and_dot,
-                                              button_color=MD3["primary"],
-                                              button_hover_color=MD3["primary_dim"],
-                                              progress_color=MD3["primary"])
-        self.nav_step_slider.set(13)
-        self.nav_step_slider.pack(padx=10, pady=(0, 2), fill="x")
-
-        # Скорость (ожидание после шага)
-        self.nav_wait_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
-        self.nav_wait_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_wait_frame, text="Скорость (сек/шаг):",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="2.0 с",
-                                         font=ctk.CTkFont(size=14, weight="bold"),
-                                         text_color=MD3["value_text"])
-        self.nav_wait_val.pack(side="right")
-        self.nav_wait_slider = ctk.CTkSlider(self.nav_frame, from_=0.5, to=5.0,
-                                             command=self._update_nav_labels,
-                                             button_color=MD3["primary"],
-                                             button_hover_color=MD3["primary_dim"],
-                                             progress_color=MD3["primary"])
-        self.nav_wait_slider.set(2.0)
-        self.nav_wait_slider.pack(padx=10, pady=(0, 2), fill="x")
-
         # ── Coastal Snake parameters ──────────────────────────────────────
         nav_sliders_frame = ctk.CTkScrollableFrame(self.nav_frame,
                                                     fg_color="transparent",
@@ -425,25 +455,6 @@ class TotalHunterApp(ctk.CTk):
                                                     scrollbar_button_hover_color=MD3["primary"],
                                                     height=200)
         nav_sliders_frame.pack(fill="x", padx=0, pady=(0, 0))
-
-        # Глубина нырка (экранов)
-        self.nav_inland_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
-        self.nav_inland_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_inland_frame, text="Глубина нырка (экранов):",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_inland_val = ctk.CTkLabel(self.nav_inland_frame, text="5",
-                                           font=ctk.CTkFont(size=14, weight="bold"),
-                                           text_color=MD3["value_text"])
-        self.nav_inland_val.pack(side="right")
-        self.nav_inland_slider = ctk.CTkSlider(
-            nav_sliders_frame, from_=1, to=10, number_of_steps=9,
-            command=self._update_nav_labels,
-            button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
-            progress_color=MD3["primary"],
-        )
-        self.nav_inland_slider.set(5)
-        self.nav_inland_slider.pack(padx=10, pady=(0, 2), fill="x")
 
         # Порог океана (% суши)
         self.nav_ocean_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
