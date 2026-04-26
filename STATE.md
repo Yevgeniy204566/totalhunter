@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-04-25 (Хангоф #13)
+> Последнее обновление: 2026-04-26 (Хангоф #14)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Модуль | Файл | Статус | Дата |
 |---|---|---|---|
-| GUI | main.py | ✅ Готов, 2 языка, 4 вкладки, 4 темы, Diamond Rebrand: ◆ справа от баланса, info_banner, кр→◆ | 2026-04-22 |
+| GUI | main.py | ✅ Готов, карточка «Навигация» (Шаг/Скорость/Глубина), TTL 20 мин, layout fix | 2026-04-26 |
 | Движок бирж | engine.py + navigator.py | ✅ Готов, EMA нормализация исправлена | 2026-04-20 |
-| CoastalSnakeNavigator | navigator.py | ✅ Готов, 42 теста, EMA clamp убран | 2026-04-20 |
+| CoastalSnakeNavigator | navigator.py | ⚠️ Ocean march bug — fix спроектирован, ждёт реализации | 2026-04-26 |
 | MiniMap Reader | minimap_reader.py | ✅ Готов, 15 тестов | 2026-04-13 |
-| CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 23 теста, OCR масла удалён | 2026-04-24 |
+| CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 39 тестов, oil dialog HSV detect добавлен | 2026-04-26 |
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
 | Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
@@ -22,14 +22,43 @@
 
 ---
 
-## Текущая работа (2026-04-25)
+## Текущая работа (2026-04-26)
 
 - **Бот 100% функционально завершён** — все модули работают
 - **GCP деплой актуален** — FastAPI + PostgreSQL + systemd на `34.68.86.57:8000` ✅
 - **Phase 2A/2B/2D — ЗАВЕРШЕНЫ** ✅ задеплоено на GCP + Vercel
-- **Diamond Rebrand — ЗАВЕРШЁН** ✅ (коммиты `67aa5c1`, `3e80743`) — кредиты→алмазы на сайте и в программе
+- **Diamond Rebrand — ЗАВЕРШЁН** ✅
+- **⚠️ CoastalSnakeNavigator — ocean march fix СПРОЕКТИРОВАН, ждёт реализации** (см. ниже)
 - **Ожидает:** прописать webhook URL в кабинете Free-Kassa: `http://34.68.86.57:8000/web/payment/webhook`
 - **Phase 2C (Community)** — следующий этап
+
+### 🔴 СЛЕДУЮЩАЯ СЕССИЯ: Ocean March Fix (navigator.py)
+
+**Проблема:** CoastalSnakeNavigator уходит в океан на изрезанном рельефе.
+
+**Корень:** При переходе HOMING→DIVING не проверяется `fwd['land_px']`.  
+`is_water` в DIVING полностью игнорируется — бот слеп на 100% во время нырка.
+
+**Решение (4 строки в navigator.py, метод `step()`):**
+```python
+# В CoastalSnakeNavigator.step(), блок HOMING, при info['is_at_coast']:
+fwd = info['fwd']
+if fwd['land_px'] == 0 and fwd['water_px'] > self.min_water_px:
+    self._shift_click()   # эта колонка — чистый океан, пропустить
+    return True           # вернуться в HOMING, проверить следующую колонку
+# иначе — нырять (land_px > 0 = есть островок = исследуем)
+```
+
+**Принцип:**
+- `land_px == 0` → чистый океан → сдвиг вдоль берега, без физического входа в воду
+- `land_px > 0` → есть хоть что-то (острово, полуостров) → нырять и исследовать
+- `dive_vec` остаётся **динамическим** (не фиксируется!) — бот обходит территорию по кругу
+- Никакого физического хождения по океану
+- Миникарта читается визуально ПЕРЕД нырком — "скачок" через воду логический, не физический
+
+**Файл:** `navigator.py`, класс `CoastalSnakeNavigator`, метод `step()`, блок `if self._state == 'HOMING':` → подблок `if info['is_at_coast']:`
+
+**НЕ трогать:** `is_water` в DIVING (не абортировать на воде — иначе сломается исследование островков через каналы)
 
 ---
 
