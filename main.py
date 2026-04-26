@@ -538,12 +538,12 @@ class TotalHunterApp(ctk.CTk):
         ctk.CTkLabel(self.nav_footprint_frame, text="Память следов (сек):",
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_footprint_val = ctk.CTkLabel(self.nav_footprint_frame, text="120 с",
+        self.nav_footprint_val = ctk.CTkLabel(self.nav_footprint_frame, text="2 мин",
                                               font=ctk.CTkFont(size=14, weight="bold"),
                                               text_color=MD3["value_text"])
         self.nav_footprint_val.pack(side="right")
         self.nav_footprint_slider = ctk.CTkSlider(
-            nav_sliders_frame, from_=10, to=300, number_of_steps=29,
+            nav_sliders_frame, from_=60, to=1200, number_of_steps=19,
             command=self._update_nav_labels,
             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
             progress_color=MD3["primary"],
@@ -1120,7 +1120,10 @@ class TotalHunterApp(ctk.CTk):
         self.nav_waterpx_val.configure(text=f"{int(self.nav_waterpx_slider.get())}")
         self.nav_diagblind_val.configure(text=f"{self.nav_diagblind_slider.get():.2f}")
         self.nav_coastrad_val.configure(text=f"{int(self.nav_coastrad_slider.get())}")
-        self.nav_footprint_val.configure(text=f"{int(self.nav_footprint_slider.get())} с")
+        ttl = int(self.nav_footprint_slider.get())
+        self.nav_footprint_val.configure(
+            text=f"{ttl // 60} мин" if ttl >= 60 else f"{ttl} с"
+        )
 
     def _update_nav_labels_and_dot(self, _=None):
         self._update_nav_labels()
@@ -1198,7 +1201,8 @@ class TotalHunterApp(ctk.CTk):
             self.nav_waterpx_slider.set(cfg.get("min_water_px", 500))
             self.nav_diagblind_slider.set(cfg.get("diagonal_blind_coeff", 0.5))
             self.nav_coastrad_slider.set(cfg.get("coast_detect_radius", 50))
-            self.nav_footprint_slider.set(cfg.get("nav_footprint_ttl", 120))
+            raw_ttl = cfg.get("nav_footprint_ttl", 120)
+            self.nav_footprint_slider.set(max(60, min(1200, int(raw_ttl))))
             self._update_nav_labels()
             self.update_slider_labels()
         except Exception:
