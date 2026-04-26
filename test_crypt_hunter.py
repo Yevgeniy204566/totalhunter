@@ -495,6 +495,30 @@ class TestSendCaptainVerification:
                     result = hunter._click_captain_event()
         assert result is True
 
+    def test_returns_false_when_oil_dialog_detected(self):
+        from unittest.mock import patch
+        hunter = self._make_hunter()
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch.object(hunter, '_click'):
+                with patch.object(hunter, '_random_pause'):
+                    with patch.object(hunter, '_interruptible_sleep'):
+                        with patch.object(hunter, '_check_oil_dialog', return_value=True):
+                            with patch.object(hunter, '_emergency_stop') as mock_stop:
+                                result = hunter._send_captain('Ordinary_1')
+        assert result is False
+        mock_stop.assert_called_once_with("OIL_LOW: масло закончилось")
+
+    def test_returns_true_when_no_oil_dialog(self):
+        from unittest.mock import patch
+        hunter = self._make_hunter()
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch.object(hunter, '_click'):
+                with patch.object(hunter, '_random_pause'):
+                    with patch.object(hunter, '_interruptible_sleep'):
+                        with patch.object(hunter, '_check_oil_dialog', return_value=False):
+                            result = hunter._send_captain('Ordinary_1')
+        assert result is True
+
 
 class TestDetectOilButtons:
     """
@@ -558,3 +582,19 @@ class TestDetectOilButtons:
         img = self._solid_bgr((0, 0, 0), h=100, w=200)
         img[0:10, 0:20] = (30, 180, 60)  # 200 пикселей — выше порога
         assert hunter._detect_oil_buttons(img) is True
+
+    def test_check_oil_dialog_returns_true_when_buttons_found(self):
+        from unittest.mock import patch
+        hunter = self._make_hunter()
+        green_img = self._solid_bgr((30, 180, 60), h=420, w=550)
+        with patch.object(hunter, '_screenshot', return_value=green_img):
+            result = hunter._check_oil_dialog()
+        assert result is True
+
+    def test_check_oil_dialog_returns_false_when_no_buttons(self):
+        from unittest.mock import patch
+        hunter = self._make_hunter()
+        black_img = self._solid_bgr((0, 0, 0), h=420, w=550)
+        with patch.object(hunter, '_screenshot', return_value=black_img):
+            result = hunter._check_oil_dialog()
+        assert result is False

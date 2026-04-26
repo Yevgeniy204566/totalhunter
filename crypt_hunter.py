@@ -71,6 +71,9 @@ CARTER_EVENT_BAR   = (1239, 122)   # полоса события Картера 
 ACCEL_USE_BTN      = (1125, 466)   # кнопка «Использовать» в диалоге ускорения
 ACCEL_TIME_REGION  = (980, 295, 340, 80)  # OCR времени внутри Carter overlay (y≈295)
 
+# Центральный регион экрана где появляется диалог масла
+OIL_DIALOG_REGION = (580, 280, 550, 420)   # (x, y, w, h) в 1920×1080
+
 
 # ══════════════════════════════════════════════════════════════
 #  ЧИСТЫЕ ФУНКЦИИ (легко тестировать)
@@ -563,12 +566,16 @@ class CryptHunter:
         return None  # caller кликнет по ref напрямую — координата откалибрована
 
     def _send_captain(self, crypt_type: str) -> bool:
-        """Нажать «Исследовать» по координатам."""
+        """Нажать «Исследовать». Возвращает False если появился диалог масла."""
         self._random_pause()
         self._status("Нажимаю «Исследовать»...")
         sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
         self._click(*sc, raw=True)
-        self._random_pause(1.2, 1.8)
+        self._interruptible_sleep(1.5)
+        if self._check_oil_dialog():
+            self._emergency_stop("OIL_LOW: масло закончилось")
+            return False
+        self._random_pause(0.3, 0.8)
         return True
 
     # ─── Ускорение марша ──────────────────────────────────────
@@ -679,6 +686,15 @@ class CryptHunter:
             np.array([130, 255, 230]),
         )
         return int(green_mask.sum() // 255 + blue_mask.sum() // 255) >= 100
+
+    def _check_oil_dialog(self) -> bool:
+        """
+        Делает скриншот центра экрана и проверяет наличие кнопок диалога масла.
+        Вызывается из _send_captain() через 1.5с после клика «Исследовать».
+        Не зависит от языка игры — ищет цвет кнопок, не текст.
+        """
+        img = self._screenshot(OIL_DIALOG_REGION)
+        return self._detect_oil_buttons(img)
 
     # ─── Полный цикл ─────────────────────────────────────────
 
