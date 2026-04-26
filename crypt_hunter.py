@@ -362,6 +362,7 @@ class CryptHunter:
     def _scroll_and_find(
         self,
         selected: list[str],
+        max_scrolls: int = 0,
     ) -> str | None:
         """
         Скроллит список склепов в меню и ищет YOLO-детекцию нужного типа.
@@ -487,6 +488,8 @@ class CryptHunter:
                     return gui_name
 
             pyautogui.scroll(random.choice([-2, -3, -4]))
+            if max_scrolls > 0 and scroll_idx >= max_scrolls:
+                return None
 
         return None
 

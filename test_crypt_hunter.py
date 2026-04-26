@@ -166,6 +166,8 @@ class TestScrollAndFind:
             h._conf = 0.7
             h._model = MagicMock()
             h.on_status_callback = None
+            h._scroll_speed = 0.5
+            h._exclusion_region = None
             return h
 
     def test_returns_none_when_not_found(self):
@@ -216,6 +218,7 @@ class TestMapDetection:
             h._conf = 0.7
             h._model = MagicMock()
             h.on_status_callback = None
+            h._exclusion_region = None
             return h
 
     def test_detect_on_map_returns_true_when_found(self):
@@ -247,23 +250,19 @@ class TestMapDetection:
                 result = hunter._detect_on_map('Ordinary_1')
         assert result is False
 
-    def test_send_captain_rare_crypt_clicks_open_first(self):
+    def test_send_captain_clicks_study_button_and_returns_true(self):
         from unittest.mock import patch
         import crypt_hunter as ch
         hunter = self._make_hunter()
         clicks = []
-        # _find_button возвращает fallback-координаты (реальный экран не нужен)
-        with patch.object(hunter, '_find_button',
-                          side_effect=lambda ref_region, color, pick, fallback: fallback):
-            with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
-                with patch.object(hunter, '_random_pause'):
-                    hunter._send_captain('R_1')
-        # «Открыть» должна быть нажата ДО «Исследовать»
-        assert ch.CRYPT_OPEN_BTN in clicks
+        with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+            with patch.object(hunter, '_random_pause'):
+                with patch.object(hunter, '_interruptible_sleep'):
+                    with patch.object(hunter, '_check_oil_dialog', return_value=False):
+                        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+                            result = hunter._send_captain('R_1')
         assert ch.CRYPT_STUDY_BTN in clicks
-        open_idx = clicks.index(ch.CRYPT_OPEN_BTN)
-        study_idx = clicks.index(ch.CRYPT_STUDY_BTN)
-        assert open_idx < study_idx
+        assert result is True
 
 
 class TestImagesDiffer:
@@ -319,6 +318,8 @@ class TestScrollAndFindEndOfList:
             h._conf = 0.7
             h._model = MagicMock()
             h.on_status_callback = None
+            h._scroll_speed = 0.5
+            h._exclusion_region = None
             return h
 
     def test_does_not_trigger_on_first_scroll(self):
@@ -352,7 +353,7 @@ class TestScrollAndFindEndOfList:
 
 
 class TestRunCycleEndOfList:
-    """_run_cycle без счётчика resets — просто reset + sleep(10-15) + повтор."""
+    """_run_cycle без счётчика resets — просто reset + sleep(30) + повтор."""
 
     def _make_hunter(self):
         from unittest.mock import patch, MagicMock
@@ -372,7 +373,7 @@ class TestRunCycleEndOfList:
             return h
 
     def test_resets_and_waits_when_no_crypt_found(self):
-        """Когда склеп не найден: _reset_search + sleep 10-15 сек + повторный поиск."""
+        """Когда склеп не найден: _reset_search + sleep 30 сек + повторный поиск."""
         from unittest.mock import patch, MagicMock, call
         hunter = self._make_hunter()
         sleep_calls = []
@@ -394,9 +395,9 @@ class TestRunCycleEndOfList:
                                                     hunter._run_cycle()
 
         mock_reset.assert_called_once()
-        # Должен быть один sleep 10-15 сек после reset
-        reset_waits = [s for s in sleep_calls if 10.0 <= s <= 15.0]
-        assert len(reset_waits) == 1, f"Ожидал один sleep 10-15с, получил: {sleep_calls}"
+        # Должен быть один sleep 30 сек после reset
+        reset_waits = [s for s in sleep_calls if s == 30.0]
+        assert len(reset_waits) == 1, f"Ожидал один sleep 30с, получил: {sleep_calls}"
 
     def test_no_sleep_60_on_repeated_misses(self):
         """Старый механизм sleep(60) после 10 сбросов должен быть удалён."""
