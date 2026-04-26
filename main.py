@@ -265,9 +265,9 @@ class TotalHunterApp(ctk.CTk):
     def setup_hunt_tab(self):
         # Баланс + алмаз рядом
         _bal_row = ctk.CTkFrame(self.tab_hunt, fg_color="transparent")
-        _bal_row.pack(pady=(10, 2))
+        _bal_row.pack(pady=(4, 2))
         self.credits_label = ctk.CTkLabel(_bal_row, text="0",
-                                          font=ctk.CTkFont(size=46, weight="bold"),
+                                          font=ctk.CTkFont(size=36, weight="bold"),
                                           text_color="#4ADE80")
         self.credits_label.pack(side="left")
         ctk.CTkButton(_bal_row, text="◆", width=36, height=40,
@@ -282,10 +282,10 @@ class TotalHunterApp(ctk.CTk):
         nn_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
                                 corner_radius=12, border_width=1,
                                 border_color=MD3["outline"])
-        nn_frame.pack(fill="x", padx=20, pady=(8, 4))
+        nn_frame.pack(fill="x", padx=20, pady=(4, 2))
         ctk.CTkLabel(nn_frame, text="Нейросеть",
                      font=ctk.CTkFont(size=14, weight="bold"),
-                     text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(8, 2))
+                     text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(4, 2))
 
         self.acc_frame = ctk.CTkFrame(nn_frame, fg_color="transparent")
         self.acc_frame.pack(fill="x", padx=12, pady=(4, 0))
@@ -304,7 +304,7 @@ class TotalHunterApp(ctk.CTk):
                                          button_hover_color=MD3["primary_dim"],
                                          progress_color=MD3["primary"])
         self.conf_slider.set(0.7)
-        self.conf_slider.pack(padx=12, pady=(2, 6), fill="x")
+        self.conf_slider.pack(padx=12, pady=(2, 2), fill="x")
 
         self.speed_frame = ctk.CTkFrame(nn_frame, fg_color="transparent")
         self.speed_frame.pack(fill="x", padx=12, pady=(0, 0))
@@ -324,21 +324,21 @@ class TotalHunterApp(ctk.CTk):
                                           button_hover_color=MD3["primary_dim"],
                                           progress_color=MD3["primary"])
         self.speed_slider.set(0.6)
-        self.speed_slider.pack(padx=12, pady=(2, 10), fill="x")
+        self.speed_slider.pack(padx=12, pady=(2, 4), fill="x")
 
 
         # ─── Карточка «Навигация» — три главных ползунка ─────────────────────
         nav_main_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
                                       corner_radius=12, border_width=1,
                                       border_color=MD3["outline"])
-        nav_main_frame.pack(fill="x", padx=20, pady=(4, 4))
+        nav_main_frame.pack(fill="x", padx=20, pady=(2, 2))
         ctk.CTkLabel(nav_main_frame, text="Навигация",
                      font=ctk.CTkFont(size=14, weight="bold"),
-                     text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(8, 2))
+                     text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(4, 2))
 
         # Шаг джойстика
         self.nav_step_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
-        self.nav_step_frame.pack(fill="x", padx=12, pady=(4, 0))
+        self.nav_step_frame.pack(fill="x", padx=12, pady=(2, 0))
         ctk.CTkLabel(self.nav_step_frame, text="Шаг:",
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
@@ -353,11 +353,11 @@ class TotalHunterApp(ctk.CTk):
                                               button_hover_color=MD3["primary_dim"],
                                               progress_color=MD3["primary"])
         self.nav_step_slider.set(13)
-        self.nav_step_slider.pack(padx=12, pady=(2, 4), fill="x")
+        self.nav_step_slider.pack(padx=12, pady=(2, 2), fill="x")
 
         # Скорость (ожидание после шага)
         self.nav_wait_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
-        self.nav_wait_frame.pack(fill="x", padx=12, pady=(4, 0))
+        self.nav_wait_frame.pack(fill="x", padx=12, pady=(2, 0))
         ctk.CTkLabel(self.nav_wait_frame, text="Скорость (сек/шаг):",
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
@@ -371,11 +371,11 @@ class TotalHunterApp(ctk.CTk):
                                              button_hover_color=MD3["primary_dim"],
                                              progress_color=MD3["primary"])
         self.nav_wait_slider.set(2.0)
-        self.nav_wait_slider.pack(padx=12, pady=(2, 4), fill="x")
+        self.nav_wait_slider.pack(padx=12, pady=(2, 2), fill="x")
 
         # Глубина нырка
         self.nav_inland_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
-        self.nav_inland_frame.pack(fill="x", padx=12, pady=(4, 0))
+        self.nav_inland_frame.pack(fill="x", padx=12, pady=(2, 0))
         ctk.CTkLabel(self.nav_inland_frame, text="Глубина нырка (экранов):",
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
@@ -390,13 +390,13 @@ class TotalHunterApp(ctk.CTk):
             progress_color=MD3["primary"],
         )
         self.nav_inland_slider.set(5)
-        self.nav_inland_slider.pack(padx=12, pady=(2, 8), fill="x")
+        self.nav_inland_slider.pack(padx=12, pady=(2, 4), fill="x")
 
 
         # Калибровка джойстика (мини-карта)
         self.nav_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
                                       corner_radius=12)
-        self.nav_frame.pack(fill="x", padx=40, pady=5)
+        self.nav_frame.pack(fill="x", padx=20, pady=3)
         # Заголовок + переключатель навигации в одной строке
         self.nav_header_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
         self.nav_header_frame.pack(fill="x", padx=10, pady=(4, 2))
@@ -453,7 +453,7 @@ class TotalHunterApp(ctk.CTk):
                                                     fg_color="transparent",
                                                     scrollbar_button_color=MD3["outline"],
                                                     scrollbar_button_hover_color=MD3["primary"],
-                                                    height=200)
+                                                    height=120)
         nav_sliders_frame.pack(fill="x", padx=0, pady=(0, 0))
 
         # Порог океана (% суши)
@@ -567,11 +567,11 @@ class TotalHunterApp(ctk.CTk):
         # Кнопка Запуска (FAB-style prominent action)
         self.start_button = ctk.CTkButton(
             self.tab_hunt, text=LANGS[self.current_lang]["start"],
-            height=80, font=ctk.CTkFont(size=24, weight="bold"),
+            height=56, font=ctk.CTkFont(size=20, weight="bold"),
             fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
-            text_color=MD3["on_surface"], corner_radius=16,
+            text_color=MD3["on_surface"], corner_radius=14,
             command=self.toggle_bot)
-        self.start_button.pack(pady=8, padx=40, fill="x")
+        self.start_button.pack(pady=5, padx=40, fill="x")
 
         # Статус
         self.status_label = ctk.CTkLabel(self.tab_hunt,
