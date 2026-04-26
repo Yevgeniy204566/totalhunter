@@ -494,3 +494,67 @@ class TestSendCaptainVerification:
                 with patch.object(hunter, '_interruptible_sleep'):
                     result = hunter._click_captain_event()
         assert result is True
+
+
+class TestDetectOilButtons:
+    """
+    _detect_oil_buttons(img_bgr) -> bool
+    True если в img_bgr достаточно зелёных (масло на складе)
+    или синих (кнопка "Купить") пикселей.
+    Порог: 100 пикселей.
+    """
+
+    def _make_hunter(self):
+        from unittest.mock import patch, MagicMock
+        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
+            from crypt_hunter import CryptHunter
+            h = CryptHunter.__new__(CryptHunter)
+            h.is_running = True
+            h.on_status_callback = None
+            return h
+
+    def _solid_bgr(self, bgr, h=100, w=200):
+        """Создаём numpy BGR изображение одного цвета."""
+        import numpy as np
+        img = np.zeros((h, w, 3), dtype=np.uint8)
+        img[:, :] = bgr
+        return img
+
+    def test_black_image_returns_false(self):
+        hunter = self._make_hunter()
+        img = self._solid_bgr((0, 0, 0))
+        assert hunter._detect_oil_buttons(img) is False
+
+    def test_green_button_returns_true(self):
+        # BGR зелёного "Использовать": примерно (30, 180, 60) = чистый зелёный
+        hunter = self._make_hunter()
+        img = self._solid_bgr((30, 180, 60))
+        assert hunter._detect_oil_buttons(img) is True
+
+    def test_blue_button_returns_true(self):
+        # BGR синего "Купить": примерно (200, 120, 60) = medium blue в BGR
+        hunter = self._make_hunter()
+        img = self._solid_bgr((200, 120, 60))
+        assert hunter._detect_oil_buttons(img) is True
+
+    def test_red_image_returns_false(self):
+        # Красный — не масляный диалог
+        hunter = self._make_hunter()
+        img = self._solid_bgr((0, 0, 200))
+        assert hunter._detect_oil_buttons(img) is False
+
+    def test_few_green_pixels_returns_false(self):
+        # Менее 100 зелёных пикселей — шум, не диалог
+        import numpy as np
+        hunter = self._make_hunter()
+        img = self._solid_bgr((0, 0, 0), h=100, w=200)
+        img[0:5, 0:10] = (30, 180, 60)   # 50 пикселей — ниже порога
+        assert hunter._detect_oil_buttons(img) is False
+
+    def test_enough_green_pixels_returns_true(self):
+        # Более 100 зелёных пикселей — диалог обнаружен
+        import numpy as np
+        hunter = self._make_hunter()
+        img = self._solid_bgr((0, 0, 0), h=100, w=200)
+        img[0:10, 0:20] = (30, 180, 60)  # 200 пикселей — выше порога
+        assert hunter._detect_oil_buttons(img) is True

@@ -579,7 +579,7 @@ class CryptHunter:
         Возвращает True если диалог ускорения открылся, False — рестарт цикла.
         """
         self._status("Кликаю по полосе Картера...")
-        self._interruptible_sleep(2.0)
+        self._random_pause(1.5, 2.0)
         pos = None
         if _TEMPLATE_AVAILABLE:
             pos = find_at_ref('btn_uskorit.png',
@@ -593,7 +593,8 @@ class CryptHunter:
                 color='purple', pick='largest',
                 fallback=CARTER_EVENT_BAR,
             )
-        self._click(*pos, raw=True)
+        cx = pos[0] + random.randint(-6, 6)  # jitter только по X (полоса узкая)
+        self._click(cx, pos[1], jitter=0, raw=True)
         self._interruptible_sleep(1.1)
         return True
 
@@ -657,6 +658,27 @@ class CryptHunter:
         if _VISUAL_NAV_AVAILABLE:
             return scale_coord(*fallback)
         return fallback
+
+    def _detect_oil_buttons(self, img_bgr: 'np.ndarray') -> bool:
+        """
+        Ищет зелёные (использовать) или синие (купить) кнопки в BGR-изображении.
+        Возвращает True если найдено ≥ 100 таких пикселей → масляный диалог.
+        HSV scale: H 0-180, S 0-255, V 0-255 (OpenCV convention).
+        """
+        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+        # Зелёная кнопка «Использовать» (масло на складе)
+        green_mask = cv2.inRange(
+            hsv,
+            np.array([35,  80,  80]),
+            np.array([85, 255, 220]),
+        )
+        # Синяя кнопка «Купить» (покупка масла)
+        blue_mask = cv2.inRange(
+            hsv,
+            np.array([100,  80,  80]),
+            np.array([130, 255, 230]),
+        )
+        return int(green_mask.sum() // 255 + blue_mask.sum() // 255) >= 100
 
     # ─── Полный цикл ─────────────────────────────────────────
 
