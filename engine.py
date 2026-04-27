@@ -39,6 +39,7 @@ class HuntEngine:
         footprint_ttl: float    = 120.0,
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
+        max_pitch_delta: float = 15.0,
     ):
         self._pacman = PacmanEngine(
             center_x=center_x,
@@ -56,6 +57,7 @@ class HuntEngine:
             footprint_ttl=footprint_ttl,
             diagonal_blind_coeff=diagonal_blind_coeff,
             coast_detect_radius=coast_detect_radius,
+            max_pitch_delta=max_pitch_delta,
         )
         self._pacman.on_found_callback = self.on_found_callback
 
