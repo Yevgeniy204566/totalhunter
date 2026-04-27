@@ -656,7 +656,7 @@ class CoastalSnakeNavigator:
         Wide snapshot (coast_snap_size) for PCA smoothing; standard 180px
         snapshot for zone analysis.
         """
-        from minimap_reader import detect_coast_angle, analyze_forward_zone
+        from minimap_reader import detect_coast_angle, analyze_forward_zone, analyze_footprint_zone
 
         mm = self._grab_minimap()  # 180px standard snapshot + red footprint overlay
 
@@ -689,12 +689,15 @@ class CoastalSnakeNavigator:
             coast_zone['land_ratio'] < 0.5
         )
 
+        fwd_fp = analyze_footprint_zone(mm, self._inland_vec, radius=60)
+
         return {
-            'coast_angle': self._coast_angle,
-            'inland_vec':  self._inland_vec,
-            'coast_vec':   self._coast_vec,
-            'fwd':         fwd,
-            'is_at_coast': is_at_coast,
+            'coast_angle':    self._coast_angle,
+            'inland_vec':     self._inland_vec,
+            'coast_vec':      self._coast_vec,
+            'fwd':            fwd,
+            'is_at_coast':    is_at_coast,
+            'fwd_footprint':  fwd_fp,
         }
 
     # ── main navigation step ─────────────────────────────────────────────
@@ -720,6 +723,9 @@ class CoastalSnakeNavigator:
                 if fwd['land_px'] == 0 and fwd['water_px'] > self.min_water_px:
                     self._shift_click()   # чистый океан → пропустить колонку
                     return True           # остаёмся в HOMING
+                if self._footprint_enabled and info['fwd_footprint']['footprint_px'] > 10:
+                    self._shift_click()   # уже исследовано → пропустить колонку
+                    return True
                 # Fallback: if detect_coast_angle never returned a real angle,
                 # set shift_vec from whatever coast_vec we have now.
                 if not self._shift_vec_set:

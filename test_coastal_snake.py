@@ -8,7 +8,7 @@ from navigator import CoastalSnakeNavigator
 
 # ── helpers ───────────────────────────────────────────────────────────────
 
-def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100):
+def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100, footprint_px=0):
     """Build a _read_minimap return dict with all required keys."""
     return {
         'coast_angle': 0.0,
@@ -21,6 +21,7 @@ def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100):
             'land_px':    land_px,
         },
         'is_at_coast': is_at_coast,
+        'fwd_footprint': {'footprint_px': footprint_px},
     }
 
 
@@ -704,6 +705,35 @@ class TestAngularDamper:
         nav._prev_inland_vec = (1.0, 0.0)
         nav.reset()
         assert nav._prev_inland_vec is None
+
+
+class TestFootprintCheck:
+    def test_footprint_ahead_skips_dive(self):
+        """At coast with footprint ahead → shift_click, stay HOMING."""
+        nav = make_navigator()
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=50, footprint_px=25)):
+            with patch.object(nav, '_shift_click') as mock_shift:
+                nav.step()
+        mock_shift.assert_called_once()
+        assert nav._state == 'HOMING'
+
+    def test_no_footprint_dives_normally(self):
+        """At coast with no footprint ahead → normal DIVING transition."""
+        nav = make_navigator()
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=50, footprint_px=0)):
+            nav.step()
+        assert nav._state == 'DIVING'
+
+    def test_footprint_check_disabled_when_footprint_off(self):
+        """footprint_enabled=False → footprint check skipped, dive proceeds."""
+        nav = make_navigator()
+        nav._footprint_enabled = False
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=50, footprint_px=999)):
+            nav.step()
+        assert nav._state == 'DIVING'
 
 
 class TestReturningWaterRecovery:
