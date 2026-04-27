@@ -1144,7 +1144,8 @@ class TotalHunterApp(ctk.CTk):
         self.nav_footprint_val.configure(
             text=f"{ttl // 60} мин" if ttl >= 60 else f"{ttl} с"
         )
-        self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}°")
+        if hasattr(self, 'nav_pitch_slider'):
+            self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}°")
 
     def _update_nav_labels_and_dot(self, _=None):
         self._update_nav_labels()
