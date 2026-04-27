@@ -9,6 +9,7 @@ Coast direction is auto-detected from minimap water distribution on first step.
 Shift distance = 1 joystick click (overlap controlled by step/p_range setting).
 """
 import re
+import math
 import random
 import time
 import winsound
@@ -19,6 +20,21 @@ import pyautogui
 
 import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+
+def _clamp_vec(v_new: tuple, v_prev: tuple, max_delta: float) -> tuple:
+    """
+    Clamp rotation of v_new relative to v_prev to max_delta radians.
+    Returns unit vector. Used by angular damper in CoastalSnakeNavigator.
+    """
+    dot   = max(-1.0, min(1.0, v_prev[0]*v_new[0] + v_prev[1]*v_new[1]))
+    angle = math.acos(dot)
+    if angle <= max_delta:
+        return v_new
+    cross = v_prev[0]*v_new[1] - v_prev[1]*v_new[0]
+    theta = math.copysign(max_delta, cross)
+    c, s  = math.cos(theta), math.sin(theta)
+    return (v_prev[0]*c - v_prev[1]*s, v_prev[0]*s + v_prev[1]*c)
 
 
 # ─────────────────────────────────────────────

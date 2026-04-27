@@ -612,3 +612,48 @@ class TestBlindReturnPhase:
                           return_value=_info(is_at_coast=True, land_px=0, water_px=5)):
             nav.step()
         assert nav._state == 'DIVING'
+
+
+import math
+from navigator import _clamp_vec
+
+
+class TestClampVec:
+    def test_unit_length(self):
+        """Result is always a unit vector."""
+        result = _clamp_vec((0.0, 1.0), (1.0, 0.0), math.radians(10))
+        length = math.sqrt(result[0]**2 + result[1]**2)
+        assert abs(length - 1.0) < 1e-9
+
+    def test_passes_small_angle(self):
+        """Angle below threshold → v_new returned unchanged."""
+        v_prev = (1.0, 0.0)
+        v_new  = (math.cos(math.radians(5)), math.sin(math.radians(5)))
+        result = _clamp_vec(v_new, v_prev, math.radians(10))
+        assert abs(result[0] - v_new[0]) < 1e-9
+        assert abs(result[1] - v_new[1]) < 1e-9
+
+    def test_clamps_large_angle(self):
+        """Angle above threshold → result is exactly max_delta from v_prev."""
+        v_prev = (1.0, 0.0)
+        v_new  = (0.0, 1.0)   # 90°
+        max_d  = math.radians(10)
+        result = _clamp_vec(v_new, v_prev, max_d)
+        dot    = max(-1.0, min(1.0, result[0]*v_prev[0] + result[1]*v_prev[1]))
+        assert abs(math.acos(dot) - max_d) < 1e-9
+
+    def test_rotates_toward_v_new(self):
+        """Clamping rotates toward v_new (CCW when v_new is CCW of v_prev)."""
+        v_prev = (1.0, 0.0)   # 0°
+        v_new  = (0.0, 1.0)   # 90° CCW
+        result = _clamp_vec(v_new, v_prev, math.radians(10))
+        assert result[1] > 0   # y > 0 → rotated CCW
+
+    def test_exact_threshold_passes(self):
+        """Angle exactly equal to max_delta → v_new unchanged."""
+        max_d  = math.radians(10)
+        v_prev = (1.0, 0.0)
+        v_new  = (math.cos(max_d), math.sin(max_d))
+        result = _clamp_vec(v_new, v_prev, max_d)
+        assert abs(result[0] - v_new[0]) < 1e-9
+        assert abs(result[1] - v_new[1]) < 1e-9
