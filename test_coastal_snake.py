@@ -707,6 +707,28 @@ class TestAngularDamper:
         assert nav._prev_inland_vec is None
 
 
+class TestBlindReturnWaterExit:
+    def test_water_in_blind_cuts_blind_phase(self):
+        """Water during blind return → blind_steps zeroed, next step checks coast."""
+        nav = make_navigator()
+        nav._state              = 'RETURNING'
+        nav._return_blind_steps = 4
+        nav._return_steps       = 10
+        nav._inland_vec         = (1.0, 0.0)
+        nav.step(is_water=True)         # moves, then zeroes blind_steps
+        assert nav._return_blind_steps == 0
+
+    def test_no_water_in_blind_keeps_phase(self):
+        """No water during blind return → blind_steps count down normally."""
+        nav = make_navigator()
+        nav._state              = 'RETURNING'
+        nav._return_blind_steps = 4
+        nav._return_steps       = 10
+        nav._inland_vec         = (1.0, 0.0)
+        nav.step(is_water=False)
+        assert nav._return_blind_steps == 3  # 4 - 1 = 3
+
+
 class TestFootprintCheck:
     def test_footprint_ahead_skips_dive(self):
         """At coast with footprint ahead → shift_click, stay HOMING."""

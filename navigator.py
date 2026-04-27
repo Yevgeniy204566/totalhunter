@@ -826,6 +826,8 @@ class CoastalSnakeNavigator:
                 self._return_blind_steps -= 1
                 self._return_steps       -= 1
                 self._move_perpendicular(toward_water=True)
+                if is_water:
+                    self._return_blind_steps = 0  # coast overshot → exit blind early
                 return True
 
             # Check for coast WITHOUT calling _read_minimap — inland_vec must
