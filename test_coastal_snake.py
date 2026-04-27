@@ -682,7 +682,7 @@ class TestAngularDamper:
                           return_value=_info(is_at_coast=True, land_px=50)):
             nav.step()
         assert nav._state == 'DIVING'
-        iv  = nav._prev_inland_vec
+        iv  = nav._inland_vec
         dot = max(-1.0, min(1.0, iv[0]*1.0 + iv[1]*0.0))
         assert abs(math.acos(dot) - math.radians(10)) < 1e-9
 
