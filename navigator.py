@@ -694,6 +694,10 @@ class CoastalSnakeNavigator:
             info = self._read_minimap()   # angle/direction update happens here
 
             if info['is_at_coast']:
+                fwd = info['fwd']
+                if fwd['land_px'] == 0 and fwd['water_px'] > self.min_water_px:
+                    self._shift_click()   # чистый океан → пропустить колонку
+                    return True           # остаёмся в HOMING
                 # Fallback: if detect_coast_angle never returned a real angle,
                 # set shift_vec from whatever coast_vec we have now.
                 if not self._shift_vec_set:

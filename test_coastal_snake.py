@@ -594,3 +594,21 @@ class TestBlindReturnPhase:
         nav._return_blind_steps = 4
         nav.reset()
         assert nav._return_blind_steps == 0
+
+    def test_ocean_column_skips_dive(self):
+        """At coast: fwd has no land and lots of water → shift, stay HOMING."""
+        nav = make_navigator(min_water=10)
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=0, water_px=500)):
+            with patch.object(nav, '_shift_click') as mock_shift:
+                nav.step()
+        mock_shift.assert_called_once()
+        assert nav._state == 'HOMING'
+
+    def test_ocean_column_insufficient_water_dives(self):
+        """At coast: fwd land_px=0 but water_px <= min_water_px → normal dive."""
+        nav = make_navigator(min_water=10)
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=0, water_px=5)):
+            nav.step()
+        assert nav._state == 'DIVING'
