@@ -477,6 +477,7 @@ class CoastalSnakeNavigator:
         self.coast_detect_radius    = coast_detect_radius
         self._max_pitch_delta   = math.radians(max_pitch_delta)
         self._prev_inland_vec   = None
+        self._return_water_streak: int = 0
 
         self._state              = 'HOMING'
         self._inland_steps       = 0
@@ -514,6 +515,7 @@ class CoastalSnakeNavigator:
         self._steps_since_shift  = 0
         self._footprint.reset()
         self._prev_inland_vec = None
+        self._return_water_streak = 0
 
     # ── calibration helper (same API as CompassNavigator) ────────────────
     def move(self, direction: str):
@@ -786,6 +788,7 @@ class CoastalSnakeNavigator:
                 self._shift_click()
                 self._state             = 'RETURNING'
                 self._return_steps      = self.max_inland_steps + 15
+                self._return_water_streak = 0
                 self._steps_since_shift = 0
                 # Soft angle dependency: diagonal coast → shorter blind phase.
                 # angle_ratio: 0.0 = cardinal, 1.0 = 45° diagonal
@@ -815,6 +818,15 @@ class CoastalSnakeNavigator:
                 self._return_steps       -= 1
                 self._move_perpendicular(toward_water=True)
                 return True
+
+            # Symmetric water recovery: re-read minimap if stuck in water 2+ steps
+            if is_water:
+                self._return_water_streak += 1
+            else:
+                self._return_water_streak = 0
+            if self._return_water_streak >= 2:
+                self._read_minimap()          # updates _inland_vec toward visible land
+                self._return_water_streak = 0
 
             # Check for coast WITHOUT calling _read_minimap — inland_vec must
             # stay frozen so the bot returns on the exact same vector it dived.
