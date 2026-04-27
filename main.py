@@ -391,6 +391,25 @@ class TotalHunterApp(ctk.CTk):
         )
         self.nav_inland_slider.set(5)
         self.nav_inland_slider.pack(padx=12, pady=(2, 4), fill="x")
+        # Угол нырка (угловой демпфер)
+        self.nav_pitch_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
+        self.nav_pitch_frame.pack(fill="x", padx=12, pady=(2, 0))
+        ctk.CTkLabel(self.nav_pitch_frame, text="Угол нырка (°):",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="15°",
+                                           font=ctk.CTkFont(size=14, weight="bold"),
+                                           text_color=MD3["value_text"])
+        self.nav_pitch_val.pack(side="right")
+        self.nav_pitch_slider = ctk.CTkSlider(
+            nav_main_frame, from_=5, to=30, number_of_steps=25,
+            command=self._update_nav_labels,
+            button_color=MD3["primary"],
+            button_hover_color=MD3["primary_dim"],
+            progress_color=MD3["primary"],
+        )
+        self.nav_pitch_slider.set(15)
+        self.nav_pitch_slider.pack(padx=12, pady=(2, 4), fill="x")
 
 
         # Калибровка джойстика (мини-карта)
@@ -1124,6 +1143,7 @@ class TotalHunterApp(ctk.CTk):
         self.nav_footprint_val.configure(
             text=f"{ttl // 60} мин" if ttl >= 60 else f"{ttl} с"
         )
+        self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}°")
 
     def _update_nav_labels_and_dot(self, _=None):
         self._update_nav_labels()
@@ -1165,6 +1185,7 @@ class TotalHunterApp(ctk.CTk):
                 'move_wait':    round(self.nav_wait_slider.get(), 1),
             }
             cfg["max_inland_steps"]      = int(self.nav_inland_slider.get())
+            cfg["max_pitch_delta"]       = int(self.nav_pitch_slider.get())
             cfg["ocean_land_ratio"]      = int(self.nav_ocean_slider.get()) / 100.0
             cfg["min_water_px"]          = int(self.nav_waterpx_slider.get())
             cfg["diagonal_blind_coeff"]  = round(self.nav_diagblind_slider.get(), 2)
@@ -1197,6 +1218,7 @@ class TotalHunterApp(ctk.CTk):
             if 'move_wait' in cfg:
                 self.nav_wait_slider.set(cfg['move_wait'])
             self.nav_inland_slider.set(cfg.get("max_inland_steps", 5))
+            self.nav_pitch_slider.set(cfg.get("max_pitch_delta", 15))
             self.nav_ocean_slider.set(int(cfg.get("ocean_land_ratio", 0.03) * 100))
             self.nav_waterpx_slider.set(cfg.get("min_water_px", 500))
             self.nav_diagblind_slider.set(cfg.get("diagonal_blind_coeff", 0.5))
@@ -1236,6 +1258,7 @@ class TotalHunterApp(ctk.CTk):
                     move_wait=self.nav_wait_slider.get(),
                     navigation_enabled=self.nav_enabled_var.get(),
                     max_inland_steps=int(self.nav_inland_slider.get()),
+                    max_pitch_delta=int(self.nav_pitch_slider.get()),
                     ocean_land_ratio=int(self.nav_ocean_slider.get()) / 100.0,
                     min_water_px=int(self.nav_waterpx_slider.get()),
                     diagonal_blind_coeff=round(self.nav_diagblind_slider.get(), 2),

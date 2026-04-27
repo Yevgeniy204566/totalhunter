@@ -458,7 +458,7 @@ class CoastalSnakeNavigator:
         force_shift_after: int  = 0,   # 0 = disabled; N = force shift every N non-shift steps
         diagonal_blind_coeff: float = 0.5,  # 0=no reduction, 1=fully blind at 45°
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
-        max_pitch_delta: float  = 10.0,  # degrees; 0 = disabled
+        max_pitch_delta: float  = 15.0,  # degrees; 0 = disabled
     ):
         self.center_x         = center_x
         self.center_y         = center_y
@@ -869,7 +869,7 @@ class PacmanEngine:
         force_shift_after: int  = 0,
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
-        max_pitch_delta: float  = 10.0,
+        max_pitch_delta: float  = 15.0,
         # legacy params (ignored):
         max_depth: int      = 4,
         screen_w: int       = 5,
