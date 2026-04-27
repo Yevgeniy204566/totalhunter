@@ -857,6 +857,7 @@ class PacmanEngine:
         force_shift_after: int  = 0,
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
+        max_pitch_delta: float  = 10.0,
         # legacy params (ignored):
         max_depth: int      = 4,
         screen_w: int       = 5,
@@ -876,6 +877,7 @@ class PacmanEngine:
             force_shift_after=force_shift_after,
             diagonal_blind_coeff=diagonal_blind_coeff,
             coast_detect_radius=coast_detect_radius,
+            max_pitch_delta=max_pitch_delta,
         )
         self.conf               = conf
         self.scan_interval      = scan_interval
