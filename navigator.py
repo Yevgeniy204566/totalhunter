@@ -566,20 +566,20 @@ class CoastalSnakeNavigator:
         self._click_vec(*sv)
         self._steps_since_shift = 0
 
-    def _move_perpendicular(self, toward_water: bool) -> None:
+    def _move_perpendicular(self, toward_water: bool, multiplier: float = 1.0) -> None:
         """
         ЗАПРЕТ на движение вдоль берега.
-        Единственный метод, который двигает бота в HOMING-фазе.
         Всегда движется строго по ±inland_vec — только перпендикулярно берегу.
 
         toward_water=True  → клик в сторону воды  (-inland_vec = seaward)
         toward_water=False → клик вглубь суши      (+inland_vec = inland)
+        multiplier         → масштаб шага (1.0 норм, 1.5/2.0 перепрыгнуть воду)
         """
         iv = self._inland_vec
         if toward_water:
-            self._click_vec(-iv[0], -iv[1])
+            self._click_vec(-iv[0] * multiplier, -iv[1] * multiplier)
         else:
-            self._click_vec(iv[0], iv[1])
+            self._click_vec(iv[0] * multiplier, iv[1] * multiplier)
         self._steps_since_shift += 1
 
     def _update_coast_angle(self, new_angle: float):
@@ -827,7 +827,15 @@ class CoastalSnakeNavigator:
                 self._return_steps      = self.max_inland_steps + 15
                 self._steps_since_shift = 0
                 return True
-            self._move_perpendicular(toward_water=False)   # нырок вглубь суши
+            mult = self._peek_step(self._inland_vec)
+            if mult is None:
+                # Ocean ahead mid-dive → abort, return proportionally
+                self._shift_click()
+                self._state             = 'RETURNING'
+                self._return_steps      = self._inland_steps + 15
+                self._steps_since_shift = 0
+                return True
+            self._move_perpendicular(toward_water=False, multiplier=mult)
             self._inland_steps += 1
             return True
 
@@ -837,18 +845,18 @@ class CoastalSnakeNavigator:
                 self._shift_click()
                 return True
 
-            # Symmetric: same visibility as DIVING — use is_water every step.
-            # Water hit = reached coast (or overshot) → stop immediately.
-            at_coast = is_water or self._is_at_coast_now()
-            cap_hit  = self._return_steps <= 0
-            if at_coast or cap_hit:
+            seaward = (-self._inland_vec[0], -self._inland_vec[1])
+            mult    = self._peek_step(seaward)
+            cap_hit = self._return_steps <= 0
+            if mult is None or cap_hit:
+                # Coast boundary reached or safety cap → shift + HOMING
                 self._shift_click()
                 self._state        = 'HOMING'
                 self._inland_steps = 0
                 self._homing_steps = 0
                 return True
             self._return_steps -= 1
-            self._move_perpendicular(toward_water=True)    # возврат к берегу
+            self._move_perpendicular(toward_water=True, multiplier=mult)
             return True
 
         return True
