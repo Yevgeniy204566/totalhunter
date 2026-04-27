@@ -637,6 +637,33 @@ class CoastalSnakeNavigator:
         if z1 > 0 or z2 > 0:          # at least one side has visible land
             self._inland_vec = perp1 if z1 >= z2 else perp2
 
+    def _peek_step(self, direction_vec: tuple) -> float | None:
+        """
+        Read minimap in direction_vec at 3 depths (1/2/3 screens = radius 30/60/90px).
+        Returns step multiplier to jump over water, or None if ocean/coast boundary.
+        """
+        from minimap_reader import analyze_forward_zone
+        mm = self._grab_minimap()
+
+        near = analyze_forward_zone(mm, direction_vec, radius=30,
+                                    ocean_land_ratio=self.ocean_land_ratio,
+                                    min_water_px=self.min_water_px)
+        if near['land_px'] > 0 or near['water_px'] <= self.min_water_px:
+            return 1.0
+
+        mid = analyze_forward_zone(mm, direction_vec, radius=60,
+                                   ocean_land_ratio=self.ocean_land_ratio,
+                                   min_water_px=self.min_water_px)
+        if mid['land_px'] > 0:
+            return 1.5
+
+        far = analyze_forward_zone(mm, direction_vec, radius=90,
+                                   ocean_land_ratio=self.ocean_land_ratio,
+                                   min_water_px=self.min_water_px)
+        if far['land_px'] > 0:
+            return 2.0
+
+        return None  # ocean (DIVING) or coast boundary (RETURNING)
 
     def _is_at_coast_now(self) -> bool:
         """

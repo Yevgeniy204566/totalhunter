@@ -620,3 +620,51 @@ class TestFootprintCheck:
         assert nav._state == 'DIVING'
 
 
+class TestPeekStep:
+    def _nav(self):
+        nav = make_navigator()
+        nav._inland_vec = (1.0, 0.0)
+        return nav
+
+    def test_land_immediate_returns_1x(self):
+        """radius=30 has land → 1.0 (normal step)."""
+        nav = self._nav()
+        land_info  = {'land_px': 50, 'water_px': 0, 'is_ocean': False, 'land_ratio': 0.5}
+        with patch('minimap_reader.analyze_forward_zone', return_value=land_info):
+            result = nav._peek_step((1.0, 0.0))
+        assert result == 1.0
+
+    def test_water_then_land_mid_returns_1_5x(self):
+        """radius=30 water, radius=60 has land → 1.5 (jump 1 screen)."""
+        nav = self._nav()
+        water_info = {'land_px': 0, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.0}
+        land_info  = {'land_px': 30, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.3}
+        with patch('minimap_reader.analyze_forward_zone', side_effect=[water_info, land_info]):
+            result = nav._peek_step((1.0, 0.0))
+        assert result == 1.5
+
+    def test_water_then_land_far_returns_2x(self):
+        """radius=30 water, radius=60 water, radius=90 has land → 2.0 (jump 2 screens)."""
+        nav = self._nav()
+        water_info = {'land_px': 0, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.0}
+        land_far   = {'land_px': 20, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.2}
+        with patch('minimap_reader.analyze_forward_zone', side_effect=[water_info, water_info, land_far]):
+            result = nav._peek_step((1.0, 0.0))
+        assert result == 2.0
+
+    def test_all_water_returns_none(self):
+        """All 3 radii no land, water present → None (ocean / coast boundary)."""
+        nav = self._nav()
+        water_info = {'land_px': 0, 'water_px': 600, 'is_ocean': True, 'land_ratio': 0.0}
+        with patch('minimap_reader.analyze_forward_zone', return_value=water_info):
+            result = nav._peek_step((1.0, 0.0))
+        assert result is None
+
+    def test_no_significant_water_returns_1x(self):
+        """radius=30 no land but water_px <= min_water_px → 1.0 (safe to step)."""
+        nav = self._nav()
+        dry_info = {'land_px': 0, 'water_px': 5, 'is_ocean': False, 'land_ratio': 0.0}
+        with patch('minimap_reader.analyze_forward_zone', return_value=dry_info):
+            result = nav._peek_step((1.0, 0.0))
+        assert result == 1.0
+
