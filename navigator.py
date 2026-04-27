@@ -459,6 +459,7 @@ class CoastalSnakeNavigator:
         diagonal_blind_coeff: float = 0.5,  # 0=no reduction, 1=fully blind at 45°
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
         max_pitch_delta: float  = 15.0,  # degrees; 0 = disabled
+        max_footprint_overlap: float = 0.5,  # 0.0-1.0; skip column if overlap >= this
     ):
         self.center_x         = center_x
         self.center_y         = center_y
@@ -475,7 +476,8 @@ class CoastalSnakeNavigator:
         self.coast_ema_alpha        = coast_ema_alpha
         self.diagonal_blind_coeff   = diagonal_blind_coeff
         self.coast_detect_radius    = coast_detect_radius
-        self._max_pitch_delta   = math.radians(max_pitch_delta)
+        self._max_pitch_delta       = math.radians(max_pitch_delta)
+        self._max_footprint_overlap = max_footprint_overlap
         self._prev_inland_vec   = None
         self._return_water_streak: int = 0
 
@@ -723,9 +725,12 @@ class CoastalSnakeNavigator:
                 if fwd['land_px'] == 0 and fwd['water_px'] > self.min_water_px:
                     self._shift_click()   # чистый океан → пропустить колонку
                     return True           # остаёмся в HOMING
-                if self._footprint_enabled and info['fwd_footprint']['footprint_px'] > 10:
-                    self._shift_click()   # уже исследовано → пропустить колонку
-                    return True
+                if self._footprint_enabled and self._max_footprint_overlap < 1.0:
+                    fp      = info['fwd_footprint']
+                    zone_px = fp.get('zone_px', 1)
+                    if zone_px > 0 and fp['footprint_px'] / zone_px >= self._max_footprint_overlap:
+                        self._shift_click()   # превышен порог перекрытия → пропустить
+                        return True
                 # Fallback: if detect_coast_angle never returned a real angle,
                 # set shift_vec from whatever coast_vec we have now.
                 if not self._shift_vec_set:
@@ -876,6 +881,7 @@ class PacmanEngine:
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
         max_pitch_delta: float  = 15.0,
+        max_footprint_overlap: float = 0.5,
         # legacy params (ignored):
         max_depth: int      = 4,
         screen_w: int       = 5,
@@ -896,6 +902,7 @@ class PacmanEngine:
             diagonal_blind_coeff=diagonal_blind_coeff,
             coast_detect_radius=coast_detect_radius,
             max_pitch_delta=max_pitch_delta,
+            max_footprint_overlap=max_footprint_overlap,
         )
         self.conf               = conf
         self.scan_interval      = scan_interval

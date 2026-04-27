@@ -163,9 +163,11 @@ def analyze_footprint_zone(
     r = minimap_bgr[:, :, 2].astype(np.float32)
     red_mask = (r > 150) & (r > b * 2.0) & (r > g * 2.0)
 
+    zone_px      = int(np.sum(cone_mask))
     footprint_px = int(np.sum(red_mask & cone_mask))
     return {
         'footprint_px':  footprint_px,
+        'zone_px':       zone_px,
         'has_footprint': footprint_px >= min_footprint_px,
     }
 
