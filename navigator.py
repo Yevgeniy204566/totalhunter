@@ -485,7 +485,7 @@ class CoastalSnakeNavigator:
         self._inland_steps       = 0
         self._homing_steps       = 0
         self._return_steps       = 0
-        self._return_blind_steps = 0
+
         self._coast_angle        = 0.0
         self._inland_vec         = (1.0, 0.0)
         self._coast_vec          = (0.0, 1.0)
@@ -507,7 +507,7 @@ class CoastalSnakeNavigator:
         self._inland_steps  = 0
         self._homing_steps  = 0
         self._return_steps       = 0
-        self._return_blind_steps = 0
+
         self._angle_init         = False
         self._inland_vec         = (1.0, 0.0)
         self._coast_vec          = (0.0, 1.0)
@@ -799,16 +799,6 @@ class CoastalSnakeNavigator:
                 self._state             = 'RETURNING'
                 self._return_steps      = self.max_inland_steps + 15
                 self._steps_since_shift = 0
-                # Soft angle dependency: diagonal coast → shorter blind phase.
-                # angle_ratio: 0.0 = cardinal, 1.0 = 45° diagonal
-                vx = abs(self._inland_vec[0])
-                vy = abs(self._inland_vec[1])
-                mx = max(vx, vy)
-                angle_ratio  = (min(vx, vy) / mx) if mx > 0 else 0.0
-                blind_factor = 1.0 - angle_ratio * self.diagonal_blind_coeff
-                self._return_blind_steps = max(
-                    0, round((self.max_inland_steps - 1) * blind_factor)
-                )
                 return True
             self._move_perpendicular(toward_water=False)   # нырок вглубь суши
             self._inland_steps += 1
@@ -820,19 +810,9 @@ class CoastalSnakeNavigator:
                 self._shift_click()
                 return True
 
-            # Blind phase: ignore rivers deep inland, no coast detection.
-            # Only the last (return_steps - blind_steps) steps use vision.
-            if self._return_blind_steps > 0:
-                self._return_blind_steps -= 1
-                self._return_steps       -= 1
-                self._move_perpendicular(toward_water=True)
-                if is_water:
-                    self._return_blind_steps = 0  # coast overshot → exit blind early
-                return True
-
-            # Check for coast WITHOUT calling _read_minimap — inland_vec must
-            # stay frozen so the bot returns on the exact same vector it dived.
-            at_coast = self._is_at_coast_now()
+            # Symmetric: same visibility as DIVING — use is_water every step.
+            # Water hit = reached coast (or overshot) → stop immediately.
+            at_coast = is_water or self._is_at_coast_now()
             cap_hit  = self._return_steps <= 0
             if at_coast or cap_hit:
                 self._shift_click()
@@ -841,7 +821,7 @@ class CoastalSnakeNavigator:
                 self._homing_steps = 0
                 return True
             self._return_steps -= 1
-            self._move_perpendicular(toward_water=True)    # возврат к воде
+            self._move_perpendicular(toward_water=True)    # возврат к берегу
             return True
 
         return True

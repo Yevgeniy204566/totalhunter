@@ -459,143 +459,7 @@ class TestShiftAlwaysPerpendicular:
 
 # ── blind return phase ────────────────────────────────────────────────────
 
-class TestBlindReturnPhase:
-    """RETURNING is blind for first max_inland-1 steps — ignores rivers."""
-
-    def test_blind_steps_set_when_entering_returning(self):
-        """DIVING→RETURNING cardinal: blind = max_inland - 1 (full)."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'DIVING'
-        nav._inland_steps = 5
-        nav._inland_vec = (1.0, 0.0)   # pure cardinal
-        nav._shift_vec  = (0.0, 1.0)
-        nav.step()
-        assert nav._state == 'RETURNING'
-        assert nav._return_blind_steps == 4   # max_inland - 1
-
-    def test_blind_steps_halved_for_diagonal_45(self):
-        """DIVING→RETURNING 45° diagonal: blind = round((max_inland-1)*0.5)."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'DIVING'
-        nav._inland_steps = 5
-        nav._inland_vec = (0.707, 0.707)   # 45° diagonal
-        nav._shift_vec  = (-0.707, 0.707)
-        nav.step()
-        assert nav._state == 'RETURNING'
-        assert nav._return_blind_steps == 2   # round(4 * 0.5)
-
-    def test_blind_steps_interpolated_for_mid_angle(self):
-        """DIVING→RETURNING ~26° angle: blind interpolated smoothly."""
-        import math
-        nav = make_navigator(max_inland=5)
-        nav._state = 'DIVING'
-        nav._inland_steps = 5
-        angle = math.radians(26)
-        nav._inland_vec = (math.cos(angle), math.sin(angle))
-        nav._shift_vec  = (-math.sin(angle), math.cos(angle))
-        nav.step()
-        assert nav._state == 'RETURNING'
-        # ratio = tan(26°) ≈ 0.488, factor = 1 - 0.488*0.5 ≈ 0.756, blind = round(4*0.756) = 3
-        assert nav._return_blind_steps == 3
-
-    def test_coast_detection_skipped_during_blind_phase(self):
-        """_is_at_coast_now must NOT be called while blind_steps > 0."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'RETURNING'
-        nav._return_steps = 8
-        nav._return_blind_steps = 3
-        nav._inland_vec = (1.0, 0.0)
-        with patch.object(nav, '_is_at_coast_now', return_value=True) as mock_coast:
-            nav.step()
-        mock_coast.assert_not_called()
-        assert nav._state == 'RETURNING', "Must stay RETURNING during blind phase"
-
-    def test_blind_steps_decrements_each_return_step(self):
-        """Each RETURNING step decrements _return_blind_steps by 1."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'RETURNING'
-        nav._return_steps = 8
-        nav._return_blind_steps = 3
-        nav._inland_vec = (1.0, 0.0)
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            nav.step()
-        assert nav._return_blind_steps == 2
-
-    def test_coast_detection_active_after_blind_phase(self):
-        """After blind phase ends (_return_blind_steps=0), coast IS checked."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'RETURNING'
-        nav._return_steps = 5
-        nav._return_blind_steps = 0   # blind phase over
-        nav._inland_vec = (1.0, 0.0)
-        with patch.object(nav, '_is_at_coast_now', return_value=True) as mock_coast:
-            nav.step()
-        mock_coast.assert_called_once()
-        assert nav._state == 'HOMING'
-
-    def test_river_does_not_abort_returning_during_blind_phase(self):
-        """River (coast=True) during blind phase must NOT trigger shift+HOMING."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'RETURNING'
-        nav._return_steps = 7   # max_inland + 2
-        nav._return_blind_steps = 4   # max_inland - 1
-        nav._inland_vec = (1.0, 0.0)
-        # Simulate coast detection True (river) during all blind steps
-        with patch.object(nav, '_is_at_coast_now', return_value=True):
-            for _ in range(4):   # exhaust blind steps
-                nav.step()
-        assert nav._state == 'RETURNING', "River must not abort RETURNING during blind phase"
-        # Now blind phase done — next step fires vision → HOMING
-        with patch.object(nav, '_is_at_coast_now', return_value=True):
-            nav.step()
-        assert nav._state == 'HOMING'
-
-    def test_vision_phase_has_generous_cap(self):
-        """Vision phase = _return_steps - _return_blind_steps = (max_inland+15) - (max_inland-1) = 16."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'DIVING'
-        nav._inland_steps = 5
-        nav._inland_vec = (1.0, 0.0)
-        nav._shift_vec  = (0.0, 1.0)
-        nav.step()
-        vision_steps = nav._return_steps - nav._return_blind_steps
-        assert vision_steps == 16, \
-            f"Expected 16 vision steps (generous safety cap), got {vision_steps}"
-
-    def test_bot_keeps_walking_until_coast_found_in_vision_phase(self):
-        """Bot walks multiple vision steps until coast is detected — no early exit."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'RETURNING'
-        nav._return_steps = 20
-        nav._return_blind_steps = 0   # vision phase active
-        nav._inland_vec = (1.0, 0.0)
-        # Coast not found for 5 steps, found on step 6
-        responses = [False, False, False, False, False, True]
-        with patch.object(nav, '_is_at_coast_now', side_effect=responses):
-            for i in range(5):
-                nav.step()
-                assert nav._state == 'RETURNING', f"Should stay RETURNING on step {i+1}"
-            nav.step()
-        assert nav._state == 'HOMING', "Should reach HOMING after coast finally found"
-
-    def test_blind_steps_zero_for_max_inland_one(self):
-        """With max_inland=1: blind_steps=0 (no blind phase, always use vision)."""
-        nav = make_navigator(max_inland=1)
-        nav._state = 'DIVING'
-        nav._inland_steps = 1
-        nav._inland_vec = (1.0, 0.0)
-        nav._shift_vec  = (0.0, 1.0)
-        nav.step()
-        assert nav._state == 'RETURNING'
-        assert nav._return_blind_steps == 0
-
-    def test_reset_clears_blind_steps(self):
-        """reset() must zero _return_blind_steps."""
-        nav = make_navigator(max_inland=5)
-        nav._return_blind_steps = 4
-        nav.reset()
-        assert nav._return_blind_steps == 0
-
+class TestOceanColumnCheck:
     def test_ocean_column_skips_dive(self):
         """At coast: fwd has no land and lots of water → shift, stay HOMING."""
         nav = make_navigator(min_water=10)
@@ -613,6 +477,26 @@ class TestBlindReturnPhase:
                           return_value=_info(is_at_coast=True, land_px=0, water_px=5)):
             nav.step()
         assert nav._state == 'DIVING'
+
+    def test_returning_stops_on_water(self):
+        """RETURNING: is_water=True stops the return (symmetric with DIVING)."""
+        nav = make_navigator()
+        nav._state = 'RETURNING'
+        nav._return_steps = 10
+        nav._inland_vec = (1.0, 0.0)
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            nav.step(is_water=True)
+        assert nav._state == 'HOMING'
+
+    def test_returning_continues_on_land(self):
+        """RETURNING: is_water=False + coast not yet → continues."""
+        nav = make_navigator()
+        nav._state = 'RETURNING'
+        nav._return_steps = 10
+        nav._inland_vec = (1.0, 0.0)
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            nav.step(is_water=False)
+        assert nav._state == 'RETURNING'
 
 
 import math
@@ -705,28 +589,6 @@ class TestAngularDamper:
         nav._prev_inland_vec = (1.0, 0.0)
         nav.reset()
         assert nav._prev_inland_vec is None
-
-
-class TestBlindReturnWaterExit:
-    def test_water_in_blind_cuts_blind_phase(self):
-        """Water during blind return → blind_steps zeroed, next step checks coast."""
-        nav = make_navigator()
-        nav._state              = 'RETURNING'
-        nav._return_blind_steps = 4
-        nav._return_steps       = 10
-        nav._inland_vec         = (1.0, 0.0)
-        nav.step(is_water=True)         # moves, then zeroes blind_steps
-        assert nav._return_blind_steps == 0
-
-    def test_no_water_in_blind_keeps_phase(self):
-        """No water during blind return → blind_steps count down normally."""
-        nav = make_navigator()
-        nav._state              = 'RETURNING'
-        nav._return_blind_steps = 4
-        nav._return_steps       = 10
-        nav._inland_vec         = (1.0, 0.0)
-        nav.step(is_water=False)
-        assert nav._return_blind_steps == 3  # 4 - 1 = 3
 
 
 class TestFootprintCheck:
