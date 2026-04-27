@@ -391,25 +391,6 @@ class TotalHunterApp(ctk.CTk):
         )
         self.nav_inland_slider.set(5)
         self.nav_inland_slider.pack(padx=12, pady=(2, 4), fill="x")
-        # Угол нырка (угловой демпфер)
-        self.nav_pitch_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
-        self.nav_pitch_frame.pack(fill="x", padx=12, pady=(2, 0))
-        ctk.CTkLabel(self.nav_pitch_frame, text="Угол нырка (°):",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="15°",
-                                           font=ctk.CTkFont(size=14, weight="bold"),
-                                           text_color=MD3["value_text"])
-        self.nav_pitch_val.pack(side="right")
-        self.nav_pitch_slider = ctk.CTkSlider(
-            nav_main_frame, from_=5, to=30, number_of_steps=25,
-            command=self._update_nav_labels,
-            button_color=MD3["primary"],
-            button_hover_color=MD3["primary_dim"],
-            progress_color=MD3["primary"],
-        )
-        self.nav_pitch_slider.set(15)
-        self.nav_pitch_slider.pack(padx=12, pady=(2, 4), fill="x")
 
 
         # Калибровка джойстика (мини-карта)
@@ -531,6 +512,26 @@ class TotalHunterApp(ctk.CTk):
         )
         self.nav_diagblind_slider.set(0.5)
         self.nav_diagblind_slider.pack(padx=10, pady=(0, 2), fill="x")
+
+        # Угол нырка (угловой демпфер)
+        self.nav_pitch_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
+        self.nav_pitch_frame.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(self.nav_pitch_frame, text="Угол нырка (°):",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="15°",
+                                           font=ctk.CTkFont(size=14, weight="bold"),
+                                           text_color=MD3["value_text"])
+        self.nav_pitch_val.pack(side="right")
+        self.nav_pitch_slider = ctk.CTkSlider(
+            nav_sliders_frame, from_=5, to=30, number_of_steps=25,
+            command=self._update_nav_labels,
+            button_color=MD3["primary"],
+            button_hover_color=MD3["primary_dim"],
+            progress_color=MD3["primary"],
+        )
+        self.nav_pitch_slider.set(15)
+        self.nav_pitch_slider.pack(padx=10, pady=(0, 2), fill="x")
 
         # Радиус конуса детекции берега
         self.nav_coastrad_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
