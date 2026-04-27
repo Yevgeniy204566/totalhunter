@@ -458,6 +458,7 @@ class CoastalSnakeNavigator:
         force_shift_after: int  = 0,   # 0 = disabled; N = force shift every N non-shift steps
         diagonal_blind_coeff: float = 0.5,  # 0=no reduction, 1=fully blind at 45°
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
+        max_pitch_delta: float  = 10.0,  # degrees; 0 = disabled
     ):
         self.center_x         = center_x
         self.center_y         = center_y
@@ -474,6 +475,8 @@ class CoastalSnakeNavigator:
         self.coast_ema_alpha        = coast_ema_alpha
         self.diagonal_blind_coeff   = diagonal_blind_coeff
         self.coast_detect_radius    = coast_detect_radius
+        self._max_pitch_delta   = math.radians(max_pitch_delta)
+        self._prev_inland_vec   = None
 
         self._state              = 'HOMING'
         self._inland_steps       = 0
@@ -510,6 +513,7 @@ class CoastalSnakeNavigator:
         self._shift_vec_set      = False
         self._steps_since_shift  = 0
         self._footprint.reset()
+        self._prev_inland_vec = None
 
     # ── calibration helper (same API as CompassNavigator) ────────────────
     def move(self, direction: str):
@@ -726,6 +730,11 @@ class CoastalSnakeNavigator:
                     sv = (-iv[1], iv[0])
                     self._footprint.draw_ray(iv, sv)
                     self._footprint.draw_ray(iv, sv, extra_coast_steps=2)
+                if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
+                    self._inland_vec = _clamp_vec(
+                        self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
+                    )
+                self._prev_inland_vec   = self._inland_vec
                 self._state             = 'DIVING'
                 self._inland_steps      = 0
                 self._homing_steps      = 0
@@ -743,6 +752,11 @@ class CoastalSnakeNavigator:
                 if not self._shift_vec_set:
                     self._shift_vec     = tuple(self._coast_vec)
                     self._shift_vec_set = True
+                if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
+                    self._inland_vec = _clamp_vec(
+                        self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
+                    )
+                self._prev_inland_vec   = self._inland_vec
                 self._state             = 'DIVING'
                 self._inland_steps      = 0
                 self._homing_steps      = 0

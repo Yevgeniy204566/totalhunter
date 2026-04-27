@@ -657,3 +657,50 @@ class TestClampVec:
         result = _clamp_vec(v_new, v_prev, max_d)
         assert abs(result[0] - v_new[0]) < 1e-9
         assert abs(result[1] - v_new[1]) < 1e-9
+
+
+class TestAngularDamper:
+    def test_first_dive_no_clamp(self):
+        """First dive: _prev_inland_vec is None → inland_vec unchanged."""
+        nav = make_navigator()
+        nav._max_pitch_delta = math.radians(10)
+        nav._inland_vec      = (0.0, 1.0)
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=50)):
+            nav.step()
+        assert nav._state == 'DIVING'
+        assert abs(nav._prev_inland_vec[0] - 0.0) < 1e-9
+        assert abs(nav._prev_inland_vec[1] - 1.0) < 1e-9
+
+    def test_second_dive_clamps_large_angle(self):
+        """Second dive with angle > max_pitch_delta → inland_vec clamped."""
+        nav = make_navigator()
+        nav._max_pitch_delta = math.radians(10)
+        nav._prev_inland_vec = (1.0, 0.0)   # previous was 0°
+        nav._inland_vec      = (0.0, 1.0)   # new would be 90°
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=50)):
+            nav.step()
+        assert nav._state == 'DIVING'
+        iv  = nav._prev_inland_vec
+        dot = max(-1.0, min(1.0, iv[0]*1.0 + iv[1]*0.0))
+        assert abs(math.acos(dot) - math.radians(10)) < 1e-9
+
+    def test_damper_disabled_at_zero(self):
+        """max_pitch_delta=0 → no clamping regardless of angle."""
+        nav = make_navigator()
+        nav._max_pitch_delta = 0.0
+        nav._prev_inland_vec = (1.0, 0.0)
+        nav._inland_vec      = (0.0, 1.0)
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, land_px=50)):
+            nav.step()
+        assert abs(nav._prev_inland_vec[0] - 0.0) < 1e-9
+        assert abs(nav._prev_inland_vec[1] - 1.0) < 1e-9
+
+    def test_reset_clears_prev_vec(self):
+        """reset() clears _prev_inland_vec."""
+        nav = make_navigator()
+        nav._prev_inland_vec = (1.0, 0.0)
+        nav.reset()
+        assert nav._prev_inland_vec is None
