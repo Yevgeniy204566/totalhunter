@@ -722,7 +722,7 @@ class TestPeekIntegration:
                 nav.step()
         mock_shift.assert_called_once()
         assert nav._state == 'RETURNING'
-        assert nav._return_steps == nav._inland_steps + 15
+        assert nav._return_steps == 17  # inland_steps=2 + 15 safety
 
     def test_returning_normal_step(self):
         """RETURNING: peek=1.0 → _move_perpendicular(toward_water=True, multiplier=1.0)."""
@@ -750,3 +750,18 @@ class TestPeekIntegration:
         mock_shift.assert_called_once()
         assert nav._state == 'HOMING'
 
+    def test_diving_jump_2x(self):
+        """DIVING: peek=2.0 → multiplier=2.0 passed to _move_perpendicular."""
+        nav = self._nav_diving()
+        with patch.object(nav, '_peek_step', return_value=2.0):
+            with patch.object(nav, '_move_perpendicular') as mock_move:
+                nav.step()
+        mock_move.assert_called_once_with(toward_water=False, multiplier=2.0)
+
+    def test_returning_jump_2x(self):
+        """RETURNING: peek=2.0 → multiplier=2.0 passed to _move_perpendicular."""
+        nav = self._nav_returning()
+        with patch.object(nav, '_peek_step', return_value=2.0):
+            with patch.object(nav, '_move_perpendicular') as mock_move:
+                nav.step()
+        mock_move.assert_called_once_with(toward_water=True, multiplier=2.0)
