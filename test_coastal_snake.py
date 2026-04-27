@@ -167,27 +167,17 @@ class TestInlineShift:
             nav.step()
         assert nav._state == 'HOMING'
 
-    def test_return_steps_safety_cap_horizontal(self):
-        """Horizontal movement: _return_steps = max_inland + 15 (generous safety cap)."""
+    def test_return_steps_equals_dive_distance_plus_margin(self):
+        """return_steps = dive_distance + 3 — same physical distance both ways."""
         nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
         nav._inland_steps = 5
-        nav._inland_vec = (1.0, 0.0)   # horizontal
+        nav._dive_distance = 7.5   # e.g. 5 steps with some 1.5x jumps
+        nav._inland_vec = (1.0, 0.0)
         nav._shift_vec  = (0.0, 1.0)
         nav.step()
         assert nav._state == 'RETURNING'
-        assert nav._return_steps == 20   # 5 + 15
-
-    def test_return_steps_safety_cap_vertical_no_bonus(self):
-        """Vertical movement: cap is max_inland + 15, same as horizontal."""
-        nav = make_navigator(max_inland=5)
-        nav._state = 'DIVING'
-        nav._inland_steps = 5
-        nav._inland_vec = (0.0, 1.0)   # vertical
-        nav._shift_vec  = (1.0, 0.0)
-        nav.step()
-        assert nav._state == 'RETURNING'
-        assert nav._return_steps == 20   # 5 + 15, no vertical bonus
+        assert nav._return_steps == 10.5   # 7.5 + 3
 
     def test_shift_vec_locked_on_first_real_angle(self):
         """_shift_vec is set only from a non-zero (real) angle, not from fallback 0.0."""
@@ -722,7 +712,7 @@ class TestPeekIntegration:
                 nav.step()
         mock_shift.assert_called_once()
         assert nav._state == 'RETURNING'
-        assert nav._return_steps == 17  # inland_steps=2 + 15 safety
+        assert nav._return_steps == 3.0  # dive_distance=0 + 3 margin (no actual steps taken)
 
     def test_returning_normal_step(self):
         """RETURNING: peek=1.0 → _move_perpendicular(toward_water=True, multiplier=1.0)."""

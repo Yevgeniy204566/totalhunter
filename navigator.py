@@ -484,7 +484,8 @@ class CoastalSnakeNavigator:
         self._state              = 'HOMING'
         self._inland_steps       = 0
         self._homing_steps       = 0
-        self._return_steps       = 0
+        self._return_steps: float = 0.0
+        self._dive_distance: float = 0.0  # physical distance: sum of multipliers
 
         self._coast_angle        = 0.0
         self._inland_vec         = (1.0, 0.0)
@@ -515,6 +516,7 @@ class CoastalSnakeNavigator:
         self._shift_vec          = (0.0, 1.0)
         self._shift_vec_set      = False
         self._steps_since_shift  = 0
+        self._dive_distance      = 0.0
         self._footprint.reset()
         self._prev_inland_vec = None
 
@@ -778,6 +780,7 @@ class CoastalSnakeNavigator:
                 self._inland_steps      = 0
                 self._homing_steps      = 0
                 self._steps_since_shift = 0
+                self._dive_distance     = 0.0
                 # fall through to DIVING in same call
 
             elif self._homing_steps >= self.homing_max_steps:
@@ -800,6 +803,7 @@ class CoastalSnakeNavigator:
                 self._inland_steps      = 0
                 self._homing_steps      = 0
                 self._steps_since_shift = 0
+                self._dive_distance     = 0.0
                 # fall through to DIVING in same call
 
             else:
@@ -821,22 +825,25 @@ class CoastalSnakeNavigator:
                 return True
 
             if self._inland_steps >= self.max_inland_steps:
-                # Max depth: shift ⊥ to dive, then return.
+                # Max depth: shift ⊥ to dive, then return same physical distance.
                 self._shift_click()
                 self._state             = 'RETURNING'
-                self._return_steps      = self.max_inland_steps + 15
+                self._return_steps      = self._dive_distance + 3
+                self._dive_distance     = 0.0
                 self._steps_since_shift = 0
                 return True
             mult = self._peek_step(self._inland_vec)
             if mult is None:
-                # Ocean ahead mid-dive → abort, return proportionally
+                # Ocean ahead mid-dive → abort, return same physical distance.
                 self._shift_click()
                 self._state             = 'RETURNING'
-                self._return_steps      = self._inland_steps + 15
+                self._return_steps      = self._dive_distance + 3
+                self._dive_distance     = 0.0
                 self._steps_since_shift = 0
                 return True
             self._move_perpendicular(toward_water=False, multiplier=mult)
-            self._inland_steps += 1
+            self._inland_steps    += 1
+            self._dive_distance   += mult
             return True
 
         if self._state == 'RETURNING':
@@ -855,7 +862,7 @@ class CoastalSnakeNavigator:
                 self._inland_steps = 0
                 self._homing_steps = 0
                 return True
-            self._return_steps -= 1
+            self._return_steps -= mult
             self._move_perpendicular(toward_water=True, multiplier=mult)
             return True
 
