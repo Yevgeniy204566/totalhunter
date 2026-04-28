@@ -37,10 +37,11 @@ class HuntEngine:
         ocean_land_ratio: float = 0.03,
         min_water_px: int       = 500,
         footprint_ttl: float    = 120.0,
-        diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
         max_pitch_delta: float = 15.0,
-        max_footprint_overlap: float = 0.5,
+        max_footprint_overlap: float = 0.2,
+        scan_dir: int = 1,
+        pixels_per_step: int | None = None,   # None = use joystick_step; set from nav_pps
     ):
         self._pacman = PacmanEngine(
             center_x=center_x,
@@ -56,10 +57,11 @@ class HuntEngine:
             ocean_land_ratio=ocean_land_ratio,
             min_water_px=min_water_px,
             footprint_ttl=footprint_ttl,
-            diagonal_blind_coeff=diagonal_blind_coeff,
             coast_detect_radius=coast_detect_radius,
             max_pitch_delta=max_pitch_delta,
             max_footprint_overlap=max_footprint_overlap,
+            scan_dir=scan_dir,
+            pixels_per_step=pixels_per_step,
         )
         self._pacman.on_found_callback = self.on_found_callback
 

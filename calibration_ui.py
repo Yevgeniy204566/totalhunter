@@ -223,3 +223,47 @@ def run_calibration(parent: "tk.Misc | None" = None) -> "tuple[tuple[int,int]|No
     if created_own_root:
         root.destroy()
     return point_a, point_b
+
+
+def measure_step_pixels(center_x: int, center_y: int, step: int, wait: float = 1.5) -> int:
+    """
+    Measure actual minimap pixels per joystick step using phase correlation.
+
+    1. Screenshot minimap before step
+    2. Click joystick 1 step RIGHT
+    3. Wait for game to respond
+    4. Screenshot minimap after step
+    5. Compute pixel shift via cv2.phaseCorrelate
+    6. Click 1 step LEFT to undo (restore position)
+
+    Returns measured pixels-per-step (int, minimum 1).
+    """
+    import time
+    import numpy as np
+    import cv2
+    import pyautogui
+
+    size   = 180
+    offset = size // 2
+    region = (center_x - offset, center_y - offset, size, size)
+
+    # Before
+    shot1 = pyautogui.screenshot(region=region)
+    img1  = cv2.cvtColor(np.array(shot1), cv2.COLOR_RGB2GRAY).astype(np.float32)
+
+    # 1 step RIGHT
+    pyautogui.click(center_x + step, center_y)
+    time.sleep(wait)
+
+    # After
+    shot2 = pyautogui.screenshot(region=region)
+    img2  = cv2.cvtColor(np.array(shot2), cv2.COLOR_RGB2GRAY).astype(np.float32)
+
+    # Undo step (1 step LEFT to restore position)
+    pyautogui.click(center_x - step, center_y)
+    time.sleep(wait)
+
+    # Phase correlation: returns shift of img2 relative to img1
+    (dx, dy), _response = cv2.phaseCorrelate(img1, img2)
+    pps = max(1, round(abs(dx)))
+    return pps

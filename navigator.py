@@ -504,7 +504,7 @@ class CoastalSnakeNavigator:
         coast_ema_alpha: float  = 0.3,
         footprint_ttl: float    = 3600.0,   # 1 час — стена жив��т всю сессию
         footprint_enabled: bool = True,
-        pixels_per_step: int    = 20,
+        pixels_per_step: int | None = None,   # None = use step (joystick step = canvas scale)
         force_shift_after: int  = 0,   # 0 = disabled; N = force shift every N non-shift steps
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
         max_pitch_delta: float  = 15.0,  # degrees; 0 = disabled
@@ -548,7 +548,7 @@ class CoastalSnakeNavigator:
 
         self._footprint_ttl     = footprint_ttl
         self._footprint_enabled = footprint_enabled
-        self._pixels_per_step   = pixels_per_step
+        self._pixels_per_step   = pixels_per_step if pixels_per_step is not None else step
         self._footprint         = FootprintCanvas()
 
         self._force_shift_after = force_shift_after
@@ -1023,12 +1023,13 @@ class PacmanEngine:
         min_water_px: int       = 500,
         footprint_ttl: float    = 3600.0,   # 1 час
         force_shift_after: int  = 0,
-        diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
         max_pitch_delta: float  = 15.0,
-        max_footprint_overlap: float = 0.2,   # Gemini: 0.2 — агрессивный фильтр
+        max_footprint_overlap: float = 0.2,
         scan_dir: int = 1,                    # +1 вправо, -1 влево
+        pixels_per_step: int | None = None,   # None = use step; set from nav_pps calibration
         # legacy params (ignored):
+        diagonal_blind_coeff: float = 0.5,
         max_depth: int      = 4,
         screen_w: int       = 5,
         screen_h: int       = 39,
@@ -1049,6 +1050,7 @@ class PacmanEngine:
             max_pitch_delta=max_pitch_delta,
             max_footprint_overlap=max_footprint_overlap,
             scan_dir=scan_dir,
+            pixels_per_step=pixels_per_step,
         )
         self.conf               = conf
         self.scan_interval      = scan_interval

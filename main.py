@@ -1207,7 +1207,11 @@ class TotalHunterApp(ctk.CTk):
             self.nav_ocean_slider.set(int(cfg.get("ocean_land_ratio", 0.03) * 100))
             self.nav_waterpx_slider.set(cfg.get("min_water_px", 500))
             self.nav_pitch_slider.set(cfg.get("max_pitch_delta", 15))
-            self.nav_overlap_slider.set(cfg.get("max_footprint_overlap", 50))
+            # Gemini fix: если в конфиге float (0.0-1.0 старый формат) → конвертируем в %
+            _overlap_raw = cfg.get("max_footprint_overlap", 50)
+            if isinstance(_overlap_raw, float) and _overlap_raw <= 1.0:
+                _overlap_raw = int(_overlap_raw * 100)
+            self.nav_overlap_slider.set(int(_overlap_raw))
             raw_ttl = cfg.get("nav_footprint_ttl", 120)
             self.nav_footprint_slider.set(max(60, min(1200, int(raw_ttl))))
             self._update_nav_labels()
@@ -1248,6 +1252,7 @@ class TotalHunterApp(ctk.CTk):
                     max_pitch_delta=int(self.nav_pitch_slider.get()),
                     max_footprint_overlap=self.nav_overlap_slider.get() / 100.0,
                     footprint_ttl=float(self.nav_footprint_slider.get()),
+                    pixels_per_step=self._load_gui_config().get('nav_pps') or None,
                 )
                 self.start_button.configure(text=LANGS[self.current_lang]["stop"],
                                             fg_color=MD3["error"],
@@ -1524,6 +1529,35 @@ class TotalHunterApp(ctk.CTk):
             corner_radius=16,
             font=ctk.CTkFont(size=18, weight="bold"),
         ).pack(fill="x", padx=40, pady=(8, 6))
+
+        # ── Замер шага (nav_pps) ─────────────────────────────────────────
+        self.pps_label = ctk.CTkLabel(
+            self.tab_calibration,
+            text=f"Шаг миникарты: {self._load_gui_config().get('nav_pps', '—')} px",
+            font=ctk.CTkFont(size=13),
+        )
+        self.pps_label.pack(pady=(4, 0))
+
+        def _calibrate_step():
+            from calibration_ui import measure_step_pixels
+            try:
+                cx   = int(self.nav_cx_entry.get())
+                cy   = int(self.nav_cy_entry.get())
+                step = int(self.nav_step_slider.get())
+                pps  = measure_step_pixels(cx, cy, step)
+                self._save_gui_config_key('nav_pps', pps)
+                self.pps_label.configure(text=f"Шаг миникарты: {pps} px")
+            except Exception as e:
+                from tkinter import messagebox
+                messagebox.showerror("Ошибка", str(e))
+
+        ctk.CTkButton(
+            self.tab_calibration,
+            text="ЗАМЕРИТЬ ШАГ МИНИКАРТЫ",
+            command=_calibrate_step,
+            height=40,
+            corner_radius=12,
+        ).pack(fill="x", padx=40, pady=(4, 6))
 
         # ── Сохранить / Загрузить — в одну строку ────────────────────────
         save_load_row = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
