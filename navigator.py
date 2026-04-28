@@ -728,14 +728,12 @@ class CoastalSnakeNavigator:
         return None  # ocean (DIVING) or coast boundary (RETURNING)
 
     def _is_at_coast_now(self) -> bool:
-        """Остановка RETURNING: линия маяка (canvas) ИЛИ визуальная вода (OR).
-        Canvas может дрейфовать от дробных шагов — визуальная вода страхует.
-        Реки не мешают: analyze_forward_zone смотрит в сторону берега (seaward),
-        реки перпендикулярны — не попадают в конус детекции.
+        """Маяк активен → ТОЛЬКО линия маяка. Никаких визуальных проверок воды.
+        Маяк = единственная точка остановки RETURNING.
+        Если маяка нет → визуальная вода как запасной вариант.
         """
         if self._footprint_enabled and self._footprint._beacon_cx is not None:
-            if self._footprint.is_beyond_beacon_line(self._inland_vec, tolerance=0.5):
-                return True
+            return self._footprint.is_beyond_beacon_line(self._inland_vec, tolerance=0.5)
 
         from minimap_reader import analyze_forward_zone
         mm = self._grab_minimap()
