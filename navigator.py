@@ -728,15 +728,15 @@ class CoastalSnakeNavigator:
         return None  # ocean (DIVING) or coast boundary (RETURNING)
 
     def _is_at_coast_now(self) -> bool:
-        """ПРАВИЛО: Маяк = абсолютный приоритет. Реки и ручьи не помеха.
-        Бот идёт к маяку любой ценой. Визуальные проверки НЕ используются
-        пока активен маяк — только математика линии маяка.
+        """Остановка RETURNING: линия маяка (canvas) ИЛИ визуальная вода (OR).
+        Canvas может дрейфовать от дробных шагов — визуальная вода страхует.
+        Реки не мешают: analyze_forward_zone смотрит в сторону берега (seaward),
+        реки перпендикулярны — не попадают в конус детекции.
         """
         if self._footprint_enabled and self._footprint._beacon_cx is not None:
-            # Маяк активен → ТОЛЬКО линия маяка, никаких визуальных проверок
-            return self._footprint.is_beyond_beacon_line(self._inland_vec, tolerance=0.5)
+            if self._footprint.is_beyond_beacon_line(self._inland_vec, tolerance=0.5):
+                return True
 
-        # Маяка нет → визуальная вода как запасной вариант
         from minimap_reader import analyze_forward_zone
         mm = self._grab_minimap()
         seaward = (-self._inland_vec[0], -self._inland_vec[1])
@@ -960,13 +960,6 @@ class CoastalSnakeNavigator:
             return True
 
         if self._state == 'RETURNING':
-            if is_water:
-                self._shift_click()
-                self._state        = 'HOMING'
-                self._inland_steps = 0
-                self._homing_steps = 0
-                return True
-
             if self._force_shift_after > 0 and self._steps_since_shift >= self._force_shift_after:
                 self._shift_click()
                 return True
