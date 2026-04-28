@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-04-28 (Хангоф #15)
+> Последнее обновление: 2026-04-28 (Хангоф #17 — визуальный возврат к маяку)
 
 ---
 
@@ -10,8 +10,8 @@
 | Модуль | Файл | Статус | Дата |
 |---|---|---|---|
 | GUI | main.py | ✅ Готов, карточки Навигация + Дополнительно, слайдеры: Угол нырка (5-30°, дефолт 15°), Перекрытие следов (10-100%, дефолт 50%) | 2026-04-28 |
-| Движок бирж | engine.py + navigator.py | ⚠️ BROKEN — RETURNING ходит по воде, логика нарушена в этой сессии | 2026-04-28 |
-| CoastalSnakeNavigator | navigator.py | ⚠️ BROKEN — см. ниже, требует полной ревизии | 2026-04-28 |
+| Движок бирж | engine.py + navigator.py | ⚠️ TESTING — визуальный возврат к маяку реализован, 69 тестов ✅, на полевой проверке | 2026-04-28 |
+| CoastalSnakeNavigator | navigator.py | ⚠️ TESTING — RETURNING: HSV magenta beacon + canvas tracking, 69 тестов ✅ | 2026-04-28 |
 | MiniMap Reader | minimap_reader.py | ✅ Готов, analyze_footprint_zone теперь возвращает zone_px | 2026-04-28 |
 | CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 39 тестов, oil dialog HSV detect добавлен | 2026-04-26 |
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
@@ -19,6 +19,39 @@
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
 | Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ Phase 2D + Diamond Rebrand завершены | 2026-04-22 |
 | Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена | 2026-04-21 |
+
+---
+
+## 🟡 CoastalSnakeNavigator — Визуальный возврат к маяку (Хангоф #17, 2026-04-28)
+
+### Что сделано в этой сессии
+
+**✅ Реализовано:**
+- Визуальная навигация RETURNING к маяку: magenta beacon (255,0,255) BGR рисуется на миникарте, детектируется HSV
+- Маяк всегда видим: clamped к краям миникарты
+- `pixels_per_step` = реальный джойстик-шаг (не хардкод 20); передаётся из `nav_pps` gui_config.json
+- Backstop: `ceil(dive_distance) + 10` вместо `inland_steps + 3`
+- Canvas tracking: float-позиции `_cx`, `_cy` для дробных шагов
+- `frac = min(1.0, dist/step_px)` — точные шаги к маяку
+- `_is_at_coast_now`: `beacon_line OR визуальная вода` (OR-логика)
+- `is_water` в RETURNING: УБРАНО (реки давали ложные срабатывания — см. AP-32)
+- 69 тестов зелёные
+
+**Калибровка (calibration_ui.py):**
+- `measure_step_pixels()`: 5 шагов + matchTemplate = `nav_pps`
+- Единая кнопка КАЛИБРОВАТЬ: оба этапа (экран + шаг) последовательно
+- `nav_pps` сохраняется в `gui_config.json`, передаётся как `pixels_per_step`
+
+**❌ Что пробовали и НЕ работает:**
+- Pixel-детект красных пикселей → mirror wall на той же canvas-строке → ложные срабатывания (AP-32)
+- `_return_steps = MAX_STEPS_SAFETY=80` → 80 шагов в океан (AP-33)
+- `is_at_beacon` в `at_coast` (HOMING) → смешивает с ocean-column skip → stuck-in-water loop (AP-35)
+- `is_water` в RETURNING без streak → 1 кадр реки = ложный стоп на середине пути (AP-32 нов.)
+- `pixels_per_step` хардкодом 20 → ошибка 67%, маяк в неверном месте (AP-34)
+
+**⚠️ На полевой проверке:**
+- Достаточно ли `beacon_line OR is_water` для диагональных берегов
+- Корректность HSV-детекции magenta на реальных скриншотах миникарты
 
 ---
 
@@ -124,7 +157,7 @@ Peek в RETURNING — НЕ для остановки и НЕ для шагов. 
 
 | Приоритет | Баг/TODO | Файл |
 |---|---|---|
-| **🔴 CRITICAL** | CoastalSnakeNavigator RETURNING ходит по воде — восстановить старую логику + добавить только peek для DIVING | navigator.py |
+| **🟡 TESTING** | CoastalSnakeNavigator RETURNING — визуальный маяк реализован, проверить на реальной карте | navigator.py |
 | **HIGH** | Прописать webhook URL в кабинете Free-Kassa | FK merchant dashboard |
 | **MED** | Вставить иллюстрации в GuidePage | web/src/pages/GuidePage.jsx |
 | LOW | КАЛИБРОВКА: картинки и описания точек А/Б | main.py |
