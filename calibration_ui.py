@@ -225,16 +225,13 @@ def run_calibration(parent: "tk.Misc | None" = None) -> "tuple[tuple[int,int]|No
     return point_a, point_b
 
 
-def measure_step_pixels(center_x: int, center_y: int, step: int, wait: float = 1.5) -> int:
+def measure_step_pixels(center_x: int, center_y: int, step: int,
+                        n_steps: int = 5, wait: float = 2.0) -> int:
     """
-    Measure actual minimap pixels per joystick step using phase correlation.
+    Measure actual minimap pixels per joystick step using template matching.
 
-    1. Screenshot minimap before step
-    2. Click joystick 1 step RIGHT
-    3. Wait for game to respond
-    4. Screenshot minimap after step
-    5. Compute pixel shift via cv2.phaseCorrelate
-    6. Click 1 step LEFT to undo (restore position)
+    Makes n_steps RIGHT, measures total shift via matchTemplate, divides by n_steps.
+    Then undoes with n_steps LEFT to restore position.
 
     Returns measured pixels-per-step (int, minimum 1).
     """
@@ -247,23 +244,35 @@ def measure_step_pixels(center_x: int, center_y: int, step: int, wait: float = 1
     offset = size // 2
     region = (center_x - offset, center_y - offset, size, size)
 
-    # Before
+    # Screenshot before — grab central patch as template
     shot1 = pyautogui.screenshot(region=region)
-    img1  = cv2.cvtColor(np.array(shot1), cv2.COLOR_RGB2GRAY).astype(np.float32)
+    img1  = cv2.cvtColor(np.array(shot1), cv2.COLOR_RGB2GRAY)
+    patch_size = 60
+    ph, pw    = img1.shape[:2]
+    cy_, cx_  = ph // 2, pw // 2
+    template  = img1[cy_ - patch_size//2 : cy_ + patch_size//2,
+                     cx_ - patch_size//2 : cx_ + patch_size//2].copy()
 
-    # 1 step RIGHT
-    pyautogui.click(center_x + step, center_y)
-    time.sleep(wait)
+    # n_steps RIGHT
+    for _ in range(n_steps):
+        pyautogui.click(center_x + step, center_y)
+        time.sleep(wait)
 
-    # After
+    # Screenshot after
     shot2 = pyautogui.screenshot(region=region)
-    img2  = cv2.cvtColor(np.array(shot2), cv2.COLOR_RGB2GRAY).astype(np.float32)
+    img2  = cv2.cvtColor(np.array(shot2), cv2.COLOR_RGB2GRAY)
 
-    # Undo step (1 step LEFT to restore position)
-    pyautogui.click(center_x - step, center_y)
-    time.sleep(wait)
+    # Undo: n_steps LEFT to restore position
+    for _ in range(n_steps):
+        pyautogui.click(center_x - step, center_y)
+        time.sleep(wait)
 
-    # Phase correlation: returns shift of img2 relative to img1
-    (dx, dy), _response = cv2.phaseCorrelate(img1, img2)
-    pps = max(1, round(abs(dx)))
+    # Find template in img2 — measures total shift
+    result = cv2.matchTemplate(img2, template, cv2.TM_CCOEFF_NORMED)
+    _, _, _, max_loc = cv2.minMaxLoc(result)
+    found_x, found_y = max_loc
+    origin_x = cx_ - patch_size // 2
+
+    total_shift = abs(found_x - origin_x)
+    pps = max(1, round(total_shift / n_steps))
     return pps
