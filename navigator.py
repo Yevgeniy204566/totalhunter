@@ -594,9 +594,8 @@ class CoastalSnakeNavigator:
             mm[b_mask] = beacon_ov[b_mask]
         return mm
 
-    def _click_vec(self, dx: float, dy: float, multiplier: float = 1.0):
-        """Click joystick in direction (dx, dy) with optional step multiplier.
-        Gemini fix: multiplier applied to p_range so jump steps are physically larger."""
+    def _click_vec(self, dx: float, dy: float, multiplier: float = 1.0, record: bool = True):
+        """Click joystick in direction (dx, dy) with optional step multiplier."""
         norm = np.hypot(dx, dy)
         if norm == 0:
             return
@@ -605,7 +604,7 @@ class CoastalSnakeNavigator:
             int(self.center_x + ndx * self.p_range_x * multiplier),
             int(self.center_y + ndy * self.p_range_y * multiplier),
         )
-        if self._footprint_enabled:
+        if self._footprint_enabled and record:
             self._footprint.record(ndx * multiplier, ndy * multiplier)
 
     def _shift_click(self) -> None:
@@ -728,18 +727,11 @@ class CoastalSnakeNavigator:
         return None  # ocean (DIVING) or coast boundary (RETURNING)
 
     def _is_at_coast_now(self) -> bool:
-        """Маяк активен → ТОЛЬКО линия маяка. Никаких визуальных проверок воды.
-        Маяк = единственная точка остановки RETURNING.
-        Если маяка нет → визуальная вода как запасной вариант.
-        """
+        """ТОЛЬКО линия маяка. Маяк всегда установлен перед RETURNING.
+        Никаких визуальных проверок воды — маяк единственная точка остановки."""
         if self._footprint_enabled and self._footprint._beacon_cx is not None:
             return self._footprint.is_beyond_beacon_line(self._inland_vec, tolerance=0.5)
-
-        from minimap_reader import analyze_forward_zone
-        mm = self._grab_minimap()
-        seaward = (-self._inland_vec[0], -self._inland_vec[1])
-        z = analyze_forward_zone(mm, seaward, radius=self.coast_detect_radius)
-        return z['water_px'] > 40 and z['land_ratio'] < 0.4
+        return False
 
     def _find_beacon_on_minimap(self, mm: np.ndarray):
         """Detect magenta beacon dot on minimap via HSV moments.
@@ -973,18 +965,35 @@ class CoastalSnakeNavigator:
                 self._homing_steps = 0
                 return True
 
-            # ── НАВИГАЦИЯ: визуальный маяк если виден, иначе сеаворд ──────
+            # ── НАВИГАЦИЯ: визуальный маяк если виден, иначе слепой сеаворд ──
             if self._footprint_enabled and self._footprint._beacon_cx is not None:
                 mm     = self._grab_minimap()
                 beacon = self._find_beacon_on_minimap(mm)
                 if beacon is not None:
                     dx, dy, dist = beacon
                     step_px = float(self._pixels_per_step)
+                    if dist < step_px * 0.5:
+                        # Визуально в точке маяка
+                        self._shift_click()
+                        self._state        = 'HOMING'
+                        self._inland_steps = 0
+                        self._homing_steps = 0
+                        return True
                     frac = min(1.0, dist / step_px)
-                    self._click_vec(dx, dy, frac)
+                    # Физический клик к маяку — НЕ пишем боковой компонент в canvas
+                    # Только seaward компонент записывается чтобы не было дрейфа
+                    self._click_vec(dx, dy, frac, record=False)
+                    seaward = (-self._inland_vec[0], -self._inland_vec[1])
+                    norm = math.hypot(dx, dy)
+                    if norm > 0:
+                        ndx, ndy = dx / norm, dy / norm
+                        sw_proj = max(0.0, ndx * seaward[0] + ndy * seaward[1])
+                        self._footprint.record(sw_proj * frac * seaward[0],
+                                               sw_proj * frac * seaward[1])
                     self._return_steps -= 1
                     return True
 
+            # Слепой сеаворд (маяк не виден на миникарте)
             self._return_steps -= 1
             self._move_perpendicular(toward_water=True)
             return True
