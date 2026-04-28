@@ -1497,16 +1497,55 @@ class TotalHunterApp(ctk.CTk):
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
 
+        # ── Статус калибровки ─────────────────────────────────────────────
+        _pps_saved = self._load_gui_config().get('nav_pps', '—')
+        self.cal_status_label = ctk.CTkLabel(
+            self.tab_calibration,
+            text=f"Шаг миникарты: {_pps_saved} px",
+            font=ctk.CTkFont(size=13),
+        )
+        self.cal_status_label.pack(pady=(2, 0))
+
+        def _run_step_calibration():
+            """Этап 2: замер шага миникарты — полностью автоматический."""
+            from calibration_ui import measure_step_pixels
+            cx   = int(self.nav_cx_entry.get())
+            cy   = int(self.nav_cy_entry.get())
+            step = int(self.nav_step_slider.get())
+            self.cal_status_label.configure(
+                text="Этап 2/2: замер шага (~25 сек)…")
+            self.update()
+            pps = measure_step_pixels(cx, cy, step)
+            self._save_gui_config_key('nav_pps', pps)
+            self.cal_status_label.configure(
+                text=f"✅ Готово. Шаг миникарты: {pps} px")
+
         def _calibrate():
+            """Единая калибровка: Этап 1 (экран) → Этап 2 (шаг) → автосохранение."""
             from calibration_ui import run_calibration
+            # Этап 1: экран
+            self.cal_status_label.configure(text="Этап 1/2: калибровка экрана…")
+            self.update()
             self.withdraw()
             try:
                 point_a, point_b = run_calibration(parent=self)
             finally:
                 self.deiconify()
-            if point_a and point_b:
-                coord_manager.calibrate(point_a, point_b)
-                _update_status()
+            if not (point_a and point_b):
+                self.cal_status_label.configure(text="Отменено.")
+                return
+            coord_manager.calibrate(point_a, point_b)
+            _update_status()
+            # Автосохранение профиля
+            path = PROFILES[self._cal_profile_var.get()]
+            os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+            coord_manager.save(path)
+            # Этап 2: шаг миникарты
+            try:
+                _run_step_calibration()
+            except Exception as e:
+                self.cal_status_label.configure(
+                    text=f"Экран ✅  |  Шаг ❌ ({e})")
 
         def _save_profile():
             coord_manager.dialog_offset_y = self._dialog_offset_y_var.get()
@@ -1517,10 +1556,10 @@ class TotalHunterApp(ctk.CTk):
                                       self._cal_profile_var.get())
             messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
 
-        # ── Кнопка Калибровать — главная (error tonal) ───────────────────
+        # ── Кнопка КАЛИБРОВАТЬ — оба этапа одной кнопкой ─────────────────
         ctk.CTkButton(
             self.tab_calibration,
-            text="КАЛИБРОВАТЬ",
+            text="КАЛИБРОВАТЬ  (экран + шаг)",
             command=_calibrate,
             fg_color=MD3["error"],
             hover_color=MD3["error_hover"],
@@ -1528,36 +1567,16 @@ class TotalHunterApp(ctk.CTk):
             height=56,
             corner_radius=16,
             font=ctk.CTkFont(size=18, weight="bold"),
-        ).pack(fill="x", padx=40, pady=(8, 6))
+        ).pack(fill="x", padx=40, pady=(8, 2))
 
-        # ── Замер шага (nav_pps) ─────────────────────────────────────────
-        self.pps_label = ctk.CTkLabel(
-            self.tab_calibration,
-            text=f"Шаг миникарты: {self._load_gui_config().get('nav_pps', '—')} px",
-            font=ctk.CTkFont(size=13),
-        )
-        self.pps_label.pack(pady=(4, 0))
-
-        def _calibrate_step():
-            from calibration_ui import measure_step_pixels
-            try:
-                cx   = int(self.nav_cx_entry.get())
-                cy   = int(self.nav_cy_entry.get())
-                step = int(self.nav_step_slider.get())
-                pps  = measure_step_pixels(cx, cy, step)
-                self._save_gui_config_key('nav_pps', pps)
-                self.pps_label.configure(text=f"Шаг миникарты: {pps} px")
-            except Exception as e:
-                from tkinter import messagebox
-                messagebox.showerror("Ошибка", str(e))
-
+        # ── Повторный замер шага (без калибровки экрана) ─────────────────
         ctk.CTkButton(
             self.tab_calibration,
-            text="ЗАМЕРИТЬ ШАГ МИНИКАРТЫ",
-            command=_calibrate_step,
-            height=40,
-            corner_radius=12,
-        ).pack(fill="x", padx=40, pady=(4, 6))
+            text="Перезамерить шаг",
+            command=lambda: _run_step_calibration(),
+            height=32,
+            corner_radius=10,
+        ).pack(fill="x", padx=40, pady=(2, 6))
 
         # ── Сохранить / Загрузить — в одну строку ────────────────────────
         save_load_row = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
