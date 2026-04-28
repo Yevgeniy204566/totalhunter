@@ -8,7 +8,7 @@ from navigator import CoastalSnakeNavigator
 
 # ── helpers ───────────────────────────────────────────────────────────────
 
-def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100, footprint_px=0):
+def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100):
     """Build a _read_minimap return dict with all required keys."""
     return {
         'coast_angle': 0.0,
@@ -21,7 +21,6 @@ def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100, footprint_
             'land_px':    land_px,
         },
         'is_at_coast': is_at_coast,
-        'fwd_footprint': {'footprint_px': footprint_px},
     }
 
 
@@ -61,52 +60,28 @@ class TestCoastalSnakeStateMachine:
         # -inland_vec = (-1, 0)
         assert args[0] < 0, f"Expected click toward water (-inland), got {args}"
 
-    def test_homing_clicks_toward_land_when_in_serious_ocean(self):
-        """Серьёзный океан 2 шага подряд (гистерезис): HOMING уходит к суше."""
+    def test_homing_clicks_toward_land_when_in_ocean(self):
+        """In open ocean (is_ocean=True): HOMING clicks inland_vec (toward land)."""
         nav = make_navigator()
         nav._inland_vec = (1.0, 0.0)
-        nav._ocean_streak = 1   # уже 1 шаг был ocean
         with patch.object(nav, '_read_minimap', return_value=_info(is_ocean=True, water_px=600)):
-            with patch.object(nav, '_peek_step', return_value=None):   # streak=2 → retreat
-                nav.step()
+            nav.step()
         nav._click_vec.assert_called_once()
         args = nav._click_vec.call_args[0]
+        # inland_vec = (1, 0)
         assert args[0] > 0, f"Expected click toward land (+inland), got {args}"
-
-    def test_homing_still_moves_seaward_on_first_ocean_step(self):
-        """Первый шаг ocean (streak=1): гистерезис → ещё идём к воде."""
-        nav = make_navigator()
-        nav._inland_vec = (1.0, 0.0)
-        nav._ocean_streak = 0   # первое обнаружение
-        with patch.object(nav, '_read_minimap', return_value=_info(is_ocean=True, water_px=600)):
-            with patch.object(nav, '_peek_step', return_value=None):
-                with patch.object(nav, '_move_perpendicular') as mock_move:
-                    nav.step()
-        mock_move.assert_called_once_with(toward_water=True)   # первый шаг — ещё к воде
-
-    def test_homing_crosses_river_not_panics(self):
-        """Ручей (is_ocean=True но peek видит сушу за ним): HOMING продолжает к воде."""
-        nav = make_navigator()
-        nav._inland_vec = (1.0, 0.0)
-        with patch.object(nav, '_read_minimap', return_value=_info(is_ocean=True, water_px=600)):
-            with patch.object(nav, '_peek_step', return_value=1.5):   # суша за ручьём
-                with patch.object(nav, '_move_perpendicular') as mock_move:
-                    nav.step()
-        mock_move.assert_called_once_with(toward_water=True)
 
     def test_homing_transitions_to_diving_when_at_coast(self):
         nav = make_navigator()
         with patch.object(nav, '_read_minimap', return_value=_info(is_at_coast=True)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
+            nav.step()
         assert nav._state == 'DIVING'
 
     def test_diving_increments_step_counter(self):
         nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
         nav._inland_vec = (1.0, 0.0)
-        with patch.object(nav, '_peek_step', return_value=1.0):
-            nav.step()
+        nav.step()
         assert nav._inland_steps == 1
 
     def test_diving_transitions_to_returning_at_max_depth(self):
@@ -123,12 +98,12 @@ class TestCoastalSnakeStateMachine:
         nav._return_steps = 2
         nav._inland_vec = (1.0, 0.0)
         with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_move_perpendicular') as mock_move:
-                nav.step()
-        mock_move.assert_called_once_with(toward_water=True)
+            nav.step()
+        args = nav._click_vec.call_args[0]
+        assert args[0] < 0, "Return step should click negative inland direction"
 
     def test_returning_stops_when_coast_detected(self):
-        """RETURNING stops when _is_at_coast_now (beacon line or visual water)."""
+        """RETURNING stops when is_at_coast regardless of remaining step count."""
         nav = make_navigator()
         nav._state = 'RETURNING'
         nav._return_steps = 5
@@ -138,7 +113,7 @@ class TestCoastalSnakeStateMachine:
         assert nav._state == 'HOMING'
 
     def test_returning_stops_at_safety_cap(self):
-        """RETURNING stops at safety cap (backstop)."""
+        """RETURNING stops at safety cap even if coast not detected (curved coast)."""
         nav = make_navigator()
         nav._state = 'RETURNING'
         nav._return_steps = 0
@@ -152,11 +127,10 @@ class TestCoastalSnakeStateMachine:
         nav = make_navigator()
         nav._state = 'RETURNING'
         nav._return_steps = 3
-        nav._inland_vec = (1.0, 0.0)
+        nav._inland_vec = (1.0, 0.0)   # frozen dive direction
         original_vec = nav._inland_vec
         with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_move_perpendicular'):
-                nav.step()
+            nav.step()
         assert nav._inland_vec == original_vec, \
             "inland_vec must not change during RETURNING"
 
@@ -187,31 +161,30 @@ class TestInlineShift:
         nav._shift_vec  = (0.0, 1.0)
         with patch.object(nav, '_is_at_coast_now', return_value=True):
             nav.step()
+        nav._click_vec.assert_called_once()
         assert nav._state == 'HOMING'
 
-    def test_return_steps_uses_dive_distance_plus_margin(self):
-        """return_steps = ceil(dive_distance) + 10 — generous backstop for deep/jump dives."""
+    def test_return_steps_safety_cap_horizontal(self):
+        """Horizontal movement: _return_steps = max_inland + 15 (generous safety cap)."""
         nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
         nav._inland_steps = 5
-        nav._dive_distance = 7.5   # jump steps: physical distance > inland_steps
-        nav._inland_vec = (1.0, 0.0)
+        nav._inland_vec = (1.0, 0.0)   # horizontal
         nav._shift_vec  = (0.0, 1.0)
         nav.step()
         assert nav._state == 'RETURNING'
-        assert nav._return_steps == 18   # ceil(7.5)+10 = 8+10 = 18
+        assert nav._return_steps == 20   # 5 + 15
 
-    def test_return_steps_for_deep_dive(self):
-        """20-step dive returns backstop=30 — enough for visual beacon approach."""
-        nav = make_navigator(max_inland=20)
+    def test_return_steps_safety_cap_vertical_no_bonus(self):
+        """Vertical movement: cap is max_inland + 15, same as horizontal."""
+        nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
-        nav._inland_steps = 20
-        nav._dive_distance = 20.0
-        nav._inland_vec = (1.0, 0.0)
-        nav._shift_vec  = (0.0, 1.0)
+        nav._inland_steps = 5
+        nav._inland_vec = (0.0, 1.0)   # vertical
+        nav._shift_vec  = (1.0, 0.0)
         nav.step()
         assert nav._state == 'RETURNING'
-        assert nav._return_steps == 30   # ceil(20)+10
+        assert nav._return_steps == 20   # 5 + 15, no vertical bonus
 
     def test_shift_vec_locked_on_first_real_angle(self):
         """_shift_vec is set only from a non-zero (real) angle, not from fallback 0.0."""
@@ -344,16 +317,14 @@ class TestReadMinimap:
 # ── ocean hard-stop in HOMING ─────────────────────────────────────────────
 
 class TestOceanHardStop:
-    def test_homing_skips_column_when_max_steps_in_open_ocean(self):
-        """Gemini fix: ocean at max_steps → shift + stay HOMING (not RETURNING seaward)."""
+    def test_homing_retreats_when_max_steps_in_open_ocean(self):
         nav = make_navigator()
         nav._state = 'HOMING'
         nav._homing_steps = 10
         with patch.object(nav, '_read_minimap',
                           return_value=_info(is_ocean=True, water_px=700, land_px=0)):
             nav.step()
-        assert nav._state == 'HOMING'
-        assert nav._homing_steps == 0
+        assert nav._state == 'RETURNING'
 
     def test_homing_dives_when_coast_found_normally(self):
         nav = make_navigator()
@@ -361,8 +332,7 @@ class TestOceanHardStop:
         nav._homing_steps = 3
         with patch.object(nav, '_read_minimap',
                           return_value=_info(is_at_coast=True)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
+            nav.step()
         assert nav._state == 'DIVING'
 
     def test_homing_dives_when_max_steps_but_land_ahead(self):
@@ -371,8 +341,7 @@ class TestOceanHardStop:
         nav._homing_steps = 10
         with patch.object(nav, '_read_minimap',
                           return_value=_info(water_px=50, land_px=150)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
+            nav.step()
         assert nav._state == 'DIVING'
 
 
@@ -489,407 +458,139 @@ class TestShiftAlwaysPerpendicular:
 
 # ── blind return phase ────────────────────────────────────────────────────
 
-class TestOceanColumnCheck:
-    def test_ocean_column_skips_dive(self):
-        """At coast: fwd has no land and lots of water → shift, stay HOMING."""
-        nav = make_navigator(min_water=10)
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=0, water_px=500)):
-            with patch.object(nav, '_shift_click') as mock_shift:
-                nav.step()
-        mock_shift.assert_called_once()
+class TestBlindReturnPhase:
+    """RETURNING is blind for first max_inland-1 steps — ignores rivers."""
+
+    def test_blind_steps_set_when_entering_returning(self):
+        """DIVING→RETURNING cardinal: blind = max_inland - 1 (full)."""
+        nav = make_navigator(max_inland=5)
+        nav._state = 'DIVING'
+        nav._inland_steps = 5
+        nav._inland_vec = (1.0, 0.0)   # pure cardinal
+        nav._shift_vec  = (0.0, 1.0)
+        nav.step()
+        assert nav._state == 'RETURNING'
+        assert nav._return_blind_steps == 4   # max_inland - 1
+
+    def test_blind_steps_halved_for_diagonal_45(self):
+        """DIVING→RETURNING 45° diagonal: blind = round((max_inland-1)*0.5)."""
+        nav = make_navigator(max_inland=5)
+        nav._state = 'DIVING'
+        nav._inland_steps = 5
+        nav._inland_vec = (0.707, 0.707)   # 45° diagonal
+        nav._shift_vec  = (-0.707, 0.707)
+        nav.step()
+        assert nav._state == 'RETURNING'
+        assert nav._return_blind_steps == 2   # round(4 * 0.5)
+
+    def test_blind_steps_interpolated_for_mid_angle(self):
+        """DIVING→RETURNING ~26° angle: blind interpolated smoothly."""
+        import math
+        nav = make_navigator(max_inland=5)
+        nav._state = 'DIVING'
+        nav._inland_steps = 5
+        angle = math.radians(26)
+        nav._inland_vec = (math.cos(angle), math.sin(angle))
+        nav._shift_vec  = (-math.sin(angle), math.cos(angle))
+        nav.step()
+        assert nav._state == 'RETURNING'
+        # ratio = tan(26°) ≈ 0.488, factor = 1 - 0.488*0.5 ≈ 0.756, blind = round(4*0.756) = 3
+        assert nav._return_blind_steps == 3
+
+    def test_coast_detection_skipped_during_blind_phase(self):
+        """_is_at_coast_now must NOT be called while blind_steps > 0."""
+        nav = make_navigator(max_inland=5)
+        nav._state = 'RETURNING'
+        nav._return_steps = 8
+        nav._return_blind_steps = 3
+        nav._inland_vec = (1.0, 0.0)
+        with patch.object(nav, '_is_at_coast_now', return_value=True) as mock_coast:
+            nav.step()
+        mock_coast.assert_not_called()
+        assert nav._state == 'RETURNING', "Must stay RETURNING during blind phase"
+
+    def test_blind_steps_decrements_each_return_step(self):
+        """Each RETURNING step decrements _return_blind_steps by 1."""
+        nav = make_navigator(max_inland=5)
+        nav._state = 'RETURNING'
+        nav._return_steps = 8
+        nav._return_blind_steps = 3
+        nav._inland_vec = (1.0, 0.0)
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            nav.step()
+        assert nav._return_blind_steps == 2
+
+    def test_coast_detection_active_after_blind_phase(self):
+        """After blind phase ends (_return_blind_steps=0), coast IS checked."""
+        nav = make_navigator(max_inland=5)
+        nav._state = 'RETURNING'
+        nav._return_steps = 5
+        nav._return_blind_steps = 0   # blind phase over
+        nav._inland_vec = (1.0, 0.0)
+        with patch.object(nav, '_is_at_coast_now', return_value=True) as mock_coast:
+            nav.step()
+        mock_coast.assert_called_once()
         assert nav._state == 'HOMING'
 
-    def test_ocean_column_insufficient_water_dives(self):
-        """At coast: fwd land_px=0 but water_px <= min_water_px → normal dive."""
-        nav = make_navigator(min_water=10)
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=0, water_px=5)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
-        assert nav._state == 'DIVING'
-
-    def test_returning_stops_on_beacon_or_water(self):
-        """RETURNING: _is_at_coast_now=True → shift + HOMING."""
-        nav = make_navigator()
+    def test_river_does_not_abort_returning_during_blind_phase(self):
+        """River (coast=True) during blind phase must NOT trigger shift+HOMING."""
+        nav = make_navigator(max_inland=5)
         nav._state = 'RETURNING'
-        nav._return_steps = 10
+        nav._return_steps = 7   # max_inland + 2
+        nav._return_blind_steps = 4   # max_inland - 1
         nav._inland_vec = (1.0, 0.0)
+        # Simulate coast detection True (river) during all blind steps
+        with patch.object(nav, '_is_at_coast_now', return_value=True):
+            for _ in range(4):   # exhaust blind steps
+                nav.step()
+        assert nav._state == 'RETURNING', "River must not abort RETURNING during blind phase"
+        # Now blind phase done — next step fires vision → HOMING
         with patch.object(nav, '_is_at_coast_now', return_value=True):
             nav.step()
         assert nav._state == 'HOMING'
 
-    def test_returning_continues_toward_coast(self):
-        """RETURNING: not at beacon, not at water → move toward coast."""
-        nav = make_navigator()
+    def test_vision_phase_has_generous_cap(self):
+        """Vision phase = _return_steps - _return_blind_steps = (max_inland+15) - (max_inland-1) = 16."""
+        nav = make_navigator(max_inland=5)
+        nav._state = 'DIVING'
+        nav._inland_steps = 5
+        nav._inland_vec = (1.0, 0.0)
+        nav._shift_vec  = (0.0, 1.0)
+        nav.step()
+        vision_steps = nav._return_steps - nav._return_blind_steps
+        assert vision_steps == 16, \
+            f"Expected 16 vision steps (generous safety cap), got {vision_steps}"
+
+    def test_bot_keeps_walking_until_coast_found_in_vision_phase(self):
+        """Bot walks multiple vision steps until coast is detected — no early exit."""
+        nav = make_navigator(max_inland=5)
         nav._state = 'RETURNING'
-        nav._return_steps = 10
+        nav._return_steps = 20
+        nav._return_blind_steps = 0   # vision phase active
         nav._inland_vec = (1.0, 0.0)
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_move_perpendicular'):
+        # Coast not found for 5 steps, found on step 6
+        responses = [False, False, False, False, False, True]
+        with patch.object(nav, '_is_at_coast_now', side_effect=responses):
+            for i in range(5):
                 nav.step()
+                assert nav._state == 'RETURNING', f"Should stay RETURNING on step {i+1}"
+            nav.step()
+        assert nav._state == 'HOMING', "Should reach HOMING after coast finally found"
+
+    def test_blind_steps_zero_for_max_inland_one(self):
+        """With max_inland=1: blind_steps=0 (no blind phase, always use vision)."""
+        nav = make_navigator(max_inland=1)
+        nav._state = 'DIVING'
+        nav._inland_steps = 1
+        nav._inland_vec = (1.0, 0.0)
+        nav._shift_vec  = (0.0, 1.0)
+        nav.step()
         assert nav._state == 'RETURNING'
+        assert nav._return_blind_steps == 0
 
-
-import math
-from navigator import _clamp_vec
-
-
-class TestClampVec:
-    def test_unit_length(self):
-        """Result is always a unit vector."""
-        result = _clamp_vec((0.0, 1.0), (1.0, 0.0), math.radians(10))
-        length = math.sqrt(result[0]**2 + result[1]**2)
-        assert abs(length - 1.0) < 1e-9
-
-    def test_passes_small_angle(self):
-        """Angle below threshold → v_new returned unchanged."""
-        v_prev = (1.0, 0.0)
-        v_new  = (math.cos(math.radians(5)), math.sin(math.radians(5)))
-        result = _clamp_vec(v_new, v_prev, math.radians(10))
-        assert abs(result[0] - v_new[0]) < 1e-9
-        assert abs(result[1] - v_new[1]) < 1e-9
-
-    def test_clamps_large_angle(self):
-        """Angle above threshold → result is exactly max_delta from v_prev."""
-        v_prev = (1.0, 0.0)
-        v_new  = (0.0, 1.0)   # 90°
-        max_d  = math.radians(10)
-        result = _clamp_vec(v_new, v_prev, max_d)
-        dot    = max(-1.0, min(1.0, result[0]*v_prev[0] + result[1]*v_prev[1]))
-        assert abs(math.acos(dot) - max_d) < 1e-9
-
-    def test_rotates_toward_v_new(self):
-        """Clamping rotates toward v_new (CCW when v_new is CCW of v_prev)."""
-        v_prev = (1.0, 0.0)   # 0°
-        v_new  = (0.0, 1.0)   # 90° CCW
-        result = _clamp_vec(v_new, v_prev, math.radians(10))
-        assert result[1] > 0   # y > 0 → rotated CCW
-
-    def test_exact_threshold_passes(self):
-        """Angle exactly equal to max_delta → v_new unchanged."""
-        max_d  = math.radians(10)
-        v_prev = (1.0, 0.0)
-        v_new  = (math.cos(max_d), math.sin(max_d))
-        result = _clamp_vec(v_new, v_prev, max_d)
-        assert abs(result[0] - v_new[0]) < 1e-9
-        assert abs(result[1] - v_new[1]) < 1e-9
-
-
-class TestAngularDamper:
-    def test_first_dive_no_clamp(self):
-        """First dive: _prev_inland_vec is None → inland_vec unchanged."""
-        nav = make_navigator()
-        nav._max_pitch_delta = math.radians(10)
-        nav._inland_vec      = (0.0, 1.0)
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=50)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
-        assert nav._state == 'DIVING'
-        assert abs(nav._prev_inland_vec[0] - 0.0) < 1e-9
-        assert abs(nav._prev_inland_vec[1] - 1.0) < 1e-9
-
-    def test_second_dive_clamps_large_angle(self):
-        """Second dive with angle > max_pitch_delta → inland_vec clamped."""
-        nav = make_navigator()
-        nav._max_pitch_delta = math.radians(10)
-        nav._prev_inland_vec = (1.0, 0.0)   # previous was 0°
-        nav._inland_vec      = (0.0, 1.0)   # new would be 90°
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=50)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
-        assert nav._state == 'DIVING'
-        iv  = nav._inland_vec
-        dot = max(-1.0, min(1.0, iv[0]*1.0 + iv[1]*0.0))
-        assert abs(math.acos(dot) - math.radians(10)) < 1e-9
-
-    def test_damper_disabled_at_zero(self):
-        """max_pitch_delta=0 → no clamping regardless of angle."""
-        nav = make_navigator()
-        nav._max_pitch_delta = 0.0
-        nav._prev_inland_vec = (1.0, 0.0)
-        nav._inland_vec      = (0.0, 1.0)
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=50)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
-        assert abs(nav._prev_inland_vec[0] - 0.0) < 1e-9
-        assert abs(nav._prev_inland_vec[1] - 1.0) < 1e-9
-
-    def test_reset_clears_prev_vec(self):
-        """reset() clears _prev_inland_vec."""
-        nav = make_navigator()
-        nav._prev_inland_vec = (1.0, 0.0)
+    def test_reset_clears_blind_steps(self):
+        """reset() must zero _return_blind_steps."""
+        nav = make_navigator(max_inland=5)
+        nav._return_blind_steps = 4
         nav.reset()
-        assert nav._prev_inland_vec is None
-
-
-class TestFootprintCheck:
-    def test_footprint_ahead_skips_dive(self):
-        """At coast with footprint ahead → shift_click, stay HOMING."""
-        nav = make_navigator()
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=50, footprint_px=25)):
-            with patch.object(nav, '_shift_click') as mock_shift:
-                nav.step()
-        mock_shift.assert_called_once()
-        assert nav._state == 'HOMING'
-
-    def test_no_footprint_dives_normally(self):
-        """At coast with no footprint ahead → normal DIVING transition."""
-        nav = make_navigator()
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=50, footprint_px=0)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
-        assert nav._state == 'DIVING'
-
-    def test_footprint_check_disabled_when_footprint_off(self):
-        """footprint_enabled=False → footprint check skipped, dive proceeds."""
-        nav = make_navigator()
-        nav._footprint_enabled = False
-        with patch.object(nav, '_read_minimap',
-                          return_value=_info(is_at_coast=True, land_px=50, footprint_px=999)):
-            with patch.object(nav, '_peek_step', return_value=1.0):
-                nav.step()
-        assert nav._state == 'DIVING'
-
-
-class TestPeekStep:
-    def _nav(self):
-        nav = make_navigator()
-        nav._inland_vec = (1.0, 0.0)
-        return nav
-
-    def test_land_immediate_returns_1x(self):
-        """radius=30 has land → 1.0 (normal step)."""
-        nav = self._nav()
-        land_info  = {'land_px': 50, 'water_px': 0, 'is_ocean': False, 'land_ratio': 0.5}
-        with patch('minimap_reader.analyze_forward_zone', return_value=land_info):
-            result = nav._peek_step((1.0, 0.0))
-        assert result == 1.0
-
-    def test_water_then_land_mid_returns_1_5x(self):
-        """radius=30 water, radius=60 has land → 1.5 (jump 1 screen)."""
-        nav = self._nav()
-        water_info = {'land_px': 0, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.0}
-        land_info  = {'land_px': 30, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.3}
-        with patch('minimap_reader.analyze_forward_zone', side_effect=[water_info, land_info]):
-            result = nav._peek_step((1.0, 0.0))
-        assert result == 1.5
-
-    def test_water_then_land_far_returns_2x(self):
-        """radius=30 water, radius=60 water, radius=90 has land → 2.0 (jump 2 screens)."""
-        nav = self._nav()
-        water_info = {'land_px': 0, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.0}
-        land_far   = {'land_px': 20, 'water_px': 600, 'is_ocean': False, 'land_ratio': 0.2}
-        with patch('minimap_reader.analyze_forward_zone', side_effect=[water_info, water_info, land_far]):
-            result = nav._peek_step((1.0, 0.0))
-        assert result == 2.0
-
-    def test_all_water_returns_none(self):
-        """All 3 radii no land, water present → None (ocean / coast boundary)."""
-        nav = self._nav()
-        water_info = {'land_px': 0, 'water_px': 600, 'is_ocean': True, 'land_ratio': 0.0}
-        with patch('minimap_reader.analyze_forward_zone', return_value=water_info):
-            result = nav._peek_step((1.0, 0.0))
-        assert result is None
-
-    def test_no_significant_water_returns_1x(self):
-        """radius=30 no land but water_px <= min_water_px → 1.0 (safe to step)."""
-        nav = self._nav()
-        dry_info = {'land_px': 0, 'water_px': 5, 'is_ocean': False, 'land_ratio': 0.0}
-        with patch('minimap_reader.analyze_forward_zone', return_value=dry_info):
-            result = nav._peek_step((1.0, 0.0))
-        assert result == 1.0
-
-
-class TestPeekIntegration:
-    def _nav_diving(self):
-        nav = make_navigator(max_inland=5)
-        nav._state        = 'DIVING'
-        nav._inland_steps = 2
-        nav._dive_distance = 2.0   # matches inland_steps (no jumps)
-        nav._inland_vec   = (1.0, 0.0)
-        nav._shift_vec    = (0.0, 1.0)
-        return nav
-
-    def _nav_returning(self):
-        nav = make_navigator(max_inland=5)
-        nav._state        = 'RETURNING'
-        nav._return_steps = 10
-        nav._inland_vec   = (1.0, 0.0)
-        nav._shift_vec    = (0.0, 1.0)
-        return nav
-
-    def test_diving_normal_step(self):
-        """DIVING: peek=1.0 → _move_perpendicular(toward_water=False, multiplier=1.0)."""
-        nav = self._nav_diving()
-        with patch.object(nav, '_peek_step', return_value=1.0):
-            with patch.object(nav, '_move_perpendicular') as mock_move:
-                nav.step()
-        mock_move.assert_called_once_with(toward_water=False, multiplier=1.0)
-        assert nav._state == 'DIVING'
-
-    def test_diving_jump_step(self):
-        """DIVING: peek=1.5 → multiplier=1.5 passed to _move_perpendicular."""
-        nav = self._nav_diving()
-        with patch.object(nav, '_peek_step', return_value=1.5):
-            with patch.object(nav, '_move_perpendicular') as mock_move:
-                nav.step()
-        mock_move.assert_called_once_with(toward_water=False, multiplier=1.5)
-
-    def test_diving_aborts_on_ocean(self):
-        """DIVING: peek=None (ocean ahead) → shift and start RETURNING."""
-        nav = self._nav_diving()
-        with patch.object(nav, '_peek_step', return_value=None):
-            with patch.object(nav, '_shift_click') as mock_shift:
-                nav.step()
-        mock_shift.assert_called_once()
-        assert nav._state == 'RETURNING'
-        assert nav._return_steps == 12  # ceil(dive_distance=2) + 10 = 12
-
-    def test_returning_normal_step(self):
-        """RETURNING: not at beacon/water → _move_perpendicular(toward_water=True)."""
-        nav = self._nav_returning()
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_move_perpendicular') as mock_move:
-                nav.step()
-        mock_move.assert_called_once_with(toward_water=True)
-        assert nav._state == 'RETURNING'
-
-    def test_returning_stops_at_coast(self):
-        """RETURNING: _is_at_coast_now=True → shift + HOMING."""
-        nav = self._nav_returning()
-        with patch.object(nav, '_is_at_coast_now', return_value=True):
-            with patch.object(nav, '_shift_click') as mock_shift:
-                nav.step()
-        mock_shift.assert_called_once()
-        assert nav._state == 'HOMING'
-
-    def test_diving_jump_2x(self):
-        """DIVING: peek=2.0 → multiplier=2.0 passed to _move_perpendicular."""
-        nav = self._nav_diving()
-        with patch.object(nav, '_peek_step', return_value=2.0):
-            with patch.object(nav, '_move_perpendicular') as mock_move:
-                nav.step()
-        mock_move.assert_called_once_with(toward_water=False, multiplier=2.0)
-
-
-# ── visual beacon return ───────────────────────────────────────────────────
-
-class TestVisualBeaconReturn:
-    """Visual RETURNING: bot tracks magenta beacon dot on minimap."""
-
-    def _nav_with_beacon(self, dist_px=60.0):
-        """RETURNING navigator with beacon set (beacon_cx != None)."""
-        nav = make_navigator(max_inland=5)
-        nav._state        = 'RETURNING'
-        nav._return_steps = 10
-        nav._inland_vec   = (1.0, 0.0)
-        nav._shift_vec    = (0.0, 1.0)
-        # Activate beacon so visual path is entered
-        nav._footprint._beacon_cx = 202
-        nav._footprint._beacon_cy = 200
-        # Patch find_beacon to return controllable result
-        return nav, dist_px
-
-    def test_visual_full_step_when_far(self):
-        """dist > pixels_per_step → fraction=1.0 (full step)."""
-        nav, _ = self._nav_with_beacon()
-        step = nav._pixels_per_step
-        far  = float(step * 5)
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_find_beacon_on_minimap', return_value=(far, 0.0, far)):
-                with patch.object(nav, '_click_vec') as mock_cv:
-                    nav.step()
-        args, _ = mock_cv.call_args
-        assert abs(args[2] - 1.0) < 0.01, f"Expected fraction 1.0, got {args[2]}"
-        assert nav._state == 'RETURNING'
-
-    def test_visual_exact_fraction_for_remainder(self):
-        """dist = 0.7*step → frac=0.7 (exact fraction)."""
-        nav, _ = self._nav_with_beacon()
-        step = float(nav._pixels_per_step)
-        dist = step * 0.7
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
-                with patch.object(nav, '_click_vec') as mock_cv:
-                    nav.step()
-        args, _ = mock_cv.call_args
-        expected_frac = dist / step
-        assert abs(args[2] - expected_frac) < 0.01, \
-            f"Expected fraction {expected_frac:.3f}, got {args[2]}"
-
-    def test_visual_arrived_when_within_half_step(self):
-        """at_coast=True → shift + HOMING (coast check fires first)."""
-        nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_is_at_coast_now', return_value=True):
-            with patch.object(nav, '_shift_click') as mock_shift:
-                nav.step()
-        mock_shift.assert_called_once()
-        assert nav._state == 'HOMING'
-
-    def test_visual_exactly_10_steps_for_10x_distance(self):
-        """dist=10*step → full step (1.0)."""
-        nav, _ = self._nav_with_beacon()
-        step = float(nav._pixels_per_step)
-        dist = step * 10
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
-                with patch.object(nav, '_click_vec') as mock_cv:
-                    nav.step()
-        args, _ = mock_cv.call_args
-        assert abs(args[2] - 1.0) < 0.01, f"Expected full step (1.0) at 10x distance"
-
-    def test_visual_arrived_shifts_and_returns_to_homing(self):
-        """Coast detected → shift + HOMING."""
-        nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_is_at_coast_now', return_value=True):
-            with patch.object(nav, '_shift_click') as mock_shift:
-                nav.step()
-        mock_shift.assert_called_once()
-        assert nav._state == 'HOMING'
-
-    def test_visual_ignores_water_navigates_direct(self):
-        """Visual path does NOT call _move_perpendicular — goes straight to beacon."""
-        nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_find_beacon_on_minimap', return_value=(60.0, 0.0, 60.0)):
-                with patch.object(nav, '_move_perpendicular') as mock_perp:
-                    with patch.object(nav, '_click_vec'):
-                        nav.step()
-        mock_perp.assert_not_called()
-
-    def test_visual_fallback_when_beacon_not_visible(self):
-        """Beacon set but not detected on minimap → fallback to _is_at_coast_now."""
-        nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=None):
-            with patch.object(nav, '_is_at_coast_now', return_value=False):
-                with patch.object(nav, '_move_perpendicular') as mock_perp:
-                    nav.step()
-        mock_perp.assert_called_once_with(toward_water=True)
-
-    def test_visual_fallback_stops_at_beacon_line(self):
-        """Fallback: _is_at_coast_now=True (beacon line) → shift + HOMING."""
-        nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=None):
-            with patch.object(nav, '_is_at_coast_now', return_value=True):
-                with patch.object(nav, '_shift_click') as mock_shift:
-                    nav.step()
-        mock_shift.assert_called_once()
-        assert nav._state == 'HOMING'
-
-    def test_direction_toward_beacon_is_correct(self):
-        """Click direction must point toward the beacon dot on minimap."""
-        nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_is_at_coast_now', return_value=False):
-            with patch.object(nav, '_find_beacon_on_minimap', return_value=(80.0, 0.0, 80.0)):
-                with patch.object(nav, '_click_vec') as mock_cv:
-                    nav.step()
-        args, _ = mock_cv.call_args
-        dx, dy = args[0], args[1]
-        assert dx > 0, f"Expected click toward beacon (dx>0), got dx={dx}"
-        assert abs(dy) < 1.0, f"Expected no vertical component, got dy={dy}"
+        assert nav._return_blind_steps == 0

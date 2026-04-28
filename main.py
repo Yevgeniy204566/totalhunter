@@ -494,44 +494,43 @@ class TotalHunterApp(ctk.CTk):
         self.nav_waterpx_slider.set(500)
         self.nav_waterpx_slider.pack(padx=10, pady=(0, 2), fill="x")
 
-        # Угол нырка (угловой демпфер)
-        self.nav_pitch_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
-        self.nav_pitch_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_pitch_frame, text="Угол нырка (°):",
+        # Коэф. диагонали возврата
+        self.nav_diagblind_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
+        self.nav_diagblind_frame.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(self.nav_diagblind_frame, text="Коэф. диагонали возврата:",
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="15°",
-                                           font=ctk.CTkFont(size=14, weight="bold"),
-                                           text_color=MD3["value_text"])
-        self.nav_pitch_val.pack(side="right")
-        self.nav_pitch_slider = ctk.CTkSlider(
-            nav_sliders_frame, from_=5, to=30, number_of_steps=25,
-            command=self._update_nav_labels,
-            button_color=MD3["primary"],
-            button_hover_color=MD3["primary_dim"],
-            progress_color=MD3["primary"],
-        )
-        self.nav_pitch_slider.set(15)
-        self.nav_pitch_slider.pack(padx=10, pady=(0, 2), fill="x")
-
-        # Порог перекрытия следов (%)
-        self.nav_overlap_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
-        self.nav_overlap_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_overlap_frame, text="Перекрытие следов (%):",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_overlap_val = ctk.CTkLabel(self.nav_overlap_frame, text="50%",
-                                             font=ctk.CTkFont(size=14, weight="bold"),
-                                             text_color=MD3["value_text"])
-        self.nav_overlap_val.pack(side="right")
-        self.nav_overlap_slider = ctk.CTkSlider(
-            nav_sliders_frame, from_=10, to=100, number_of_steps=18,
+        self.nav_diagblind_val = ctk.CTkLabel(self.nav_diagblind_frame, text="0.50",
+                                              font=ctk.CTkFont(size=14, weight="bold"),
+                                              text_color=MD3["value_text"])
+        self.nav_diagblind_val.pack(side="right")
+        self.nav_diagblind_slider = ctk.CTkSlider(
+            nav_sliders_frame, from_=0.0, to=1.0, number_of_steps=10,
             command=self._update_nav_labels,
             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
             progress_color=MD3["primary"],
         )
-        self.nav_overlap_slider.set(50)
-        self.nav_overlap_slider.pack(padx=10, pady=(0, 2), fill="x")
+        self.nav_diagblind_slider.set(0.5)
+        self.nav_diagblind_slider.pack(padx=10, pady=(0, 2), fill="x")
+
+        # Радиус конуса детекции берега
+        self.nav_coastrad_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
+        self.nav_coastrad_frame.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(self.nav_coastrad_frame, text="Конус детекции берега (px):",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_coastrad_val = ctk.CTkLabel(self.nav_coastrad_frame, text="50",
+                                             font=ctk.CTkFont(size=14, weight="bold"),
+                                             text_color=MD3["value_text"])
+        self.nav_coastrad_val.pack(side="right")
+        self.nav_coastrad_slider = ctk.CTkSlider(
+            nav_sliders_frame, from_=10, to=90, number_of_steps=16,
+            command=self._update_nav_labels,
+            button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
+            progress_color=MD3["primary"],
+        )
+        self.nav_coastrad_slider.set(50)
+        self.nav_coastrad_slider.pack(padx=10, pady=(0, 2), fill="x")
 
         # Память следов (TTL секунды)
         self.nav_footprint_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
@@ -1119,16 +1118,12 @@ class TotalHunterApp(ctk.CTk):
         self.nav_inland_val.configure(text=f"{int(self.nav_inland_slider.get())}")
         self.nav_ocean_val.configure(text=f"{int(self.nav_ocean_slider.get())}%")
         self.nav_waterpx_val.configure(text=f"{int(self.nav_waterpx_slider.get())}")
-        if hasattr(self, 'nav_pitch_slider'):
-            self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}°")
-        if hasattr(self, 'nav_overlap_slider'):
-            self.nav_overlap_val.configure(text=f"{int(self.nav_overlap_slider.get())}%")
+        self.nav_diagblind_val.configure(text=f"{self.nav_diagblind_slider.get():.2f}")
+        self.nav_coastrad_val.configure(text=f"{int(self.nav_coastrad_slider.get())}")
         ttl = int(self.nav_footprint_slider.get())
         self.nav_footprint_val.configure(
             text=f"{ttl // 60} мин" if ttl >= 60 else f"{ttl} с"
         )
-        if hasattr(self, 'nav_pitch_slider'):
-            self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}°")
 
     def _update_nav_labels_and_dot(self, _=None):
         self._update_nav_labels()
@@ -1170,12 +1165,11 @@ class TotalHunterApp(ctk.CTk):
                 'move_wait':    round(self.nav_wait_slider.get(), 1),
             }
             cfg["max_inland_steps"]      = int(self.nav_inland_slider.get())
-            cfg["max_pitch_delta"]       = int(self.nav_pitch_slider.get())
             cfg["ocean_land_ratio"]      = int(self.nav_ocean_slider.get()) / 100.0
-            cfg["min_water_px"]            = int(self.nav_waterpx_slider.get())
-            cfg["max_pitch_delta"]         = int(self.nav_pitch_slider.get())
-            cfg["max_footprint_overlap"]   = int(self.nav_overlap_slider.get())
-            cfg["nav_footprint_ttl"]       = int(self.nav_footprint_slider.get())
+            cfg["min_water_px"]          = int(self.nav_waterpx_slider.get())
+            cfg["diagonal_blind_coeff"]  = round(self.nav_diagblind_slider.get(), 2)
+            cfg["coast_detect_radius"]   = int(self.nav_coastrad_slider.get())
+            cfg["nav_footprint_ttl"]     = int(self.nav_footprint_slider.get())
             with open(GUI_CONFIG_PATH, 'w') as f:
                 json.dump(cfg, f, indent=2)
             messagebox.showinfo("OK", "Настройки сохранены")
@@ -1203,15 +1197,10 @@ class TotalHunterApp(ctk.CTk):
             if 'move_wait' in cfg:
                 self.nav_wait_slider.set(cfg['move_wait'])
             self.nav_inland_slider.set(cfg.get("max_inland_steps", 5))
-            self.nav_pitch_slider.set(cfg.get("max_pitch_delta", 15))
             self.nav_ocean_slider.set(int(cfg.get("ocean_land_ratio", 0.03) * 100))
             self.nav_waterpx_slider.set(cfg.get("min_water_px", 500))
-            self.nav_pitch_slider.set(cfg.get("max_pitch_delta", 15))
-            # Gemini fix: если в конфиге float (0.0-1.0 старый формат) → конвертируем в %
-            _overlap_raw = cfg.get("max_footprint_overlap", 50)
-            if isinstance(_overlap_raw, float) and _overlap_raw <= 1.0:
-                _overlap_raw = int(_overlap_raw * 100)
-            self.nav_overlap_slider.set(int(_overlap_raw))
+            self.nav_diagblind_slider.set(cfg.get("diagonal_blind_coeff", 0.5))
+            self.nav_coastrad_slider.set(cfg.get("coast_detect_radius", 50))
             raw_ttl = cfg.get("nav_footprint_ttl", 120)
             self.nav_footprint_slider.set(max(60, min(1200, int(raw_ttl))))
             self._update_nav_labels()
@@ -1249,10 +1238,9 @@ class TotalHunterApp(ctk.CTk):
                     max_inland_steps=int(self.nav_inland_slider.get()),
                     ocean_land_ratio=int(self.nav_ocean_slider.get()) / 100.0,
                     min_water_px=int(self.nav_waterpx_slider.get()),
-                    max_pitch_delta=int(self.nav_pitch_slider.get()),
-                    max_footprint_overlap=self.nav_overlap_slider.get() / 100.0,
+                    diagonal_blind_coeff=round(self.nav_diagblind_slider.get(), 2),
+                    coast_detect_radius=int(self.nav_coastrad_slider.get()),
                     footprint_ttl=float(self.nav_footprint_slider.get()),
-                    pixels_per_step=self._load_gui_config().get('nav_pps') or None,
                 )
                 self.start_button.configure(text=LANGS[self.current_lang]["stop"],
                                             fg_color=MD3["error"],
@@ -1497,55 +1485,16 @@ class TotalHunterApp(ctk.CTk):
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
 
-        # ── Статус калибровки ─────────────────────────────────────────────
-        _pps_saved = self._load_gui_config().get('nav_pps', '—')
-        self.cal_status_label = ctk.CTkLabel(
-            self.tab_calibration,
-            text=f"Шаг миникарты: {_pps_saved} px",
-            font=ctk.CTkFont(size=13),
-        )
-        self.cal_status_label.pack(pady=(2, 0))
-
-        def _run_step_calibration():
-            """Этап 2: замер шага миникарты — полностью автоматический."""
-            from calibration_ui import measure_step_pixels
-            cx   = int(self.nav_cx_entry.get())
-            cy   = int(self.nav_cy_entry.get())
-            step = int(self.nav_step_slider.get())
-            self.cal_status_label.configure(
-                text="Этап 2/2: замер шага (~25 сек)…")
-            self.update()
-            pps = measure_step_pixels(cx, cy, step)
-            self._save_gui_config_key('nav_pps', pps)
-            self.cal_status_label.configure(
-                text=f"✅ Готово. Шаг миникарты: {pps} px")
-
         def _calibrate():
-            """Единая калибровка: Этап 1 (экран) → Этап 2 (шаг) → автосохранение."""
             from calibration_ui import run_calibration
-            # Этап 1: экран
-            self.cal_status_label.configure(text="Этап 1/2: калибровка экрана…")
-            self.update()
             self.withdraw()
             try:
                 point_a, point_b = run_calibration(parent=self)
             finally:
                 self.deiconify()
-            if not (point_a and point_b):
-                self.cal_status_label.configure(text="Отменено.")
-                return
-            coord_manager.calibrate(point_a, point_b)
-            _update_status()
-            # Автосохранение профиля
-            path = PROFILES[self._cal_profile_var.get()]
-            os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-            coord_manager.save(path)
-            # Этап 2: шаг миникарты
-            try:
-                _run_step_calibration()
-            except Exception as e:
-                self.cal_status_label.configure(
-                    text=f"Экран ✅  |  Шаг ❌ ({e})")
+            if point_a and point_b:
+                coord_manager.calibrate(point_a, point_b)
+                _update_status()
 
         def _save_profile():
             coord_manager.dialog_offset_y = self._dialog_offset_y_var.get()
@@ -1556,10 +1505,10 @@ class TotalHunterApp(ctk.CTk):
                                       self._cal_profile_var.get())
             messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
 
-        # ── Кнопка КАЛИБРОВАТЬ — оба этапа одной кнопкой ─────────────────
+        # ── Кнопка Калибровать — главная (error tonal) ───────────────────
         ctk.CTkButton(
             self.tab_calibration,
-            text="КАЛИБРОВАТЬ  (экран + шаг)",
+            text="КАЛИБРОВАТЬ",
             command=_calibrate,
             fg_color=MD3["error"],
             hover_color=MD3["error_hover"],
@@ -1567,16 +1516,7 @@ class TotalHunterApp(ctk.CTk):
             height=56,
             corner_radius=16,
             font=ctk.CTkFont(size=18, weight="bold"),
-        ).pack(fill="x", padx=40, pady=(8, 2))
-
-        # ── Повторный замер шага (без калибровки экрана) ─────────────────
-        ctk.CTkButton(
-            self.tab_calibration,
-            text="Перезамерить шаг",
-            command=lambda: _run_step_calibration(),
-            height=32,
-            corner_radius=10,
-        ).pack(fill="x", padx=40, pady=(2, 6))
+        ).pack(fill="x", padx=40, pady=(8, 6))
 
         # ── Сохранить / Загрузить — в одну строку ────────────────────────
         save_load_row = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
