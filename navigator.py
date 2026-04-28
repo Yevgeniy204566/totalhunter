@@ -536,8 +536,7 @@ class CoastalSnakeNavigator:
         self._homing_steps       = 0
         self._return_steps: float = 0.0
         self._dive_distance: float = 0.0
-        self._ocean_streak: int   = 0    # гистерезис осцилляции в HOMING
-        self._return_water_streak: int = 0  # счётчик воды в RETURNING
+        self._ocean_streak: int   = 0    # Gemini: гистерезис осцилляции
 
         self._coast_angle        = 0.0
         self._inland_vec         = (1.0, 0.0)
@@ -561,7 +560,6 @@ class CoastalSnakeNavigator:
         self._homing_steps  = 0
         self._return_steps  = 0
         self._ocean_streak  = 0
-        self._return_water_streak = 0
 
         self._angle_init         = False
         self._inland_vec         = (1.0, 0.0)
@@ -962,19 +960,6 @@ class CoastalSnakeNavigator:
             return True
 
         if self._state == 'RETURNING':
-            # Water check: 2 consecutive water frames = real coast reached, not a river
-            if is_water:
-                self._return_water_streak += 1
-                if self._return_water_streak >= 2:
-                    self._shift_click()
-                    self._state             = 'HOMING'
-                    self._inland_steps      = 0
-                    self._homing_steps      = 0
-                    self._return_water_streak = 0
-                return True
-            else:
-                self._return_water_streak = 0
-
             if self._force_shift_after > 0 and self._steps_since_shift >= self._force_shift_after:
                 self._shift_click()
                 return True
