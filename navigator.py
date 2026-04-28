@@ -960,6 +960,13 @@ class CoastalSnakeNavigator:
             return True
 
         if self._state == 'RETURNING':
+            if is_water:
+                self._shift_click()
+                self._state        = 'HOMING'
+                self._inland_steps = 0
+                self._homing_steps = 0
+                return True
+
             if self._force_shift_after > 0 and self._steps_since_shift >= self._force_shift_after:
                 self._shift_click()
                 return True
