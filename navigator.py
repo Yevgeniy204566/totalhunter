@@ -964,22 +964,16 @@ class CoastalSnakeNavigator:
                 beacon = self._find_beacon_on_minimap(mm)
                 if beacon is not None:
                     dx, dy, dist = beacon
-                    if dist < 10:
-                        # Arrived at beacon
+                    step_px = float(self._pixels_per_step)
+                    if dist < step_px * 0.5:
+                        # Arrived: within half a step from beacon
                         self._shift_click()
                         self._state        = 'HOMING'
                         self._inland_steps = 0
                         self._homing_steps = 0
                         return True
-                    # Adaptive step: full → 1/2 → 1/3 → 1/5 as beacon gets close
-                    if dist > 80:
-                        frac = 1.0
-                    elif dist > 50:
-                        frac = 0.5
-                    elif dist > 25:
-                        frac = 1.0 / 3.0
-                    else:
-                        frac = 0.2
+                    # Exact fraction: dist/step → full steps until remainder, then 1 fractional step
+                    frac = min(1.0, dist / step_px)
                     self._click_vec(dx, dy, frac)
                     self._return_steps -= 1
                     return True

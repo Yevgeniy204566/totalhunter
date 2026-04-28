@@ -784,46 +784,57 @@ class TestVisualBeaconReturn:
         return nav, dist_px
 
     def test_visual_full_step_when_far(self):
-        """dist>80px → fraction=1.0 (full step)."""
+        """dist > pixels_per_step → fraction=1.0 (full step, clamped by min(1.0, dist/step))."""
         nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(81.0, 0.0, 81.0)):
+        step = nav._pixels_per_step   # 20 by default
+        far  = float(step * 5)        # 100px — clearly more than 1 step
+        with patch.object(nav, '_find_beacon_on_minimap', return_value=(far, 0.0, far)):
             with patch.object(nav, '_click_vec') as mock_cv:
                 nav.step()
-        args, kwargs = mock_cv.call_args
-        assert abs(args[2] - 1.0) < 0.01, f"Expected fraction 1.0, got {args[2]}"
+        args, _ = mock_cv.call_args
+        assert abs(args[2] - 1.0) < 0.01, f"Expected fraction 1.0 when dist>>step, got {args[2]}"
         assert nav._state == 'RETURNING'
 
-    def test_visual_half_step_when_mid(self):
-        """50<dist<=80px → fraction=0.5."""
+    def test_visual_exact_fraction_for_remainder(self):
+        """dist = 1.5 * step → fraction = 1.0 (first step), next call would be 0.5."""
         nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(60.0, 0.0, 60.0)):
+        step = float(nav._pixels_per_step)
+        dist = step * 0.7    # 70% of one step — should give frac=0.7
+        with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
             with patch.object(nav, '_click_vec') as mock_cv:
                 nav.step()
         args, _ = mock_cv.call_args
-        assert abs(args[2] - 0.5) < 0.01, f"Expected fraction 0.5, got {args[2]}"
+        expected_frac = dist / step
+        assert abs(args[2] - expected_frac) < 0.01, \
+            f"Expected fraction {expected_frac:.3f} (dist/step), got {args[2]}"
 
-    def test_visual_third_step_when_close(self):
-        """25<dist<=50px → fraction=1/3."""
+    def test_visual_arrived_when_within_half_step(self):
+        """dist < step*0.5 → arrived at beacon → shift + HOMING."""
         nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(35.0, 0.0, 35.0)):
-            with patch.object(nav, '_click_vec') as mock_cv:
+        step = float(nav._pixels_per_step)
+        dist = step * 0.4    # less than half step
+        with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
+            with patch.object(nav, '_shift_click') as mock_shift:
                 nav.step()
-        args, _ = mock_cv.call_args
-        assert abs(args[2] - 1.0 / 3.0) < 0.01, f"Expected fraction 1/3, got {args[2]}"
+        mock_shift.assert_called_once()
+        assert nav._state == 'HOMING'
 
-    def test_visual_fifth_step_when_very_close(self):
-        """dist<=25px → fraction=0.2 (1/5)."""
+    def test_visual_exactly_10_steps_for_10x_distance(self):
+        """dist=10*step → needs exactly 10 full steps (frac=1.0 each)."""
         nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(20.0, 0.0, 20.0)):
+        step = float(nav._pixels_per_step)
+        dist = step * 10    # exactly 10 steps away
+        with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
             with patch.object(nav, '_click_vec') as mock_cv:
                 nav.step()
         args, _ = mock_cv.call_args
-        assert abs(args[2] - 0.2) < 0.01, f"Expected fraction 0.2, got {args[2]}"
+        assert abs(args[2] - 1.0) < 0.01, f"Expected full step (1.0) at 10x distance"
 
     def test_visual_arrived_shifts_and_returns_to_homing(self):
-        """dist<10px → arrived at beacon → shift + HOMING."""
+        """Alias for arrived test — backwards compat."""
         nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(5.0, 0.0, 5.0)):
+        step = float(nav._pixels_per_step)
+        with patch.object(nav, '_find_beacon_on_minimap', return_value=(step * 0.3, 0.0, step * 0.3)):
             with patch.object(nav, '_shift_click') as mock_shift:
                 nav.step()
         mock_shift.assert_called_once()
