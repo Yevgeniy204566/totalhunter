@@ -964,28 +964,8 @@ class CoastalSnakeNavigator:
                 self._shift_click()
                 return True
 
-            # Visual beacon navigation — active only when beacon is placed
-            if self._footprint_enabled and self._footprint._beacon_cx is not None:
-                mm     = self._grab_minimap()
-                beacon = self._find_beacon_on_minimap(mm)
-                if beacon is not None:
-                    dx, dy, dist = beacon
-                    step_px = float(self._pixels_per_step)
-                    if dist < step_px * 0.5:
-                        # Arrived: within half a step from beacon
-                        self._shift_click()
-                        self._state        = 'HOMING'
-                        self._inland_steps = 0
-                        self._homing_steps = 0
-                        return True
-                    # Exact fraction: dist/step → full steps until remainder, then 1 fractional step
-                    frac = min(1.0, dist / step_px)
-                    self._click_vec(dx, dy, frac)
-                    self._return_steps -= 1
-                    return True
-                # Beacon placed but dot not visible on minimap → fall through to canvas math
-
-            # Fallback: no visual beacon → beacon-line math or safety cap
+            # ── СТОП: проверяется ВСЕГДА, до любой навигации ──────────────
+            # beacon_line ИЛИ визуальная вода в сеаворд направлении (OR)
             cap_hit  = self._return_steps <= 0
             at_coast = self._is_at_coast_now()
             if cap_hit or at_coast:
@@ -994,6 +974,19 @@ class CoastalSnakeNavigator:
                 self._inland_steps = 0
                 self._homing_steps = 0
                 return True
+
+            # ── НАВИГАЦИЯ: визуальный маяк если виден, иначе сеаворд ──────
+            if self._footprint_enabled and self._footprint._beacon_cx is not None:
+                mm     = self._grab_minimap()
+                beacon = self._find_beacon_on_minimap(mm)
+                if beacon is not None:
+                    dx, dy, dist = beacon
+                    step_px = float(self._pixels_per_step)
+                    frac = min(1.0, dist / step_px)
+                    self._click_vec(dx, dy, frac)
+                    self._return_steps -= 1
+                    return True
+
             self._return_steps -= 1
             self._move_perpendicular(toward_water=True)
             return True

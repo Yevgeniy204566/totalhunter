@@ -797,57 +797,57 @@ class TestVisualBeaconReturn:
         return nav, dist_px
 
     def test_visual_full_step_when_far(self):
-        """dist > pixels_per_step → fraction=1.0 (full step, clamped by min(1.0, dist/step))."""
+        """dist > pixels_per_step → fraction=1.0 (full step)."""
         nav, _ = self._nav_with_beacon()
-        step = nav._pixels_per_step   # 20 by default
-        far  = float(step * 5)        # 100px — clearly more than 1 step
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(far, 0.0, far)):
-            with patch.object(nav, '_click_vec') as mock_cv:
-                nav.step()
+        step = nav._pixels_per_step
+        far  = float(step * 5)
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            with patch.object(nav, '_find_beacon_on_minimap', return_value=(far, 0.0, far)):
+                with patch.object(nav, '_click_vec') as mock_cv:
+                    nav.step()
         args, _ = mock_cv.call_args
-        assert abs(args[2] - 1.0) < 0.01, f"Expected fraction 1.0 when dist>>step, got {args[2]}"
+        assert abs(args[2] - 1.0) < 0.01, f"Expected fraction 1.0, got {args[2]}"
         assert nav._state == 'RETURNING'
 
     def test_visual_exact_fraction_for_remainder(self):
-        """dist = 1.5 * step → fraction = 1.0 (first step), next call would be 0.5."""
+        """dist = 0.7*step → frac=0.7 (exact fraction)."""
         nav, _ = self._nav_with_beacon()
         step = float(nav._pixels_per_step)
-        dist = step * 0.7    # 70% of one step — should give frac=0.7
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
-            with patch.object(nav, '_click_vec') as mock_cv:
-                nav.step()
+        dist = step * 0.7
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
+                with patch.object(nav, '_click_vec') as mock_cv:
+                    nav.step()
         args, _ = mock_cv.call_args
         expected_frac = dist / step
         assert abs(args[2] - expected_frac) < 0.01, \
-            f"Expected fraction {expected_frac:.3f} (dist/step), got {args[2]}"
+            f"Expected fraction {expected_frac:.3f}, got {args[2]}"
 
     def test_visual_arrived_when_within_half_step(self):
-        """dist < step*0.5 → arrived at beacon → shift + HOMING."""
+        """at_coast=True → shift + HOMING (coast check fires first)."""
         nav, _ = self._nav_with_beacon()
-        step = float(nav._pixels_per_step)
-        dist = step * 0.4    # less than half step
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
+        with patch.object(nav, '_is_at_coast_now', return_value=True):
             with patch.object(nav, '_shift_click') as mock_shift:
                 nav.step()
         mock_shift.assert_called_once()
         assert nav._state == 'HOMING'
 
     def test_visual_exactly_10_steps_for_10x_distance(self):
-        """dist=10*step → needs exactly 10 full steps (frac=1.0 each)."""
+        """dist=10*step → full step (1.0)."""
         nav, _ = self._nav_with_beacon()
         step = float(nav._pixels_per_step)
-        dist = step * 10    # exactly 10 steps away
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
-            with patch.object(nav, '_click_vec') as mock_cv:
-                nav.step()
+        dist = step * 10
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            with patch.object(nav, '_find_beacon_on_minimap', return_value=(dist, 0.0, dist)):
+                with patch.object(nav, '_click_vec') as mock_cv:
+                    nav.step()
         args, _ = mock_cv.call_args
         assert abs(args[2] - 1.0) < 0.01, f"Expected full step (1.0) at 10x distance"
 
     def test_visual_arrived_shifts_and_returns_to_homing(self):
-        """Alias for arrived test — backwards compat."""
+        """Coast detected → shift + HOMING."""
         nav, _ = self._nav_with_beacon()
-        step = float(nav._pixels_per_step)
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(step * 0.3, 0.0, step * 0.3)):
+        with patch.object(nav, '_is_at_coast_now', return_value=True):
             with patch.object(nav, '_shift_click') as mock_shift:
                 nav.step()
         mock_shift.assert_called_once()
@@ -856,10 +856,11 @@ class TestVisualBeaconReturn:
     def test_visual_ignores_water_navigates_direct(self):
         """Visual path does NOT call _move_perpendicular — goes straight to beacon."""
         nav, _ = self._nav_with_beacon()
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(60.0, 0.0, 60.0)):
-            with patch.object(nav, '_move_perpendicular') as mock_perp:
-                with patch.object(nav, '_click_vec'):
-                    nav.step()
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            with patch.object(nav, '_find_beacon_on_minimap', return_value=(60.0, 0.0, 60.0)):
+                with patch.object(nav, '_move_perpendicular') as mock_perp:
+                    with patch.object(nav, '_click_vec'):
+                        nav.step()
         mock_perp.assert_not_called()
 
     def test_visual_fallback_when_beacon_not_visible(self):
@@ -884,10 +885,10 @@ class TestVisualBeaconReturn:
     def test_direction_toward_beacon_is_correct(self):
         """Click direction must point toward the beacon dot on minimap."""
         nav, _ = self._nav_with_beacon()
-        # Beacon is to the RIGHT (dx=+80, dy=0) on minimap
-        with patch.object(nav, '_find_beacon_on_minimap', return_value=(80.0, 0.0, 80.0)):
-            with patch.object(nav, '_click_vec') as mock_cv:
-                nav.step()
+        with patch.object(nav, '_is_at_coast_now', return_value=False):
+            with patch.object(nav, '_find_beacon_on_minimap', return_value=(80.0, 0.0, 80.0)):
+                with patch.object(nav, '_click_vec') as mock_cv:
+                    nav.step()
         args, _ = mock_cv.call_args
         dx, dy = args[0], args[1]
         assert dx > 0, f"Expected click toward beacon (dx>0), got dx={dx}"
