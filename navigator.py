@@ -933,7 +933,8 @@ class CoastalSnakeNavigator:
             if self._inland_steps >= self.max_inland_steps:
                 self._shift_click()
                 self._state             = 'RETURNING'
-                self._return_steps      = self._inland_steps + 3  # backstop
+                # Backstop = actual physical distance dived + generous margin for diagonal visual approach
+                self._return_steps      = int(math.ceil(self._dive_distance)) + 10
                 self._dive_distance     = 0.0
                 self._steps_since_shift = 0
                 return True
@@ -949,7 +950,7 @@ class CoastalSnakeNavigator:
                 # Нырнули N>0 шагов, потом океан → нормальный аборт
                 self._shift_click()
                 self._state             = 'RETURNING'
-                self._return_steps      = self._inland_steps + 3  # backstop
+                self._return_steps      = int(math.ceil(self._dive_distance)) + 10
                 self._dive_distance     = 0.0
                 self._steps_since_shift = 0
                 return True

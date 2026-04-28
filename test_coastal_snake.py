@@ -189,17 +189,29 @@ class TestInlineShift:
             nav.step()
         assert nav._state == 'HOMING'
 
-    def test_return_steps_equals_inland_steps_plus_margin(self):
-        """return_steps = inland_steps + 3 — backstop cap."""
+    def test_return_steps_uses_dive_distance_plus_margin(self):
+        """return_steps = ceil(dive_distance) + 10 — generous backstop for deep/jump dives."""
         nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
         nav._inland_steps = 5
-        nav._dive_distance = 7.5
+        nav._dive_distance = 7.5   # jump steps: physical distance > inland_steps
         nav._inland_vec = (1.0, 0.0)
         nav._shift_vec  = (0.0, 1.0)
         nav.step()
         assert nav._state == 'RETURNING'
-        assert nav._return_steps == 8   # inland_steps(5) + 3
+        assert nav._return_steps == 18   # ceil(7.5)+10 = 8+10 = 18
+
+    def test_return_steps_for_deep_dive(self):
+        """20-step dive returns backstop=30 — enough for visual beacon approach."""
+        nav = make_navigator(max_inland=20)
+        nav._state = 'DIVING'
+        nav._inland_steps = 20
+        nav._dive_distance = 20.0
+        nav._inland_vec = (1.0, 0.0)
+        nav._shift_vec  = (0.0, 1.0)
+        nav.step()
+        assert nav._state == 'RETURNING'
+        assert nav._return_steps == 30   # ceil(20)+10
 
     def test_shift_vec_locked_on_first_real_angle(self):
         """_shift_vec is set only from a non-zero (real) angle, not from fallback 0.0."""
@@ -697,10 +709,11 @@ class TestPeekStep:
 class TestPeekIntegration:
     def _nav_diving(self):
         nav = make_navigator(max_inland=5)
-        nav._state       = 'DIVING'
+        nav._state        = 'DIVING'
         nav._inland_steps = 2
-        nav._inland_vec  = (1.0, 0.0)
-        nav._shift_vec   = (0.0, 1.0)
+        nav._dive_distance = 2.0   # matches inland_steps (no jumps)
+        nav._inland_vec   = (1.0, 0.0)
+        nav._shift_vec    = (0.0, 1.0)
         return nav
 
     def _nav_returning(self):
@@ -736,7 +749,7 @@ class TestPeekIntegration:
                 nav.step()
         mock_shift.assert_called_once()
         assert nav._state == 'RETURNING'
-        assert nav._return_steps == 5  # inland_steps(2) + 3 margin
+        assert nav._return_steps == 12  # ceil(dive_distance=2) + 10 = 12
 
     def test_returning_normal_step(self):
         """RETURNING: not at beacon/water → _move_perpendicular(toward_water=True)."""
