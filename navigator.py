@@ -232,17 +232,22 @@ class FootprintCanvas:
         self._beacon_cy = None
 
     def render_beacon_overlay(self, minimap_shape: tuple, pixels_per_step: int = 20) -> np.ndarray:
-        """Return BGR image with magenta beacon circle at canvas-derived position."""
+        """Return BGR image with magenta beacon circle.
+        Always drawn: clamped to minimap edge when beyond bounds so the bot
+        always has a visible direction target regardless of dive depth."""
         h, w = minimap_shape[:2]
         overlay = np.zeros((h, w, 3), dtype=np.uint8)
         if self._beacon_cx is None:
             return overlay
         dx = self._beacon_cx - self._cx
         dy = self._beacon_cy - self._cy
-        px = int(round(w // 2 + dx * pixels_per_step))
-        py = int(round(h // 2 + dy * pixels_per_step))
-        if 0 <= px < w and 0 <= py < h:
-            cv2.circle(overlay, (px, py), 12, self.BEACON_COLOR, -1)
+        px_f = w // 2 + dx * pixels_per_step
+        py_f = h // 2 + dy * pixels_per_step
+        margin = 14   # keep circle fully inside edge
+        # Clamp to minimap interior — edge position still points correct direction
+        px = int(round(max(margin, min(w - 1 - margin, px_f))))
+        py = int(round(max(margin, min(h - 1 - margin, py_f))))
+        cv2.circle(overlay, (px, py), 12, self.BEACON_COLOR, -1)
         return overlay
 
 
