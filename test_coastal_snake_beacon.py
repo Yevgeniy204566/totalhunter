@@ -289,7 +289,7 @@ def test_returning_blind_transitions_to_scan_when_close():
          patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
         nav.step()
 
-    assert nav._state in ('RETURNING_SCAN', 'RETURNING_BEACON', 'HOMING')
+    assert nav._state == 'RETURNING_SCAN'
 
 def test_returning_blind_cap_triggers_shift():
     """return_steps==0 → shift + HOMING."""
@@ -416,6 +416,7 @@ def test_returning_beacon_cap_triggers_shift():
 
     mock_shift.assert_called_once()
     assert nav._state == 'HOMING'
+    assert nav._beacon_grid is None
 
 # ── step() dispatch ──────────────────────────────────────────────────────
 

@@ -153,7 +153,8 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
     def _step_returning_blind(self) -> bool:
         if self._force_shift_after > 0 and self._steps_since_shift >= self._force_shift_after:
             self._shift_click()
-            self._state = 'HOMING'
+            self._state       = 'HOMING'
+            self._beacon_grid = None
             return True
 
         if self._return_steps <= 0:
