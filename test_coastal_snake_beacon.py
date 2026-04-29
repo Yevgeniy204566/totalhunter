@@ -247,7 +247,6 @@ def _nav_in_returning_blind(nav):
     nav._bot_gcy           = 0.0
     nav._steps_since_shift = 0
     nav._force_shift_after = 0
-    nav._beacon_lost_streak = 0
 
 # ── RETURNING_BLIND ──────────────────────────────────────────────────────
 
@@ -390,19 +389,18 @@ def test_returning_beacon_stops_when_close():
     assert nav._beacon_grid is None
 
 def test_returning_beacon_fallback_after_3_lost_frames():
-    """If beacon not found for 3 consecutive frames → RETURNING_SCAN."""
+    """Beacon not found in BEACON → back to RETURNING_SCAN, NO movement."""
     nav = _make_nav()
     _nav_in_returning_blind(nav)
-    nav._state              = 'RETURNING_BEACON'
-    nav._beacon_lost_streak = 2   # about to hit 3
+    nav._state = 'RETURNING_BEACON'
 
     with patch.object(nav, '_grab_minimap', return_value=_land_minimap()), \
          patch.object(nav, '_find_beacon_on_minimap', return_value=None), \
-         patch.object(nav, '_move_perpendicular'):
+         patch.object(nav, '_move_perpendicular') as mock_move:
         nav.step()
 
     assert nav._state == 'RETURNING_SCAN'
-    assert nav._beacon_lost_streak == 0
+    mock_move.assert_not_called()   # ЗОЛОТОЕ ПРАВИЛО: не двигаться если маяк не найден
 
 def test_returning_beacon_cap_triggers_shift():
     nav = _make_nav()
@@ -449,19 +447,17 @@ def test_step_intercepts_diving_at_max_depth():
 # ── Task 8: reset() + canvas-zero explicit coverage ──────────────────────
 
 def test_reset_clears_beacon_and_canvas():
-    """reset() zeroes beacon_grid, _bot_gcx/y, beacon_lost_streak."""
+    """reset() zeroes beacon_grid and _bot_gcx/y."""
     nav = _make_nav()
-    nav._beacon_grid        = (1.0, 2.0)
-    nav._bot_gcx            = 99.0
-    nav._bot_gcy            = -5.0
-    nav._beacon_lost_streak = 2
+    nav._beacon_grid = (1.0, 2.0)
+    nav._bot_gcx     = 99.0
+    nav._bot_gcy     = -5.0
 
     nav.reset()
 
-    assert nav._beacon_grid        is None
-    assert nav._bot_gcx            == 0.0
-    assert nav._bot_gcy            == 0.0
-    assert nav._beacon_lost_streak == 0
+    assert nav._beacon_grid is None
+    assert nav._bot_gcx     == 0.0
+    assert nav._bot_gcy     == 0.0
 
 def test_canvas_zeroed_at_each_dive_start():
     """_move_perpendicular(toward_water=False) with inland_steps==0 zeroes canvas."""

@@ -27,25 +27,25 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
     navigator.py is never modified.
     """
 
-    MINIMAP_RADIUS      = 90    # px — half of 180px snapshot
-    BEACON_SHIFT_STEPS  = 2     # beacon placed this many shift-steps from dive start
-    SCAN_TRIGGER_RATIO  = 1.2   # activate scan when canvas-dist < ratio * MINIMAP_RADIUS
-    BEACON_LOST_MAX     = 3     # frames beacon can be missing before fallback to SCAN
+    MINIMAP_RADIUS     = 90   # px — half of 180px snapshot
+    BEACON_SHIFT_STEPS = 2    # beacon placed this many shift-steps from dive start
+    SCAN_TRIGGER_RATIO = 1.2  # activate scan when canvas-dist < ratio * MINIMAP_RADIUS
+
+    # ЗОЛОТОЕ ПРАВИЛО: маяк рисуем МЫ — мы ОБЯЗАНЫ его найти.
+    # «Маяк не найден» = БАГ, не кейс. Никаких движений к воде при потере маяка.
 
     def __init__(self, *args, pixels_per_step: int = 20, **kwargs):
         super().__init__(*args, **kwargs)
-        self._pixels_per_step  = pixels_per_step
+        self._pixels_per_step = pixels_per_step
         self._beacon_grid: tuple[float, float] | None = None
-        self._bot_gcx: float   = 0.0   # canvas position in step-space
-        self._bot_gcy: float   = 0.0
-        self._beacon_lost_streak: int = 0
+        self._bot_gcx: float  = 0.0   # canvas position in step-space
+        self._bot_gcy: float  = 0.0
 
     def reset(self):
         super().reset()
-        self._beacon_grid        = None
-        self._bot_gcx            = 0.0
-        self._bot_gcy            = 0.0
-        self._beacon_lost_streak = 0
+        self._beacon_grid = None
+        self._bot_gcx     = 0.0
+        self._bot_gcy     = 0.0
 
     def _click_vec(self, dx: float, dy: float) -> None:
         super()._click_vec(dx, dy)   # pyautogui click + footprint record
@@ -192,12 +192,11 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         beacon_pos = self._find_beacon_on_minimap(mm)
 
         if beacon_pos is not None:
-            self._beacon_lost_streak = 0
             self._state = 'RETURNING_BEACON'
             return self._step_returning_beacon()
 
-        self._return_steps -= 1
-        self._move_perpendicular(toward_water=True)
+        # Маяк не найден → стоять и сканировать следующий шаг. НЕ ДВИГАТЬСЯ.
+        # Это баг (мы сами нарисовали маяк — должны найти). Не добавлять движений к воде.
         return True
 
     def _step_returning_beacon(self) -> bool:
@@ -219,17 +218,10 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         beacon_pos = self._find_beacon_on_minimap(mm)
 
         if beacon_pos is None:
-            self._beacon_lost_streak += 1
-            if self._beacon_lost_streak >= self.BEACON_LOST_MAX:
-                self._beacon_lost_streak = 0
-                self._state = 'RETURNING_SCAN'
-                return self._step_returning_scan()
-            # not yet lost threshold — keep moving toward coast
-            self._return_steps -= 1
-            self._move_perpendicular(toward_water=True)
+            # Маяк не найден → назад в SCAN. НЕ ДВИГАТЬСЯ.
+            self._state = 'RETURNING_SCAN'
             return True
 
-        self._beacon_lost_streak = 0
         h, w = mm.shape[:2]
         px, py = beacon_pos
         dx = float(px - w // 2)
