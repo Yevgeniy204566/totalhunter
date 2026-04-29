@@ -68,3 +68,40 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         land_mask, _ = get_land_water_masks(mm)
         land_resized  = cv2.resize(land_mask, (w, h), interpolation=cv2.INTER_NEAREST)
         return bool(land_resized[py, px] > 0)
+
+    def _place_dynamic_beacon(self) -> None:
+        sv     = self._shift_vec
+        iv     = self._inland_vec
+        depth  = self._inland_steps   # bot is this many steps inland right now
+
+        # Beacon is at coast level (0 inland) + 2 shift steps — FIXED
+        bx = self.BEACON_SHIFT_STEPS * sv[0]
+        by = self.BEACON_SHIFT_STEPS * sv[1]
+
+        mm = self._grab_minimap()   # use self so tests can mock it
+        h, w = mm.shape[:2]
+        cx, cy = w // 2, h // 2
+
+        found = False
+        for i in range(20):
+            # Convert beacon step-pos to minimap pixel relative to bot
+            rel_x = (bx - depth * iv[0]) * self._pixels_per_step
+            rel_y = (by - depth * iv[1]) * self._pixels_per_step
+            px = int(cx + rel_x)
+            py = int(cy + rel_y)
+            if self._is_land_at(mm, px, py):
+                found = True
+                break
+            # Ping-pong Y search: +5px, -5px, +10px, -10px, ...
+            sign   = 1 if i % 2 == 0 else -1
+            offset = (i // 2 + 1) * 5 / self._pixels_per_step
+            by     = self.BEACON_SHIFT_STEPS * sv[1] + sign * offset
+
+        if not found:
+            logging.warning(
+                "_place_dynamic_beacon: land not found in 20 iterations, using default"
+            )
+            bx = self.BEACON_SHIFT_STEPS * sv[0]
+            by = self.BEACON_SHIFT_STEPS * sv[1]
+
+        self._beacon_grid = (bx, by)

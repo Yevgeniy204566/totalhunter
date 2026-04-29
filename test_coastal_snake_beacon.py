@@ -104,3 +104,59 @@ def test_is_land_at_out_of_bounds_returns_false():
     mm = _land_minimap()
     assert nav._is_land_at(mm, -1, 50)  is False
     assert nav._is_land_at(mm, 200, 50) is False
+
+
+# ── Task 4: _place_dynamic_beacon ────────────────────────────────────────
+
+def test_place_beacon_on_land():
+    """Beacon placed 2 shift-steps from coast when land available."""
+    nav = _make_nav()
+    nav._inland_vec  = (1.0, 0.0)
+    nav._shift_vec   = (0.0, 1.0)
+    nav._inland_steps = 5
+    nav._bot_gcx     = 5.0
+    nav._bot_gcy     = 0.0
+
+    with patch.object(nav, '_grab_minimap', return_value=_land_minimap()), \
+         patch.object(nav, '_is_land_at', return_value=True):
+        nav._place_dynamic_beacon()
+
+    bx, by = nav._beacon_grid
+    # Beacon should be at coast (0) + 2 shift steps = (0, 2)
+    assert abs(bx - 0.0) < 1e-6
+    assert abs(by - 2.0) < 1e-6
+
+def test_place_beacon_shifts_off_water():
+    """When first position is water, ping-pong search finds land."""
+    nav = _make_nav()
+    nav._inland_vec  = (1.0, 0.0)
+    nav._shift_vec   = (0.0, 1.0)
+    nav._inland_steps = 5
+    nav._bot_gcx     = 5.0
+    nav._bot_gcy     = 0.0
+
+    # First call returns False (water), second returns True (land)
+    land_responses = [False, True]
+    with patch.object(nav, '_grab_minimap', return_value=_land_minimap()), \
+         patch.object(nav, '_is_land_at', side_effect=land_responses):
+        nav._place_dynamic_beacon()
+
+    assert nav._beacon_grid is not None
+
+def test_place_beacon_fallback_after_20_iterations(caplog):
+    """All 20 iterations fail → use default position + log WARNING."""
+    import logging
+    nav = _make_nav()
+    nav._inland_vec  = (1.0, 0.0)
+    nav._shift_vec   = (0.0, 1.0)
+    nav._inland_steps = 5
+    nav._bot_gcx     = 5.0
+    nav._bot_gcy     = 0.0
+
+    with patch.object(nav, '_grab_minimap', return_value=_water_minimap()), \
+         patch.object(nav, '_is_land_at', return_value=False), \
+         caplog.at_level(logging.WARNING):
+        nav._place_dynamic_beacon()
+
+    assert nav._beacon_grid is not None
+    assert 'land not found' in caplog.text
