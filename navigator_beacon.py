@@ -105,20 +105,40 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             by = self.BEACON_SHIFT_STEPS * sv[1]
 
         self._beacon_grid = (bx, by)
+        # Диагностика: показываем где маяк на миникарте и на суше ли он
+        rel_x = int(cx + (bx - depth * iv[0]) * self._pixels_per_step)
+        rel_y = int(cy + (by - depth * iv[1]) * self._pixels_per_step)
+        logging.info(
+            f"BEACON_PLACE: grid=({bx:.2f},{by:.2f}) "
+            f"minimap_px=({rel_x},{rel_y}) "
+            f"depth={depth} pps={self._pixels_per_step} "
+            f"land={found}"
+        )
 
     def _grab_minimap(self) -> np.ndarray:
         mm = super()._grab_minimap()   # footprints overlay from parent
+        h, w = mm.shape[:2]
+        cx, cy = w // 2, h // 2
 
+        # ── Двухцветная схема берег/вода ─────────────────────────────────
+        # Земля → зелёный, вода → синий.
+        # Overlay рисуем ДО маяка — маяк поверх всего.
+        land_mask, water_mask = get_land_water_masks(mm)
+        land_r  = cv2.resize(land_mask,  (w, h), interpolation=cv2.INTER_NEAREST)
+        water_r = cv2.resize(water_mask, (w, h), interpolation=cv2.INTER_NEAREST)
+        overlay = mm.copy()
+        overlay[land_r  > 0] = (40,  180,  40)   # BGR зелёный = суша
+        overlay[water_r > 0] = (180,  60,  20)   # BGR синий   = вода
+        mm = cv2.addWeighted(mm, 0.5, overlay, 0.5, 0)
+
+        # ── Magenta маяк поверх всего ─────────────────────────────────────
         if self._beacon_grid is not None:
             bx, by = self._beacon_grid
-            h, w = mm.shape[:2]
-            cx, cy = w // 2, h // 2
             rel_x = int((bx - self._bot_gcx) * self._pixels_per_step)
             rel_y = int((by - self._bot_gcy) * self._pixels_per_step)
             px = max(0, min(w - 1, cx + rel_x))
             py = max(0, min(h - 1, cy + rel_y))
-            # BGR magenta (255, 0, 255) drawn ON TOP of footprints
-            cv2.circle(mm, (px, py), 6, (255, 0, 255), -1)
+            cv2.circle(mm, (px, py), 8, (255, 0, 255), -1)   # magenta, чуть крупнее
 
         return mm
 
@@ -190,13 +210,20 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
 
         mm         = self._grab_minimap()
         beacon_pos = self._find_beacon_on_minimap(mm)
+        logging.info(f"BEACON_SCAN: found={beacon_pos} return_steps={self._return_steps}")
 
         if beacon_pos is not None:
             self._state = 'RETURNING_BEACON'
             return self._step_returning_beacon()
 
         # Маяк не найден → стоять и сканировать следующий шаг. НЕ ДВИГАТЬСЯ.
-        # Это баг (мы сами нарисовали маяк — должны найти). Не добавлять движений к воде.
+        # Это баг: мы сами нарисовали маяк — должны найти его всегда.
+        logging.warning(
+            f"BEACON_SCAN: НЕ НАЙДЕН! "
+            f"beacon_grid={self._beacon_grid} "
+            f"bot_gcx={self._bot_gcx:.2f} bot_gcy={self._bot_gcy:.2f} "
+            f"pps={self._pixels_per_step}"
+        )
         return True
 
     def _step_returning_beacon(self) -> bool:
@@ -219,6 +246,11 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
 
         if beacon_pos is None:
             # Маяк не найден → назад в SCAN. НЕ ДВИГАТЬСЯ.
+            logging.warning(
+                f"BEACON_HOME: маяк потерян! "
+                f"beacon_grid={self._beacon_grid} "
+                f"bot=({self._bot_gcx:.2f},{self._bot_gcy:.2f})"
+            )
             self._state = 'RETURNING_SCAN'
             return True
 
@@ -227,8 +259,10 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         dx = float(px - w // 2)
         dy = float(py - h // 2)
         dist = np.hypot(dx, dy)
+        logging.info(f"BEACON_HOME: pos=({px},{py}) dist={dist:.1f}px dx={dx:.0f} dy={dy:.0f}")
 
         if dist < 5.0:
+            logging.info("BEACON_HOME: ПРИЗЕМЛИЛСЯ на маяк → shift → HOMING")
             self._shift_click()
             self._state        = 'HOMING'
             self._inland_steps = 0
