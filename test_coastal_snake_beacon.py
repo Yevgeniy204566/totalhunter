@@ -160,3 +160,39 @@ def test_place_beacon_fallback_after_20_iterations(caplog):
 
     assert nav._beacon_grid is not None
     assert 'land not found' in caplog.text
+
+
+# ── Task 5: _grab_minimap override ───────────────────────────────────────
+
+def test_magenta_drawn_in_processing_buffer():
+    """_grab_minimap() returns frame with magenta pixels when beacon is set."""
+    nav = _make_nav()
+    nav._beacon_grid  = (0.0, 2.0)   # beacon at (0, 2) step-space
+    nav._bot_gcx      = 5.0           # bot is 5 steps inland
+    nav._bot_gcy      = 0.0
+    nav._inland_vec   = (1.0, 0.0)
+    nav._shift_vec    = (0.0, 1.0)
+
+    base_mm = _land_minimap()
+    with patch.object(
+        nav.__class__.__bases__[0], '_grab_minimap', return_value=base_mm.copy()
+    ):
+        mm = nav._grab_minimap()
+
+    # Check magenta pixels exist (BGR: B=255, G=0, R=255)
+    magenta_mask = (mm[:,:,0] == 255) & (mm[:,:,1] == 0) & (mm[:,:,2] == 255)
+    assert magenta_mask.any(), "No magenta pixels found in output frame"
+
+def test_no_magenta_when_beacon_none():
+    """No magenta drawn when beacon_grid is None."""
+    nav = _make_nav()
+    nav._beacon_grid = None
+
+    base_mm = _land_minimap()
+    with patch.object(
+        nav.__class__.__bases__[0], '_grab_minimap', return_value=base_mm.copy()
+    ):
+        mm = nav._grab_minimap()
+
+    magenta_mask = (mm[:,:,0] == 255) & (mm[:,:,1] == 0) & (mm[:,:,2] == 255)
+    assert not magenta_mask.any()

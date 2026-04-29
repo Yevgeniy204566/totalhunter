@@ -105,3 +105,19 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             by = self.BEACON_SHIFT_STEPS * sv[1]
 
         self._beacon_grid = (bx, by)
+
+    def _grab_minimap(self) -> np.ndarray:
+        mm = super()._grab_minimap()   # footprints overlay from parent
+
+        if self._beacon_grid is not None:
+            bx, by = self._beacon_grid
+            h, w = mm.shape[:2]
+            cx, cy = w // 2, h // 2
+            rel_x = int((bx - self._bot_gcx) * self._pixels_per_step)
+            rel_y = int((by - self._bot_gcy) * self._pixels_per_step)
+            px = max(0, min(w - 1, cx + rel_x))
+            py = max(0, min(h - 1, cy + rel_y))
+            # BGR magenta (255, 0, 255) drawn ON TOP of footprints
+            cv2.circle(mm, (px, py), 6, (255, 0, 255), -1)
+
+        return mm
