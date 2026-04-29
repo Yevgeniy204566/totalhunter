@@ -22,10 +22,10 @@ def _water_minimap():
 def test_old_navigator_class_unchanged():
     """CoastalSnakeNavigator from navigator.py must be importable and intact."""
     from navigator import CoastalSnakeNavigator
-    # Check class exists and has expected methods
-    assert hasattr(CoastalSnakeNavigator, '__init__')
-    assert hasattr(CoastalSnakeNavigator, 'reset')
+    nav = CoastalSnakeNavigator.__new__(CoastalSnakeNavigator)
+    assert hasattr(CoastalSnakeNavigator, 'step')
     assert hasattr(CoastalSnakeNavigator, 'move')
+    assert 'max_inland_steps' in CoastalSnakeNavigator.__init__.__code__.co_varnames
 
 
 # ── Test 2 ───────────────────────────────────────────────────────────────
