@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-04-29 (Хангоф #18 — откат к стабильной базе 536772f)
+> Последнее обновление: 2026-04-29 (Хангоф #19 — Dynamic Beacon V2 создан, не прошёл полевой тест)
 
 ---
 
@@ -10,8 +10,9 @@
 | Модуль | Файл | Статус | Дата |
 |---|---|---|---|
 | GUI | main.py | ✅ Восстановлен к 26 апреля, слайдеры: Угол нырка (5-30°, дефолт 15°), Перекрытие следов (10-100%, дефолт 50%) | 2026-04-29 |
-| Движок бирж | engine.py + navigator.py | ✅ СТАБИЛЬНАЯ БАЗА — коммит 536772f, 42 теста ✅ | 2026-04-29 |
-| CoastalSnakeNavigator | navigator.py | ✅ СТАБИЛЬНАЯ БАЗА — возвращён к 26 апреля, RETURNING по canvas-математике, 42 теста ✅ | 2026-04-29 |
+| Движок бирж | engine.py + navigator.py | ✅ СТАБИЛЬНАЯ БАЗА — коммит 536772f, 42 теста ✅. `use_beacon=false` в gui_config.json | 2026-04-29 |
+| CoastalSnakeNavigator | navigator.py | ✅ СТАБИЛЬНАЯ БАЗА — canvas-математика, 42 теста ✅ | 2026-04-29 |
+| CoastalSnakeNavigatorBeacon | navigator_beacon.py | 🟡 СОЗДАН, НЕ ПРОШЁЛ ПОЛЕВОЙ ТЕСТ — бот уходит в воду. `use_beacon=true` → сломано. 33 юнит-теста ✅ | 2026-04-29 |
 | MiniMap Reader | minimap_reader.py | ✅ Готов, analyze_footprint_zone теперь возвращает zone_px | 2026-04-28 |
 | CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 39 тестов, oil dialog HSV detect добавлен | 2026-04-26 |
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
@@ -19,6 +20,36 @@
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
 | Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ Phase 2D + Diamond Rebrand завершены | 2026-04-22 |
 | Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена | 2026-04-21 |
+
+---
+
+## 🟡 Хангоф #19 — Dynamic Beacon V2 создан, полевой тест провален (2026-04-29)
+
+### Что сделано в этой сессии
+
+**✅ Реализовано:**
+- `navigator_beacon.py` — `CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator)`, изолирован
+- Три под-состояния RETURNING: RETURNING_BLIND → RETURNING_SCAN → RETURNING_BEACON
+- Двухцветный overlay миникарты: земля=зелёный, вода=синий, маяк=magenta поверх
+- Диагностический лог: `beacon_debug.log` — BEACON_PLACE, BEACON_SCAN, BEACON_HOME
+- Золотое правило: маяк не найден → СТОЯТЬ, не идти к воде (AP-46)
+- Kill-switch: `gui_config.json` `use_beacon: false/true`
+- `engine.py`: factory-паттерн для выбора навигатора
+- 75 тестов: 42 старых ✅ + 33 новых ✅
+
+**❌ Полевой тест провалился:**
+- `use_beacon=true` → бот уходит в воду (дважды)
+- Причина НЕИЗВЕСТНА: лог теста содержал только pytest-данные, не игровые
+- Подозрения: `nav_pps=12` неверный (нет GUI-калибровки), canvas tracking drift, HSV detection issue
+- Горизонтальный берег: 3-5 пикселей сдвига вместо 1 экрана (проблема и в старом коде)
+
+**Статус:** `use_beacon=false` — работает на старом навигаторе. Beacon-версия требует дальнейшей отладки.
+
+### Что нужно решить перед следующей попыткой
+
+1. **Добавить GUI-калибровку nav_pps** — без точного значения маяк будет в неверном месте
+2. **Диагностика с игровыми данными** — запустить с use_beacon=true и собрать реальный beacon_debug.log
+3. **Понять почему бот уходит в воду** — возможно canvas tracking при RETURNING_BEACON идёт не туда
 
 ---
 
