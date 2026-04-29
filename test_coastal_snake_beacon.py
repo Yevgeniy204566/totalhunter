@@ -82,3 +82,25 @@ def test_canvas_not_zeroed_on_non_first_step():
         nav._inland_vec = (1.0, 0.0)
         nav._move_perpendicular(toward_water=False)
         assert abs(nav._bot_gcx - 4.0) < 1e-6
+
+
+# ── Task 3: _is_land_at ───────────────────────────────────────────────────
+
+def test_is_land_at_returns_true_on_land_pixel():
+    nav = _make_nav()
+    mm = _land_minimap()   # solid green → land mask fires
+    # centre pixel of land minimap should be land
+    cx, cy = mm.shape[1] // 2, mm.shape[0] // 2
+    assert nav._is_land_at(mm, cx, cy) is True
+
+def test_is_land_at_returns_false_on_water_pixel():
+    nav = _make_nav()
+    mm = _water_minimap()
+    cx, cy = mm.shape[1] // 2, mm.shape[0] // 2
+    assert nav._is_land_at(mm, cx, cy) is False
+
+def test_is_land_at_out_of_bounds_returns_false():
+    nav = _make_nav()
+    mm = _land_minimap()
+    assert nav._is_land_at(mm, -1, 50)  is False
+    assert nav._is_land_at(mm, 200, 50) is False

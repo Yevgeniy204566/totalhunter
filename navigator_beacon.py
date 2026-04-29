@@ -60,3 +60,11 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             self._bot_gcx = 0.0
             self._bot_gcy = 0.0
         super()._move_perpendicular(toward_water=toward_water)
+
+    def _is_land_at(self, mm: np.ndarray, px: int, py: int) -> bool:
+        h, w = mm.shape[:2]
+        if not (0 <= px < w and 0 <= py < h):
+            return False
+        land_mask, _ = get_land_water_masks(mm)
+        land_resized  = cv2.resize(land_mask, (w, h), interpolation=cv2.INTER_NEAREST)
+        return bool(land_resized[py, px] > 0)
