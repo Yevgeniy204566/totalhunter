@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import cv2
 from unittest.mock import patch, MagicMock
 
 
@@ -196,3 +197,36 @@ def test_no_magenta_when_beacon_none():
 
     magenta_mask = (mm[:,:,0] == 255) & (mm[:,:,1] == 0) & (mm[:,:,2] == 255)
     assert not magenta_mask.any()
+
+
+# ── Task 6: _find_beacon_on_minimap + _canvas_dist_to_beacon ─────────────
+
+def test_find_beacon_returns_coords_when_magenta_present():
+    """Returns (x, y) centroid when magenta pixels exist."""
+    nav  = _make_nav()
+    mm   = _land_minimap()
+    cv2.circle(mm, (90, 90), 6, (255, 0, 255), -1)   # draw magenta at centre
+    result = nav._find_beacon_on_minimap(mm)
+    assert result is not None
+    x, y = result
+    assert abs(x - 90) <= 5
+    assert abs(y - 90) <= 5
+
+def test_find_beacon_returns_none_when_no_magenta():
+    nav = _make_nav()
+    mm  = _land_minimap()   # no magenta
+    assert nav._find_beacon_on_minimap(mm) is None
+
+def test_canvas_dist_to_beacon_correct():
+    """Distance from bot at (5,0) to beacon at (0,2) — Pythagorean."""
+    nav = _make_nav()
+    nav._beacon_grid = (0.0, 2.0)
+    nav._bot_gcx     = 5.0
+    nav._bot_gcy     = 0.0
+    expected = np.hypot(5.0, 2.0)
+    assert abs(nav._canvas_dist_to_beacon() - expected) < 1e-6
+
+def test_canvas_dist_inf_when_no_beacon():
+    nav = _make_nav()
+    nav._beacon_grid = None
+    assert nav._canvas_dist_to_beacon() == float('inf')

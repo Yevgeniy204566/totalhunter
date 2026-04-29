@@ -121,3 +121,24 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             cv2.circle(mm, (px, py), 6, (255, 0, 255), -1)
 
         return mm
+
+    def _find_beacon_on_minimap(
+        self, mm: np.ndarray
+    ) -> tuple[int, int] | None:
+        """Detect magenta beacon; returns (x, y) centroid or None."""
+        hsv  = cv2.cvtColor(mm, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(
+            hsv,
+            np.array([140, 150, 100]),
+            np.array([170, 255, 255]),
+        )
+        pts = np.column_stack(np.where(mask > 0))
+        if len(pts) < 5:
+            return None
+        return (int(pts[:, 1].mean()), int(pts[:, 0].mean()))   # (x, y)
+
+    def _canvas_dist_to_beacon(self) -> float:
+        if self._beacon_grid is None:
+            return float('inf')
+        bx, by = self._beacon_grid
+        return float(np.hypot(bx - self._bot_gcx, by - self._bot_gcy))
