@@ -142,3 +142,128 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             return float('inf')
         bx, by = self._beacon_grid
         return float(np.hypot(bx - self._bot_gcx, by - self._bot_gcy))
+
+    # ── RETURNING sub-state logic ────────────────────────────────────────────
+
+    def _scan_triggered(self) -> bool:
+        """True when canvas distance to beacon is within SCAN_TRIGGER_RATIO * MINIMAP_RADIUS px."""
+        dist_px = self._canvas_dist_to_beacon() * self._pixels_per_step
+        return dist_px < self.MINIMAP_RADIUS * self.SCAN_TRIGGER_RATIO
+
+    def _step_returning_blind(self) -> bool:
+        if self._force_shift_after > 0 and self._steps_since_shift >= self._force_shift_after:
+            self._shift_click()
+            self._state = 'HOMING'
+            return True
+
+        if self._return_steps <= 0:
+            self._shift_click()
+            self._state        = 'HOMING'
+            self._inland_steps = 0
+            self._homing_steps = 0
+            self._beacon_grid  = None
+            return True
+
+        if self._scan_triggered():
+            self._state = 'RETURNING_SCAN'
+            return self._step_returning_scan()
+
+        self._return_steps -= 1
+        self._move_perpendicular(toward_water=True)
+        return True
+
+    def _step_returning_scan(self) -> bool:
+        if self._force_shift_after > 0 and self._steps_since_shift >= self._force_shift_after:
+            self._shift_click()
+            self._state       = 'HOMING'
+            self._beacon_grid = None
+            return True
+
+        if self._return_steps <= 0:
+            self._shift_click()
+            self._state        = 'HOMING'
+            self._inland_steps = 0
+            self._homing_steps = 0
+            self._beacon_grid  = None
+            return True
+
+        mm         = self._grab_minimap()
+        beacon_pos = self._find_beacon_on_minimap(mm)
+
+        if beacon_pos is not None:
+            self._beacon_lost_streak = 0
+            self._state = 'RETURNING_BEACON'
+            return self._step_returning_beacon()
+
+        self._return_steps -= 1
+        self._move_perpendicular(toward_water=True)
+        return True
+
+    def _step_returning_beacon(self) -> bool:
+        if self._force_shift_after > 0 and self._steps_since_shift >= self._force_shift_after:
+            self._shift_click()
+            self._state       = 'HOMING'
+            self._beacon_grid = None
+            return True
+
+        if self._return_steps <= 0:
+            self._shift_click()
+            self._state        = 'HOMING'
+            self._inland_steps = 0
+            self._homing_steps = 0
+            self._beacon_grid  = None
+            return True
+
+        mm         = self._grab_minimap()
+        beacon_pos = self._find_beacon_on_minimap(mm)
+
+        if beacon_pos is None:
+            self._beacon_lost_streak += 1
+            if self._beacon_lost_streak >= self.BEACON_LOST_MAX:
+                self._beacon_lost_streak = 0
+                self._state = 'RETURNING_SCAN'
+                return self._step_returning_scan()
+            # not yet lost threshold — keep moving toward coast
+            self._return_steps -= 1
+            self._move_perpendicular(toward_water=True)
+            return True
+
+        self._beacon_lost_streak = 0
+        h, w = mm.shape[:2]
+        px, py = beacon_pos
+        dx = float(px - w // 2)
+        dy = float(py - h // 2)
+        dist = np.hypot(dx, dy)
+
+        if dist < 5.0:
+            self._shift_click()
+            self._state        = 'HOMING'
+            self._inland_steps = 0
+            self._homing_steps = 0
+            self._beacon_grid  = None
+            return True
+
+        self._click_vec(dx, dy)
+        self._steps_since_shift += 1
+        self._return_steps -= 1
+        return True
+
+    def step(self, is_water: bool = False) -> bool:
+        # Dispatch our sub-states first
+        if self._state == 'RETURNING_BLIND':
+            return self._step_returning_blind()
+        if self._state == 'RETURNING_SCAN':
+            return self._step_returning_scan()
+        if self._state == 'RETURNING_BEACON':
+            return self._step_returning_beacon()
+
+        # DIVING at max depth: place beacon, then let parent do shift
+        if self._state == 'DIVING' and self._inland_steps >= self.max_inland_steps:
+            self._place_dynamic_beacon()
+            super().step(is_water=is_water)           # parent: shift + sets RETURNING
+            if self._state == 'RETURNING':
+                self._state = 'RETURNING_BLIND'
+            return True
+
+        # All other states (HOMING, DIVING not at max): parent handles
+        return super().step(is_water=is_water)

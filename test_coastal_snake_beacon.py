@@ -230,3 +230,216 @@ def test_canvas_dist_inf_when_no_beacon():
     nav = _make_nav()
     nav._beacon_grid = None
     assert nav._canvas_dist_to_beacon() == float('inf')
+
+
+# ── helper ──────────────────────────────────────────────────────────────
+
+def _nav_in_returning_blind(nav):
+    """Put navigator into RETURNING_BLIND with standard parameters."""
+    nav._state             = 'RETURNING_BLIND'
+    nav._return_steps      = 20
+    nav._inland_steps      = 5
+    nav._homing_steps      = 0
+    nav._inland_vec        = (1.0, 0.0)
+    nav._shift_vec         = (0.0, 1.0)
+    nav._beacon_grid       = (0.0, 2.0)
+    nav._bot_gcx           = 5.0
+    nav._bot_gcy           = 0.0
+    nav._steps_since_shift = 0
+    nav._force_shift_after = 0
+    nav._beacon_lost_streak = 0
+
+# ── RETURNING_BLIND ──────────────────────────────────────────────────────
+
+def test_returning_blind_moves_toward_coast():
+    """RETURNING_BLIND calls _move_perpendicular(toward_water=True)."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._bot_gcx = 50.0   # very far from beacon → scan NOT triggered
+
+    with patch.object(nav, '_move_perpendicular') as mock_move, \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        nav.step()
+
+    mock_move.assert_called_once_with(toward_water=True)
+
+def test_returning_blind_does_not_call_hsv():
+    """HSV detection must NOT run during blind phase."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._bot_gcx = 50.0   # far from beacon
+
+    with patch.object(nav, '_find_beacon_on_minimap') as mock_hsv, \
+         patch.object(nav, '_move_perpendicular'), \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        nav.step()
+
+    mock_hsv.assert_not_called()
+
+def test_returning_blind_transitions_to_scan_when_close():
+    """RETURNING_BLIND → RETURNING_SCAN when canvas_dist < threshold."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    # Force distance below threshold: bot very close to beacon (0,2)
+    nav._bot_gcx = 0.1
+    nav._bot_gcy = 2.1   # ~0.14 steps from (0,2) beacon
+
+    with patch.object(nav, '_find_beacon_on_minimap', return_value=None), \
+         patch.object(nav, '_move_perpendicular'), \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        nav.step()
+
+    assert nav._state in ('RETURNING_SCAN', 'RETURNING_BEACON', 'HOMING')
+
+def test_returning_blind_cap_triggers_shift():
+    """return_steps==0 → shift + HOMING."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._return_steps = 0
+
+    with patch.object(nav, '_shift_click') as mock_shift, \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        nav.step()
+
+    mock_shift.assert_called_once()
+    assert nav._state == 'HOMING'
+
+# ── RETURNING_SCAN ───────────────────────────────────────────────────────
+
+def test_returning_scan_calls_hsv_each_step():
+    """RETURNING_SCAN calls _find_beacon_on_minimap every step."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._state   = 'RETURNING_SCAN'
+    nav._bot_gcx = 0.5
+
+    with patch.object(nav, '_find_beacon_on_minimap', return_value=None) as mock_hsv, \
+         patch.object(nav, '_move_perpendicular'), \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        nav.step()
+
+    mock_hsv.assert_called_once()
+
+def test_returning_scan_transitions_to_beacon_when_found():
+    """RETURNING_SCAN → RETURNING_BEACON when magenta detected."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._state   = 'RETURNING_SCAN'
+    nav._bot_gcx = 0.5
+
+    mm_with_beacon = _land_minimap()
+    cv2.circle(mm_with_beacon, (90, 90), 6, (255, 0, 255), -1)
+
+    with patch.object(nav, '_grab_minimap', return_value=mm_with_beacon), \
+         patch.object(nav, '_click_vec'):
+        nav.step()
+
+    assert nav._state in ('RETURNING_BEACON', 'HOMING')
+
+def test_returning_scan_cap_triggers_shift():
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._state        = 'RETURNING_SCAN'
+    nav._return_steps = 0
+
+    with patch.object(nav, '_shift_click') as mock_shift, \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        nav.step()
+
+    mock_shift.assert_called_once()
+    assert nav._state == 'HOMING'
+    assert nav._beacon_grid is None
+
+# ── RETURNING_BEACON ─────────────────────────────────────────────────────
+
+def test_returning_beacon_moves_toward_beacon():
+    """_click_vec called with vector pointing toward beacon centroid."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._state = 'RETURNING_BEACON'
+
+    mm_with_beacon = _land_minimap()
+    cv2.circle(mm_with_beacon, (100, 80), 6, (255, 0, 255), -1)   # off-centre
+
+    with patch.object(nav, '_grab_minimap', return_value=mm_with_beacon), \
+         patch.object(nav, '_click_vec') as mock_click:
+        nav.step()
+
+    mock_click.assert_called_once()
+    dx, dy = mock_click.call_args[0]
+    assert dx > 0   # beacon is to the right of centre (100 > 90)
+    assert dy < 0   # beacon is above centre (80 < 90)
+
+def test_returning_beacon_stops_when_close():
+    """dist < 5px → shift + HOMING + beacon cleared."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._state = 'RETURNING_BEACON'
+
+    mm_with_beacon = _land_minimap()
+    # Beacon right at centre → dist == 0
+    cv2.circle(mm_with_beacon, (90, 90), 6, (255, 0, 255), -1)
+
+    with patch.object(nav, '_grab_minimap', return_value=mm_with_beacon), \
+         patch.object(nav, '_shift_click') as mock_shift, \
+         patch.object(nav, '_click_vec'):
+        nav.step()
+
+    mock_shift.assert_called_once()
+    assert nav._state == 'HOMING'
+    assert nav._beacon_grid is None
+
+def test_returning_beacon_fallback_after_3_lost_frames():
+    """If beacon not found for 3 consecutive frames → RETURNING_SCAN."""
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._state              = 'RETURNING_BEACON'
+    nav._beacon_lost_streak = 2   # about to hit 3
+
+    with patch.object(nav, '_grab_minimap', return_value=_land_minimap()), \
+         patch.object(nav, '_find_beacon_on_minimap', return_value=None), \
+         patch.object(nav, '_move_perpendicular'):
+        nav.step()
+
+    assert nav._state == 'RETURNING_SCAN'
+    assert nav._beacon_lost_streak == 0
+
+def test_returning_beacon_cap_triggers_shift():
+    nav = _make_nav()
+    _nav_in_returning_blind(nav)
+    nav._state        = 'RETURNING_BEACON'
+    nav._return_steps = 0
+
+    with patch.object(nav, '_shift_click') as mock_shift, \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        nav.step()
+
+    mock_shift.assert_called_once()
+    assert nav._state == 'HOMING'
+
+# ── step() dispatch ──────────────────────────────────────────────────────
+
+def test_step_intercepts_diving_at_max_depth():
+    """step() places beacon and redirects RETURNING → RETURNING_BLIND."""
+    nav = _make_nav()
+    nav._state         = 'DIVING'
+    nav._inland_steps  = nav.max_inland_steps   # at max depth
+    nav._inland_vec    = (1.0, 0.0)
+    nav._shift_vec     = (0.0, 1.0)
+    nav._bot_gcx       = float(nav.max_inland_steps)
+    nav._return_steps  = 0
+
+    with patch.object(nav, '_place_dynamic_beacon') as mock_place, \
+         patch.object(nav, '_shift_click'), \
+         patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
+        # Simulate parent setting RETURNING
+        def fake_super_step(*a, **kw):
+            nav._state        = 'RETURNING'
+            nav._return_steps = nav.max_inland_steps + 15
+        with patch.object(
+            nav.__class__.__bases__[0], 'step', side_effect=fake_super_step
+        ):
+            nav.step()
+
+    mock_place.assert_called_once()
+    assert nav._state == 'RETURNING_BLIND'
