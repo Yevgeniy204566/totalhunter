@@ -9,10 +9,20 @@ Extends CoastalSnakeNavigator with RETURNING phase split into three sub-states:
 navigator.py is never modified.
 """
 import logging
+import os
 import numpy as np
 import cv2
 
 from navigator import CoastalSnakeNavigator, get_land_water_masks
+
+# ── Логирование в файл beacon_debug.log ──────────────────────────────────
+_log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'beacon_debug.log')
+_beacon_logger = logging.getLogger('beacon')
+if not _beacon_logger.handlers:
+    _fh = logging.FileHandler(_log_path, encoding='utf-8')
+    _fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+    _beacon_logger.addHandler(_fh)
+    _beacon_logger.setLevel(logging.DEBUG)
 
 
 class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
@@ -98,7 +108,7 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             by     = self.BEACON_SHIFT_STEPS * sv[1] + sign * offset
 
         if not found:
-            logging.warning(
+            _beacon_logger.warning(
                 "_place_dynamic_beacon: land not found in 20 iterations, using default"
             )
             bx = self.BEACON_SHIFT_STEPS * sv[0]
@@ -108,7 +118,7 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         # Диагностика: показываем где маяк на миникарте и на суше ли он
         rel_x = int(cx + (bx - depth * iv[0]) * self._pixels_per_step)
         rel_y = int(cy + (by - depth * iv[1]) * self._pixels_per_step)
-        logging.info(
+        _beacon_logger.info(
             f"BEACON_PLACE: grid=({bx:.2f},{by:.2f}) "
             f"minimap_px=({rel_x},{rel_y}) "
             f"depth={depth} pps={self._pixels_per_step} "
@@ -210,7 +220,7 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
 
         mm         = self._grab_minimap()
         beacon_pos = self._find_beacon_on_minimap(mm)
-        logging.info(f"BEACON_SCAN: found={beacon_pos} return_steps={self._return_steps}")
+        _beacon_logger.info(f"BEACON_SCAN: found={beacon_pos} return_steps={self._return_steps}")
 
         if beacon_pos is not None:
             self._state = 'RETURNING_BEACON'
@@ -218,7 +228,7 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
 
         # Маяк не найден → стоять и сканировать следующий шаг. НЕ ДВИГАТЬСЯ.
         # Это баг: мы сами нарисовали маяк — должны найти его всегда.
-        logging.warning(
+        _beacon_logger.warning(
             f"BEACON_SCAN: НЕ НАЙДЕН! "
             f"beacon_grid={self._beacon_grid} "
             f"bot_gcx={self._bot_gcx:.2f} bot_gcy={self._bot_gcy:.2f} "
@@ -246,7 +256,7 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
 
         if beacon_pos is None:
             # Маяк не найден → назад в SCAN. НЕ ДВИГАТЬСЯ.
-            logging.warning(
+            _beacon_logger.warning(
                 f"BEACON_HOME: маяк потерян! "
                 f"beacon_grid={self._beacon_grid} "
                 f"bot=({self._bot_gcx:.2f},{self._bot_gcy:.2f})"
@@ -259,10 +269,10 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         dx = float(px - w // 2)
         dy = float(py - h // 2)
         dist = np.hypot(dx, dy)
-        logging.info(f"BEACON_HOME: pos=({px},{py}) dist={dist:.1f}px dx={dx:.0f} dy={dy:.0f}")
+        _beacon_logger.info(f"BEACON_HOME: pos=({px},{py}) dist={dist:.1f}px dx={dx:.0f} dy={dy:.0f}")
 
         if dist < 5.0:
-            logging.info("BEACON_HOME: ПРИЗЕМЛИЛСЯ на маяк → shift → HOMING")
+            _beacon_logger.info("BEACON_HOME: ПРИЗЕМЛИЛСЯ на маяк → shift → HOMING")
             self._shift_click()
             self._state        = 'HOMING'
             self._inland_steps = 0
