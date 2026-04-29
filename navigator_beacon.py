@@ -46,3 +46,17 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         self._bot_gcx            = 0.0
         self._bot_gcy            = 0.0
         self._beacon_lost_streak = 0
+
+    def _click_vec(self, dx: float, dy: float) -> None:
+        super()._click_vec(dx, dy)   # pyautogui click + footprint record
+        norm = np.hypot(dx, dy)
+        if norm > 0:
+            self._bot_gcx += dx / norm
+            self._bot_gcy += dy / norm
+
+    def _move_perpendicular(self, toward_water: bool) -> None:
+        # Zero canvas at start of each new dive (before first inland step)
+        if not toward_water and self._inland_steps == 0:
+            self._bot_gcx = 0.0
+            self._bot_gcy = 0.0
+        super()._move_perpendicular(toward_water=toward_water)
