@@ -39,24 +39,59 @@ class HuntEngine:
         footprint_ttl: float    = 120.0,
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
+        use_beacon:      bool  = False,
+        pixels_per_step: int   = 20,
     ):
-        self._pacman = PacmanEngine(
-            center_x=center_x,
-            center_y=center_y,
-            step=joystick_step,
-            conf=conf,
-            scan_interval=scan_interval,
-            sound_path=self.sound_path or 'Logo_exchange.wav',
-            yolo_model=self.model,
-            move_wait=move_wait,
-            navigation_enabled=navigation_enabled,
-            max_inland_steps=max_inland_steps,
-            ocean_land_ratio=ocean_land_ratio,
-            min_water_px=min_water_px,
-            footprint_ttl=footprint_ttl,
-            diagonal_blind_coeff=diagonal_blind_coeff,
-            coast_detect_radius=coast_detect_radius,
-        )
+        if use_beacon:
+            from navigator_beacon import CoastalSnakeNavigatorBeacon
+            nav = CoastalSnakeNavigatorBeacon(
+                center_x=center_x,
+                center_y=center_y,
+                step=joystick_step,
+                max_inland_steps=max_inland_steps,
+                ocean_land_ratio=ocean_land_ratio,
+                min_water_px=min_water_px,
+                footprint_ttl=footprint_ttl,
+                diagonal_blind_coeff=diagonal_blind_coeff,
+                coast_detect_radius=coast_detect_radius,
+                pixels_per_step=pixels_per_step,
+            )
+            self._pacman = PacmanEngine(
+                center_x=center_x,
+                center_y=center_y,
+                step=joystick_step,
+                conf=conf,
+                scan_interval=scan_interval,
+                sound_path=self.sound_path or 'Logo_exchange.wav',
+                yolo_model=self.model,
+                move_wait=move_wait,
+                navigation_enabled=navigation_enabled,
+                max_inland_steps=max_inland_steps,
+                ocean_land_ratio=ocean_land_ratio,
+                min_water_px=min_water_px,
+                footprint_ttl=footprint_ttl,
+                diagonal_blind_coeff=diagonal_blind_coeff,
+                coast_detect_radius=coast_detect_radius,
+            )
+            self._pacman.joystick = nav   # inject beacon navigator
+        else:
+            self._pacman = PacmanEngine(
+                center_x=center_x,
+                center_y=center_y,
+                step=joystick_step,
+                conf=conf,
+                scan_interval=scan_interval,
+                sound_path=self.sound_path or 'Logo_exchange.wav',
+                yolo_model=self.model,
+                move_wait=move_wait,
+                navigation_enabled=navigation_enabled,
+                max_inland_steps=max_inland_steps,
+                ocean_land_ratio=ocean_land_ratio,
+                min_water_px=min_water_px,
+                footprint_ttl=footprint_ttl,
+                diagonal_blind_coeff=diagonal_blind_coeff,
+                coast_detect_radius=coast_detect_radius,
+            )
         self._pacman.on_found_callback = self.on_found_callback
 
         self.is_running = True
