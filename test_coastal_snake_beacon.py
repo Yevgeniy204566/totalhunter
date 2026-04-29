@@ -444,3 +444,87 @@ def test_step_intercepts_diving_at_max_depth():
 
     mock_place.assert_called_once()
     assert nav._state == 'RETURNING_BLIND'
+
+
+# ── Task 8: reset() + canvas-zero explicit coverage ──────────────────────
+
+def test_reset_clears_beacon_and_canvas():
+    """reset() zeroes beacon_grid, _bot_gcx/y, beacon_lost_streak."""
+    nav = _make_nav()
+    nav._beacon_grid        = (1.0, 2.0)
+    nav._bot_gcx            = 99.0
+    nav._bot_gcy            = -5.0
+    nav._beacon_lost_streak = 2
+
+    nav.reset()
+
+    assert nav._beacon_grid        is None
+    assert nav._bot_gcx            == 0.0
+    assert nav._bot_gcy            == 0.0
+    assert nav._beacon_lost_streak == 0
+
+def test_canvas_zeroed_at_each_dive_start():
+    """_move_perpendicular(toward_water=False) with inland_steps==0 zeroes canvas."""
+    with patch('pyautogui.size', return_value=(1920, 1080)), \
+         patch('pyautogui.click'):
+        nav = _make_nav()
+        nav._bot_gcx     = 7.0
+        nav._bot_gcy     = -3.0
+        nav._inland_steps = 0
+        nav._inland_vec   = (1.0, 0.0)
+        nav._move_perpendicular(toward_water=False)
+        # zeroed THEN one step added → (1, 0)
+        assert abs(nav._bot_gcx - 1.0) < 1e-6
+        assert abs(nav._bot_gcy - 0.0) < 1e-6
+
+
+# ── Task 9: engine factory flag tests ────────────────────────────────────
+
+def test_engine_use_beacon_true_injects_beacon_navigator():
+    """use_beacon=True → CoastalSnakeNavigatorBeacon injected into PacmanEngine."""
+    from navigator_beacon import CoastalSnakeNavigatorBeacon
+
+    with patch('pyautogui.size', return_value=(1920, 1080)), \
+         patch('pyautogui.click'), \
+         patch('ultralytics.YOLO'), \
+         patch('engine.YOLO'), \
+         patch('engine.HuntEngine._start_heartbeat'), \
+         patch('navigator.PacmanEngine') as MockPacman:
+
+        mock_instance = MagicMock()
+        MockPacman.return_value = mock_instance
+        mock_instance.on_found_callback = None
+
+        import engine
+        import importlib; importlib.reload(engine)
+
+        h = engine.HuntEngine()
+        h.start(conf=0.7, use_beacon=True, pixels_per_step=12)
+
+    # The injected joystick should be a CoastalSnakeNavigatorBeacon
+    assert isinstance(mock_instance.joystick, CoastalSnakeNavigatorBeacon)
+
+def test_engine_use_beacon_false_uses_default():
+    """use_beacon=False (default) → joystick not replaced with beacon navigator."""
+    from navigator_beacon import CoastalSnakeNavigatorBeacon
+
+    with patch('pyautogui.size', return_value=(1920, 1080)), \
+         patch('ultralytics.YOLO'), \
+         patch('engine.YOLO'), \
+         patch('engine.HuntEngine._start_heartbeat'), \
+         patch('navigator.PacmanEngine') as MockPacman:
+
+        mock_instance = MagicMock()
+        MockPacman.return_value = mock_instance
+        mock_instance.on_found_callback = None
+
+        import engine
+        import importlib; importlib.reload(engine)
+
+        h = engine.HuntEngine()
+        h.start(conf=0.7, use_beacon=False)
+
+    # joystick attribute should NOT be a CoastalSnakeNavigatorBeacon instance
+    # (it will be a MagicMock auto-attribute, not a real beacon navigator)
+    joystick_val = mock_instance.__dict__.get('joystick')
+    assert not isinstance(joystick_val, CoastalSnakeNavigatorBeacon)
