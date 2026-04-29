@@ -1241,6 +1241,8 @@ class TotalHunterApp(ctk.CTk):
                     diagonal_blind_coeff=round(self.nav_diagblind_slider.get(), 2),
                     coast_detect_radius=int(self.nav_coastrad_slider.get()),
                     footprint_ttl=float(self.nav_footprint_slider.get()),
+                    use_beacon=bool(self._load_gui_config().get('use_beacon', False)),
+                    pixels_per_step=int(self._load_gui_config().get('nav_pps', 20)),
                 )
                 self.start_button.configure(text=LANGS[self.current_lang]["stop"],
                                             fg_color=MD3["error"],
