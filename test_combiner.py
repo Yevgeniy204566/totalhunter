@@ -28,3 +28,21 @@ def test_parse_empty_returns_0():
 
 def test_parse_less_than_4_gives_small_int():
     assert parse_number("3") == 3  # caller decides to skip
+
+import numpy as np
+from combiner import _images_differ
+
+def test_images_differ_same():
+    a = np.zeros((50, 50, 3), dtype=np.uint8)
+    b = np.zeros((50, 50, 3), dtype=np.uint8)
+    assert _images_differ(a, b) is False
+
+def test_images_differ_changed():
+    a = np.zeros((50, 50, 3), dtype=np.uint8)
+    b = np.ones((50, 50, 3), dtype=np.uint8) * 200
+    assert _images_differ(a, b) is True
+
+def test_images_differ_shape_mismatch():
+    a = np.zeros((50, 50, 3), dtype=np.uint8)
+    b = np.zeros((60, 50, 3), dtype=np.uint8)
+    assert _images_differ(a, b) is True
