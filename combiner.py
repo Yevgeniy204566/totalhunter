@@ -42,6 +42,7 @@ CLICK_Y_RATIO = 0.85
 COMBO_SCROLL_PT  = (960, 430)
 COMBO_HEADER_PT  = (960, 175)   # пиксель заголовка окна
 
+GRID_DIFF_THRESHOLD = 0.03  # 3% — скролл меняет картинку, шум — нет
 
 # ══════════════════════════════════════════════════════════════
 #  DATA
@@ -59,8 +60,6 @@ class CardInfo:
 # ══════════════════════════════════════════════════════════════
 #  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ══════════════════════════════════════════════════════════════
-
-GRID_DIFF_THRESHOLD = 0.03  # 3% — скролл меняет картинку, шум — нет
 
 def _images_differ(a: 'np.ndarray', b: 'np.ndarray') -> bool:
     """True если изображения достаточно разные (скролл прошёл)."""
@@ -105,7 +104,7 @@ class CombinerEngine:
     # ── OCR ──────────────────────────────────────────────────
 
     def _zoom_ocr(self, img_bgr: 'np.ndarray') -> str:
-        """Upscale x2, invert, OTSU threshold, tesseract digits+suffixes."""
+        """Upscale x2, invert, OTSU threshold, tesseract digits+suffixes. Assumes light text on dark card background."""
         h, w = img_bgr.shape[:2]
         big = cv2.resize(img_bgr, (w * 2, h * 2), interpolation=cv2.INTER_CUBIC)
         gray = cv2.cvtColor(big, cv2.COLOR_BGR2GRAY)
