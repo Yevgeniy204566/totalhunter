@@ -103,6 +103,23 @@ def _patch_step(cls):
     cls.step = _step
 
 
+def _screen_with_delta(nav, dx: float, dy: float, delta_px: int) -> str:
+    """Реальные координаты клика с учётом delta-смещения."""
+    norm = np.hypot(dx, dy)
+    if norm == 0:
+        return "(none)"
+    ndx, ndy = dx / norm, dy / norm
+    cx = int(nav.center_x + ndx * nav.p_range_x)
+    cy = int(nav.center_y + ndy * nav.p_range_y)
+    if delta_px > 0 and nav._shift_vec_set:
+        sv = nav._shift_vec
+        sv_n = float(np.hypot(sv[0], sv[1]))
+        if sv_n > 0:
+            cx += int(sv[0] / sv_n * delta_px)
+            cy += int(sv[1] / sv_n * delta_px)
+    return f"screen({cx},{cy})"
+
+
 def _patch_move_perpendicular(cls):
     orig = cls._move_perpendicular
 
@@ -115,7 +132,8 @@ def _patch_move_perpendicular(cls):
             action = "DIVE  "
             dx, dy = iv[0], iv[1]
 
-        sc = _screen(self, dx, dy)
+        # Показываем РЕАЛЬНЫЙ клик (с дельтой для RETURN)
+        sc = _screen_with_delta(self, dx, dy, return_delta_px)
         norm = np.hypot(dx, dy)
         if norm > 0:
             dx_n, dy_n = dx / norm, dy / norm
