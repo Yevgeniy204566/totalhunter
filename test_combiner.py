@@ -73,6 +73,7 @@ def test_click_card_calls_pyautogui_n_times():
         engine.click_card(card, n_clicks)
 
     assert mock_pg.click.call_count == 3
+    assert mock_time.sleep.call_count == 3
 
 def test_click_card_stops_on_flag():
     engine = CombinerEngine()
@@ -109,8 +110,8 @@ def test_click_card_randomizes_position():
         assert 495 <= cx <= 505
         assert 295 <= cy <= 305
 
-def test_stop_flag_already_set():
-    """If _stop_requested is True before any clicks, zero clicks happen."""
+def test_skip_cards_less_than_4():
+    """Cards with count < 4 are skipped by the caller (n_clicks = count // 4 == 0)."""
     assert parse_number("3") < 4
     assert parse_number("0") < 4
     assert parse_number("") < 4
