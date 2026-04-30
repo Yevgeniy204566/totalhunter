@@ -155,8 +155,6 @@ class CombinerEngine:
 
     def stop(self) -> None:
         self._stop_requested = True
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=3)
 
     def start(self, delay: float, status_callback: 'Callable[[str], None]') -> None:
         self._stop_requested = False
@@ -174,8 +172,9 @@ class CombinerEngine:
             with mss.mss() as sct:
                 px = sct.grab({"top": COMBO_HEADER_PT[1], "left": COMBO_HEADER_PT[0],
                                "width": 1, "height": 1})
-                r, g, b = int(np.array(px)[0, 0, 0]), int(np.array(px)[0, 0, 1]), int(np.array(px)[0, 0, 2])
-            return not (30 <= r <= 90 and 30 <= g <= 90 and 30 <= b <= 90)
+                px_arr = np.array(px)
+                b_val, g_val, r_val = int(px_arr[0, 0, 0]), int(px_arr[0, 0, 1]), int(px_arr[0, 0, 2])
+            return not (30 <= r_val <= 90 and 30 <= g_val <= 90 and 30 <= b_val <= 90)
         except Exception:
             return True   # при ошибке — не блокируем
 
@@ -192,6 +191,8 @@ class CombinerEngine:
         while not self._stop_requested:
             # Anti-stuck: wait for window to be visible
             for _ in range(3):
+                if self._stop_requested:
+                    return
                 if self._check_window_visible():
                     break
                 time.sleep(2.0)
@@ -214,7 +215,7 @@ class CombinerEngine:
                     status_callback(f"Ряд {row_idx + 1}, кол {card.col + 1} — {n_clicks} кликов")
                     self.click_card(card, n_clicks)
 
-            # Scroll and check if end reached
+            # Capture post-combine state as baseline, then scroll and compare
             before = self._capture_grid()
             self._scroll_down()
             after = self._capture_grid()

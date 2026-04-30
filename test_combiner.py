@@ -137,3 +137,4 @@ def test_start_creates_daemon_thread():
 
     assert engine._thread is not None
     assert engine._thread.daemon is True
+    assert did_run == [True]
