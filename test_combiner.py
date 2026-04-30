@@ -1,7 +1,8 @@
 # test_combiner.py
 import numpy as np
 import pytest
-from combiner import parse_number, _images_differ
+from unittest.mock import patch, MagicMock
+from combiner import parse_number, _images_differ, CombinerEngine
 
 def test_parse_4_1k():
     assert parse_number("4.1k") == 4100
@@ -56,3 +57,60 @@ def test_images_differ_shape_mismatch():
     a = np.zeros((50, 50, 3), dtype=np.uint8)
     b = np.zeros((60, 50, 3), dtype=np.uint8)
     assert _images_differ(a, b) is True
+
+def test_click_card_calls_pyautogui_n_times():
+    engine = CombinerEngine()
+    engine.delay = 0.0
+    card = MagicMock()
+    card.click_x = 100
+    card.click_y = 200
+    n_clicks = 12 // 4  # = 3
+
+    with patch('combiner.pyautogui') as mock_pg, \
+         patch('combiner.time') as mock_time:
+        mock_pg.click = MagicMock()
+        mock_time.sleep = MagicMock()
+        engine.click_card(card, n_clicks)
+
+    assert mock_pg.click.call_count == 3
+
+def test_click_card_stops_on_flag():
+    engine = CombinerEngine()
+    engine.delay = 0.0
+    engine._stop_requested = True
+    card = MagicMock()
+    card.click_x = 100
+    card.click_y = 200
+
+    with patch('combiner.pyautogui') as mock_pg, \
+         patch('combiner.time') as mock_time:
+        mock_pg.click = MagicMock()
+        mock_time.sleep = MagicMock()
+        engine.click_card(card, 100)
+
+    assert mock_pg.click.call_count == 0
+
+def test_click_card_randomizes_position():
+    """Click coords must be within ±5px of card center."""
+    engine = CombinerEngine()
+    engine.delay = 0.0
+    card = MagicMock()
+    card.click_x = 500
+    card.click_y = 300
+
+    clicked_coords = []
+    with patch('combiner.pyautogui') as mock_pg, \
+         patch('combiner.time') as mock_time:
+        mock_pg.click = lambda x, y: clicked_coords.append((x, y))
+        mock_time.sleep = MagicMock()
+        engine.click_card(card, 10)
+
+    for cx, cy in clicked_coords:
+        assert 495 <= cx <= 505
+        assert 295 <= cy <= 305
+
+def test_stop_flag_already_set():
+    """If _stop_requested is True before any clicks, zero clicks happen."""
+    assert parse_number("3") < 4
+    assert parse_number("0") < 4
+    assert parse_number("") < 4

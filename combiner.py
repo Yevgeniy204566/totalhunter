@@ -142,3 +142,13 @@ class CombinerEngine:
             cards.append(CardInfo(row=row_idx, col=col, count=count,
                                   click_x=abs_x, click_y=abs_y))
         return cards
+
+    def click_card(self, card: CardInfo, n_clicks: int) -> None:
+        """Click card n_clicks times with ±5px randomization. Stops early if _stop_requested."""
+        for _ in range(n_clicks):
+            if self._stop_requested:
+                return
+            dx = random.randint(-5, 5)
+            dy = random.randint(-5, 5)
+            pyautogui.click(card.click_x + dx, card.click_y + dy)
+            time.sleep(self.delay)
