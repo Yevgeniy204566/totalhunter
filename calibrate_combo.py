@@ -124,7 +124,7 @@ def find_grid(img: np.ndarray, debug_path: str = "combo_grid_debug.png") -> dict
         img = img[y1:y2, x1:x2]
         crop_offset_x, crop_offset_y = x1, y1
         h, w = img.shape[:2]
-        print(f"  Full-screen detected → cropped to [{x1}:{x2}, {y1}:{y2}]  ({w}×{h})")
+        print(f"  Full-screen detected -> cropped to [{x1}:{x2}, {y1}:{y2}]  ({w}x{h})")
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     debug = img.copy()
@@ -342,17 +342,25 @@ def main():
         "--debug-out", default="combo_grid_debug.png", metavar="FILE",
         help="Output path for debug image (default: combo_grid_debug.png)"
     )
+    parser.add_argument(
+        "--delay", type=int, default=5, metavar="SEC",
+        help="Seconds to wait before screenshot (default: 5)"
+    )
     args = parser.parse_args()
 
     results = []
 
     if args.live:
         try:
-            import mss
+            import mss, time as _time
         except ImportError:
             print("ERROR: mss not installed.  pip install mss")
             sys.exit(1)
-        print("Taking live screenshot...")
+        print(f"Switching to game in {args.delay} seconds — open the Combining window NOW!")
+        for i in range(args.delay, 0, -1):
+            print(f"  {i}...", end="\r", flush=True)
+            _time.sleep(1)
+        print("Taking screenshot!          ")
         with mss.mss() as sct:
             mon = sct.monitors[1]
             raw = sct.grab(mon)
