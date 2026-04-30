@@ -9,6 +9,7 @@ Coast direction is auto-detected from minimap water distribution on first step.
 Shift distance = 1 joystick click (overlap controlled by step/p_range setting).
 """
 import re
+import math
 import random
 import time
 import winsound
@@ -75,6 +76,20 @@ class PositionReader:
 # ─────────────────────────────────────────────
 # Minimap preprocessing
 # ─────────────────────────────────────────────
+
+def _clamp_vec(v_new: tuple, v_prev: tuple, max_delta: float) -> tuple:
+    """Clamp rotation of v_new relative to v_prev to max_delta radians.
+    Prevents inland_vec from flipping 180° at coast corners (π-ambiguity).
+    """
+    dot   = max(-1.0, min(1.0, v_prev[0]*v_new[0] + v_prev[1]*v_new[1]))
+    angle = math.acos(dot)
+    if angle <= max_delta:
+        return v_new
+    cross = v_prev[0]*v_new[1] - v_prev[1]*v_new[0]
+    theta = math.copysign(max_delta, cross)
+    c, s  = math.cos(theta), math.sin(theta)
+    return (v_prev[0]*c - v_prev[1]*s, v_prev[0]*s + v_prev[1]*c)
+
 
 MINIMAP_ZOOM      = 3
 SCAN_AREA         = 180
@@ -449,6 +464,7 @@ class CoastalSnakeNavigator:
         diagonal_blind_coeff: float = 0.5,  # 0=no reduction, 1=fully blind at 45°
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
         return_delta_px: int    = 0,   # pixels of rightward bias added to every RETURNING click
+        max_pitch_delta: float  = 15.0, # degrees; max inland_vec rotation per dive (0 = disabled)
     ):
         self.center_x         = center_x
         self.center_y         = center_y
@@ -466,6 +482,8 @@ class CoastalSnakeNavigator:
         self.diagonal_blind_coeff   = diagonal_blind_coeff
         self.coast_detect_radius    = coast_detect_radius
         self.return_delta_px        = return_delta_px
+        self._max_pitch_delta   = math.radians(max_pitch_delta)
+        self._prev_inland_vec   = None
 
         self._state              = 'HOMING'
         self._inland_steps       = 0
@@ -501,6 +519,7 @@ class CoastalSnakeNavigator:
         self._shift_vec          = (0.0, 1.0)
         self._shift_vec_set      = False
         self._steps_since_shift  = 0
+        self._prev_inland_vec    = None
         self._footprint.reset()
 
     # ── calibration helper (same API as CompassNavigator) ────────────────
@@ -786,11 +805,13 @@ class CoastalSnakeNavigator:
                     iv = self._inland_vec
                     self._shift_vec     = (-iv[1], iv[0])
                     self._shift_vec_set = True
-                # [WALL DISABLED] — draw_ray commented out.
-                # if self._footprint_enabled:
-                #     iv = self._inland_vec
-                #     sv = self._shift_vec
-                #     self._footprint.draw_ray(iv, sv)
+                # Angular damper: clamp inland_vec rotation vs previous dive.
+                # Prevents 180° flip at coast corners (PCA π-ambiguity).
+                if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
+                    self._inland_vec = _clamp_vec(
+                        self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
+                    )
+                self._prev_inland_vec   = self._inland_vec
                 self._state             = 'DIVING'
                 self._inland_steps      = 0
                 self._homing_steps      = 0
@@ -808,6 +829,11 @@ class CoastalSnakeNavigator:
                 if not self._shift_vec_set:
                     self._shift_vec     = tuple(self._coast_vec)
                     self._shift_vec_set = True
+                if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
+                    self._inland_vec = _clamp_vec(
+                        self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
+                    )
+                self._prev_inland_vec   = self._inland_vec
                 self._state             = 'DIVING'
                 self._inland_steps      = 0
                 self._homing_steps      = 0
@@ -909,6 +935,7 @@ class PacmanEngine:
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
         return_delta_px: int    = 0,
+        max_pitch_delta: float  = 15.0,
         # legacy params (ignored):
         max_depth: int      = 4,
         screen_w: int       = 5,
@@ -929,6 +956,7 @@ class PacmanEngine:
             diagonal_blind_coeff=diagonal_blind_coeff,
             coast_detect_radius=coast_detect_radius,
             return_delta_px=return_delta_px,
+            max_pitch_delta=max_pitch_delta,
         )
         self.conf               = conf
         self.scan_interval      = scan_interval
