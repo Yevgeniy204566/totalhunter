@@ -93,7 +93,7 @@ MD3 = _load_theme(MD3_NAME)
 
 LANGS = {
     "RU": {
-        "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_ref": "РЕФЕРАЛЫ",
+        "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛЫ",
         "get_trial": "ПОЛУЧИТЬ 300 ПОПЫТОК", "start": "ЗАПУСТИТЬ ОХОТУ", "stop": "ОСТАНОВИТЬ",
         "no_credits": "У вас 0 поисков!", "login_btn": "ВОЙТИ ЧЕРЕЗ GOOGLE",
         "banned": "ВАШ АККАУНТ ЗАБЛОКИРОВАН", "ref_title": "ПАРТНЕРСКАЯ ПРОГРАММА",
@@ -106,7 +106,7 @@ LANGS = {
         "add_oil": "Добавь масла",
     },
     "EN": {
-        "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_ref": "REFERRALS",
+        "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_combo": "Combo", "tab_ref": "REFERRALS",
         "get_trial": "GET 300 TRIALS", "start": "START HUNT", "stop": "STOP",
         "no_credits": "0 credits left!", "login_btn": "LOGIN WITH GOOGLE",
         "banned": "ACCOUNT BANNED", "ref_title": "REFERRAL SYSTEM",
