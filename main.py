@@ -9,6 +9,7 @@ from auth import (get_hwid, check_license, get_free_trial, spend_credit,
                   login_with_google, log_error_to_server, activate_referral)
 from engine import HuntEngine
 from crypt_hunter import CryptHunter
+from combiner import CombinerEngine
 from coord_manager import coord_manager, REF_A, REF_B
 import tkinter.messagebox as messagebox
 import sys
@@ -128,6 +129,8 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_engine = CryptHunter()
         self.is_crypt_running = False
         self._crypt_found_count = 0
+        self.combo_engine = CombinerEngine()
+        self.is_combo_running = False
         self.current_lang = "RU"
         self.user_email = None
         self.current_credits = 0
@@ -235,6 +238,7 @@ class TotalHunterApp(ctk.CTk):
        
         self.tab_crypt = self.tabview.add("СКЛЕПЫ")
         self.tab_hunt  = self.tabview.add(LANGS[self.current_lang]["tab_hunt"])
+        self.tab_combo = self.tabview.add("Combo")
         self.tab_ref   = self.tabview.add(LANGS[self.current_lang]["tab_ref"])
         self.tab_calibration = self.tabview.add("КАЛИБРОВКА")
 
@@ -251,6 +255,7 @@ class TotalHunterApp(ctk.CTk):
 
         self.setup_hunt_tab()
         self.setup_crypt_tab()
+        self.setup_combo_tab()
         self.setup_ref_tab()
         self.setup_calibration_tab()
         self.update_license_info()
@@ -927,6 +932,38 @@ class TotalHunterApp(ctk.CTk):
                 on_countdown_callback=self.on_crypt_countdown,
             )
 
+    def toggle_combo_bot(self):
+        if self.is_combo_running:
+            self.is_combo_running = False
+            self.combo_engine.stop()
+            self.combo_start_btn.configure(text="ЗАПУСТИТЬ COMBO",
+                                           fg_color=MD3["green_btn"],
+                                           hover_color=MD3["green_hover"])
+            self.combo_status_label.configure(text="Остановлено",
+                                              text_color=MD3["on_surface2"])
+        else:
+            self.is_combo_running = True
+            delay = round(self.combo_speed_slider.get(), 2)
+            self.combo_start_btn.configure(text="ОСТАНОВИТЬ",
+                                           fg_color=MD3["error"],
+                                           hover_color=MD3["error_hover"])
+            self.combo_status_label.configure(text="СТАТУС: В РАБОТЕ...",
+                                              text_color=MD3["secondary"])
+            self.combo_engine.start(
+                delay=delay,
+                status_callback=self._on_combo_status,
+            )
+
+    def _on_combo_status(self, msg: str):
+        def _ui():
+            self.combo_status_label.configure(text=msg)
+            if msg in ("Готово — конец списка", "Остановлено", "Окно перекрыто — стоп"):
+                self.is_combo_running = False
+                self.combo_start_btn.configure(text="ЗАПУСТИТЬ COMBO",
+                                               fg_color=MD3["green_btn"],
+                                               hover_color=MD3["green_hover"])
+        self.after(0, _ui)
+
     def _on_always_on_top(self):
         """Переключить режим «поверх всех окон» и обновить зону исключения YOLO."""
         on_top = self.always_on_top_var.get()
@@ -990,6 +1027,64 @@ class TotalHunterApp(ctk.CTk):
             self._update_crypt_labels()
         except Exception:
             pass
+
+    def setup_combo_tab(self):
+        """Вкладка Combo — автокомбинирование материалов."""
+
+        ctk.CTkLabel(self.tab_combo,
+                     text="COMBO — Комбинирование",
+                     font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=MD3["primary"]).pack(pady=(16, 4))
+
+        ctk.CTkLabel(self.tab_combo,
+                     text="Откройте окно «Комбинирование» в игре,\nзатем нажмите СТАРТ.",
+                     font=ctk.CTkFont(size=12),
+                     text_color=MD3["on_surface2"],
+                     justify="center").pack(pady=(0, 12))
+
+        # ── Слайдер скорости ─────────────────────────────────
+        speed_frame = ctk.CTkFrame(self.tab_combo, fg_color=MD3["elevated"],
+                                   corner_radius=12, border_width=1,
+                                   border_color=MD3["outline"])
+        speed_frame.pack(padx=30, pady=(0, 10), fill="x")
+
+        ctk.CTkLabel(speed_frame, text="Задержка между кликами",
+                     font=ctk.CTkFont(size=12),
+                     text_color=MD3["on_surface2"]).pack(pady=(10, 0))
+
+        speed_row = ctk.CTkFrame(speed_frame, fg_color="transparent")
+        speed_row.pack(fill="x", padx=10, pady=(4, 10))
+
+        self.combo_speed_slider = ctk.CTkSlider(
+            speed_row, from_=0.05, to=0.5, number_of_steps=45,
+            fg_color=MD3["outline"], progress_color=MD3["primary"],
+            button_color=MD3["secondary"], button_hover_color=MD3["primary_dim"],
+            command=self._update_combo_speed_label)
+        self.combo_speed_slider.set(0.1)
+        self.combo_speed_slider.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        self.combo_speed_val = ctk.CTkLabel(speed_row, text="0.10 с",
+                                            font=ctk.CTkFont(size=13),
+                                            text_color=MD3["value_text"], width=50)
+        self.combo_speed_val.pack(side="left")
+
+        # ── Кнопка Старт/Стоп ────────────────────────────────
+        self.combo_start_btn = ctk.CTkButton(
+            self.tab_combo, text="ЗАПУСТИТЬ COMBO",
+            height=56, font=ctk.CTkFont(size=18, weight="bold"),
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], corner_radius=16,
+            command=self.toggle_combo_bot)
+        self.combo_start_btn.pack(pady=(10, 4), padx=20, fill="x")
+
+        self.combo_status_label = ctk.CTkLabel(
+            self.tab_combo, text="ГОТОВО",
+            text_color=MD3["on_surface2"])
+        self.combo_status_label.pack(pady=(0, 4))
+
+    def _update_combo_speed_label(self, _=None):
+        val = round(self.combo_speed_slider.get(), 2)
+        self.combo_speed_val.configure(text=f"{val:.2f} с")
 
     def setup_ref_tab(self):
         # Заголовок Рефералки
