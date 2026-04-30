@@ -552,23 +552,23 @@ class TotalHunterApp(ctk.CTk):
         self.nav_delta_slider.set(0)
         self.nav_delta_slider.pack(padx=10, pady=(0, 4), fill="x")
 
-        # Демпфер поворота (max_pitch_delta)
+        # Живость хода (smooth_alpha)
         self.nav_pitch_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_pitch_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_pitch_frame, text="Демпфер поворота (°):",
+        ctk.CTkLabel(self.nav_pitch_frame, text="Живость хода (%):",
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="15°",
+        self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="50%",
                                           font=ctk.CTkFont(size=14, weight="bold"),
                                           text_color=MD3["value_text"])
         self.nav_pitch_val.pack(side="right")
         self.nav_pitch_slider = ctk.CTkSlider(
-            nav_sliders_frame, from_=0, to=90, number_of_steps=90,
+            nav_sliders_frame, from_=10, to=100, number_of_steps=18,
             command=self._update_nav_labels,
             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
             progress_color=MD3["primary"],
         )
-        self.nav_pitch_slider.set(15)
+        self.nav_pitch_slider.set(50)
         self.nav_pitch_slider.pack(padx=10, pady=(0, 4), fill="x")
 
         # Кнопка сохранения настроек
@@ -1144,7 +1144,7 @@ class TotalHunterApp(ctk.CTk):
             text=f"{ttl // 60} мин" if ttl >= 60 else f"{ttl} с"
         )
         self.nav_delta_val.configure(text=f"{int(self.nav_delta_slider.get())} px")
-        self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}°")
+        self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}%")
 
     def _update_nav_labels_and_dot(self, _=None):
         self._update_nav_labels()
@@ -1191,7 +1191,7 @@ class TotalHunterApp(ctk.CTk):
             cfg["diagonal_blind_coeff"]  = round(self.nav_diagblind_slider.get(), 2)
             cfg["nav_footprint_ttl"]     = int(self.nav_footprint_slider.get())
             cfg["return_delta_px"]       = int(self.nav_delta_slider.get())
-            cfg["max_pitch_delta"]       = int(self.nav_pitch_slider.get())
+            cfg["smooth_alpha"]          = int(self.nav_pitch_slider.get())
             with open(GUI_CONFIG_PATH, 'w') as f:
                 json.dump(cfg, f, indent=2)
             messagebox.showinfo("OK", "Настройки сохранены")
@@ -1225,7 +1225,7 @@ class TotalHunterApp(ctk.CTk):
             raw_ttl = cfg.get("nav_footprint_ttl", 120)
             self.nav_footprint_slider.set(max(60, min(1200, int(raw_ttl))))
             self.nav_delta_slider.set(int(cfg.get("return_delta_px", 0)))
-            self.nav_pitch_slider.set(int(cfg.get("max_pitch_delta", 15)))
+            self.nav_pitch_slider.set(int(cfg.get("smooth_alpha", 50)))
             self._update_nav_labels()
             self.update_slider_labels()
         except Exception:
@@ -1264,7 +1264,7 @@ class TotalHunterApp(ctk.CTk):
                     diagonal_blind_coeff=round(self.nav_diagblind_slider.get(), 2),
                     footprint_ttl=float(self.nav_footprint_slider.get()),
                     return_delta_px=int(self.nav_delta_slider.get()),
-                    max_pitch_delta=float(self.nav_pitch_slider.get()),
+                    smooth_alpha=float(self.nav_pitch_slider.get()) / 100.0,
                     use_beacon=bool(self._load_gui_config().get('use_beacon', False)),
                     pixels_per_step=int(self._load_gui_config().get('nav_pps', 20)),
                 )

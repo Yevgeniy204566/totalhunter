@@ -6,11 +6,10 @@
   "scan_interval": 5.0,
   "move_wait": 0.5,
   "max_inland_steps": 6,
-  "max_pitch_delta": 27,
   "ocean_land_ratio": 0.04,
   "min_water_px": 900,
-  "max_footprint_overlap": 20,
+  "diagonal_blind_coeff": 0.5,
   "nav_footprint_ttl": 600,
-  "nav_pps": 12,
-  "use_beacon": false
+  "return_delta_px": 10,
+  "smooth_alpha": 50
 }

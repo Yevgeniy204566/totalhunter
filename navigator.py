@@ -77,20 +77,6 @@ class PositionReader:
 # Minimap preprocessing
 # ─────────────────────────────────────────────
 
-def _clamp_vec(v_new: tuple, v_prev: tuple, max_delta: float) -> tuple:
-    """Clamp rotation of v_new relative to v_prev to max_delta radians.
-    Prevents inland_vec from flipping 180° at coast corners (π-ambiguity).
-    """
-    dot   = max(-1.0, min(1.0, v_prev[0]*v_new[0] + v_prev[1]*v_new[1]))
-    angle = math.acos(dot)
-    if angle <= max_delta:
-        return v_new
-    cross = v_prev[0]*v_new[1] - v_prev[1]*v_new[0]
-    theta = math.copysign(max_delta, cross)
-    c, s  = math.cos(theta), math.sin(theta)
-    return (v_prev[0]*c - v_prev[1]*s, v_prev[0]*s + v_prev[1]*c)
-
-
 MINIMAP_ZOOM      = 3
 SCAN_AREA         = 180
 MIN_COAST_STEPS   = 3   # ignore water for first N steps (cross small rivers)
@@ -456,7 +442,7 @@ class CoastalSnakeNavigator:
         ocean_land_ratio: float = 0.03,
         min_water_px: int       = 500,
         homing_max_steps: int   = 10,
-        coast_ema_alpha: float  = 0.3,
+        smooth_alpha: float     = 0.5,  # 0.1=плавно/медленно, 1.0=резко/быстро
         footprint_ttl: float    = 120.0,
         footprint_enabled: bool = True,
         pixels_per_step: int    = 20,
@@ -464,7 +450,6 @@ class CoastalSnakeNavigator:
         diagonal_blind_coeff: float = 0.5,  # 0=no reduction, 1=fully blind at 45°
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
         return_delta_px: int    = 0,   # pixels of rightward bias added to every RETURNING click
-        max_pitch_delta: float  = 15.0, # degrees; max inland_vec rotation per dive (0 = disabled)
     ):
         self.center_x         = center_x
         self.center_y         = center_y
@@ -478,12 +463,10 @@ class CoastalSnakeNavigator:
         self.ocean_land_ratio       = ocean_land_ratio
         self.min_water_px           = min_water_px
         self.homing_max_steps       = homing_max_steps
-        self.coast_ema_alpha        = coast_ema_alpha
+        self.smooth_alpha           = max(0.01, min(1.0, smooth_alpha))
         self.diagonal_blind_coeff   = diagonal_blind_coeff
         self.coast_detect_radius    = coast_detect_radius
         self.return_delta_px        = return_delta_px
-        self._max_pitch_delta   = math.radians(max_pitch_delta)
-        self._prev_inland_vec   = None
 
         self._state              = 'HOMING'
         self._inland_steps       = 0
@@ -519,7 +502,6 @@ class CoastalSnakeNavigator:
         self._shift_vec          = (0.0, 1.0)
         self._shift_vec_set      = False
         self._steps_since_shift  = 0
-        self._prev_inland_vec    = None
         self._footprint.reset()
 
     # ── calibration helper (same API as CompassNavigator) ────────────────
@@ -650,7 +632,7 @@ class CoastalSnakeNavigator:
                 # PCA returned the opposite end of the same line — flip it
                 new_angle = new_angle + np.pi
                 diff_raw  = (new_angle - a + np.pi) % (2 * np.pi) - np.pi
-            self._coast_angle = (a + self.coast_ema_alpha * diff_raw) % (2 * np.pi)
+            self._coast_angle = (a + self.smooth_alpha * diff_raw) % (2 * np.pi)
 
         ca = self._coast_angle
         self._coast_vec  = (float(np.cos(ca)),           float(np.sin(ca)))
@@ -809,16 +791,8 @@ class CoastalSnakeNavigator:
             info = self._read_minimap()   # angle/direction update happens here
 
             if info['is_at_coast']:
-                # Angular damper: clamp inland_vec rotation vs previous dive.
-                # Prevents 180° flip at coast corners (PCA π-ambiguity).
-                if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
-                    self._inland_vec = _clamp_vec(
-                        self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
-                    )
-                self._prev_inland_vec = self._inland_vec
-                # Recompute shift_vec as perpendicular to the CURRENT (clamped) inland_vec.
-                # With the damper, shift_vec rotates at most max_pitch_delta per cycle —
-                # no oscillation risk. This keeps shift strictly perpendicular to the dive.
+                # shift_vec = perpendicular to current inland_vec.
+                # smooth_alpha already ensures gradual rotation — no separate damper needed.
                 iv = self._inland_vec
                 self._shift_vec     = (-iv[1], iv[0])
                 self._shift_vec_set = True
@@ -836,11 +810,6 @@ class CoastalSnakeNavigator:
                     self._homing_steps = 0
                     return True
                 # Land visible but max steps reached — start diving from here
-                if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
-                    self._inland_vec = _clamp_vec(
-                        self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
-                    )
-                self._prev_inland_vec = self._inland_vec
                 iv = self._inland_vec
                 self._shift_vec     = (-iv[1], iv[0])
                 self._shift_vec_set = True
@@ -945,7 +914,7 @@ class PacmanEngine:
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
         return_delta_px: int    = 0,
-        max_pitch_delta: float  = 15.0,
+        smooth_alpha: float     = 0.5,
         # legacy params (ignored):
         max_depth: int      = 4,
         screen_w: int       = 5,
@@ -966,7 +935,7 @@ class PacmanEngine:
             diagonal_blind_coeff=diagonal_blind_coeff,
             coast_detect_radius=coast_detect_radius,
             return_delta_px=return_delta_px,
-            max_pitch_delta=max_pitch_delta,
+            smooth_alpha=smooth_alpha,
         )
         self.conf               = conf
         self.scan_interval      = scan_interval
