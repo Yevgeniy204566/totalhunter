@@ -563,7 +563,7 @@ class TotalHunterApp(ctk.CTk):
                                           text_color=MD3["value_text"])
         self.nav_pitch_val.pack(side="right")
         self.nav_pitch_slider = ctk.CTkSlider(
-            nav_sliders_frame, from_=10, to=50, number_of_steps=40,
+            nav_sliders_frame, from_=0, to=90, number_of_steps=90,
             command=self._update_nav_labels,
             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
             progress_color=MD3["primary"],
