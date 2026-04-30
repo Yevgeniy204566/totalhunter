@@ -115,3 +115,25 @@ def test_skip_cards_less_than_4():
     assert parse_number("3") < 4
     assert parse_number("0") < 4
     assert parse_number("") < 4
+
+def test_stop_sets_flag():
+    engine = CombinerEngine()
+    engine._stop_requested = False
+    engine.stop()
+    assert engine._stop_requested is True
+
+def test_start_creates_daemon_thread():
+    engine = CombinerEngine()
+    did_run = []
+
+    def fake_run(cb):
+        did_run.append(True)
+
+    engine._run = fake_run
+
+    with patch('combiner.pyautogui'), patch('combiner.mss'):
+        engine.start(delay=0.1, status_callback=lambda s: None)
+        import time as _t; _t.sleep(0.1)
+
+    assert engine._thread is not None
+    assert engine._thread.daemon is True

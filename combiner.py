@@ -152,3 +152,75 @@ class CombinerEngine:
             dy = random.randint(-5, 5)
             pyautogui.click(card.click_x + dx, card.click_y + dy)
             time.sleep(self.delay)
+
+    def stop(self) -> None:
+        self._stop_requested = True
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=3)
+
+    def start(self, delay: float, status_callback: 'Callable[[str], None]') -> None:
+        self._stop_requested = False
+        self.delay = delay
+        self._thread = threading.Thread(
+            target=self._run, args=(status_callback,), daemon=True
+        )
+        self._thread.start()
+
+    # ── Anti-Stuck ───────────────────────────────────────────
+
+    def _check_window_visible(self) -> bool:
+        """True если пиксель заголовка не серый (окно не перекрыто)."""
+        try:
+            with mss.mss() as sct:
+                px = sct.grab({"top": COMBO_HEADER_PT[1], "left": COMBO_HEADER_PT[0],
+                               "width": 1, "height": 1})
+                r, g, b = int(np.array(px)[0, 0, 0]), int(np.array(px)[0, 0, 1]), int(np.array(px)[0, 0, 2])
+            return not (30 <= r <= 90 and 30 <= g <= 90 and 30 <= b <= 90)
+        except Exception:
+            return True   # при ошибке — не блокируем
+
+    # ── Scroll ───────────────────────────────────────────────
+
+    def _scroll_down(self) -> None:
+        pyautogui.moveTo(COMBO_SCROLL_PT[0], COMBO_SCROLL_PT[1])
+        pyautogui.scroll(-500)
+        time.sleep(1.0)
+
+    # ── Main loop ────────────────────────────────────────────
+
+    def _run(self, status_callback: 'Callable[[str], None]') -> None:
+        while not self._stop_requested:
+            # Anti-stuck: wait for window to be visible
+            for _ in range(3):
+                if self._check_window_visible():
+                    break
+                time.sleep(2.0)
+            else:
+                status_callback("Окно перекрыто — стоп")
+                return
+
+            grid = self._capture_grid()
+
+            for row_idx in range(COMBO_ROWS_VISIBLE):
+                if self._stop_requested:
+                    return
+                cards = self.scan_row(grid, row_idx)
+                for card in cards:
+                    if self._stop_requested:
+                        return
+                    if card.count < 4:
+                        continue
+                    n_clicks = card.count // 4
+                    status_callback(f"Ряд {row_idx + 1}, кол {card.col + 1} — {n_clicks} кликов")
+                    self.click_card(card, n_clicks)
+
+            # Scroll and check if end reached
+            before = self._capture_grid()
+            self._scroll_down()
+            after = self._capture_grid()
+
+            if not _images_differ(before, after):
+                status_callback("Готово — конец списка")
+                return
+
+        status_callback("Остановлено")
