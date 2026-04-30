@@ -616,6 +616,21 @@ class CoastalSnakeNavigator:
             self._click_vec(iv[0], iv[1])
         self._steps_since_shift += 1
 
+    def _effective_delta(self) -> int:
+        """Scale return_delta_px by how horizontal the dive direction is.
+
+        Horizontal dive (coast vertical)   -> 100% of return_delta_px
+        Diagonal dive (coast 45 deg)       -> ~55% (approx 50%)
+        Vertical dive (coast horizontal)   -> 10% of return_delta_px
+
+        Formula: scale = 0.10 + 0.90 * |inland_vec.x|²
+        """
+        if self.return_delta_px == 0:
+            return 0
+        horizontal = abs(self._inland_vec[0])
+        scale = 0.10 + 0.90 * (horizontal ** 2)
+        return round(self.return_delta_px * scale)
+
     def _update_coast_angle(self, new_angle: float):
         """EMA smoothing of coast angle to handle noisy minimap readings.
 
@@ -889,7 +904,7 @@ class CoastalSnakeNavigator:
                 self._return_blind_steps -= 1
                 self._return_steps       -= 1
                 self._move_perpendicular(toward_water=True,
-                                         return_delta_px=self.return_delta_px)
+                                         return_delta_px=self._effective_delta())
                 return True
 
             # Check for coast WITHOUT calling _read_minimap — inland_vec must
@@ -904,7 +919,7 @@ class CoastalSnakeNavigator:
                 return True
             self._return_steps -= 1
             self._move_perpendicular(toward_water=True,
-                                     return_delta_px=self.return_delta_px)
+                                     return_delta_px=self._effective_delta())
             return True
 
         return True
