@@ -809,24 +809,19 @@ class CoastalSnakeNavigator:
             info = self._read_minimap()   # angle/direction update happens here
 
             if info['is_at_coast']:
-                # [WALL DISABLED] — footprint wall check commented out.
-                # if info.get('has_footprint_ahead', False):
-                #     self._shift_click()
-                #     return True
-
-                # Fallback: if detect_coast_angle never returned a real angle,
-                # set shift_vec from whatever coast_vec we have now.
-                if not self._shift_vec_set:
-                    iv = self._inland_vec
-                    self._shift_vec     = (-iv[1], iv[0])
-                    self._shift_vec_set = True
                 # Angular damper: clamp inland_vec rotation vs previous dive.
                 # Prevents 180° flip at coast corners (PCA π-ambiguity).
                 if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
                     self._inland_vec = _clamp_vec(
                         self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
                     )
-                self._prev_inland_vec   = self._inland_vec
+                self._prev_inland_vec = self._inland_vec
+                # Recompute shift_vec as perpendicular to the CURRENT (clamped) inland_vec.
+                # With the damper, shift_vec rotates at most max_pitch_delta per cycle —
+                # no oscillation risk. This keeps shift strictly perpendicular to the dive.
+                iv = self._inland_vec
+                self._shift_vec     = (-iv[1], iv[0])
+                self._shift_vec_set = True
                 self._state             = 'DIVING'
                 self._inland_steps      = 0
                 self._homing_steps      = 0
@@ -841,14 +836,14 @@ class CoastalSnakeNavigator:
                     self._homing_steps = 0
                     return True
                 # Land visible but max steps reached — start diving from here
-                if not self._shift_vec_set:
-                    self._shift_vec     = tuple(self._coast_vec)
-                    self._shift_vec_set = True
                 if self._prev_inland_vec is not None and self._max_pitch_delta > 0:
                     self._inland_vec = _clamp_vec(
                         self._inland_vec, self._prev_inland_vec, self._max_pitch_delta
                     )
-                self._prev_inland_vec   = self._inland_vec
+                self._prev_inland_vec = self._inland_vec
+                iv = self._inland_vec
+                self._shift_vec     = (-iv[1], iv[0])
+                self._shift_vec_set = True
                 self._state             = 'DIVING'
                 self._inland_steps      = 0
                 self._homing_steps      = 0
