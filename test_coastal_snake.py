@@ -8,7 +8,8 @@ from navigator import CoastalSnakeNavigator
 
 # ── helpers ───────────────────────────────────────────────────────────────
 
-def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100):
+def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100,
+          has_footprint_ahead=False):
     """Build a _read_minimap return dict with all required keys."""
     return {
         'coast_angle': 0.0,
@@ -20,7 +21,8 @@ def _info(is_at_coast=False, is_ocean=False, water_px=0, land_px=100):
             'water_px':   water_px,
             'land_px':    land_px,
         },
-        'is_at_coast': is_at_coast,
+        'is_at_coast':         is_at_coast,
+        'has_footprint_ahead': has_footprint_ahead,
     }
 
 
@@ -139,29 +141,31 @@ class TestCoastalSnakeStateMachine:
 
 class TestInlineShift:
     def test_shift_click_at_max_depth(self):
-        """At max depth: shift click fired inline, then RETURNING."""
+        """At max depth: exactly 1 shift click fired, then RETURNING."""
         nav = make_navigator(max_inland=2)
         nav._state = 'DIVING'
         nav._inland_steps = 2
         nav._inland_vec = (1.0, 0.0)
         nav._coast_vec  = (0.0, 1.0)
         nav._shift_vec  = (0.0, 1.0)
+        nav._shift_vec_set = True
         nav.step()
-        nav._click_vec.assert_called_once()
+        assert nav._click_vec.call_count == 1, "Shift must always be exactly 1 click"
         args = nav._click_vec.call_args[0]
         assert abs(args[0] - 0.0) < 0.01 and abs(args[1] - 1.0) < 0.01, \
             f"Expected shift_vec (0,1), got {args}"
 
     def test_shift_click_when_returning_to_coast(self):
-        """When coast detected during RETURNING: shift click + HOMING."""
+        """When coast detected during RETURNING: shift fires, state→HOMING."""
         nav = make_navigator()
         nav._state = 'RETURNING'
         nav._return_steps = 5
-        nav._inland_vec = (1.0, 0.0)
-        nav._shift_vec  = (0.0, 1.0)
+        nav._inland_vec = (0.0, 1.0)   # vertical → 1 shift click
+        nav._shift_vec  = (-1.0, 0.0)
+        nav._shift_vec_set = True
         with patch.object(nav, '_is_at_coast_now', return_value=True):
             nav.step()
-        nav._click_vec.assert_called_once()
+        assert nav._click_vec.call_count == 1
         assert nav._state == 'HOMING'
 
     def test_return_steps_safety_cap_horizontal(self):
@@ -211,16 +215,20 @@ class TestInlineShift:
         nav._grab_minimap.return_value = fake_mm
 
         import minimap_reader as mr
-        # coast_angle = π/2 → coast_vec = (0, 1) (vertical coast)
+        # coast_angle=π/2 → inland_vec=(cos(π), sin(π))=(-1,0)
+        # shift_vec = (-iv[1], iv[0]) = (0, -1)  [90° CCW from inland]
         with patch.object(mr, 'detect_coast_angle', return_value=np.pi / 2), \
              patch.object(mr, 'analyze_forward_zone',
                           return_value={'water_px': 0, 'land_px': 100,
                                         'land_ratio': 1.0, 'is_ocean': False}):
             nav._read_minimap()
         assert nav._shift_vec_set is True
-        # coast_angle=π/2 → coast_vec=(cos(π/2), sin(π/2)) ≈ (0, 1)
-        assert abs(nav._shift_vec[1] - 1.0) < 0.01, \
-            f"Expected vertical shift_vec (0,1) for vertical coast, got {nav._shift_vec}"
+        # shift_vec must be ⊥ to inland_vec=(-1,0): dot product = 0
+        iv = nav._inland_vec
+        sv = nav._shift_vec
+        dot = iv[0] * sv[0] + iv[1] * sv[1]
+        assert abs(dot) < 0.01, \
+            f"shift_vec must be perpendicular to inland_vec  iv={iv}  sv={sv}  dot={dot:.4f}"
 
     def test_shift_vec_not_updated_on_subsequent_angle_reads(self):
         """Once locked, _shift_vec stays fixed even if coast angle drifts."""
@@ -459,10 +467,10 @@ class TestShiftAlwaysPerpendicular:
 # ── blind return phase ────────────────────────────────────────────────────
 
 class TestBlindReturnPhase:
-    """RETURNING is blind for first max_inland-1 steps — ignores rivers."""
+    """RETURNING is blind for first max_inland-3 steps — фонарь включается за 3 шага до берега."""
 
     def test_blind_steps_set_when_entering_returning(self):
-        """DIVING→RETURNING cardinal: blind = max_inland - 1 (full)."""
+        """DIVING→RETURNING cardinal: blind = max_inland - 3 (фонарь за 3 шага до берега)."""
         nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
         nav._inland_steps = 5
@@ -470,10 +478,10 @@ class TestBlindReturnPhase:
         nav._shift_vec  = (0.0, 1.0)
         nav.step()
         assert nav._state == 'RETURNING'
-        assert nav._return_blind_steps == 4   # max_inland - 1
+        assert nav._return_blind_steps == 2   # max_inland - 3
 
     def test_blind_steps_halved_for_diagonal_45(self):
-        """DIVING→RETURNING 45° diagonal: blind = round((max_inland-1)*0.5)."""
+        """DIVING→RETURNING 45° diagonal: blind = round((max_inland-3)*0.5)."""
         nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
         nav._inland_steps = 5
@@ -481,7 +489,7 @@ class TestBlindReturnPhase:
         nav._shift_vec  = (-0.707, 0.707)
         nav.step()
         assert nav._state == 'RETURNING'
-        assert nav._return_blind_steps == 2   # round(4 * 0.5)
+        assert nav._return_blind_steps == 1   # round(2 * 0.5)
 
     def test_blind_steps_interpolated_for_mid_angle(self):
         """DIVING→RETURNING ~26° angle: blind interpolated smoothly."""
@@ -494,8 +502,8 @@ class TestBlindReturnPhase:
         nav._shift_vec  = (-math.sin(angle), math.cos(angle))
         nav.step()
         assert nav._state == 'RETURNING'
-        # ratio = tan(26°) ≈ 0.488, factor = 1 - 0.488*0.5 ≈ 0.756, blind = round(4*0.756) = 3
-        assert nav._return_blind_steps == 3
+        # ratio = tan(26°) ≈ 0.488, factor = 1 - 0.488*0.5 ≈ 0.756, blind = round(2*0.756) = 2
+        assert nav._return_blind_steps == 2
 
     def test_coast_detection_skipped_during_blind_phase(self):
         """_is_at_coast_now must NOT be called while blind_steps > 0."""
@@ -550,7 +558,7 @@ class TestBlindReturnPhase:
         assert nav._state == 'HOMING'
 
     def test_vision_phase_has_generous_cap(self):
-        """Vision phase = _return_steps - _return_blind_steps = (max_inland+15) - (max_inland-1) = 16."""
+        """Vision phase = _return_steps - _return_blind_steps = (max_inland+15) - (max_inland-3) = 18."""
         nav = make_navigator(max_inland=5)
         nav._state = 'DIVING'
         nav._inland_steps = 5
@@ -558,8 +566,8 @@ class TestBlindReturnPhase:
         nav._shift_vec  = (0.0, 1.0)
         nav.step()
         vision_steps = nav._return_steps - nav._return_blind_steps
-        assert vision_steps == 16, \
-            f"Expected 16 vision steps (generous safety cap), got {vision_steps}"
+        assert vision_steps == 18, \
+            f"Expected 18 vision steps (generous safety cap), got {vision_steps}"
 
     def test_bot_keeps_walking_until_coast_found_in_vision_phase(self):
         """Bot walks multiple vision steps until coast is detected — no early exit."""
@@ -594,3 +602,183 @@ class TestBlindReturnPhase:
         nav._return_blind_steps = 4
         nav.reset()
         assert nav._return_blind_steps == 0
+
+
+# ── inland_vec hysteresis (fix: no flip on marginal pixel difference) ────────
+
+class TestInlandDirectionHysteresis:
+    """_validate_inland_direction must use ×2 hysteresis — no flip on noise."""
+
+    def _fwd(self, z1_land, z2_land):
+        """side_effect: perp1 (direction[1]>0) → z1, perp2 (y<0) → z2."""
+        def _side(mm, direction, **kw):
+            lp = z1_land if direction[1] > 0 else z2_land
+            return {'land_px': lp, 'water_px': 0, 'land_ratio': 1.0, 'is_ocean': False}
+        return _side
+
+    def test_no_flip_when_z2_less_than_2x_z1(self):
+        """z2=15, z1=10 → z2 < z1*2 → inland_vec stays at perp1 (no flip)."""
+        nav = make_navigator()
+        nav._coast_angle = 0.0
+        nav._angle_init  = True
+        nav._inland_vec  = (0.0, 1.0)   # perp1 = DOWN
+        mm = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        with patch.object(mr, 'analyze_forward_zone', side_effect=self._fwd(10, 15)):
+            nav._validate_inland_direction(mm)
+        assert abs(nav._inland_vec[1] - 1.0) < 0.01, \
+            f"Must NOT flip when z2=15 < z1*2=20  got={nav._inland_vec}"
+
+    def test_flip_when_z2_at_least_2x_z1(self):
+        """z2=21, z1=10 → z2 >= z1*2 → inland_vec flips to perp2 (UP)."""
+        nav = make_navigator()
+        nav._coast_angle = 0.0
+        nav._angle_init  = True
+        nav._inland_vec  = (0.0, 1.0)   # perp1 = DOWN
+        mm = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        with patch.object(mr, 'analyze_forward_zone', side_effect=self._fwd(10, 21)):
+            nav._validate_inland_direction(mm)
+        assert abs(nav._inland_vec[1] - (-1.0)) < 0.01, \
+            f"MUST flip when z2=21 >= z1*2=20  got={nav._inland_vec}"
+
+    def test_no_flip_back_from_perp2_when_z1_less_than_2x_z2(self):
+        """Currently at perp2 (UP): z1=15, z2=10 → z1 < z2*2=20 → stays at perp2."""
+        nav = make_navigator()
+        nav._coast_angle = 0.0
+        nav._angle_init  = True
+        nav._inland_vec  = (0.0, -1.0)  # perp2 = UP
+        mm = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        with patch.object(mr, 'analyze_forward_zone', side_effect=self._fwd(15, 10)):
+            nav._validate_inland_direction(mm)
+        assert abs(nav._inland_vec[1] - (-1.0)) < 0.01, \
+            f"Must NOT flip back (z1=15 < z2*2=20)  got={nav._inland_vec}"
+
+    def test_flip_from_perp2_when_z1_at_least_2x_z2(self):
+        """At perp2 (UP): z1=25, z2=10 → z1 >= z2*2 → flips back to perp1 (DOWN)."""
+        nav = make_navigator()
+        nav._coast_angle = 0.0
+        nav._angle_init  = True
+        nav._inland_vec  = (0.0, -1.0)  # perp2 = UP
+        mm = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        with patch.object(mr, 'analyze_forward_zone', side_effect=self._fwd(25, 10)):
+            nav._validate_inland_direction(mm)
+        assert abs(nav._inland_vec[1] - 1.0) < 0.01, \
+            f"MUST flip to perp1 when z1=25 >= z2*2=20  got={nav._inland_vec}"
+
+    def test_no_flip_when_both_sides_zero_land(self):
+        """z1=0, z2=0 → no land anywhere → inland_vec unchanged."""
+        nav = make_navigator()
+        nav._coast_angle = 0.0
+        nav._angle_init  = True
+        nav._inland_vec  = (0.0, 1.0)
+        mm = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        with patch.object(mr, 'analyze_forward_zone', side_effect=self._fwd(0, 0)):
+            nav._validate_inland_direction(mm)
+        assert abs(nav._inland_vec[1] - 1.0) < 0.01, \
+            f"Must NOT change when no land visible  got={nav._inland_vec}"
+
+    def test_old_equal_pixels_does_not_flip(self):
+        """z1=z2=50 — tied: current direction wins (perp1 stays perp1)."""
+        nav = make_navigator()
+        nav._coast_angle = 0.0
+        nav._angle_init  = True
+        nav._inland_vec  = (0.0, 1.0)   # perp1
+        mm = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        with patch.object(mr, 'analyze_forward_zone', side_effect=self._fwd(50, 50)):
+            nav._validate_inland_direction(mm)
+        assert abs(nav._inland_vec[1] - 1.0) < 0.01, \
+            f"Tied pixels → current direction wins, no flip  got={nav._inland_vec}"
+
+
+# ── footprint wall blocks re-dive ─────────────────────────────────────────────
+
+class TestFootprintWallBlocksDive:
+    """Footprint wall detected → shift right instead of diving into old strip."""
+
+    def test_wall_disabled_footprint_ahead_still_dives(self):
+        """Wall check disabled: has_footprint_ahead=True no longer blocks dive."""
+        nav = make_navigator()
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, has_footprint_ahead=True)):
+            nav.step()
+        assert nav._state == 'DIVING', \
+            "Wall disabled: footprint_ahead must NOT block dive"
+
+    def test_no_footprint_ahead_transitions_to_diving(self):
+        """No footprint: coast detected → DIVING."""
+        nav = make_navigator()
+        with patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True, has_footprint_ahead=False)):
+            nav.step()
+        assert nav._state == 'DIVING'
+
+
+# ── _read_minimap returns has_footprint_ahead ──────────────────────────────────
+
+class TestReadMinimapFootprintAhead:
+    """_read_minimap must include 'has_footprint_ahead' in return dict."""
+
+    def _base_patches(self):
+        import minimap_reader as mr
+        return (
+            patch.object(mr, 'detect_coast_angle', return_value=0.0),
+            patch.object(mr, 'analyze_forward_zone',
+                         return_value={'water_px': 0, 'land_px': 100,
+                                       'land_ratio': 1.0, 'is_ocean': False}),
+        )
+
+    def test_key_present_in_result(self):
+        nav = make_navigator()
+        nav._grab_minimap.return_value = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        p1, p2 = self._base_patches()
+        with p1, p2, \
+             patch.object(mr, 'analyze_footprint_zone',
+                          return_value={'footprint_px': 0, 'zone_px': 100,
+                                        'has_footprint': False}):
+            result = nav._read_minimap()
+        assert 'has_footprint_ahead' in result
+
+    def test_false_when_no_footprint_pixels(self):
+        nav = make_navigator()
+        nav._grab_minimap.return_value = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        p1, p2 = self._base_patches()
+        with p1, p2, \
+             patch.object(mr, 'analyze_footprint_zone',
+                          return_value={'footprint_px': 0, 'zone_px': 100,
+                                        'has_footprint': False}):
+            result = nav._read_minimap()
+        assert result['has_footprint_ahead'] is False
+
+    def test_true_when_red_pixels_in_shift_direction(self):
+        nav = make_navigator()
+        nav._grab_minimap.return_value = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        p1, p2 = self._base_patches()
+        with p1, p2, \
+             patch.object(mr, 'analyze_footprint_zone',
+                          return_value={'footprint_px': 25, 'zone_px': 100,
+                                        'has_footprint': True}):
+            result = nav._read_minimap()
+        assert result['has_footprint_ahead'] is True
+
+    def test_false_when_footprint_disabled(self):
+        """footprint_enabled=False → has_footprint_ahead always False."""
+        nav = make_navigator()
+        nav._footprint_enabled = False
+        nav._grab_minimap.return_value = np.zeros((180, 180, 3), dtype=np.uint8)
+        import minimap_reader as mr
+        p1, p2 = self._base_patches()
+        with p1, p2, \
+             patch.object(mr, 'analyze_footprint_zone',
+                          return_value={'footprint_px': 99, 'zone_px': 100,
+                                        'has_footprint': True}):
+            result = nav._read_minimap()
+        assert result['has_footprint_ahead'] is False, \
+            "Footprint disabled → must not report wall even if pixels exist"

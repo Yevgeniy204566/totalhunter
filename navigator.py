@@ -106,14 +106,18 @@ class FootprintCanvas:
     FOOTPRINT_COLOR = (0, 0, 255)  # BGR: Red — does NOT trigger water detection
 
     def __init__(self):
-        self._grid = np.zeros((self.GRID_SIZE, self.GRID_SIZE), dtype=np.float64)
-        self._cx   = self.CENTER
-        self._cy   = self.CENTER
+        self._grid  = np.zeros((self.GRID_SIZE, self.GRID_SIZE), dtype=np.float64)
+        self._cx    = float(self.CENTER)
+        self._cy    = float(self.CENTER)
+        self._cx_i  = self.CENTER   # integer grid index (for stamping)
+        self._cy_i  = self.CENTER
 
     def record(self, dx: float, dy: float) -> None:
-        """Track current grid position (called on every step)."""
-        self._cx = max(0, min(self.GRID_SIZE - 1, self._cx + int(round(dx))))
-        self._cy = max(0, min(self.GRID_SIZE - 1, self._cy + int(round(dy))))
+        """Track position with float accumulation — avoids rounding error on diagonal steps."""
+        self._cx = max(0.0, min(float(self.GRID_SIZE - 1), self._cx + dx))
+        self._cy = max(0.0, min(float(self.GRID_SIZE - 1), self._cy + dy))
+        self._cx_i = int(round(self._cx))
+        self._cy_i = int(round(self._cy))
 
     def draw_ray(
         self,
@@ -133,9 +137,9 @@ class FootprintCanvas:
         coast_dx = int(round(coast_vec[0]))
         coast_dy = int(round(coast_vec[1]))
         rcx = max(0, min(self.GRID_SIZE - 1,
-                         self._cx - coast_dx + extra_coast_steps * coast_dx))
+                         self._cx_i - coast_dx + extra_coast_steps * coast_dx))
         rcy = max(0, min(self.GRID_SIZE - 1,
-                         self._cy - coast_dy + extra_coast_steps * coast_dy))
+                         self._cy_i - coast_dy + extra_coast_steps * coast_dy))
 
         norm = np.hypot(inland_vec[0], inland_vec[1])
         if norm == 0:
@@ -168,8 +172,8 @@ class FootprintCanvas:
 
         for dy in range(-half_y, half_y + 1):
             for dx in range(-half_x, half_x + 1):
-                gx = self._cx + dx
-                gy = self._cy + dy
+                gx = self._cx_i + dx
+                gy = self._cy_i + dy
                 if 0 <= gx < self.GRID_SIZE and 0 <= gy < self.GRID_SIZE:
                     ts = self._grid[gy, gx]
                     if ts > 0 and (now - ts) < ttl_sec:
@@ -181,8 +185,10 @@ class FootprintCanvas:
 
     def reset(self) -> None:
         self._grid[:] = 0
-        self._cx = self.CENTER
-        self._cy = self.CENTER
+        self._cx   = float(self.CENTER)
+        self._cy   = float(self.CENTER)
+        self._cx_i = self.CENTER
+        self._cy_i = self.CENTER
 
 
 def _prepare_minimap(frame_bgr: np.ndarray) -> np.ndarray:
@@ -442,6 +448,7 @@ class CoastalSnakeNavigator:
         force_shift_after: int  = 0,   # 0 = disabled; N = force shift every N non-shift steps
         diagonal_blind_coeff: float = 0.5,  # 0=no reduction, 1=fully blind at 45°
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
+        return_delta_px: int    = 0,   # pixels of rightward bias added to every RETURNING click
     ):
         self.center_x         = center_x
         self.center_y         = center_y
@@ -458,6 +465,7 @@ class CoastalSnakeNavigator:
         self.coast_ema_alpha        = coast_ema_alpha
         self.diagonal_blind_coeff   = diagonal_blind_coeff
         self.coast_detect_radius    = coast_detect_radius
+        self.return_delta_px        = return_delta_px
 
         self._state              = 'HOMING'
         self._inland_steps       = 0
@@ -513,37 +521,64 @@ class CoastalSnakeNavigator:
             mm[mask] = overlay[mask]
         return mm
 
-    def _click_vec(self, dx: float, dy: float):
-        """Click joystick in arbitrary direction (dx, dy) — supports diagonals."""
+    def _click_vec(self, dx: float, dy: float, extra_shift_px: int = 0):
+        """Click joystick in direction (dx, dy). extra_shift_px offsets the
+        click in shift_vec direction (used for return_delta_px during RETURNING)."""
         norm = np.hypot(dx, dy)
         if norm == 0:
             return
         ndx, ndy = dx / norm, dy / norm
-        pyautogui.click(
-            int(self.center_x + ndx * self.p_range_x),
-            int(self.center_y + ndy * self.p_range_y),
-        )
+        cx = int(self.center_x + ndx * self.p_range_x)
+        cy = int(self.center_y + ndy * self.p_range_y)
+        if extra_shift_px > 0 and self._shift_vec_set:
+            sv = self._shift_vec
+            sv_n = float(np.hypot(sv[0], sv[1]))
+            if sv_n > 0:
+                cx += int(sv[0] / sv_n * extra_shift_px)
+                cy += int(sv[1] / sv_n * extra_shift_px)
+        pyautogui.click(cx, cy)
         if self._footprint_enabled:
             self._footprint.record(ndx, ndy)
 
+    def _soft_shift(self, fraction: float) -> None:
+        """
+        Fractional lateral correction — pushes bot away from left wall.
+
+        fraction=0.5 → closest, 1/6 → farthest detectable.
+        Clicks at center + sv * fraction * p_range (sub-step position).
+        Only fires when footprint canvas has data (no false trigger at session start).
+        """
+        import pyautogui as _pag
+        sv = self._shift_vec if self._shift_vec_set else (-self._inland_vec[1], self._inland_vec[0])
+        norm = np.hypot(sv[0], sv[1])
+        if norm == 0 or fraction <= 0:
+            return
+        ndx, ndy = sv[0] / norm, sv[1] / norm
+        x = int(self.center_x + ndx * self.p_range_x * fraction)
+        y = int(self.center_y + ndy * self.p_range_y * fraction)
+        _pag.click(x, y)
+        if self._footprint_enabled:
+            self._footprint.record(ndx * fraction, ndy * fraction)
+
     def _shift_click(self) -> None:
         """
-        Lateral shift — НАМЕРТВО perpendicular to inland_vec.
+        Lateral shift — uses locked _shift_vec (AP-37). Always exactly 1 click.
 
-        Direction = 90° CCW rotation of current _inland_vec: sv = (-iy, ix).
-        Mathematically guaranteed to be ⊥ to dive/return for ANY coast angle.
-        Never uses _shift_vec — computed fresh from _inland_vec every call.
+        Diagonal shift has a seaward Y-component: multiple clicks amplify it
+        and push the bot into the ocean. 1 click keeps displacement small enough
+        for the return phase to compensate.
         """
-        iv = self._inland_vec
-        sv = (-iv[1], iv[0])          # 90° CCW — always ⊥ to inland_vec
-        # Invariant check: sv must be perpendicular to iv
-        assert abs(sv[0] * iv[0] + sv[1] * iv[1]) < 1e-9, \
-            f"INVARIANT VIOLATED: shift {sv} is not ⊥ to inland {iv}"
-        self._shift_vec = sv          # keep _shift_vec in sync for draw_ray / diagnostics
+        if self._shift_vec_set:
+            sv = self._shift_vec
+        else:
+            iv = self._inland_vec
+            sv = (-iv[1], iv[0])
+            self._shift_vec = sv
+
         self._click_vec(*sv)
         self._steps_since_shift = 0
 
-    def _move_perpendicular(self, toward_water: bool) -> None:
+    def _move_perpendicular(self, toward_water: bool, return_delta_px: int = 0) -> None:
         """
         ЗАПРЕТ на движение вдоль берега.
         Единственный метод, который двигает бота в HOMING-фазе.
@@ -551,10 +586,13 @@ class CoastalSnakeNavigator:
 
         toward_water=True  → клик в сторону воды  (-inland_vec = seaward)
         toward_water=False → клик вглубь суши      (+inland_vec = inland)
+
+        return_delta_px: when >0, the click is physically offset by this many pixels
+        in the shift_vec direction on the joystick — applies during RETURNING only.
         """
         iv = self._inland_vec
         if toward_water:
-            self._click_vec(-iv[0], -iv[1])
+            self._click_vec(-iv[0], -iv[1], extra_shift_px=return_delta_px)
         else:
             self._click_vec(iv[0], iv[1])
         self._steps_since_shift += 1
@@ -584,15 +622,16 @@ class CoastalSnakeNavigator:
         self._coast_vec  = (float(np.cos(ca)),           float(np.sin(ca)))
         self._inland_vec = (float(np.cos(ca + np.pi/2)), float(np.sin(ca + np.pi/2)))
 
-        # FIX: sync shift_vec = coast_vec while not locked — prevents shift_vec == inland_vec
-        # when PCA returns 0.0 fallback (the root cause of "no shift" bug).
+        # Store shift direction = 90° CCW from inland_vec.
+        # Locked at first real coast detection so it never drifts with EMA angle noise.
         if not self._shift_vec_set:
-            self._shift_vec = tuple(self._coast_vec)
+            iv = self._inland_vec
+            self._shift_vec = (-iv[1], iv[0])
 
 
     def _validate_inland_direction(self, mm) -> None:
         """
-        Fix 2: Ensure _inland_vec points toward land, not ocean.
+        Ensure _inland_vec points toward land, not ocean.
 
         After EMA updates _inland_vec to one of the two perpendiculars,
         we check both and pick the one with more land pixels.
@@ -612,7 +651,16 @@ class CoastalSnakeNavigator:
                                    min_water_px=self.min_water_px)['land_px']
 
         if z1 > 0 or z2 > 0:          # at least one side has visible land
-            self._inland_vec = perp1 if z1 >= z2 else perp2
+            # Hysteresis: flip only when opposite side has ≥2× more land pixels.
+            # Prevents minimap noise at the coast edge from oscillating inland_vec.
+            dot = (self._inland_vec[0] * perp1[0] + self._inland_vec[1] * perp1[1])
+            current_is_perp1 = dot > 0   # same hemisphere as perp1
+            if current_is_perp1:
+                if z2 > z1 * 2:
+                    self._inland_vec = perp2
+            else:
+                if z1 > z2 * 2:
+                    self._inland_vec = perp1
 
 
     def _is_at_coast_now(self) -> bool:
@@ -634,7 +682,7 @@ class CoastalSnakeNavigator:
         Wide snapshot (coast_snap_size) for PCA smoothing; standard 180px
         snapshot for zone analysis.
         """
-        from minimap_reader import detect_coast_angle, analyze_forward_zone
+        from minimap_reader import detect_coast_angle, analyze_forward_zone, analyze_footprint_zone
 
         mm = self._grab_minimap()  # 180px standard snapshot + red footprint overlay
 
@@ -667,12 +715,45 @@ class CoastalSnakeNavigator:
             coast_zone['land_ratio'] < 0.5
         )
 
+        # Footprint wall check — use locked shift direction (same as _shift_click).
+        if self._shift_vec_set:
+            sv_fp = self._shift_vec
+        else:
+            iv = self._inland_vec
+            sv_fp = (-iv[1], iv[0])
+        has_footprint_ahead = (
+            self._footprint_enabled and
+            analyze_footprint_zone(mm, sv_fp, radius=60)['has_footprint']
+        )
+
+        # Soft left-wall repulsion: measure proximity via footprint in -sv direction.
+        # Returns fraction of a step to nudge right (0 = no wall nearby).
+        # Fractions: 1/2 closest … 1/6 farthest. Only fires when canvas has data.
+        wall_repulsion_frac = 0.0
+        if self._footprint_enabled and self._shift_vec_set:
+            neg_sv = (-sv_fp[0], -sv_fp[1])
+            pps = self._pixels_per_step
+            _LEVELS = [
+                (pps * 0.5, 0.5  ),   # within 0.5 steps → push 1/2
+                (pps * 1.0, 1/3  ),   # within 1 step    → push 1/3
+                (pps * 2.0, 0.25 ),   # within 2 steps   → push 1/4
+                (pps * 3.0, 0.2  ),   # within 3 steps   → push 1/5
+                (pps * 4.0, 1/6  ),   # within 4 steps   → push 1/6
+            ]
+            for radius_f, frac in _LEVELS:
+                fp = analyze_footprint_zone(mm, neg_sv, radius=max(5, int(radius_f)))
+                if fp['has_footprint']:
+                    wall_repulsion_frac = frac
+                    break
+
         return {
-            'coast_angle': self._coast_angle,
-            'inland_vec':  self._inland_vec,
-            'coast_vec':   self._coast_vec,
-            'fwd':         fwd,
-            'is_at_coast': is_at_coast,
+            'coast_angle':         self._coast_angle,
+            'inland_vec':          self._inland_vec,
+            'coast_vec':           self._coast_vec,
+            'fwd':                 fwd,
+            'is_at_coast':         is_at_coast,
+            'has_footprint_ahead': has_footprint_ahead,
+            'wall_repulsion_frac': wall_repulsion_frac,
         }
 
     # ── main navigation step ─────────────────────────────────────────────
@@ -694,18 +775,22 @@ class CoastalSnakeNavigator:
             info = self._read_minimap()   # angle/direction update happens here
 
             if info['is_at_coast']:
+                # [WALL DISABLED] — footprint wall check commented out.
+                # if info.get('has_footprint_ahead', False):
+                #     self._shift_click()
+                #     return True
+
                 # Fallback: if detect_coast_angle never returned a real angle,
                 # set shift_vec from whatever coast_vec we have now.
                 if not self._shift_vec_set:
-                    self._shift_vec     = tuple(self._coast_vec)
-                    self._shift_vec_set = True
-                # Draw left wall + mirror wall 1 screen ahead.
-                # Use same perpendicular formula as _shift_click for consistency.
-                if self._footprint_enabled:
                     iv = self._inland_vec
-                    sv = (-iv[1], iv[0])
-                    self._footprint.draw_ray(iv, sv)
-                    self._footprint.draw_ray(iv, sv, extra_coast_steps=2)
+                    self._shift_vec     = (-iv[1], iv[0])
+                    self._shift_vec_set = True
+                # [WALL DISABLED] — draw_ray commented out.
+                # if self._footprint_enabled:
+                #     iv = self._inland_vec
+                #     sv = self._shift_vec
+                #     self._footprint.draw_ray(iv, sv)
                 self._state             = 'DIVING'
                 self._inland_steps      = 0
                 self._homing_steps      = 0
@@ -730,14 +815,12 @@ class CoastalSnakeNavigator:
                 # fall through to DIVING in same call
 
             else:
-                # ЗАПРЕТ на движение вдоль берега.
-                # Движение ТОЛЬКО по ±inland_vec — строго перпендикулярно воде.
-                # is_ocean → мы в море → двигаемся вглубь суши (+inland).
-                # else    → мы на суше → двигаемся к воде (-inland = seaward).
+                # Wall repulsion: blend rightward component into the click direction.
+                # Wall correction disabled — use return_delta_px instead.
                 if info['fwd']['is_ocean']:
-                    self._move_perpendicular(toward_water=False)   # к суше
+                    self._move_perpendicular(toward_water=False)
                 else:
-                    self._move_perpendicular(toward_water=True)    # к воде
+                    self._move_perpendicular(toward_water=True)
                 self._homing_steps += 1
                 return True
 
@@ -761,7 +844,7 @@ class CoastalSnakeNavigator:
                 angle_ratio  = (min(vx, vy) / mx) if mx > 0 else 0.0
                 blind_factor = 1.0 - angle_ratio * self.diagonal_blind_coeff
                 self._return_blind_steps = max(
-                    0, round((self.max_inland_steps - 1) * blind_factor)
+                    0, round((self.max_inland_steps - 3) * blind_factor)
                 )
                 return True
             self._move_perpendicular(toward_water=False)   # нырок вглубь суши
@@ -779,7 +862,8 @@ class CoastalSnakeNavigator:
             if self._return_blind_steps > 0:
                 self._return_blind_steps -= 1
                 self._return_steps       -= 1
-                self._move_perpendicular(toward_water=True)
+                self._move_perpendicular(toward_water=True,
+                                         return_delta_px=self.return_delta_px)
                 return True
 
             # Check for coast WITHOUT calling _read_minimap — inland_vec must
@@ -793,7 +877,8 @@ class CoastalSnakeNavigator:
                 self._homing_steps = 0
                 return True
             self._return_steps -= 1
-            self._move_perpendicular(toward_water=True)    # возврат к воде
+            self._move_perpendicular(toward_water=True,
+                                     return_delta_px=self.return_delta_px)
             return True
 
         return True
@@ -823,6 +908,7 @@ class PacmanEngine:
         force_shift_after: int  = 0,
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
+        return_delta_px: int    = 0,
         # legacy params (ignored):
         max_depth: int      = 4,
         screen_w: int       = 5,
@@ -842,6 +928,7 @@ class PacmanEngine:
             force_shift_after=force_shift_after,
             diagonal_blind_coeff=diagonal_blind_coeff,
             coast_detect_radius=coast_detect_radius,
+            return_delta_px=return_delta_px,
         )
         self.conf               = conf
         self.scan_interval      = scan_interval

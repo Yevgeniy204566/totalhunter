@@ -57,19 +57,19 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
         self._bot_gcx     = 0.0
         self._bot_gcy     = 0.0
 
-    def _click_vec(self, dx: float, dy: float) -> None:
-        super()._click_vec(dx, dy)   # pyautogui click + footprint record
+    def _click_vec(self, dx: float, dy: float, extra_shift_px: int = 0) -> None:
+        super()._click_vec(dx, dy, extra_shift_px=extra_shift_px)
         norm = np.hypot(dx, dy)
         if norm > 0:
             self._bot_gcx += dx / norm
             self._bot_gcy += dy / norm
 
-    def _move_perpendicular(self, toward_water: bool) -> None:
+    def _move_perpendicular(self, toward_water: bool, return_delta_px: int = 0) -> None:
         # Zero canvas at start of each new dive (before first inland step)
         if not toward_water and self._inland_steps == 0:
             self._bot_gcx = 0.0
             self._bot_gcy = 0.0
-        super()._move_perpendicular(toward_water=toward_water)
+        super()._move_perpendicular(toward_water=toward_water, return_delta_px=return_delta_px)
 
     def _is_land_at(self, mm: np.ndarray, px: int, py: int) -> bool:
         h, w = mm.shape[:2]
@@ -200,7 +200,7 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             return self._step_returning_scan()
 
         self._return_steps -= 1
-        self._move_perpendicular(toward_water=True)
+        self._move_perpendicular(toward_water=True, return_delta_px=self.return_delta_px)
         return True
 
     def _step_returning_scan(self) -> bool:
@@ -303,4 +303,9 @@ class CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator):
             return True
 
         # All other states (HOMING, DIVING not at max): parent handles
-        return super().step(is_water=is_water)
+        result = super().step(is_water=is_water)
+        # Edge case: HOMING ocean-fallback sets state='RETURNING' directly.
+        # Intercept it so beacon's sub-states handle the return.
+        if self._state == 'RETURNING':
+            self._state = 'RETURNING_BLIND'
+        return result

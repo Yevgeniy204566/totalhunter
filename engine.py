@@ -8,6 +8,8 @@ from ultralytics import YOLO
 
 from navigator import PacmanEngine
 from auth import heartbeat as _heartbeat
+import nav_logger
+nav_logger.install()
 
 
 class HuntEngine:
@@ -39,6 +41,7 @@ class HuntEngine:
         footprint_ttl: float    = 120.0,
         diagonal_blind_coeff: float = 0.5,
         coast_detect_radius: int = 50,
+        return_delta_px: int   = 0,
         use_beacon:      bool  = False,
         pixels_per_step: int   = 20,
     ):
@@ -54,6 +57,7 @@ class HuntEngine:
                 footprint_ttl=footprint_ttl,
                 diagonal_blind_coeff=diagonal_blind_coeff,
                 coast_detect_radius=coast_detect_radius,
+                return_delta_px=return_delta_px,
                 pixels_per_step=pixels_per_step,
             )
             self._pacman = PacmanEngine(
@@ -91,6 +95,7 @@ class HuntEngine:
                 footprint_ttl=footprint_ttl,
                 diagonal_blind_coeff=diagonal_blind_coeff,
                 coast_detect_radius=coast_detect_radius,
+                return_delta_px=return_delta_px,
             )
         self._pacman.on_found_callback = self.on_found_callback
 
