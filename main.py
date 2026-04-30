@@ -514,24 +514,6 @@ class TotalHunterApp(ctk.CTk):
         self.nav_diagblind_slider.pack(padx=10, pady=(0, 2), fill="x")
 
         # Радиус конуса детекции берега
-        self.nav_coastrad_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
-        self.nav_coastrad_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_coastrad_frame, text="Конус детекции берега (px):",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left")
-        self.nav_coastrad_val = ctk.CTkLabel(self.nav_coastrad_frame, text="50",
-                                             font=ctk.CTkFont(size=14, weight="bold"),
-                                             text_color=MD3["value_text"])
-        self.nav_coastrad_val.pack(side="right")
-        self.nav_coastrad_slider = ctk.CTkSlider(
-            nav_sliders_frame, from_=10, to=90, number_of_steps=16,
-            command=self._update_nav_labels,
-            button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
-            progress_color=MD3["primary"],
-        )
-        self.nav_coastrad_slider.set(50)
-        self.nav_coastrad_slider.pack(padx=10, pady=(0, 2), fill="x")
-
         # Память следов (TTL секунды)
         self.nav_footprint_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_footprint_frame.pack(fill="x", padx=10, pady=(0, 2))
@@ -550,6 +532,44 @@ class TotalHunterApp(ctk.CTk):
         )
         self.nav_footprint_slider.set(120)
         self.nav_footprint_slider.pack(padx=10, pady=(0, 2), fill="x")
+
+        # Дельта возврата (подмешивание вправо при возврате)
+        self.nav_delta_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
+        self.nav_delta_frame.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(self.nav_delta_frame, text="Дельта возврата (px):",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_delta_val = ctk.CTkLabel(self.nav_delta_frame, text="0 px",
+                                          font=ctk.CTkFont(size=14, weight="bold"),
+                                          text_color=MD3["value_text"])
+        self.nav_delta_val.pack(side="right")
+        self.nav_delta_slider = ctk.CTkSlider(
+            nav_sliders_frame, from_=0, to=20, number_of_steps=20,
+            command=self._update_nav_labels,
+            button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
+            progress_color=MD3["primary"],
+        )
+        self.nav_delta_slider.set(0)
+        self.nav_delta_slider.pack(padx=10, pady=(0, 4), fill="x")
+
+        # Демпфер поворота (max_pitch_delta)
+        self.nav_pitch_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
+        self.nav_pitch_frame.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(self.nav_pitch_frame, text="Демпфер поворота (°):",
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="15°",
+                                          font=ctk.CTkFont(size=14, weight="bold"),
+                                          text_color=MD3["value_text"])
+        self.nav_pitch_val.pack(side="right")
+        self.nav_pitch_slider = ctk.CTkSlider(
+            nav_sliders_frame, from_=10, to=50, number_of_steps=40,
+            command=self._update_nav_labels,
+            button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
+            progress_color=MD3["primary"],
+        )
+        self.nav_pitch_slider.set(15)
+        self.nav_pitch_slider.pack(padx=10, pady=(0, 4), fill="x")
 
         # Кнопка сохранения настроек
         self.save_btn = ctk.CTkButton(self.nav_frame, text="Сохранить настройки",
@@ -1119,11 +1139,12 @@ class TotalHunterApp(ctk.CTk):
         self.nav_ocean_val.configure(text=f"{int(self.nav_ocean_slider.get())}%")
         self.nav_waterpx_val.configure(text=f"{int(self.nav_waterpx_slider.get())}")
         self.nav_diagblind_val.configure(text=f"{self.nav_diagblind_slider.get():.2f}")
-        self.nav_coastrad_val.configure(text=f"{int(self.nav_coastrad_slider.get())}")
         ttl = int(self.nav_footprint_slider.get())
         self.nav_footprint_val.configure(
             text=f"{ttl // 60} мин" if ttl >= 60 else f"{ttl} с"
         )
+        self.nav_delta_val.configure(text=f"{int(self.nav_delta_slider.get())} px")
+        self.nav_pitch_val.configure(text=f"{int(self.nav_pitch_slider.get())}°")
 
     def _update_nav_labels_and_dot(self, _=None):
         self._update_nav_labels()
@@ -1168,8 +1189,9 @@ class TotalHunterApp(ctk.CTk):
             cfg["ocean_land_ratio"]      = int(self.nav_ocean_slider.get()) / 100.0
             cfg["min_water_px"]          = int(self.nav_waterpx_slider.get())
             cfg["diagonal_blind_coeff"]  = round(self.nav_diagblind_slider.get(), 2)
-            cfg["coast_detect_radius"]   = int(self.nav_coastrad_slider.get())
             cfg["nav_footprint_ttl"]     = int(self.nav_footprint_slider.get())
+            cfg["return_delta_px"]       = int(self.nav_delta_slider.get())
+            cfg["max_pitch_delta"]       = int(self.nav_pitch_slider.get())
             with open(GUI_CONFIG_PATH, 'w') as f:
                 json.dump(cfg, f, indent=2)
             messagebox.showinfo("OK", "Настройки сохранены")
@@ -1200,9 +1222,10 @@ class TotalHunterApp(ctk.CTk):
             self.nav_ocean_slider.set(int(cfg.get("ocean_land_ratio", 0.03) * 100))
             self.nav_waterpx_slider.set(cfg.get("min_water_px", 500))
             self.nav_diagblind_slider.set(cfg.get("diagonal_blind_coeff", 0.5))
-            self.nav_coastrad_slider.set(cfg.get("coast_detect_radius", 50))
             raw_ttl = cfg.get("nav_footprint_ttl", 120)
             self.nav_footprint_slider.set(max(60, min(1200, int(raw_ttl))))
+            self.nav_delta_slider.set(int(cfg.get("return_delta_px", 0)))
+            self.nav_pitch_slider.set(int(cfg.get("max_pitch_delta", 15)))
             self._update_nav_labels()
             self.update_slider_labels()
         except Exception:
@@ -1239,8 +1262,9 @@ class TotalHunterApp(ctk.CTk):
                     ocean_land_ratio=int(self.nav_ocean_slider.get()) / 100.0,
                     min_water_px=int(self.nav_waterpx_slider.get()),
                     diagonal_blind_coeff=round(self.nav_diagblind_slider.get(), 2),
-                    coast_detect_radius=int(self.nav_coastrad_slider.get()),
                     footprint_ttl=float(self.nav_footprint_slider.get()),
+                    return_delta_px=int(self.nav_delta_slider.get()),
+                    max_pitch_delta=float(self.nav_pitch_slider.get()),
                     use_beacon=bool(self._load_gui_config().get('use_beacon', False)),
                     pixels_per_step=int(self._load_gui_config().get('nav_pps', 20)),
                 )
