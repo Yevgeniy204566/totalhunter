@@ -41,6 +41,7 @@ CLICK_Y_RATIO = 0.85
 # Точка скролла и проверки Anti-Stuck
 COMBO_SCROLL_PT  = (960, 430)
 COMBO_HEADER_PT  = (960, 175)   # пиксель заголовка окна
+COMBO_SCROLL_CLICKS = 3         # pyautogui scroll units (tune if needed)
 
 GRID_DIFF_THRESHOLD = 0.03  # 3% — скролл меняет картинку, шум — нет
 
@@ -97,6 +98,8 @@ def parse_number(text: str) -> int:
 
 class CombinerEngine:
     def __init__(self):
+        if not _DEPS_OK:
+            raise RuntimeError("CombinerEngine requires numpy, cv2, pyautogui, mss, pytesseract")
         self.delay: float = 0.1
         self._stop_requested: bool = False
         self._thread: 'threading.Thread | None' = None
@@ -157,6 +160,8 @@ class CombinerEngine:
         self._stop_requested = True
 
     def start(self, delay: float, status_callback: 'Callable[[str], None]') -> None:
+        if self._thread and self._thread.is_alive():
+            return
         self._stop_requested = False
         self.delay = delay
         self._thread = threading.Thread(
@@ -182,7 +187,7 @@ class CombinerEngine:
 
     def _scroll_down(self) -> None:
         pyautogui.moveTo(COMBO_SCROLL_PT[0], COMBO_SCROLL_PT[1])
-        pyautogui.scroll(-500)
+        pyautogui.scroll(-COMBO_SCROLL_CLICKS)
         time.sleep(1.0)
 
     # ── Main loop ────────────────────────────────────────────
