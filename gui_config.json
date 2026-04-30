@@ -11,5 +11,5 @@
   "diagonal_blind_coeff": 0.5,
   "nav_footprint_ttl": 600,
   "return_delta_px": 10,
-  "smooth_alpha": 50
+  "smooth_alpha": 70
 }
