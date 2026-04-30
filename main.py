@@ -1400,6 +1400,15 @@ class TotalHunterApp(ctk.CTk):
                                            hover_color=MD3["green_hover"])
             self.crypt_status_label.configure(text="Остановлено (ESC)",
                                               text_color=MD3["on_surface2"])
+        # Combo
+        if self.is_combo_running:
+            self.is_combo_running = False
+            self.combo_engine.stop()
+            self.combo_start_btn.configure(text="ЗАПУСТИТЬ COMBO",
+                                           fg_color=MD3["green_btn"],
+                                           hover_color=MD3["green_hover"])
+            self.combo_status_label.configure(text="Остановлено (ESC)",
+                                              text_color=MD3["on_surface2"])
 
     def on_target_found(self):
         """Вызывается из фонового потока движка"""
