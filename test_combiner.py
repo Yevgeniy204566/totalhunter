@@ -2,7 +2,8 @@
 import numpy as np
 import pytest
 from unittest.mock import patch, MagicMock
-from combiner import parse_number, _images_differ, CombinerEngine
+from combiner import (parse_number, _images_differ, CombinerEngine,
+                       COMBO_SLOT_W, COMBO_SLOT_H, COMBO_COLS, COMBO_ROWS_VISIBLE)
 
 def test_parse_4_1k():
     assert parse_number("4.1k") == 4100
@@ -10,8 +11,8 @@ def test_parse_4_1k():
 def test_parse_4_1k_comma():
     assert parse_number("4,1k") == 4100
 
-def test_parse_1_2M():
-    assert parse_number("1.2M") == 1_200_000
+def test_parse_1_2M_ignored():
+    assert parse_number("1.2M") == 0   # M не используется в комбинировании
 
 def test_parse_500():
     assert parse_number("500") == 500
@@ -138,3 +139,38 @@ def test_start_creates_daemon_thread():
     assert engine._thread is not None
     assert engine._thread.daemon is True
     assert did_run == [True]
+
+
+# ── Координатная привязка (coord_manager) ────────────────────────────────────
+
+def _make_grid():
+    """Пустой grid_img нужного размера."""
+    return np.zeros((COMBO_SLOT_H * COMBO_ROWS_VISIBLE,
+                     COMBO_SLOT_W * COMBO_COLS, 3), dtype=np.uint8)
+
+
+def test_click_coords_user_first_card():
+    """GRID_Y=372: row_idx=0, col=0 → screen (673, 416) — первая карточка пользователя."""
+    engine = CombinerEngine()
+    with patch.object(engine, '_zoom_ocr', return_value='100'):
+        cards = engine.scan_row(_make_grid(), 0)
+    assert cards[0].click_x == 673
+    assert cards[0].click_y == 416
+
+
+def test_click_coords_user_second_card():
+    """GRID_Y=372: row_idx=0, col=1 → screen (760, 416) — вторая карточка."""
+    engine = CombinerEngine()
+    with patch.object(engine, '_zoom_ocr', return_value='100'):
+        cards = engine.scan_row(_make_grid(), 0)
+    assert cards[1].click_x == 760
+    assert cards[1].click_y == 416
+
+
+def test_click_coords_user_second_row():
+    """GRID_Y=372: row_idx=1, col=0 → screen (673, 504) — второй ряд."""
+    engine = CombinerEngine()
+    with patch.object(engine, '_zoom_ocr', return_value='100'):
+        cards = engine.scan_row(_make_grid(), 1)
+    assert cards[0].click_x == 673
+    assert cards[0].click_y == 504
