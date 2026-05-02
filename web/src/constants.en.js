@@ -13,7 +13,7 @@ export const LANDING = {
     { key: 'total_crypts',    icon: '⚰️',  label: 'Crypts Collected',  color: '#B060FF'       },
     { key: 'active_hunters',  icon: '⚔️',  label: 'Players Online',    color: 'var(--credits-gold)' },
   ],
-  featuresTitle: 'What Pain Does the Bot Solve',
+  featuresTitle: 'What Total Hunter Solves',
   featuresSub:   'Not a clicker — a full scout with a neural network',
   features: [
     {

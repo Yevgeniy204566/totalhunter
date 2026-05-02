@@ -10,9 +10,9 @@ function getRefCookie() {
 }
 
 const FEATURES = [
-  { icon: '⚔', text: 'Авто-охота на Биржи' },
-  { icon: '💀', text: 'Поиск Склепов 24/7' },
-  { icon: '◈',  text: 'Реферальная система' },
+  { icon: '◈', text: 'Авто-охота на Биржи' },
+  { icon: '◈', text: 'Поиск Склепов 24/7' },
+  { icon: '◈', text: 'Реферальная система' },
 ]
 
 export default function LoginPage() {

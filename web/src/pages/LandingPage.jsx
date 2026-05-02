@@ -247,7 +247,7 @@ export default function LandingPage() {
               <div key={title} className="card" style={{ borderRadius: 14, padding: 28 }}>
                 {FEATURE_IMAGES[i] ? (
                   <div style={{
-                    width: '100%', height: 160, borderRadius: 12,
+                    width: '100%', height: 220, borderRadius: 12,
                     marginBottom: 22, overflow: 'hidden',
                     border: `1px solid ${color}44`,
                     background: `${color}08`,
