@@ -138,15 +138,19 @@ export default function LandingPage() {
         <div style={{ position: 'relative', maxWidth: 800 }}>
 
           {/* ── Big Logo with glow ── */}
-          <div style={{ marginBottom: 32 }}>
+          <div style={{ marginBottom: 40, width: '100%' }}>
             <img
               src="/img/logo.png"
               alt="Total Hunter"
               style={{
-                width: 160, height: 160,
+                width: '100%',
+                maxWidth: 720,
+                height: 'auto',
                 borderRadius: 32,
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 0 32px rgba(61,127,255,0.7)) drop-shadow(0 0 64px rgba(61,127,255,0.35))',
+                filter: 'drop-shadow(0 0 48px rgba(61,127,255,0.8)) drop-shadow(0 0 96px rgba(61,127,255,0.4))',
+                display: 'block',
+                margin: '0 auto',
               }}
             />
           </div>
