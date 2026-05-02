@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-02 (Хангоф #29 — Переезд на total-hunter.com завершён, SaaS запущен)
+> Последнее обновление: 2026-05-03 (Хангоф #30 — SEO, Legal RU/EN, GuidePage перевод, иконки, деплой-баг исправлен)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare, домен куплен 2026-05-02)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -24,7 +24,7 @@
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
 | Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
-| Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ Домен total-hunter.com, RU/EN i18n, лендинг с картинками | 2026-05-02 |
+| Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ SEO, Legal RU/EN, GuidePage полный перевод, иконки, деплой-хук настроен | 2026-05-03 |
 | Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена | 2026-04-21 |
 
 ---

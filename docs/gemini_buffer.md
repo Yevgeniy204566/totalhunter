@@ -1,82 +1,79 @@
-# Хангоф #29 — SaaS запущен на total-hunter.com
-**Дата:** 2026-05-02
+# Gemini Buffer — Хангоф #30
+**Дата:** 2026-05-03 | Сессия: веб-платформа, SEO, иконки, деплой
 
 ---
 
-## ✅ Что сделано в этой сессии
+## Что сделано сегодня
 
-| Задача | Статус |
-|---|---|
-| Домен total-hunter.com (Cloudflare, SSL) | ✅ |
-| Nginx + SSL на GCP → api.total-hunter.com | ✅ |
-| Vercel привязан к домену, auto-deploy из ветки main | ✅ |
-| CORS обновлён — добавлен total-hunter.com | ✅ |
-| Биржа: списание включено (spend_credit("exchange")) | ✅ |
-| Стоимость биржи: 5 → 10 алмазов (сервер + гайд) | ✅ |
-| COOP заголовок (vercel.json) — OAuth работает | ✅ |
-| Лендинг: картинки exchange.png + crypt.png в фичах | ✅ |
-| Лендинг: большой лого со свечением (160px, glow) | ✅ |
-| Лендинг: кнопка RU/EN переключает язык | ✅ |
-| Дашборд: переводы RU/EN через useLang() | ✅ |
-| GuidePage: 10 алмазов за биржу, lang подключён | ✅ |
-| Текст лендинга отредактирован пользователем | ✅ |
-| Git branch переименован master → main | ✅ |
-| Все файлы (картинки, переводы, lang.js) добавлены в git | ✅ |
+| # | Задача | Статус |
+|---|--------|--------|
+| 1 | SEO: `index.html` — title, meta description, OG, Twitter Card, JSON-LD SoftwareApplication, hreflang ru/en/x-default, canonical | ✅ |
+| 2 | Legal page: полный профессиональный текст на RU+EN (5 разделов: Условия, Конфиденциальность, Отказ, Возврат, Контакты), кнопка ← Назад, переключатель языка | ✅ |
+| 3 | Слоган лендинга: «Total Hunter — умный поиск и автоматизация в Total Battle» (RU+EN) | ✅ |
+| 4 | Убрано слово «боль» из заголовков лендинга → «Что решает Total Hunter» | ✅ |
+| 5 | Убраны emoji-иконки 🏪⚰️⚔️ из блока статистики лендинга | ✅ |
+| 6 | LoginPage: убраны ⚔ и 💀, заменены на ◈ | ✅ |
+| 7 | GuidePage: полный RU/EN перевод через `G = lang==='en' ? GUIDE_EN : GUIDE_RU` — все разделы, TOC, FAQ, CTA, кнопка языка в навбаре | ✅ |
+| 8 | Карточки feature images лендинга: высота 160→220px | ✅ |
+| 9 | Иконки: перегенерированы из 1024×1024 оригинала, обрезаны по контуру алмаза, `favicon.svg` удалён | ✅ |
+| 10 | `favicon.ico` (web): 16+32+48px. `assets/icon.ico` (бот): 7 размеров 16-256px | ✅ |
+| 11 | Vercel deploy баг: `productionBranch="master"` → пуши в `main` уходили в Preview. Создан deploy hook `D0wsErcYcw`, ветка `main` | ✅ |
+| 12 | `deploy_web.sh`: правильный деплой через hook + poll-until-READY + alias | ✅ |
 
 ---
 
-## 🔴 Чеклист запуска — что осталось
+## Критический баг деплоя (решён)
 
-### Высокий приоритет
-| # | Задача |
-|---|---|
-| 1 | **SEO** — meta title/description/og-tags для total-hunter.com |
-| 2 | **EXE упаковка** — PyInstaller .spec файл, сборка дистрибутива |
-| 3 | **Защита YOLO моделей** — шифрование crypts.pt → crypts.pt.enc |
-| 4 | **Автообновление** — check version при старте, открывать браузер |
-| 5 | **Coinzilla** — вставить код рекламы в Layout.jsx (место готово) |
-
-### Средний приоритет
-| # | Задача |
-|---|---|
-| 6 | **Автокалибровка REF_A/REF_B** — OpenCV matchTemplate для джойстика и серебра |
-| 7 | **Free-Kassa webhook** — прописать URL в кабинете FK |
-| 8 | **GuidePage i18n** — полный перевод (файлы guide_content.js/en.js готовы, нужно подключить все секции) |
-| 9 | **Иллюстрации в гайде** — вставить calib_point_a.png, calib_point_b.png |
+**Симптом:** коммиты пушатся, Vercel строит, сайт не меняется.  
+**Причина:** `productionBranch: "master"` в Vercel dashboard при ветке `main`. Все деплои уходили в Preview.  
+**Решение:** deploy hook `POST .../D0wsErcYcw` (ветка `main`) + ручное назначение alias `total-hunter.com` через API после каждого билда.  
+**Token:** `/c/Users/Admin/AppData/Roaming/com.vercel.cli/Data/auth.json` (истекает ~ноябрь 2026)
 
 ---
 
-## Инфраструктура (финальный статус)
+## Текущее состояние сайта (total-hunter.com)
 
-```
-total-hunter.com          → Vercel (React SPA)
-api.total-hunter.com      → GCP 34.68.86.57 (Nginx → uvicorn :8000)
-34.68.86.57/admin         → Admin Panel
-PostgreSQL                → на GCP, systemd сервис "totalhunter"
-GitHub: Yevgeniy204566/totalhunter, branch: main
-```
+| Страница | RU | EN | Статус |
+|----------|----|----|--------|
+| Лендинг `/` | ✅ | ✅ | Слоган, фичи, статистика без иконок |
+| Логин `/login` | ✅ | — | Без мечей/черепов |
+| Dashboard `/dashboard` | ✅ | ✅ | i18n подключён |
+| Инструкция `/guide` | ✅ | ✅ | Полный перевод |
+| Legal `/legal` | ✅ | ✅ | 5 разделов, кнопка Назад |
 
-## Критические правила git (выучить наизусть)
+---
+
+## Что делать дальше (приоритет)
+
+### 🔴 HIGH
+1. **Free-Kassa webhook** — зарегистрировать `FK_SECRET_WORD2` в кабинете FK. Без этого платежи принимаются, но алмазы не начисляются автоматически.
+2. **Google Search Console** — добавить домен `total-hunter.com`, запросить индексацию. Sitemap: отправить `/sitemap.xml` (нужно создать).
+
+### 🟡 MED
+3. **EXE packaging** — PyInstaller `build.spec`, собрать `TotalHunter.exe` с bundled Python + моделями YOLO.
+4. **YOLO model protection** — AES-256 шифрование `crypts.pt` → `crypts.pt.enc`, endpoint `/get_model_key`.
+5. **Auto-update** — поле `version` в `/check_auth` ответе, `updater.py` модуль.
+6. **Coinzilla реклама** — зарегистрироваться на coinzilla.com, вставить embed в `Layout.jsx` вместо заглушки.
+
+### 🟢 LOW
+7. **Combo модуль** — разморожен для будущей сессии: заменить `pyautogui.scroll()` на `keyboard.press('pagedown')`, маяк с уникальным max-значением.
+8. **Beacon навигатор** — `use_beacon=false` (заморожен), требует полевой тест с правильным `nav_pps`.
+9. **Иллюстрации в Guide** — `calib_point_a/b.png` уже есть в `web/public/img/`, нужно проверить отображение в GuidePage.
+
+---
+
+## Деплой (команды для следующей сессии)
 
 ```bash
-# Редактируешь файл в VS Code → сохранил → потом:
-git add web/src/constants.js       # или нужный файл
-git commit -m "что изменил"
+# Стандартный деплой (Клод делает сам):
+git add <файлы>
+git commit -m "описание"
 git push origin main
-# Только тогда Vercel задеплоит!
+# Затем: hook → poll READY → alias (см. deploy_web.sh)
+
+# Проверка что деплой дошёл:
+curl -sI https://total-hunter.com/index.html | grep etag
 ```
 
-## SEO — что нужно сделать
-
-Добавить в `web/index.html`:
-```html
-<title>Total Hunter — автоматический поиск бирж и склепов в Total Battle</title>
-<meta name="description" content="Бот для Total Battle: автоматический поиск бирж наёмников и сбор склепов. 100 алмазов бесплатно при регистрации.">
-<meta property="og:title" content="Total Hunter">
-<meta property="og:description" content="Автоматизация для Total Battle">
-<meta property="og:image" content="https://total-hunter.com/img/logo.png">
-<meta property="og:url" content="https://total-hunter.com">
-<meta name="robots" content="index, follow">
-```
-
-И подключить Google Search Console для индексации.
+**Deploy hook:** `POST https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw`  
+**Project:** `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj` | **Team:** `team_CkkRPXdwtRtsL9YCk8n4Fzla`
