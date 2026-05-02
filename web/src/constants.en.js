@@ -9,9 +9,9 @@ export const LANDING = {
   ctaSecondary: 'Guide',
   statsLabel:   '⬡ Total Hunter Players\' Results',
   stats: [
-    { key: 'total_exchanges', icon: '🏪', label: 'Exchanges Found',   color: 'var(--accent)' },
-    { key: 'total_crypts',    icon: '⚰️',  label: 'Crypts Collected',  color: '#B060FF'       },
-    { key: 'active_hunters',  icon: '⚔️',  label: 'Players Online',    color: 'var(--credits-gold)' },
+    { key: 'total_exchanges', label: 'Exchanges Found',   color: 'var(--accent)' },
+    { key: 'total_crypts',    label: 'Crypts Collected',  color: '#B060FF'       },
+    { key: 'active_hunters',  label: 'Players Online',    color: 'var(--credits-gold)' },
   ],
   featuresTitle: 'What Total Hunter Solves',
   featuresSub:   'Not a clicker — a full scout with a neural network',

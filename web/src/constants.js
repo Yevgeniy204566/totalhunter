@@ -9,9 +9,9 @@ export const LANDING = {
   ctaSecondary: 'Инструкция',
   statsLabel:   '⬡ Результаты игроков Total Hunter',
   stats: [
-    { key: 'total_exchanges', icon: '🏪', label: 'Найдено бирж',    color: 'var(--accent)' },
-    { key: 'total_crypts',    icon: '⚰️',  label: 'Собрано склепов', color: '#B060FF'       },
-    { key: 'active_hunters',  icon: '⚔️',  label: 'Игроков в сети',  color: 'var(--credits-gold)' },
+    { key: 'total_exchanges', label: 'Найдено бирж',    color: 'var(--accent)' },
+    { key: 'total_crypts',    label: 'Собрано склепов', color: '#B060FF'       },
+    { key: 'active_hunters',  label: 'Игроков в сети',  color: 'var(--credits-gold)' },
   ],
   featuresTitle: 'Что решает Total Hunter',
   featuresSub:   'Не кликер — полноценный разведчик с нейросетью',

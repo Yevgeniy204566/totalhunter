@@ -27,7 +27,7 @@ function useCounter(target, duration = 1400) {
   return value
 }
 
-function StatCard({ icon, label, color, rawValue }) {
+function StatCard({ label, color, rawValue }) {
   const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
   const display  = typeof rawValue === 'number' ? animated.toLocaleString() : '—'
 
@@ -47,7 +47,6 @@ function StatCard({ icon, label, color, rawValue }) {
       e.currentTarget.style.boxShadow = ''
       e.currentTarget.style.borderColor = 'var(--outline)'
     }}>
-      <div style={{ fontSize: 30, marginBottom: 14 }}>{icon}</div>
       <div style={{
         fontSize: 'clamp(40px, 5vw, 58px)', fontWeight: 800,
         color, lineHeight: 1, marginBottom: 10,
@@ -219,8 +218,8 @@ export default function LandingPage() {
             {LANDING.statsLabel}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-            {LANDING.stats.map(({ key, icon, label, color }) => (
-              <StatCard key={key} icon={icon} label={label} color={color} rawValue={stats ? stats[key] : null} />
+            {LANDING.stats.map(({ key, label, color }) => (
+              <StatCard key={key} label={label} color={color} rawValue={stats ? stats[key] : null} />
             ))}
           </div>
         </div>
