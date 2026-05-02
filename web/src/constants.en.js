@@ -1,38 +1,38 @@
 export const LANDING = {
-  badge:    'Total Battle · Player Assistant',
-  heroTitle: 'Total Hunter —',
-  heroAccent: 'Automated Scouting',
+  badge:      'Total Battle · Automation',
+  heroTitle:  'Total Hunter —',
+  heroAccent: 'Bot Works While You Rest',
   heroSub:
-    'The bot automatically finds exchanges for hiring mercenaries and collects crypts across the map. ' +
-    'Focus on your tasks while the system searches for targets for you.',
-  ctaPrimary:   'Start Searching ➔',
-  ctaSecondary: 'Instructions',
-  statsLabel:   '⬡ Our Players\' Results',
+    'Tired of spending hours scrolling the map for exchanges and manually timing Carter\'s marches? ' +
+    'Total Hunter finds mercenary exchanges and sends Carter to crypts — automatically, without you.',
+  ctaPrimary:   'Try for Free ➔',
+  ctaSecondary: 'Guide',
+  statsLabel:   '⬡ Total Hunter Players\' Results',
   stats: [
-    { key: 'total_exchanges', icon: '', label: 'Exchanges Found',   color: 'var(--accent)' },
-    { key: 'total_crypts',    icon: '', label: 'Crypts Collected',  color: '#B060FF'       },
-    { key: 'active_hunters',  icon: '', label: 'Players Online',    color: 'var(--credits-gold)' },
+    { key: 'total_exchanges', icon: '🏪', label: 'Exchanges Found',   color: 'var(--accent)' },
+    { key: 'total_crypts',    icon: '⚰️',  label: 'Crypts Collected',  color: '#B060FF'       },
+    { key: 'active_hunters',  icon: '⚔️',  label: 'Players Online',    color: 'var(--credits-gold)' },
   ],
-  featuresTitle: 'What the Bot Does',
-  featuresSub:   'Automating routine tasks for a comfortable game',
+  featuresTitle: 'What Pain Does the Bot Solve',
+  featuresSub:   'Not a clicker — a full scout with a neural network',
   features: [
     {
-      icon: '', color: 'var(--accent)',
-      title: 'Find Mercenary Exchanges',
+      icon: '🏪', color: 'var(--accent)',
+      title: 'Mercenary Exchanges — Never Miss One',
       desc:
-        'The bot constantly scans the map to find exchanges where you can buy elite troops. ' +
-        'You no longer need to spend hours scrolling the map looking for army packs.',
+        'The bot scans kingdom coastlines 24/7 and wakes you with a sound signal the moment it finds an exchange. ' +
+        'No more hours at the monitor — just an alert and buying your army.',
     },
     {
-      icon: '', color: '#B060FF',
-      title: 'Collecting Crypts',
+      icon: '⚰️', color: '#B060FF',
+      title: 'Crypts Farm While You Sleep',
       desc:
-        'Fully automated crypt searching and collection. ' +
-        'The bot finds targets, calculates travel time, and immediately proceeds to the next crypt.',
+        'Full cycle without you: found crypt → sent Carter → calculated return time → repeated. ' +
+        'Elite resources accumulate around the clock.',
     },
   ],
-  ctaTitle:   'Want to Free Up Your Time?',
+  ctaTitle: 'Want to Keep Up With the Top Players?',
   ctaSub:
-    'Get 100 free credits upon your first connection. Try the bot in action right now.',
+    'First 100 diamonds are free. No credit card required. Ready to launch in 5 minutes.',
   ctaBtn: 'Start for Free',
 }
