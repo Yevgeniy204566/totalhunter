@@ -108,7 +108,7 @@ export const GUIDE = {
     title: 'Operating Modes',
     exchange: {
       title: 'Exchange Hunting',
-      cost: '5 diamonds / find',
+      cost: '10 diamonds / find',
       rows: [
         { l: 'Logic',    t: 'Continuous coastline scanning using the "Snake" algorithm.' },
         { l: 'Result',   t: 'Audio signal + search stop → you purchase troops manually.' },
@@ -132,7 +132,7 @@ export const GUIDE = {
     intro: 'Total Hunter uses ◆ diamonds — an internal currency consumed only for successful bot actions.',
     spendLabel: 'Diamond Consumption',
     spendRows: [
-      { label: 'Exchange Found', cost: '−5 diamonds',  color: '#00CFFF' },
+      { label: 'Exchange Found', cost: '−10 diamonds', color: '#00CFFF' },
       { label: 'Crypt Gathered',  cost: '−1 diamond',   color: '#B060FF' },
       { label: 'Nothing Found',    cost: 'Free',         color: 'var(--on-surface2)' },
       { label: 'Trial',            cost: '+100 diamonds', color: 'var(--credits-gold)' },

@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom'
 import { isLoggedIn } from '../auth.js'
+import { useLang } from '../lang.js'
+import { GUIDE as GUIDE_RU } from '../guide_content.js'
+import { GUIDE as GUIDE_EN } from '../guide_content.en.js'
 
 // ── Diamond icon (gradient ◆) ────────────────────────────────────────────────
 function Diamond({ size = 28, style = {} }) {
@@ -130,6 +133,9 @@ function Note({ children }) {
 }
 
 export default function GuidePage() {
+  const { lang, toggle } = useLang()
+  const G = lang === 'en' ? GUIDE_EN : GUIDE_RU
+
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
 
@@ -381,7 +387,7 @@ export default function GuidePage() {
                 <div style={{ fontSize: 24, marginBottom: 10 }}>🔍</div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>Охота на Биржи</div>
                 <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 14, background: 'rgba(0,207,255,0.15)', border: '1px solid rgba(0,207,255,0.3)', fontSize: 12, color: '#00CFFF', fontWeight: 600 }}>
-                  5 алмазов / находка
+                  10 алмазов / находка
                 </div>
                 {[
                   { l: 'Логика', t: 'Непрерывное сканирование береговой линии по алгоритму «змейка».' },
@@ -475,7 +481,7 @@ export default function GuidePage() {
               </div>
               <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 20 }}>
                 {[
-                  { label: 'Найдена Биржа', cost: '−5 алмазов', color: '#00CFFF' },
+                  { label: 'Найдена Биржа', cost: '−10 алмазов', color: '#00CFFF' },
                   { label: 'Сбор Склепа',   cost: '−1 алмаз',   color: '#B060FF' },
                   { label: 'Не найдено',    cost: 'бесплатно',  color: 'var(--on-surface2)' },
                   { label: 'Триал',         cost: '+100 алмазов', color: 'var(--credits-gold)' },
