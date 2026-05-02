@@ -288,7 +288,6 @@ export default function GuidePage() {
                 desc="Программа рассчитывает время туда+обратно и добавляет Добавочную паузу (до 300 с). Бот ждёт гарантированного возврата Картера." />
               <Step n="4" title="Сброс списка"
                 desc="Если список склепов закончился — автоматический сброс через вкладку «Арена», после чего цикл продолжается." />
-              <Note>⚠ Требуется не менее <strong>70 000 единиц масла</strong> на аккаунте. Ниже порога — бот автоматически остановит сбор.</Note>
             </Card>
           </Section>
 
@@ -411,9 +410,6 @@ export default function GuidePage() {
                     <span style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{t}</span>
                   </div>
                 ))}
-                <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(176,96,255,0.08)', border: '1px solid rgba(176,96,255,0.2)', fontSize: 12, color: '#C090FF' }}>
-                  ⚠ Требуется ≥ 70 000 единиц масла
-                </div>
               </NeonCard>
             </div>
             <Card>
