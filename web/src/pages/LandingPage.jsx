@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { isLoggedIn } from '../auth.js'
-import { LANDING } from '../constants.js'
+import { LANDING as LANDING_RU } from '../constants.js'
+import { LANDING as LANDING_EN } from '../constants.en.js'
+import { useLang } from '../lang.js'
 import { useCounter } from '../hooks/useCounter.js'
 
 function StatCard({ icon, label, color, rawValue }) {
@@ -42,6 +44,8 @@ function StatCard({ icon, label, color, rawValue }) {
 
 export default function LandingPage() {
   const [stats, setStats] = useState(null)
+  const { lang, toggle } = useLang()
+  const LANDING = lang === 'en' ? LANDING_EN : LANDING_RU
 
   useEffect(() => {
     api.globalStats().then(d => setStats(d)).catch(() => {})
@@ -72,16 +76,15 @@ export default function LandingPage() {
             color: 'var(--on-surface2)', border: '1px solid var(--outline)',
             fontWeight: 500,
           }}>
-            Гайд
+            {lang === 'en' ? 'Guide' : 'Гайд'}
           </Link>
-          {/* Language stub */}
-          <button style={{
+          <button onClick={toggle} style={{
             padding: '8px 12px', borderRadius: 8, fontSize: 13,
             background: 'transparent', color: 'var(--on-surface2)',
             border: '1px solid var(--outline)', cursor: 'pointer',
             fontWeight: 600, fontFamily: 'inherit',
-          }} title="Language (coming soon)">
-            RU
+          }}>
+            {lang.toUpperCase()}
           </button>
           <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
             padding: '9px 22px', borderRadius: 8, fontSize: 14,
@@ -89,7 +92,7 @@ export default function LandingPage() {
             fontWeight: 700, textDecoration: 'none',
             display: 'inline-block',
           }}>
-            {isLoggedIn() ? 'Dashboard →' : 'Войти'}
+            {isLoggedIn() ? 'Dashboard →' : (lang === 'en' ? 'Sign In' : 'Войти')}
           </Link>
         </div>
       </nav>
@@ -118,6 +121,11 @@ export default function LandingPage() {
         }} />
 
         <div style={{ position: 'relative', maxWidth: 800 }}>
+          <img
+            src="/img/logo.png"
+            alt="Total Hunter"
+            style={{ width: 96, height: 96, marginBottom: 24, borderRadius: 20, objectFit: 'contain' }}
+          />
           <div style={{
             display: 'inline-block',
             padding: '5px 16px', borderRadius: 20, marginBottom: 28,
@@ -157,7 +165,7 @@ export default function LandingPage() {
               background: 'var(--accent)', color: '#FFFFFF',
               fontWeight: 700, textDecoration: 'none', display: 'inline-block',
             }}>
-              {isLoggedIn() ? 'Перейти в Dashboard →' : LANDING.ctaPrimary}
+              {isLoggedIn() ? (lang === 'en' ? 'Go to Dashboard →' : 'Перейти в Dashboard →') : LANDING.ctaPrimary}
             </Link>
             <a href="#features" style={{
               padding: '17px 32px', borderRadius: 10, fontSize: 17,
@@ -284,7 +292,7 @@ export default function LandingPage() {
       }}>
         <span style={{ color: 'var(--on-surface2)', fontSize: 13 }}>© 2026 Total Hunter</span>
         <div style={{ display: 'flex', gap: 20 }}>
-          <Link to="/guide" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>Гайд</Link>
+          <Link to="/guide" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>{lang === 'en' ? 'Guide' : 'Гайд'}</Link>
           <Link to="/legal" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>Legal</Link>
         </div>
       </footer>

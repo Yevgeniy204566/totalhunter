@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
 import { clearToken } from '../auth.js'
 import { api } from '../api.js'
+import { useLang } from '../lang.js'
 
 const NAV = [
   { to: '/dashboard',              icon: '◈', label: 'Profile' },
@@ -18,6 +19,7 @@ const STICKY_AD_HEIGHT = 72
 export default function Layout() {
   const navigate = useNavigate()
   const [credits, setCredits] = useState(null)
+  const { lang, toggle } = useLang()
 
   useEffect(() => {
     api.me().then(d => setCredits(d.credits)).catch(() => {})
@@ -45,7 +47,7 @@ export default function Layout() {
         zIndex: 100,
         boxShadow: '0 2px 32px var(--accent-glow)',
       }}>
-        <Link to="/dashboard" style={{
+        <Link to="/" style={{
           display: 'flex', alignItems: 'center', gap: 10,
           textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
         }}>
@@ -90,7 +92,7 @@ export default function Layout() {
             +5 КР
           </Link>
 
-          <button className="header-btn" title="Language (coming soon)">RU</button>
+          <button className="header-btn" onClick={toggle}>{lang.toUpperCase()}</button>
           <button className="header-btn header-btn--logout" onClick={logout}>Выйти</button>
         </div>
       </header>
