@@ -1,7 +1,7 @@
 export const LANDING = {
   badge:      'Total Battle · Automation',
   heroTitle:  'Total Hunter —',
-  heroAccent: 'Bot Works While You Rest',
+  heroAccent: 'Smart Search and Automation in Total Battle',
   heroSub:
     'Tired of spending hours scrolling the map for exchanges and manually timing Carter\'s marches? ' +
     'Total Hunter finds mercenary exchanges and sends Carter to crypts — automatically, without you.',

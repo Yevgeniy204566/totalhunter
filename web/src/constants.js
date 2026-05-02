@@ -1,7 +1,7 @@
 export const LANDING = {
   badge:      'Total Battle · Автоматизация',
   heroTitle:  'Total Hunter —',
-  heroAccent: 'Пока ты отдыхаешь, бот работает',
+  heroAccent: 'умный поиск и автоматизация в Total Battle',
   heroSub:
     'Устал часами крутить карту в поисках бирж и вручную считать время походов? ' +
     'Total Hunter находит биржи наёмников и отправляет Картера в склепы — сам, без тебя.',
