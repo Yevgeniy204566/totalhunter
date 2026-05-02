@@ -2,24 +2,27 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { useCounter } from '../hooks/useCounter.js'
+import { useLang } from '../lang.js'
+import { DASHBOARD as D_RU } from '../dashboard_content.js'
+import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
-const STAT_TILES = [
-  { key: 'exchanges_today', icon: '⚔', label: 'Бирж сегодня',    color: 'var(--accent)'       },
-  { key: 'crypts_today',    icon: '💀', label: 'Склепов сегодня', color: '#B060FF'              },
-  { key: 'active_hunters',  icon: '◈',  label: 'Охотников онлайн', color: 'var(--credits-gold)' },
+const STAT_KEYS = [
+  { key: 'exchanges_today', icon: '⚔', color: 'var(--accent)'       },
+  { key: 'crypts_today',    icon: '💀', color: '#B060FF'              },
+  { key: 'active_hunters',  icon: '◈',  color: 'var(--credits-gold)' },
 ]
 
-const HUNT_META = {
-  exchange: { icon: '⚔', label: 'Биржа',  color: 'var(--accent)'  },
-  crypt:    { icon: '💀', label: 'Склеп',  color: '#B060FF'        },
+const HUNT_ICONS = {
+  exchange: { icon: '⚔', color: 'var(--accent)' },
+  crypt:    { icon: '💀', color: '#B060FF'       },
 }
 
-function timeAgo(iso) {
+function timeAgo(iso, T) {
   const diff = (Date.now() - new Date(iso)) / 1000
-  if (diff < 60)   return 'только что'
-  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`
-  return `${Math.floor(diff / 86400)} дн назад`
+  if (diff < 60)   return T.justNow
+  if (diff < 3600) return `${Math.floor(diff / 60)} ${T.minutesAgo}`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ${T.hoursAgo}`
+  return `${Math.floor(diff / 86400)} ${T.daysAgo}`
 }
 
 function StatTile({ label, color, rawValue }) {
@@ -58,6 +61,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null)
   const [hunts, setHunts] = useState(null)
   const [error, setError] = useState('')
+  const { lang } = useLang()
+  const D = lang === 'en' ? D_EN : D_RU
 
   useEffect(() => {
     api.me().then(setUser).catch(e => setError(e.message))
@@ -66,9 +71,10 @@ export default function DashboardPage() {
   }, [])
 
   if (error) return <div className="page-content" style={{ color: 'var(--error-text)' }}>{error}</div>
-  if (!user)  return <div className="page-content text-muted">Загрузка...</div>
+  if (!user)  return <div className="page-content text-muted">{D.loading}</div>
 
   const recentHunts = hunts?.items?.slice(0, 8) ?? []
+  const statTileLabels = [D.statTiles.exchangesToday, D.statTiles.cryptsToday, D.statTiles.huntersOnline]
 
   return (
     <div style={{
@@ -80,8 +86,8 @@ export default function DashboardPage() {
 
       {/* ── Global stat tiles ─────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 36, flexWrap: 'wrap' }}>
-        {STAT_TILES.map(({ key, label, color }) => (
-          <StatTile key={key} label={label} color={color}
+        {STAT_KEYS.map(({ key, icon, color }, i) => (
+          <StatTile key={key} label={statTileLabels[i]} color={color}
                     rawValue={stats ? stats[key] : null} />
         ))}
       </div>
@@ -92,7 +98,7 @@ export default function DashboardPage() {
         {/* Profile card */}
         <div>
           <h2 className="gradient-text" style={{ fontSize: 22, fontWeight: 800, marginBottom: 20 }}>
-            Профиль
+            {D.profile.title}
           </h2>
           <div className="card" style={{ borderRadius: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
@@ -102,9 +108,7 @@ export default function DashboardPage() {
                 border: '1px solid rgba(61,127,255,0.4)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 20, color: 'var(--accent)',
-              }}>
-                ◈
-              </div>
+              }}>◈</div>
               <div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF' }}>
                   {user.username || 'Hunter'}
@@ -114,21 +118,18 @@ export default function DashboardPage() {
             </div>
             <div className="separator" />
             {[
-              { label: 'Кредиты',       value: user.credits,     gold: true },
-              { label: 'Рефералы',       value: user.ref_credits, gold: false },
-              { label: 'Реф. код',       value: user.ref_code,    gold: false },
-              { label: 'Статус',         value: user.trial_used ? 'Триал использован' : '✓ Триал доступен', gold: false },
-              { label: 'С нами с',       value: user.created_at?.slice(0, 10) ?? '—', gold: false },
+              { label: D.profile.credits,    value: user.credits,     gold: true  },
+              { label: D.profile.refCredits, value: user.ref_credits, gold: false },
+              { label: D.profile.refCode,    value: user.ref_code,    gold: false },
+              { label: D.profile.status,     value: user.trial_used ? D.profile.trialUsed : D.profile.trialAvailable, gold: false },
+              { label: D.profile.memberSince,value: user.created_at?.slice(0, 10) ?? '—', gold: false },
             ].map(({ label, value, gold }) => (
               <div key={label} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '10px 0', borderBottom: '1px solid var(--separator)',
               }}>
                 <span style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{label}</span>
-                <span style={{
-                  fontWeight: 600, fontSize: 14,
-                  color: gold ? 'var(--credits-gold)' : '#FFFFFF',
-                }}>
+                <span style={{ fontWeight: 600, fontSize: 14, color: gold ? 'var(--credits-gold)' : '#FFFFFF' }}>
                   {value}
                 </span>
               </div>
@@ -138,10 +139,9 @@ export default function DashboardPage() {
                 display: 'inline-block', padding: '9px 20px',
                 background: 'var(--accent)', color: '#FFFFFF',
                 borderRadius: 8, fontSize: 13, fontWeight: 600,
-                textDecoration: 'none',
-                boxShadow: '0 0 14px var(--accent-glow)',
+                textDecoration: 'none', boxShadow: '0 0 14px var(--accent-glow)',
               }}>
-                Пополнить кредиты →
+                {D.profile.topUp}
               </Link>
             </div>
           </div>
@@ -150,16 +150,17 @@ export default function DashboardPage() {
         {/* Recent activity */}
         <div>
           <h2 className="gradient-text" style={{ fontSize: 22, fontWeight: 800, marginBottom: 20 }}>
-            Последние находки
+            {D.recentHunts.title}
           </h2>
           <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
             {recentHunts.length === 0 ? (
               <div style={{ padding: 24, color: 'var(--on-surface2)', fontSize: 14, textAlign: 'center' }}>
-                Ещё нет охот. Запусти бота! ⚔
+                {D.recentHunts.empty}
               </div>
             ) : (
               recentHunts.map((h, i) => {
-                const meta = HUNT_META[h.hunt_type] ?? { icon: '◈', label: h.hunt_type, color: 'var(--on-surface2)' }
+                const icons = HUNT_ICONS[h.hunt_type] ?? { icon: '◈', color: 'var(--on-surface2)' }
+                const label = D.huntTypes[h.hunt_type] ?? h.hunt_type
                 return (
                   <div key={i} style={{
                     display: 'flex', alignItems: 'center', gap: 12,
@@ -171,23 +172,20 @@ export default function DashboardPage() {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <div style={{
                       width: 34, height: 34, borderRadius: 8,
-                      background: `${meta.color}18`,
-                      border: `1px solid ${meta.color}44`,
+                      background: `${icons.color}18`, border: `1px solid ${icons.color}44`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 16, flexShrink: 0,
-                    }}>
-                      {meta.icon}
-                    </div>
+                    }}>{icons.icon}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
-                        {meta.label} — найден
+                        {label} {D.recentHunts.found}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
-                        {timeAgo(h.created_at)}
+                        {timeAgo(h.created_at, D.timeAgo)}
                       </div>
                     </div>
-                    <div style={{ fontSize: 11, color: meta.color, fontWeight: 700, letterSpacing: '0.5px' }}>
-                      +ЛУТНУТО
+                    <div style={{ fontSize: 11, color: icons.color, fontWeight: 700, letterSpacing: '0.5px' }}>
+                      {D.recentHunts.looted}
                     </div>
                   </div>
                 )
@@ -196,7 +194,7 @@ export default function DashboardPage() {
           </div>
           <div style={{ marginTop: 10, textAlign: 'right' }}>
             <Link to="/dashboard/hunts" style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
-              Вся история →
+              {D.recentHunts.allHistory}
             </Link>
           </div>
         </div>

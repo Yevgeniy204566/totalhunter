@@ -22,7 +22,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/"           element={isLoggedIn() ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+        <Route path="/"           element={<LandingPage />} />
         <Route path="/login"      element={<LoginPage />} />
         <Route path="/guide"      element={<GuidePage />} />
         <Route path="/legal"      element={<LegalPage />} />

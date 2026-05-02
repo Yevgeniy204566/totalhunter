@@ -93,7 +93,7 @@ export default function Layout() {
           </Link>
 
           <button className="header-btn" onClick={toggle}>{lang.toUpperCase()}</button>
-          <button className="header-btn header-btn--logout" onClick={logout}>Выйти</button>
+          <button className="header-btn header-btn--logout" onClick={logout}>{lang === 'en' ? 'Logout' : 'Выйти'}</button>
         </div>
       </header>
 
