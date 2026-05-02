@@ -1,6 +1,17 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        }
+      ]
+    }
+  ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "http://34.68.86.57:8000/$1" },
+    { "source": "/api/(.*)", "destination": "https://api.total-hunter.com/$1" },
     { "source": "/img/(.*)", "destination": "/img/$1" },
     { "source": "/(.*)", "destination": "/" }
   ]

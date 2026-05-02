@@ -35,7 +35,7 @@ export default function ReferralsPage() {
 
   if (!user) return <div className="page-content text-muted">Загрузка...</div>
 
-  const refLink = `https://totalhunter.vercel.app/ref/${user.ref_code}`
+  const refLink = `https://total-hunter.com/ref/${user.ref_code}`
 
   return (
     <div style={{
