@@ -1,87 +1,105 @@
-# Gemini Buffer — Хангоф #31
-**Дата:** 2026-05-03 | Сессия: авто-калибровка реализована и протестирована ✅
+# Gemini Buffer — Хангоф #32
+**Дата:** 2026-05-04 | Сессия: CryptHunter — логирование + чтение масла с HUD ✅
 
 ---
 
-## Что сделано сегодня (Хангоф #31)
+## Что сделано сегодня (Хангоф #32)
 
 | # | Задача | Статус |
 |---|--------|--------|
-| 1 | `auto_calibration.py` — новый модуль: `scale_ref`, `detect_point_a_in_region`, `detect_point_b_from_diff`, `auto_detect_point_a`, `auto_detect_point_b` | ✅ |
-| 2 | `calibration_ui.py` — `run_calibration(start_a, start_b)` + `calibrate_one_point` публичная | ✅ |
-| 3 | `main.py` — кнопка **АВТОКАЛИБРОВАТЬ** (синяя, над КАЛИБРОВАТЬ) | ✅ |
-| 4 | Два независимых этапа: сначала Point A полностью, потом Point B | ✅ |
-| 5 | `test_auto_calibration.py` — 13 тестов, все зелёные | ✅ |
-| 6 | Пользователь протестировал, всё работает | ✅ |
+| 1 | Логирование в файл `logs/crypt_YYYYMMDD_HHMMSS.log` | ✅ |
+| 2 | Скриншоты при детекте масла и экстренном стопе | ✅ |
+| 3 | `[EXP]` диалог-гейт: `btn_issledovat.png` перед кликом «Исследовать» | ✅ |
+| 4 | Клик по эталонным координатам `CRYPT_STUDY_BTN`, не по шаблону | ✅ |
+| 5 | OCR трёх видов масла с HUD панели (обычное/эпическое/редкое) | ✅ |
+| 6 | Привязка к Point B калибровки — работает для всех 3 профилей | ✅ |
+| 7 | Старт x=759 (пользователь замерил по экрану) | ✅ |
+| 8 | `parse_oil_value`: обрабатывает `5.84M`, `528K`, `8900`, артефакт `55.76M→5.76M` | ✅ |
+| 9 | Стоп до отправки Картера если нужного масла < 70k | ✅ |
+| 10 | Три лейбла масла в GUI (зелёный/синий/фиолетовый), обновляются перед каждым маршем | ✅ |
+| 11 | Fix: `coord_manager` → `_cm` в `_oil_screen_region` (NameError при первом запуске) | ✅ |
+| 12 | Бот протестирован, масло читается корректно | ✅ |
 
 ---
 
-## Архитектура авто-калибровки
+## Архитектура чтения масла
 
-### Поток выполнения
+### Привязка к Point B
 ```
-АВТОКАЛИБРОВАТЬ нажата
-  │
-  ├─ Этап 1: auto_detect_point_a(screen_w, screen_h)
-  │    └─ scale_ref(REF_A) → _grab_region → detect_point_a_in_region (white rect contour)
-  │    └─ fallback = scaled REF_A
-  │    └─ calibrate_one_point(self, start_a, "Точка А...")  ← лупа A
-  │    └─ пользователь подтверждает
-  │
-  └─ Этап 2: auto_detect_point_b(screen_w, screen_h)
-       └─ scale_ref(REF_B) → pyautogui.moveTo → sleep(0.4s)
-       └─ возвращает ПОЗИЦИЮ КУРСОРА (не diff-bounding-box!)
-       └─ calibrate_one_point(self, start_b, "Точка Б...")  ← лупа B с "+" в кадре
-       └─ пользователь подтверждает
-       
-coord_manager.calibrate(point_a, point_b) → _update_status()
+Point B (серебро) откалиброван пользователем
+    ↓  _OIL_DX_ANCHOR=-431, _OIL_DY=-10
+Начало масляной секции (x=718, y=78)
+    ↓  _OIL_ICON_W=41 (иконка до x=759, замерено show_coords.py)
+Старт OCR числа: x=759
+    ↓  _OIL_NUM_W=76
+Три секции по 96px: ordinary(759) | epic(855) | rare(951)
 ```
 
-### Ключевые решения
-- **Point A**: OpenCV findContours белого прямоугольника + aspect-ratio guard (max/min > 3 → skip)
-- **Point B**: курсор едет на scaled REF_B, ждём hover, **start_b = позиция курсора** (не diff-результат)
-- **Coord fix**: `x1 + img_x` вместо `cx - r + img_x` (устранили до 60px ошибку у REF_A[0]=90)
-- **Два этапа**: пользователь не портит позицию курсора для Point B при работе с лупой Point A
+**Профили:**
+- Client: Point B=(1149,88) → ordinary x=759 ✅
+- Browser 1 (Chrome): Point B=(1148,179) → ordinary x=758, y=169 ✅ авто
+- Browser 2 (Firefox): Point B=(1149,88) → ordinary x=759 ✅
 
-### Workflow сохранения (ВАЖНО)
+### Маппинг масло → тип склепа
+| Тип склепа | Масло | Порог |
+|-----------|-------|-------|
+| Ordinary_1..12 | 🟢 обычное | < 70k → стоп |
+| Epic_2..18 | 🔵 эпическое | < 70k → стоп |
+| R_1, R_2 | 🟣 редкое | < 70k → стоп |
+
+### Поток выполнения (перед каждым маршем)
 ```
-Откалибровал → выбрать профиль (Client / Browser 1 / Browser 2) → 💾 Сохранить
+_send_captain(crypt_type)
+    ↓
+_check_oil_level(crypt_type)   ← новое
+    ↓ OCR панели → проверка < 70k
+    ↓ если мало → _emergency_stop("OIL_LOW")
+    ↓ если OK → продолжаем
+[EXP] btn_issledovat.png виден? (диалог открыт)
+    ↓ да → клик по CRYPT_STUDY_BTN (эталонные координаты)
+    ↓ нет → рестарт цикла
+ждём 1.5с
 ```
-- Без «Сохранить» — калибровка только в RAM, теряется при перезапуске
-- После сохранения — профиль автозагружается при следующем старте
-- `gui_config.json` хранит `last_calibration_profile`
 
 ---
 
-## Статус профилей
-| Слот | Файл | Описание |
-|------|------|----------|
-| Client | `profiles/profile_client.json` | Нативный клиент |
-| Browser 1 | `profiles/profile_chrome.json` | Chrome |
-| Browser 2 | `profiles/profile_firefox.json` | Firefox / другой браузер |
+## Диагностика остановок (логи)
+
+Логи пишутся в `logs/crypt_YYYYMMDD_HHMMSS.log`:
+```
+[HH:MM:SS.mmm] [DEBUG] oil panel: ordinary=5720000 epic=461000 rare=774000
+[HH:MM:SS.mmm] [INFO]  Масло [epic]: 461,000 (мин 70,000)
+[HH:MM:SS.mmm] [WARN]  [EXP] btn_issledovat НЕ найден → рестарт
+[HH:MM:SS.mmm] [STOP]  EMERGENCY STOP: OIL_LOW: epic=45000 < 70000
+```
+
+При стопе сохраняются:
+- `logs/oil_region_HHMMSS.png` — регион масла
+- `logs/emergency_stop_HHMMSS.png` — полный экран
 
 ---
 
-## Что делать дальше (строго по приоритету)
+## Задачи на следующую сессию (приоритет)
 
-### 🔴 HIGH
+### 🔴 HIGH — бизнес
 1. **Free-Kassa webhook** — зарегистрировать `FK_SECRET_WORD2` в кабинете FK
 2. **Coinzilla** — зарегистрироваться, получить embed-код, вставить в `Layout.jsx:152`
 
-### 🟡 MED
-3. **Google Search Console** — добавить total-hunter.com, sitemap.xml
-4. **EXE packaging** — PyInstaller build.spec, TotalHunter.exe
-5. **YOLO model protection** — AES-256 crypts.pt
-6. **Auto-update** — version в /check_auth, updater.py
+### 🟡 MED — бот
+3. **Тест масла при реальном < 70k** — убедиться что стоп корректно срабатывает
+4. **EXP-флаги** — если `_EXP_DIALOG_GATE` стабильно работает → убрать флаг, сделать постоянным
+5. **EXP_OIL_BLUE_THR** — старая HSV-детекция масла теперь заменена OCR, убрать константу и `_check_oil_dialog` из кода
 
-### 🟢 СЛЕДУЮЩАЯ СЕССИЯ
-7. **Доработка бота по склепам (CryptHunter)** — пользователь озвучил как приоритет
+### 🟢 MED — упаковка
+6. **EXE packaging** — PyInstaller build.spec, TotalHunter.exe
+7. **YOLO model protection** — AES-256 crypts.pt
+8. **Auto-update** — version в /check_auth, updater.py
+9. **Google Search Console** — добавить total-hunter.com, sitemap.xml
 
 ---
 
-## Технические данные деплоя
+## Технические данные
 
 **Deploy hook:** `POST https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw`
-**Project:** `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj` | **Team:** `team_CkkRPXdwtRtsL9YCk8n4Fzla`
-**Token:** `C:/Users/Admin/AppData/Roaming/com.vercel.cli/Data/auth.json` (истекает ~ноябрь 2026)
 **Backend:** https://api.total-hunter.com → GCP 34.68.86.57:8000
+**Последний коммит:** `750d864` fix(crypts): coord_manager → _cm

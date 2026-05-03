@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-03 (Авто-калибровка реализована и протестирована)
+> Последнее обновление: 2026-05-04 (CryptHunter: логи + OCR масла + диалог-гейт)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare, домен куплен 2026-05-02)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -21,7 +21,7 @@
 | CoastalSnakeNavigator | navigator.py | ✅ НОВАЯ СТАБИЛЬНАЯ БАЗА — единый smooth_alpha, фонарь, адаптивная дельта, 54 теста ✅ | 2026-04-30 |
 | CoastalSnakeNavigatorBeacon | navigator_beacon.py | 🟡 СОЗДАН, НЕ ПРОШЁЛ ПОЛЕВОЙ ТЕСТ — бот уходит в воду. `use_beacon=true` → сломано. 33 юнит-теста ✅ | 2026-04-29 |
 | MiniMap Reader | minimap_reader.py | ✅ Готов, analyze_footprint_zone теперь возвращает zone_px | 2026-04-28 |
-| CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Готов, 39 тестов, oil dialog HSV detect добавлен | 2026-04-26 |
+| CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Хангоф #32: логирование, диалог-гейт [EXP], OCR масла с HUD привязан к Point B, стоп < 70k, GUI лейблы | 2026-05-04 |
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
 | Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
