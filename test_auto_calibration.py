@@ -124,7 +124,6 @@ def test_detect_point_b_ignores_small_diff():
     assert detect_point_b_from_diff(baseline, hover) is None
 
 
-from unittest.mock import patch
 from auto_calibration import auto_detect_points
 
 

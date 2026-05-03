@@ -63,6 +63,8 @@ def detect_point_a_in_region(img: np.ndarray) -> tuple[int, int] | None:
         approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
         if len(approx) == 4:
             x, y, w, h = cv2.boundingRect(cnt)
+            if max(w, h) / max(min(w, h), 1) > 3:
+                continue
             return (x + w // 2, y + h // 2)
     return None
 
