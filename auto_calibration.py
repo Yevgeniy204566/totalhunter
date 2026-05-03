@@ -35,3 +35,20 @@ def detect_point_a_in_region(img: np.ndarray) -> tuple[int, int] | None:
             x, y, w, h = cv2.boundingRect(cnt)
             return (x + w // 2, y + h // 2)
     return None
+
+
+def detect_point_b_from_diff(
+    baseline: np.ndarray, hover: np.ndarray
+) -> tuple[int, int] | None:
+    """
+    Find center of newly appeared pixels (the game's + crosshair on silver hover).
+    Returns (x, y) in image coordinates, or None if nothing significant appeared.
+    """
+    diff = cv2.absdiff(baseline, hover)
+    gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+    _, mask = cv2.threshold(gray, _DIFF_THRESHOLD, 255, cv2.THRESH_BINARY)
+    if cv2.countNonZero(mask) < _DIFF_MIN_PX:
+        return None
+    pts = cv2.findNonZero(mask)
+    x, y, w, h = cv2.boundingRect(pts)
+    return (x + w // 2, y + h // 2)

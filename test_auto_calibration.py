@@ -92,3 +92,33 @@ def test_detect_point_a_ignores_small_contours():
     img = np.zeros((300, 300, 3), dtype=np.uint8)
     cv2.rectangle(img, (148, 148), (152, 152), (255, 255, 255), 1)  # ~16 px²
     assert detect_point_a_in_region(img) is None
+
+
+from auto_calibration import detect_point_b_from_diff
+
+
+def test_detect_point_b_finds_plus_shape():
+    """Synthetic hover: yellow-green blocky + appears at center."""
+    baseline = np.zeros((300, 300, 3), dtype=np.uint8)
+    hover = baseline.copy()
+    cv2.rectangle(hover, (130, 110), (170, 190), (50, 200, 100), -1)  # vertical bar
+    cv2.rectangle(hover, (110, 130), (190, 170), (50, 200, 100), -1)  # horizontal bar
+    result = detect_point_b_from_diff(baseline, hover)
+    assert result is not None
+    cx, cy = result
+    assert abs(cx - 150) <= 15, f"Expected cx≈150, got {cx}"
+    assert abs(cy - 150) <= 15, f"Expected cy≈150, got {cy}"
+
+
+def test_detect_point_b_returns_none_when_no_diff():
+    """Identical screenshots — nothing appeared."""
+    img = np.zeros((300, 300, 3), dtype=np.uint8)
+    assert detect_point_b_from_diff(img, img) is None
+
+
+def test_detect_point_b_ignores_small_diff():
+    """Less than 100 new pixels — noise, not a crosshair."""
+    baseline = np.zeros((300, 300, 3), dtype=np.uint8)
+    hover = baseline.copy()
+    hover[100:103, 100:103] = (255, 255, 255)  # 9 pixels
+    assert detect_point_b_from_diff(baseline, hover) is None
