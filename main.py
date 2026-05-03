@@ -129,7 +129,7 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_engine = CryptHunter()
         self.is_crypt_running = False
         self._crypt_found_count = 0
-        self.combo_engine = CombinerEngine()
+        # self.combo_engine = CombinerEngine()  # Combo временно отключён
         self.is_combo_running = False
         self.current_lang = "RU"
         self.user_email = None
@@ -184,7 +184,7 @@ class TotalHunterApp(ctk.CTk):
             fg_color="#1A5C2A", hover_color="#226B33",
             text_color="#4ADE80", corner_radius=6,
             font=ctk.CTkFont(size=11, weight="bold"),
-            command=lambda: webbrowser.open("https://totalhunter.pro/dashboard"),
+            command=lambda: webbrowser.open("https://total-hunter.com/dashboard"),
         ).pack(side="right", padx=(0, 2))
 
 
@@ -238,7 +238,7 @@ class TotalHunterApp(ctk.CTk):
        
         self.tab_crypt = self.tabview.add("СКЛЕПЫ")
         self.tab_hunt  = self.tabview.add(LANGS[self.current_lang]["tab_hunt"])
-        self.tab_combo = self.tabview.add("Combo")
+        # self.tab_combo = self.tabview.add("Combo")  # временно отключён
         self.tab_ref   = self.tabview.add(LANGS[self.current_lang]["tab_ref"])
         self.tab_calibration = self.tabview.add("КАЛИБРОВКА")
 
@@ -255,7 +255,7 @@ class TotalHunterApp(ctk.CTk):
 
         self.setup_hunt_tab()
         self.setup_crypt_tab()
-        self.setup_combo_tab()
+        # self.setup_combo_tab()  # временно отключён
         self.setup_ref_tab()
         self.setup_calibration_tab()
         self.update_license_info()
@@ -279,7 +279,7 @@ class TotalHunterApp(ctk.CTk):
                       fg_color="#0A0F1E", hover_color="#1A2A5E",
                       text_color="#00CFFF", corner_radius=8,
                       font=ctk.CTkFont(size=22, weight="bold"),
-                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
+                      command=lambda: webbrowser.open("https://total-hunter.com/dashboard/balance"),
                       ).pack(side="left", padx=(8, 0))
 
 
@@ -621,7 +621,7 @@ class TotalHunterApp(ctk.CTk):
                       fg_color="#0A0F1E", hover_color="#1A2A5E",
                       text_color="#00CFFF", corner_radius=8,
                       font=ctk.CTkFont(size=22, weight="bold"),
-                      command=lambda: webbrowser.open("https://totalhunter.pro/balance"),
+                      command=lambda: webbrowser.open("https://total-hunter.com/dashboard/balance"),
                       ).pack(side="left", padx=(8, 0))
 
         # ─── Сетка иконок склепов ────────────────────────────
@@ -1110,7 +1110,7 @@ class TotalHunterApp(ctk.CTk):
                       height=32, corner_radius=8,
                       fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
                       text_color=MD3["on_surface"],
-                      command=lambda: webbrowser.open("https://totalhunter.pro/dashboard/referrals"),
+                      command=lambda: webbrowser.open("https://total-hunter.com/dashboard/referrals"),
                       ).pack(padx=10, pady=(0, 10), fill="x")
 
         self.share_lb = ctk.CTkLabel(self.tab_ref,
@@ -1417,10 +1417,13 @@ class TotalHunterApp(ctk.CTk):
 
     def _process_found(self):
         """Безопасно обновляем UI в главном потоке"""
-        # TODO: re-enable before commercial launch
-        # res = spend_credit()
-        # if res and res.get("success"):
-        #     self._update_credits_display(res.get("remaining", 0))
+        res = spend_credit("exchange")
+        if res and res.get("success"):
+            self._update_credits_display(res.get("remaining", 0))
+        elif res and res.get("low_credits"):
+            self.toggle_bot()  # сначала стоп
+            webbrowser.open("https://total-hunter.com/dashboard/balance")
+            return
 
         # Визуально переключаем кнопку обратно
         self.toggle_bot()
@@ -1615,6 +1618,29 @@ class TotalHunterApp(ctk.CTk):
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
 
+        def _auto_calibrate():
+            from auto_calibration import auto_detect_points
+            from calibration_ui import run_calibration
+            self.withdraw()
+            try:
+                screen_w = self.winfo_screenwidth()
+                screen_h = self.winfo_screenheight()
+                start_a, start_b = auto_detect_points(screen_w, screen_h)
+                point_a, point_b = run_calibration(
+                    parent=self, start_a=start_a, start_b=start_b
+                )
+            except Exception as e:
+                messagebox.showerror(
+                    "Авто-калибровка",
+                    f"Не удалось: {e}\nИспользуйте ручную КАЛИБРОВАТЬ.",
+                )
+                return
+            finally:
+                self.deiconify()
+            if point_a and point_b:
+                coord_manager.calibrate(point_a, point_b)
+                _update_status()
+
         def _calibrate():
             from calibration_ui import run_calibration
             self.withdraw()
@@ -1634,6 +1660,18 @@ class TotalHunterApp(ctk.CTk):
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
             messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
+
+        ctk.CTkButton(
+            self.tab_calibration,
+            text="АВТОКАЛИБРОВАТЬ",
+            command=_auto_calibrate,
+            fg_color=MD3["blue_btn"],
+            hover_color=MD3["blue_hover"],
+            text_color=MD3["on_surface"],
+            height=40,
+            corner_radius=12,
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).pack(fill="x", padx=40, pady=(8, 2))
 
         # ── Кнопка Калибровать — главная (error tonal) ───────────────────
         ctk.CTkButton(

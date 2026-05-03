@@ -12,13 +12,33 @@ _DIFF_MIN_PX = 100
 _HOVER_WAIT = 0.4
 _CONTOUR_MIN_AREA = 500
 
+# Point B uses a taller rectangle — browsers can push the resource bar down 200+ px
+_SEARCH_B_X = 200   # horizontal half-width
+_SEARCH_B_Y_UP = 50    # pixels to search ABOVE scaled REF_B
+_SEARCH_B_Y_DOWN = 350  # pixels to search BELOW scaled REF_B
 
-def _grab_region(cx: int, cy: int, radius: int = _SEARCH_RADIUS) -> tuple[np.ndarray, int, int]:
-    """Capture a square region centered on (cx, cy). Returns (BGR ndarray, x1, y1)."""
-    x1 = max(0, cx - radius)
-    y1 = max(0, cy - radius)
+
+def _grab_region(
+    cx: int, cy: int,
+    radius: int = _SEARCH_RADIUS,
+    radius_x: int | None = None,
+    radius_y_up: int | None = None,
+    radius_y_down: int | None = None,
+) -> tuple[np.ndarray, int, int]:
+    """
+    Capture screen region centered on (cx, cy).
+    If radius_x/radius_y_up/radius_y_down provided, uses rectangular region.
+    Returns (BGR ndarray, x1, y1).
+    """
+    rx = radius_x if radius_x is not None else radius
+    ry_up = radius_y_up if radius_y_up is not None else radius
+    ry_down = radius_y_down if radius_y_down is not None else radius
+    x1 = max(0, cx - rx)
+    y1 = max(0, cy - ry_up)
+    x2 = cx + rx
+    y2 = cy + ry_down
     with _mss() as sct:
-        mon = {"left": x1, "top": y1, "width": radius * 2, "height": radius * 2}
+        mon = {"left": x1, "top": y1, "width": x2 - x1, "height": y2 - y1}
         shot = sct.grab(mon)
     return np.array(shot)[:, :, :3], x1, y1
 
@@ -80,12 +100,22 @@ def auto_detect_points(
     else:
         point_a = (a_cx, a_cy)
 
-    # ── Point B — hover-diff yellow-green crosshair ───────────────────────
+    # ── Point B — rectangular search (tall to handle browser chrome offset) ──
     b_cx, b_cy = scale_ref(REF_B, screen_w, screen_h)
-    baseline, bx1, by1 = _grab_region(b_cx, b_cy)
+    baseline, bx1, by1 = _grab_region(
+        b_cx, b_cy,
+        radius_x=_SEARCH_B_X,
+        radius_y_up=_SEARCH_B_Y_UP,
+        radius_y_down=_SEARCH_B_Y_DOWN,
+    )
     pyautogui.moveTo(b_cx, b_cy, duration=0.15)
     time.sleep(_HOVER_WAIT)
-    hover_img, _, _ = _grab_region(b_cx, b_cy)
+    hover_img, _, _ = _grab_region(
+        b_cx, b_cy,
+        radius_x=_SEARCH_B_X,
+        radius_y_up=_SEARCH_B_Y_UP,
+        radius_y_down=_SEARCH_B_Y_DOWN,
+    )
     found_b = detect_point_b_from_diff(baseline, hover_img)
     if found_b is not None:
         point_b = (bx1 + found_b[0], by1 + found_b[1])
