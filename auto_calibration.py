@@ -1,0 +1,37 @@
+import time
+import numpy as np
+import cv2
+import pyautogui
+from mss import mss as _mss
+
+from coord_manager import REF_A, REF_B
+
+_SEARCH_RADIUS = 150
+_DIFF_THRESHOLD = 30
+_DIFF_MIN_PX = 100
+_HOVER_WAIT = 0.4
+_CONTOUR_MIN_AREA = 500
+
+
+def scale_ref(ref: tuple[int, int], screen_w: int, screen_h: int) -> tuple[int, int]:
+    """Scale a reference coordinate from 1920x1080 to actual screen resolution."""
+    return (int(ref[0] * screen_w / 1920), int(ref[1] * screen_h / 1080))
+
+
+def detect_point_a_in_region(img: np.ndarray) -> tuple[int, int] | None:
+    """
+    Find center of white rectangular contour in img (BGR).
+    Returns (x, y) in image coordinates, or None if not found.
+    """
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in sorted(contours, key=cv2.contourArea, reverse=True):
+        if cv2.contourArea(cnt) < _CONTOUR_MIN_AREA:
+            break
+        peri = cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
+        if len(approx) == 4:
+            x, y, w, h = cv2.boundingRect(cnt)
+            return (x + w // 2, y + h // 2)
+    return None

@@ -48,3 +48,47 @@ def test_run_calibration_defaults_to_ref_when_no_start(monkeypatch):
 
     assert calls[0] == REF_A
     assert calls[1] == REF_B
+
+
+import cv2
+import numpy as np
+from auto_calibration import scale_ref, detect_point_a_in_region
+
+
+def test_scale_ref_identity_1920x1080():
+    assert scale_ref(REF_A, 1920, 1080) == REF_A
+    assert scale_ref(REF_B, 1920, 1080) == REF_B
+
+
+def test_scale_ref_double_resolution():
+    a = scale_ref(REF_A, 3840, 2160)
+    assert a == (REF_A[0] * 2, REF_A[1] * 2)
+
+
+def test_scale_ref_non_integer_rounds_down():
+    a = scale_ref((90, 925), 2560, 1440)
+    assert a == (120, int(925 * 1440 / 1080))
+
+
+def test_detect_point_a_finds_white_rectangle():
+    """Synthetic image: dark background + white rectangle."""
+    img = np.zeros((300, 300, 3), dtype=np.uint8)
+    cv2.rectangle(img, (80, 100), (180, 200), (255, 255, 255), 3)
+    result = detect_point_a_in_region(img)
+    assert result is not None
+    cx, cy = result
+    assert abs(cx - 130) <= 10, f"Expected cx≈130, got {cx}"
+    assert abs(cy - 150) <= 10, f"Expected cy≈150, got {cy}"
+
+
+def test_detect_point_a_returns_none_when_no_rect():
+    """Completely dark image — no rectangle found."""
+    img = np.zeros((300, 300, 3), dtype=np.uint8)
+    assert detect_point_a_in_region(img) is None
+
+
+def test_detect_point_a_ignores_small_contours():
+    """Small rectangle (< 500 px²) is ignored."""
+    img = np.zeros((300, 300, 3), dtype=np.uint8)
+    cv2.rectangle(img, (148, 148), (152, 152), (255, 255, 255), 1)  # ~16 px²
+    assert detect_point_a_in_region(img) is None
