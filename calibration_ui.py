@@ -188,7 +188,11 @@ def _calibrate_one_point(
     return result[0]
 
 
-def run_calibration(parent: "tk.Misc | None" = None) -> "tuple[tuple[int,int]|None, tuple[int,int]|None]":
+def run_calibration(
+    parent: "tk.Misc | None" = None,
+    start_a: "tuple[int,int] | None" = None,
+    start_b: "tuple[int,int] | None" = None,
+) -> "tuple[tuple[int,int]|None, tuple[int,int]|None]":
     """
     Sequential 2-point calibration with live magnifier.
     Shows Point A (minimap) first, then Point B (silver crosshair).
@@ -208,7 +212,7 @@ def run_calibration(parent: "tk.Misc | None" = None) -> "tuple[tuple[int,int]|No
         root.withdraw()
 
     point_a = _calibrate_one_point(
-        root, REF_A,
+        root, start_a if start_a is not None else REF_A,
         "Точка А — центр мини-карты (лево-низ)",
     )
     if point_a is None:
@@ -217,7 +221,7 @@ def run_calibration(parent: "tk.Misc | None" = None) -> "tuple[tuple[int,int]|No
         return None, None
 
     point_b = _calibrate_one_point(
-        root, REF_B,
+        root, start_b if start_b is not None else REF_B,
         "Точка Б — крестик серебра (право-верх)",
     )
     if created_own_root:
