@@ -128,7 +128,7 @@ from auto_calibration import auto_detect_points
 
 
 def test_auto_detect_points_fallback_when_nothing_found():
-    """Blank screenshots → both detectors return None → fallback to scaled REF."""
+    """Blank screenshot for A → fallback to scaled REF_A. B always returns scaled REF_B."""
     blank = np.zeros((300, 300, 3), dtype=np.uint8)
     with patch("auto_calibration._grab_region", return_value=(blank, 0, 0)), \
          patch("auto_calibration.pyautogui"), \
@@ -139,37 +139,22 @@ def test_auto_detect_points_fallback_when_nothing_found():
 
 
 def test_auto_detect_points_returns_screen_coords_when_found():
-    """Detectors find points → return screen coordinates, not image coordinates."""
+    """Point A detected via contour. Point B returns cursor position (scaled REF_B)."""
     blank = np.zeros((300, 300, 3), dtype=np.uint8)
 
     # Point A: white rectangle centered near (155, 150) in image
     img_a = blank.copy()
     cv2.rectangle(img_a, (130, 120), (180, 180), (255, 255, 255), 3)
 
-    # Point B: hover with blocky + centered near (150, 150) in image
-    img_b_hover = blank.copy()
-    cv2.rectangle(img_b_hover, (130, 110), (170, 190), (50, 200, 100), -1)
-    cv2.rectangle(img_b_hover, (110, 130), (190, 170), (50, 200, 100), -1)
-
-    # For 1920x1080: a_cx=90, a_cy=925, b_cx=1149, b_cy=88
-    # a: x1=max(0,90-150)=0, y1=max(0,925-150)=775
-    # b: x1=max(0,1149-150)=999, y1=max(0,88-150)=0
-    grab_responses = iter([
-        (img_a, 0, 775),       # Point A grab
-        (blank, 999, 0),       # Point B baseline
-        (img_b_hover, 999, 0), # Point B hover
-    ])
-
-    with patch("auto_calibration._grab_region", side_effect=lambda *a, **kw: next(grab_responses)), \
+    # For 1920x1080: a_cx=90, a_cy=925 → x1=0, y1=775
+    with patch("auto_calibration._grab_region", return_value=(img_a, 0, 775)), \
          patch("auto_calibration.pyautogui"), \
          patch("auto_calibration.time"):
         pa, pb = auto_detect_points(1920, 1080)
 
-    # Point A: img center from cv2.rectangle(img_a, (130,120),(180,180)) → cx≈155, cy≈150
-    # screen: x1=0 + 155=155, y1=775 + 150=925
+    # Point A: img cx≈155, cy≈150 → screen (0+155, 775+150) = (155, 925)
     assert abs(pa[0] - 155) <= 10
     assert abs(pa[1] - 925) <= 10
 
-    # Point B: img center ≈ (150,150), x1=999, y1=0 → screen ≈ (1149, 150)
-    assert abs(pb[0] - (999 + 150)) <= 15
-    assert abs(pb[1] - (0 + 150)) <= 15
+    # Point B: cursor position = scaled REF_B = (1149, 88) on 1920x1080
+    assert pb == REF_B

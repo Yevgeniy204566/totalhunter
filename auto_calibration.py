@@ -12,11 +12,6 @@ _DIFF_MIN_PX = 100
 _HOVER_WAIT = 0.4
 _CONTOUR_MIN_AREA = 500
 
-# Point B uses a taller rectangle — browsers can push the resource bar down 200+ px
-_SEARCH_B_X = 200   # horizontal half-width
-_SEARCH_B_Y_UP = 50    # pixels to search ABOVE scaled REF_B
-_SEARCH_B_Y_DOWN = 350  # pixels to search BELOW scaled REF_B
-
 
 def _grab_region(
     cx: int, cy: int,
@@ -97,25 +92,10 @@ def auto_detect_point_a(screen_w: int, screen_h: int) -> tuple[int, int]:
 
 
 def auto_detect_point_b(screen_w: int, screen_h: int) -> tuple[int, int]:
-    """Detect Point B (silver + crosshair via hover-diff). Returns screen coords."""
+    """Move cursor to silver area, wait for game to show + crosshair, return cursor position."""
     b_cx, b_cy = scale_ref(REF_B, screen_w, screen_h)
-    baseline, bx1, by1 = _grab_region(
-        b_cx, b_cy,
-        radius_x=_SEARCH_B_X,
-        radius_y_up=_SEARCH_B_Y_UP,
-        radius_y_down=_SEARCH_B_Y_DOWN,
-    )
     pyautogui.moveTo(b_cx, b_cy, duration=0.15)
     time.sleep(_HOVER_WAIT)
-    hover_img, _, _ = _grab_region(
-        b_cx, b_cy,
-        radius_x=_SEARCH_B_X,
-        radius_y_up=_SEARCH_B_Y_UP,
-        radius_y_down=_SEARCH_B_Y_DOWN,
-    )
-    found_b = detect_point_b_from_diff(baseline, hover_img)
-    if found_b is not None:
-        return (bx1 + found_b[0], by1 + found_b[1])
     return (b_cx, b_cy)
 
 
