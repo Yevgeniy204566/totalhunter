@@ -122,3 +122,46 @@ def test_detect_point_b_ignores_small_diff():
     hover = baseline.copy()
     hover[100:103, 100:103] = (255, 255, 255)  # 9 pixels
     assert detect_point_b_from_diff(baseline, hover) is None
+
+
+from unittest.mock import patch
+from auto_calibration import auto_detect_points
+
+
+def test_auto_detect_points_fallback_when_nothing_found():
+    """Blank screenshots → both detectors return None → fallback to scaled REF."""
+    blank = np.zeros((300, 300, 3), dtype=np.uint8)
+    with patch("auto_calibration._grab_region", return_value=blank), \
+         patch("auto_calibration.pyautogui"), \
+         patch("auto_calibration.time"):
+        pa, pb = auto_detect_points(1920, 1080)
+    assert pa == REF_A
+    assert pb == REF_B
+
+
+def test_auto_detect_points_returns_screen_coords_when_found():
+    """Detectors find points → return screen coordinates, not image coordinates."""
+    blank = np.zeros((300, 300, 3), dtype=np.uint8)
+
+    # Point A: white rectangle centered near (155, 150) in image
+    img_a = blank.copy()
+    cv2.rectangle(img_a, (130, 120), (180, 180), (255, 255, 255), 3)
+
+    # Point B: hover with blocky + centered near (150, 150) in image
+    img_b_hover = blank.copy()
+    cv2.rectangle(img_b_hover, (130, 110), (170, 190), (50, 200, 100), -1)
+    cv2.rectangle(img_b_hover, (110, 130), (190, 170), (50, 200, 100), -1)
+
+    grab_responses = iter([img_a, blank, img_b_hover])
+
+    with patch("auto_calibration._grab_region", side_effect=lambda *a, **kw: next(grab_responses)), \
+         patch("auto_calibration.pyautogui"), \
+         patch("auto_calibration.time"):
+        pa, pb = auto_detect_points(1920, 1080)
+
+    # Point A img center ≈ (155, 150) → screen = (REF_A[0] - 150 + 155, REF_A[1] - 150 + 150)
+    assert abs(pa[0] - (REF_A[0] - 150 + 155)) <= 10
+    assert abs(pa[1] - (REF_A[1] - 150 + 150)) <= 10
+    # Point B img center ≈ (150, 150) → screen ≈ REF_B
+    assert abs(pb[0] - REF_B[0]) <= 15
+    assert abs(pb[1] - REF_B[1]) <= 15
