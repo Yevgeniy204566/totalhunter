@@ -1,69 +1,87 @@
-# Gemini Buffer — Хангоф #30
-**Дата:** 2026-05-03 | Сессия: веб-платформа, SEO, иконки, деплой
+# Gemini Buffer — Хангоф #31
+**Дата:** 2026-05-03 | Сессия: авто-калибровка реализована и протестирована ✅
 
 ---
 
-## Три источника монетизации Total Hunter
-
-| # | Источник | Статус | Приоритет |
-|---|----------|--------|-----------|
-| 1 | **Free-Kassa** — прямые продажи алмазов | ✅ Работает | FK_SECRET_WORD2 не настроен |
-| 2 | **Coinzilla** — рекламный баннер в дашборде | ⏳ Заглушка `AD` в Layout.jsx:152 | 🔴 HIGH |
-| 3 | **Рефералы** — L1(10%) L2(5%) L3(1%) от покупок | ✅ Работает | — |
-
----
-
-## Coinzilla — что нужно сделать
-
-**Слот уже есть:** `web/src/components/Layout.jsx` строка 152 — sticky bottom bar высотой 72px, показывается во всём дашборде.
-
-**Шаги:**
-1. Зарегистрироваться на **coinzilla.com** как publisher (сайт: total-hunter.com)
-2. Создать ad unit **728×90 Leaderboard** (идеально под 72px)
-3. Получить embed-код (`<script>` + `<ins>` или `<div>`)
-4. Передать код Клоду → вставим в `Layout.jsx:152` вместо `AD`
-5. Деплой — готово
-
-**Почему Coinzilla:** специализируется на crypto/gaming аудитории — точное попадание в игроков Total Battle.
-
----
-
-## Что сделано сегодня (Хангоф #30)
+## Что сделано сегодня (Хангоф #31)
 
 | # | Задача | Статус |
 |---|--------|--------|
-| 1 | SEO: index.html — title, meta, OG, JSON-LD, hreflang, canonical | ✅ |
-| 2 | Legal page: 5 разделов RU+EN, кнопка Назад, переключатель языка | ✅ |
-| 3 | Слоган: «Total Hunter — умный поиск и автоматизация в Total Battle» | ✅ |
-| 4 | GuidePage: полный перевод RU/EN через guide_content.js/.en.js | ✅ |
-| 5 | Лендинг: убраны 🏪⚰️⚔️ из статистики, «боль» убрана из текстов | ✅ |
-| 6 | LoginPage: убраны ⚔ и 💀, заменены на ◈ | ✅ |
-| 7 | Иконки: перегенерированы из 1024×1024, favicon.svg удалён, алмаз крупнее | ✅ |
-| 8 | Vercel баг: productionBranch=master → deploy hook + alias workflow | ✅ |
+| 1 | `auto_calibration.py` — новый модуль: `scale_ref`, `detect_point_a_in_region`, `detect_point_b_from_diff`, `auto_detect_point_a`, `auto_detect_point_b` | ✅ |
+| 2 | `calibration_ui.py` — `run_calibration(start_a, start_b)` + `calibrate_one_point` публичная | ✅ |
+| 3 | `main.py` — кнопка **АВТОКАЛИБРОВАТЬ** (синяя, над КАЛИБРОВАТЬ) | ✅ |
+| 4 | Два независимых этапа: сначала Point A полностью, потом Point B | ✅ |
+| 5 | `test_auto_calibration.py` — 13 тестов, все зелёные | ✅ |
+| 6 | Пользователь протестировал, всё работает | ✅ |
+
+---
+
+## Архитектура авто-калибровки
+
+### Поток выполнения
+```
+АВТОКАЛИБРОВАТЬ нажата
+  │
+  ├─ Этап 1: auto_detect_point_a(screen_w, screen_h)
+  │    └─ scale_ref(REF_A) → _grab_region → detect_point_a_in_region (white rect contour)
+  │    └─ fallback = scaled REF_A
+  │    └─ calibrate_one_point(self, start_a, "Точка А...")  ← лупа A
+  │    └─ пользователь подтверждает
+  │
+  └─ Этап 2: auto_detect_point_b(screen_w, screen_h)
+       └─ scale_ref(REF_B) → pyautogui.moveTo → sleep(0.4s)
+       └─ возвращает ПОЗИЦИЮ КУРСОРА (не diff-bounding-box!)
+       └─ calibrate_one_point(self, start_b, "Точка Б...")  ← лупа B с "+" в кадре
+       └─ пользователь подтверждает
+       
+coord_manager.calibrate(point_a, point_b) → _update_status()
+```
+
+### Ключевые решения
+- **Point A**: OpenCV findContours белого прямоугольника + aspect-ratio guard (max/min > 3 → skip)
+- **Point B**: курсор едет на scaled REF_B, ждём hover, **start_b = позиция курсора** (не diff-результат)
+- **Coord fix**: `x1 + img_x` вместо `cx - r + img_x` (устранили до 60px ошибку у REF_A[0]=90)
+- **Два этапа**: пользователь не портит позицию курсора для Point B при работе с лупой Point A
+
+### Workflow сохранения (ВАЖНО)
+```
+Откалибровал → выбрать профиль (Client / Browser 1 / Browser 2) → 💾 Сохранить
+```
+- Без «Сохранить» — калибровка только в RAM, теряется при перезапуске
+- После сохранения — профиль автозагружается при следующем старте
+- `gui_config.json` хранит `last_calibration_profile`
+
+---
+
+## Статус профилей
+| Слот | Файл | Описание |
+|------|------|----------|
+| Client | `profiles/profile_client.json` | Нативный клиент |
+| Browser 1 | `profiles/profile_chrome.json` | Chrome |
+| Browser 2 | `profiles/profile_firefox.json` | Firefox / другой браузер |
 
 ---
 
 ## Что делать дальше (строго по приоритету)
 
-### 🔴 HIGH — делать первым
-1. **Free-Kassa webhook** — зарегистрировать `FK_SECRET_WORD2` в кабинете FK. Без этого алмазы не начисляются после оплаты автоматически.
+### 🔴 HIGH
+1. **Free-Kassa webhook** — зарегистрировать `FK_SECRET_WORD2` в кабинете FK
 2. **Coinzilla** — зарегистрироваться, получить embed-код, вставить в `Layout.jsx:152`
 
 ### 🟡 MED
-3. **Google Search Console** — добавить total-hunter.com, создать sitemap.xml, запросить индексацию
-4. **EXE packaging** — PyInstaller build.spec, собрать TotalHunter.exe с Python + YOLO моделями
-5. **YOLO model protection** — AES-256 шифрование crypts.pt, endpoint /get_model_key
+3. **Google Search Console** — добавить total-hunter.com, sitemap.xml
+4. **EXE packaging** — PyInstaller build.spec, TotalHunter.exe
+5. **YOLO model protection** — AES-256 crypts.pt
 6. **Auto-update** — version в /check_auth, updater.py
 
-### 🟢 LOW
-7. **Combo модуль** — `pyautogui.scroll()` → `keyboard.press('pagedown')`, маяк с max-значением
-8. **Beacon навигатор** — use_beacon=false, нужен полевой тест
+### 🟢 СЛЕДУЮЩАЯ СЕССИЯ
+7. **Доработка бота по склепам (CryptHunter)** — пользователь озвучил как приоритет
 
 ---
 
 ## Технические данные деплоя
 
-**Deploy hook:** `POST https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw`  
-**Project:** `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj` | **Team:** `team_CkkRPXdwtRtsL9YCk8n4Fzla`  
-**Token:** `/c/Users/Admin/AppData/Roaming/com.vercel.cli/Data/auth.json` (истекает ~ноябрь 2026)  
+**Deploy hook:** `POST https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw`
+**Project:** `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj` | **Team:** `team_CkkRPXdwtRtsL9YCk8n4Fzla`
+**Token:** `C:/Users/Admin/AppData/Roaming/com.vercel.cli/Data/auth.json` (истекает ~ноябрь 2026)
 **Backend:** https://api.total-hunter.com → GCP 34.68.86.57:8000
