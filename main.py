@@ -832,7 +832,23 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_status_label = ctk.CTkLabel(
             self.tab_crypt, text="ГОТОВО", text_color=MD3["on_surface2"]
         )
-        self.crypt_status_label.pack(pady=(0, 4))
+        self.crypt_status_label.pack(pady=(0, 2))
+
+        # Масло — три типа
+        oil_frame = ctk.CTkFrame(self.tab_crypt, fg_color="transparent")
+        oil_frame.pack(pady=(0, 4))
+        self.oil_ordinary_label = ctk.CTkLabel(
+            oil_frame, text="🟢 —", font=("Roboto", 11), text_color="#66BB6A"
+        )
+        self.oil_ordinary_label.pack(side="left", padx=6)
+        self.oil_epic_label = ctk.CTkLabel(
+            oil_frame, text="🔵 —", font=("Roboto", 11), text_color="#42A5F5"
+        )
+        self.oil_epic_label.pack(side="left", padx=6)
+        self.oil_rare_label = ctk.CTkLabel(
+            oil_frame, text="🟣 —", font=("Roboto", 11), text_color="#AB47BC"
+        )
+        self.oil_rare_label.pack(side="left", padx=6)
 
         self._load_crypt_settings()
 
@@ -865,6 +881,19 @@ class TotalHunterApp(ctk.CTk):
 
     def on_crypt_status(self, msg: str):
         self.after(0, lambda: self.crypt_status_label.configure(text=msg))
+
+    def on_crypt_oil(self, ordinary: int, epic: int, rare: int):
+        def _fmt(n: int) -> str:
+            if n >= 1_000_000:
+                return f"{n/1_000_000:.2f}M"
+            if n >= 1_000:
+                return f"{n//1_000}K"
+            return str(n)
+        def _upd():
+            self.oil_ordinary_label.configure(text=f"🟢 {_fmt(ordinary)}")
+            self.oil_epic_label.configure(text=f"🔵 {_fmt(epic)}")
+            self.oil_rare_label.configure(text=f"🟣 {_fmt(rare)}")
+        self.after(0, _upd)
 
     def on_crypt_countdown(self, remaining: int, total: int,
                            march_one_way: int = 0, buf: int = 0):
@@ -930,6 +959,7 @@ class TotalHunterApp(ctk.CTk):
                 on_status_callback=self.on_crypt_status,
                 on_stop_callback=self.on_crypt_stop,
                 on_countdown_callback=self.on_crypt_countdown,
+                on_oil_callback=self.on_crypt_oil,
             )
 
     def toggle_combo_bot(self):
