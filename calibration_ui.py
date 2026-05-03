@@ -58,7 +58,7 @@ def _show_red_dot(root: tk.Tk, x: int, y: int) -> tk.Toplevel:
     return dot
 
 
-def _calibrate_one_point(
+def calibrate_one_point(
     root: tk.Tk,
     start_pos: tuple[int, int],
     label_text: str,
@@ -211,7 +211,7 @@ def run_calibration(
     if created_own_root:
         root.withdraw()
 
-    point_a = _calibrate_one_point(
+    point_a = calibrate_one_point(
         root, start_a if start_a is not None else REF_A,
         "Точка А — центр мини-карты (лево-низ)",
     )
@@ -220,7 +220,7 @@ def run_calibration(
             root.destroy()
         return None, None
 
-    point_b = _calibrate_one_point(
+    point_b = calibrate_one_point(
         root, start_b if start_b is not None else REF_B,
         "Точка Б — крестик серебра (право-верх)",
     )

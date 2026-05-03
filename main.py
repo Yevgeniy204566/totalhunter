@@ -1619,27 +1619,45 @@ class TotalHunterApp(ctk.CTk):
                                       self._cal_profile_var.get())
 
         def _auto_calibrate():
-            from auto_calibration import auto_detect_points
-            from calibration_ui import run_calibration
+            from auto_calibration import auto_detect_point_a, auto_detect_point_b
+            from calibration_ui import calibrate_one_point
+            screen_w = self.winfo_screenwidth()
+            screen_h = self.winfo_screenheight()
+
+            # ── Этап 1: детектируем Point A → лупа → пользователь подтверждает ──
             self.withdraw()
             try:
-                screen_w = self.winfo_screenwidth()
-                screen_h = self.winfo_screenheight()
-                start_a, start_b = auto_detect_points(screen_w, screen_h)
-                point_a, point_b = run_calibration(
-                    parent=self, start_a=start_a, start_b=start_b
-                )
+                start_a = auto_detect_point_a(screen_w, screen_h)
             except Exception as e:
-                messagebox.showerror(
-                    "Авто-калибровка",
-                    f"Не удалось: {e}\nИспользуйте ручную КАЛИБРОВАТЬ.",
-                )
-                return
-            finally:
+                messagebox.showerror("Авто-калибровка", f"Ошибка детекции A:\n{e}")
                 self.deiconify()
-            if point_a and point_b:
-                coord_manager.calibrate(point_a, point_b)
-                _update_status()
+                return
+            self.deiconify()
+
+            point_a = calibrate_one_point(
+                self, start_a, "Точка А — центр мини-карты (лево-низ)"
+            )
+            if point_a is None:
+                return
+
+            # ── Этап 2: детектируем Point B → лупа → пользователь подтверждает ──
+            self.withdraw()
+            try:
+                start_b = auto_detect_point_b(screen_w, screen_h)
+            except Exception as e:
+                messagebox.showerror("Авто-калибровка", f"Ошибка детекции B:\n{e}")
+                self.deiconify()
+                return
+            self.deiconify()
+
+            point_b = calibrate_one_point(
+                self, start_b, "Точка Б — крестик серебра (право-верх)"
+            )
+            if point_b is None:
+                return
+
+            coord_manager.calibrate(point_a, point_b)
+            _update_status()
 
         def _calibrate():
             from calibration_ui import run_calibration

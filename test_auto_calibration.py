@@ -12,7 +12,7 @@ def test_run_calibration_passes_start_a_to_point_dialog(monkeypatch):
         calls.append(start_pos)
         return start_pos  # симулируем нажатие «Зафиксировать»
 
-    monkeypatch.setattr(calibration_ui, "_calibrate_one_point", fake_calibrate_one)
+    monkeypatch.setattr(calibration_ui, "calibrate_one_point", fake_calibrate_one)
 
     root = tk.Tk()
     root.withdraw()
@@ -37,7 +37,7 @@ def test_run_calibration_defaults_to_ref_when_no_start(monkeypatch):
         calls.append(start_pos)
         return start_pos
 
-    monkeypatch.setattr(calibration_ui, "_calibrate_one_point", fake_calibrate_one)
+    monkeypatch.setattr(calibration_ui, "calibrate_one_point", fake_calibrate_one)
 
     root = tk.Tk()
     root.withdraw()

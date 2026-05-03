@@ -86,23 +86,18 @@ def detect_point_b_from_diff(
     return (x + w // 2, y + h // 2)
 
 
-def auto_detect_points(
-    screen_w: int, screen_h: int
-) -> tuple[tuple[int, int], tuple[int, int]]:
-    """
-    Auto-detect Point A (minimap joystick white rect) and Point B (silver + crosshair).
-    Always returns coordinates: detected position or scaled REF as fallback.
-    """
-    # ── Point A — white rectangle of joystick ────────────────────────────
+def auto_detect_point_a(screen_w: int, screen_h: int) -> tuple[int, int]:
+    """Detect Point A (minimap joystick white rectangle). Returns screen coords."""
     a_cx, a_cy = scale_ref(REF_A, screen_w, screen_h)
     img_a, ax1, ay1 = _grab_region(a_cx, a_cy)
     found_a = detect_point_a_in_region(img_a)
     if found_a is not None:
-        point_a = (ax1 + found_a[0], ay1 + found_a[1])
-    else:
-        point_a = (a_cx, a_cy)
+        return (ax1 + found_a[0], ay1 + found_a[1])
+    return (a_cx, a_cy)
 
-    # ── Point B — rectangular search (tall to handle browser chrome offset) ──
+
+def auto_detect_point_b(screen_w: int, screen_h: int) -> tuple[int, int]:
+    """Detect Point B (silver + crosshair via hover-diff). Returns screen coords."""
     b_cx, b_cy = scale_ref(REF_B, screen_w, screen_h)
     baseline, bx1, by1 = _grab_region(
         b_cx, b_cy,
@@ -120,8 +115,12 @@ def auto_detect_points(
     )
     found_b = detect_point_b_from_diff(baseline, hover_img)
     if found_b is not None:
-        point_b = (bx1 + found_b[0], by1 + found_b[1])
-    else:
-        point_b = (b_cx, b_cy)
+        return (bx1 + found_b[0], by1 + found_b[1])
+    return (b_cx, b_cy)
 
-    return point_a, point_b
+
+def auto_detect_points(
+    screen_w: int, screen_h: int
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Detect both points sequentially. Kept for tests."""
+    return auto_detect_point_a(screen_w, screen_h), auto_detect_point_b(screen_w, screen_h)
