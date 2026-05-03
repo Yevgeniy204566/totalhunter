@@ -287,8 +287,8 @@ class CryptHunter:
         """
         if _VISUAL_NAV_AVAILABLE:
             bx, by = _cm._point_b
-            sx = coord_manager.scale_x
-            sy = abs(coord_manager.scale_y)
+            sx = _cm.scale_x
+            sy = abs(_cm.scale_y)
         else:
             bx, by = REF_B
             sx = sy = 1.0
