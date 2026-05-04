@@ -6,8 +6,9 @@
 #
 # ⚠️  ВНИМАНИЕ: перезапишет текущую БД полностью!
 
-DB_NAME="totalhunter_db"
-DB_USER="totalhunter_user"
+DB_NAME="totalhunter"
+DB_USER="hunter"
+export PGPASSWORD="TotalHunter2026"
 SERVICE="totalhunter"
 BACKUP_DIR="$HOME/backups"
 
@@ -47,7 +48,7 @@ sudo systemctl stop "$SERVICE"
 
 # ── 3. Восстановить ──────────────────────────────────────────────────────────
 echo "[$(date)] Восстанавливаю из $FILE..."
-gunzip -c "$FILE" | psql -U "$DB_USER" "$DB_NAME"
+gunzip -c "$FILE" | psql -h localhost -U "$DB_USER" "$DB_NAME"
 
 if [ $? -eq 0 ]; then
     echo "[$(date)] ✅ Восстановление завершено успешно"

@@ -8,8 +8,9 @@
 #     - targets/ (YOLO-модели)
 
 BACKUP_DIR="$HOME/backups"
-DB_NAME="totalhunter_db"
-DB_USER="totalhunter_user"
+DB_NAME="totalhunter"
+DB_USER="hunter"
+export PGPASSWORD="TotalHunter2026"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 FILE="$BACKUP_DIR/totalhunter_$TIMESTAMP.sql.gz"
 
@@ -19,7 +20,7 @@ GCS_BUCKET="gs://totalhunter-backups"
 mkdir -p "$BACKUP_DIR"
 
 # ── 1. Локальный бэкап ────────────────────────────────────────────────────────
-pg_dump -U "$DB_USER" "$DB_NAME" | gzip > "$FILE"
+pg_dump -h localhost -U "$DB_USER" "$DB_NAME" | gzip > "$FILE"
 
 if [ $? -ne 0 ]; then
     echo "[$(date)] ❌ Backup FAILED (pg_dump error)" >&2
