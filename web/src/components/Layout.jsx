@@ -14,7 +14,6 @@ const NAV = [
   { to: '/dashboard/feedback',     icon: '✦', label: 'Feedback' },
 ]
 
-const STICKY_AD_HEIGHT = 72
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -102,7 +101,7 @@ export default function Layout() {
         position: 'fixed',
         top: 'var(--header-height)', left: 0,
         width: 'var(--sidebar-width)',
-        height: `calc(100vh - var(--header-height) - ${STICKY_AD_HEIGHT}px)`,
+        height: `calc(100vh - var(--header-height))`,
         background: 'var(--card)',
         borderRight: '1px solid var(--outline)',
         display: 'flex', flexDirection: 'column',
@@ -130,27 +129,11 @@ export default function Layout() {
         marginLeft: 'var(--sidebar-width)',
         marginTop: 'var(--header-height)',
         minHeight: `calc(100vh - var(--header-height))`,
-        paddingBottom: STICKY_AD_HEIGHT,
         overflowY: 'auto',
       }}>
         <Outlet />
       </main>
 
-      {/* ── Sticky Bottom Ad Bar ──────────────────────────────── */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: STICKY_AD_HEIGHT,
-        background: 'rgba(5, 8, 16, 0.88)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid var(--outline)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 90,
-        boxShadow: '0 -4px 28px rgba(0,0,0,0.45)',
-        color: 'var(--on-surface2)', fontSize: 12, letterSpacing: '2px',
-      }}>
-        AD
-      </div>
 
     </div>
   )
