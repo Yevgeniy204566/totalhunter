@@ -5,7 +5,7 @@ import { useCounter } from '../hooks/useCounter.js'
 const PACKAGES = [
   {
     id:       'lite',
-    name:     'NOVICE',
+    name:     'LITE',
     subtitle: 'Start Your Hunt',
     credits:  300,
     bonus:    null,
@@ -18,7 +18,7 @@ const PACKAGES = [
   },
   {
     id:       'pro',
-    name:     'RANGER',
+    name:     'PRO',
     subtitle: "Hunter's Choice",
     credits:  1500,
     bonus:    500,
@@ -31,7 +31,7 @@ const PACKAGES = [
   },
   {
     id:       'ultra',
-    name:     'ELITE',
+    name:     'ULTRA',
     subtitle: 'Maximum Power',
     credits:  4000,
     bonus:    1000,
@@ -41,20 +41,6 @@ const PACKAGES = [
     border:   '#E5E4E2',
     glow:     'rgba(102,0,153,0.50)',
     featured: false,
-  },
-  {
-    id:       null,
-    name:     'APEX',
-    subtitle: 'Legendary Status',
-    credits:  10000,
-    bonus:    2000,
-    total:    12000,
-    price:    '$20.00',
-    grad:     ['#FFBF00', '#FFD700'],
-    border:   '#FFD700',
-    glow:     'rgba(255,191,0,0.55)',
-    featured: false,
-    soon:     true,
   },
 ]
 
