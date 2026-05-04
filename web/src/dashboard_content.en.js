@@ -9,8 +9,52 @@ export const DASHBOARD = {
   },
 
   nav: {
-    logout: 'Logout',
-    guide:  'Guide',
+    logout:       'Logout',
+    guide:        'Guide',
+    profile:      'Profile',
+    balance:      'Balance',
+    hunts:        'Hunts',
+    referrals:    'Referrals',
+    devices:      'Devices',
+    transactions: 'Transactions',
+    feedback:     'Feedback',
+  },
+
+  devices: {
+    title:       'Devices',
+    linked:      'Linked device',
+    unlink:      'Unlink device (reset HWID)',
+    nextReset:   'Next reset available:',
+    linkTitle:   'Link your device',
+    linkSteps:   [
+      'Open the bot on your computer',
+      'Go to the Profile tab',
+      'Click Generate link code',
+      'Enter the 6-digit code below',
+    ],
+    codeError:   'Code must be 6 digits',
+    linkBtn:     'Link',
+    placeholder: '000000',
+  },
+
+  feedback: {
+    title:       'Feedback',
+    sub:         'Got an idea or suggestion? We read every message.',
+    placeholder: 'Your idea or suggestion...',
+    sending:     'Sending...',
+    send:        'Send Idea',
+  },
+
+  login: {
+    title:      'Sign In',
+    sub:        'Use your Google account to sign in. First login automatically creates an account.',
+    features:   ['Auto-hunt for Exchanges', '24/7 Crypt Search', 'Referral System'],
+    signingIn:  'Signing in...',
+    loginError: 'Login error: ',
+    legal:      'By continuing, you agree to the',
+    legalLink:  'terms of service',
+    guide:      'Guide',
+    home:       '← Back to home',
   },
 
   profile: {

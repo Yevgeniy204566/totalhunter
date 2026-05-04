@@ -3,15 +3,17 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
 import { clearToken } from '../auth.js'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
+import { DASHBOARD as D_RU } from '../dashboard_content.js'
+import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
-const NAV = [
-  { to: '/dashboard',              icon: '◈', label: 'Profile' },
-  { to: '/dashboard/balance',      icon: '◆', label: 'Balance' },
-  { to: '/dashboard/hunts',        icon: '⚔', label: 'Hunts' },
-  { to: '/dashboard/referrals',    icon: '⬡', label: 'Referrals' },
-  { to: '/dashboard/devices',      icon: '▣', label: 'Devices' },
-  { to: '/dashboard/transactions', icon: '≡', label: 'Transactions' },
-  { to: '/dashboard/feedback',     icon: '✦', label: 'Feedback' },
+const NAV_KEYS = [
+  { to: '/dashboard',              icon: '◈', key: 'profile' },
+  { to: '/dashboard/balance',      icon: '◆', key: 'balance' },
+  { to: '/dashboard/hunts',        icon: '⚔', key: 'hunts' },
+  { to: '/dashboard/referrals',    icon: '⬡', key: 'referrals' },
+  { to: '/dashboard/devices',      icon: '▣', key: 'devices' },
+  { to: '/dashboard/transactions', icon: '≡', key: 'transactions' },
+  { to: '/dashboard/feedback',     icon: '✦', key: 'feedback' },
 ]
 
 
@@ -19,6 +21,8 @@ export default function Layout() {
   const navigate = useNavigate()
   const [credits, setCredits] = useState(null)
   const { lang, toggle } = useLang()
+  const D = lang === 'ru' ? D_RU : D_EN
+  const NAV = NAV_KEYS.map(n => ({ ...n, label: D.nav[n.key] }))
 
   useEffect(() => {
     api.me().then(d => setCredits(d.credits)).catch(() => {})
@@ -92,7 +96,7 @@ export default function Layout() {
           </Link>
 
           <button className="header-btn" onClick={toggle}>{lang.toUpperCase()}</button>
-          <button className="header-btn header-btn--logout" onClick={logout}>{lang === 'en' ? 'Logout' : 'Выйти'}</button>
+          <button className="header-btn header-btn--logout" onClick={logout}>{D.nav.logout}</button>
         </div>
       </header>
 
@@ -120,7 +124,7 @@ export default function Layout() {
         <div style={{ flex: 1 }} />
         <a href="/guide" className="nav-item" style={{ borderTop: '1px solid var(--outline)', marginTop: 8 }}>
           <span className="nav-icon" style={{ fontSize: 14 }}>📖</span>
-          Guide
+          {D.nav.guide}
         </a>
       </nav>
 

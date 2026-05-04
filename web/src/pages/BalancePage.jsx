@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useCounter } from '../hooks/useCounter.js'
+import { useLang } from '../lang.js'
+import { DASHBOARD as D_RU } from '../dashboard_content.js'
+import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
 const PACKAGES = [
   {
@@ -245,6 +248,9 @@ export default function BalancePage() {
   const [user,   setUser]   = useState(null)
   const [buying, setBuying] = useState(null)
   const [error,  setError]  = useState('')
+  const { lang } = useLang()
+  const D = lang === 'ru' ? D_RU : D_EN
+  const b = D.balance
 
   useEffect(() => { api.me().then(setUser) }, [])
 
@@ -261,7 +267,7 @@ export default function BalancePage() {
     }
   }
 
-  if (!user) return <div className="page-content text-muted">Loading...</div>
+  if (!user) return <div className="page-content text-muted">{D.loading}</div>
 
   return (
     <div style={{
@@ -282,13 +288,13 @@ export default function BalancePage() {
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
       }}>
-        Balance
+        {b.title}
       </h2>
 
       {/* Balance overview */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 48, flexWrap: 'wrap' }}>
-        <BalanceCard title="Diamonds"         value={user.credits}     color="#00CFFF" />
-        <BalanceCard title="Referral Balance" value={user.ref_credits} color="#FFD166" />
+        <BalanceCard title={b.diamonds}   value={user.credits}     color="#00CFFF" />
+        <BalanceCard title={b.refBalance} value={user.ref_credits} color="#FFD166" />
       </div>
 
       {/* Section title */}
@@ -297,14 +303,14 @@ export default function BalancePage() {
           fontSize: 10, fontWeight: 700, letterSpacing: '4px',
           color: 'rgba(0,191,255,0.8)', textTransform: 'uppercase', marginBottom: 12,
         }}>
-          ⬡ Choose Your Arsenal
+          {b.sectionBadge}
         </div>
         <h3 style={{ fontSize: 28, fontWeight: 900, color: '#FFFFFF', marginBottom: 8,
                      letterSpacing: '-0.5px' }}>
-          Top Up Diamonds
+          {b.sectionTitle}
         </h3>
         <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
-          Secure payment · Instant delivery · Diamonds never expire
+          {b.sectionSub}
         </p>
       </div>
 
@@ -330,7 +336,7 @@ export default function BalancePage() {
 
       <div style={{ textAlign: 'center', marginTop: 8 }}>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>
-          🔒 Secure Payment · Free-Kassa · Diamonds never expire
+          {b.secureNote}
         </span>
       </div>
     </div>
