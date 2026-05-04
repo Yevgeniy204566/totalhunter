@@ -5,42 +5,56 @@ import { useCounter } from '../hooks/useCounter.js'
 const PACKAGES = [
   {
     id:       'lite',
-    name:     'LITE',
+    name:     'NOVICE',
+    subtitle: 'Start Your Hunt',
     credits:  300,
     bonus:    null,
     total:    300,
     price:    '$1.00',
-    color:    '#3D7FFF',
-    glow:     'rgba(61,127,255,0.30)',
-    bg:       'rgba(61,127,255,0.06)',
+    grad:     ['#00BFFF', '#00F0FF'],
+    border:   '#C0C0C0',
+    glow:     'rgba(0,191,255,0.40)',
     featured: false,
-    label:    'Starter Pack',
   },
   {
     id:       'pro',
-    name:     'PRO',
+    name:     'RANGER',
+    subtitle: "Hunter's Choice",
     credits:  1500,
     bonus:    500,
     total:    2000,
     price:    '$5.00',
-    color:    '#4ADE80',
-    glow:     'rgba(74,222,128,0.30)',
-    bg:       'rgba(74,222,128,0.07)',
+    grad:     ['#00A36C', '#90EE90'],
+    border:   '#CD7F32',
+    glow:     'rgba(0,163,108,0.45)',
     featured: true,
-    label:    "Hunter's Choice",
   },
   {
     id:       'ultra',
-    name:     'ULTRA',
+    name:     'ELITE',
+    subtitle: 'Maximum Power',
     credits:  4000,
     bonus:    1000,
     total:    5000,
     price:    '$10.00',
-    color:    '#FFD166',
-    glow:     'rgba(255,209,102,0.30)',
-    bg:       'rgba(255,209,102,0.06)',
+    grad:     ['#660099', '#FF00FF'],
+    border:   '#E5E4E2',
+    glow:     'rgba(102,0,153,0.50)',
     featured: false,
-    label:    'Max Value',
+  },
+  {
+    id:       null,
+    name:     'APEX',
+    subtitle: 'Legendary Status',
+    credits:  10000,
+    bonus:    2000,
+    total:    12000,
+    price:    '$20.00',
+    grad:     ['#FFBF00', '#FFD700'],
+    border:   '#FFD700',
+    glow:     'rgba(255,191,0,0.55)',
+    featured: false,
+    soon:     true,
   },
 ]
 
@@ -60,23 +74,23 @@ function Diamond({ size = 22 }) {
 function BalanceCard({ title, value, color }) {
   const animated = useCounter(typeof value === 'number' ? value : null)
   return (
-    <div className="card" style={{
-      flex: '1 1 160px', borderRadius: 14, textAlign: 'center', padding: '22px 20px',
-      border: `1px solid ${color}33`,
-      boxShadow: `0 0 24px ${color}11`,
+    <div style={{
+      flex: '1 1 160px', borderRadius: 16, textAlign: 'center', padding: '22px 20px',
+      background: 'rgba(255,255,255,0.04)',
+      backdropFilter: 'blur(12px)',
+      border: `1px solid ${color}44`,
+      boxShadow: `0 0 32px ${color}22`,
     }}>
-      <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: 8,
-                    fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 8,
+                    fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
         {title}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <Diamond size={28} />
+        <Diamond size={26} />
         <div style={{
-          fontSize: 44, fontWeight: 900,
-          color,
-          textShadow: `0 0 28px ${color}bb`,
-          fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1,
+          fontSize: 42, fontWeight: 900, color,
+          textShadow: `0 0 32px ${color}cc`,
+          fontVariantNumeric: 'tabular-nums', lineHeight: 1,
         }}>
           {value != null ? animated.toLocaleString() : '—'}
         </div>
@@ -85,131 +99,157 @@ function BalanceCard({ title, value, color }) {
   )
 }
 
+function Sparkles({ color }) {
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', borderRadius: 20 }}>
+      {[...Array(6)].map((_, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: 3, height: 3, borderRadius: '50%',
+          background: color,
+          boxShadow: `0 0 6px ${color}`,
+          left: `${15 + i * 14}%`,
+          top: `${10 + (i % 3) * 25}%`,
+          animation: `sparkle ${1.2 + i * 0.3}s ease-in-out infinite alternate`,
+          opacity: 0.7,
+        }} />
+      ))}
+    </div>
+  )
+}
+
 function PackageCard({ pkg, buying, onBuy }) {
   const [hovered, setHovered] = useState(false)
-  const isActive = hovered || pkg.featured
+  const gradStr = `linear-gradient(135deg, ${pkg.grad[0]}, ${pkg.grad[1]})`
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        flex: '1 1 210px',
+        flex: '1 1 200px',
         position: 'relative',
-        background: `linear-gradient(160deg, ${pkg.bg} 0%, rgba(5,8,16,0.97) 100%)`,
-        border: `1px solid ${isActive ? pkg.color : 'var(--outline)'}`,
-        borderRadius: 18,
-        padding: pkg.featured ? '36px 24px 24px' : '28px 20px 20px',
+        background: hovered || pkg.featured
+          ? `linear-gradient(160deg, ${pkg.grad[0]}18 0%, rgba(0,0,5,0.92) 100%)`
+          : 'rgba(255,255,255,0.03)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: `1px solid ${hovered || pkg.featured ? pkg.border : 'rgba(255,255,255,0.10)'}`,
+        borderRadius: 20,
+        padding: pkg.featured ? '40px 22px 26px' : '30px 20px 22px',
         textAlign: 'center',
-        transition: 'box-shadow 0.25s, border-color 0.25s, transform 0.2s',
-        boxShadow: isActive
-          ? `0 0 48px ${pkg.glow}, 0 0 8px ${pkg.glow}, inset 0 1px 0 ${pkg.color}33`
+        transition: 'all 0.28s ease',
+        boxShadow: hovered || pkg.featured
+          ? `0 0 48px ${pkg.glow}, 0 0 96px ${pkg.glow}55, inset 0 1px 0 ${pkg.border}33`
           : 'none',
-        transform: pkg.featured ? 'scale(1.05)' : hovered ? 'scale(1.01)' : 'scale(1)',
-        cursor: 'pointer',
+        transform: pkg.featured ? 'scale(1.05)' : hovered ? 'scale(1.02)' : 'scale(1)',
+        cursor: pkg.soon ? 'default' : 'pointer',
+        minWidth: 180,
       }}
     >
-      {/* Featured badge */}
+      {pkg.soon && <Sparkles color={pkg.grad[1]} />}
+
       {pkg.featured && (
         <div style={{
           position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
-          background: `linear-gradient(90deg, #4ADE80, #3D7FFF)`,
-          color: '#000', fontSize: 11, fontWeight: 900,
-          padding: '5px 18px', borderRadius: 20, letterSpacing: '0.8px',
+          background: gradStr,
+          color: '#000', fontSize: 10, fontWeight: 900,
+          padding: '5px 18px', borderRadius: 20, letterSpacing: '1px',
           whiteSpace: 'nowrap', textTransform: 'uppercase',
+          boxShadow: `0 0 16px ${pkg.glow}`,
         }}>
-          ⭐ {pkg.label}
+          ⭐ {pkg.subtitle}
         </div>
       )}
 
-      {/* Pack name */}
+      {/* Name with gradient */}
       <div style={{
-        fontSize: 22, fontWeight: 900, color: pkg.color,
-        letterSpacing: '2px', textTransform: 'uppercase',
-        textShadow: `0 0 24px ${pkg.glow}`,
+        fontSize: 20, fontWeight: 900, letterSpacing: '3px', textTransform: 'uppercase',
+        background: gradStr,
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        filter: `drop-shadow(0 0 12px ${pkg.grad[0]}88)`,
         marginBottom: 4,
       }}>
         {pkg.name}
       </div>
 
       {!pkg.featured && (
-        <div style={{ fontSize: 11, color: pkg.color, opacity: 0.7,
-                      letterSpacing: '1px', marginBottom: 16 }}>
-          {pkg.label}
+        <div style={{ fontSize: 10, color: pkg.grad[1], opacity: 0.7,
+                      letterSpacing: '1.5px', marginBottom: 18, textTransform: 'uppercase' }}>
+          {pkg.subtitle}
         </div>
       )}
+      {pkg.featured && <div style={{ height: 22 }} />}
 
-      {/* BONUS */}
+      {/* Bonus */}
       {pkg.bonus ? (
         <>
           <div style={{
-            fontSize: 62, fontWeight: 900, lineHeight: 1,
-            color: '#FFD166',
-            textShadow: '0 0 30px rgba(255,209,102,0.9), 0 0 60px rgba(255,209,102,0.4)',
-            fontVariantNumeric: 'tabular-nums',
-            marginBottom: 4,
+            fontSize: 56, fontWeight: 900, lineHeight: 1,
+            background: 'linear-gradient(135deg, #FFD166, #FFAA00)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            filter: 'drop-shadow(0 0 20px rgba(255,209,102,0.8))',
+            fontVariantNumeric: 'tabular-nums', marginBottom: 4,
           }}>
             +{pkg.bonus.toLocaleString()}
           </div>
           <div style={{
-            fontSize: 11, fontWeight: 900, letterSpacing: '2px',
-            color: '#FFD166', opacity: 0.9,
-            textTransform: 'uppercase', marginBottom: 18,
+            fontSize: 10, fontWeight: 900, letterSpacing: '2px',
+            color: '#FFD166', textTransform: 'uppercase', marginBottom: 16,
           }}>
             🎁 Bonus Diamonds
           </div>
         </>
       ) : (
-        <div style={{ height: 88 }} />
+        <div style={{ height: 80 }} />
       )}
 
       {/* Total */}
       <div style={{
-        fontSize: 34, fontWeight: 900,
-        color: pkg.color,
-        textShadow: `0 0 20px ${pkg.glow}`,
-        fontVariantNumeric: 'tabular-nums',
-        lineHeight: 1,
-        marginBottom: 6,
+        fontSize: 30, fontWeight: 900,
+        background: gradStr,
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        fontVariantNumeric: 'tabular-nums', lineHeight: 1, marginBottom: 6,
       }}>
         = {pkg.total.toLocaleString()} ◆
       </div>
 
-      {/* Base credits */}
       {pkg.bonus ? (
-        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22 }}>
-          <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>
-            {pkg.credits.toLocaleString()}
-          </span>
-          {' '}base ◆
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>
+          <span style={{ textDecoration: 'line-through' }}>{pkg.credits.toLocaleString()}</span> base ◆
         </div>
       ) : (
-        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22 }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>
           diamonds for hunts
         </div>
       )}
 
-      {/* Buy button */}
+      {/* Button */}
       <button
-        disabled={!!buying}
-        onClick={() => onBuy(pkg.id)}
+        disabled={!!buying || pkg.soon}
+        onClick={() => !pkg.soon && onBuy(pkg.id)}
         style={{
-          width: '100%', padding: '14px 0',
-          background: buying === pkg.id
-            ? 'var(--elevated)'
-            : `linear-gradient(135deg, ${pkg.color}, ${pkg.color}cc)`,
-          color: buying === pkg.id ? 'var(--on-surface2)' : '#000',
-          border: 'none', borderRadius: 10,
-          fontSize: 15, fontWeight: 900,
-          cursor: buying ? 'not-allowed' : 'pointer',
+          width: '100%', padding: '13px 0',
+          background: pkg.soon
+            ? 'rgba(255,255,255,0.06)'
+            : buying === pkg.id ? 'rgba(255,255,255,0.08)' : gradStr,
+          color: pkg.soon ? 'rgba(255,255,255,0.4)'
+            : buying === pkg.id ? 'rgba(255,255,255,0.5)' : '#000',
+          border: `1px solid ${pkg.soon ? 'rgba(255,255,255,0.1)' : pkg.border}`,
+          borderRadius: 10, fontSize: 13, fontWeight: 900,
+          cursor: pkg.soon || buying ? 'not-allowed' : 'pointer',
           opacity: buying && buying !== pkg.id ? 0.4 : 1,
-          transition: 'opacity 0.15s, box-shadow 0.2s',
-          boxShadow: buying === pkg.id ? 'none' : `0 0 24px ${pkg.glow}`,
-          fontFamily: 'inherit', letterSpacing: '0.5px',
-          textTransform: 'uppercase',
+          transition: 'all 0.2s',
+          boxShadow: pkg.soon || buying ? 'none' : `0 0 20px ${pkg.glow}`,
+          fontFamily: 'inherit', letterSpacing: '1px', textTransform: 'uppercase',
         }}
       >
-        {buying === pkg.id ? 'Redirecting...' : `Buy — ${pkg.price}`}
+        {pkg.soon ? '🔒 Coming Soon'
+          : buying === pkg.id ? 'Redirecting...'
+          : `Buy — ${pkg.price}`}
       </button>
     </div>
   )
@@ -223,6 +263,7 @@ export default function BalancePage() {
   useEffect(() => { api.me().then(setUser) }, [])
 
   async function handleBuy(pkg) {
+    if (!pkg) return
     setBuying(pkg)
     setError('')
     try {
@@ -239,69 +280,73 @@ export default function BalancePage() {
   return (
     <div style={{
       minHeight: '100%',
-      background: `
-        radial-gradient(ellipse 80% 40% at 20% 0%, rgba(74,222,128,0.05) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 0%, rgba(61,127,255,0.05) 0%, transparent 60%),
-        var(--bg)
-      `,
-      padding: '32px 24px', maxWidth: 980, margin: '0 auto',
+      background: 'linear-gradient(160deg, #000033 0%, #000510 50%, #000020 100%)',
+      padding: '32px 20px', maxWidth: 1060, margin: '0 auto',
     }}>
+      <style>{`
+        @keyframes sparkle {
+          from { opacity: 0.3; transform: scale(0.8); }
+          to   { opacity: 1.0; transform: scale(1.3); }
+        }
+      `}</style>
 
-      <h2 className="gradient-text" style={{ fontSize: 22, fontWeight: 900, marginBottom: 24 }}>
+      <h2 style={{
+        fontSize: 22, fontWeight: 900, marginBottom: 24,
+        background: 'linear-gradient(90deg, #00CFFF, #B060FF)',
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+      }}>
         Balance
       </h2>
 
       {/* Balance overview */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 44, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 48, flexWrap: 'wrap' }}>
         <BalanceCard title="Diamonds"         value={user.credits}     color="#00CFFF" />
         <BalanceCard title="Referral Balance" value={user.ref_credits} color="#FFD166" />
       </div>
 
       {/* Section title */}
-      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <div style={{
-          fontSize: 11, fontWeight: 700, letterSpacing: '3px',
-          color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 10,
+          fontSize: 10, fontWeight: 700, letterSpacing: '4px',
+          color: 'rgba(0,191,255,0.8)', textTransform: 'uppercase', marginBottom: 12,
         }}>
           ⬡ Choose Your Arsenal
         </div>
-        <h3 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', marginBottom: 6 }}>
+        <h3 style={{ fontSize: 28, fontWeight: 900, color: '#FFFFFF', marginBottom: 8,
+                     letterSpacing: '-0.5px' }}>
           Top Up Diamonds
         </h3>
-        <p style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
           Secure payment · Instant delivery · Diamonds never expire
         </p>
       </div>
 
       {/* Package cards */}
       <div style={{
-        display: 'flex', gap: 20, flexWrap: 'wrap',
-        alignItems: 'flex-start',
-        paddingTop: 20,
-        marginBottom: 36,
+        display: 'flex', gap: 16, flexWrap: 'wrap',
+        alignItems: 'flex-start', paddingTop: 20, marginBottom: 36,
       }}>
         {PACKAGES.map(pkg => (
-          <PackageCard key={pkg.id} pkg={pkg} buying={buying} onBuy={handleBuy} />
+          <PackageCard key={pkg.name} pkg={pkg} buying={buying} onBuy={handleBuy} />
         ))}
       </div>
 
       {error && (
         <div style={{
-          color: 'var(--error-text)', fontSize: 14, marginBottom: 24,
+          color: '#ff6b6b', fontSize: 14, marginBottom: 24,
           padding: '12px 16px', background: 'rgba(122,32,32,0.2)',
-          borderRadius: 10, border: '1px solid var(--error)',
+          borderRadius: 10, border: '1px solid rgba(255,107,107,0.3)',
         }}>
           {error}
         </div>
       )}
 
-      {/* Secure payment note */}
       <div style={{ textAlign: 'center', marginTop: 8 }}>
-        <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.5px' }}>
           🔒 Secure Payment · Free-Kassa · Diamonds never expire
         </span>
       </div>
-
     </div>
   )
 }
