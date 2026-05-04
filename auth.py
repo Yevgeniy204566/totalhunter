@@ -32,6 +32,19 @@ def check_license():
         log_error_to_server(f"Check License Error: {str(e)}")
         return {"authorized": False, "credits": 0, "message": "Нет связи с сервером"}
 
+def generate_link_code():
+    """Генерирует 6-значный код для привязки бота к аккаунту на сайте.
+    Возвращает (code: str, expires_in_seconds: int) или (None, 0) при ошибке."""
+    hwid = get_hwid()
+    try:
+        response = requests.post(f"{SERVER_URL}/web/link/generate",
+                                 json={"hwid": hwid}, timeout=5)
+        data = response.json()
+        return data.get("code"), data.get("expires_in_seconds", 600)
+    except Exception as e:
+        log_error_to_server(f"Generate Link Code Error: {str(e)}")
+        return None, 0
+
 def transfer_referral_balance():
     """Переводит реферальный баланс (ref_credits) → основной (credits).
     Возвращает (success: bool, message: str, new_credits: int)."""
