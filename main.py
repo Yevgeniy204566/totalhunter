@@ -105,6 +105,49 @@ LANGS = {
         "clicker_title": "Синхронизация Clickermann", "clicker_on": "ВКЛЮЧИТЬ", "key_start": "Старт:", "key_stop": "Стоп:",
         "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: В ПОИСКЕ...",
         "add_oil": "Добавь масла",
+        # hunt tab
+        "hunt_neural": "Нейросеть", "hunt_nav": "Навигация", "hunt_step": "Шаг:",
+        "hunt_speed": "Скорость (сек/шаг):", "hunt_dive": "Глубина нырка (экранов):",
+        "hunt_additional": "Дополнительно", "hunt_auto": "Авто",
+        "hunt_ocean": "Граница океан/суша (%):", "hunt_water": "Мин. размер водоёма:",
+        "hunt_coeff": "Коэф. диагонали возврата:", "hunt_footprint": "Память следов (сек):",
+        "hunt_delta": "Дельта возврата (px):", "hunt_liveliness": "Живость хода (%):",
+        "save_settings": "Сохранить настройки",
+        # crypt tab
+        "crypt_select": "Выберите типы склепов:", "crypt_start": "ЗАПУСТИТЬ СБОР СКЛЕПОВ",
+        "crypt_ready": "ГОТОВО", "crypt_save": "💾  Сохранить настройки",
+        "crypt_click_adj": "Микроподстройка кликов ↑↓:", "crypt_yolo": "Частота YOLO-детекции",
+        "crypt_march": "Марш (мин)", "crypt_break": "Перерыв (сек)", "crypt_accel": "Ускорений",
+        "crypt_profile": "Профиль:", "crypt_stop": "ОСТАНОВИТЬ",
+        "crypt_stopped": "Остановлено", "crypt_stopped_esc": "Остановлено (ESC)",
+        "crypt_select_one": "Выберите хотя бы один тип!",
+        # ref tab
+        "ref_balance": "Реферальный баланс", "ref_transfer": "💸  Перевести на баланс  →",
+        "ref_your_link": "Ваша реферальная ссылка:", "ref_referrals_label": "Рефералы",
+        "ref_transferring": "⏳ Перевод...",
+        "ref_transfer_ok": "Баланс успешно переведён!", "ref_transfer_err": "Не удалось перевести баланс.",
+        # calibration tab
+        "cal_title": "Калибровка экрана",
+        "cal_instructions": "Откройте игру в привычном режиме, затем установите две точки.",
+        "cal_profile": "Профиль:", "cal_not_calibrated": "Не откалиброван",
+        "cal_auto": "АВТОКАЛИБРОВАТЬ", "cal_calibrate": "КАЛИБРОВАТЬ",
+        "cal_save": "💾  Сохранить", "cal_load": "📂  Загрузить",
+        "cal_link_title": "Привязка к аккаунту на сайте",
+        "cal_get_code": "🔗 Получить код", "cal_devices": "🌐 Устройства",
+        # messageboxes
+        "settings_saved": "Настройки сохранены", "error": "Ошибка",
+        "nav_error": "Неверные параметры навигации",
+        "cal_auto_title": "Авто-калибровка", "cal_saved": "Сохранено",
+        # units
+        "min_unit": "мин", "sec_unit": "с",
+        # link code
+        "cal_link_warning_title": "Привязка недоступна",
+        "cal_link_warning": "Привязка доступна только для зарегистрированных пользователей.\nСначала войди через Google на сайте total-hunter.com",
+        "cal_code_error_title": "Ошибка",
+        "cal_code_error": "Не удалось получить код.\nПроверь подключение к интернету.",
+        "cal_code_valid": "Действует {m}:{s:02d} · Введи на сайте в разделе Устройства",
+        "cal_code_expired": "Код истёк — получи новый",
+        "cal_code_linked": "Аккаунт привязан: ",
     },
     "EN": {
         "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_combo": "Combo", "tab_ref": "REFERRALS",
@@ -118,6 +161,49 @@ LANGS = {
         "clicker_title": "Clickermann Sync", "clicker_on": "ENABLED", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "READY", "status_running": "STATUS: SEARCHING...",
         "add_oil": "Add Oil",
+        # hunt tab
+        "hunt_neural": "Neural Net", "hunt_nav": "Navigation", "hunt_step": "Step:",
+        "hunt_speed": "Speed (sec/step):", "hunt_dive": "Dive depth (screens):",
+        "hunt_additional": "Advanced", "hunt_auto": "Auto",
+        "hunt_ocean": "Ocean/land border (%):", "hunt_water": "Min water body size:",
+        "hunt_coeff": "Return diagonal coeff:", "hunt_footprint": "Footprint memory (sec):",
+        "hunt_delta": "Return delta (px):", "hunt_liveliness": "Liveliness (%):",
+        "save_settings": "Save settings",
+        # crypt tab
+        "crypt_select": "Select crypt types:", "crypt_start": "START CRYPT HUNT",
+        "crypt_ready": "READY", "crypt_save": "💾  Save settings",
+        "crypt_click_adj": "Click micro-adjust ↑↓:", "crypt_yolo": "YOLO detection rate",
+        "crypt_march": "March (min)", "crypt_break": "Break (sec)", "crypt_accel": "Accelerations",
+        "crypt_profile": "Profile:", "crypt_stop": "STOP",
+        "crypt_stopped": "Stopped", "crypt_stopped_esc": "Stopped (ESC)",
+        "crypt_select_one": "Select at least one type!",
+        # ref tab
+        "ref_balance": "Referral balance", "ref_transfer": "💸  Transfer to balance  →",
+        "ref_your_link": "Your referral link:", "ref_referrals_label": "Referrals",
+        "ref_transferring": "⏳ Transferring...",
+        "ref_transfer_ok": "Balance transferred successfully!", "ref_transfer_err": "Failed to transfer balance.",
+        # calibration tab
+        "cal_title": "Screen Calibration",
+        "cal_instructions": "Open the game in normal mode, then set two points.",
+        "cal_profile": "Profile:", "cal_not_calibrated": "Not calibrated",
+        "cal_auto": "AUTO-CALIBRATE", "cal_calibrate": "CALIBRATE",
+        "cal_save": "💾  Save", "cal_load": "📂  Load",
+        "cal_link_title": "Link to account on site",
+        "cal_get_code": "🔗 Get code", "cal_devices": "🌐 Devices",
+        # messageboxes
+        "settings_saved": "Settings saved", "error": "Error",
+        "nav_error": "Invalid navigation parameters",
+        "cal_auto_title": "Auto-calibration", "cal_saved": "Saved",
+        # units
+        "min_unit": "min", "sec_unit": "s",
+        # link code
+        "cal_link_warning_title": "Linking unavailable",
+        "cal_link_warning": "Linking is only available for registered users.\nFirst log in via Google at total-hunter.com",
+        "cal_code_error_title": "Error",
+        "cal_code_error": "Failed to get code.\nCheck your internet connection.",
+        "cal_code_valid": "Valid {m}:{s:02d} · Enter on site in Devices section",
+        "cal_code_expired": "Code expired — get a new one",
+        "cal_code_linked": "Account linked: ",
     },
 }
 
@@ -289,7 +375,7 @@ class TotalHunterApp(ctk.CTk):
                                 corner_radius=12, border_width=1,
                                 border_color=MD3["outline"])
         nn_frame.pack(fill="x", padx=20, pady=(4, 2))
-        ctk.CTkLabel(nn_frame, text="Нейросеть",
+        ctk.CTkLabel(nn_frame, text=LANGS[self.current_lang]["hunt_neural"],
                      font=ctk.CTkFont(size=14, weight="bold"),
                      text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(4, 2))
 
@@ -338,14 +424,14 @@ class TotalHunterApp(ctk.CTk):
                                       corner_radius=12, border_width=1,
                                       border_color=MD3["outline"])
         nav_main_frame.pack(fill="x", padx=20, pady=(2, 2))
-        ctk.CTkLabel(nav_main_frame, text="Навигация",
+        ctk.CTkLabel(nav_main_frame, text=LANGS[self.current_lang]["hunt_nav"],
                      font=ctk.CTkFont(size=14, weight="bold"),
                      text_color=MD3["on_surface"]).pack(anchor="w", padx=12, pady=(4, 2))
 
         # Шаг джойстика
         self.nav_step_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
         self.nav_step_frame.pack(fill="x", padx=12, pady=(2, 0))
-        ctk.CTkLabel(self.nav_step_frame, text="Шаг:",
+        ctk.CTkLabel(self.nav_step_frame, text=LANGS[self.current_lang]["hunt_step"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_step_val = ctk.CTkLabel(self.nav_step_frame, text="13 px",
@@ -364,7 +450,7 @@ class TotalHunterApp(ctk.CTk):
         # Скорость (ожидание после шага)
         self.nav_wait_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
         self.nav_wait_frame.pack(fill="x", padx=12, pady=(2, 0))
-        ctk.CTkLabel(self.nav_wait_frame, text="Скорость (сек/шаг):",
+        ctk.CTkLabel(self.nav_wait_frame, text=LANGS[self.current_lang]["hunt_speed"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="2.0 с",
@@ -382,7 +468,7 @@ class TotalHunterApp(ctk.CTk):
         # Глубина нырка
         self.nav_inland_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
         self.nav_inland_frame.pack(fill="x", padx=12, pady=(2, 0))
-        ctk.CTkLabel(self.nav_inland_frame, text="Глубина нырка (экранов):",
+        ctk.CTkLabel(self.nav_inland_frame, text=LANGS[self.current_lang]["hunt_dive"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_inland_val = ctk.CTkLabel(self.nav_inland_frame, text="5",
@@ -407,14 +493,14 @@ class TotalHunterApp(ctk.CTk):
         self.nav_header_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
         self.nav_header_frame.pack(fill="x", padx=10, pady=(4, 2))
         self.nav_lb = ctk.CTkLabel(self.nav_header_frame,
-                                   text="Дополнительно",
+                                   text=LANGS[self.current_lang]["hunt_additional"],
                                    font=ctk.CTkFont(size=14, weight="bold"),
                                    text_color=MD3["on_surface"])
         self.nav_lb.pack(side="left")
         self.nav_enabled_var = ctk.BooleanVar(value=True)
         self.nav_toggle = ctk.CTkSwitch(
             self.nav_header_frame,
-            text="Авто",
+            text=LANGS[self.current_lang]["hunt_auto"],
             variable=self.nav_enabled_var,
             onvalue=True, offvalue=False,
             command=self._on_nav_toggle,
@@ -465,7 +551,7 @@ class TotalHunterApp(ctk.CTk):
         # Порог океана (% суши)
         self.nav_ocean_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_ocean_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_ocean_frame, text="Граница океан/суша (%):",
+        ctk.CTkLabel(self.nav_ocean_frame, text=LANGS[self.current_lang]["hunt_ocean"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_ocean_val = ctk.CTkLabel(self.nav_ocean_frame, text="3%",
@@ -484,7 +570,7 @@ class TotalHunterApp(ctk.CTk):
         # Мин. пикселей воды для детекта океана
         self.nav_waterpx_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_waterpx_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_waterpx_frame, text="Мин. размер водоёма:",
+        ctk.CTkLabel(self.nav_waterpx_frame, text=LANGS[self.current_lang]["hunt_water"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_waterpx_val = ctk.CTkLabel(self.nav_waterpx_frame, text="500",
@@ -503,7 +589,7 @@ class TotalHunterApp(ctk.CTk):
         # Коэф. диагонали возврата
         self.nav_diagblind_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_diagblind_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_diagblind_frame, text="Коэф. диагонали возврата:",
+        ctk.CTkLabel(self.nav_diagblind_frame, text=LANGS[self.current_lang]["hunt_coeff"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_diagblind_val = ctk.CTkLabel(self.nav_diagblind_frame, text="0.50",
@@ -523,7 +609,7 @@ class TotalHunterApp(ctk.CTk):
         # Память следов (TTL секунды)
         self.nav_footprint_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_footprint_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_footprint_frame, text="Память следов (сек):",
+        ctk.CTkLabel(self.nav_footprint_frame, text=LANGS[self.current_lang]["hunt_footprint"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_footprint_val = ctk.CTkLabel(self.nav_footprint_frame, text="2 мин",
@@ -542,7 +628,7 @@ class TotalHunterApp(ctk.CTk):
         # Дельта возврата (подмешивание вправо при возврате)
         self.nav_delta_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_delta_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_delta_frame, text="Дельта возврата (px):",
+        ctk.CTkLabel(self.nav_delta_frame, text=LANGS[self.current_lang]["hunt_delta"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_delta_val = ctk.CTkLabel(self.nav_delta_frame, text="0 px",
@@ -561,7 +647,7 @@ class TotalHunterApp(ctk.CTk):
         # Живость хода (smooth_alpha)
         self.nav_pitch_frame = ctk.CTkFrame(nav_sliders_frame, fg_color="transparent")
         self.nav_pitch_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_pitch_frame, text="Живость хода (%):",
+        ctk.CTkLabel(self.nav_pitch_frame, text=LANGS[self.current_lang]["hunt_liveliness"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         self.nav_pitch_val = ctk.CTkLabel(self.nav_pitch_frame, text="50%",
@@ -578,7 +664,7 @@ class TotalHunterApp(ctk.CTk):
         self.nav_pitch_slider.pack(padx=10, pady=(0, 4), fill="x")
 
         # Кнопка сохранения настроек
-        self.save_btn = ctk.CTkButton(self.nav_frame, text="Сохранить настройки",
+        self.save_btn = ctk.CTkButton(self.nav_frame, text=LANGS[self.current_lang]["save_settings"],
                                       height=28,
                                       fg_color=MD3["green_btn"],
                                       hover_color=MD3["green_hover"],
@@ -626,7 +712,7 @@ class TotalHunterApp(ctk.CTk):
                       ).pack(side="left", padx=(8, 0))
 
         # ─── Сетка иконок склепов ────────────────────────────
-        icons_label = ctk.CTkLabel(self.tab_crypt, text="Выберите типы склепов:",
+        icons_label = ctk.CTkLabel(self.tab_crypt, text=LANGS[self.current_lang]["crypt_select"],
                                    font=ctk.CTkFont(size=13),
                                    text_color=MD3["on_surface2"])
         icons_label.pack(pady=(2, 1))
@@ -754,7 +840,7 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_march_slider.pack(padx=10, pady=(2, 4), fill="x")
 
         # Пауза между YOLO-детекциями (scroll_speed + 0.2 сек)
-        self.crypt_scroll_val = _slider_row("Частота YOLO-детекции", "скан 1.2 с")
+        self.crypt_scroll_val = _slider_row(LANGS[self.current_lang]["crypt_yolo"], "скан 1.2 с")
         self.crypt_scroll_slider = ctk.CTkSlider(settings_frame, from_=0.0, to=4.0,
                                                  command=self._update_crypt_labels,
                                                  button_color=MD3["primary"],
@@ -766,7 +852,7 @@ class TotalHunterApp(ctk.CTk):
         # ── Профиль калибровки ────────────────────────────────────
         misc_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
         misc_row.pack(fill="x", padx=10, pady=(2, 0))
-        ctk.CTkLabel(misc_row, text="Профиль:", font=ctk.CTkFont(size=13),
+        ctk.CTkLabel(misc_row, text=LANGS[self.current_lang]["crypt_profile"], font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         ctk.CTkOptionMenu(misc_row, values=list(self._PROFILES.keys()),
                           variable=self._cal_profile_var, width=100,
@@ -778,7 +864,7 @@ class TotalHunterApp(ctk.CTk):
         # ── Смещение диалога (микроподстройка кликов) ────────────
         offset_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
         offset_row.pack(fill="x", padx=10, pady=(2, 0))
-        ctk.CTkLabel(offset_row, text="Микроподстройка кликов ↑↓:",
+        ctk.CTkLabel(offset_row, text=LANGS[self.current_lang]["crypt_click_adj"],
                      font=ctk.CTkFont(size=13),
                      text_color=MD3["on_surface2"]).pack(side="left")
         ctk.CTkButton(offset_row, text="−", width=28, height=24,
@@ -797,7 +883,7 @@ class TotalHunterApp(ctk.CTk):
                           self._dialog_offset_y_var.get() + 5)).pack(side="left")
 
         # Единая кнопка сохранения
-        ctk.CTkButton(settings_frame, text="💾  Сохранить настройки",
+        ctk.CTkButton(settings_frame, text=LANGS[self.current_lang]["crypt_save"],
                       height=32,
                       fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
                       text_color=MD3["on_surface"], corner_radius=8,
@@ -842,7 +928,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ─── Кнопка Старт/Стоп ───────────────────────────────
         self.crypt_start_btn = ctk.CTkButton(
-            self.tab_crypt, text="ЗАПУСТИТЬ СБОР СКЛЕПОВ",
+            self.tab_crypt, text=LANGS[self.current_lang]["crypt_start"],
             height=56, font=ctk.CTkFont(size=18, weight="bold"),
             fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
             text_color=MD3["on_surface"], corner_radius=16,
@@ -852,7 +938,7 @@ class TotalHunterApp(ctk.CTk):
 
         # Статус
         self.crypt_status_label = ctk.CTkLabel(
-            self.tab_crypt, text="ГОТОВО", text_color=MD3["on_surface2"]
+            self.tab_crypt, text=LANGS[self.current_lang]["crypt_ready"], text_color=MD3["on_surface2"]
         )
         self.crypt_status_label.pack(pady=(0, 2))
 
@@ -863,12 +949,12 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_conf_val.configure(text=f"{conf}%")
         accel = int(self.crypt_accel_slider.get())
         march_min = int(self.crypt_march_slider.get())
-        self.crypt_march_val.configure(text=f"{march_min} мин")
+        self.crypt_march_val.configure(text=f"{march_min} {LANGS[self.current_lang]['min_unit']}")
         self.crypt_accel_val.configure(text=str(accel))
         brk = int(self.crypt_break_slider.get())
-        self.crypt_break_val.configure(text=f"{brk} с")
+        self.crypt_break_val.configure(text=f"{brk} {LANGS[self.current_lang]['sec_unit']}")
         sc = round(self.crypt_scroll_slider.get(), 1)
-        self.crypt_scroll_val.configure(text=f"скан {sc + 0.2:.1f} с")
+        self.crypt_scroll_val.configure(text=f"скан {sc + 0.2:.1f} {LANGS[self.current_lang]['sec_unit']}")
 
     def on_crypt_found(self, crypt_type: str):
         """Вызывается ПОСЛЕ возвращения Картера (коллекция завершена)."""
@@ -923,7 +1009,7 @@ class TotalHunterApp(ctk.CTk):
             stop_text = f"СТОП: {reason}"
             stop_color = MD3["error_text"]
         def _update(t=stop_text, c=stop_color):
-            self.crypt_start_btn.configure(text="ЗАПУСТИТЬ СБОР СКЛЕПОВ",
+            self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_start"],
                                            fg_color=MD3["green_btn"],
                                            hover_color=MD3["green_hover"])
             self.crypt_status_label.configure(text=t, text_color=c)
@@ -935,23 +1021,23 @@ class TotalHunterApp(ctk.CTk):
         if self.is_crypt_running:
             self.is_crypt_running = False
             self.crypt_engine.stop()
-            self.crypt_start_btn.configure(text="ЗАПУСТИТЬ СБОР СКЛЕПОВ",
+            self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_start"],
                                            fg_color=MD3["green_btn"],
                                            hover_color=MD3["green_hover"])
-            self.crypt_status_label.configure(text="Остановлено", text_color=MD3["on_surface2"])
+            self.crypt_status_label.configure(text=LANGS[self.current_lang]["crypt_stopped"], text_color=MD3["on_surface2"])
             self.crypt_countdown_label.configure(text="")
             self.crypt_timer_detail_label.configure(text="")
         else:
             selected = [k for k, v in self._crypt_vars.items() if v.get()]
             if not selected:
                 self.crypt_status_label.configure(
-                    text="Выберите хотя бы один тип!", text_color="#FFB300"
+                    text=LANGS[self.current_lang]["crypt_select_one"], text_color="#FFB300"
                 )
                 return
             self.is_crypt_running = True
             self._crypt_found_count = 0
-            self.crypt_status_label.configure(text="СТАТУС: В ПОИСКЕ...", text_color=MD3["secondary"])
-            self.crypt_start_btn.configure(text="ОСТАНОВИТЬ",
+            self.crypt_status_label.configure(text=LANGS[self.current_lang]["status_running"], text_color=MD3["secondary"])
+            self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_stop"],
                                            fg_color=MD3["error"],
                                            hover_color=MD3["error_hover"])
             self.crypt_engine.start(
@@ -1135,7 +1221,7 @@ class TotalHunterApp(ctk.CTk):
                                     corner_radius=12, border_width=1,
                                     border_color=MD3["outline"])
         ref_bal_card.pack(padx=20, pady=(0, 8), fill="x")
-        ctk.CTkLabel(ref_bal_card, text="Реферальный баланс",
+        ctk.CTkLabel(ref_bal_card, text=LANGS[self.current_lang]["ref_balance"],
                      font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]
                      ).pack(pady=(10, 0))
         self.ref_balance_label = ctk.CTkLabel(ref_bal_card, text="0 ◆",
@@ -1143,7 +1229,7 @@ class TotalHunterApp(ctk.CTk):
                                               text_color="#FFD700")
         self.ref_balance_label.pack(pady=(2, 6))
         self.ref_transfer_btn = ctk.CTkButton(
-            ref_bal_card, text="💸  Перевести на баланс  →",
+            ref_bal_card, text=LANGS[self.current_lang]["ref_transfer"],
             height=32, corner_radius=8,
             fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
             text_color=MD3["on_surface"],
@@ -1151,7 +1237,7 @@ class TotalHunterApp(ctk.CTk):
         self.ref_transfer_btn.pack(padx=10, pady=(0, 10), fill="x")
 
         # ── Реферальная ссылка (PRIMARY — AP-13) ─────────────────────────
-        ctk.CTkLabel(self.tab_ref, text="Ваша реферальная ссылка:",
+        ctk.CTkLabel(self.tab_ref, text=LANGS[self.current_lang]["ref_your_link"],
                      font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]
                      ).pack(pady=(4, 0))
         link_frame = ctk.CTkFrame(self.tab_ref, fg_color=MD3["card"],
@@ -1187,7 +1273,7 @@ class TotalHunterApp(ctk.CTk):
                                   corner_radius=12, border_width=1,
                                   border_color=MD3["outline"])
         stats_card.pack(padx=20, pady=(0, 8), fill="x")
-        ctk.CTkLabel(stats_card, text="Рефералы", font=ctk.CTkFont(size=11),
+        ctk.CTkLabel(stats_card, text=LANGS[self.current_lang]["ref_referrals_label"], font=ctk.CTkFont(size=11),
                      text_color=MD3["on_surface2"]).pack(pady=(8, 2))
         stats_row = ctk.CTkFrame(stats_card, fg_color="transparent")
         stats_row.pack(pady=(0, 10))
@@ -1354,9 +1440,9 @@ class TotalHunterApp(ctk.CTk):
             cfg["smooth_alpha"]          = int(self.nav_pitch_slider.get())
             with open(GUI_CONFIG_PATH, 'w') as f:
                 json.dump(cfg, f, indent=2)
-            messagebox.showinfo("OK", "Настройки сохранены")
+            messagebox.showinfo("OK", LANGS[self.current_lang]["settings_saved"])
         except Exception as e:
-            messagebox.showerror("Error", f"Не удалось сохранить: {e}")
+            messagebox.showerror(LANGS[self.current_lang]["error"], f"Не удалось сохранить: {e}")
 
     def _load_settings(self):
         try:
@@ -1407,7 +1493,7 @@ class TotalHunterApp(ctk.CTk):
                 scan_interval = float(self.speed_slider.get())
                 move_wait = float(self.nav_wait_slider.get())
             except ValueError:
-                messagebox.showerror("Error", "Неверные параметры навигации"); return
+                messagebox.showerror(LANGS[self.current_lang]["error"], LANGS[self.current_lang]["nav_error"]); return
 
             try:
                 self.engine.start(
@@ -1460,10 +1546,10 @@ class TotalHunterApp(ctk.CTk):
         if self.is_crypt_running:
             self.is_crypt_running = False
             self.crypt_engine.stop()
-            self.crypt_start_btn.configure(text="ЗАПУСТИТЬ СБОР СКЛЕПОВ",
+            self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_start"],
                                            fg_color=MD3["green_btn"],
                                            hover_color=MD3["green_hover"])
-            self.crypt_status_label.configure(text="Остановлено (ESC)",
+            self.crypt_status_label.configure(text=LANGS[self.current_lang]["crypt_stopped_esc"],
                                               text_color=MD3["on_surface2"])
         # Combo
         if self.is_combo_running:
@@ -1514,17 +1600,17 @@ class TotalHunterApp(ctk.CTk):
             messagebox.showinfo("OK", LANGS[self.current_lang]["copied"])
 
     def _do_transfer_ref_balance(self):
-        self.ref_transfer_btn.configure(state="disabled", text="⏳ Перевод...")
+        self.ref_transfer_btn.configure(state="disabled", text=LANGS[self.current_lang]["ref_transferring"])
         def _worker():
             ok, msg, new_credits = transfer_referral_balance()
             def _upd():
-                self.ref_transfer_btn.configure(state="normal", text="💸  Перевести на баланс  →")
+                self.ref_transfer_btn.configure(state="normal", text=LANGS[self.current_lang]["ref_transfer"])
                 if ok:
                     self.ref_balance_label.configure(text="0 ◆")
                     self._update_credits_display(new_credits)
-                    messagebox.showinfo("Перевод", msg or "Баланс успешно переведён!")
+                    messagebox.showinfo("OK", msg or LANGS[self.current_lang]["ref_transfer_ok"])
                 else:
-                    messagebox.showerror("Ошибка", msg or "Не удалось перевести баланс.")
+                    messagebox.showerror(LANGS[self.current_lang]["error"], msg or LANGS[self.current_lang]["ref_transfer_err"])
             self.after(0, _upd)
         import threading
         threading.Thread(target=_worker, daemon=True).start()
@@ -1607,14 +1693,14 @@ class TotalHunterApp(ctk.CTk):
 
         ctk.CTkLabel(
             self.tab_calibration,
-            text="Калибровка экрана",
+            text=LANGS[self.current_lang]["cal_title"],
             font=ctk.CTkFont(size=16, weight="bold"),
             text_color=MD3["on_surface"],
         ).pack(pady=(12, 2))
 
         ctk.CTkLabel(
             self.tab_calibration,
-            text="Откройте игру в привычном режиме, затем установите две точки.",
+            text=LANGS[self.current_lang]["cal_instructions"],
             font=ctk.CTkFont(size=12),
             text_color=MD3["on_surface2"],
             justify="center",
@@ -1662,7 +1748,7 @@ class TotalHunterApp(ctk.CTk):
         # ── Profile dropdown ──────────────────────────────────────────────
         profile_frame = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
         profile_frame.pack(fill="x", padx=40, pady=4)
-        ctk.CTkLabel(profile_frame, text="Профиль:",
+        ctk.CTkLabel(profile_frame, text=LANGS[self.current_lang]["cal_profile"],
                      text_color=MD3["on_surface2"]).pack(side="left")
         ctk.CTkOptionMenu(
             profile_frame,
@@ -1678,7 +1764,7 @@ class TotalHunterApp(ctk.CTk):
         # ── Status label ──────────────────────────────────────────────────
         self._cal_status_label = ctk.CTkLabel(
             self.tab_calibration,
-            text="Не откалиброван",
+            text=LANGS[self.current_lang]["cal_not_calibrated"],
             font=ctk.CTkFont(size=13),
             text_color="#FFB300",
         )
@@ -1698,7 +1784,7 @@ class TotalHunterApp(ctk.CTk):
         def _load_profile():
             path = PROFILES[self._cal_profile_var.get()]
             if not os.path.exists(path):
-                messagebox.showerror("Ошибка", f"Файл не найден:\n{path}")
+                messagebox.showerror(LANGS[self.current_lang]["error"], f"Файл не найден:\n{path}")
                 return
             coord_manager.load(path)
             self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
@@ -1717,7 +1803,7 @@ class TotalHunterApp(ctk.CTk):
             try:
                 start_a = auto_detect_point_a(screen_w, screen_h)
             except Exception as e:
-                messagebox.showerror("Авто-калибровка", f"Ошибка детекции A:\n{e}")
+                messagebox.showerror(LANGS[self.current_lang]["cal_auto_title"], f"Ошибка детекции A:\n{e}")
                 self.deiconify()
                 return
             self.deiconify()
@@ -1733,7 +1819,7 @@ class TotalHunterApp(ctk.CTk):
             try:
                 start_b = auto_detect_point_b(screen_w, screen_h)
             except Exception as e:
-                messagebox.showerror("Авто-калибровка", f"Ошибка детекции B:\n{e}")
+                messagebox.showerror(LANGS[self.current_lang]["cal_auto_title"], f"Ошибка детекции B:\n{e}")
                 self.deiconify()
                 return
             self.deiconify()
@@ -1765,11 +1851,11 @@ class TotalHunterApp(ctk.CTk):
             coord_manager.save(path)
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
-            messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
+            messagebox.showinfo(LANGS[self.current_lang]["cal_saved"], f"Профиль сохранён:\n{path}")
 
         ctk.CTkButton(
             self.tab_calibration,
-            text="АВТОКАЛИБРОВАТЬ",
+            text=LANGS[self.current_lang]["cal_auto"],
             command=_auto_calibrate,
             fg_color=MD3["blue_btn"],
             hover_color=MD3["blue_hover"],
@@ -1782,7 +1868,7 @@ class TotalHunterApp(ctk.CTk):
         # ── Кнопка Калибровать — главная (error tonal) ───────────────────
         ctk.CTkButton(
             self.tab_calibration,
-            text="КАЛИБРОВАТЬ",
+            text=LANGS[self.current_lang]["cal_calibrate"],
             command=_calibrate,
             fg_color=MD3["error"],
             hover_color=MD3["error_hover"],
@@ -1795,12 +1881,12 @@ class TotalHunterApp(ctk.CTk):
         # ── Сохранить / Загрузить — в одну строку ────────────────────────
         save_load_row = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
         save_load_row.pack(fill="x", padx=40, pady=(0, 8))
-        ctk.CTkButton(save_load_row, text="💾  Сохранить",
+        ctk.CTkButton(save_load_row, text=LANGS[self.current_lang]["cal_save"],
                       command=_save_profile,
                       fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
                       text_color=MD3["on_surface"], corner_radius=8,
                       height=36).pack(side="left", expand=True, fill="x", padx=(0, 4))
-        ctk.CTkButton(save_load_row, text="📂  Загрузить",
+        ctk.CTkButton(save_load_row, text=LANGS[self.current_lang]["cal_load"],
                       command=_load_profile,
                       fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
                       text_color=MD3["on_surface"], corner_radius=8,
