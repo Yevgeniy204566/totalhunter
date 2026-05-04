@@ -14,6 +14,7 @@ const PACKAGES = [
     glow:     'rgba(61,127,255,0.30)',
     bg:       'rgba(61,127,255,0.06)',
     featured: false,
+    label:    'Starter Pack',
   },
   {
     id:       'pro',
@@ -26,6 +27,7 @@ const PACKAGES = [
     glow:     'rgba(74,222,128,0.30)',
     bg:       'rgba(74,222,128,0.07)',
     featured: true,
+    label:    "Hunter's Choice",
   },
   {
     id:       'ultra',
@@ -38,6 +40,7 @@ const PACKAGES = [
     glow:     'rgba(255,209,102,0.30)',
     bg:       'rgba(255,209,102,0.06)',
     featured: false,
+    label:    'Max Value',
   },
 ]
 
@@ -59,16 +62,19 @@ function BalanceCard({ title, value, color }) {
   return (
     <div className="card" style={{
       flex: '1 1 160px', borderRadius: 14, textAlign: 'center', padding: '22px 20px',
+      border: `1px solid ${color}33`,
+      boxShadow: `0 0 24px ${color}11`,
     }}>
       <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: 8,
-                    fontWeight: 600, letterSpacing: '0.5px' }}>
+                    fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
         {title}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         <Diamond size={28} />
         <div style={{
-          fontSize: 44, fontWeight: 900, color,
-          textShadow: `0 0 22px ${color}99`,
+          fontSize: 44, fontWeight: 900,
+          color,
+          textShadow: `0 0 28px ${color}bb`,
           fontVariantNumeric: 'tabular-nums',
           lineHeight: 1,
         }}>
@@ -90,16 +96,17 @@ function PackageCard({ pkg, buying, onBuy }) {
       style={{
         flex: '1 1 210px',
         position: 'relative',
-        background: `linear-gradient(160deg, ${pkg.bg} 0%, rgba(5,8,16,0.95) 100%)`,
+        background: `linear-gradient(160deg, ${pkg.bg} 0%, rgba(5,8,16,0.97) 100%)`,
         border: `1px solid ${isActive ? pkg.color : 'var(--outline)'}`,
         borderRadius: 18,
         padding: pkg.featured ? '36px 24px 24px' : '28px 20px 20px',
         textAlign: 'center',
         transition: 'box-shadow 0.25s, border-color 0.25s, transform 0.2s',
         boxShadow: isActive
-          ? `0 0 36px ${pkg.glow}, inset 0 1px 0 ${pkg.color}33`
+          ? `0 0 48px ${pkg.glow}, 0 0 8px ${pkg.glow}, inset 0 1px 0 ${pkg.color}33`
           : 'none',
-        transform: pkg.featured ? 'scale(1.04)' : hovered ? 'scale(1.01)' : 'scale(1)',
+        transform: pkg.featured ? 'scale(1.05)' : hovered ? 'scale(1.01)' : 'scale(1)',
+        cursor: 'pointer',
       }}
     >
       {/* Featured badge */}
@@ -111,7 +118,7 @@ function PackageCard({ pkg, buying, onBuy }) {
           padding: '5px 18px', borderRadius: 20, letterSpacing: '0.8px',
           whiteSpace: 'nowrap', textTransform: 'uppercase',
         }}>
-          ⭐ Выбор охотника
+          ⭐ {pkg.label}
         </div>
       )}
 
@@ -119,19 +126,26 @@ function PackageCard({ pkg, buying, onBuy }) {
       <div style={{
         fontSize: 22, fontWeight: 900, color: pkg.color,
         letterSpacing: '2px', textTransform: 'uppercase',
-        textShadow: `0 0 20px ${pkg.glow}`,
-        marginBottom: 20,
+        textShadow: `0 0 24px ${pkg.glow}`,
+        marginBottom: 4,
       }}>
         {pkg.name}
       </div>
 
-      {/* BONUS — the hook */}
+      {!pkg.featured && (
+        <div style={{ fontSize: 11, color: pkg.color, opacity: 0.7,
+                      letterSpacing: '1px', marginBottom: 16 }}>
+          {pkg.label}
+        </div>
+      )}
+
+      {/* BONUS */}
       {pkg.bonus ? (
         <>
           <div style={{
             fontSize: 62, fontWeight: 900, lineHeight: 1,
             color: '#FFD166',
-            textShadow: '0 0 30px rgba(255,209,102,0.85), 0 0 60px rgba(255,209,102,0.35)',
+            textShadow: '0 0 30px rgba(255,209,102,0.9), 0 0 60px rgba(255,209,102,0.4)',
             fontVariantNumeric: 'tabular-nums',
             marginBottom: 4,
           }}>
@@ -142,36 +156,36 @@ function PackageCard({ pkg, buying, onBuy }) {
             color: '#FFD166', opacity: 0.9,
             textTransform: 'uppercase', marginBottom: 18,
           }}>
-            🎁 бонус алмазов
+            🎁 Bonus Diamonds
           </div>
         </>
       ) : (
         <div style={{ height: 88 }} />
       )}
 
-      {/* Total — secondary hero */}
+      {/* Total */}
       <div style={{
-        fontSize: 34, fontWeight: 900, color: '#FFFFFF', lineHeight: 1,
-        textShadow: '0 0 14px rgba(255,255,255,0.55)',
+        fontSize: 34, fontWeight: 900,
+        color: pkg.color,
+        textShadow: `0 0 20px ${pkg.glow}`,
         fontVariantNumeric: 'tabular-nums',
+        lineHeight: 1,
         marginBottom: 6,
       }}>
         = {pkg.total.toLocaleString()} ◆
       </div>
 
-      {/* Base credits strikethrough */}
+      {/* Base credits */}
       {pkg.bonus ? (
-        <div style={{
-          fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22,
-        }}>
-          <span style={{ textDecoration: 'line-through', opacity: 0.55 }}>
+        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22 }}>
+          <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>
             {pkg.credits.toLocaleString()}
           </span>
-          {' '}базовых ◆
+          {' '}base ◆
         </div>
       ) : (
         <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 22 }}>
-          алмазов на охоту
+          diamonds for hunts
         </div>
       )}
 
@@ -190,11 +204,12 @@ function PackageCard({ pkg, buying, onBuy }) {
           cursor: buying ? 'not-allowed' : 'pointer',
           opacity: buying && buying !== pkg.id ? 0.4 : 1,
           transition: 'opacity 0.15s, box-shadow 0.2s',
-          boxShadow: buying === pkg.id ? 'none' : `0 0 20px ${pkg.glow}`,
-          fontFamily: 'inherit', letterSpacing: '0.3px',
+          boxShadow: buying === pkg.id ? 'none' : `0 0 24px ${pkg.glow}`,
+          fontFamily: 'inherit', letterSpacing: '0.5px',
+          textTransform: 'uppercase',
         }}
       >
-        {buying === pkg.id ? 'Переход...' : `Купить — ${pkg.price}`}
+        {buying === pkg.id ? 'Redirecting...' : `Buy — ${pkg.price}`}
       </button>
     </div>
   )
@@ -214,12 +229,12 @@ export default function BalancePage() {
       const data = await api.paymentCreate(pkg)
       window.location.href = data.redirect_url
     } catch (e) {
-      setError(e.message || 'Ошибка оплаты')
+      setError(e.message || 'Payment error')
       setBuying(null)
     }
   }
 
-  if (!user) return <div className="page-content text-muted">Загрузка...</div>
+  if (!user) return <div className="page-content text-muted">Loading...</div>
 
   return (
     <div style={{
@@ -233,13 +248,13 @@ export default function BalancePage() {
     }}>
 
       <h2 className="gradient-text" style={{ fontSize: 22, fontWeight: 900, marginBottom: 24 }}>
-        Баланс
+        Balance
       </h2>
 
       {/* Balance overview */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 44, flexWrap: 'wrap' }}>
-        <BalanceCard title="Алмазы"              value={user.credits}     color="#00CFFF" />
-        <BalanceCard title="Реферальный баланс" value={user.ref_credits} color="#FFD166" />
+        <BalanceCard title="Diamonds"         value={user.credits}     color="#00CFFF" />
+        <BalanceCard title="Referral Balance" value={user.ref_credits} color="#FFD166" />
       </div>
 
       {/* Section title */}
@@ -248,13 +263,13 @@ export default function BalancePage() {
           fontSize: 11, fontWeight: 700, letterSpacing: '3px',
           color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 10,
         }}>
-          ⬡ Выбери свой арсенал
+          ⬡ Choose Your Arsenal
         </div>
         <h3 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', marginBottom: 6 }}>
-          Пополнение алмазов
+          Top Up Diamonds
         </h3>
         <p style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
-          Оплата через Free-Kassa · Зачисление мгновенно
+          Secure payment · Instant delivery · Diamonds never expire
         </p>
       </div>
 
@@ -262,7 +277,7 @@ export default function BalancePage() {
       <div style={{
         display: 'flex', gap: 20, flexWrap: 'wrap',
         alignItems: 'flex-start',
-        paddingTop: 20,   /* space for featured badge */
+        paddingTop: 20,
         marginBottom: 36,
       }}>
         {PACKAGES.map(pkg => (
@@ -283,7 +298,7 @@ export default function BalancePage() {
       {/* Secure payment note */}
       <div style={{ textAlign: 'center', marginTop: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
-          🔒 Безопасная оплата · Free-Kassa · Алмазы не сгорают
+          🔒 Secure Payment · Free-Kassa · Diamonds never expire
         </span>
       </div>
 

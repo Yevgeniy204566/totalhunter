@@ -143,11 +143,11 @@ export default function LandingPage() {
               alt="Total Hunter"
               style={{
                 width: '100%',
-                maxWidth: 720,
+                maxWidth: 920,
                 height: 'auto',
                 borderRadius: 32,
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 0 48px rgba(61,127,255,0.8)) drop-shadow(0 0 96px rgba(61,127,255,0.4))',
+                filter: 'drop-shadow(0 0 64px rgba(61,127,255,0.9)) drop-shadow(0 0 120px rgba(61,127,255,0.5))',
                 display: 'block',
                 margin: '0 auto',
               }}
@@ -246,15 +246,16 @@ export default function LandingPage() {
               <div key={title} className="card" style={{ borderRadius: 14, padding: 28 }}>
                 {FEATURE_IMAGES[i] ? (
                   <div style={{
-                    width: '100%', height: 220, borderRadius: 12,
+                    width: '100%', height: 280, borderRadius: 12,
                     marginBottom: 22, overflow: 'hidden',
                     border: `1px solid ${color}44`,
                     background: `${color}08`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <img
                       src={FEATURE_IMAGES[i]}
                       alt={title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
                     />
                   </div>
                 ) : (
