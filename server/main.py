@@ -59,7 +59,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://totalhunter.vercel.app",
+        "https://total-hunter.com",
+        "https://www.total-hunter.com",
+        "https://totalhunter.vercel.app",  # keep during migration
         "http://localhost:5173",
         "http://localhost:3000",
     ],
@@ -73,7 +75,7 @@ app.include_router(payments_router)
 
 # Стоимость действий в кредитах
 CREDIT_COST = {
-    "exchange": 5,
+    "exchange": 10,
     "crypt": 1,
 }
 
@@ -185,6 +187,23 @@ async def check_auth(req: HwidRequest, request: Request, db: AsyncSession = Depe
         current_version  = await _get_setting("current_version", db)
         force_update_val = await _get_setting("force_update", db)
 
+        # L1/L2/L3 referral counts
+        l1 = (await db.execute(
+            select(func.count(User.id)).where(User.invited_by_id == user.id)
+        )).scalar() or 0
+        l2_ids = (await db.execute(
+            select(User.id).where(User.invited_by_id == user.id)
+        )).scalars().all()
+        l2 = (await db.execute(
+            select(func.count(User.id)).where(User.invited_by_id.in_(l2_ids))
+        )).scalar() or 0 if l2_ids else 0
+        l3_ids = (await db.execute(
+            select(User.id).where(User.invited_by_id.in_(l2_ids))
+        )).scalars().all() if l2_ids else []
+        l3 = (await db.execute(
+            select(func.count(User.id)).where(User.invited_by_id.in_(l3_ids))
+        )).scalar() or 0 if l3_ids else 0
+
         return CheckAuthResponse(
             authorized=True,
             credits=user.credits,
@@ -197,6 +216,8 @@ async def check_auth(req: HwidRequest, request: Request, db: AsyncSession = Depe
             banned=False,
             force_update=(force_update_val == "true"),
             current_version=current_version,
+            referrals={"l1": l1, "l2": l2, "l3": l3},
+            is_referred=user.invited_by_id is not None,
         )
 
 
@@ -209,20 +230,29 @@ async def use_credit(req: UseCreditsRequest, db: AsyncSession = Depends(get_db))
     """
     Списывает кредиты за успешную находку.
 
-    Стоимость: exchange=5кр, crypt=1кр.
-    CheckConstraint в БД не даст уйти в минус даже при race condition.
+    Атомарный UPDATE: credits = credits - cost WHERE credits >= cost.
+    Исключает race condition без SELECT FOR UPDATE.
     """
     cost = CREDIT_COST.get(req.hunt_type, req.amount)
 
     async with db.begin():
-        result = await db.execute(select(User).where(User.hwid == req.hwid))
-        user = result.scalar_one_or_none()
+        # Одна атомарная операция — читаем и списываем одновременно
+        row = (await db.execute(
+            update(User)
+            .where(User.hwid == req.hwid, User.credits >= cost, User.is_banned == False)
+            .values(credits=User.credits - cost)
+            .returning(User.id, User.credits)
+        )).first()
 
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        if user.is_banned:
-            raise HTTPException(status_code=403, detail="Banned")
-        if user.credits < cost:
+        if not row:
+            # Определяем причину отказа
+            user = (await db.execute(
+                select(User).where(User.hwid == req.hwid)
+            )).scalar_one_or_none()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            if user.is_banned:
+                raise HTTPException(status_code=403, detail="Banned")
             raise HTTPException(
                 status_code=402,
                 detail={
@@ -232,23 +262,17 @@ async def use_credit(req: UseCreditsRequest, db: AsyncSession = Depends(get_db))
                 },
             )
 
-        user.credits -= cost
+        user_id, new_credits = row
 
-        # Запись в транзакции
         db.add(Transaction(
-            user_id=user.id,
+            user_id=user_id,
             type="credit_use",
             amount=-cost,
             meta={"hunt_type": req.hunt_type},
         ))
+        db.add(Hunt(user_id=user_id, hunt_type=req.hunt_type))
 
-        # Запись в статистику находок
-        db.add(Hunt(user_id=user.id, hunt_type=req.hunt_type))
-
-        # Реферальные отчисления с покупки — НЕ применяются к credit_use.
-        # Проценты начисляются только при покупке пакетов (purchase).
-
-    return BasicResponse(success=True, message="OK", credits=user.credits)
+    return BasicResponse(success=True, message="OK", credits=new_credits)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

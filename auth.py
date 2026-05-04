@@ -32,6 +32,19 @@ def check_license():
         log_error_to_server(f"Check License Error: {str(e)}")
         return {"authorized": False, "credits": 0, "message": "Нет связи с сервером"}
 
+def transfer_referral_balance():
+    """Переводит реферальный баланс (ref_credits) → основной (credits).
+    Возвращает (success: bool, message: str, new_credits: int)."""
+    hwid = get_hwid()
+    try:
+        response = requests.post(f"{SERVER_URL}/transfer_referral_balance",
+                                 json={"hwid": hwid}, timeout=5)
+        data = response.json()
+        return data.get("success", False), data.get("message", ""), data.get("credits", 0)
+    except Exception as e:
+        log_error_to_server(f"Transfer Ref Error: {str(e)}")
+        return False, "Ошибка связи с сервером", 0
+
 def activate_referral(code):
     """Отправляет код пригласителя на сервер для получения бонуса"""
     hwid = get_hwid()
@@ -56,7 +69,7 @@ def get_free_trial():
 def spend_credit(hunt_type: str = "crypt"):
     """
     Списывает кредиты при нахождении цели.
-    hunt_type: 'exchange' (5 кр.) или 'crypt' (1 кр.)
+    hunt_type: 'exchange' (10 кр.) или 'crypt' (1 кр.)
     Возвращает {"success": False, "low_credits": True} при 402 — бот показывает окно пополнения.
     """
     hwid = get_hwid()

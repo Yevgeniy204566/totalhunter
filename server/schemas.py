@@ -53,6 +53,8 @@ class CheckAuthResponse(BaseModel):
     banned: bool = False
     force_update: bool = False
     current_version: Optional[str] = None
+    referrals: Optional[dict] = None  # {"l1": int, "l2": int, "l3": int}
+    is_referred: bool = False         # invited_by_id уже установлен
 
 
 class BasicResponse(BaseModel):

@@ -265,11 +265,16 @@ async def link_verify(
     async with db.begin_nested():
         await db.delete(link)
 
+        skip_ref_welcome = False
         if bot_user and bot_user.id != web_user.id:
             web_user.credits     += bot_user.credits
             web_user.ref_credits += bot_user.ref_credits
             if bot_user.trial_used:
                 web_user.trial_used = True
+            # Transfer referral chain — referrer already paid via /activate_referral
+            if bot_user.invited_by_id and not web_user.invited_by_id:
+                web_user.invited_by_id = bot_user.invited_by_id
+                skip_ref_welcome = True
             await db.execute(update(Hunt).where(Hunt.user_id == bot_user.id).values(user_id=web_user.id))
             await db.execute(update(Transaction).where(Transaction.user_id == bot_user.id).values(user_id=web_user.id))
             await db.delete(bot_user)
@@ -288,8 +293,8 @@ async def link_verify(
                 meta={"hwid": hwid, "reason": "first_hwid_link"},
             ))
 
-            # Reward referrer if present
-            if web_user.invited_by_id:
+            # Reward referrer only if not already paid via bot /activate_referral
+            if web_user.invited_by_id and not skip_ref_welcome:
                 referrer_result = await db.execute(
                     select(User).where(User.id == web_user.invited_by_id)
                 )

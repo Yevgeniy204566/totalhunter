@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-04 (CryptHunter: логи + OCR масла + диалог-гейт)
+> Последнее обновление: 2026-05-04 (Phase 2C: atomic /use_credit, Double-Dipping fix, backup script)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare, домен куплен 2026-05-02)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -27,6 +27,7 @@
 | Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
 | Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ SEO, Legal RU/EN, GuidePage полный перевод, иконки, деплой-хук настроен | 2026-05-03 |
 | Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена | 2026-04-21 |
+| **Безопасность данных** | server/main.py + web_routes.py | ✅ Phase 2C: атомарный /use_credit (UPDATE...RETURNING), Double-Dipping fix при merge, invited_by_id перенос, backup_db.sh (cron 6ч) | 2026-05-04 |
 
 ---
 

@@ -6,7 +6,8 @@ import json
 import os
 import customtkinter as ctk
 from auth import (get_hwid, check_license, get_free_trial, spend_credit,
-                  login_with_google, log_error_to_server, activate_referral)
+                  login_with_google, log_error_to_server, activate_referral,
+                  transfer_referral_balance)
 from engine import HuntEngine
 from crypt_hunter import CryptHunter
 from combiner import CombinerEngine
@@ -752,8 +753,8 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_march_slider.set(15)
         self.crypt_march_slider.pack(padx=10, pady=(2, 4), fill="x")
 
-        # Скорость скроллинга (YOLO = scroll_speed + 0.2 сек)
-        self.crypt_scroll_val = _slider_row("Скорость скроллинга", "скан 1.2 с")
+        # Пауза между YOLO-детекциями (scroll_speed + 0.2 сек)
+        self.crypt_scroll_val = _slider_row("Частота YOLO-детекции", "скан 1.2 с")
         self.crypt_scroll_slider = ctk.CTkSlider(settings_frame, from_=0.0, to=4.0,
                                                  command=self._update_crypt_labels,
                                                  button_color=MD3["primary"],
@@ -818,6 +819,27 @@ class TotalHunterApp(ctk.CTk):
         )
         self.crypt_timer_detail_label.pack(pady=(0, 2))
 
+        # ─── Масло — три типа (над кнопкой Старт) ──────────────
+        oil_frame = ctk.CTkFrame(self.tab_crypt, fg_color=MD3["card"],
+                                  corner_radius=10, border_width=1,
+                                  border_color=MD3["outline"])
+        oil_frame.pack(pady=(2, 4), padx=20)
+        self.oil_ordinary_label = ctk.CTkLabel(
+            oil_frame, text="🟢 —",
+            font=ctk.CTkFont(size=13, weight="bold"), text_color="#66BB6A"
+        )
+        self.oil_ordinary_label.pack(side="left", padx=12, pady=6)
+        self.oil_rare_label = ctk.CTkLabel(
+            oil_frame, text="🔵 —",
+            font=ctk.CTkFont(size=13, weight="bold"), text_color="#42A5F5"
+        )
+        self.oil_rare_label.pack(side="left", padx=12, pady=6)
+        self.oil_epic_label = ctk.CTkLabel(
+            oil_frame, text="🟣 —",
+            font=ctk.CTkFont(size=13, weight="bold"), text_color="#AB47BC"
+        )
+        self.oil_epic_label.pack(side="left", padx=12, pady=6)
+
         # ─── Кнопка Старт/Стоп ───────────────────────────────
         self.crypt_start_btn = ctk.CTkButton(
             self.tab_crypt, text="ЗАПУСТИТЬ СБОР СКЛЕПОВ",
@@ -833,22 +855,6 @@ class TotalHunterApp(ctk.CTk):
             self.tab_crypt, text="ГОТОВО", text_color=MD3["on_surface2"]
         )
         self.crypt_status_label.pack(pady=(0, 2))
-
-        # Масло — три типа
-        oil_frame = ctk.CTkFrame(self.tab_crypt, fg_color="transparent")
-        oil_frame.pack(pady=(0, 4))
-        self.oil_ordinary_label = ctk.CTkLabel(
-            oil_frame, text="🟢 —", font=("Roboto", 11), text_color="#66BB6A"
-        )
-        self.oil_ordinary_label.pack(side="left", padx=6)
-        self.oil_epic_label = ctk.CTkLabel(
-            oil_frame, text="🔵 —", font=("Roboto", 11), text_color="#42A5F5"
-        )
-        self.oil_epic_label.pack(side="left", padx=6)
-        self.oil_rare_label = ctk.CTkLabel(
-            oil_frame, text="🟣 —", font=("Roboto", 11), text_color="#AB47BC"
-        )
-        self.oil_rare_label.pack(side="left", padx=6)
 
         self._load_crypt_settings()
 
@@ -891,8 +897,8 @@ class TotalHunterApp(ctk.CTk):
             return str(n)
         def _upd():
             self.oil_ordinary_label.configure(text=f"🟢 {_fmt(ordinary)}")
-            self.oil_epic_label.configure(text=f"🔵 {_fmt(epic)}")
-            self.oil_rare_label.configure(text=f"🟣 {_fmt(rare)}")
+            self.oil_rare_label.configure(text=f"🔵 {_fmt(rare)}")
+            self.oil_epic_label.configure(text=f"🟣 {_fmt(epic)}")
         self.after(0, _upd)
 
     def on_crypt_countdown(self, remaining: int, total: int,
@@ -1117,85 +1123,108 @@ class TotalHunterApp(ctk.CTk):
         self.combo_speed_val.configure(text=f"{val:.2f} с")
 
     def setup_ref_tab(self):
-        # Заголовок Рефералки
+        # Заголовок
         self.ref_title_lb = ctk.CTkLabel(self.tab_ref,
                                          text=LANGS[self.current_lang]["ref_title"],
                                          font=ctk.CTkFont(size=20, weight="bold"),
                                          text_color=MD3["primary"])
-        self.ref_title_lb.pack(pady=(16, 4))
+        self.ref_title_lb.pack(pady=(14, 4))
 
         # ── Реферальный баланс ────────────────────────────────────────────
         ref_bal_card = ctk.CTkFrame(self.tab_ref, fg_color=MD3["elevated"],
                                     corner_radius=12, border_width=1,
                                     border_color=MD3["outline"])
-        ref_bal_card.pack(padx=30, pady=(0, 10), fill="x")
+        ref_bal_card.pack(padx=20, pady=(0, 8), fill="x")
         ctk.CTkLabel(ref_bal_card, text="Реферальный баланс",
-                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]
                      ).pack(pady=(10, 0))
         self.ref_balance_label = ctk.CTkLabel(ref_bal_card, text="0 ◆",
                                               font=ctk.CTkFont(size=28, weight="bold"),
                                               text_color="#FFD700")
         self.ref_balance_label.pack(pady=(2, 6))
-        ctk.CTkButton(ref_bal_card, text="💸  Перевести на баланс  →",
-                      height=32, corner_radius=8,
-                      fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
-                      text_color=MD3["on_surface"],
-                      command=lambda: webbrowser.open("https://total-hunter.com/dashboard/referrals"),
-                      ).pack(padx=10, pady=(0, 10), fill="x")
+        self.ref_transfer_btn = ctk.CTkButton(
+            ref_bal_card, text="💸  Перевести на баланс  →",
+            height=32, corner_radius=8,
+            fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
+            text_color=MD3["on_surface"],
+            command=self._do_transfer_ref_balance)
+        self.ref_transfer_btn.pack(padx=10, pady=(0, 10), fill="x")
 
-        self.share_lb = ctk.CTkLabel(self.tab_ref,
-                                     text=LANGS[self.current_lang]["share_text"],
-                                     font=ctk.CTkFont(size=13),
-                                     text_color=MD3["on_surface2"], wraplength=350)
-        self.share_lb.pack(pady=(0, 8))
+        # ── Реферальная ссылка (PRIMARY — AP-13) ─────────────────────────
+        ctk.CTkLabel(self.tab_ref, text="Ваша реферальная ссылка:",
+                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]
+                     ).pack(pady=(4, 0))
+        link_frame = ctk.CTkFrame(self.tab_ref, fg_color=MD3["card"],
+                                  corner_radius=10, border_width=1,
+                                  border_color=MD3["outline"])
+        link_frame.pack(padx=20, pady=(2, 2), fill="x")
+        self.ref_link_val = ctk.CTkLabel(link_frame, text="https://total-hunter.com/ref/---",
+                                         font=ctk.CTkFont(size=12),
+                                         text_color=MD3["primary"])
+        self.ref_link_val.pack(side="left", padx=10, pady=8, fill="x", expand=True)
+        ctk.CTkButton(link_frame, text="📋", width=36, height=30,
+                      fg_color=MD3["elevated"], hover_color=MD3["outline"],
+                      text_color=MD3["on_surface"], corner_radius=8,
+                      command=self.copy_link).pack(side="right", padx=6, pady=6)
 
-
-        # Свой код
-        self.my_code_frame = ctk.CTkFrame(self.tab_ref, fg_color=MD3["elevated"],
-                                          corner_radius=12)
-        self.my_code_frame.pack(padx=40, pady=10, fill="x")
-        self.my_code_lb = ctk.CTkLabel(self.my_code_frame,
-                                       text=LANGS[self.current_lang]["my_code"],
-                                       font=ctk.CTkFont(size=10),
-                                       text_color=MD3["on_surface2"])
-        self.my_code_lb.pack(pady=(10, 0))
-        self.my_code_val = ctk.CTkLabel(self.my_code_frame, text="---",
-                                        font=ctk.CTkFont(size=32, weight="bold"),
+        # Код — вспомогательно
+        code_row = ctk.CTkFrame(self.tab_ref, fg_color="transparent")
+        code_row.pack(pady=(0, 6))
+        ctk.CTkLabel(code_row, text="Код: ", font=ctk.CTkFont(size=11),
+                     text_color=MD3["on_surface2"]).pack(side="left")
+        self.my_code_val = ctk.CTkLabel(code_row, text="---",
+                                        font=ctk.CTkFont(size=11, weight="bold"),
                                         text_color=MD3["on_surface"])
-        self.my_code_val.pack(pady=(0, 5))
-        self.copy_btn = ctk.CTkButton(self.my_code_frame,
-                                      text=LANGS[self.current_lang]["copy"],
-                                      width=100, height=30,
-                                      fg_color=MD3["card"],
-                                      hover_color=MD3["outline"],
-                                      text_color=MD3["secondary"],
-                                      corner_radius=8,
+        self.my_code_val.pack(side="left")
+        self.copy_btn = ctk.CTkButton(code_row, text="📋", width=28, height=22,
+                                      fg_color=MD3["card"], hover_color=MD3["outline"],
+                                      text_color=MD3["secondary"], corner_radius=6,
                                       command=self.copy_code)
-        self.copy_btn.pack(pady=(0, 15))
+        self.copy_btn.pack(side="left", padx=(6, 0))
 
+        # ── Статистика L1 / L2 / L3 ──────────────────────────────────────
+        stats_card = ctk.CTkFrame(self.tab_ref, fg_color=MD3["elevated"],
+                                  corner_radius=12, border_width=1,
+                                  border_color=MD3["outline"])
+        stats_card.pack(padx=20, pady=(0, 8), fill="x")
+        ctk.CTkLabel(stats_card, text="Рефералы", font=ctk.CTkFont(size=11),
+                     text_color=MD3["on_surface2"]).pack(pady=(8, 2))
+        stats_row = ctk.CTkFrame(stats_card, fg_color="transparent")
+        stats_row.pack(pady=(0, 10))
+        for col, label in enumerate(["L1", "L2", "L3"]):
+            col_frame = ctk.CTkFrame(stats_row, fg_color=MD3["card"],
+                                     corner_radius=8, width=80)
+            col_frame.pack(side="left", padx=8)
+            ctk.CTkLabel(col_frame, text=label, font=ctk.CTkFont(size=10),
+                         text_color=MD3["on_surface2"]).pack(pady=(6, 0))
+            lbl = ctk.CTkLabel(col_frame, text="0",
+                               font=ctk.CTkFont(size=20, weight="bold"),
+                               text_color=MD3["primary"])
+            lbl.pack(pady=(0, 6))
+            setattr(self, f"ref_l{col+1}_label", lbl)
 
-        # Поле Ввода кода друга
+        # ── Поле ввода кода друга ─────────────────────────────────────────
         self.friend_code_lb = ctk.CTkLabel(self.tab_ref,
                                            text=LANGS[self.current_lang]["friend_code"],
                                            text_color=MD3["on_surface2"])
-        self.friend_code_lb.pack(pady=(30, 5))
+        self.friend_code_lb.pack(pady=(8, 4))
         self.ref_entry = ctk.CTkEntry(self.tab_ref, placeholder_text="XXXXXX",
-                                      height=45, justify="center",
+                                      height=40, justify="center",
                                       font=ctk.CTkFont(size=16),
                                       fg_color=MD3["card"],
                                       border_color=MD3["outline"],
                                       text_color=MD3["on_surface"],
                                       corner_radius=8)
-        self.ref_entry.pack(padx=50, pady=5, fill="x")
+        self.ref_entry.pack(padx=40, pady=(0, 4), fill="x")
         self.ref_btn = ctk.CTkButton(self.tab_ref,
                                      text=LANGS[self.current_lang]["activate_ref"],
-                                     height=40,
+                                     height=38,
                                      fg_color=MD3["primary"],
                                      hover_color=MD3["primary_dim"],
                                      text_color=MD3["bg"],
                                      corner_radius=8,
                                      command=self.activate_ref_action)
-        self.ref_btn.pack(padx=50, pady=10, fill="x")
+        self.ref_btn.pack(padx=40, pady=(0, 8), fill="x")
 
 
     def update_slider_labels(self, _=None):
@@ -1228,11 +1257,17 @@ class TotalHunterApp(ctk.CTk):
                 self.label_email.configure(text=f"User: {self.user_email}")
                 # Авторизован — скрываем кнопку логина в баннере
                 self.login_button.pack_forget()
-            if data.get("my_ref_id"):
-                self.my_ref_id = data["my_ref_id"]
+            if data.get("ref_id"):
+                self.my_ref_id = data["ref_id"]
                 self.my_code_val.configure(text=self.my_ref_id)
+                self.ref_link_val.configure(
+                    text=f"https://total-hunter.com/ref/{self.my_ref_id}")
             ref_credits = data.get("ref_credits", 0)
             self.ref_balance_label.configure(text=f"{ref_credits} ◆")
+            refs = data.get("referrals") or {}
+            self.ref_l1_label.configure(text=str(refs.get("l1", 0)))
+            self.ref_l2_label.configure(text=str(refs.get("l2", 0)))
+            self.ref_l3_label.configure(text=str(refs.get("l3", 0)))
             if data.get("is_referred"):
                 self.ref_entry.pack_forget(); self.ref_btn.pack_forget()
                 self.friend_code_lb.configure(text=LANGS[self.current_lang]["ref_used"], text_color="#4ADE80", font=ctk.CTkFont(size=14, weight="bold"))
@@ -1466,10 +1501,33 @@ class TotalHunterApp(ctk.CTk):
 
     def copy_code(self):
         code = self.my_code_val.cget("text")
-        if code != "---":
+        if code not in ("---", ""):
             self.clipboard_clear()
             self.clipboard_append(code)
             messagebox.showinfo("OK", LANGS[self.current_lang]["copied"])
+
+    def copy_link(self):
+        link = self.ref_link_val.cget("text")
+        if "---" not in link:
+            self.clipboard_clear()
+            self.clipboard_append(link)
+            messagebox.showinfo("OK", LANGS[self.current_lang]["copied"])
+
+    def _do_transfer_ref_balance(self):
+        self.ref_transfer_btn.configure(state="disabled", text="⏳ Перевод...")
+        def _worker():
+            ok, msg, new_credits = transfer_referral_balance()
+            def _upd():
+                self.ref_transfer_btn.configure(state="normal", text="💸  Перевести на баланс  →")
+                if ok:
+                    self.ref_balance_label.configure(text="0 ◆")
+                    self._update_credits_display(new_credits)
+                    messagebox.showinfo("Перевод", msg or "Баланс успешно переведён!")
+                else:
+                    messagebox.showerror("Ошибка", msg or "Не удалось перевести баланс.")
+            self.after(0, _upd)
+        import threading
+        threading.Thread(target=_worker, daemon=True).start()
 
 
     def activate_ref_action(self):
