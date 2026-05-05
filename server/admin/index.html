@@ -324,6 +324,17 @@
 
     @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } }
 
+    /* ── HWID truncation ──────────────────────────────────────── */
+    .hwid-cell {
+      font-family: monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     /* ── Mobile ────────────────────────────────────────────────── */
     @media (max-width: 768px) {
       .sidebar { display: none; }
@@ -466,8 +477,8 @@
                 <th>Статус</th>
                 <th>Игрок</th>
                 <th>Email</th>
-                <th>💎 Баланс</th>
-                <th>Реф.</th>
+                <th>Баланс ◆</th>
+                <th>Реф. ◆</th>
                 <th>L1/L2/L3</th>
                 <th>Последний вход</th>
                 <th>IP</th>
@@ -487,7 +498,7 @@
                     </td>
                     <td>
                       <div style="font-weight:600" x-text="u.username||'—'"></div>
-                      <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="u.hwid"></div>
+                      <div class="hwid-cell" :title="u.hwid" x-text="u.hwid"></div>
                     </td>
                     <td style="color:var(--text-dim)" x-text="u.email||'—'"></td>
                     <td>
