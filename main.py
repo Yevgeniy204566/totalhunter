@@ -932,42 +932,40 @@ class TotalHunterApp(ctk.CTk):
         )
         self.crypt_timer_detail_label.pack(pady=(0, 2))
 
-        # ─── Масло — три типа (над кнопкой Старт) ──────────────
+        # ─── Масло — три типа + переключатель проверки (одна строка) ───
         oil_frame = ctk.CTkFrame(self.tab_crypt, fg_color=MD3["card"],
                                   corner_radius=10, border_width=1,
                                   border_color=MD3["outline"])
-        oil_frame.pack(pady=(2, 4), padx=20)
+        oil_frame.pack(pady=(2, 4), padx=20, fill="x")
         self.oil_ordinary_label = ctk.CTkLabel(
             oil_frame, text="🟢 —",
             font=ctk.CTkFont(size=13, weight="bold"), text_color="#66BB6A"
         )
-        self.oil_ordinary_label.pack(side="left", padx=12, pady=6)
+        self.oil_ordinary_label.pack(side="left", padx=10, pady=6)
         self.oil_rare_label = ctk.CTkLabel(
             oil_frame, text="🔵 —",
             font=ctk.CTkFont(size=13, weight="bold"), text_color="#42A5F5"
         )
-        self.oil_rare_label.pack(side="left", padx=12, pady=6)
+        self.oil_rare_label.pack(side="left", padx=10, pady=6)
         self.oil_epic_label = ctk.CTkLabel(
             oil_frame, text="🟣 —",
             font=ctk.CTkFont(size=13, weight="bold"), text_color="#AB47BC"
         )
-        self.oil_epic_label.pack(side="left", padx=12, pady=6)
-
-        # ─── Переключатель проверки масла ────────────────────
+        self.oil_epic_label.pack(side="left", padx=10, pady=6)
         self._oil_check_var = ctk.BooleanVar(value=True)
         self._oil_check_switch = ctk.CTkSwitch(
-            self.tab_crypt,
+            oil_frame,
             text=LANGS[self.current_lang]["oil_check"],
             variable=self._oil_check_var,
             onvalue=True, offvalue=False,
             command=self._save_crypt_settings,
-            font=ctk.CTkFont(size=13),
+            font=ctk.CTkFont(size=11),
             text_color=MD3["on_surface2"],
             button_color=MD3["primary"],
             button_hover_color=MD3["primary_dim"],
             progress_color=MD3["primary"],
         )
-        self._oil_check_switch.pack(pady=(4, 2))
+        self._oil_check_switch.pack(side="right", padx=10, pady=6)
         self._i18n_labels.append((self._oil_check_switch, "oil_check"))
 
         # ─── Кнопка Старт/Стоп ───────────────────────────────
