@@ -515,18 +515,25 @@
                     <td style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="u.ip_address||'—'"></td>
                     <td>
                       <div class="actions">
-                        <button class="btn btn-accent btn-sm btn-icon" title="+300 алмазов"
-                          @click="adjustCredits(u, 300)">
-                          <span class="material-symbols-rounded" style="font-size:14px">add</span>300
+                        <!-- Ручной ввод алмазов -->
+                        <input type="number" :id="`credits_${u.id}`"
+                          placeholder="◆" min="-9999" max="99999"
+                          style="width:64px;background:var(--card2);border:1px solid var(--outline);
+                                 color:var(--text);border-radius:6px;padding:5px 7px;
+                                 font:inherit;font-size:12px;text-align:center">
+                        <button class="btn btn-accent btn-sm btn-icon"
+                          title="Начислить/списать алмазы"
+                          @click="adjustCreditsInput(u)">
+                          <span class="material-symbols-rounded" style="font-size:14px">add</span>
                         </button>
                         <button class="btn btn-sm btn-icon" :class="u.is_banned?'btn-ghost':'btn-orange'"
                           :title="u.is_banned?'Разбанить':'Забанить'"
-                          @click="toggleBan(u)">
+                          @click="confirmBan(u)">
                           <span class="material-symbols-rounded" style="font-size:14px"
                             x-text="u.is_banned?'lock_open':'block'"></span>
                         </button>
                         <button class="btn btn-red btn-sm btn-icon" title="Удалить пользователя"
-                          @click="deleteUser(u)">
+                          @click="confirmDelete(u)">
                           <span class="material-symbols-rounded" style="font-size:14px">delete</span>
                         </button>
                       </div>
@@ -560,10 +567,13 @@
                 <div class="user-card-row">Реф. баланс <span x-text="u.ref_credits+' ◆'"></span></div>
                 <div class="user-card-row">Последний вход <span x-text="u.last_seen?formatDate(u.last_seen):'—'"></span></div>
                 <div class="user-card-actions">
-                  <button class="btn btn-accent btn-sm" @click="adjustCredits(u, 300)">+300 ◆</button>
+                  <input type="number" :id="`mob_credits_${u.id}`" placeholder="◆ кол-во"
+                    style="flex:1;background:var(--card2);border:1px solid var(--outline);
+                           color:var(--text);border-radius:6px;padding:8px;font:inherit;text-align:center">
+                  <button class="btn btn-accent btn-sm" @click="adjustCreditsInput(u, true)">Начислить</button>
                   <button class="btn btn-sm" :class="u.is_banned?'btn-ghost':'btn-orange'"
-                    @click="toggleBan(u)" x-text="u.is_banned?'Разбан':'Бан'"></button>
-                  <button class="btn btn-red btn-sm" @click="deleteUser(u)">Удалить</button>
+                    @click="confirmBan(u)" x-text="u.is_banned?'Разбан':'Бан'"></button>
+                  <button class="btn btn-red btn-sm" @click="confirmDelete(u)">Удалить</button>
                 </div>
               </div>
             </template>
@@ -791,6 +801,28 @@ function adminApp() {
       const r = await fetch(`${API}/admin/users?${q}`, { headers: this.headers() });
       if (r.ok) { const d = await r.json(); this.users = d.users; this.totalUsers = d.total; }
       this.loading = false;
+    },
+
+    adjustCreditsInput(u, mobile = false) {
+      const id = mobile ? `mob_credits_${u.id}` : `credits_${u.id}`;
+      const input = document.getElementById(id);
+      const amount = parseInt(input?.value);
+      if (!amount || isNaN(amount)) { this.showToast('Введите число'); return; }
+      const sign = amount > 0 ? `+${amount}` : `${amount}`;
+      if (!confirm(`${u.email || u.hwid}\nНачислить ${sign} ◆?`)) return;
+      input.value = '';
+      this.adjustCredits(u, amount);
+    },
+
+    confirmBan(u) {
+      const action = u.is_banned ? 'Разбанить' : 'Забанить';
+      if (!confirm(`${action} пользователя?\n${u.email || u.hwid}`)) return;
+      this.toggleBan(u);
+    },
+
+    confirmDelete(u) {
+      if (!confirm(`⚠️ УДАЛИТЬ ПОЛНОСТЬЮ?\n${u.email || u.hwid}\n\nВсе данные будут стёрты безвозвратно!`)) return;
+      this.deleteUser(u);
     },
 
     async toggleBan(u) {
