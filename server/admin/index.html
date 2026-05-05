@@ -663,9 +663,12 @@
         <div class="section" style="max-width:580px">
           <div class="section-title" style="margin-bottom:14px">Отправить уведомление всем ботам</div>
           <textarea class="inp" placeholder="Текст уведомления..." x-model="broadcastMsg"></textarea>
-          <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-accent" @click="sendBroadcast()" :disabled="!broadcastMsg">
               <span class="material-symbols-rounded" style="font-size:16px">send</span> Отправить
+            </button>
+            <button class="btn btn-red btn-sm" @click="clearBroadcast()">
+              <span class="material-symbols-rounded" style="font-size:14px">clear</span> Очистить
             </button>
             <span style="color:var(--text-dim);font-size:11px">Появится в боте при следующем /check_auth</span>
           </div>
@@ -912,6 +915,12 @@ function adminApp() {
     async loadLogs() {
       const r = await fetch(`${API}/admin/logs?limit=50`, { headers: this.headers() });
       if (r.ok) this.logs = await r.json();
+    },
+
+    async clearBroadcast() {
+      await fetch(`${API}/admin/broadcast?message=${encodeURIComponent('')}`,
+        { method: 'POST', headers: this.headers() });
+      this.showToast('Broadcast очищен');
     },
 
     async sendBroadcast() {

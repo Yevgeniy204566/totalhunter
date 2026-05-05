@@ -333,8 +333,8 @@ class TotalHunterApp(ctk.CTk):
         self.broadcast_frame = ctk.CTkFrame(self.info_banner, fg_color="transparent",
                                             corner_radius=0)
         self.broadcast_label = ctk.CTkLabel(self.broadcast_frame, text="",
-                                            font=ctk.CTkFont(size=13, slant="italic"),
-                                            text_color="#FFD740", wraplength=380)
+                                            font=ctk.CTkFont(size=13),
+                                            text_color="#00CFFF", wraplength=380)
 
         # Вкладки
         self.tabview = ctk.CTkTabview(self._outer, width=420, height=780,
