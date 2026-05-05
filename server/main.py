@@ -441,25 +441,6 @@ async def version_latest(db: AsyncSession = Depends(get_db)):
     return {"version": version, "download_url": dl_url}
 
 
-@app.post("/admin/version/update", dependencies=[Depends(require_admin)])
-async def admin_update_version(
-    version: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """Обновить текущую версию бота (admin). Автоматически формирует URL."""
-    dl_url = f"{_DL_BASE}/v{version}/TotalHunter.zip"
-    async with db.begin():
-        for key, val in [("latest_version", version), ("latest_download_url", dl_url)]:
-            existing = (await db.execute(
-                select(AppSetting).where(AppSetting.key == key)
-            )).scalar_one_or_none()
-            if existing:
-                existing.value = val
-            else:
-                db.add(AppSetting(key=key, value=val))
-    return {"success": True, "version": version, "download_url": dl_url}
-
-
 # ═════════════════════════════════════════════════════════════════════════════
 # МОДУЛЬ 3: ADMIN PANEL
 # ═════════════════════════════════════════════════════════════════════════════
@@ -474,6 +455,24 @@ def require_admin(credentials: HTTPAuthorizationCredentials = Depends(_bearer)):
     """FastAPI dependency — проверяет Bearer токен для всех /admin/* роутов."""
     if credentials.credentials != ADMIN_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid admin token")
+
+
+# ── POST /admin/version/update ───────────────────────────────────────────────
+
+@app.post("/admin/version/update", dependencies=[Depends(require_admin)])
+async def admin_update_version(version: str, db: AsyncSession = Depends(get_db)):
+    """Обновить текущую версию бота. URL формируется автоматически."""
+    dl_url = f"{_DL_BASE}/v{version}/TotalHunter.zip"
+    async with db.begin():
+        for key, val in [("latest_version", version), ("latest_download_url", dl_url)]:
+            existing = (await db.execute(
+                select(AppSetting).where(AppSetting.key == key)
+            )).scalar_one_or_none()
+            if existing:
+                existing.value = val
+            else:
+                db.add(AppSetting(key=key, value=val))
+    return {"success": True, "version": version, "download_url": dl_url}
 
 
 # ── GET /admin/stats ──────────────────────────────────────────────────────────
