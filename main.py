@@ -24,7 +24,7 @@ import os
 import customtkinter as ctk
 from auth import (get_hwid, check_license, get_free_trial, spend_credit,
                   login_with_google, log_error_to_server, activate_referral,
-                  transfer_referral_balance)
+                  transfer_referral_balance, generate_link_code)
 from engine import HuntEngine
 from crypt_hunter import CryptHunter
 from combiner import CombinerEngine
@@ -114,7 +114,7 @@ LANGS = {
         # --- существующие ---
         "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛЫ",
         "get_trial": "ПОЛУЧИТЬ 300 ПОПЫТОК", "start": "ЗАПУСТИТЬ ОХОТУ", "stop": "ОСТАНОВИТЬ",
-        "no_credits": "У вас 0 поисков!", "login_btn": "ВОЙТИ ЧЕРЕЗ GOOGLE",
+        "no_credits": "У вас 0 алмазов! Привяжите устройство на сайте.", "login_btn": "ПРИВЯЗАТЬ УСТРОЙСТВО",
         "banned": "ВАШ АККАУНТ ЗАБЛОКИРОВАН", "ref_title": "ПАРТНЕРСКАЯ ПРОГРАММА",
         "my_code": "ВАШ КОД ДЛЯ ПРИГЛАШЕНИЯ:", "friend_code": "КОД ПРИГЛАСИТЕЛЯ (+50):",
         "activate_ref": "АКТИВИРОВАТЬ", "ref_used": "БОНУС АКТИВИРОВАН ✅",
@@ -166,7 +166,7 @@ LANGS = {
         # --- существующие ---
         "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_combo": "Combo", "tab_ref": "REFERRALS",
         "get_trial": "GET 300 TRIALS", "start": "START HUNT", "stop": "STOP",
-        "no_credits": "0 credits left!", "login_btn": "LOGIN WITH GOOGLE",
+        "no_credits": "0 diamonds! Link your device on the website.", "login_btn": "LINK DEVICE",
         "banned": "ACCOUNT BANNED", "ref_title": "REFERRAL SYSTEM",
         "my_code": "YOUR INVITE CODE:", "friend_code": "INVITER CODE (+50):",
         "activate_ref": "ACTIVATE", "ref_used": "BONUS ACTIVE ✅",
@@ -1097,6 +1097,7 @@ class TotalHunterApp(ctk.CTk):
     def toggle_crypt_bot(self):
         if self.is_crypt_running:
             self.is_crypt_running = False
+            # stop path — no credits check needed
             self.crypt_engine.stop()
             self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_start"],
                                            fg_color=MD3["green_btn"],
@@ -1106,6 +1107,8 @@ class TotalHunterApp(ctk.CTk):
             self.crypt_countdown_label.configure(text="")
             self.crypt_timer_detail_label.configure(text="")
         else:
+            if self.current_credits <= 0:
+                messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
             selected = [k for k, v in self._crypt_vars.items() if v.get()]
             if not selected:
                 self.crypt_status_label.configure(
@@ -1690,8 +1693,27 @@ class TotalHunterApp(ctk.CTk):
 
 
     def handle_login(self):
-        login_with_google()
-        self.after(5000, self.update_license_info)
+        code, expires = generate_link_code()
+        if not code:
+            messagebox.showerror("Hunter", "Connection error. Check internet and try again.")
+            return
+
+        # Show code in button + open devices page
+        self.login_button.configure(
+            text=f"Code: {code}   (10 min)",
+            state="disabled", fg_color="#1B3A4B",
+            hover_color="#1B3A4B",
+        )
+        webbrowser.open("https://total-hunter.com/dashboard/devices")
+        self._poll_link_status()
+
+    def _poll_link_status(self):
+        """Poll every 5 sec until device is linked (email appears)."""
+        data = check_license()
+        if data and data.get("email"):
+            self.update_license_info()
+            return
+        self.after(5000, self._poll_link_status)
 
 
     def copy_code(self):
