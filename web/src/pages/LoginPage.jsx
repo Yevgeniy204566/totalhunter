@@ -3,22 +3,21 @@ import { api } from '../api.js'
 import { saveToken } from '../auth.js'
 import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
+import { useLang } from '../lang.js'
+import { DASHBOARD as D_RU } from '../dashboard_content.js'
+import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
 function getRefCookie() {
   const match = document.cookie.match(/(?:^|;\s*)th_ref=([^;]+)/)
   return match ? match[1] : null
 }
 
-const FEATURES = [
-  { icon: '◈', text: 'Авто-охота на Биржи' },
-  { icon: '◈', text: 'Поиск Склепов 24/7' },
-  { icon: '◈', text: 'Реферальная система' },
-]
-
 export default function LoginPage() {
   const navigate  = useNavigate()
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const { lang } = useLang()
+  const T = lang === 'ru' ? D_RU.login : D_EN.login
 
   const handleSuccess = async (credentialResponse) => {
     setLoading(true)
@@ -29,7 +28,7 @@ export default function LoginPage() {
       saveToken(data.jwt)
       navigate('/dashboard')
     } catch (e) {
-      setError('Ошибка входа: ' + e.message)
+      setError(T.loginError + e.message)
       setLoading(false)
     }
   }
@@ -89,11 +88,10 @@ export default function LoginPage() {
             fontSize: 26, fontWeight: 800, color: '#FFFFFF',
             marginBottom: 10, letterSpacing: '-0.5px',
           }}>
-            Войти в кабинет
+            {T.title}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
-            Используй Google-аккаунт для входа.<br />
-            Первый вход — автоматически создаёт аккаунт.
+            {T.sub}
           </p>
         </div>
 
@@ -102,7 +100,7 @@ export default function LoginPage() {
           display: 'flex', gap: 8, justifyContent: 'center',
           flexWrap: 'wrap', marginBottom: 32,
         }}>
-          {FEATURES.map(({ icon, text }) => (
+          {T.features.map((text) => (
             <div key={text} style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '5px 12px', borderRadius: 20,
@@ -110,7 +108,7 @@ export default function LoginPage() {
               border: '1px solid rgba(61,127,255,0.2)',
               fontSize: 12, color: '#C8D8F0', fontWeight: 500,
             }}>
-              <span style={{ fontSize: 13 }}>{icon}</span>
+              <span style={{ fontSize: 13 }}>◈</span>
               {text}
             </div>
           ))}
@@ -130,7 +128,7 @@ export default function LoginPage() {
         }}>
           <GoogleLogin
             onSuccess={handleSuccess}
-            onError={() => setError('Ошибка Google авторизации')}
+            onError={() => setError(T.googleError)}
             theme="filled_black"
             size="large"
             width="320"
@@ -139,7 +137,7 @@ export default function LoginPage() {
 
         {loading && (
           <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--accent)', marginBottom: 8 }}>
-            Входим...
+            {T.signingIn}
           </div>
         )}
 
@@ -158,21 +156,21 @@ export default function LoginPage() {
           textAlign: 'center', fontSize: 11, color: 'var(--on-surface2)',
           lineHeight: 1.6, marginTop: 20,
         }}>
-          Продолжая, ты соглашаешься с{' '}
-          <Link to="/legal" style={{ color: 'var(--accent)', textDecoration: 'none' }}>условиями использования</Link>
+          {T.legal}{' '}
+          <Link to="/legal" style={{ color: 'var(--accent)', textDecoration: 'none' }}>{T.legalLink}</Link>
         </p>
       </div>
 
       {/* Footer links */}
       <div style={{ display: 'flex', gap: 24, marginTop: 28 }}>
         <Link to="/guide" style={{ fontSize: 13, color: 'var(--on-surface2)', textDecoration: 'none' }}>
-          Гайд
+          {T.guide}
         </Link>
         <Link to="/legal" style={{ fontSize: 13, color: 'var(--on-surface2)', textDecoration: 'none' }}>
           Legal
         </Link>
         <Link to="/" style={{ fontSize: 13, color: 'var(--on-surface2)', textDecoration: 'none' }}>
-          ← На главную
+          {T.home}
         </Link>
       </div>
 

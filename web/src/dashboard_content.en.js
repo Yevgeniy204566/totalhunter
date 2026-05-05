@@ -51,6 +51,7 @@ export const DASHBOARD = {
     features:   ['Auto-hunt for Exchanges', '24/7 Crypt Search', 'Referral System'],
     signingIn:  'Signing in...',
     loginError: 'Login error: ',
+    googleError: 'Google authorization error',
     legal:      'By continuing, you agree to the',
     legalLink:  'terms of service',
     guide:      'Guide',

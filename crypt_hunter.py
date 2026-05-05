@@ -312,41 +312,11 @@ class CryptHunter:
         text = pytesseract.image_to_string(thresh, config='--psm 7 -c tessedit_char_whitelist=0123456789.,MmKk')
         return parse_oil_value(text)
 
-    def _debug_ocr_approaches(self, section_idx: int) -> None:
-        """Два независимых теста OCR для одного региона масла. Логирует сырой текст обоих."""
-        region = self._oil_screen_region(section_idx)
-        img = self._screenshot(region)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        w, h = region[2], region[3]
-        names = {0: "ordinary", 1: "rare", 2: "epic"}
-        name = names.get(section_idx, str(section_idx))
-
-        # Тест 1: unsharp mask + Otsu (текущий подход)
-        blur = cv2.GaussianBlur(gray, (0, 0), 3)
-        sharp = cv2.addWeighted(gray, 2.0, blur, -1.0, 0)
-        big1 = cv2.resize(sharp, (w * 4, h * 4), interpolation=cv2.INTER_LANCZOS4)
-        _, t1 = cv2.threshold(big1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        text1 = pytesseract.image_to_string(t1, config='--psm 7 -c tessedit_char_whitelist=0123456789.,MmKk').strip()
-
-        # Тест 2: инверсия + адаптивный порог
-        big2 = cv2.resize(gray, (w * 4, h * 4), interpolation=cv2.INTER_LANCZOS4)
-        inv = cv2.bitwise_not(big2)
-        t2 = cv2.adaptiveThreshold(inv, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                    cv2.THRESH_BINARY, 11, 2)
-        text2 = pytesseract.image_to_string(t2, config='--psm 7 -c tessedit_char_whitelist=0123456789.,MmKk').strip()
-
-        self._log("DEBUG", f"OCR_TEST [{name}] T1(Otsu): '{text1}' → {parse_oil_value(text1):,}")
-        self._log("DEBUG", f"OCR_TEST [{name}] T2(Adaptive+Inv): '{text2}' → {parse_oil_value(text2):,}")
-        cv2.imwrite(os.path.join(_LOG_DIR, f"ocr_t1_{name}.png"), t1)
-        cv2.imwrite(os.path.join(_LOG_DIR, f"ocr_t2_{name}.png"), t2)
-
     def _read_oil_panel(self) -> dict:
         """
         OCR трёх регионов масла (иконки вырезаны).
         Возвращает {'ordinary': int, 'epic': int, 'rare': int}.
         """
-        for idx in (0, 1, 2):
-            self._debug_ocr_approaches(idx)
         ordinary = self._ocr_oil_region(0)
         epic     = self._ocr_oil_region(2)
         rare     = self._ocr_oil_region(1)
