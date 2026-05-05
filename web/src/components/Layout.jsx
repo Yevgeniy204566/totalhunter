@@ -37,7 +37,7 @@ export default function Layout() {
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
 
       {/* ── Fixed Header ─────────────────────────────────────── */}
-      <header style={{
+      <header className="header-top-bar" style={{
         position: 'fixed', top: 0, left: 0, right: 0,
         height: 'var(--header-height)',
         background: 'var(--header-bg)',
@@ -55,11 +55,11 @@ export default function Layout() {
           textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
         }}>
           <span style={{ fontSize: 20, color: 'var(--accent)' }}>⚔</span>
-          <span style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
-          <span style={{ color: 'var(--on-surface)' }}>Hunter</span>
+          <span className="header-logo-text" style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
+          <span className="header-logo-text" style={{ color: 'var(--on-surface)' }}>Hunter</span>
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="header-btn-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {credits !== null && (
             <div className="credits-badge">
               <span style={{ fontSize: 13 }}>◈</span>
@@ -68,6 +68,7 @@ export default function Layout() {
           )}
 
           <Link
+            className="header-earn-btn"
             to="/dashboard/balance"
             title="Посмотри короткий ролик и получи кредиты для охоты"
             style={{
@@ -100,15 +101,15 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* ── Fixed Sidebar ─────────────────────────────────────── */}
-      <nav style={{
+      {/* ── Fixed Sidebar (desktop only) ─────────────────────── */}
+      <nav className="desktop-sidebar" style={{
         position: 'fixed',
         top: 'var(--header-height)', left: 0,
         width: 'var(--sidebar-width)',
         height: `calc(100vh - var(--header-height))`,
         background: 'var(--card)',
         borderRight: '1px solid var(--outline)',
-        display: 'flex', flexDirection: 'column',
+        flexDirection: 'column',
         paddingTop: 12,
         zIndex: 50,
       }}>
@@ -128,8 +129,21 @@ export default function Layout() {
         </a>
       </nav>
 
+      {/* ── Bottom Navigation (mobile only) ──────────────────── */}
+      <nav className="mobile-bottom-nav">
+        {NAV.slice(0, 6).map(({ to, icon, label }) => (
+          <NavLink
+            key={to} to={to} end
+            className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
+          >
+            <span className="nav-icon">{icon}</span>
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </nav>
+
       {/* ── Main content ─────────────────────────────────────── */}
-      <main style={{
+      <main className="main-content" style={{
         marginLeft: 'var(--sidebar-width)',
         marginTop: 'var(--header-height)',
         minHeight: `calc(100vh - var(--header-height))`,

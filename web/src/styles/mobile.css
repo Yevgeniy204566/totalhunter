@@ -1,0 +1,165 @@
+/* ══════════════════════════════════════════════════════════════
+   MOBILE STYLES — max-width: 768px
+   Десктоп НЕ трогается. Все правила активны только на телефоне.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* ── Layout: скрыть сайдбар, показать bottom-nav ─────────── */
+  .desktop-sidebar   { display: none !important; }
+  .mobile-bottom-nav { display: flex !important; }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding-bottom: 72px !important; /* место для bottom-nav */
+  }
+
+  /* ── Header: компактный ──────────────────────────────────── */
+  .header-top-bar {
+    padding: 0 12px !important;
+    height: 52px !important;
+  }
+
+  .header-logo-text { display: none !important; }
+  .header-btn-group { gap: 6px !important; }
+
+  /* Скрыть кнопку +5 КР на маленьких экранах */
+  .header-earn-btn { display: none !important; }
+
+  /* ── Глобальные отступы страниц ─────────────────────────── */
+  .page-content {
+    padding: 16px 12px !important;
+  }
+
+  /* ── Landing Page ───────────────────────────────────────── */
+  .landing-hero {
+    min-height: 70vh !important;
+    padding: 48px 16px 32px !important;
+  }
+
+  .landing-hero h1 {
+    font-size: clamp(28px, 8vw, 42px) !important;
+    letter-spacing: -0.5px !important;
+  }
+
+  .landing-hero p {
+    font-size: 15px !important;
+  }
+
+  .landing-cta-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .landing-cta-row a,
+  .landing-cta-row button {
+    text-align: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .landing-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .landing-features-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Dashboard: stat cards ──────────────────────────────── */
+  .dash-stats-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  /* ── Balance Page: pricing cards ────────────────────────── */
+  .balance-packages-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* ── Таблицы: горизонтальный скролл ─────────────────────── */
+  .table-scroll-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  table {
+    min-width: 500px;
+  }
+
+  /* ── Карточки рефералов ─────────────────────────────────── */
+  .ref-network-cards {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ── DownloadPage ───────────────────────────────────────── */
+  .download-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Устройства ─────────────────────────────────────────── */
+  .devices-card { max-width: 100% !important; }
+
+  /* ── Feedback ───────────────────────────────────────────── */
+  .feedback-card { max-width: 100% !important; }
+
+  /* ── Общие улучшения ────────────────────────────────────── */
+  h2 { font-size: 18px !important; }
+
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px; /* минимум для пальца */
+  }
+
+  /* Скрыть длинный HWID в таблицах */
+  .hwid-full { display: none !important; }
+  .hwid-short { display: inline !important; }
+}
+
+/* ── Bottom navigation bar (mobile only) ─────────────────── */
+.mobile-bottom-nav {
+  display: none; /* скрыт на десктопе */
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--card);
+  border-top: 1px solid var(--outline);
+  z-index: 100;
+  align-items: stretch;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--on-surface2);
+  font-size: 10px;
+  font-weight: 600;
+  transition: color 0.15s;
+  padding: 6px 0;
+  min-width: 44px;
+}
+
+.mobile-nav-item .nav-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mobile-nav-item.active,
+.mobile-nav-item[aria-current="page"] {
+  color: var(--accent);
+}
+
+/* ── Скрыть bottom-nav на десктопе ───────────────────────── */
+@media (min-width: 769px) {
+  .mobile-bottom-nav { display: none !important; }
+  .desktop-sidebar   { display: flex !important; }
+}

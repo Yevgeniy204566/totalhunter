@@ -120,7 +120,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ───────────────────────────────────────────────── */}
-      <section style={{
+      <section className="landing-hero" style={{
         minHeight: '86vh',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
@@ -190,7 +190,7 @@ export default function LandingPage() {
             {LANDING.heroSub}
           </p>
 
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
               padding: '17px 40px', borderRadius: 10, fontSize: 17,
               background: 'var(--accent)', color: '#FFFFFF',
@@ -225,7 +225,7 @@ export default function LandingPage() {
           }}>
             {LANDING.statsLabel}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
+          <div className="landing-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
             {LANDING.stats.map(({ key, label, color }) => (
               <StatCard key={key} label={label} color={color} rawValue={stats ? stats[key] : null} />
             ))}
