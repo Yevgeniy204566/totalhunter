@@ -9,6 +9,8 @@ import customtkinter as _ctk
 _ctk_path = os.path.dirname(_ctk.__file__)
 
 datas = [
+    # Звуковой файл биржи
+    ('Logo_exchange.wav', '.'),
     # YOLO модели (зашифрованные .pte — .pt в EXE не попадают)
     ('exchange.pte', '.'),
     ('targets/crypts.pte', 'targets'),

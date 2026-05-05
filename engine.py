@@ -25,9 +25,11 @@ class HuntEngine:
             self.model_path = pt_path
             self.model = YOLO(pt_path)
 
-        files_in_dir = os.listdir(script_dir)
+        import sys
+        _base = getattr(sys, '_MEIPASS', script_dir)
+        files_in_dir = os.listdir(_base)
         sound_file = next((f for f in files_in_dir if f.lower().endswith('.wav')), None)
-        self.sound_path = os.path.join(script_dir, sound_file) if sound_file else None
+        self.sound_path = os.path.join(_base, sound_file) if sound_file else None
 
         self.is_running = False
         self.on_found_callback = None
