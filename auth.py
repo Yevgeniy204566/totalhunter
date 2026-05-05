@@ -1,7 +1,6 @@
 import requests
 import uuid
 import hashlib
-import subprocess
 import webbrowser
 
 # Основной адрес сервера для API (Бот)
@@ -9,25 +8,10 @@ SERVER_URL = "http://34.68.86.57:8000"
 # Домен для авторизации через Google (через nip.io для обхода ограничений IP)
 AUTH_DOMAIN = "http://34.68.86.57.nip.io:8000"
 
-def _get_disk_serial() -> str:
-    """Серийный номер системного диска через wmic (без консольного окна)."""
-    try:
-        r = subprocess.run(
-            ["wmic", "diskdrive", "get", "SerialNumber"],
-            capture_output=True, text=True, timeout=5,
-            creationflags=subprocess.CREATE_NO_WINDOW,
-        )
-        lines = [l.strip() for l in r.stdout.splitlines()
-                 if l.strip() and l.strip() != "SerialNumber"]
-        return lines[0] if lines else ""
-    except Exception:
-        return ""
-
 def get_hwid():
-    """HWID = SHA256(MAC + DiskSerial) — устойчив к смене MAC."""
-    mac    = str(uuid.getnode())
-    disk   = _get_disk_serial()
-    return hashlib.sha256((mac + disk).encode()).hexdigest()[:16].upper()
+    """HWID = SHA256(MAC) — стабильная привязка к сетевой карте."""
+    mac = str(uuid.getnode())
+    return hashlib.sha256(mac.encode()).hexdigest()[:16].upper()
 
 def login_with_google():
     """Открывает браузер для привязки Google-аккаунта"""
