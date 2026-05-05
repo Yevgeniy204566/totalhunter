@@ -217,8 +217,8 @@ class TotalHunterApp(ctk.CTk):
        
         self.title("Total Battle Hunter Pro v2.4")
         self.geometry("460x1010")
-        self.resizable(True, True)
-        self.minsize(400, 500)
+        self.resizable(False, True)
+        self.minsize(460, 400)
         self.configure(fg_color=MD3["bg"])
 
         self._outer = ctk.CTkScrollableFrame(
