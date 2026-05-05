@@ -32,11 +32,11 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import Integer, func, select, update
+from sqlalchemy import Integer, func, select, update, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AppSetting, Broadcast, Feedback, Hunt, Log, Transaction, User
+from models import AppSetting, Broadcast, Feedback, Hunt, HwidHistory, LinkCode, Log, Transaction, User
 from web_routes import router as web_router
 from payments import router as payments_router
 from schemas import (
@@ -596,6 +596,24 @@ async def admin_adjust_credits(
             meta={"admin_note": note},
         ))
     return {"success": True, "credits": user.credits}
+
+
+# ── POST /admin/delete_user ───────────────────────────────────────────────────
+
+@app.post("/admin/delete_user", dependencies=[Depends(require_admin)])
+async def admin_delete_user(hwid: str, db: AsyncSession = Depends(get_db)):
+    """Полное удаление пользователя по HWID — для тестирования флоу регистрации."""
+    async with db.begin():
+        result = await db.execute(select(User).where(User.hwid == hwid))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        await db.execute(sa_delete(Transaction).where(Transaction.user_id == user.id))
+        await db.execute(sa_delete(Hunt).where(Hunt.user_id == user.id))
+        await db.execute(sa_delete(HwidHistory).where(HwidHistory.user_id == user.id))
+        await db.execute(sa_delete(LinkCode).where(LinkCode.hwid == hwid))
+        await db.delete(user)
+    return {"success": True, "deleted_hwid": hwid}
 
 
 # ── POST /admin/broadcast ─────────────────────────────────────────────────────

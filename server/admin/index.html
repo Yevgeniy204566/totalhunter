@@ -493,6 +493,9 @@
                         <button class="btn btn-danger btn-sm" @click="toggleBan(u)">
                           <span x-text="u.is_banned ? 'Разбан' : 'Бан'"></span>
                         </button>
+                        <button class="btn btn-sm" style="background:#7f1d1d;color:#fff" @click="deleteUser(u)">
+                          УДАЛИТЬ
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -780,6 +783,16 @@
           { method: 'POST', headers: this.headers() }
         );
         if (r.ok) { u.is_banned = !u.is_banned; this.showToast(u.is_banned ? 'Забанен' : 'Разбанен'); }
+      },
+
+      async deleteUser(u) {
+        if (!confirm(`Удалить пользователя ${u.email || u.hwid}?\nВсе данные будут стёрты!`)) return;
+        const r = await fetch(
+          `${API}/admin/delete_user?hwid=${u.hwid}`,
+          { method: 'POST', headers: this.headers() }
+        );
+        if (r.ok) { this.showToast('Пользователь удалён'); this.loadUsers(); }
+        else { this.showToast('Ошибка удаления'); }
       },
 
       async adjustCredits(hwid, amount) {
