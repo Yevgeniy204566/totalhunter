@@ -4,422 +4,436 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Total Hunter — Admin</title>
-  <link rel="icon" type="image/png" href="/static/favicon.ico">
-  <link rel="shortcut icon" href="/static/favicon.ico">
-
-  <!-- Alpine.js — реактивность без фреймворка -->
+  <link rel="icon" href="/static/favicon.ico">
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-  <!-- Material Symbols -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
 
   <style>
-    /* ── MD3 Dark + Neon Tokens ─────────────────────────────────── */
     :root {
-      --md-surface:        #0f0f14;
-      --md-surface-1:      #1a1a24;
-      --md-surface-2:      #222233;
-      --md-surface-3:      #2a2a40;
-      --md-on-surface:     #e2e2ec;
-      --md-on-surface-dim: #8a8aaa;
-      --md-primary:        #00e5ff;        /* neon cyan */
-      --md-primary-dim:    #0097a7;
-      --md-secondary:      #7c4dff;        /* neon violet */
-      --md-error:          #ff5252;
-      --md-success:        #00e676;
-      --md-warning:        #ffd740;
-      --md-outline:        #3a3a55;
-      --md-radius-sm:      8px;
-      --md-radius-md:      12px;
-      --md-radius-lg:      20px;
-      --md-elevation-1:    0 2px 8px rgba(0,229,255,.08);
-      --md-elevation-2:    0 4px 20px rgba(0,229,255,.14);
+      --bg:        #0B0E14;
+      --card:      #151921;
+      --card2:     #1C2230;
+      --outline:   #252D3D;
+      --accent:    #00F0FF;
+      --accent-dim:#007A82;
+      --accent-glow: rgba(0,240,255,.18);
+      --green:     #00E676;
+      --red:       #FF5252;
+      --orange:    #FFB300;
+      --text:      #E2EAF4;
+      --text-dim:  #6B7A96;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Roboto', sans-serif;
-      background: var(--md-surface);
-      color: var(--md-on-surface);
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
+      font-size: 13px;
     }
 
-    /* ── Sidebar ─────────────────────────────────────────────────── */
+    [x-cloak] { display: none !important; }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
     .sidebar {
-      width: 240px;
-      background: var(--md-surface-1);
-      border-right: 1px solid var(--md-outline);
+      width: 220px;
+      background: var(--card);
+      border-right: 1px solid var(--outline);
       display: flex;
       flex-direction: column;
-      padding: 24px 0;
+      padding: 20px 0;
       flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
     }
 
-    .sidebar-logo {
-      padding: 0 20px 28px;
-      font-size: 18px;
+    .logo {
+      padding: 0 18px 24px;
+      font-size: 16px;
       font-weight: 700;
-      color: var(--md-primary);
-      letter-spacing: .5px;
+      color: var(--accent);
       display: flex;
       align-items: center;
       gap: 10px;
+      letter-spacing: .3px;
     }
 
-    .sidebar-logo .dot {
-      width: 8px; height: 8px;
+    .logo-dot {
+      width: 9px; height: 9px;
       border-radius: 50%;
-      background: var(--md-primary);
-      box-shadow: 0 0 8px var(--md-primary);
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
       animation: pulse 2s infinite;
     }
 
-    @keyframes pulse {
-      0%,100% { opacity: 1; } 50% { opacity: .3; }
-    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.85)} }
 
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 12px 20px;
+      gap: 12px;
+      padding: 11px 18px;
       cursor: pointer;
       border-radius: 0 50px 50px 0;
-      margin-right: 12px;
-      transition: background .2s, color .2s;
-      color: var(--md-on-surface-dim);
-      font-size: 14px;
+      margin-right: 10px;
+      transition: all .18s;
+      color: var(--text-dim);
+      font-size: 13px;
       font-weight: 500;
       user-select: none;
+      position: relative;
     }
 
-    .nav-item:hover { background: var(--md-surface-2); color: var(--md-on-surface); }
-    .nav-item.active {
-      background: rgba(0,229,255,.12);
-      color: var(--md-primary);
+    .nav-item:hover { background: var(--card2); color: var(--text); }
+    .nav-item.active { background: var(--accent-glow); color: var(--accent); }
+    .nav-item .material-symbols-rounded { font-size: 19px; }
+
+    .nav-badge {
+      background: var(--red);
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: auto;
     }
 
-    .nav-item .material-symbols-rounded { font-size: 20px; }
-
-    /* ── Main ────────────────────────────────────────────────────── */
-    .main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 32px;
-    }
+    /* ── Main ─────────────────────────────────────────────────── */
+    .main { flex: 1; overflow-y: auto; padding: 28px 32px; }
 
     .page-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
-      margin-bottom: 24px;
-      color: var(--md-on-surface);
+      margin-bottom: 22px;
+      letter-spacing: -.3px;
     }
 
-    /* ── Stat Cards ──────────────────────────────────────────────── */
-    .cards {
+    /* ── Stat Cards ───────────────────────────────────────────── */
+    .stat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 16px;
-      margin-bottom: 28px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
     }
 
-    .card {
-      background: var(--md-surface-1);
-      border: 1px solid var(--md-outline);
-      border-radius: var(--md-radius-md);
-      padding: 20px;
-      box-shadow: var(--md-elevation-1);
-      transition: box-shadow .2s;
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--outline);
+      border-radius: var(--r-md);
+      padding: 18px 16px;
+      transition: border-color .2s, box-shadow .2s;
     }
 
-    .card:hover { box-shadow: var(--md-elevation-2); }
+    .stat-card:hover { border-color: var(--accent-dim); box-shadow: 0 0 16px var(--accent-glow); }
 
-    .card-label {
-      font-size: 12px;
-      color: var(--md-on-surface-dim);
-      margin-bottom: 8px;
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: .8px;
+      margin-bottom: 8px;
     }
 
-    .card-value {
-      font-size: 32px;
-      font-weight: 700;
-    }
+    .stat-value { font-size: 30px; font-weight: 700; line-height: 1; }
+    .c-cyan   { color: var(--accent); }
+    .c-green  { color: var(--green); }
+    .c-red    { color: var(--red); }
+    .c-orange { color: var(--orange); }
 
-    .card-value.cyan   { color: var(--md-primary); }
-    .card-value.violet { color: var(--md-secondary); }
-    .card-value.green  { color: var(--md-success); }
-    .card-value.red    { color: var(--md-error); }
-
-    /* ── Section ─────────────────────────────────────────────────── */
+    /* ── Section ───────────────────────────────────────────────── */
     .section {
-      background: var(--md-surface-1);
-      border: 1px solid var(--md-outline);
-      border-radius: var(--md-radius-md);
-      padding: 20px;
-      margin-bottom: 24px;
+      background: var(--card);
+      border: 1px solid var(--outline);
+      border-radius: var(--r-md);
+      padding: 18px;
+      margin-bottom: 20px;
     }
 
     .section-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    .section-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
+    .section-title { font-size: 14px; font-weight: 600; }
 
-    /* ── Search / Input ──────────────────────────────────────────── */
-    .input-field {
-      background: var(--md-surface-2);
-      border: 1px solid var(--md-outline);
-      border-radius: var(--md-radius-sm);
-      padding: 10px 14px;
-      color: var(--md-on-surface);
-      font-size: 14px;
-      font-family: inherit;
+    /* ── Inputs ────────────────────────────────────────────────── */
+    .inp {
+      background: var(--card2);
+      border: 1px solid var(--outline);
+      border-radius: var(--r-sm);
+      padding: 9px 13px;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
       outline: none;
-      transition: border-color .2s;
+      transition: border-color .18s;
     }
+    .inp:focus { border-color: var(--accent); }
+    .inp::placeholder { color: var(--text-dim); }
 
-    .input-field:focus { border-color: var(--md-primary); }
-    .input-field::placeholder { color: var(--md-on-surface-dim); }
+    textarea.inp { resize: vertical; min-height: 80px; width: 100%; }
 
-    /* ── Buttons ─────────────────────────────────────────────────── */
+    /* ── Buttons ───────────────────────────────────────────────── */
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 9px 18px;
+      padding: 8px 16px;
       border-radius: 50px;
       border: none;
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      transition: opacity .2s, transform .1s;
-    }
-
-    .btn:hover   { opacity: .88; }
-    .btn:active  { transform: scale(.97); }
-
-    .btn-primary  { background: var(--md-primary);   color: #000; }
-    .btn-secondary{ background: var(--md-secondary);  color: #fff; }
-    .btn-danger   { background: var(--md-error);      color: #fff; }
-    .btn-ghost    {
-      background: transparent;
-      color: var(--md-primary);
-      border: 1px solid var(--md-primary);
-    }
-    .btn-sm { padding: 5px 12px; font-size: 12px; }
-
-    /* ── Table ───────────────────────────────────────────────────── */
-    .table-wrap { overflow-x: auto; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th {
-      text-align: left;
-      padding: 10px 12px;
-      color: var(--md-on-surface-dim);
-      font-weight: 500;
-      border-bottom: 1px solid var(--md-outline);
+      font: 600 12px/1 'Inter', sans-serif;
+      transition: opacity .18s, transform .1s, box-shadow .18s;
       white-space: nowrap;
     }
+    .btn:hover { opacity: .85; }
+    .btn:active { transform: scale(.96); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
 
-    td {
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(58,58,85,.5);
-      vertical-align: middle;
-    }
+    .btn-accent  { background: var(--accent); color: #000; }
+    .btn-ghost   { background: transparent; color: var(--accent); border: 1px solid var(--accent-dim); }
+    .btn-red     { background: rgba(255,82,82,.15); color: var(--red); border: 1px solid rgba(255,82,82,.3); }
+    .btn-orange  { background: rgba(255,179,0,.12); color: var(--orange); border: 1px solid rgba(255,179,0,.3); }
+    .btn-sm      { padding: 5px 12px; font-size: 11px; }
+    .btn-icon    { padding: 6px 8px; border-radius: var(--r-sm); }
 
-    tr:hover td { background: var(--md-surface-2); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinning { animation: spin .7s linear infinite; display: inline-block; }
 
-    .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 50px;
+    /* ── Status dot ────────────────────────────────────────────── */
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: 11px;
       font-weight: 600;
     }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-online  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+    .dot-offline { background: var(--text-dim); }
+    .dot-banned  { background: var(--red); box-shadow: 0 0 6px var(--red); }
 
-    .badge-online  { background: rgba(0,230,118,.15); color: var(--md-success); }
-    .badge-offline { background: rgba(138,138,170,.1); color: var(--md-on-surface-dim); }
-    .badge-banned  { background: rgba(255,82,82,.15);  color: var(--md-error); }
+    /* ── Table ─────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
 
-    /* ── Broadcast textarea ──────────────────────────────────────── */
-    textarea.input-field { resize: vertical; min-height: 80px; width: 100%; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
 
-    /* ── Token login overlay ──────────────────────────────────────── */
+    th {
+      text-align: left;
+      padding: 9px 10px;
+      color: var(--text-dim);
+      font-weight: 600;
+      border-bottom: 1px solid var(--outline);
+      white-space: nowrap;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(37,45,61,.6);
+      vertical-align: middle;
+    }
+
+    tr:hover td { background: rgba(28,34,48,.7); }
+
+    /* ── Mobile user cards ─────────────────────────────────────── */
+    .user-cards { display: none; }
+
+    /* ── Actions group ─────────────────────────────────────────── */
+    .actions { display: flex; gap: 6px; align-items: center; }
+
+    /* ── Log / Spinner ─────────────────────────────────────────── */
+    .spinner {
+      width: 22px; height: 22px;
+      border: 2px solid var(--outline);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: auto;
+    }
+
+    .log-payload {
+      font-family: monospace;
+      color: var(--text-dim);
+      max-width: 380px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Pagination ────────────────────────────────────────────── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      justify-content: flex-end;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    /* ── Login overlay ─────────────────────────────────────────── */
     .overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.85);
+      background: rgba(0,0,0,.88);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 100;
     }
 
-    .login-card {
-      background: var(--md-surface-1);
-      border: 1px solid var(--md-outline);
-      border-radius: var(--md-radius-lg);
+    .login-box {
+      background: var(--card);
+      border: 1px solid var(--outline);
+      border-radius: var(--r-lg);
       padding: 40px;
-      width: 360px;
+      width: 340px;
       text-align: center;
-      box-shadow: var(--md-elevation-2);
     }
 
-    .login-card h2 { margin-bottom: 8px; color: var(--md-primary); }
-    .login-card p  { color: var(--md-on-surface-dim); font-size: 13px; margin-bottom: 24px; }
+    .login-box h2 { color: var(--accent); margin-bottom: 6px; font-size: 20px; }
+    .login-box p  { color: var(--text-dim); font-size: 12px; margin-bottom: 22px; }
 
-    /* ── Logs table ──────────────────────────────────────────────── */
-    .log-payload {
-      font-family: monospace;
-      font-size: 11px;
-      color: var(--md-on-surface-dim);
-      max-width: 400px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* ── Spinner ──────────────────────────────────────────────────── */
-    .spinner {
-      display: inline-block;
-      width: 20px; height: 20px;
-      border: 2px solid var(--md-outline);
-      border-top-color: var(--md-primary);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Toast ────────────────────────────────────────────────────── */
+    /* ── Toast ─────────────────────────────────────────────────── */
     .toast {
       position: fixed;
-      bottom: 24px; right: 24px;
-      background: var(--md-surface-3);
-      border: 1px solid var(--md-primary);
-      border-radius: var(--md-radius-sm);
-      padding: 12px 20px;
-      font-size: 14px;
+      bottom: 22px; right: 22px;
+      background: var(--card2);
+      border: 1px solid var(--accent-dim);
+      border-radius: var(--r-sm);
+      padding: 11px 18px;
+      font-size: 13px;
       z-index: 200;
-      animation: fadeIn .3s ease;
+      animation: fadeUp .25s ease;
     }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } }
+
+    /* ── Mobile ────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { padding: 16px; }
+
+      .user-table-wrap { display: none; }
+      .user-cards { display: flex; flex-direction: column; gap: 12px; }
+
+      .user-card {
+        background: var(--card2);
+        border: 1px solid var(--outline);
+        border-radius: var(--r-md);
+        padding: 14px;
+      }
+
+      .user-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+      .user-card-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: var(--text-dim); }
+      .user-card-row span { color: var(--text); font-weight: 500; }
+      .user-card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+      .user-card-actions .btn { flex: 1; justify-content: center; min-height: 44px; }
+
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 
 <body x-data="adminApp()" x-init="init()">
 
-  <!-- ── Token Login Overlay ───────────────────────────────────── -->
+  <!-- Login Overlay -->
   <div class="overlay" x-show="!authenticated" x-cloak>
-    <div class="login-card">
-      <h2>🎯 Total Hunter</h2>
-      <p>Введи Admin Token для входа</p>
-      <input
-        class="input-field"
-        type="password"
-        placeholder="Admin Token"
-        x-model="tokenInput"
-        @keyup.enter="login()"
-        style="width:100%;margin-bottom:16px;"
-      >
-      <button class="btn btn-primary" style="width:100%" @click="login()">Войти</button>
-      <p x-show="loginError" style="color:var(--md-error);margin-top:12px;font-size:13px">
-        Неверный токен
-      </p>
+    <div class="login-box">
+      <h2>⚔ Total Hunter</h2>
+      <p>Admin Panel — введи токен для входа</p>
+      <input class="inp" type="password" placeholder="Admin Token"
+        x-model="tokenInput" @keyup.enter="login()" style="width:100%;margin-bottom:14px;">
+      <button class="btn btn-accent" style="width:100%;justify-content:center" @click="login()">Войти</button>
+      <p x-show="loginError" style="color:var(--red);margin-top:10px;font-size:12px">Неверный токен</p>
     </div>
   </div>
 
-  <!-- ── Sidebar ───────────────────────────────────────────────── -->
-  <nav class="sidebar">
-    <div class="sidebar-logo">
-      <div class="dot"></div>
+  <!-- Sidebar -->
+  <nav class="sidebar" x-show="authenticated" x-cloak>
+    <div class="logo">
+      <div class="logo-dot"></div>
       Total Hunter
     </div>
 
-    <div class="nav-item" :class="{active: page==='dashboard'}" @click="page='dashboard'; loadStats()">
+    <div class="nav-item" :class="{active:page==='dashboard'}" @click="page='dashboard';loadStats()">
       <span class="material-symbols-rounded">dashboard</span> Dashboard
     </div>
-    <div class="nav-item" :class="{active: page==='users'}" @click="page='users'; loadUsers()">
+    <div class="nav-item" :class="{active:page==='users'}" @click="page='users';loadUsers()">
       <span class="material-symbols-rounded">group</span> Пользователи
     </div>
-    <div class="nav-item" :class="{active: page==='logs'}" @click="page='logs'; loadLogs()">
+    <div class="nav-item" :class="{active:page==='logs'}" @click="page='logs';loadLogs()">
       <span class="material-symbols-rounded">bug_report</span> Логи
     </div>
-    <div class="nav-item" :class="{active: page==='broadcast'}" @click="page='broadcast'">
+    <div class="nav-item" :class="{active:page==='broadcast'}" @click="page='broadcast'">
       <span class="material-symbols-rounded">campaign</span> Broadcast
     </div>
-    <div class="nav-item" :class="{active: page==='feedback'}" @click="page='feedback'; loadFeedback()">
+    <div class="nav-item" :class="{active:page==='feedback'}" @click="page='feedback';loadFeedback()">
       <span class="material-symbols-rounded">feedback</span> Feedback
-      <span id="feedback-badge" style="background:#e53935;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;display:none;"></span>
+      <span class="nav-badge" x-show="feedbackCount>0" x-text="feedbackCount"></span>
     </div>
-    <div class="nav-item" :class="{active: page==='leaderboard'}" @click="page='leaderboard'; loadLeaderboard()">
+    <div class="nav-item" :class="{active:page==='leaderboard'}" @click="page='leaderboard';loadLeaderboard()">
       <span class="material-symbols-rounded">leaderboard</span> Leaderboard
     </div>
   </nav>
 
-  <!-- ── Main ─────────────────────────────────────────────────── -->
-  <main class="main">
+  <!-- Main -->
+  <main class="main" x-show="authenticated" x-cloak>
 
     <!-- DASHBOARD -->
     <template x-if="page==='dashboard'">
       <div>
         <div class="page-title">Dashboard</div>
-
-        <div class="cards">
-          <div class="card">
-            <div class="card-label">Онлайн сейчас</div>
-            <div class="card-value cyan" x-text="stats.online_users ?? '…'"></div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Онлайн сейчас</div>
+            <div class="stat-value c-cyan" x-text="stats.online_users ?? '…'"></div>
           </div>
-          <div class="card">
-            <div class="card-label">Всего юзеров</div>
-            <div class="card-value" x-text="stats.total_users ?? '…'"></div>
+          <div class="stat-card">
+            <div class="stat-label">Всего игроков</div>
+            <div class="stat-value" x-text="stats.total_users ?? '…'"></div>
           </div>
-          <div class="card">
-            <div class="card-label">Забанено</div>
-            <div class="card-value red" x-text="stats.banned_users ?? '…'"></div>
+          <div class="stat-card">
+            <div class="stat-label">Забанено</div>
+            <div class="stat-value c-red" x-text="stats.banned_users ?? '…'"></div>
           </div>
-          <div class="card">
-            <div class="card-label">Находок сегодня</div>
-            <div class="card-value green" x-text="stats.hunts_today ?? '…'"></div>
+          <div class="stat-card">
+            <div class="stat-label">Находок сегодня</div>
+            <div class="stat-value c-green" x-text="stats.hunts_today ?? '…'"></div>
           </div>
-          <div class="card">
-            <div class="card-label">Бирж всего</div>
-            <div class="card-value violet" x-text="stats.exchanges_total ?? '…'"></div>
+          <div class="stat-card">
+            <div class="stat-label">Биржи всего</div>
+            <div class="stat-value c-cyan" x-text="stats.exchanges_total ?? '…'"></div>
           </div>
-          <div class="card">
-            <div class="card-label">Склепов всего</div>
-            <div class="card-value cyan" x-text="stats.crypts_total ?? '…'"></div>
+          <div class="stat-card">
+            <div class="stat-label">Склепы всего</div>
+            <div class="stat-value c-green" x-text="stats.crypts_total ?? '…'"></div>
           </div>
         </div>
-
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Топ-10 охотников</div>
+            <div class="section-title">Быстрые действия</div>
             <button class="btn btn-ghost btn-sm" @click="loadStats()">
-              <span class="material-symbols-rounded" style="font-size:16px">refresh</span> Обновить
+              <span class="material-symbols-rounded" :class="{spinning:loading}" style="font-size:15px">refresh</span> Обновить
             </button>
           </div>
-          <p style="color:var(--md-on-surface-dim);font-size:13px">
-            Скоро: Leaderboard TOP-50 по количеству находок.
+          <p style="color:var(--text-dim);font-size:12px">
+            Broadcast → отправить уведомление в бот. Leaderboard → топ игроков.
           </p>
         </div>
       </div>
@@ -429,89 +443,87 @@
     <template x-if="page==='users'">
       <div>
         <div class="page-title">Пользователи</div>
-
         <div class="section">
           <div class="section-header">
-            <input
-              class="input-field"
-              placeholder="Поиск: HWID / Email / Username"
-              x-model="search"
-              @input.debounce.400ms="loadUsers()"
-              style="width:260px"
-            >
-            <button class="btn btn-sm" :class="onlineOnly ? 'btn-primary' : 'btn-ghost'"
-              @click="onlineOnly = !onlineOnly; loadUsers()"
-              style="gap:4px;display:flex;align-items:center">
-              <span style="width:8px;height:8px;border-radius:50%;background:#00e676;display:inline-block"></span>
+            <input class="inp" placeholder="🔍  Поиск: HWID / Email / Username"
+              x-model="search" @input.debounce.350ms="page_num=1;loadUsers()" style="width:240px">
+            <button class="btn btn-sm" :class="onlineOnly?'btn-accent':'btn-ghost'"
+              @click="onlineOnly=!onlineOnly;page_num=1;loadUsers()">
+              <span class="dot" :class="onlineOnly?'dot-online':'dot-offline'"></span>
               Онлайн
             </button>
             <button class="btn btn-ghost btn-sm" @click="loadUsers()">
-              <span class="material-symbols-rounded" style="font-size:16px">refresh</span>
+              <span class="material-symbols-rounded" :class="{spinning:loading}" style="font-size:15px">refresh</span>
             </button>
           </div>
 
-          <div x-show="loading" style="text-align:center;padding:24px">
-            <div class="spinner"></div>
-          </div>
+          <div x-show="loading" style="text-align:center;padding:28px"><div class="spinner"></div></div>
 
-          <div class="table-wrap" x-show="!loading">
+          <!-- Desktop table -->
+          <div class="table-wrap user-table-wrap" x-show="!loading">
             <table>
-              <thead>
-                <tr>
-                  <th>Статус</th>
-                  <th>Username / HWID</th>
-                  <th>Email</th>
-                  <th>Баланс</th>
-                  <th>Реф. баланс</th>
-                  <th>Рефералы</th>
-                  <th>Последний вход</th>
-                  <th>IP</th>
-                  <th>Версия</th>
-                  <th>Действия</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>Статус</th>
+                <th>Игрок</th>
+                <th>Email</th>
+                <th>💎 Баланс</th>
+                <th>Реф.</th>
+                <th>L1/L2/L3</th>
+                <th>Последний вход</th>
+                <th>IP</th>
+                <th>Действия</th>
+              </tr></thead>
               <tbody>
                 <template x-for="u in users" :key="u.id">
                   <tr>
                     <td>
-                      <span class="badge" :class="u.is_banned ? 'badge-banned' : (u.is_online ? 'badge-online' : 'badge-offline')"
-                        x-text="u.is_banned ? 'BAN' : (u.is_online ? 'Online' : 'Offline')">
-                      </span>
+                      <div class="status-dot">
+                        <span class="dot"
+                          :class="u.is_banned?'dot-banned':(u.is_online?'dot-online':'dot-offline')">
+                        </span>
+                        <span style="color:var(--text-dim)"
+                          x-text="u.is_banned?'BAN':(u.is_online?'Online':'Offline')"></span>
+                      </div>
                     </td>
                     <td>
-                      <div style="font-weight:500" x-text="u.username || '—'"></div>
-                      <div style="font-size:11px;color:var(--md-on-surface-dim);font-family:monospace" x-text="u.hwid"></div>
+                      <div style="font-weight:600" x-text="u.username||'—'"></div>
+                      <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="u.hwid"></div>
                     </td>
-                    <td style="color:var(--md-on-surface-dim)" x-text="u.email || '—'"></td>
+                    <td style="color:var(--text-dim)" x-text="u.email||'—'"></td>
                     <td>
-                      <span style="color:var(--md-primary);font-weight:600" x-text="u.credits"></span> кр.
+                      <span style="color:var(--accent);font-weight:700" x-text="u.credits"></span>
+                      <span style="color:var(--text-dim)"> ◆</span>
                     </td>
+                    <td style="color:var(--text-dim)" x-text="u.ref_credits+' ◆'"></td>
+                    <td style="color:var(--text-dim)">
+                      <span x-text="u.referrals.l1"></span> /
+                      <span x-text="u.referrals.l2"></span> /
+                      <span x-text="u.referrals.l3"></span>
+                    </td>
+                    <td style="color:var(--text-dim);white-space:nowrap" x-text="u.last_seen?formatDate(u.last_seen):'—'"></td>
+                    <td style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="u.ip_address||'—'"></td>
                     <td>
-                      <span style="color:var(--md-secondary)" x-text="u.ref_credits"></span> кр.
-                    </td>
-                    <td style="font-size:12px;color:var(--md-on-surface-dim)">
-                      L1: <span x-text="u.referrals.l1"></span> |
-                      L2: <span x-text="u.referrals.l2"></span> |
-                      L3: <span x-text="u.referrals.l3"></span>
-                    </td>
-                    <td style="font-size:11px;color:var(--md-on-surface-dim)" x-text="u.last_seen ? formatDate(u.last_seen) : '—'"></td>
-                    <td style="font-size:11px;font-family:monospace;color:var(--md-on-surface-dim)" x-text="u.ip_address || '—'"></td>
-                    <td style="font-size:12px" x-text="u.bot_version || '—'"></td>
-                    <td>
-                      <div style="display:flex;gap:6px;flex-wrap:wrap">
-                        <button class="btn btn-primary btn-sm" @click="adjustCredits(u.hwid, 300)">+300</button>
-                        <button class="btn btn-danger btn-sm" @click="toggleBan(u)">
-                          <span x-text="u.is_banned ? 'Разбан' : 'Бан'"></span>
+                      <div class="actions">
+                        <button class="btn btn-accent btn-sm btn-icon" title="+300 алмазов"
+                          @click="adjustCredits(u, 300)">
+                          <span class="material-symbols-rounded" style="font-size:14px">add</span>300
                         </button>
-                        <button class="btn btn-sm" style="background:#7f1d1d;color:#fff" @click="deleteUser(u)">
-                          УДАЛИТЬ
+                        <button class="btn btn-sm btn-icon" :class="u.is_banned?'btn-ghost':'btn-orange'"
+                          :title="u.is_banned?'Разбанить':'Забанить'"
+                          @click="toggleBan(u)">
+                          <span class="material-symbols-rounded" style="font-size:14px"
+                            x-text="u.is_banned?'lock_open':'block'"></span>
+                        </button>
+                        <button class="btn btn-red btn-sm btn-icon" title="Удалить пользователя"
+                          @click="deleteUser(u)">
+                          <span class="material-symbols-rounded" style="font-size:14px">delete</span>
                         </button>
                       </div>
                     </td>
                   </tr>
                 </template>
-                <tr x-show="users.length === 0 && !loading">
-                  <td colspan="9" style="text-align:center;color:var(--md-on-surface-dim);padding:24px">
+                <tr x-show="!loading&&users.length===0">
+                  <td colspan="9" style="text-align:center;color:var(--text-dim);padding:28px">
                     Пользователи не найдены
                   </td>
                 </tr>
@@ -519,14 +531,38 @@
             </table>
           </div>
 
-          <!-- Pagination -->
-          <div style="display:flex;align-items:center;gap:12px;margin-top:16px;justify-content:flex-end">
-            <span style="font-size:13px;color:var(--md-on-surface-dim)">
-              Всего: <span x-text="totalUsers"></span>
-            </span>
-            <button class="btn btn-ghost btn-sm" :disabled="page_num===1" @click="page_num--; loadUsers()">← Назад</button>
-            <span style="font-size:13px" x-text="`Стр. ${page_num}`"></span>
-            <button class="btn btn-ghost btn-sm" @click="page_num++; loadUsers()">Далее →</button>
+          <!-- Mobile cards -->
+          <div class="user-cards" x-show="!loading">
+            <template x-for="u in users" :key="u.id">
+              <div class="user-card">
+                <div class="user-card-header">
+                  <div>
+                    <div style="font-weight:600" x-text="u.username||u.hwid"></div>
+                    <div style="font-size:10px;color:var(--text-dim)" x-text="u.email||'—'"></div>
+                  </div>
+                  <div class="status-dot">
+                    <span class="dot" :class="u.is_banned?'dot-banned':(u.is_online?'dot-online':'dot-offline')"></span>
+                    <span x-text="u.is_banned?'BAN':(u.is_online?'Online':'Offline')"></span>
+                  </div>
+                </div>
+                <div class="user-card-row">Баланс <span x-text="u.credits+' ◆'"></span></div>
+                <div class="user-card-row">Реф. баланс <span x-text="u.ref_credits+' ◆'"></span></div>
+                <div class="user-card-row">Последний вход <span x-text="u.last_seen?formatDate(u.last_seen):'—'"></span></div>
+                <div class="user-card-actions">
+                  <button class="btn btn-accent btn-sm" @click="adjustCredits(u, 300)">+300 ◆</button>
+                  <button class="btn btn-sm" :class="u.is_banned?'btn-ghost':'btn-orange'"
+                    @click="toggleBan(u)" x-text="u.is_banned?'Разбан':'Бан'"></button>
+                  <button class="btn btn-red btn-sm" @click="deleteUser(u)">Удалить</button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <div class="pagination">
+            <span>Всего: <b x-text="totalUsers"></b></span>
+            <button class="btn btn-ghost btn-sm" :disabled="page_num===1" @click="page_num--;loadUsers()">← Назад</button>
+            <span x-text="`Стр. ${page_num}`"></span>
+            <button class="btn btn-ghost btn-sm" @click="page_num++;loadUsers()">Далее →</button>
           </div>
         </div>
       </div>
@@ -540,32 +576,28 @@
           <div class="section-header">
             <div class="section-title">Телеметрия от ботов</div>
             <button class="btn btn-ghost btn-sm" @click="loadLogs()">
-              <span class="material-symbols-rounded" style="font-size:16px">refresh</span>
+              <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
             </button>
           </div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Время</th>
-                  <th>HWID</th>
-                  <th>Тип</th>
-                  <th>Сообщение</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>Время</th><th>HWID</th><th>Тип</th><th>Сообщение</th>
+              </tr></thead>
               <tbody>
                 <template x-for="l in logs" :key="l.id">
                   <tr>
-                    <td style="font-size:11px;white-space:nowrap;color:var(--md-on-surface-dim)" x-text="formatDate(l.created_at)"></td>
-                    <td style="font-family:monospace;font-size:11px" x-text="l.hwid"></td>
-                    <td><span class="badge badge-banned" x-text="l.event_type"></span></td>
+                    <td style="white-space:nowrap;color:var(--text-dim)" x-text="formatDate(l.created_at)"></td>
+                    <td style="font-family:monospace;font-size:10px" x-text="l.hwid"></td>
+                    <td>
+                      <span style="background:rgba(255,82,82,.12);color:var(--red);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600"
+                        x-text="l.event_type"></span>
+                    </td>
                     <td class="log-payload" x-text="l.payload"></td>
                   </tr>
                 </template>
-                <tr x-show="logs.length === 0">
-                  <td colspan="4" style="text-align:center;color:var(--md-on-surface-dim);padding:24px">
-                    Логи пусты
-                  </td>
+                <tr x-show="logs.length===0">
+                  <td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Логи пусты</td>
                 </tr>
               </tbody>
             </table>
@@ -578,23 +610,14 @@
     <template x-if="page==='broadcast'">
       <div>
         <div class="page-title">Broadcast</div>
-        <div class="section" style="max-width:600px">
-          <div class="section-title" style="margin-bottom:16px">
-            Отправить сообщение всем ботам
-          </div>
-          <textarea
-            class="input-field"
-            placeholder="Текст уведомления..."
-            x-model="broadcastMsg"
-          ></textarea>
+        <div class="section" style="max-width:580px">
+          <div class="section-title" style="margin-bottom:14px">Отправить уведомление всем ботам</div>
+          <textarea class="inp" placeholder="Текст уведомления..." x-model="broadcastMsg"></textarea>
           <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
-            <button class="btn btn-primary" @click="sendBroadcast()" :disabled="!broadcastMsg">
-              <span class="material-symbols-rounded" style="font-size:18px">send</span>
-              Отправить
+            <button class="btn btn-accent" @click="sendBroadcast()" :disabled="!broadcastMsg">
+              <span class="material-symbols-rounded" style="font-size:16px">send</span> Отправить
             </button>
-            <span style="font-size:12px;color:var(--md-on-surface-dim)">
-              Сообщение появится у всех при следующем /check_auth
-            </span>
+            <span style="color:var(--text-dim);font-size:11px">Появится в боте при следующем /check_auth</span>
           </div>
         </div>
       </div>
@@ -606,32 +629,24 @@
         <div class="page-title">Feedback</div>
         <div class="section">
           <div class="section-header">
-            <div class="section-title">Обратная связь от пользователей</div>
+            <div class="section-title">Обратная связь от игроков</div>
             <button class="btn btn-ghost btn-sm" @click="loadFeedback()">
-              <span class="material-symbols-rounded" style="font-size:16px">refresh</span>
+              <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
             </button>
           </div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Время</th>
-                  <th>User ID</th>
-                  <th>Сообщение</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Время</th><th>User ID</th><th>Сообщение</th></tr></thead>
               <tbody>
                 <template x-for="f in feedbackItems" :key="f.id">
                   <tr>
-                    <td style="font-size:11px;white-space:nowrap;color:var(--md-on-surface-dim)" x-text="formatDate(f.created_at)"></td>
-                    <td style="font-family:monospace;font-size:12px" x-text="f.user_id"></td>
-                    <td style="font-size:13px" x-text="f.text"></td>
+                    <td style="white-space:nowrap;color:var(--text-dim)" x-text="formatDate(f.created_at)"></td>
+                    <td style="font-family:monospace;font-size:11px" x-text="f.user_id"></td>
+                    <td x-text="f.text"></td>
                   </tr>
                 </template>
-                <tr x-show="feedbackItems.length === 0">
-                  <td colspan="3" style="text-align:center;color:var(--md-on-surface-dim);padding:24px">
-                    Нет записей
-                  </td>
+                <tr x-show="feedbackItems.length===0">
+                  <td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Нет записей</td>
                 </tr>
               </tbody>
             </table>
@@ -644,55 +659,39 @@
     <template x-if="page==='leaderboard'">
       <div>
         <div class="page-title">Leaderboard TOP-50</div>
-
-        <div style="display:flex;gap:8px;margin-bottom:20px">
-          <button class="btn btn-sm"
-                  :class="lbPeriod==='alltime' ? 'btn-primary' : 'btn-ghost'"
-                  @click="lbPeriod='alltime'; loadLeaderboard()">All time</button>
-          <button class="btn btn-sm"
-                  :class="lbPeriod==='month' ? 'btn-primary' : 'btn-ghost'"
-                  @click="lbPeriod='month'; loadLeaderboard()">Month</button>
-          <button class="btn btn-sm"
-                  :class="lbPeriod==='week' ? 'btn-primary' : 'btn-ghost'"
-                  @click="lbPeriod='week'; loadLeaderboard()">Week</button>
+        <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+          <button class="btn btn-sm" :class="lbPeriod==='alltime'?'btn-accent':'btn-ghost'"
+            @click="lbPeriod='alltime';loadLeaderboard()">All time</button>
+          <button class="btn btn-sm" :class="lbPeriod==='month'?'btn-accent':'btn-ghost'"
+            @click="lbPeriod='month';loadLeaderboard()">Month</button>
+          <button class="btn btn-sm" :class="lbPeriod==='week'?'btn-accent':'btn-ghost'"
+            @click="lbPeriod='week';loadLeaderboard()">Week</button>
           <button class="btn btn-ghost btn-sm" @click="loadLeaderboard()">
-            <span class="material-symbols-rounded" style="font-size:16px">refresh</span>
+            <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
           </button>
         </div>
-
         <div class="section">
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Username / HWID</th>
-                  <th>Exchanges</th>
-                  <th>Crypts</th>
-                  <th>Total</th>
-                  <th>Last seen</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>#</th><th>Игрок</th><th>Биржи</th><th>Склепы</th><th>Итого</th><th>Последний вход</th>
+              </tr></thead>
               <tbody>
                 <template x-for="row in leaderboard" :key="row.rank">
                   <tr>
-                    <td style="color:var(--md-on-surface-dim);font-weight:600" x-text="row.rank"></td>
+                    <td style="color:var(--text-dim);font-weight:700" x-text="row.rank"></td>
                     <td>
-                      <div style="font-weight:500" x-text="row.username || '—'"></div>
-                      <div style="font-size:11px;color:var(--md-on-surface-dim);font-family:monospace"
-                           x-text="row.hwid || '—'"></div>
+                      <div style="font-weight:600" x-text="row.username||'—'"></div>
+                      <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
                     </td>
-                    <td style="color:var(--md-primary)" x-text="row.exchanges"></td>
-                    <td style="color:var(--md-secondary)" x-text="row.crypts"></td>
-                    <td style="font-weight:600" x-text="row.hunts_total"></td>
-                    <td style="font-size:12px;color:var(--md-on-surface-dim)"
-                        x-text="row.last_seen ? formatDate(row.last_seen) : '—'"></td>
+                    <td style="color:var(--accent);font-weight:600" x-text="row.exchanges"></td>
+                    <td style="color:var(--green);font-weight:600" x-text="row.crypts"></td>
+                    <td style="font-weight:700" x-text="row.hunts_total"></td>
+                    <td style="color:var(--text-dim)" x-text="row.last_seen?formatDate(row.last_seen):'—'"></td>
                   </tr>
                 </template>
-                <tr x-show="leaderboard.length === 0">
-                  <td colspan="6" style="text-align:center;color:var(--md-on-surface-dim);padding:24px">
-                    Нет данных
-                  </td>
+                <tr x-show="leaderboard.length===0">
+                  <td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
                 </tr>
               </tbody>
             </table>
@@ -707,172 +706,144 @@
   <div class="toast" x-show="toast" x-text="toast" x-cloak></div>
 
 <script>
-  const API  = '';   // Same origin — FastAPI на :8000 отдаёт и фронт, и API
-  const PER  = 50;
+const API = '';
+const PER = 50;
 
-  function adminApp() {
-    return {
-      authenticated: false,
-      tokenInput: '',
-      loginError: false,
-      token: localStorage.getItem('admin_token') || '',
+function adminApp() {
+  return {
+    authenticated: false,
+    tokenInput: '', loginError: false,
+    token: localStorage.getItem('admin_token') || '',
 
-      page: 'dashboard',
-      loading: false,
-      toast: '',
+    page: 'dashboard',
+    loading: false,
+    toast: '',
+    feedbackCount: 0,
 
-      stats: {},
-      users: [],
-      totalUsers: 0,
-      page_num: 1,
-      search: '',
-      onlineOnly: false,
-      logs: [],
-      broadcastMsg: '',
-      feedbackItems: [],
-      leaderboard: [],
-      lbPeriod: 'alltime',
+    stats: {},
+    users: [], totalUsers: 0,
+    page_num: 1, search: '', onlineOnly: false,
+    logs: [],
+    broadcastMsg: '',
+    feedbackItems: [],
+    leaderboard: [], lbPeriod: 'alltime',
 
-      // ── Init ─────────────────────────────────────────────────
-      async init() {
-        if (this.token) {
-          const ok = await this.verify();
-          if (ok) { this.authenticated = true; this.loadStats(); }
-          else     { this.token = ''; localStorage.removeItem('admin_token'); }
-        }
-      },
+    async init() {
+      if (this.token) {
+        const ok = await this.verify();
+        if (ok) { this.authenticated = true; this.loadStats(); this.loadFeedbackBadge(); }
+        else    { this.token = ''; localStorage.removeItem('admin_token'); }
+      }
+    },
 
-      async verify() {
-        try {
-          const r = await fetch(`${API}/admin/stats`, { headers: this.headers() });
-          return r.ok;
-        } catch { return false; }
-      },
+    async verify() {
+      try { const r = await fetch(`${API}/admin/stats`, { headers: this.headers() }); return r.ok; }
+      catch { return false; }
+    },
 
-      login() {
-        this.token = this.tokenInput;
-        this.verify().then(ok => {
-          if (ok) {
-            localStorage.setItem('admin_token', this.token);
-            this.authenticated = true;
-            this.loginError = false;
-            this.loadStats();
-          } else {
-            this.loginError = true;
-            this.token = '';
-          }
-        });
-      },
+    login() {
+      this.token = this.tokenInput;
+      this.verify().then(ok => {
+        if (ok) {
+          localStorage.setItem('admin_token', this.token);
+          this.authenticated = true; this.loginError = false;
+          this.loadStats(); this.loadFeedbackBadge();
+        } else { this.loginError = true; this.token = ''; }
+      });
+    },
 
-      headers() {
-        return { 'Authorization': `Bearer ${this.token}`, 'Content-Type': 'application/json' };
-      },
+    headers() {
+      return { 'Authorization': `Bearer ${this.token}`, 'Content-Type': 'application/json' };
+    },
 
-      // ── Stats ─────────────────────────────────────────────────
-      async loadStats() {
-        const r = await fetch(`${API}/admin/stats`, { headers: this.headers() });
-        if (r.ok) this.stats = await r.json();
-      },
+    async loadStats() {
+      this.loading = true;
+      const r = await fetch(`${API}/admin/stats`, { headers: this.headers() });
+      if (r.ok) this.stats = await r.json();
+      this.loading = false;
+    },
 
-      // ── Users ─────────────────────────────────────────────────
-      async loadUsers() {
-        this.loading = true;
-        const q = new URLSearchParams({ page: this.page_num, per_page: PER });
-        if (this.search) q.append('search', this.search);
-        if (this.onlineOnly) q.append('online_only', '1');
-        const r = await fetch(`${API}/admin/users?${q}`, { headers: this.headers() });
-        if (r.ok) {
-          const d = await r.json();
-          this.users = d.users;
-          this.totalUsers = d.total;
-        }
-        this.loading = false;
-      },
+    async loadUsers() {
+      this.loading = true;
+      const q = new URLSearchParams({ page: this.page_num, per_page: PER });
+      if (this.search) q.append('search', this.search);
+      if (this.onlineOnly) q.append('online_only', '1');
+      const r = await fetch(`${API}/admin/users?${q}`, { headers: this.headers() });
+      if (r.ok) { const d = await r.json(); this.users = d.users; this.totalUsers = d.total; }
+      this.loading = false;
+    },
 
-      async toggleBan(u) {
-        const r = await fetch(
-          `${API}/admin/ban?hwid=${u.hwid}&banned=${!u.is_banned}`,
-          { method: 'POST', headers: this.headers() }
-        );
-        if (r.ok) { u.is_banned = !u.is_banned; this.showToast(u.is_banned ? 'Забанен' : 'Разбанен'); }
-      },
+    async toggleBan(u) {
+      const prev = u.is_banned;
+      u.is_banned = !u.is_banned; // optimistic
+      const r = await fetch(`${API}/admin/ban?hwid=${u.hwid}&banned=${u.is_banned}`,
+        { method: 'POST', headers: this.headers() });
+      if (!r.ok) { u.is_banned = prev; this.showToast('Ошибка'); }
+      else this.showToast(u.is_banned ? 'Забанен' : 'Разбанен');
+    },
 
-      async deleteUser(u) {
-        if (!confirm(`Удалить пользователя ${u.email || u.hwid}?\nВсе данные будут стёрты!`)) return;
-        const r = await fetch(
-          `${API}/admin/delete_user?hwid=${u.hwid}`,
-          { method: 'POST', headers: this.headers() }
-        );
-        if (r.ok) { this.showToast('Пользователь удалён'); this.loadUsers(); }
-        else { this.showToast('Ошибка удаления'); }
-      },
+    async deleteUser(u) {
+      if (!confirm(`Удалить ${u.email || u.hwid}?\nВсе данные будут стёрты!`)) return;
+      this.users = this.users.filter(x => x.id !== u.id); // optimistic UI
+      const r = await fetch(`${API}/admin/delete_user?hwid=${u.hwid}`,
+        { method: 'POST', headers: this.headers() });
+      if (r.ok) { this.showToast('Пользователь удалён'); this.totalUsers--; }
+      else { this.loadUsers(); this.showToast('Ошибка удаления'); }
+    },
 
-      async adjustCredits(hwid, amount) {
-        const r = await fetch(
-          `${API}/admin/adjust_credits?hwid=${hwid}&amount=${amount}&note=admin+panel`,
-          { method: 'POST', headers: this.headers() }
-        );
-        if (r.ok) { this.showToast(`+${amount} кредитов начислено`); this.loadUsers(); }
-      },
+    async adjustCredits(u, amount) {
+      const r = await fetch(
+        `${API}/admin/adjust_credits?hwid=${u.hwid}&amount=${amount}&note=admin+panel`,
+        { method: 'POST', headers: this.headers() }
+      );
+      if (r.ok) {
+        const d = await r.json();
+        u.credits = d.credits;
+        this.showToast(`+${amount} ◆ начислено`);
+      }
+    },
 
-      // ── Logs ──────────────────────────────────────────────────
-      async loadLogs() {
-        const r = await fetch(`${API}/admin/logs?limit=50`, { headers: this.headers() });
-        if (r.ok) this.logs = await r.json();
-      },
+    async loadLogs() {
+      const r = await fetch(`${API}/admin/logs?limit=50`, { headers: this.headers() });
+      if (r.ok) this.logs = await r.json();
+    },
 
-      // ── Broadcast ─────────────────────────────────────────────
-      async sendBroadcast() {
-        const r = await fetch(
-          `${API}/admin/broadcast?message=${encodeURIComponent(this.broadcastMsg)}`,
-          { method: 'POST', headers: this.headers() }
-        );
-        if (r.ok) { this.showToast('Broadcast отправлен!'); this.broadcastMsg = ''; }
-      },
+    async sendBroadcast() {
+      const r = await fetch(
+        `${API}/admin/broadcast?message=${encodeURIComponent(this.broadcastMsg)}`,
+        { method: 'POST', headers: this.headers() }
+      );
+      if (r.ok) { this.showToast('Broadcast отправлен!'); this.broadcastMsg = ''; }
+    },
 
-      // ── Feedback ──────────────────────────────────────────────
-      async loadFeedback() {
-        const r = await fetch(`${API}/admin/feedback/list`, { headers: this.headers() });
-        if (r.ok) this.feedbackItems = await r.json();
-      },
+    async loadFeedback() {
+      const r = await fetch(`${API}/admin/feedback/list`, { headers: this.headers() });
+      if (r.ok) this.feedbackItems = await r.json();
+    },
 
-      // ── Leaderboard ───────────────────────────────────────────
-      async loadLeaderboard() {
-        const r = await fetch(`${API}/admin/leaderboard?period=${this.lbPeriod}`, { headers: this.headers() });
-        if (r.ok) { const data = await r.json(); this.leaderboard = data.items; }
-      },
+    async loadFeedbackBadge() {
+      try {
+        const r = await fetch(`${API}/admin/feedback/unread`, { headers: this.headers() });
+        if (r.ok) { const d = await r.json(); this.feedbackCount = d.count || 0; }
+      } catch {}
+    },
 
-      // ── Helpers ───────────────────────────────────────────────
-      formatDate(iso) {
-        if (!iso) return '—';
-        return new Date(iso).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
-      },
+    async loadLeaderboard() {
+      const r = await fetch(`${API}/admin/leaderboard?period=${this.lbPeriod}`, { headers: this.headers() });
+      if (r.ok) { const d = await r.json(); this.leaderboard = d.items; }
+    },
 
-      showToast(msg) {
-        this.toast = msg;
-        setTimeout(() => this.toast = '', 3000);
-      },
-    };
-  }
-</script>
+    formatDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+    },
 
-<script>
-async function loadFeedbackBadge() {
-  try {
-    const token = localStorage.getItem('admin_token') || '';
-    const r = await fetch('/admin/feedback/unread', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const d = await r.json();
-    const badge = document.getElementById('feedback-badge');
-    if (badge) {
-      badge.textContent = d.count;
-      badge.style.display = d.count > 0 ? 'inline-block' : 'none';
-    }
-  } catch {}
+    showToast(msg) {
+      this.toast = msg;
+      setTimeout(() => this.toast = '', 3000);
+    },
+  };
 }
-loadFeedbackBadge();
-setInterval(loadFeedbackBadge, 30000);
 </script>
 </body>
 </html>
