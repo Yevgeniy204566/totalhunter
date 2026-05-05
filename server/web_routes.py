@@ -314,6 +314,7 @@ async def link_verify(
             await db.execute(update(Hunt).where(Hunt.user_id == bot_user.id).values(user_id=web_user.id))
             await db.execute(update(Transaction).where(Transaction.user_id == bot_user.id).values(user_id=web_user.id))
             await db.delete(bot_user)
+            await db.flush()  # DELETE bot_user до UPDATE web_user.hwid — иначе unique constraint падает
 
         web_user.hwid = hwid
         db.add(HwidHistory(hwid=hwid, user_id=web_user.id))
