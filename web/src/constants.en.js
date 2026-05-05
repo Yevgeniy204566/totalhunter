@@ -1,3 +1,27 @@
+export const DOWNLOAD = {
+  badge:       'Windows · v1.0',
+  title:       'Download Total Hunter',
+  subtitle:    'Install the bot in 2 minutes and start farming exchanges and crypts automatically.',
+  btnDownload: 'Download TotalHunter.zip',
+  btnGuide:    'Installation Guide',
+  sysTitle:    'System Requirements',
+  sysItems: [
+    { icon: '🖥', label: 'Windows 10 / 11 (64-bit)' },
+    { icon: '💾', label: '~1.5 GB free disk space' },
+    { icon: '🌐', label: 'Internet connection' },
+    { icon: '🎮', label: 'Total Battle (browser or client)' },
+  ],
+  stepsTitle: 'How to Install',
+  steps: [
+    { n: '1', text: 'Download TotalHunter.zip and extract it to any folder.' },
+    { n: '2', text: 'Run TotalHunter.exe — Windows Defender may ask for permission, click "Run anyway".' },
+    { n: '3', text: 'Sign in with Google and link your device in the dashboard.' },
+  ],
+  noteTitle: 'First Launch',
+  noteText:  'First 100 diamonds are free. Sign in with Google, no credit card required.',
+  backHome:  '← Back to Home',
+}
+
 export const LANDING = {
   badge:      'Total Battle · Automation',
   heroTitle:  'Total Hunter —',

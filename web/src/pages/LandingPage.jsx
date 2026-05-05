@@ -95,6 +95,12 @@ export default function LandingPage() {
           }}>
             {lang === 'en' ? 'Guide' : 'Гайд'}
           </Link>
+          <Link to="/download" style={{
+            padding: '8px 16px', borderRadius: 8, fontSize: 14,
+            color: 'var(--accent)', border: '1px solid rgba(61,127,255,0.4)', fontWeight: 600,
+          }}>
+            {lang === 'en' ? '⬇ Download' : '⬇ Скачать'}
+          </Link>
           <button onClick={toggle} style={{
             padding: '8px 12px', borderRadius: 8, fontSize: 13,
             background: 'transparent', color: 'var(--on-surface2)',
@@ -192,14 +198,16 @@ export default function LandingPage() {
             }}>
               {isLoggedIn() ? (lang === 'en' ? 'Go to Dashboard →' : 'Перейти в Dashboard →') : LANDING.ctaPrimary}
             </Link>
-            <a href="#features" style={{
+            <Link to="/download" style={{
               padding: '17px 32px', borderRadius: 10, fontSize: 17,
               background: 'transparent', color: '#FFFFFF',
               fontWeight: 600, textDecoration: 'none',
-              border: '1px solid rgba(255,255,255,0.18)', display: 'inline-block',
+              border: '1px solid rgba(255,255,255,0.18)', display: 'inline-flex',
+              alignItems: 'center', gap: 8,
             }}>
-              {LANDING.ctaSecondary}
-            </a>
+              <span>⬇</span>
+              {lang === 'en' ? 'Download' : 'Скачать'}
+            </Link>
           </div>
         </div>
       </section>
@@ -309,6 +317,9 @@ export default function LandingPage() {
       }}>
         <span style={{ color: 'var(--on-surface2)', fontSize: 13 }}>© 2026 Total Hunter</span>
         <div style={{ display: 'flex', gap: 20 }}>
+          <Link to="/download" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
+            {lang === 'en' ? 'Download' : 'Скачать'}
+          </Link>
           <Link to="/guide" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
             {lang === 'en' ? 'Guide' : 'Гайд'}
           </Link>

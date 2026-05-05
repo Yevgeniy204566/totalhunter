@@ -1,3 +1,27 @@
+export const DOWNLOAD = {
+  badge:       'Windows · v1.0',
+  title:       'Скачать Total Hunter',
+  subtitle:    'Установи бота за 2 минуты и начни фармить биржи и склепы автоматически.',
+  btnDownload: 'Скачать TotalHunter.zip',
+  btnGuide:    'Инструкция по установке',
+  sysTitle:    'Системные требования',
+  sysItems: [
+    { icon: '🖥', label: 'Windows 10 / 11 (64-bit)' },
+    { icon: '💾', label: '~1.5 GB свободного места' },
+    { icon: '🌐', label: 'Интернет-соединение' },
+    { icon: '🎮', label: 'Игра Total Battle (браузер или клиент)' },
+  ],
+  stepsTitle: 'Как установить',
+  steps: [
+    { n: '1', text: 'Скачай архив TotalHunter.zip и распакуй в любую папку.' },
+    { n: '2', text: 'Запусти TotalHunter.exe — Windows Defender может попросить разрешение, нажми «Всё равно запустить».' },
+    { n: '3', text: 'Войди через Google-аккаунт и привяжи устройство в личном кабинете.' },
+  ],
+  noteTitle: 'Первый запуск',
+  noteText:  'Первые 100 алмазов — бесплатно. Регистрация через Google, кредитная карта не нужна.',
+  backHome:  '← На главную',
+}
+
 export const LANDING = {
   badge:      'Total Battle · Автоматизация',
   heroTitle:  'Total Hunter —',
