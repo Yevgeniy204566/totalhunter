@@ -1593,9 +1593,8 @@ class TotalHunterApp(ctk.CTk):
             if self.always_on_top_var.get():
                 self.always_on_top_var.set(False)
                 self._on_always_on_top()
-            # TODO: re-enable credits check before commercial launch
-            # if self.current_credits <= 0:
-            #     messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
+            if self.current_credits <= 0:
+                messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
             try:
                 cx = int(self.nav_cx_entry.get())
                 cy = int(self.nav_cy_entry.get())
