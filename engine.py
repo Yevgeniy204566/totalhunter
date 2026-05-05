@@ -15,8 +15,15 @@ nav_logger.install()
 class HuntEngine:
     def __init__(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.model_path = os.path.join(script_dir, 'exchange.pt')
-        self.model = YOLO(self.model_path)
+        enc_path = os.path.join(script_dir, 'exchange.pte')
+        pt_path  = os.path.join(script_dir, 'exchange.pt')
+        if os.path.exists(enc_path):
+            from model_crypto import yolo_from_encrypted
+            self.model = yolo_from_encrypted(enc_path)
+            self.model_path = enc_path
+        else:
+            self.model_path = pt_path
+            self.model = YOLO(pt_path)
 
         files_in_dir = os.listdir(script_dir)
         sound_file = next((f for f in files_in_dir if f.lower().endswith('.wav')), None)

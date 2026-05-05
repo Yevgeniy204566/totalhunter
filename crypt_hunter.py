@@ -134,9 +134,11 @@ def parse_oil_value(text: str) -> int:
 # ══════════════════════════════════════════════════════════════
 #  Путь к модели
 # ══════════════════════════════════════════════════════════════
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH  = os.path.join(_SCRIPT_DIR, 'targets', 'crypts.pt')
-_LOG_DIR    = os.path.join(_SCRIPT_DIR, 'logs')
+_SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
+_MODEL_ENC     = os.path.join(_SCRIPT_DIR, 'targets', 'crypts.pte')
+_MODEL_PLAIN   = os.path.join(_SCRIPT_DIR, 'targets', 'crypts.pt')
+MODEL_PATH     = _MODEL_ENC if os.path.exists(_MODEL_ENC) else _MODEL_PLAIN
+_LOG_DIR       = os.path.join(_SCRIPT_DIR, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 
 # ══════════════════════════════════════════════════════════════
@@ -191,7 +193,11 @@ class CryptHunter:
     """Автосбор склепов через меню Дозорной башни."""
 
     def __init__(self):
-        self._model = YOLO(MODEL_PATH)
+        if MODEL_PATH.endswith('.pte'):
+            from model_crypto import yolo_from_encrypted
+            self._model = yolo_from_encrypted(MODEL_PATH)
+        else:
+            self._model = YOLO(MODEL_PATH)
         self.is_running = False
         self._thread: threading.Thread | None = None
         self.on_found_callback  = None   # fn(crypt_type: str)
