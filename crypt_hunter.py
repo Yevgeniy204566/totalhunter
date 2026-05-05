@@ -468,7 +468,7 @@ class CryptHunter:
 
     def _open_watchtower(self):
         """Открыть меню Дозорной башни."""
-        self._status("Открываю Дозорную башню...")
+        # self._status("Открываю Дозорную башню...")
         pos = None
         if _TEMPLATE_AVAILABLE:
             # Ищем pipe.png в фиксированном регионе экрана (не через scale_coord —
@@ -480,9 +480,9 @@ class CryptHunter:
             )
             pos = find_in_screen_region('pipe.png', search_region, threshold=0.60)
             if pos:
-                self._status(f"  [template] pipe.png → {pos}")
+                # self._status(f"  [template] pipe.png → {pos}")
             else:
-                self._status("  [template] pipe.png не найден — использую координаты")
+                # self._status("  [template] pipe.png не найден — использую координаты")
         if pos is not None:
             self._click(*pos, jitter=5, raw=True)
         else:
@@ -491,7 +491,7 @@ class CryptHunter:
 
     def _select_crypts_tab(self):
         """Кликнуть «Склепы и арены» в боковом меню башни."""
-        self._status("Выбираю вкладку «Склепы и арены»...")
+        # self._status("Выбираю вкладку «Склепы и арены»...")
         pos = None
         if _TEMPLATE_AVAILABLE:
             search_region = (
@@ -500,9 +500,9 @@ class CryptHunter:
             )
             pos = find_in_screen_region('tab_crypts.png', search_region, threshold=0.60)
             if pos:
-                self._status(f"  [template] tab_crypts.png → {pos}")
+                # self._status(f"  [template] tab_crypts.png → {pos}")
             else:
-                self._status("  [template] tab_crypts.png не найден — использую координаты")
+                # self._status("  [template] tab_crypts.png не найден — использую координаты")
         if pos is not None:
             self._click(*pos, jitter=5, raw=True)
         else:
@@ -514,7 +514,7 @@ class CryptHunter:
         Сбросить поиск склепов на начало.
         Два клика по «Арена» с паузой 1 сек между ними.
         """
-        self._status("Конец списка — кликаю Арену для сброса...")
+        # self._status("Конец списка — кликаю Арену для сброса...")
         self._click(*WT_ARENA_TAB, jitter=3)
         self._interruptible_sleep(random.uniform(0.9, 1.1))
         self._click(*WT_ARENA_TAB, jitter=3)
@@ -532,7 +532,7 @@ class CryptHunter:
         Сканирует только MENU_SCAN_REGION — не смотрит на игровое поле.
         Возвращает GUI-имя найденного типа или None если дошли до конца.
         """
-        self._status("Ищу склеп в меню...")
+        # self._status("Ищу склеп в меню...")
         # Переводим мышь в зону списка — туда куда будет идти скролл
         pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
                          duration=random.uniform(0.3, 0.5))
@@ -564,17 +564,17 @@ class CryptHunter:
                 if not _images_differ(prev_menu_snap, menu_snap):
                     no_move_count += 1
                     if no_move_count >= 3:
-                        self._status(
-                            f"Конец списка: меню не двигается "
-                            f"({scroll_idx} скроллов)"
-                        )
+                        # self._status(
+                        #     f"Конец списка: меню не двигается "
+                        #     f"({scroll_idx} скроллов)"
+                        # )
                         return None
                 else:
                     no_move_count = 0
             prev_menu_snap = menu_snap
 
             scroll_idx += 1
-            self._status(f"Ищу склеп... скролл {scroll_idx}")
+            # self._status(f"Ищу склеп... скролл {scroll_idx}")
             results = self._model(img, conf=self._conf, verbose=False)
 
             for r in results:
@@ -606,7 +606,7 @@ class CryptHunter:
                     # склеп откроется целиком, кнопка «Перейти» будет полностью видна.
                     nudge_threshold = ms_y + int(ms_h * 0.72)  # нижние 28% меню
                     if cy > nudge_threshold:
-                        self._status(f"  Доскролл: склеп у края (cy={cy})...")
+                        # self._status(f"  Доскролл: склеп у края (cy={cy})...")
                         pyautogui.scroll(-2)
                         self._interruptible_sleep(0.35)
                         if not self.is_running:
@@ -640,12 +640,12 @@ class CryptHunter:
                         goto_pos = find_in_screen_region('transition.png', btn_region,
                                                          threshold=0.70)
                         if goto_pos is None:
-                            self._status(f"  transition.png не найден — клик по позиции")
+                            # self._status(f"  transition.png не найден — клик по позиции")
                     if goto_pos is None:
                         sc_x = scale_coord(WT_GOTO_BTN_X, 0)[0] if _VISUAL_NAV_AVAILABLE else WT_GOTO_BTN_X
                         goto_pos = (sc_x, cy + 17)
 
-                    self._status(f"Найден: {gui_name} — кнопка «Перейти» → {goto_pos}")
+                    # self._status(f"Найден: {gui_name} — кнопка «Перейти» → {goto_pos}")
                     self._click(*goto_pos, jitter=2, raw=True)
                     self._random_pause(0.8, 1.5)
                     return gui_name
@@ -667,7 +667,7 @@ class CryptHunter:
         screen_cx, screen_cy = 960, 540  # центр 1920×1080
         yolo_target = GUI_TO_YOLO.get(crypt_type)  # например "crypt_7"
 
-        self._status(f"Ищу {crypt_type} на карте...")
+        # self._status(f"Ищу {crypt_type} на карте...")
         for _ in range(attempts):
             if not self.is_running:
                 return False
@@ -701,7 +701,7 @@ class CryptHunter:
                         best_box = (cx, cy)
 
             if best_box:
-                self._status(f"{crypt_type} найден на карте — кликаю")
+                # self._status(f"{crypt_type} найден на карте — кликаю")
                 self._click(best_box[0], best_box[1], jitter=4, raw=True)
                 self._random_pause(0.8, 1.2)
                 return True
@@ -726,7 +726,7 @@ class CryptHunter:
             tight = (sc[0] - 100, sc[1] - 35, 200, 70)
             pos = find_in_screen_region('btn_issledovat.png', tight, threshold=0.65)
             if pos:
-                self._status(f"  [tmpl] кнопка уточнена → {pos}")
+                # self._status(f"  [tmpl] кнопка уточнена → {pos}")
                 return pos
 
         return None  # caller кликнет по ref напрямую — координата откалибрована
@@ -746,17 +746,17 @@ class CryptHunter:
             found = find_in_screen_region('btn_issledovat.png', gate_region, threshold=0.60)
             if found:
                 self._log("INFO", f"[EXP] btn_issledovat найден → {found} (кликаем по эталону)")
-                self._status("Диалог открыт — нажимаю «Исследовать»...")
+                # self._status("Диалог открыт — нажимаю «Исследовать»...")
                 sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
                 self._click(*sc, raw=True)
             else:
                 self._log("WARN", "[EXP] btn_issledovat НЕ найден — диалог не открыт, рестарт цикла")
-                self._status("[EXP] Диалог склепа не обнаружен — рестарт")
+                # self._status("[EXP] Диалог склепа не обнаружен — рестарт")
                 return False
 
             self._interruptible_sleep(1.5)
         else:
-            self._status("Нажимаю «Исследовать»...")
+            # self._status("Нажимаю «Исследовать»...")
             sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
             self._click(*sc, raw=True)
             self._interruptible_sleep(1.5)
@@ -774,7 +774,7 @@ class CryptHunter:
         Кликнуть по полосе события Картера вверху экрана (кнопка «Ускорить»).
         Возвращает True если диалог ускорения открылся, False — рестарт цикла.
         """
-        self._status("Кликаю по полосе Картера...")
+        # self._status("Кликаю по полосе Картера...")
         self._random_pause(1.5, 2.0)
         pos = None
         if _TEMPLATE_AVAILABLE:
@@ -782,7 +782,7 @@ class CryptHunter:
                               ref_cx=CARTER_EVENT_BAR[0], ref_cy=CARTER_EVENT_BAR[1],
                               rw=400, rh=80)
             if pos:
-                self._status(f"  [tmpl] Ускорить → {pos}")
+                # self._status(f"  [tmpl] Ускорить → {pos}")
         if pos is None:
             pos = self._find_button(
                 ref_region=(900, 85, 500, 60),
@@ -802,7 +802,7 @@ class CryptHunter:
         for i in range(applied):
             if not self.is_running:
                 return
-            self._status(f"Ускорение {i + 1}/{applied}")
+            # self._status(f"Ускорение {i + 1}/{applied}")
             self._click(*sc_use, raw=True)
             self._random_pause(0.8, 1.2)
 
@@ -818,10 +818,10 @@ class CryptHunter:
             if not self.is_running:
                 return False
             if verify_fn():
-                self._status(f"  ✓ {name} — подтверждено")
+                # self._status(f"  ✓ {name} — подтверждено")
                 return True
             self._interruptible_sleep(0.5)
-        self._status(f"  ✗ {name} — не подтверждено за {timeout:.0f}с → рестарт")
+        # self._status(f"  ✗ {name} — не подтверждено за {timeout:.0f}с → рестарт")
         return False
 
     def _close_dialog(self):
@@ -848,9 +848,9 @@ class CryptHunter:
             region = scale_region(*ref_region)
             pos = find_colored_button(region, color, pick)
             if pos:
-                self._status(f"  [visual] {color}/{pick} → {pos}")
+                # self._status(f"  [visual] {color}/{pick} → {pos}")
                 return pos
-            self._status(f"  [visual] не найдено — использую fallback")
+            # self._status(f"  [visual] не найдено — использую fallback")
         if _VISUAL_NAV_AVAILABLE:
             return scale_coord(*fallback)
         return fallback
@@ -908,7 +908,7 @@ class CryptHunter:
             crypt_type = self._scroll_and_find(self._selected)
             if crypt_type is None and self.is_running:
                 wait = 30.0
-                self._status(f"Конец списка — жду {wait:.0f} сек...")
+                # self._status(f"Конец списка — жду {wait:.0f} сек...")
                 self._interruptible_sleep(wait)
                 self._reset_search()
 
@@ -920,13 +920,13 @@ class CryptHunter:
 
         # [6] YOLO на карте — ищем тот же тип, ближайший к центру
         if not self._detect_on_map(crypt_type):
-            self._status("Склеп не найден на карте — начинаю сначала")
+            # self._status("Склеп не найден на карте — начинаю сначала")
             return  # РЕСТАРТ
 
         # [6.5] Для R-типов: открываем склеп (пустой диалог, только кнопка «Открыть»)
         # После клика появляется обычный диалог с маслом и временем марша
         if crypt_type in RARE_CRYPT_TYPES:
-            self._status("Редкий склеп — нажимаю «Открыть»")
+            # self._status("Редкий склеп — нажимаю «Открыть»")
             sc_open = scale_dialog(*CRYPT_OPEN_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_OPEN_BTN
             self._click(*sc_open, raw=True)
             time.sleep(0.4)
@@ -934,7 +934,7 @@ class CryptHunter:
 
         # [7] Отправляем Капитана
         if not self._send_captain(crypt_type):
-            self._status("Капитан не отправлен — перезапуск цикла")
+            # self._status("Капитан не отправлен — перезапуск цикла")
             return
 
         if not self.is_running:
@@ -944,7 +944,7 @@ class CryptHunter:
         n = self._accelerations
         if n > 0:
             if not self._click_captain_event():
-                self._status("Диалог ускорения не открылся — перезапуск цикла")
+                # self._status("Диалог ускорения не открылся — перезапуск цикла")
                 return
             self._accelerate(n)
 
