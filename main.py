@@ -553,33 +553,11 @@ class TotalHunterApp(ctk.CTk):
         self.nav_toggle.pack(side="right")
         self._i18n_labels.append((self.nav_toggle, "nav_auto"))
 
-        # CENTER X / Y
+        # CENTER X / Y — берётся из calibration (coord_manager.ref_a)
+        # Невидимые виджеты для обратной совместимости с _on_nav_toggle и _load_settings
         self.nav_xy_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
-        self.nav_xy_frame.pack(fill="x", padx=10, pady=(0, 2))
-        ctk.CTkLabel(self.nav_xy_frame, text="Center X:",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left", padx=(0,2))
-        self.nav_cx_entry = ctk.CTkEntry(self.nav_xy_frame, width=55, justify="center",
-                                         font=ctk.CTkFont(size=13),
-                                         fg_color=MD3["card"],
-                                         border_color=MD3["outline"],
-                                         text_color=MD3["on_surface"],
-                                         corner_radius=6)
-        self.nav_cx_entry.insert(0, "90")
-        self.nav_cx_entry.pack(side="left", padx=(0, 10))
-        self.nav_cx_entry.bind('<KeyRelease>', self._show_calibration_dot)
-        ctk.CTkLabel(self.nav_xy_frame, text="Center Y:",
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"]).pack(side="left", padx=(0,2))
-        self.nav_cy_entry = ctk.CTkEntry(self.nav_xy_frame, width=55, justify="center",
-                                         font=ctk.CTkFont(size=13),
-                                         fg_color=MD3["card"],
-                                         border_color=MD3["outline"],
-                                         text_color=MD3["on_surface"],
-                                         corner_radius=6)
-        self.nav_cy_entry.insert(0, "925")
-        self.nav_cy_entry.pack(side="left")
-        self.nav_cy_entry.bind('<KeyRelease>', self._show_calibration_dot)
+        self.nav_cx_entry = ctk.CTkEntry(self.nav_xy_frame)
+        self.nav_cy_entry = ctk.CTkEntry(self.nav_xy_frame)
 
         # ── Coastal Snake parameters ──────────────────────────────────────
         nav_sliders_frame = ctk.CTkScrollableFrame(self.nav_frame,
@@ -1459,8 +1437,7 @@ class TotalHunterApp(ctk.CTk):
         """Dim nav controls when auto-navigation is disabled."""
         enabled = self.nav_enabled_var.get()
         state = "normal" if enabled else "disabled"
-        for w in (self.nav_step_slider, self.nav_wait_slider,
-                  self.nav_cx_entry, self.nav_cy_entry):
+        for w in (self.nav_step_slider, self.nav_wait_slider):
             w.configure(state=state)
 
     def _update_nav_labels(self, _=None):
@@ -1484,12 +1461,12 @@ class TotalHunterApp(ctk.CTk):
         self._show_calibration_dot()
 
     def _show_calibration_dot(self, _=None):
-        """Show a red dot on screen at the joystick center position."""
+        """Show a red dot on screen at the joystick center (from calibration)."""
         import tkinter as tk
         try:
-            cx = int(self.nav_cx_entry.get())
-            cy = int(self.nav_cy_entry.get())
-        except ValueError:
+            cx = int(coord_manager.ref_a[0])
+            cy = int(coord_manager.ref_a[1])
+        except Exception:
             return
 
         if not hasattr(self, '_dot_win') or not self._dot_win.winfo_exists():
@@ -1511,8 +1488,6 @@ class TotalHunterApp(ctk.CTk):
     def _save_settings(self):
         try:
             cfg = {
-                'center_x':     self.nav_cx_entry.get(),
-                'center_y':     self.nav_cy_entry.get(),
                 'step':         int(self.nav_step_slider.get()),
                 'conf':         round(self.conf_slider.get(), 2),
                 'scan_interval': round(self.speed_slider.get(), 1),
@@ -1537,12 +1512,7 @@ class TotalHunterApp(ctk.CTk):
                 return
             with open(GUI_CONFIG_PATH) as f:
                 cfg = json.load(f)
-            if 'center_x' in cfg:
-                self.nav_cx_entry.delete(0, 'end')
-                self.nav_cx_entry.insert(0, str(cfg['center_x']))
-            if 'center_y' in cfg:
-                self.nav_cy_entry.delete(0, 'end')
-                self.nav_cy_entry.insert(0, str(cfg['center_y']))
+            # center_x/center_y больше не хранятся — берутся из coord_manager.ref_a
             if 'step' in cfg:
                 self.nav_step_slider.set(cfg['step'])
             if 'conf' in cfg:
@@ -1573,8 +1543,8 @@ class TotalHunterApp(ctk.CTk):
             if self.current_credits <= 0:
                 messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
             try:
-                cx = int(self.nav_cx_entry.get())
-                cy = int(self.nav_cy_entry.get())
+                # Центр джойстика — из калибровки (единственный источник правды)
+                cx, cy = int(coord_manager.ref_a[0]), int(coord_manager.ref_a[1])
                 step = int(self.nav_step_slider.get())
                 scan_interval = float(self.speed_slider.get())
                 move_wait = float(self.nav_wait_slider.get())
@@ -1584,8 +1554,8 @@ class TotalHunterApp(ctk.CTk):
             try:
                 self.engine.start(
                     conf=self.conf_slider.get(),
-                    center_x=int(self.nav_cx_entry.get()),
-                    center_y=int(self.nav_cy_entry.get()),
+                    center_x=cx,
+                    center_y=cy,
                     joystick_step=int(self.nav_step_slider.get()),
                     scan_interval=self.speed_slider.get(),
                     move_wait=self.nav_wait_slider.get(),
