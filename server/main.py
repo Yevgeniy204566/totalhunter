@@ -430,16 +430,34 @@ async def transfer_referral_balance(req: HwidRequest, db: AsyncSession = Depends
 
 # ── GET /version/latest ───────────────────────────────────────────────────────
 
-LATEST_VERSION     = os.environ.get("LATEST_VERSION", "1.0.5")
-LATEST_DOWNLOAD_URL = os.environ.get(
-    "LATEST_DOWNLOAD_URL",
-    "https://github.com/Yevgeniy204566/totalhunter/releases/download/v1.0.5/TotalHunter.zip"
-)
+_DL_BASE = "https://github.com/Yevgeniy204566/totalhunter/releases/download"
 
 @app.get("/version/latest")
-async def version_latest():
-    """Возвращает актуальную версию и ссылку для скачивания."""
-    return {"version": LATEST_VERSION, "download_url": LATEST_DOWNLOAD_URL}
+async def version_latest(db: AsyncSession = Depends(get_db)):
+    """Возвращает актуальную версию и ссылку для скачивания (из БД)."""
+    version = await _get_setting("latest_version", db) or "1.0.6"
+    dl_url  = await _get_setting("latest_download_url", db) or \
+              f"{_DL_BASE}/v{version}/TotalHunter.zip"
+    return {"version": version, "download_url": dl_url}
+
+
+@app.post("/admin/version/update", dependencies=[Depends(require_admin)])
+async def admin_update_version(
+    version: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Обновить текущую версию бота (admin). Автоматически формирует URL."""
+    dl_url = f"{_DL_BASE}/v{version}/TotalHunter.zip"
+    async with db.begin():
+        for key, val in [("latest_version", version), ("latest_download_url", dl_url)]:
+            existing = (await db.execute(
+                select(AppSetting).where(AppSetting.key == key)
+            )).scalar_one_or_none()
+            if existing:
+                existing.value = val
+            else:
+                db.add(AppSetting(key=key, value=val))
+    return {"success": True, "version": version, "download_url": dl_url}
 
 
 # ═════════════════════════════════════════════════════════════════════════════

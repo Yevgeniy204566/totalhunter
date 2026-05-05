@@ -436,6 +436,35 @@
             <div class="stat-value c-green" x-text="stats.crypts_total ?? '…'"></div>
           </div>
         </div>
+        <!-- Version Management -->
+        <div class="section" style="border-color:rgba(0,240,255,0.25)">
+          <div class="section-header">
+            <div class="section-title">
+              <span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle;margin-right:6px">system_update</span>
+              Версия бота
+            </div>
+            <button class="btn btn-ghost btn-sm" @click="loadCurrentVersion()">
+              <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
+            </button>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div style="font-size:12px;color:var(--text-dim)">Текущая в БД:</div>
+            <div style="font-size:18px;font-weight:700;color:var(--accent)" x-text="currentVersion||'загрузка...'"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center">
+            <input class="inp" placeholder="Новая версия, напр. 1.0.6"
+              x-model="newVersion" style="width:200px">
+            <button class="btn btn-accent btn-sm" @click="publishVersion()"
+              :disabled="!newVersion">
+              <span class="material-symbols-rounded" style="font-size:15px">rocket_launch</span>
+              Опубликовать
+            </button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+            URL формируется автоматически: github.com/.../releases/download/v{версия}/TotalHunter.zip
+          </div>
+        </div>
+
         <div class="section">
           <div class="section-header">
             <div class="section-title">Быстрые действия</div>
@@ -756,6 +785,8 @@ function adminApp() {
     logs: [],
     broadcastMsg: '',
     feedbackItems: [],
+    currentVersion: '',
+    newVersion: '',
     leaderboard: [], lbPeriod: 'alltime',
 
     async init() {
@@ -791,6 +822,29 @@ function adminApp() {
       const r = await fetch(`${API}/admin/stats`, { headers: this.headers() });
       if (r.ok) this.stats = await r.json();
       this.loading = false;
+      this.loadCurrentVersion();
+    },
+
+    async loadCurrentVersion() {
+      try {
+        const r = await fetch(`${API}/version/latest`);
+        if (r.ok) { const d = await r.json(); this.currentVersion = d.version; }
+      } catch {}
+    },
+
+    async publishVersion() {
+      if (!this.newVersion.trim()) return;
+      if (!confirm(`Опубликовать версию ${this.newVersion}?\nПользователи со старой версией обновятся при следующем запуске.`)) return;
+      const r = await fetch(
+        `${API}/admin/version/update?version=${encodeURIComponent(this.newVersion)}`,
+        { method: 'POST', headers: this.headers() }
+      );
+      if (r.ok) {
+        const d = await r.json();
+        this.currentVersion = d.version;
+        this.newVersion = '';
+        this.showToast(`v${d.version} опубликована! Боты обновятся автоматически.`);
+      } else { this.showToast('Ошибка'); }
     },
 
     async loadUsers() {
