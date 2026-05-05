@@ -217,11 +217,19 @@ class TotalHunterApp(ctk.CTk):
        
         self.title("Total Battle Hunter Pro v2.4")
         self.geometry("460x1010")
-        self.resizable(False, False)
+        self.resizable(True, True)
+        self.minsize(400, 500)
         self.configure(fg_color=MD3["bg"])
 
+        self._outer = ctk.CTkScrollableFrame(
+            self, fg_color=MD3["bg"], corner_radius=0,
+            scrollbar_button_color=MD3["outline"],
+            scrollbar_button_hover_color=MD3["primary"],
+        )
+        self._outer.pack(fill="both", expand=True)
+
         # Шапка: «Поверх окон» слева, выбор языка справа
-        _header = ctk.CTkFrame(self, fg_color="transparent")
+        _header = ctk.CTkFrame(self._outer, fg_color="transparent")
         _header.pack(fill="x", padx=20, pady=(10, 4))
         self.always_on_top_var = ctk.BooleanVar(value=False)
         ctk.CTkLabel(_header, text="On top:", font=ctk.CTkFont(size=14, weight="bold"),
@@ -267,21 +275,21 @@ class TotalHunterApp(ctk.CTk):
 
 
         # Заголовок и HWID
-        self.label_title = ctk.CTkLabel(self, text=LANGS[self.current_lang]["title"],
+        self.label_title = ctk.CTkLabel(self._outer, text=LANGS[self.current_lang]["title"],
                                         font=ctk.CTkFont(size=22, weight="bold"),
                                         text_color=MD3["on_surface"])
         self.label_title.pack(pady=(0, 5))
-        self.label_hwid = ctk.CTkLabel(self, text=f"HWID: {get_hwid()}",
+        self.label_hwid = ctk.CTkLabel(self._outer, text=f"HWID: {get_hwid()}",
                                        font=ctk.CTkFont(size=10),
                                        text_color=MD3["outline"])
         self.label_hwid.pack()
-        self.label_email = ctk.CTkLabel(self, text="",
+        self.label_email = ctk.CTkLabel(self._outer, text="",
                                         font=ctk.CTkFont(size=12, weight="bold"),
                                         text_color=MD3["primary"])
         self.label_email.pack()
 
         # ── Глобальный инфо-баннер (логин / объявления) ──────────────────
-        self.info_banner = ctk.CTkFrame(self, fg_color=MD3["elevated"],
+        self.info_banner = ctk.CTkFrame(self._outer, fg_color=MD3["elevated"],
                                         corner_radius=10)
         self.info_banner.pack(fill="x", padx=20, pady=(4, 0))
 
@@ -302,7 +310,7 @@ class TotalHunterApp(ctk.CTk):
                                             text_color="#FFD740", wraplength=380)
 
         # Вкладки
-        self.tabview = ctk.CTkTabview(self, width=420, height=780,
+        self.tabview = ctk.CTkTabview(self._outer, width=420, height=780,
                                       fg_color=MD3["card"],
                                       segmented_button_fg_color=MD3["elevated"],
                                       segmented_button_selected_color=MD3["tab_selected"],
@@ -312,7 +320,7 @@ class TotalHunterApp(ctk.CTk):
                                       text_color=MD3["on_surface"],
                                       text_color_disabled=MD3["on_surface2"],
                                       corner_radius=12)
-        self.tabview.pack(padx=20, pady=10, fill="both", expand=True)
+        self.tabview.pack(padx=20, pady=10, fill="x")
        
         self.tab_crypt = self.tabview.add(LANGS[self.current_lang]["tab_crypt"])
         self.tab_hunt  = self.tabview.add(LANGS[self.current_lang]["tab_hunt"])
