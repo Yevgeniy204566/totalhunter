@@ -198,6 +198,7 @@ class CryptHunter:
         self.on_status_callback = None   # fn(message: str)
         self.on_stop_callback   = None   # fn(reason: str)
         self.on_oil_callback    = None   # fn(ordinary: int, epic: int, rare: int)
+        self.oil_check_enabled  = True   # если False — оба механизма масла отключены
 
         self._log_file: str | None = None
 
@@ -725,7 +726,7 @@ class CryptHunter:
         self._random_pause()
 
         # Проверяем масло ДО клика — читаем прямо с панели HUD
-        if not self._check_oil_level(crypt_type):
+        if self.oil_check_enabled and not self._check_oil_level(crypt_type):
             return False
 
         if _EXP_DIALOG_GATE and _TEMPLATE_AVAILABLE:
@@ -749,7 +750,7 @@ class CryptHunter:
             sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
             self._click(*sc, raw=True)
             self._interruptible_sleep(1.5)
-            if self._check_oil_dialog():
+            if self.oil_check_enabled and self._check_oil_dialog():
                 self._emergency_stop("OIL_LOW: масло закончилось")
                 return False
 
