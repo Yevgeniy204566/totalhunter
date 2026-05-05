@@ -143,6 +143,7 @@ LANGS = {
         "crypt_start": "ЗАПУСТИТЬ СБОР СКЛЕПОВ", "crypt_stop_btn": "ОСТАНОВИТЬ",
         "crypt_ready": "ГОТОВО", "crypt_stopped": "Остановлено",
         "crypt_select_warn": "Выберите хотя бы один тип!", "crypt_searching": "СТАТУС: В ПОИСКЕ...",
+        "crypt_collected": "Собрано", "crypt_last": "последний",
         "oil_check": "Проверка масла",
         # --- calibration tab ---
         "cal_title": "Калибровка экрана",
@@ -194,6 +195,7 @@ LANGS = {
         "crypt_start": "START CRYPT HUNT", "crypt_stop_btn": "STOP",
         "crypt_ready": "READY", "crypt_stopped": "Stopped",
         "crypt_select_warn": "Select at least one type!", "crypt_searching": "STATUS: SEARCHING...",
+        "crypt_collected": "Collected", "crypt_last": "last",
         "oil_check": "Oil check",
         # --- calibration tab ---
         "cal_title": "Screen Calibration",
@@ -1031,8 +1033,9 @@ class TotalHunterApp(ctk.CTk):
         """Вызывается ПОСЛЕ возвращения Картера (коллекция завершена)."""
         self._crypt_found_count += 1
         count = self._crypt_found_count
+        L = LANGS[self.current_lang]
         self.after(0, lambda: self.crypt_status_label.configure(
-            text=f"Собрано: {count} | последний: {crypt_type}"
+            text=f"{L['crypt_collected']}: {count} | {L['crypt_last']}: {crypt_type}"
         ))
         from auth import spend_credit
         try:
