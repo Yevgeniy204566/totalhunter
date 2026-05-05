@@ -83,6 +83,35 @@ export default function ReferralsPage() {
         </div>
       </div>
 
+      {/* Network L1/L2/L3 */}
+      {user.referrals && (
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '1.5px',
+                        color: 'var(--on-surface2)', textTransform: 'uppercase',
+                        width: '100%', marginBottom: 4 }}>
+            {r.networkTitle}
+          </div>
+          {[
+            { key: 'l1', label: 'L1', color: 'var(--accent)' },
+            { key: 'l2', label: 'L2', color: '#B060FF' },
+            { key: 'l3', label: 'L3', color: 'var(--credits-gold)' },
+          ].map(({ key, label, color }) => (
+            <div key={key} style={{
+              flex: '1 1 80px', background: 'var(--elevated)',
+              border: `1px solid ${color}33`, borderRadius: 12,
+              padding: '16px 12px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 11, color: 'var(--on-surface2)', marginBottom: 6, fontWeight: 600 }}>{label}</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color,
+                            textShadow: `0 0 16px ${color}88`, lineHeight: 1 }}>
+                {user.referrals[key] || 0}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--on-surface2)', marginTop: 4 }}>{r.networkPeople}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Referral balance */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{

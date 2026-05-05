@@ -130,6 +130,23 @@ async def auth_google(req: GoogleAuthRequest, db: AsyncSession = Depends(get_db)
             )
             db.add(user)
             await db.flush()
+
+            # Начисляем реф-бонусы при регистрации по ссылке
+            if invited_by_id:
+                user.ref_credits += 50
+                db.add(Transaction(
+                    user_id=user.id, type="ref_welcome", amount=50,
+                    meta={"role": "invited", "via": "web"},
+                ))
+                ref_result = await db.execute(select(User).where(User.id == invited_by_id))
+                inviter = ref_result.scalar_one_or_none()
+                if inviter and not inviter.is_banned:
+                    inviter.ref_credits += 100
+                    db.add(Transaction(
+                        user_id=inviter.id, type="ref_welcome", amount=100,
+                        meta={"role": "inviter", "invited_email": email},
+                    ))
+
         elif username and user.username != username:
             user.username = username
 
@@ -145,7 +162,19 @@ async def auth_google(req: GoogleAuthRequest, db: AsyncSession = Depends(get_db)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/me", response_model=WebMeResponse)
-async def web_me(user: User = Depends(get_web_user)):
+async def web_me(user: User = Depends(get_web_user), db: AsyncSession = Depends(get_db)):
+    l1_ids = (await db.execute(
+        select(User.id).where(User.invited_by_id == user.id)
+    )).scalars().all()
+    l1 = len(l1_ids)
+    l2_ids = (await db.execute(
+        select(User.id).where(User.invited_by_id.in_(l1_ids))
+    )).scalars().all() if l1_ids else []
+    l2 = len(l2_ids)
+    l3 = (await db.execute(
+        select(func.count(User.id)).where(User.invited_by_id.in_(l2_ids))
+    )).scalar() or 0 if l2_ids else 0
+
     return WebMeResponse(
         id=user.id,
         email=user.email or "",
@@ -157,6 +186,7 @@ async def web_me(user: User = Depends(get_web_user)):
         hwid_reset_at=user.hwid_reset_at.isoformat() if user.hwid_reset_at else None,
         trial_used=user.trial_used,
         created_at=user.created_at.isoformat() if user.created_at else "",
+        referrals={"l1": l1, "l2": l2, "l3": l3},
     )
 
 

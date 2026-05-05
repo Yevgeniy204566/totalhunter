@@ -89,6 +89,7 @@ class WebMeResponse(BaseModel):
     hwid_reset_at: Optional[str] = None
     trial_used: bool
     created_at: str
+    referrals: dict = {"l1": 0, "l2": 0, "l3": 0}
 
 
 class LinkGenerateRequest(BaseModel):

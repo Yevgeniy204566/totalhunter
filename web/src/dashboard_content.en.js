@@ -136,8 +136,10 @@ export const DASHBOARD = {
       { level: 'L2', pct: '5%',  desc: 'Referrals of your referrals',              color: '#B060FF'             },
       { level: 'L3', pct: '1%',  desc: 'Third chain level',                 color: 'var(--credits-gold)' },
     ],
-    perPurchase: 'of every purchase amount',
-    note:        'Earnings are generated from every credit purchase in your referral chain. Blocked users are skipped, and the chain continues.',
+    perPurchase:   'of every purchase amount',
+    note:          'Earnings are generated from every credit purchase in your referral chain. Blocked users are skipped, and the chain continues.',
+    networkTitle:  'My Network',
+    networkPeople: 'people',
   },
 
   transactions: {

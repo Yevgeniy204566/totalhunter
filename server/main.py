@@ -132,8 +132,8 @@ async def _apply_referral_bonuses(new_user: User, db: AsyncSession) -> None:
       - L1 (пригласивший):   +100 кредитов
     Записывает транзакции для обеих сторон.
     """
-    # Бонус новому пользователю
-    new_user.credits += 50
+    # Бонус новому пользователю → ref_credits (перевод вручную)
+    new_user.ref_credits += 50
     db.add(Transaction(
         user_id=new_user.id,
         type="ref_welcome",
@@ -141,14 +141,14 @@ async def _apply_referral_bonuses(new_user: User, db: AsyncSession) -> None:
         meta={"role": "invited"},
     ))
 
-    # Бонус пригласившему (L1)
+    # Бонус пригласившему (L1) → ref_credits
     if new_user.invited_by_id:
         result = await db.execute(
             select(User).where(User.id == new_user.invited_by_id)
         )
         inviter = result.scalar_one_or_none()
         if inviter and not inviter.is_banned:
-            inviter.credits += 100
+            inviter.ref_credits += 100
             db.add(Transaction(
                 user_id=inviter.id,
                 type="ref_welcome",
