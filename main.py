@@ -227,7 +227,7 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_found_count = 0
         # self.combo_engine = CombinerEngine()  # Combo временно отключён
         self.is_combo_running = False
-        self.current_lang = "RU"
+        self.current_lang = "EN"
         self.user_email = None
         self.current_credits = 0
         self.my_ref_id = "---"
@@ -341,11 +341,14 @@ class TotalHunterApp(ctk.CTk):
                                       corner_radius=12)
         self.tabview.pack(padx=20, pady=10, fill="x")
        
-        self.tab_crypt = self.tabview.add(LANGS[self.current_lang]["tab_crypt"])
-        self.tab_hunt  = self.tabview.add(LANGS[self.current_lang]["tab_hunt"])
+        # Сохраняем имена вкладок при создании — change_lang ищет по ним
+        self._tab_init_names = {k: LANGS[self.current_lang][k]
+                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_cal")}
+        self.tab_crypt = self.tabview.add(self._tab_init_names["tab_crypt"])
+        self.tab_hunt  = self.tabview.add(self._tab_init_names["tab_hunt"])
         # self.tab_combo = self.tabview.add("Combo")  # временно отключён
-        self.tab_ref   = self.tabview.add(LANGS[self.current_lang]["tab_ref"])
-        self.tab_calibration = self.tabview.add(LANGS[self.current_lang]["tab_cal"])
+        self.tab_ref   = self.tabview.add(self._tab_init_names["tab_ref"])
+        self.tab_calibration = self.tabview.add(self._tab_init_names["tab_cal"])
 
 
         # Общие переменные для калибровки (нужны в нескольких вкладках)
@@ -1759,19 +1762,13 @@ class TotalHunterApp(ctk.CTk):
         for widget, key in self._i18n_labels:
             widget.configure(text=LANGS[val][key])
 
-        # Вкладки — всегда ищем по РУССКОМУ ключу (созданному в __init__).
-        # btns dict НЕ трогаем — ключи остаются русскими навсегда,
+        # Вкладки — ищем по имени созданному при запуске (_tab_init_names).
+        # btns dict НЕ трогаем — ключи остаются оригинальными навсегда,
         # иначе ломается click-callback (lambda замыкает оригинальное имя).
         btns = self.tabview._segmented_button._buttons_dict
-        _tab_ru = {
-            "tab_crypt": LANGS["RU"]["tab_crypt"],
-            "tab_hunt":  LANGS["RU"]["tab_hunt"],
-            "tab_ref":   LANGS["RU"]["tab_ref"],
-            "tab_cal":   LANGS["RU"]["tab_cal"],
-        }
-        for tab_key, ru_name in _tab_ru.items():
-            if ru_name in btns:
-                btns[ru_name].configure(text=LANGS[val][tab_key])
+        for tab_key, init_name in self._tab_init_names.items():
+            if init_name in btns:
+                btns[init_name].configure(text=LANGS[val][tab_key])
 
         # crypt_start_btn — только если бот не запущен
         if not self.is_crypt_running:
