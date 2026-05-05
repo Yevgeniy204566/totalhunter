@@ -66,6 +66,7 @@ hiddenimports = [
     'auto_calibration', 'calibration_ui', 'calibration',
     'button_finder', 'template_finder', 'human_input',
     'nav_logger', 'navigator_beacon',
+    'version', 'updater',
 ]
 
 hiddenimports += collect_submodules('ultralytics')

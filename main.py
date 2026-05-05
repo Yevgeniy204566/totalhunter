@@ -2059,6 +2059,12 @@ class TotalHunterApp(ctk.CTk):
 
 
 if __name__ == "__main__":
+    from version import VERSION
+    from updater import check_for_updates, run_update_window
+    latest_tag, url = check_for_updates(VERSION)
+    if latest_tag and url:
+        run_update_window(latest_tag, url)
+
     app = TotalHunterApp()
     app.mainloop()
 
