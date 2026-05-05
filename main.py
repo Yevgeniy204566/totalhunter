@@ -1764,7 +1764,6 @@ class TotalHunterApp(ctk.CTk):
         self.ref_title_lb.configure(text=LANGS[val]["ref_title"])
         self.friend_code_lb.configure(text=LANGS[val]["friend_code"])
         self.ref_btn.configure(text=LANGS[val]["activate_ref"])
-        self.copy_btn.configure(text=LANGS[val]["copy"])
         self.share_lb.configure(text=LANGS[val]["share_text"])
         self.status_label.configure(text=LANGS[val]["status_ready"] if not self.is_running else LANGS[val]["status_running"])
 
