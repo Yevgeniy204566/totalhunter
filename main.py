@@ -2,6 +2,23 @@
 
 
 
+# ── PyInstaller: preload torch DLLs before any import ────────────────────────
+import sys, os
+if getattr(sys, 'frozen', False):
+    import ctypes, glob as _glob
+    _torch_lib = os.path.join(sys._MEIPASS, 'torch', 'lib')
+    if os.path.isdir(_torch_lib):
+        _k32 = ctypes.WinDLL('kernel32.dll')
+        _k32.LoadLibraryW.restype = ctypes.c_void_p
+        os.add_dll_directory(_torch_lib)
+        for _dll in ['libiomp5md.dll', 'c10.dll', 'torch_global_deps.dll',
+                     'torch_cpu.dll', 'torch.dll', 'torch_python.dll']:
+            _p = os.path.join(_torch_lib, _dll)
+            if os.path.exists(_p):
+                _k32.LoadLibraryW(_p)
+        del _k32, _glob, _dll, _p, _torch_lib
+# ─────────────────────────────────────────────────────────────────────────────
+
 import json
 import os
 import customtkinter as ctk

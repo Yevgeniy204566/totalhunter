@@ -1,6 +1,6 @@
 # build.spec — PyInstaller для TotalHunter
 import os
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 
 block_cipher = None
 
@@ -57,6 +57,7 @@ hiddenimports = [
 ]
 
 hiddenimports += collect_submodules('ultralytics')
+hiddenimports += collect_submodules('torch')
 
 # Исключаем лишнее чтобы не раздувать сборку
 excludes = [
@@ -65,15 +66,17 @@ excludes = [
     'test', 'tests', 'unittest',
 ]
 
+_torch_binaries = collect_dynamic_libs('torch')
+
 a = Analysis(
     ['main.py'],
     pathex=[os.getcwd()],
-    binaries=[],
+    binaries=_torch_binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['hook_torch.py'],
     excludes=excludes,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
