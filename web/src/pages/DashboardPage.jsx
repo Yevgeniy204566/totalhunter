@@ -13,8 +13,8 @@ const STAT_KEYS = [
 ]
 
 const HUNT_ICONS = {
-  exchange: { icon: '⚔', color: 'var(--accent)' },
-  crypt:    { icon: '💀', color: '#B060FF'       },
+  exchange: { color: '#B060FF' },
+  crypt:    { color: '#4ADE80' },
 }
 
 function timeAgo(iso, T) {
@@ -159,7 +159,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               recentHunts.map((h, i) => {
-                const icons = HUNT_ICONS[h.hunt_type] ?? { icon: '◈', color: 'var(--on-surface2)' }
+                const hunti = HUNT_ICONS[h.hunt_type] ?? { color: 'var(--on-surface2)' }
                 const label = D.huntTypes[h.hunt_type] ?? h.hunt_type
                 return (
                   <div key={i} style={{
@@ -171,21 +171,17 @@ export default function DashboardPage() {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--elevated)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <div style={{
-                      width: 34, height: 34, borderRadius: 8,
-                      background: `${icons.color}18`, border: `1px solid ${icons.color}44`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, flexShrink: 0,
-                    }}>{icons.icon}</div>
+                      width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                      background: hunti.color,
+                      boxShadow: `0 0 6px ${hunti.color}`,
+                    }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
-                        {label} {D.recentHunts.found}
+                      <div style={{ fontSize: 14, fontWeight: 600, color: hunti.color }}>
+                        {label}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
                         {timeAgo(h.created_at, D.timeAgo)}
                       </div>
-                    </div>
-                    <div style={{ fontSize: 11, color: icons.color, fontWeight: 700, letterSpacing: '0.5px' }}>
-                      {D.recentHunts.looted}
                     </div>
                   </div>
                 )

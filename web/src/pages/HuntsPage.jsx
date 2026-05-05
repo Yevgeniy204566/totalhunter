@@ -6,8 +6,8 @@ import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
 const HUNT_COLORS = {
-  exchange: { icon: '⚔', color: 'var(--accent)', bg: 'rgba(61,127,255,0.12)' },
-  crypt:    { icon: '💀', color: '#B060FF',       bg: 'rgba(176,96,255,0.12)' },
+  exchange: { color: '#B060FF', bg: 'rgba(176,96,255,0.12)' },
+  crypt:    { color: '#4ADE80', bg: 'rgba(74,222,128,0.10)' },
 }
 
 function StatTile({ icon, label, color, value }) {
@@ -74,11 +74,11 @@ export default function HuntsPage() {
       {visTotal > 0 && (
         <div className="card" style={{ borderRadius: 12, marginBottom: 24, padding: '16px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
-              ⚔ {h.exchangeLabel} — {exchanges}
-            </span>
             <span style={{ fontSize: 13, color: '#B060FF', fontWeight: 600 }}>
-              {crypts} — {h.cryptLabel} 💀
+              {h.exchangeLabel} — {exchanges}
+            </span>
+            <span style={{ fontSize: 13, color: '#4ADE80', fontWeight: 600 }}>
+              {crypts} — {h.cryptLabel}
             </span>
           </div>
           <div style={{ height: 8, borderRadius: 4, background: 'var(--outline)', overflow: 'hidden' }}>
@@ -119,10 +119,9 @@ export default function HuntsPage() {
             }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--elevated)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: meta.bg,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-                {meta.icon}
-              </div>
+              <div style={{ width: 10, height: 10, borderRadius: '50%',
+                            background: meta.color, boxShadow: `0 0 6px ${meta.color}`,
+                            margin: '0 10px' }} />
               <div style={{ fontSize: 14, fontWeight: 600, color: meta.color }}>{label}</div>
               <div style={{ fontSize: 12, color: 'var(--on-surface2)', textAlign: 'right' }}>
                 {timeAgo(item.created_at)}
