@@ -641,9 +641,31 @@ async def admin_broadcast(message: str, db: AsyncSession = Depends(get_db)):
 
 @app.get("/admin/feedback/unread", dependencies=[Depends(require_admin)])
 async def feedback_unread(db: AsyncSession = Depends(get_db)):
-    """Количество записей обратной связи от пользователей."""
-    row = await db.execute(select(func.count()).select_from(Feedback))
+    """Количество непрочитанных отзывов (после последнего открытия Feedback)."""
+    last_read = await _get_setting("feedback_last_read_at", db)
+    query = select(func.count()).select_from(Feedback)
+    if last_read:
+        from datetime import datetime as _dt
+        ts = _dt.fromisoformat(last_read)
+        query = query.where(Feedback.created_at > ts)
+    row = await db.execute(query)
     return {"count": row.scalar() or 0}
+
+
+@app.post("/admin/feedback/mark_read", dependencies=[Depends(require_admin)])
+async def feedback_mark_read(db: AsyncSession = Depends(get_db)):
+    """Сбрасывает счётчик — вызывается при открытии вкладки Feedback."""
+    now = datetime.now(timezone.utc).isoformat()
+    async with db.begin():
+        existing = await db.execute(
+            select(AppSetting).where(AppSetting.key == "feedback_last_read_at")
+        )
+        row = existing.scalar_one_or_none()
+        if row:
+            row.value = now
+        else:
+            db.add(AppSetting(key="feedback_last_read_at", value=now))
+    return {"success": True}
 
 
 @app.get("/admin/feedback/list", dependencies=[Depends(require_admin)])
@@ -662,6 +684,26 @@ async def feedback_list(db: AsyncSession = Depends(get_db), limit: int = 100):
         }
         for f in items
     ]
+
+
+# ── GET /admin/feedback/export ───────────────────────────────────────────────
+
+@app.get("/admin/feedback/export", dependencies=[Depends(require_admin)])
+async def feedback_export(db: AsyncSession = Depends(get_db)):
+    """Экспорт всех отзывов в plain-text для анализа нейросетью."""
+    from fastapi.responses import PlainTextResponse
+    result = await db.execute(
+        select(Feedback, User.email, User.username)
+        .outerjoin(User, User.id == Feedback.user_id)
+        .order_by(Feedback.created_at.asc())
+    )
+    rows = result.all()
+    lines = ["=== Total Hunter — Feedback Export ===\n"]
+    for f, email, username in rows:
+        ts = f.created_at.strftime("%Y-%m-%d %H:%M") if f.created_at else "—"
+        author = email or username or f"user#{f.user_id}"
+        lines.append(f"[{ts}] {author}\n{f.text}\n{'-'*60}")
+    return PlainTextResponse("\n".join(lines), media_type="text/plain; charset=utf-8")
 
 
 # ── GET /admin/leaderboard ────────────────────────────────────────────────────

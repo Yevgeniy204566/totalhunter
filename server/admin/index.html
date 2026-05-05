@@ -630,9 +630,18 @@
         <div class="section">
           <div class="section-header">
             <div class="section-title">Обратная связь от игроков</div>
-            <button class="btn btn-ghost btn-sm" @click="loadFeedback()">
-              <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
-            </button>
+            <div style="display:flex;gap:8px">
+              <a :href="`${API}/admin/feedback/export`"
+                 :download="`feedback_${new Date().toISOString().slice(0,10)}.txt`"
+                 class="btn btn-ghost btn-sm"
+                 style="text-decoration:none"
+                 @click.prevent="exportFeedback()">
+                <span class="material-symbols-rounded" style="font-size:15px">download</span> Экспорт .txt
+              </a>
+              <button class="btn btn-ghost btn-sm" @click="loadFeedback()">
+                <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
+              </button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -819,6 +828,22 @@ function adminApp() {
     async loadFeedback() {
       const r = await fetch(`${API}/admin/feedback/list`, { headers: this.headers() });
       if (r.ok) this.feedbackItems = await r.json();
+      // Сбрасываем бейдж — отмечаем все как прочитанные
+      await fetch(`${API}/admin/feedback/mark_read`, { method: 'POST', headers: this.headers() });
+      this.feedbackCount = 0;
+    },
+
+    async exportFeedback() {
+      const url = `${API}/admin/feedback/export`;
+      const r = await fetch(url, { headers: this.headers() });
+      if (!r.ok) { this.showToast('Ошибка экспорта'); return; }
+      const text = await r.text();
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `feedback_${new Date().toISOString().slice(0,10)}.txt`;
+      a.click();
+      this.showToast('Файл скачан');
     },
 
     async loadFeedbackBadge() {
