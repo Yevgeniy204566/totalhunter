@@ -45,6 +45,7 @@ def compile_module(src: str):
         "--module",
         "--remove-output",
         "--no-pyi-file",
+        "--assume-yes-for-downloads",
         src,
     ])
 
@@ -80,7 +81,7 @@ def check_assets():
         if not os.path.exists(os.path.join(ROOT, f)):
             missing.append(f)
     if missing:
-        print(f"\n⚠️  Отсутствуют файлы: {missing}")
+        print(f"\nWARN  Отсутствуют файлы: {missing}")
         print("    Запусти python model_crypto.py если нет .pte файлов")
         return False
     return True
@@ -98,7 +99,7 @@ def main():
     print("\n[1/4] Проверка ассетов...")
     if not check_assets():
         sys.exit(1)
-    print("  ✅ Все ассеты на месте")
+    print("  OK Все ассеты на месте")
 
     # Шаг 2: Компиляция чувствительных модулей в .pyd
     print("\n[2/4] Компиляция ключевых модулей (Nuitka → C++)...")
@@ -112,12 +113,12 @@ def main():
                 pyd = find_pyd(mod)
                 if pyd:
                     compiled.append(os.path.basename(pyd))
-                    print(f"  ✅ {mod} → {os.path.basename(pyd)}")
+                    print(f"  OK {mod} → {os.path.basename(pyd)}")
                 else:
-                    print(f"  ⚠️  {mod}: .pyd не найден, используем .py")
+                    print(f"  WARN  {mod}: .pyd не найден, используем .py")
                     skipped.append(mod)
             except subprocess.CalledProcessError as e:
-                print(f"  ⚠️  {mod}: ошибка компиляции ({e}), используем .py")
+                print(f"  WARN  {mod}: ошибка компиляции ({e}), используем .py")
                 skipped.append(mod)
         else:
             print(f"  –  {mod}: файл не найден, пропускаем")
@@ -144,7 +145,7 @@ def main():
                 print(f"  Удалён из dist: {mod} (заменён .pyd)")
 
     print("\n" + "=" * 60)
-    print("  ✅ СБОРКА ЗАВЕРШЕНА")
+    print("  OK СБОРКА ЗАВЕРШЕНА")
     print(f"  EXE: dist/TotalHunter/TotalHunter.exe")
     print(f"  Защищено модулей: {len(compiled)}")
     print("=" * 60)

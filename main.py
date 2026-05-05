@@ -227,7 +227,15 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_found_count = 0
         # self.combo_engine = CombinerEngine()  # Combo временно отключён
         self.is_combo_running = False
-        self.current_lang = "EN"
+        saved_lang = {}
+        if os.path.exists(GUI_CONFIG_PATH):
+            try:
+                import json as _j
+                with open(GUI_CONFIG_PATH) as _f:
+                    saved_lang = _j.load(_f)
+            except Exception:
+                pass
+        self.current_lang = saved_lang.get("lang", "EN")
         self.user_email = None
         self.current_credits = 0
         self.my_ref_id = "---"
@@ -1748,6 +1756,7 @@ class TotalHunterApp(ctk.CTk):
     def change_lang(self, val):
         old_val = self.current_lang
         self.current_lang = val
+        self._save_gui_config_key("lang", val)
         self.label_title.configure(text=LANGS[val]["title"])
         self.acc_lb.configure(text=LANGS[val]["accuracy"])
         self.speed_lb.configure(text=LANGS[val]["scan_rate"])

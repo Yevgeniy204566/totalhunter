@@ -10,11 +10,12 @@ SERVER_URL = "http://34.68.86.57:8000"
 AUTH_DOMAIN = "http://34.68.86.57.nip.io:8000"
 
 def _get_disk_serial() -> str:
-    """Серийный номер системного диска C: через wmic."""
+    """Серийный номер системного диска через wmic (без консольного окна)."""
     try:
         r = subprocess.run(
             ["wmic", "diskdrive", "get", "SerialNumber"],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, timeout=5,
+            creationflags=subprocess.CREATE_NO_WINDOW,
         )
         lines = [l.strip() for l in r.stdout.splitlines()
                  if l.strip() and l.strip() != "SerialNumber"]
