@@ -1353,28 +1353,9 @@ class TotalHunterApp(ctk.CTk):
                       text_color=MD3["on_surface"], corner_radius=8,
                       command=self.copy_link).pack(side="right", padx=6, pady=6)
 
-        # Код — вспомогательно
-        self.my_code_lb = ctk.CTkLabel(self.tab_ref,
-                                       text=LANGS[self.current_lang]["my_code"],
-                                       font=ctk.CTkFont(size=11),
-                                       text_color=MD3["on_surface2"])
-        self.my_code_lb.pack(pady=(4, 0))
-        code_row = ctk.CTkFrame(self.tab_ref, fg_color="transparent")
-        code_row.pack(pady=(0, 6))
-        _ref_code_prefix_lb = ctk.CTkLabel(code_row, text=LANGS[self.current_lang]["ref_code_prefix"],
-                                           font=ctk.CTkFont(size=11),
-                                           text_color=MD3["on_surface2"])
-        _ref_code_prefix_lb.pack(side="left")
-        self._i18n_labels.append((_ref_code_prefix_lb, "ref_code_prefix"))
-        self.my_code_val = ctk.CTkLabel(code_row, text="---",
-                                        font=ctk.CTkFont(size=11, weight="bold"),
-                                        text_color=MD3["on_surface"])
-        self.my_code_val.pack(side="left")
-        self.copy_btn = ctk.CTkButton(code_row, text="📋", width=28, height=22,
-                                      fg_color=MD3["card"], hover_color=MD3["outline"],
-                                      text_color=MD3["secondary"], corner_radius=6,
-                                      command=self.copy_code)
-        self.copy_btn.pack(side="left", padx=(6, 0))
+        # my_code_val — невидимый виджет, хранит ref_id для copy_code()
+        self.my_code_lb = ctk.CTkLabel(self.tab_ref, text="")
+        self.my_code_val = ctk.CTkLabel(self.tab_ref, text="---")
 
         # ── Статистика L1 / L2 / L3 ──────────────────────────────────────
         stats_card = ctk.CTkFrame(self.tab_ref, fg_color=MD3["elevated"],
@@ -1772,7 +1753,6 @@ class TotalHunterApp(ctk.CTk):
         self.speed_lb.configure(text=LANGS[val]["scan_rate"])
         self.start_button.configure(text=LANGS[val]["start"] if not self.is_running else LANGS[val]["stop"])
         self.ref_title_lb.configure(text=LANGS[val]["ref_title"])
-        self.my_code_lb.configure(text=LANGS[val]["my_code"])
         self.friend_code_lb.configure(text=LANGS[val]["friend_code"])
         self.ref_btn.configure(text=LANGS[val]["activate_ref"])
         self.copy_btn.configure(text=LANGS[val]["copy"])
