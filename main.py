@@ -1050,8 +1050,11 @@ class TotalHunterApp(ctk.CTk):
         ))
         from auth import spend_credit
         try:
-            spend_credit()
-            new_credits = max(0, self.current_credits - 1)
+            res = spend_credit()
+            if res and res.get("success"):
+                new_credits = res.get("credits", res.get("remaining", max(0, self.current_credits - 1)))
+            else:
+                new_credits = max(0, self.current_credits - 1)
             self.after(0, lambda n=new_credits: self._update_credits_display(n))
         except Exception:
             pass
@@ -1671,7 +1674,7 @@ class TotalHunterApp(ctk.CTk):
         """Безопасно обновляем UI в главном потоке"""
         res = spend_credit("exchange")
         if res and res.get("success"):
-            self._update_credits_display(res.get("remaining", 0))
+            self._update_credits_display(res.get("credits", res.get("remaining", self.current_credits - 10)))
         elif res and res.get("low_credits"):
             self.toggle_bot()  # сначала стоп
             webbrowser.open("https://total-hunter.com/dashboard/balance")
