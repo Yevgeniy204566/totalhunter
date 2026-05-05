@@ -742,7 +742,7 @@ class TotalHunterApp(ctk.CTk):
         icons_label.pack(pady=(2, 1))
         self._i18n_labels.append((icons_label, "crypt_icons_title"))
 
-        scroll_frame = ctk.CTkScrollableFrame(self.tab_crypt, height=310,
+        scroll_frame = ctk.CTkScrollableFrame(self.tab_crypt, height=195,
                                                fg_color=MD3["card"],
                                                corner_radius=12,
                                                border_width=1,
@@ -1149,7 +1149,8 @@ class TotalHunterApp(ctk.CTk):
         self.wm_attributes('-topmost', on_top)
         if on_top:
             screen_h = self.winfo_screenheight()
-            self.geometry(f"460x{screen_h}+0+0")
+            right_x = self.winfo_screenwidth() - 460
+            self.geometry(f"460x{screen_h}+{right_x}+0")
             self.update_idletasks()
             x = self.winfo_x()
             y = self.winfo_y()
