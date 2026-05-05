@@ -295,6 +295,10 @@ async def link_verify(
     async with db.begin_nested():
         await db.delete(link)
 
+        # Capture before merge: if web_user already had inviter (set via web signup bonus)
+        # → referrer was already paid +100, skip the +50 HWID reward to avoid double-pay
+        had_inviter_before_merge = web_user.invited_by_id is not None
+
         skip_ref_welcome = False
         if bot_user and bot_user.id != web_user.id:
             web_user.credits     += bot_user.credits
@@ -324,6 +328,9 @@ async def link_verify(
             ))
 
             # Reward referrer only if not already paid via bot /activate_referral
+            # or via web signup ref bonus (had_inviter_before_merge)
+            if had_inviter_before_merge:
+                skip_ref_welcome = True
             if web_user.invited_by_id and not skip_ref_welcome:
                 referrer_result = await db.execute(
                     select(User).where(User.id == web_user.invited_by_id)

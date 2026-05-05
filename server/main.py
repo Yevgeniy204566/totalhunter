@@ -374,8 +374,8 @@ async def activate_referral(req: ReferralRequest, db: AsyncSession = Depends(get
 
     return BasicResponse(
         success=True,
-        message=f"Код активирован! +50 кредитов.",
-        credits=user.credits,
+        message="Code activated! +50 → referral balance. Press Transfer to use.",
+        credits=user.ref_credits,
     )
 
 
