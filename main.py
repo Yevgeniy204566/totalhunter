@@ -1114,6 +1114,7 @@ class TotalHunterApp(ctk.CTk):
                                            fg_color=MD3["error"],
                                            hover_color=MD3["error_hover"])
             self.crypt_engine.oil_check_enabled = self._oil_check_var.get()
+            self.crypt_engine.lang = self.current_lang
             self.crypt_engine.start(
                 selected_crypts=selected,
                 conf=self.crypt_conf_slider.get(),

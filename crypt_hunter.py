@@ -198,6 +198,7 @@ class CryptHunter:
             self._model = yolo_from_encrypted(MODEL_PATH)
         else:
             self._model = YOLO(MODEL_PATH)
+        self.lang = "RU"
         self.is_running = False
         self._thread: threading.Thread | None = None
         self.on_found_callback  = None   # fn(crypt_type: str)
@@ -373,7 +374,10 @@ class CryptHunter:
             except Exception as e:
                 import traceback
                 err = traceback.format_exc()
-                self._status(f"Ошибка цикла: {e} — повтор через 10 сек")
+                if self.lang == "EN":
+                    self._status(f"Cycle error: {e} — retry in 10s")
+                else:
+                    self._status(f"Ошибка цикла: {e} — повтор через 10 сек")
                 try:
                     from auth import log_error_to_server
                     log_error_to_server(err)
@@ -950,7 +954,10 @@ class CryptHunter:
         wait_time = t_one_way * 2
         total_wait = int(wait_time) + _buf
         _march_one_way = int(t_one_way)
-        self._status(f"Ждём Картера: {_march_one_way}с туда + {_march_one_way}с обратно + {_buf}с пауза")
+        if self.lang == "EN":
+            self._status(f"Waiting Carter: {_march_one_way}s there + {_march_one_way}s back + {_buf}s pause")
+        else:
+            self._status(f"Ждём Картера: {_march_one_way}с туда + {_march_one_way}с обратно + {_buf}с пауза")
         for remaining in range(total_wait, 0, -1):
             if not self.is_running:
                 break

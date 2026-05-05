@@ -14,6 +14,8 @@ datas = [
     ('targets/crypts.pte', 'targets'),
     # Иконки склепов (PNG)
     ('targets/*.png', 'targets'),
+    # Шаблоны для template_finder (визуальная навигация склепов)
+    ('targets_2', 'targets_2'),
     # Картинки калибровки + иконка приложения
     ('assets',        'assets'),
     # Профили калибровки
@@ -54,6 +56,16 @@ hiddenimports = [
     # Misc
     'packaging', 'pkg_resources',
     'tkinter', 'tkinter.ttk', 'tkinter.messagebox',
+    # Шифрование моделей (условный импорт — PyInstaller не видит автоматически)
+    'model_crypto',
+    'cryptography', 'cryptography.fernet',
+    'cryptography.hazmat', 'cryptography.hazmat.primitives',
+    'cryptography.hazmat.backends',
+    'tempfile',
+    # Прочие модули проекта (условные импорты)
+    'auto_calibration', 'calibration_ui', 'calibration',
+    'button_finder', 'template_finder', 'human_input',
+    'nav_logger', 'navigator_beacon',
 ]
 
 hiddenimports += collect_submodules('ultralytics')
@@ -63,7 +75,6 @@ hiddenimports += collect_submodules('torch')
 excludes = [
     'matplotlib', 'scipy', 'pandas', 'jupyter', 'notebook',
     'IPython', 'jedi', 'sphinx', 'pytest',
-    'test', 'tests', 'unittest',
 ]
 
 _torch_binaries = collect_dynamic_libs('torch')

@@ -82,13 +82,10 @@ def detect_point_b_from_diff(
 
 
 def auto_detect_point_a(screen_w: int, screen_h: int) -> tuple[int, int]:
-    """Detect Point A (minimap joystick white rectangle). Returns screen coords."""
-    a_cx, a_cy = scale_ref(REF_A, screen_w, screen_h)
-    img_a, ax1, ay1 = _grab_region(a_cx, a_cy)
-    found_a = detect_point_a_in_region(img_a)
-    if found_a is not None:
-        return (ax1 + found_a[0], ay1 + found_a[1])
-    return (a_cx, a_cy)
+    """Return Point A starting position — scaled REF_A to actual resolution.
+    User fine-tunes in the loupe UI; no auto-detection to avoid wrong placement.
+    """
+    return scale_ref(REF_A, screen_w, screen_h)
 
 
 def auto_detect_point_b(screen_w: int, screen_h: int) -> tuple[int, int]:
