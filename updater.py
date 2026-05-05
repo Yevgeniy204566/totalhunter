@@ -10,6 +10,7 @@ import requests
 
 VERSION_API = "https://api.total-hunter.com/version/latest"
 EXE_NAME    = "TotalHunter.exe"
+ZIP_NAME    = "TotalHunter.zip"
 
 
 def _ver_tuple(v: str):
@@ -117,8 +118,11 @@ def run_update_window(latest_tag: str, download_url: str):
                 elif msg[0] == "done":
                     lbl.configure(text="Installing update...")
                     root.update()
-                    subprocess.Popen(["cmd", "/c", msg[1]],
-                                     creationflags=subprocess.CREATE_NO_WINDOW)
+                    subprocess.Popen(
+                        ["cmd", "/c", msg[1]],
+                        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                        close_fds=True,
+                    )
                     root.destroy()
                     sys.exit(0)
                 elif msg[0] == "error":
