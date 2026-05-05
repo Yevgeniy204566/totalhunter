@@ -742,7 +742,7 @@ class TotalHunterApp(ctk.CTk):
         icons_label.pack(pady=(2, 1))
         self._i18n_labels.append((icons_label, "crypt_icons_title"))
 
-        scroll_frame = ctk.CTkScrollableFrame(self.tab_crypt, height=195,
+        scroll_frame = ctk.CTkScrollableFrame(self.tab_crypt, height=260,
                                                fg_color=MD3["card"],
                                                corner_radius=12,
                                                border_width=1,
@@ -767,30 +767,30 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_vars: dict = {}
         self._crypt_icons: list = []  # держим ссылки чтобы GC не убрал
 
-        COLS = 6
+        COLS = 10
         for idx, crypt_name in enumerate(crypt_order):
             row = idx // COLS
             col = idx % COLS
 
             # Разделитель между группами (перед Epic и перед R)
             if crypt_name in ('Epic_2', 'R_1'):
-                sep_row = row  # разделитель на той же строке что начинается группа
+                sep_row = row
                 sep = ctk.CTkFrame(scroll_frame, height=2, fg_color=MD3["separator"])
                 sep.grid(row=sep_row * 2, column=0, columnspan=COLS,
-                         padx=4, pady=(6, 2), sticky="ew")
+                         padx=2, pady=(4, 1), sticky="ew")
 
             cell = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-            cell.grid(row=row * 2 + 1, column=col, padx=4, pady=4)
+            cell.grid(row=row * 2 + 1, column=col, padx=2, pady=2)
 
             # Иконка
             icon_path = os.path.join(targets_dir, f"{crypt_name}.png")
             try:
-                pil_img = Image.open(icon_path).resize((48, 48))
-                ctk_img = ctk.CTkImage(pil_img, size=(48, 48))
+                pil_img = Image.open(icon_path).resize((34, 34))
+                ctk_img = ctk.CTkImage(pil_img, size=(34, 34))
                 self._crypt_icons.append(ctk_img)
                 ctk.CTkLabel(cell, image=ctk_img, text="").pack()
             except Exception:
-                ctk.CTkLabel(cell, text="?", width=48, height=48).pack()
+                ctk.CTkLabel(cell, text="?", width=34, height=34).pack()
 
             # Чекбокс
             var = ctk.BooleanVar(value=False)
