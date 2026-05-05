@@ -1,102 +1,105 @@
-# Хангоф #36 — 2026-05-05
-**Сессия:** PyInstaller EXE сборка — полный цикл от нуля до работающего билда
+# Gemini Buffer — 2026-05-05 15:30
 
 ---
 
-## Что сделано сегодня
+## Процесс автообновления Total Hunter Bot
 
-### EXE Упаковка (PyInstaller)
-| # | Задача | Статус |
-|---|--------|--------|
-| 1 | build.spec создан — onedir, все data files, ultralytics/torch hidden imports | ✅ |
-| 2 | model_crypto.py — Fernet шифрование .pt → .pte моделей | ✅ |
-| 3 | Фикс WinError 1114 — preload torch DLL в main.py перед всеми импортами | ✅ |
-| 4 | targets_2/ добавлен в сборку — шаблоны для визуальной навигации склепов | ✅ |
-| 5 | unittest убран из excludes — PyTorch его требует | ✅ |
-| 6 | model_crypto + все условные импорты добавлены в hiddenimports | ✅ |
-| 7 | EXE запускается, GUI открывается, биржи и склепы работают | ✅ |
+### Как работает система
 
-### Бот (main.py + crypt_hunter.py)
-| # | Задача | Статус |
-|---|--------|--------|
-| 1 | Диагностические _status сообщения склепов закомментированы (30 строк) | ✅ |
-| 2 | "Собрано/Collected", "Ждём Картера/Waiting Carter" переведены RU/EN | ✅ |
-| 3 | Подсветка вкладок при смене языка — фикс через _tab_init_names | ✅ |
-| 4 | EN язык по умолчанию при запуске | ✅ |
-| 5 | Автокалибровка точка A — возвращает REF_A (90,925) без поиска контура | ✅ |
-| 6 | Переключатель "Oil check" в строке индикаторов масла | ✅ |
+Автообновление работает ТОЛЬКО в собранном EXE (не в Python-скрипте).
 
-### Сайт (web/)
-| # | Задача | Статус |
-|---|--------|--------|
-| 1 | LoginPage.jsx — полный i18n подключён | ✅ |
-| 2 | debug-OCR убран из _read_oil_panel | ✅ |
+**Компоненты:**
+- `updater.py` — логика проверки версии
+- `version.py` — текущая версия (`VERSION = "1.0.7"`)
+- `/version/latest` на сервере — эндпоинт с актуальной версией
+- Admin Panel → Dashboard → "Версия бота" — интерфейс публикации
 
 ---
 
-## Решённые сложные проблемы (для памяти)
+### Шаги для выпуска новой версии (напр. v1.0.8)
 
-### WinError 1114 — torch DLL
-PyTorch DLL не загружались в frozen EXE. Решение: preload последовательности DLL в начале main.py через `kernel32.LoadLibraryW` до любого `import torch`.
-
-### Tab highlight при смене языка
-`btns.pop(old_key)` ломал click-callback (lambda с оригинальным именем). Решение: хранить `_tab_init_names` при создании табвью, менять только `text` кнопок без изменения ключей словаря.
-
-### IndentationError после комментирования
-Комментирование `self._status()` оставило пустые `if/else` блоки. Решение: скрипт добавил `pass` во все пустые тела.
-
----
-
-## Текущее состояние продукта
-
-### ✅ Готово
-- Бот: склепы, биржи, навигация, OCR масла
-- Бот: i18n RU/EN полный, EN по умолчанию
-- Бот: EXE сборка работает (dist/TotalHunter/TotalHunter.exe, ~950MB)
-- Бот: YOLO модели зашифрованы (.pte)
-- Бот: Oil check toggle, ресайзируемое окно, On Top справа
-- Сайт: лендинг, dashboard, все страницы RU/EN
-- Сервер: FastAPI, PostgreSQL, бэкапы
-
-### ❌ Осталось до релиза
-1. **Тест привязки устройства** — бот → 6-значный код → сайт → HWID (ручной тест)
-2. **DownloadPage на сайте** — /download + кнопка скачать EXE
-3. **Загрузить EXE** — GitHub Releases (dist/TotalHunter/ zip или installer)
-4. **Free-Kassa ключи** — FK_MERCHANT_ID, FK_SECRET_WORD, FK_SECRET_WORD2 в systemd
-5. **Тест оплаты** — end-to-end Free-Kassa
-6. **Раскомментировать проверку кредитов** — toggle_bot строка `# if self.current_credits <= 0`
-7. **PyArmor** — купить лицензию (~$49), обфусцировать код перед финальным релизом
-8. **Auto-update** — updater.py + force_update флаг
-
----
-
-## Задания на следующий раз
-
-### 🔴 П1 — Ближайшее
-1. **DownloadPage** — создать страницу /download на сайте с кнопкой скачать EXE
-2. **GitHub Releases** — загрузить dist/TotalHunter/ как zip-архив
-3. **Тест привязки** — проверить end-to-end: бот → код → сайт → email в боте
-
-### 🔴 П2 — Монетизация
-4. **Free-Kassa ключи** на сервере в systemd
-5. **Тест оплаты** end-to-end
-6. **Включить списание** — раскомментировать проверку кредитов в toggle_bot
-
-### 🟡 П3 — Безопасность
-7. **PyArmor лицензия** — купить и обфусцировать перед публичным релизом
-
----
-
-## Технические данные
-
-**Сборка EXE:**
-```bash
-cd C:/BattleBot
-python model_crypto.py      # если модели изменились
-python -m PyInstaller build.spec -y
-# Результат: dist/TotalHunter/TotalHunter.exe
+**1. Обновить version.py**
+```python
+VERSION = "1.0.8"
 ```
 
-**Сервер:** GCP `34.68.86.57` | `/opt/totalhunter/server/`
-**Деплой сайта:** git push origin main → авто
-**Последний коммит:** `3b5e534` — EN default + robust tab highlight
+**2. Собрать EXE через build.spec**
+```
+pyinstaller build.spec --noconfirm
+```
+→ результат: `dist/TotalHunter.exe`
+
+**3. Запаковать в ZIP**
+```
+cd dist && zip TotalHunter.zip TotalHunter.exe
+```
+
+**4. Загрузить на GitHub Releases**
+- Создать Release с тегом `v1.0.8`
+- Приложить `TotalHunter.zip`
+- URL будет: `https://github.com/Yevgeniy204566/totalhunter/releases/download/v1.0.8/TotalHunter.zip`
+
+**5. Опубликовать версию через Admin Panel**
+- Зайти на `https://admin.total-hunter.com`
+- Dashboard → блок "Версия бота"
+- Ввести `1.0.8` в поле
+- Нажать "Опубликовать"
+- Проверить: поле "Текущая в БД" должно показать `1.0.8`
+
+**ИЛИ через curl:**
+```bash
+curl -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.8" \
+  -H "Authorization: Bearer dev-admin-token"
+```
+
+**6. Проверить эндпоинт**
+```bash
+curl https://api.total-hunter.com/version/latest
+# {"version":"1.0.8","download_url":"https://github.com/.../v1.0.8/TotalHunter.zip"}
+```
+
+---
+
+### Как обновляется пользователь
+
+1. Пользователь запускает старый EXE (например v1.0.6)
+2. При запуске `updater.py` вызывает `check_for_updates("1.0.6")`
+3. Если сервер вернул версию > текущей — показывается диалог
+4. Пользователь нажимает "Обновить"
+5. Скачивается ZIP с GitHub
+6. Файл распаковывается рядом со старым EXE
+7. Запускается новый EXE, старый завершается
+
+**ВАЖНО:** Автообновление работает только с v1.0.6+  
+Версии 1.0.3–1.0.5 использовали старый GitHub API (возвращал 404 для приватных репо) — обновление не работало. Пользователи с этими версиями должны скачать вручную.
+
+---
+
+### Известные проблемы / история
+
+- **v1.0.7**: Поле "версия в БД" случайно было заполнено текстом "Обновить " (кнопка) → исправлено через curl POST на /admin/version/update?version=1.0.7
+- **v1.0.3–1.0.5**: GitHub API для приватных репо возвращает 404 → переехали на собственный сервер
+
+---
+
+## Мобильная Админка — что сделано 2026-05-05
+
+**Изменения в `server/admin/index.html`:**
+
+1. **Убрал hamburger/drawer** — был неудобен на телефоне
+2. **Добавил нижнюю навигацию** (как на сайте) — 6 табов: Dashboard, Игроки, Broadcast, Feedback, TOP, Логи
+3. **Список игроков** — теперь компактные строки-плашки вместо больших карточек:
+   - `[dot] Имя / email ... [кредиты ◆] [+] [ban] [del]`
+   - Кнопка `+` вызывает `prompt()` для ввода суммы — без inline input
+4. **Toast** поднят выше bottom nav (не перекрывается)
+5. **Мобильный header** показывает название текущей страницы + кнопку refresh
+
+**Нужно задеплоить на GCP:**
+```bash
+git add server/admin/index.html
+git commit -m "feat(admin): mobile bottom nav + compact user rows"
+git push origin main
+# затем SSH → cd /app && git pull
+```
+
+---
