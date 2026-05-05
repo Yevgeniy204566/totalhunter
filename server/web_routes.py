@@ -8,6 +8,8 @@ Bot calls /web/link/generate (no JWT). Frontend calls everything else.
 import os
 import random
 import string
+
+_REF_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -113,7 +115,7 @@ async def auth_google(req: GoogleAuthRequest, db: AsyncSession = Depends(get_db)
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
         if user is None:
-            new_ref_code = _secrets.token_urlsafe(6)
+            new_ref_code = "".join(_secrets.choice(_REF_ALPHABET) for _ in range(8))
             invited_by_id = None
             if req.ref_code:
                 ref_row = await db.execute(

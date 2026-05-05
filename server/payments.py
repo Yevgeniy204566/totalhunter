@@ -84,6 +84,7 @@ async def _apply_referral_cascade(
                     amount=amount,
                     meta={
                         "level": level,
+                        "related_user_id": buyer.id,
                         "ref_from_user_id": buyer.id,
                         "credits_total": credits_total,
                     },

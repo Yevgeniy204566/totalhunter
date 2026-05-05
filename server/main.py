@@ -84,9 +84,11 @@ CREDIT_COST = {
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
+_REF_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # без 0,1,I,L,O — не перепутать при вводе
+
 def _generate_ref_code() -> str:
-    """Генерирует уникальный реферальный код: 8 символов, URL-safe."""
-    return secrets.token_urlsafe(6)  # ~8 символов
+    """Генерирует 8-символьный реф-код из читаемых символов (Crockford-подобный)."""
+    return "".join(secrets.choice(_REF_ALPHABET) for _ in range(8))
 
 
 async def _get_or_create_user(hwid: str, db: AsyncSession, ip: str | None = None) -> User:
@@ -138,7 +140,7 @@ async def _apply_referral_bonuses(new_user: User, db: AsyncSession) -> None:
         user_id=new_user.id,
         type="ref_welcome",
         amount=50,
-        meta={"role": "invited"},
+        meta={"role": "invited", "related_user_id": new_user.invited_by_id},
     ))
 
     # Бонус пригласившему (L1) → ref_credits
@@ -153,7 +155,7 @@ async def _apply_referral_bonuses(new_user: User, db: AsyncSession) -> None:
                 user_id=inviter.id,
                 type="ref_welcome",
                 amount=100,
-                meta={"role": "inviter", "invited_hwid": new_user.hwid},
+                meta={"role": "inviter", "related_user_id": new_user.id, "invited_hwid": new_user.hwid},
             ))
 
 
