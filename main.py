@@ -1392,28 +1392,10 @@ class TotalHunterApp(ctk.CTk):
             lbl.pack(pady=(0, 6))
             setattr(self, f"ref_l{col+1}_label", lbl)
 
-        # ── Поле ввода кода друга ─────────────────────────────────────────
-        self.friend_code_lb = ctk.CTkLabel(self.tab_ref,
-                                           text=LANGS[self.current_lang]["friend_code"],
-                                           text_color=MD3["on_surface2"])
-        self.friend_code_lb.pack(pady=(8, 4))
-        self.ref_entry = ctk.CTkEntry(self.tab_ref, placeholder_text="XXXXXX",
-                                      height=40, justify="center",
-                                      font=ctk.CTkFont(size=16),
-                                      fg_color=MD3["card"],
-                                      border_color=MD3["outline"],
-                                      text_color=MD3["on_surface"],
-                                      corner_radius=8)
-        self.ref_entry.pack(padx=40, pady=(0, 4), fill="x")
-        self.ref_btn = ctk.CTkButton(self.tab_ref,
-                                     text=LANGS[self.current_lang]["activate_ref"],
-                                     height=38,
-                                     fg_color=MD3["primary"],
-                                     hover_color=MD3["primary_dim"],
-                                     text_color=MD3["bg"],
-                                     corner_radius=8,
-                                     command=self.activate_ref_action)
-        self.ref_btn.pack(padx=40, pady=(0, 8), fill="x")
+        # Код пригласителя перенесён на сайт (dashboard/referrals)
+        self.friend_code_lb = ctk.CTkLabel(self.tab_ref, text="")
+        self.ref_entry = ctk.CTkEntry(self.tab_ref)
+        self.ref_btn = ctk.CTkButton(self.tab_ref, text="")
 
 
     def update_slider_labels(self, _=None):
@@ -1765,8 +1747,6 @@ class TotalHunterApp(ctk.CTk):
         self.speed_lb.configure(text=LANGS[val]["scan_rate"])
         self.start_button.configure(text=LANGS[val]["start"] if not self.is_running else LANGS[val]["stop"])
         self.ref_title_lb.configure(text=LANGS[val]["ref_title"])
-        self.friend_code_lb.configure(text=LANGS[val]["friend_code"])
-        self.ref_btn.configure(text=LANGS[val]["activate_ref"])
         self.share_lb.configure(text=LANGS[val]["share_text"])
         self.status_label.configure(text=LANGS[val]["status_ready"] if not self.is_running else LANGS[val]["status_running"])
 

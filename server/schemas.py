@@ -90,6 +90,7 @@ class WebMeResponse(BaseModel):
     trial_used: bool
     created_at: str
     referrals: dict = {"l1": 0, "l2": 0, "l3": 0}
+    invited_by_id: Optional[int] = None
 
 
 class LinkGenerateRequest(BaseModel):

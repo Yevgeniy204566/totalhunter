@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { api } from '../api.js'
 import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
@@ -6,10 +6,13 @@ import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
 export default function ReferralsPage() {
-  const [user,    setUser]    = useState(null)
-  const [copied,  setCopied]  = useState(false)
-  const [msg,     setMsg]     = useState('')
-  const [loading, setLoading] = useState(false)
+  const [user,       setUser]       = useState(null)
+  const [copied,     setCopied]     = useState(false)
+  const [msg,        setMsg]        = useState('')
+  const [loading,    setLoading]    = useState(false)
+  const [codeInput,  setCodeInput]  = useState('')
+  const [codeMsg,    setCodeMsg]    = useState('')
+  const [codeLoading,setCodeLoading]= useState(false)
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const r = D.referrals
@@ -23,6 +26,17 @@ export default function ReferralsPage() {
     navigator.clipboard.writeText(`https://total-hunter.com/ref/${user.ref_code}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function activateCode() {
+    if (!codeInput.trim()) return
+    setCodeLoading(true); setCodeMsg('')
+    try {
+      const res = await api.activateReferral(codeInput.trim().toUpperCase())
+      setCodeMsg(res.message)
+      if (res.success) { setCodeInput(''); await refresh() }
+    } catch (e) { setCodeMsg(e.message) }
+    finally { setCodeLoading(false) }
   }
 
   async function transfer() {
@@ -141,6 +155,61 @@ export default function ReferralsPage() {
           {msg && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--on-surface2)' }}>{msg}</div>}
         </div>
       </div>
+
+      {/* Inviter code — shown only if not yet referred */}
+      {!user.invited_by_id && (
+        <div className="card" style={{ borderRadius: 14, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>
+            {r.inviterTitle}
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 16 }}>
+            {r.inviterSub}
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input
+              value={codeInput}
+              onChange={e => setCodeInput(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8))}
+              placeholder="XXXXXXXX"
+              maxLength={8}
+              style={{
+                flex: 1, background: 'var(--elevated)', border: '1px solid var(--outline)',
+                color: 'var(--on-surface)', borderRadius: 8, padding: '10px 14px',
+                fontSize: 18, letterSpacing: 6, textAlign: 'center', fontFamily: 'monospace',
+              }}
+            />
+            <button
+              onClick={activateCode}
+              disabled={codeLoading || codeInput.length < 6}
+              style={{
+                padding: '10px 22px', borderRadius: 8, fontSize: 14, fontWeight: 700,
+                background: codeInput.length >= 6 ? 'var(--accent)' : 'var(--elevated)',
+                color: codeInput.length >= 6 ? '#000' : 'var(--on-surface2)',
+                border: 'none', cursor: codeInput.length >= 6 ? 'pointer' : 'not-allowed',
+                fontFamily: 'inherit',
+              }}
+            >
+              {codeLoading ? '...' : r.inviterBtn}
+            </button>
+          </div>
+          {codeMsg && (
+            <div style={{ marginTop: 10, fontSize: 13,
+              color: codeMsg.includes('ctivat') || codeMsg.includes('ктивир') ? '#4ADE80' : 'var(--on-surface2)' }}>
+              {codeMsg}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* If already referred — show success */}
+      {user.invited_by_id && (
+        <div style={{
+          background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)',
+          borderRadius: 12, padding: '14px 18px', marginBottom: 20,
+          fontSize: 13, color: '#4ADE80', fontWeight: 600,
+        }}>
+          ✅ {r.inviterActive}
+        </div>
+      )}
 
       {/* Cascade info */}
       <div className="card" style={{ borderRadius: 14 }}>

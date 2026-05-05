@@ -189,6 +189,7 @@ async def web_me(user: User = Depends(get_web_user), db: AsyncSession = Depends(
         trial_used=user.trial_used,
         created_at=user.created_at.isoformat() if user.created_at else "",
         referrals={"l1": l1, "l2": l2, "l3": l3},
+        invited_by_id=user.invited_by_id,
     )
 
 
@@ -463,3 +464,39 @@ async def web_referral_transfer(
         db.add(Transaction(user_id=web_user.id, type="ref_transfer", amount=amount, meta={"from": "ref_credits"}))
     await db.commit()
     return BasicResponse(success=True, message=f"Transferred {amount} credits", credits=web_user.credits)
+
+
+# POST /web/referral/activate
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/referral/activate", response_model=BasicResponse)
+async def web_referral_activate(
+    ref_code: str,
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    """Активация кода пригласителя из личного кабинета на сайте."""
+    if web_user.invited_by_id is not None:
+        return BasicResponse(success=False, message="Referral code already activated.")
+
+    async with db.begin():
+        ref_result = await db.execute(select(User).where(User.ref_code == ref_code.upper()))
+        inviter = ref_result.scalar_one_or_none()
+
+        if not inviter:
+            return BasicResponse(success=False, message="Code not found.")
+        if inviter.id == web_user.id:
+            return BasicResponse(success=False, message="Cannot use your own code.")
+
+        web_user.invited_by_id = inviter.id
+
+        # Bonuses → ref_credits
+        web_user.ref_credits += 50
+        db.add(Transaction(user_id=web_user.id, type="ref_welcome", amount=50,
+                           meta={"role": "invited", "via": "web_profile", "related_user_id": inviter.id}))
+        if not inviter.is_banned:
+            inviter.ref_credits += 100
+            db.add(Transaction(user_id=inviter.id, type="ref_welcome", amount=100,
+                               meta={"role": "inviter", "related_user_id": web_user.id}))
+
+    return BasicResponse(success=True, message="Code activated! +50 → referral balance.")

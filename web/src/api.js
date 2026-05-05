@@ -32,6 +32,7 @@ export const api = {
   linkVerify:       (code)     => request('POST', '/web/link/verify', { code }),
   hwidReset:        ()         => request('POST', '/web/hwid/reset'),
   referralTransfer: ()         => request('POST', '/web/referral/transfer'),
+  activateReferral: (code)     => request('POST', `/web/referral/activate?ref_code=${encodeURIComponent(code)}`),
   globalStats:      ()         => request('GET',  '/web/stats/global'),
   sendFeedback:     (text)     => request('POST', '/web/feedback', { text }),
   paymentCreate:    (pkg)      => request('POST', '/web/payment/create', { package: pkg }),
