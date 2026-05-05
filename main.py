@@ -1759,21 +1759,19 @@ class TotalHunterApp(ctk.CTk):
         for widget, key in self._i18n_labels:
             widget.configure(text=LANGS[val][key])
 
-        # Вкладки — все 4: переименовываем кнопки и восстанавливаем подсветку
+        # Вкладки — всегда ищем по РУССКОМУ ключу (созданному в __init__).
+        # btns dict НЕ трогаем — ключи остаются русскими навсегда,
+        # иначе ломается click-callback (lambda замыкает оригинальное имя).
         btns = self.tabview._segmented_button._buttons_dict
-        seg = self.tabview._segmented_button
-        cur_old = seg._current_value   # имя активной вкладки ДО смены языка
-        cur_new = cur_old              # найдём новое имя ниже
-        tab_map = {tab_key: (LANGS[old_val][tab_key], LANGS[val][tab_key])
-                   for tab_key in ("tab_hunt", "tab_ref", "tab_crypt", "tab_cal")}
-        for old_text, new_text in tab_map.values():
-            if old_text in btns:
-                btns[old_text].configure(text=new_text)
-                btns[new_text] = btns.pop(old_text)
-            if cur_old == old_text:
-                cur_new = new_text
-        # set() обновляет _current_value И перерисовывает подсветку правильно
-        seg.set(cur_new)
+        _tab_ru = {
+            "tab_crypt": LANGS["RU"]["tab_crypt"],
+            "tab_hunt":  LANGS["RU"]["tab_hunt"],
+            "tab_ref":   LANGS["RU"]["tab_ref"],
+            "tab_cal":   LANGS["RU"]["tab_cal"],
+        }
+        for tab_key, ru_name in _tab_ru.items():
+            if ru_name in btns:
+                btns[ru_name].configure(text=LANGS[val][tab_key])
 
         # crypt_start_btn — только если бот не запущен
         if not self.is_crypt_running:
