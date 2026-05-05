@@ -1152,10 +1152,10 @@ class TotalHunterApp(ctk.CTk):
                 import ctypes, ctypes.wintypes
                 rect = ctypes.wintypes.RECT()
                 ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)
-                work_h = rect.bottom - rect.top
+                work_h = rect.bottom - rect.top - 80
                 work_y = rect.top
             except Exception:
-                work_h = self.winfo_screenheight() - 48
+                work_h = self.winfo_screenheight() - 130
                 work_y = 0
             right_x = self.winfo_screenwidth() - 460
             self.geometry(f"460x{work_h}+{right_x}+{work_y}")
