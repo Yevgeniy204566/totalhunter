@@ -2,7 +2,28 @@
 
 > Не тратить время повторно на эти решения.
 > Обновляется командой **«Хангоф»**.
-> Последнее обновление: 2026-05-03 (Хангоф #30)
+> Последнее обновление: 2026-05-06 (Хангоф #35)
+
+---
+
+## ⛔ BUILD / RELEASE — Запрещённые подходы (Хангоф #35)
+
+**AP-BUILD-1: Кириллица в print() без перекодировки stdout**
+- Windows консоль по умолчанию cp1251 → `UnicodeEncodeError` на `→`, `◆` и прочих символах
+- РЕШЕНИЕ: первые строки build_release.py — `sys.stdout.reconfigure(encoding='utf-8', errors='replace')`
+
+**AP-UPDATE-1: `CREATE_NO_WINDOW` для helper.bat процесса**
+- Процесс привязывается к родителю → убивается вместе с sys.exit(0) → bat не выполняется
+- РЕШЕНИЕ: `subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP`
+
+**AP-UPDATE-2: Не определять ZIP_NAME перед download_and_install()**
+- `zip_path = os.path.join(tmp_dir, ZIP_NAME)` → `NameError: name 'ZIP_NAME' is not defined`
+- РЕШЕНИЕ: `ZIP_NAME = "TotalHunter.zip"` в константах модуля
+
+**AP-UPDATE-3: Публиковать в поле версии любой текст кроме числа**
+- Поле "версия" в Admin Panel → вводить ТОЛЬКО вида `1.0.8`, никаких слов
+- Если ввести текст → `/version/latest` вернёт текст как версию → автообновление сломано у всех пользователей
+- ЭКСТРЕННЫЙ ФИКС: `curl -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.7" -H "Authorization: Bearer dev-admin-token"`
 
 ---
 
@@ -21,6 +42,11 @@
 **AP-WEB-3: favicon.svg от Vite как первая иконка в index.html**
 - Браузеры всегда предпочитают SVG над ICO/PNG → старый Vite-болт перекрывал алмаз
 - РЕШЕНИЕ: favicon.svg удалён из репо. Использовать только favicon.ico + Icon_16/32/256.png
+
+**AP-WEB-5: Запрашивать у пользователя параметры деплоя Vercel — ЗАПРЕЩЕНО**
+- Токен, projectId, teamId, hook URL — всё есть в CLAUDE.md раздел 6.5 и STATE.md
+- Каждый раз спрашивать пользователя = трата времени и раздражение
+- РЕШЕНИЕ: читать CLAUDE.md → брать параметры → деплоить самостоятельно
 
 **AP-WEB-4: Присваивать alias до завершения NEW билда**
 - Если alias назначить немедленно после hook trigger — он указывает на СТАРЫЙ последний деплой

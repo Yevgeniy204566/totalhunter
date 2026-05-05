@@ -15,6 +15,12 @@ import os
 import shutil
 import glob
 
+# Force UTF-8 output so Cyrillic/arrow chars don't crash on cp1251 console
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Модули с чувствительной логикой → компилируем в .pyd
@@ -39,7 +45,7 @@ def run(cmd, **kwargs):
 def compile_module(src: str):
     """Компилирует .py в .pyd через Nuitka (--module)."""
     name = os.path.basename(src)
-    print(f"  [Nuitka] Компилирую {name} → .pyd")
+    print(f"  [Nuitka] Compiling {name} -> .pyd")
     run([
         sys.executable, "-m", "nuitka",
         "--module",
@@ -102,7 +108,7 @@ def main():
     print("  OK Все ассеты на месте")
 
     # Шаг 2: Компиляция чувствительных модулей в .pyd
-    print("\n[2/4] Компиляция ключевых модулей (Nuitka → C++)...")
+    print("\n[2/4] Kompiliatsiia modulei (Nuitka -> C++)...")
     compiled = []
     skipped = []
     for mod in PROTECTED_MODULES:

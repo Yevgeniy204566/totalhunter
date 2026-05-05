@@ -172,6 +172,37 @@ def analyze_footprint_zone(
     }
 
 
+def is_on_beacon(
+    minimap_bgr: np.ndarray,
+    radius: int = 10,
+    min_px: int = 15,
+) -> bool:
+    """
+    True when red beacon pixels are found within `radius` px of minimap centre.
+
+    The beacon is a coast-parallel line drawn by FootprintCanvas.draw_beacon()
+    at the landing position (+1 coast step) before each dive.  When the bot
+    physically stands on the beacon the stamped cell appears at the minimap
+    centre (dx=0, dy=0 in render_overlay), so we check a small circle around
+    the centre — not a directional cone.
+
+    Rivers have no beacon pixels → no false stops at rivers.
+    """
+    h, w = minimap_bgr.shape[:2]
+    cy, cx = h // 2, w // 2
+
+    ys, xs = np.mgrid[0:h, 0:w]
+    dist_sq = (xs - cx).astype(np.float32) ** 2 + (ys - cy).astype(np.float32) ** 2
+    circle_mask = dist_sq <= float(radius ** 2)
+
+    b = minimap_bgr[:, :, 0].astype(np.float32)
+    g = minimap_bgr[:, :, 1].astype(np.float32)
+    r = minimap_bgr[:, :, 2].astype(np.float32)
+    red_mask = (r > 150) & (r > b * 2.0) & (r > g * 2.0)
+
+    return int(np.sum(red_mask & circle_mask)) >= min_px
+
+
 def get_minimap_snapshot(
     center_x: int = 90,
     center_y: int = 925,

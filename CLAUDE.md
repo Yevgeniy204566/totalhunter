@@ -118,6 +118,34 @@ docs/             — буфер Gemini, документация
 
 ---
 
+## 6.5. 🔒 ДЕПЛОЙ САЙТА total-hunter.com — 3 ОБЯЗАТЕЛЬНЫХ ШАГА
+
+**Claude делает все 3 шага сам. git push НЕДОСТАТОЧНО.**
+
+```bash
+# Шаг 1
+git add web/src/... && git commit -m "..." && git push origin main
+
+# Шаг 2 — триггер хука (запускает билд)
+curl -s -X POST "https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw"
+
+# Шаг 3 — ждать READY и прикрепить домен
+TOKEN="vcp_2OacfkL9S4wbYB31ngyotlULFv7nedPLGMp6ICpIILlk13PbwP3NVtBj"
+TEAM="team_CkkRPXdwtRtsL9YCk8n4Fzla"
+PROJECT="prj_mWtcb6hJCkl40YLWheeIlxD5NmXj"
+until STATE=$(curl -s "https://api.vercel.com/v6/deployments?projectId=$PROJECT&teamId=$TEAM&limit=1" \
+  -H "Authorization: Bearer $TOKEN" | grep -o '"state":"[^"]*"' | head -1 | cut -d'"' -f4) \
+  && [ "$STATE" = "READY" ]; do echo "State: $STATE"; sleep 10; done
+DEP_ID=$(curl -s "https://api.vercel.com/v6/deployments?projectId=$PROJECT&teamId=$TEAM&limit=1" \
+  -H "Authorization: Bearer $TOKEN" | grep -o '"uid":"[^"]*"' | head -1 | cut -d'"' -f4)
+curl -s -X POST "https://api.vercel.com/v2/deployments/$DEP_ID/aliases?teamId=$TEAM" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"alias":"total-hunter.com"}'
+```
+
+**Почему:** productionBranch=master в Vercel (не main). Push в main → Preview, не Production. Нужен hook + alias.
+**Если токен истёк:** vercel.com → Account Settings → Tokens → Create → дать Claude.
+
 ## 7. Workflow памяти и контекста
 
 - **«Хангоф»** — команда перед `/compact` или `/clear`. Обновляет STATE.md + ANTI-PATTERNS.md.

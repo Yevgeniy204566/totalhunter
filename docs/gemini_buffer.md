@@ -1,105 +1,97 @@
-# Gemini Buffer — 2026-05-05 15:30
+# Gemini Buffer — Хангоф #35 — 2026-05-06
 
 ---
 
-## Процесс автообновления Total Hunter Bot
+## Что сделано сегодня (05-06 мая)
 
-### Как работает система
+### 1. Автообновление — исправлено и задеплоено
+- **Баг 1:** `ZIP_NAME` не был определён → `NameError` при скачивании. Исправлено: `ZIP_NAME = "TotalHunter.zip"` в `updater.py`
+- **Баг 2:** `CREATE_NO_WINDOW` — helper.bat убивался вместе с EXE. Исправлено: `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`
+- **v1.0.7 → v1.0.8:** окно появляется, но падает (сломан updater v1.0.7). Пользователи v1.0.7 — скачать вручную с сайта. С v1.0.8 всё работает.
 
-Автообновление работает ТОЛЬКО в собранном EXE (не в Python-скрипте).
+### 2. Мобильная Админка — переделана
+- Убран hamburger/drawer
+- Добавлена нижняя навигация (6 табов как на сайте)
+- Игроки — компактные строки-плашки вместо больших карточек
+- Задеплоено на GCP
 
-**Компоненты:**
-- `updater.py` — логика проверки версии
-- `version.py` — текущая версия (`VERSION = "1.0.7"`)
-- `/version/latest` на сервере — эндпоинт с актуальной версией
-- Admin Panel → Dashboard → "Версия бота" — интерфейс публикации
+### 3. v1.0.8 — собрана и опубликована
+- 9 модулей Nuitka + PyInstaller
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.0.8
+- Сервер: `/version/latest` → `1.0.8`
+
+### 4. Путь сервера зафиксирован
+`/opt/totalhunter/server` (НЕ `/app`)
+```bash
+cd /opt/totalhunter/server && sudo git pull origin main && sudo systemctl restart totalhunter
+```
 
 ---
 
-### Шаги для выпуска новой версии (напр. v1.0.8)
+## 🔴 Проблема — Ярлык на рабочем столе (на завтра)
 
-**1. Обновить version.py**
+**Симптом:** Размытая иконка ярлыка, переходит из версии в версию.
+
+**Причина:** Windows кэширует иконки в `IconCache.db`. После xcopy нового EXE кеш не обновляется. Ярлык (.lnk) не пересоздаётся.
+
+**Решение — добавить в update.bat:**
+```batch
+ie4uinit.exe -show
+```
+Эта утилита Windows сбрасывает кеш иконок без перезапуска explorer.exe.
+
+Изменить нужно в `updater.py` → функция `download_and_install()` → в bat_path:
 ```python
-VERSION = "1.0.8"
-```
-
-**2. Собрать EXE через build.spec**
-```
-pyinstaller build.spec --noconfirm
-```
-→ результат: `dist/TotalHunter.exe`
-
-**3. Запаковать в ZIP**
-```
-cd dist && zip TotalHunter.zip TotalHunter.exe
-```
-
-**4. Загрузить на GitHub Releases**
-- Создать Release с тегом `v1.0.8`
-- Приложить `TotalHunter.zip`
-- URL будет: `https://github.com/Yevgeniy204566/totalhunter/releases/download/v1.0.8/TotalHunter.zip`
-
-**5. Опубликовать версию через Admin Panel**
-- Зайти на `https://admin.total-hunter.com`
-- Dashboard → блок "Версия бота"
-- Ввести `1.0.8` в поле
-- Нажать "Опубликовать"
-- Проверить: поле "Текущая в БД" должно показать `1.0.8`
-
-**ИЛИ через curl:**
-```bash
-curl -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.8" \
-  -H "Authorization: Bearer dev-admin-token"
-```
-
-**6. Проверить эндпоинт**
-```bash
-curl https://api.total-hunter.com/version/latest
-# {"version":"1.0.8","download_url":"https://github.com/.../v1.0.8/TotalHunter.zip"}
+f.write(f'xcopy /s /y /e "{extract_dir}\\*" "{exe_dir}\\"\n')
+f.write('ie4uinit.exe -show\n')   # сбросить кеш иконок
+f.write(f'start "" "{os.path.join(exe_dir, EXE_NAME)}"\n')
 ```
 
 ---
 
-### Как обновляется пользователь
+## План на завтра (2026-05-07)
 
-1. Пользователь запускает старый EXE (например v1.0.6)
-2. При запуске `updater.py` вызывает `check_for_updates("1.0.6")`
-3. Если сервер вернул версию > текущей — показывается диалог
-4. Пользователь нажимает "Обновить"
-5. Скачивается ZIP с GitHub
-6. Файл распаковывается рядом со старым EXE
-7. Запускается новый EXE, старый завершается
+### 1. Фикс ярлыка (иконка)
+- Добавить `ie4uinit.exe -show` в update.bat
+- Собрать v1.0.9
+- Залить, опубликовать, проверить
 
-**ВАЖНО:** Автообновление работает только с v1.0.6+  
-Версии 1.0.3–1.0.5 использовали старый GitHub API (возвращал 404 для приватных репо) — обновление не работало. Пользователи с этими версиями должны скачать вручную.
+### 2. Тест автообновления
+- Скачать v1.0.8 с total-hunter.com
+- Запустить → не должен предлагать обновление (версии совпадают)
+- Поднять сервер на v1.0.9 → запустить v1.0.8 → проверить полный флоу обновления
 
----
-
-### Известные проблемы / история
-
-- **v1.0.7**: Поле "версия в БД" случайно было заполнено текстом "Обновить " (кнопка) → исправлено через curl POST на /admin/version/update?version=1.0.7
-- **v1.0.3–1.0.5**: GitHub API для приватных репо возвращает 404 → переехали на собственный сервер
+### 3. Free-Kassa
+- Зарегистрировать кабинет
+- Прописать webhook: `https://api.total-hunter.com/payments/webhook`
+- Получить FK_SECRET_WORD + FK_SECRET_WORD2 → добавить в GCP env
 
 ---
 
-## Мобильная Админка — что сделано 2026-05-05
+## Шпаргалка команд (для следующей сессии)
 
-**Изменения в `server/admin/index.html`:**
+### Сборка и публикация новой версии:
+```powershell
+# version.py → VERSION = "1.0.X"
+python build_release.py
+cd dist\TotalHunter && Compress-Archive -Path * -DestinationPath ..\..\TotalHunter.zip -Force
+& "C:\Program Files\GitHub CLI\gh.exe" release create v1.0.X "C:\BattleBot\TotalHunter.zip" --title "v1.0.X" --repo "Yevgeniy204566/totalhunter"
+curl -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.X" -H "Authorization: Bearer dev-admin-token"
+```
 
-1. **Убрал hamburger/drawer** — был неудобен на телефоне
-2. **Добавил нижнюю навигацию** (как на сайте) — 6 табов: Dashboard, Игроки, Broadcast, Feedback, TOP, Логи
-3. **Список игроков** — теперь компактные строки-плашки вместо больших карточек:
-   - `[dot] Имя / email ... [кредиты ◆] [+] [ban] [del]`
-   - Кнопка `+` вызывает `prompt()` для ввода суммы — без inline input
-4. **Toast** поднят выше bottom nav (не перекрывается)
-5. **Мобильный header** показывает название текущей страницы + кнопку refresh
-
-**Нужно задеплоить на GCP:**
+### Деплой сервера:
 ```bash
-git add server/admin/index.html
-git commit -m "feat(admin): mobile bottom nav + compact user rows"
+cd /opt/totalhunter/server && sudo git pull origin main && sudo systemctl restart totalhunter
+```
+
+### Экстренный сброс версии:
+```bash
+curl -s -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.8" -H "Authorization: Bearer dev-admin-token"
+```
+
+### Деплой сайта (3 шага — Клод делает сам):
+```bash
 git push origin main
-# затем SSH → cd /app && git pull
+curl -X POST "https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw"
+# + poll READY + alias total-hunter.com (см. CLAUDE.md раздел 6.5)
 ```
-
----

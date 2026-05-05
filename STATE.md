@@ -1,12 +1,18 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-04 (Phase 2C: atomic /use_credit, Double-Dipping fix, backup script)
+> Последнее обновление: 2026-05-06 (Хангоф #35: автообновление, мобильная админка, v1.0.8 релиз)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare, домен куплен 2026-05-02)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
 **CORS:** total-hunter.com + totalhunter.vercel.app
 **Git branch:** main (master удалён, auto-deploy через Vercel)
+
+**Frontend Deploy:** Hook + Token (НЕ vercel --prod, НЕ git push alone)
+- Project: `evgeniys-projects-2168e6f8/totalhunter`
+- Hook: `POST https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw`
+- Token: `vcp_2OacfkL9S4wbYB31ngyotlULFv7nedPLGMp6ICpIILlk13PbwP3NVtBj`
+- Полный workflow: см. CLAUDE.md раздел 6.5
 
 ---
 
@@ -24,10 +30,11 @@
 | CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Хангоф #32: логирование, диалог-гейт [EXP], OCR масла с HUD привязан к Point B, стоп < 70k, GUI лейблы | 2026-05-04 |
 | CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
 | Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
-| Admin Panel | server/admin/index.html | ✅ Feedback badge + Leaderboard TOP-50 | 2026-04-21 |
+| Admin Panel | server/admin/index.html | ✅ V2: мобильная нижняя навигация + плашки игроков + версия бота | 2026-05-06 |
 | Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ SEO, Legal RU/EN, GuidePage полный перевод, иконки, деплой-хук настроен | 2026-05-03 |
 | Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена | 2026-04-21 |
 | **Безопасность данных** | server/main.py + web_routes.py | ✅ Phase 2C: атомарный /use_credit (UPDATE...RETURNING), Double-Dipping fix при merge, invited_by_id перенос, backup_db.sh (cron 6ч) | 2026-05-04 |
+| **Auto-update** | updater.py | ✅ v1.0.8: ZIP_NAME определён, DETACHED_PROCESS для helper.bat. v1.0.7 и старше — обновляться ВРУЧНУЮ с сайта | 2026-05-06 |
 
 ---
 
@@ -413,6 +420,7 @@ Peek в RETURNING — НЕ для остановки и НЕ для шагов. 
 
 | Приоритет | Баг/TODO | Файл |
 |---|---|---|
+| **🔴 ЗАВТРА** | Ярлык на рабочем столе — размытый, переходит из версии в версию. Windows кэширует иконку (IconCache.db). Фикс: добавить `ie4uinit.exe -show` в update.bat после xcopy | updater.py (update.bat) |
 | **🟡 OPEN** | CoastalSnakeNavigator RETURNING — нет точного визуального возврата к маяку; работает по canvas-математике, иногда промахивается | navigator.py |
 | **HIGH** | Прописать webhook URL в кабинете Free-Kassa | FK merchant dashboard |
 | **MED** | Вставить иллюстрации в GuidePage | web/src/pages/GuidePage.jsx |

@@ -550,45 +550,56 @@ class TestDetectOilButtons:
         img = self._solid_bgr((0, 0, 0))
         assert hunter._detect_oil_buttons(img) is False
 
-    def test_green_button_returns_true(self):
-        # BGR зелёного "Использовать": примерно (30, 180, 60) = чистый зелёный
+    def test_green_only_returns_false(self):
+        # Только зелёная кнопка (Carter overlay) → False: диалог масла требует ОБЕ
         hunter = self._make_hunter()
         img = self._solid_bgr((30, 180, 60))
-        assert hunter._detect_oil_buttons(img) is True
+        assert hunter._detect_oil_buttons(img) is False
 
-    def test_blue_button_returns_true(self):
-        # BGR синего "Купить": примерно (200, 120, 60) = medium blue в BGR
+    def test_blue_only_returns_false(self):
+        # Только синяя кнопка → False
         hunter = self._make_hunter()
         img = self._solid_bgr((200, 120, 60))
+        assert hunter._detect_oil_buttons(img) is False
+
+    def test_both_buttons_returns_true(self):
+        # ОБЕ кнопки — зелёная >= 500 И синяя >= 50 → True
+        import numpy as np
+        hunter = self._make_hunter()
+        img = np.zeros((280, 460, 3), dtype=np.uint8)
+        img[0:20, 0:30]  = (30, 180, 60)   # 600 зелёных пикселей
+        img[0:10, 30:40] = (200, 120, 60)  # 100 синих пикселей
         assert hunter._detect_oil_buttons(img) is True
 
     def test_red_image_returns_false(self):
-        # Красный — не масляный диалог
         hunter = self._make_hunter()
         img = self._solid_bgr((0, 0, 200))
         assert hunter._detect_oil_buttons(img) is False
 
     def test_few_green_pixels_returns_false(self):
-        # Менее 100 зелёных пикселей — шум, не диалог
+        # < 500 зелёных пикселей — не диалог
         import numpy as np
         hunter = self._make_hunter()
         img = self._solid_bgr((0, 0, 0), h=100, w=200)
-        img[0:5, 0:10] = (30, 180, 60)   # 50 пикселей — ниже порога
+        img[0:5, 0:10] = (30, 180, 60)   # 50 пикселей
         assert hunter._detect_oil_buttons(img) is False
 
-    def test_enough_green_pixels_returns_true(self):
-        # Более 100 зелёных пикселей — диалог обнаружен
+    def test_enough_green_no_blue_returns_false(self):
+        # >= 500 зелёных, но нет синей — Carter overlay, не масло
         import numpy as np
         hunter = self._make_hunter()
         img = self._solid_bgr((0, 0, 0), h=100, w=200)
-        img[0:10, 0:20] = (30, 180, 60)  # 200 пикселей — выше порога
-        assert hunter._detect_oil_buttons(img) is True
+        img[0:25, 0:25] = (30, 180, 60)  # 625 зелёных, нет синих
+        assert hunter._detect_oil_buttons(img) is False
 
-    def test_check_oil_dialog_returns_true_when_buttons_found(self):
+    def test_check_oil_dialog_returns_true_when_both_buttons_found(self):
+        import numpy as np
         from unittest.mock import patch
         hunter = self._make_hunter()
-        green_img = self._solid_bgr((30, 180, 60), h=420, w=550)
-        with patch.object(hunter, '_screenshot', return_value=green_img):
+        img = np.zeros((280, 460, 3), dtype=np.uint8)
+        img[0:20, 0:30]  = (30, 180, 60)   # зелёная
+        img[0:10, 30:40] = (200, 120, 60)  # синяя
+        with patch.object(hunter, '_screenshot', return_value=img):
             result = hunter._check_oil_dialog()
         assert result is True
 
