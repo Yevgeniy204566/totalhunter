@@ -349,10 +349,60 @@
       white-space: nowrap;
     }
 
+    /* ── Mobile Drawer ─────────────────────────────────────────── */
+    .mobile-topbar {
+      display: none;
+      position: sticky; top: 0; z-index: 90;
+      background: var(--card);
+      border-bottom: 1px solid var(--outline);
+      padding: 0 16px;
+      height: 52px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mobile-topbar-title {
+      font-size: 15px; font-weight: 700; color: var(--accent);
+    }
+
+    .hamburger {
+      background: none; border: none; cursor: pointer;
+      color: var(--text); padding: 8px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hamburger:hover { background: var(--card2); }
+    .hamburger .material-symbols-rounded { font-size: 24px; }
+
+    .drawer-overlay {
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 150; backdrop-filter: blur(4px);
+    }
+    .drawer-overlay.open { display: block; }
+
+    .drawer {
+      position: fixed; top: 0; left: -280px; bottom: 0;
+      width: 260px; background: var(--card);
+      border-right: 1px solid var(--outline);
+      z-index: 160; padding: 20px 0;
+      transition: left 0.25s ease;
+      display: flex; flex-direction: column;
+    }
+    .drawer.open { left: 0; }
+
+    .drawer-header {
+      padding: 0 20px 20px;
+      font-size: 16px; font-weight: 700; color: var(--accent);
+      border-bottom: 1px solid var(--outline);
+      margin-bottom: 8px;
+    }
+
     /* ── Mobile ────────────────────────────────────────────────── */
     @media (max-width: 768px) {
       .sidebar { display: none; }
-      .main { padding: 16px; }
+      .mobile-topbar { display: flex; }
+      .main { padding: 12px; }
 
       .user-table-wrap { display: none; }
       .user-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -371,11 +421,50 @@
       .user-card-actions .btn { flex: 1; justify-content: center; min-height: 44px; }
 
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .section-header { flex-direction: column; align-items: flex-start; }
+      .inp { font-size: 16px; }
+      .page-title { font-size: 18px; margin-bottom: 16px; }
     }
   </style>
 </head>
 
 <body x-data="adminApp()" x-init="init()">
+
+  <!-- Mobile Drawer Overlay -->
+  <div class="drawer-overlay" :class="{open: drawerOpen}" @click="drawerOpen=false" x-show="authenticated" x-cloak></div>
+
+  <!-- Mobile Drawer -->
+  <div class="drawer" :class="{open: drawerOpen}" x-show="authenticated" x-cloak>
+    <div class="drawer-header">⚔ Admin Panel</div>
+    <div class="nav-item" :class="{active:page==='dashboard'}" @click="page='dashboard';loadStats();drawerOpen=false">
+      <span class="material-symbols-rounded">dashboard</span> Dashboard
+    </div>
+    <div class="nav-item" :class="{active:page==='users'}" @click="page='users';loadUsers();drawerOpen=false">
+      <span class="material-symbols-rounded">group</span> Пользователи
+    </div>
+    <div class="nav-item" :class="{active:page==='logs'}" @click="page='logs';loadLogs();drawerOpen=false">
+      <span class="material-symbols-rounded">bug_report</span> Логи
+    </div>
+    <div class="nav-item" :class="{active:page==='broadcast'}" @click="page='broadcast';drawerOpen=false">
+      <span class="material-symbols-rounded">campaign</span> Broadcast
+    </div>
+    <div class="nav-item" :class="{active:page==='feedback'}" @click="page='feedback';loadFeedback();drawerOpen=false">
+      <span class="material-symbols-rounded">feedback</span> Feedback
+      <span class="nav-badge" x-show="feedbackCount>0" x-text="feedbackCount"></span>
+    </div>
+    <div class="nav-item" :class="{active:page==='leaderboard'}" @click="page='leaderboard';loadLeaderboard();drawerOpen=false">
+      <span class="material-symbols-rounded">leaderboard</span> Leaderboard
+    </div>
+  </div>
+
+  <!-- Mobile Top Bar -->
+  <div class="mobile-topbar" x-show="authenticated" x-cloak>
+    <button class="hamburger" @click="drawerOpen=!drawerOpen">
+      <span class="material-symbols-rounded">menu</span>
+    </button>
+    <div class="mobile-topbar-title" x-text="page.charAt(0).toUpperCase()+page.slice(1)"></div>
+    <div style="width:40px"></div>
+  </div>
 
   <!-- Login Overlay -->
   <div class="overlay" x-show="!authenticated" x-cloak>
@@ -795,6 +884,7 @@ function adminApp() {
     loading: false,
     toast: '',
     feedbackCount: 0,
+    drawerOpen: false,
 
     stats: {},
     users: [], totalUsers: 0,
