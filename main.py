@@ -742,7 +742,7 @@ class TotalHunterApp(ctk.CTk):
         icons_label.pack(pady=(2, 1))
         self._i18n_labels.append((icons_label, "crypt_icons_title"))
 
-        scroll_frame = ctk.CTkScrollableFrame(self.tab_crypt, height=260,
+        scroll_frame = ctk.CTkScrollableFrame(self.tab_crypt, height=310,
                                                fg_color=MD3["card"],
                                                corner_radius=12,
                                                border_width=1,
@@ -767,7 +767,7 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_vars: dict = {}
         self._crypt_icons: list = []  # держим ссылки чтобы GC не убрал
 
-        COLS = 10
+        COLS = 6
         for idx, crypt_name in enumerate(crypt_order):
             row = idx // COLS
             col = idx % COLS
@@ -777,20 +777,20 @@ class TotalHunterApp(ctk.CTk):
                 sep_row = row
                 sep = ctk.CTkFrame(scroll_frame, height=2, fg_color=MD3["separator"])
                 sep.grid(row=sep_row * 2, column=0, columnspan=COLS,
-                         padx=2, pady=(4, 1), sticky="ew")
+                         padx=4, pady=(4, 1), sticky="ew")
 
             cell = ctk.CTkFrame(scroll_frame, fg_color="transparent")
-            cell.grid(row=row * 2 + 1, column=col, padx=2, pady=2)
+            cell.grid(row=row * 2 + 1, column=col, padx=3, pady=2)
 
             # Иконка
             icon_path = os.path.join(targets_dir, f"{crypt_name}.png")
             try:
-                pil_img = Image.open(icon_path).resize((34, 34))
-                ctk_img = ctk.CTkImage(pil_img, size=(34, 34))
+                pil_img = Image.open(icon_path).resize((40, 40))
+                ctk_img = ctk.CTkImage(pil_img, size=(40, 40))
                 self._crypt_icons.append(ctk_img)
                 ctk.CTkLabel(cell, image=ctk_img, text="").pack()
             except Exception:
-                ctk.CTkLabel(cell, text="?", width=34, height=34).pack()
+                ctk.CTkLabel(cell, text="?", width=40, height=40).pack()
 
             # Чекбокс
             var = ctk.BooleanVar(value=False)
@@ -1148,11 +1148,8 @@ class TotalHunterApp(ctk.CTk):
         on_top = self.always_on_top_var.get()
         self.wm_attributes('-topmost', on_top)
         if on_top:
-            # Снапаем окно в верхний правый угол — безопасная зона:
-            # мини-карта и точка калибровки A находятся слева (x≈90),
-            # все элементы игры для кликов/OCR заканчиваются до x=1350.
-            right_x = self.winfo_screenwidth() - 460
-            self.geometry(f"460x1010+{right_x}+0")
+            screen_h = self.winfo_screenheight()
+            self.geometry(f"460x{screen_h}+0+0")
             self.update_idletasks()
             x = self.winfo_x()
             y = self.winfo_y()
