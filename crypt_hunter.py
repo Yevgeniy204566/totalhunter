@@ -471,6 +471,7 @@ class CryptHunter:
         # self._status("Открываю Дозорную башню...")
         pos = None
         if _TEMPLATE_AVAILABLE:
+            pass
             # Ищем pipe.png в фиксированном регионе экрана (не через scale_coord —
             # он зависит от позиции окна Chrome которая может быть любой).
             # Регион: широкая полоса вокруг известного положения иконки.
@@ -480,8 +481,10 @@ class CryptHunter:
             )
             pos = find_in_screen_region('pipe.png', search_region, threshold=0.60)
             if pos:
+                pass
                 # self._status(f"  [template] pipe.png → {pos}")
             else:
+                pass
                 # self._status("  [template] pipe.png не найден — использую координаты")
         if pos is not None:
             self._click(*pos, jitter=5, raw=True)
@@ -500,8 +503,10 @@ class CryptHunter:
             )
             pos = find_in_screen_region('tab_crypts.png', search_region, threshold=0.60)
             if pos:
+                pass
                 # self._status(f"  [template] tab_crypts.png → {pos}")
             else:
+                pass
                 # self._status("  [template] tab_crypts.png не найден — использую координаты")
         if pos is not None:
             self._click(*pos, jitter=5, raw=True)
@@ -561,9 +566,11 @@ class CryptHunter:
             # Вырезаем только зону меню для сравнения (не весь экран).
             menu_snap = img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w].copy()
             if prev_menu_snap is not None:
+                pass
                 if not _images_differ(prev_menu_snap, menu_snap):
                     no_move_count += 1
                     if no_move_count >= 3:
+                        pass
                         # self._status(
                         #     f"Конец списка: меню не двигается "
                         #     f"({scroll_idx} скроллов)"
@@ -606,6 +613,7 @@ class CryptHunter:
                     # склеп откроется целиком, кнопка «Перейти» будет полностью видна.
                     nudge_threshold = ms_y + int(ms_h * 0.72)  # нижние 28% меню
                     if cy > nudge_threshold:
+                        pass
                         # self._status(f"  Доскролл: склеп у края (cy={cy})...")
                         pyautogui.scroll(-2)
                         self._interruptible_sleep(0.35)
@@ -640,6 +648,7 @@ class CryptHunter:
                         goto_pos = find_in_screen_region('transition.png', btn_region,
                                                          threshold=0.70)
                         if goto_pos is None:
+                            pass
                             # self._status(f"  transition.png не найден — клик по позиции")
                     if goto_pos is None:
                         sc_x = scale_coord(WT_GOTO_BTN_X, 0)[0] if _VISUAL_NAV_AVAILABLE else WT_GOTO_BTN_X
@@ -701,6 +710,7 @@ class CryptHunter:
                         best_box = (cx, cy)
 
             if best_box:
+                pass
                 # self._status(f"{crypt_type} найден на карте — кликаю")
                 self._click(best_box[0], best_box[1], jitter=4, raw=True)
                 self._random_pause(0.8, 1.2)
@@ -726,6 +736,7 @@ class CryptHunter:
             tight = (sc[0] - 100, sc[1] - 35, 200, 70)
             pos = find_in_screen_region('btn_issledovat.png', tight, threshold=0.65)
             if pos:
+                pass
                 # self._status(f"  [tmpl] кнопка уточнена → {pos}")
                 return pos
 
@@ -740,6 +751,7 @@ class CryptHunter:
             return False
 
         if _EXP_DIALOG_GATE and _TEMPLATE_AVAILABLE:
+            pass
             # [EXP] Шаг 1: убеждаемся что диалог открыт перед кликом
             sc_btn = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
             gate_region = (sc_btn[0] - 150, sc_btn[1] - 60, 300, 120)
@@ -756,6 +768,7 @@ class CryptHunter:
 
             self._interruptible_sleep(1.5)
         else:
+            pass
             # self._status("Нажимаю «Исследовать»...")
             sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
             self._click(*sc, raw=True)
@@ -782,6 +795,7 @@ class CryptHunter:
                               ref_cx=CARTER_EVENT_BAR[0], ref_cy=CARTER_EVENT_BAR[1],
                               rw=400, rh=80)
             if pos:
+                pass
                 # self._status(f"  [tmpl] Ускорить → {pos}")
         if pos is None:
             pos = self._find_button(
@@ -818,6 +832,7 @@ class CryptHunter:
             if not self.is_running:
                 return False
             if verify_fn():
+                pass
                 # self._status(f"  ✓ {name} — подтверждено")
                 return True
             self._interruptible_sleep(0.5)
@@ -848,6 +863,7 @@ class CryptHunter:
             region = scale_region(*ref_region)
             pos = find_colored_button(region, color, pick)
             if pos:
+                pass
                 # self._status(f"  [visual] {color}/{pick} → {pos}")
                 return pos
             # self._status(f"  [visual] не найдено — использую fallback")
@@ -920,12 +936,14 @@ class CryptHunter:
 
         # [6] YOLO на карте — ищем тот же тип, ближайший к центру
         if not self._detect_on_map(crypt_type):
+            pass
             # self._status("Склеп не найден на карте — начинаю сначала")
             return  # РЕСТАРТ
 
         # [6.5] Для R-типов: открываем склеп (пустой диалог, только кнопка «Открыть»)
         # После клика появляется обычный диалог с маслом и временем марша
         if crypt_type in RARE_CRYPT_TYPES:
+            pass
             # self._status("Редкий склеп — нажимаю «Открыть»")
             sc_open = scale_dialog(*CRYPT_OPEN_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_OPEN_BTN
             self._click(*sc_open, raw=True)
@@ -934,6 +952,7 @@ class CryptHunter:
 
         # [7] Отправляем Капитана
         if not self._send_captain(crypt_type):
+            pass
             # self._status("Капитан не отправлен — перезапуск цикла")
             return
 
@@ -943,7 +962,9 @@ class CryptHunter:
         # [10] Ускорение N раз (из ползунка), если N > 0
         n = self._accelerations
         if n > 0:
+            pass
             if not self._click_captain_event():
+                pass
                 # self._status("Диалог ускорения не открылся — перезапуск цикла")
                 return
             self._accelerate(n)
