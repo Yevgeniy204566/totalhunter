@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Total Hunter — Admin</title>
+  <link rel="icon" type="image/png" href="/static/favicon.ico">
+  <link rel="shortcut icon" href="/static/favicon.ico">
 
   <!-- Alpine.js — реактивность без фреймворка -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -435,8 +437,14 @@
               placeholder="Поиск: HWID / Email / Username"
               x-model="search"
               @input.debounce.400ms="loadUsers()"
-              style="width:300px"
+              style="width:260px"
             >
+            <button class="btn btn-sm" :class="onlineOnly ? 'btn-primary' : 'btn-ghost'"
+              @click="onlineOnly = !onlineOnly; loadUsers()"
+              style="gap:4px;display:flex;align-items:center">
+              <span style="width:8px;height:8px;border-radius:50%;background:#00e676;display:inline-block"></span>
+              Онлайн
+            </button>
             <button class="btn btn-ghost btn-sm" @click="loadUsers()">
               <span class="material-symbols-rounded" style="font-size:16px">refresh</span>
             </button>
@@ -456,6 +464,7 @@
                   <th>Баланс</th>
                   <th>Реф. баланс</th>
                   <th>Рефералы</th>
+                  <th>Последний вход</th>
                   <th>IP</th>
                   <th>Версия</th>
                   <th>Действия</th>
@@ -485,6 +494,7 @@
                       L2: <span x-text="u.referrals.l2"></span> |
                       L3: <span x-text="u.referrals.l3"></span>
                     </td>
+                    <td style="font-size:11px;color:var(--md-on-surface-dim)" x-text="u.last_seen ? formatDate(u.last_seen) : '—'"></td>
                     <td style="font-size:11px;font-family:monospace;color:var(--md-on-surface-dim)" x-text="u.ip_address || '—'"></td>
                     <td style="font-size:12px" x-text="u.bot_version || '—'"></td>
                     <td>
@@ -716,6 +726,7 @@
       totalUsers: 0,
       page_num: 1,
       search: '',
+      onlineOnly: false,
       logs: [],
       broadcastMsg: '',
       feedbackItems: [],
@@ -768,6 +779,7 @@
         this.loading = true;
         const q = new URLSearchParams({ page: this.page_num, per_page: PER });
         if (this.search) q.append('search', this.search);
+        if (this.onlineOnly) q.append('online_only', '1');
         const r = await fetch(`${API}/admin/users?${q}`, { headers: this.headers() });
         if (r.ok) {
           const d = await r.json();

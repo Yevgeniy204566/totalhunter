@@ -73,6 +73,12 @@ app.add_middleware(
 app.include_router(web_router)
 app.include_router(payments_router)
 
+# Статика для админки (иконка)
+from fastapi.staticfiles import StaticFiles as _SF
+import os as _os
+_static_dir = _os.path.join(_os.path.dirname(__file__), "admin")
+app.mount("/static", _SF(directory=_static_dir, html=False), name="static")
+
 # Стоимость действий в кредитах
 CREDIT_COST = {
     "exchange": 10,
@@ -487,6 +493,7 @@ async def admin_stats(db: AsyncSession = Depends(get_db)):
 async def admin_users(
     db: AsyncSession = Depends(get_db),
     search: Optional[str] = None,
+    online_only: Optional[str] = None,
     page: int = 1,
     per_page: int = 50,
 ):
@@ -497,7 +504,7 @@ async def admin_users(
     now = datetime.now(timezone.utc)
     online_threshold = now - timedelta(minutes=5)
 
-    query = select(User).order_by(User.created_at.desc())
+    query = select(User).order_by(User.last_seen.desc().nulls_last(), User.created_at.desc())
     if search:
         like = f"%{search}%"
         query = query.where(
@@ -505,6 +512,8 @@ async def admin_users(
             User.email.ilike(like) |
             User.username.ilike(like)
         )
+    if online_only == '1':
+        query = query.where(User.last_seen >= online_threshold)
 
     total = (await db.execute(
         select(func.count()).select_from(query.subquery())
