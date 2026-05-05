@@ -428,6 +428,20 @@ async def transfer_referral_balance(req: HwidRequest, db: AsyncSession = Depends
     )
 
 
+# ── GET /version/latest ───────────────────────────────────────────────────────
+
+LATEST_VERSION     = os.environ.get("LATEST_VERSION", "1.0.5")
+LATEST_DOWNLOAD_URL = os.environ.get(
+    "LATEST_DOWNLOAD_URL",
+    "https://github.com/Yevgeniy204566/totalhunter/releases/download/v1.0.5/TotalHunter.zip"
+)
+
+@app.get("/version/latest")
+async def version_latest():
+    """Возвращает актуальную версию и ссылку для скачивания."""
+    return {"version": LATEST_VERSION, "download_url": LATEST_DOWNLOAD_URL}
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # МОДУЛЬ 3: ADMIN PANEL
 # ═════════════════════════════════════════════════════════════════════════════

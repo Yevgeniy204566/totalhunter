@@ -8,32 +8,32 @@ import subprocess
 
 import requests
 
-GITHUB_API = "https://api.github.com/repos/Yevgeniy204566/totalhunter/releases/latest"
-ZIP_NAME   = "TotalHunter.zip"
-EXE_NAME   = "TotalHunter.exe"
+VERSION_API = "https://api.total-hunter.com/version/latest"
+EXE_NAME    = "TotalHunter.exe"
 
 
-def _ver_tuple(tag: str):
+def _ver_tuple(v: str):
     try:
-        return tuple(int(x) for x in tag.lstrip("v").split("."))
+        return tuple(int(x) for x in v.lstrip("v").split("."))
     except Exception:
         return (0,)
 
 
 def check_for_updates(current_version: str):
-    """Return (latest_tag, download_url) if update available, else (None, None)."""
+    """Return (latest_version, download_url) if update available, else (None, None)."""
     if not getattr(sys, "frozen", False):
         return None, None
     try:
-        r = requests.get(GITHUB_API, timeout=8)
+        r = requests.get(VERSION_API, timeout=8)
         r.raise_for_status()
         data = r.json()
-        tag  = data.get("tag_name", "")
-        if _ver_tuple(tag) <= _ver_tuple(current_version):
+        latest  = data.get("version", "")
+        dl_url  = data.get("download_url", "")
+        if not latest or not dl_url:
             return None, None
-        for asset in data.get("assets", []):
-            if asset["name"] == ZIP_NAME:
-                return tag, asset["browser_download_url"]
+        if _ver_tuple(latest) <= _ver_tuple(current_version):
+            return None, None
+        return latest, dl_url
     except Exception:
         pass
     return None, None
