@@ -1544,7 +1544,7 @@ class TotalHunterApp(ctk.CTk):
                 messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
             try:
                 # Центр джойстика — из калибровки (единственный источник правды)
-                cx, cy = int(coord_manager.ref_a[0]), int(coord_manager.ref_a[1])
+                cx, cy = int(coord_manager.anchor_x), int(coord_manager.anchor_y)
                 step = int(self.nav_step_slider.get())
                 scan_interval = float(self.speed_slider.get())
                 move_wait = float(self.nav_wait_slider.get())
