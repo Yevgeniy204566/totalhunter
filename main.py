@@ -1148,9 +1148,17 @@ class TotalHunterApp(ctk.CTk):
         on_top = self.always_on_top_var.get()
         self.wm_attributes('-topmost', on_top)
         if on_top:
-            screen_h = self.winfo_screenheight()
+            try:
+                import ctypes, ctypes.wintypes
+                rect = ctypes.wintypes.RECT()
+                ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)
+                work_h = rect.bottom - rect.top
+                work_y = rect.top
+            except Exception:
+                work_h = self.winfo_screenheight() - 48
+                work_y = 0
             right_x = self.winfo_screenwidth() - 460
-            self.geometry(f"460x{screen_h}+{right_x}+0")
+            self.geometry(f"460x{work_h}+{right_x}+{work_y}")
             self.update_idletasks()
             x = self.winfo_x()
             y = self.winfo_y()
