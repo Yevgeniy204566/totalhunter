@@ -323,6 +323,9 @@ export default function LandingPage() {
           <Link to="/guide" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
             {lang === 'en' ? 'Guide' : 'Гайд'}
           </Link>
+          <Link to="/contacts" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
+            {lang === 'en' ? 'Contacts' : 'Контакты'}
+          </Link>
           <Link to="/legal" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>Legal</Link>
         </div>
       </footer>

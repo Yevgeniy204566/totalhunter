@@ -119,7 +119,7 @@ function ContentEN() {
         <UL items={[
           'Your Total Battle game login, password, or game account credentials — never requested, never stored.',
           'Screen content or visual data from your game session.',
-          'Payment card numbers or banking details — all payments are processed by Free-Kassa (PCI DSS compliant).',
+          'Payment card numbers or banking details — all payments are processed by NOWPayments. We never see or store your payment credentials.',
         ]} />
 
         <H4>2.3 How We Use Your Data</H4>
@@ -141,7 +141,7 @@ function ContentEN() {
         <H4>2.5 Third-Party Services</H4>
         <UL items={[
           'Google OAuth — authentication provider. Subject to Google\'s Privacy Policy.',
-          'Free-Kassa — payment processing. Subject to Free-Kassa\'s Privacy Policy.',
+          'NOWPayments — cryptocurrency payment processing. Subject to NOWPayments\' Privacy Policy.',
           'Google Cloud Platform (GCP) — server infrastructure. Data is stored in the US region.',
           'Vercel — website hosting. No personal data is processed by Vercel.',
         ]} />
@@ -150,7 +150,7 @@ function ContentEN() {
         <P>
           You have the right to: access a copy of your personal data, request correction of inaccurate data,
           request deletion of your account and associated data, and withdraw consent for optional communications.
-          To exercise these rights, contact us at <Accent>support@total-hunter.com</Accent>.
+          To exercise these rights, contact us at <Accent>totalhunter.support@gmail.com</Accent>.
         </P>
 
         <H4>2.7 Cookies</H4>
@@ -190,10 +190,15 @@ function ContentEN() {
       <Section title="4. Refund & Payment Policy">
         <H4>4.1 Accepted Payment Methods</H4>
         <P>
-          Payments are processed exclusively through <Hl>Free-Kassa</Hl> — a certified payment
-          aggregator supporting: bank cards (Visa / Mastercard / MIR), electronic wallets
-          (QIWI, YooMoney, WebMoney), and cryptocurrency (Bitcoin, Ethereum, USDT).
+          Payments are processed exclusively through <Hl>NOWPayments</Hl> — a non-custodial
+          cryptocurrency payment processor. Accepted currencies include: USDT (TRC-20 / ERC-20),
+          Bitcoin (BTC), Ethereum (ETH), BNB, and other major cryptocurrencies supported by NOWPayments.
           All transactions are secured by SSL/TLS encryption.
+        </P>
+        <P>
+          <Warn>Important:</Warn> Cryptocurrency transactions are <Hl>irreversible by nature</Hl>.
+          Once a payment is confirmed on the blockchain, it cannot be reversed by the sender or the Service.
+          Diamonds are credited automatically upon payment confirmation.
         </P>
 
         <H4>4.2 Refund Eligibility</H4>
@@ -216,7 +221,7 @@ function ContentEN() {
 
         <H4>4.4 How to Request a Refund</H4>
         <P>
-          To initiate a refund, send an email to <Accent>support@total-hunter.com</Accent> with the
+          To initiate a refund, send an email to <Accent>totalhunter.support@gmail.com</Accent> with the
           subject line «Refund Request» and include:
         </P>
         <UL items={[
@@ -244,7 +249,8 @@ function ContentEN() {
           Privacy Policy, or need assistance with a refund, please contact us:
         </P>
         <UL items={[
-          'Email: support@total-hunter.com',
+          'Email: totalhunter.support@gmail.com',
+          'Telegram: @TotalHunter_bot',
           'Website: https://total-hunter.com',
           'Response time: within 48 hours on business days',
         ]} />
@@ -348,7 +354,7 @@ function ContentRU() {
         <UL items={[
           'Логин, пароль или учётные данные вашего игрового аккаунта Total Battle — никогда не запрашиваются и не хранятся.',
           'Содержимое экрана или визуальные данные из вашей игровой сессии.',
-          'Номера банковских карт или банковские реквизиты — все платежи обрабатываются Free-Kassa (соответствует стандарту PCI DSS).',
+          'Номера банковских карт или банковские реквизиты — все платежи обрабатываются NOWPayments. Мы никогда не видим и не храним ваши платёжные данные.',
         ]} />
 
         <H4>2.3 Как мы используем ваши данные</H4>
@@ -370,7 +376,7 @@ function ContentRU() {
         <H4>2.5 Сторонние сервисы</H4>
         <UL items={[
           'Google OAuth — провайдер аутентификации. Подпадает под Политику конфиденциальности Google.',
-          'Free-Kassa — обработка платежей. Подпадает под Политику конфиденциальности Free-Kassa.',
+          'NOWPayments — обработка криптовалютных платежей. Подпадает под Политику конфиденциальности NOWPayments.',
           'Google Cloud Platform (GCP) — серверная инфраструктура. Данные хранятся в регионе США.',
           'Vercel — хостинг сайта. Персональные данные через Vercel не обрабатываются.',
         ]} />
@@ -380,7 +386,7 @@ function ContentRU() {
           Вы имеете право: получить копию своих персональных данных, запросить исправление
           недостоверных данных, запросить удаление аккаунта и связанных данных, а также отозвать
           согласие на получение необязательных сообщений. Для реализации этих прав обратитесь к нам:
-          {' '}<Accent>support@total-hunter.com</Accent>.
+          {' '}<Accent>totalhunter.support@gmail.com</Accent>.
         </P>
 
         <H4>2.7 Файлы Cookie</H4>
@@ -421,10 +427,15 @@ function ContentRU() {
       <Section title="4. Политика возврата и оплаты">
         <H4>4.1 Принимаемые способы оплаты</H4>
         <P>
-          Платежи обрабатываются исключительно через <Hl>Free-Kassa</Hl> — сертифицированный
-          платёжный агрегатор, поддерживающий: банковские карты (Visa / Mastercard / МИР),
-          электронные кошельки (QIWI, ЮMoney, WebMoney) и криптовалюты (Bitcoin, Ethereum, USDT).
+          Платежи обрабатываются исключительно через <Hl>NOWPayments</Hl> — некастодиальный
+          процессор криптовалютных платежей. Поддерживаемые валюты: USDT (TRC-20 / ERC-20),
+          Bitcoin (BTC), Ethereum (ETH), BNB и другие криптовалюты, поддерживаемые NOWPayments.
           Все транзакции защищены шифрованием SSL/TLS.
+        </P>
+        <P>
+          <Warn>Важно:</Warn> Криптовалютные транзакции <Hl>необратимы по своей природе</Hl>.
+          После подтверждения платежа в блокчейне он не может быть отменён ни отправителем, ни Сервисом.
+          Алмазы начисляются автоматически после подтверждения оплаты.
         </P>
 
         <H4>4.2 Условия возврата</H4>
@@ -447,7 +458,7 @@ function ContentRU() {
 
         <H4>4.4 Как запросить возврат</H4>
         <P>
-          Для инициирования возврата отправьте письмо на <Accent>support@total-hunter.com</Accent>{' '}
+          Для инициирования возврата отправьте письмо на <Accent>totalhunter.support@gmail.com</Accent>{' '}
           с темой «Refund Request» и укажите:
         </P>
         <UL items={[
@@ -476,7 +487,8 @@ function ContentRU() {
           конфиденциальности или возврата средств, обращайтесь к нам:
         </P>
         <UL items={[
-          'Email: support@total-hunter.com',
+          'Email: totalhunter.support@gmail.com',
+          'Telegram: @TotalHunter_bot',
           'Сайт: https://total-hunter.com',
           'Время ответа: в течение 48 часов в рабочие дни',
         ]} />

@@ -12,6 +12,7 @@ import TransactionsPage from './pages/TransactionsPage.jsx'
 import FeedbackPage from './pages/FeedbackPage.jsx'
 import GuidePage from './pages/GuidePage.jsx'
 import LegalPage from './pages/LegalPage.jsx'
+import ContactsPage from './pages/ContactsPage.jsx'
 import RefPage from './pages/RefPage.jsx'
 import DownloadPage from './pages/DownloadPage.jsx'
 
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/login"      element={<LoginPage />} />
         <Route path="/guide"      element={<GuidePage />} />
         <Route path="/legal"      element={<LegalPage />} />
+        <Route path="/contacts"   element={<ContactsPage />} />
         <Route path="/ref/:code"  element={<RefPage />} />
         <Route path="/download"   element={<DownloadPage />} />
         <Route path="/dashboard"  element={<PrivateRoute element={<Layout />} />}>
