@@ -5,6 +5,28 @@
 
 ---
 
+## 🔒 0. ПРОТОКОЛ «СНАЧАЛА ПОНЯТЬ — ПОТОМ ДЕЛАТЬ» (ВЫСШИЙ ПРИОРИТЕТ)
+
+**При любой ошибке, баге, 404, 502, «не работает»:**
+1. Прочитать `MEMORY.md` и `STATE.md`
+2. Найти первопричину. Если непонятно — задать ОДИН вопрос
+3. Предложить минимальное решение → ждать явного «да»
+4. Только потом трогать код
+
+**Карта деплоя — знать наизусть:**
+| Что | Куда | Команда |
+|---|---|---|
+| Фронтенд (`web/`) | Vercel | git push + hook + alias |
+| Бэкенд код (`server/`) | GCP git pull | `cd /opt/totalhunter/server && sudo git pull && sudo systemctl restart totalhunter` |
+| Релизы бота (`TotalHunter.zip`) | GitHub Releases (ПУБЛИЧНЫЙ) | `gh release create vX.X.X` + API version/update |
+
+**ЗАПРЕЩЕНО:**
+- Хранить файлы/архивы на GCP — только код через git
+- Изменять `server/main.py` без диагностики первопричины
+- Добавлять зависимости без проверки что они установлены на GCP
+
+---
+
 ## 1. Цель проекта
 Коммерческий SaaS-бот для игры Total Battle.
 Автоматический поиск Бирж (Exchange) и Склепов (Crypts) на карте королевства.
@@ -130,7 +152,7 @@ git add web/src/... && git commit -m "..." && git push origin main
 curl -s -X POST "https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw"
 
 # Шаг 3 — ждать READY и прикрепить домен
-TOKEN="vcp_2OacfkL9S4wbYB31ngyotlULFv7nedPLGMp6ICpIILlk13PbwP3NVtBj"
+TOKEN="$VERCEL_TOKEN"  # хранится в .claude/settings.local.json (не в репо)
 TEAM="team_CkkRPXdwtRtsL9YCk8n4Fzla"
 PROJECT="prj_mWtcb6hJCkl40YLWheeIlxD5NmXj"
 until STATE=$(curl -s "https://api.vercel.com/v6/deployments?projectId=$PROJECT&teamId=$TEAM&limit=1" \
