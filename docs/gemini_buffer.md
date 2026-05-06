@@ -1,97 +1,99 @@
-# Gemini Buffer — Хангоф #35 — 2026-05-06
+# Gemini Buffer — Хангоф #37 — 2026-05-07 01:00
 
 ---
 
-## Что сделано сегодня (05-06 мая)
+## ✅ Что сделано сегодня (06-07 мая)
 
-### 1. Автообновление — исправлено и задеплоено
-- **Баг 1:** `ZIP_NAME` не был определён → `NameError` при скачивании. Исправлено: `ZIP_NAME = "TotalHunter.zip"` в `updater.py`
-- **Баг 2:** `CREATE_NO_WINDOW` — helper.bat убивался вместе с EXE. Исправлено: `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`
-- **v1.0.7 → v1.0.8:** окно появляется, но падает (сломан updater v1.0.7). Пользователи v1.0.7 — скачать вручную с сайта. С v1.0.8 всё работает.
+### 1. Иконки — полностью обновлены
+- `web/public/favicon.ico` + `Icon_16/32/48/64/128/256.png` → алмаз (обрезан паддинг 54%)
+- `server/admin/favicon.ico` → Рост_PNG (на GCP подтверждено MD5)
+- `assets/icon.ico` → multi-size 16–256px для EXE
+- `updater.py` → `ie4uinit.exe -show` сброс кеша иконок Windows после обновления
 
-### 2. Мобильная Админка — переделана
-- Убран hamburger/drawer
-- Добавлена нижняя навигация (6 табов как на сайте)
-- Игроки — компактные строки-плашки вместо больших карточек
-- Задеплоено на GCP
+### 2. Автообновление — работает
+- Репо `totalhunter` сделан **публичным** → ZIP скачивается без авторизации
+- v1.0.9 собрана, опубликована на GitHub Releases, сервер обновлён
+- Проверено: `ZIP v1.0.9: 200 OK`, `/version/latest` → `1.0.9`
 
-### 3. v1.0.8 — собрана и опубликована
-- 9 модулей Nuitka + PyInstaller
-- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.0.8
-- Сервер: `/version/latest` → `1.0.8`
+### 3. Протокол «сначала понять — потом делать»
+- 5 ячеек памяти (deploy arch, no server files, diagnose first, github public, all commands)
+- CLAUDE.md раздел 0 — протокол деплоя и запреты
+- 2 хука в settings.local.json (UserPromptSubmit + PreToolUse)
 
-### 4. Путь сервера зафиксирован
-`/opt/totalhunter/server` (НЕ `/app`)
-```bash
-cd /opt/totalhunter/server && sudo git pull origin main && sudo systemctl restart totalhunter
-```
+### 4. Vercel токен — защищён
+- Старый токен был в публичном репо → Vercel отозвал автоматически
+- Новый токен → в `.claude/settings.local.json` и memory (не в репо)
+- Хранится только в `.claude/settings.local.json` (gitignored) и memory
+
+### 5. Сайт — подготовлен к NOWPayments
+- `/contacts` — новая страница (email, Telegram, цены, legal)
+- `/legal` → email `totalhunter.support@gmail.com`, `@TotalHunter_bot`, NOWPayments вместо Free-Kassa
+- Лендинг → Pricing секция (Lite $1, Pro $5, Ultra $10)
+- Деплой total-hunter.com ✅
 
 ---
 
-## 🔴 Проблема — Ярлык на рабочем столе (на завтра)
+## 🔴 Задачи на завтра (2026-05-07)
 
-**Симптом:** Размытая иконка ярлыка, переходит из версии в версию.
+### 1. Тест автообновления (ПЕРВЫМ ДЕЛОМ)
+- Запустить v1.0.8 → не должен предлагать обновление (сейчас сервер на 1.0.9, надо сначала выставить 1.0.8 для теста)
+- Точный порядок:
+  ```bash
+  # 1. Поставить сервер на 1.0.9 (уже стоит)
+  # 2. Запустить старый v1.0.8 → должен показать "New version available: 1.0.9"
+  # 3. Нажать обновить → скачает с GitHub → установит → запустится v1.0.9
+  # 4. Убедиться что иконка алмаза на рабочем столе обновилась
+  ```
 
-**Причина:** Windows кэширует иконки в `IconCache.db`. После xcopy нового EXE кеш не обновляется. Ярлык (.lnk) не пересоздаётся.
+### 2. NOWPayments — регистрация и модерация
+- Зайти на nowpayments.io → Create account → Business type: **SaaS and Web Services**
+- Указать сайт: `total-hunter.com`
+- Email поддержки: `totalhunter.support@gmail.com`
+- Сайт готов к проверке: есть `/contacts`, `/legal` (ToS, Privacy, Refund), Pricing на лендинге
+- После одобрения → получить API Key + IPN Secret
 
-**Решение — добавить в update.bat:**
-```batch
-ie4uinit.exe -show
-```
-Эта утилита Windows сбрасывает кеш иконок без перезапуска explorer.exe.
-
-Изменить нужно в `updater.py` → функция `download_and_install()` → в bat_path:
+### 3. NOWPayments — техническая интеграция (бэкенд)
+После получения API Key:
 ```python
-f.write(f'xcopy /s /y /e "{extract_dir}\\*" "{exe_dir}\\"\n')
-f.write('ie4uinit.exe -show\n')   # сбросить кеш иконок
-f.write(f'start "" "{os.path.join(exe_dir, EXE_NAME)}"\n')
+# Этап 2 из буфера Gemini:
+# - POST /payments/create — создание invoice, сохранение в БД
+# - POST /payments/webhook — обработка IPN с проверкой x-nowpayments-sig
+# - Логика: status=finished → начислить алмазы пользователю
+# - Статусы: waiting, confirming, expired
 ```
 
----
-
-## План на завтра (2026-05-07)
-
-### 1. Фикс ярлыка (иконка)
-- Добавить `ie4uinit.exe -show` в update.bat
-- Собрать v1.0.9
-- Залить, опубликовать, проверить
-
-### 2. Тест автообновления
-- Скачать v1.0.8 с total-hunter.com
-- Запустить → не должен предлагать обновление (версии совпадают)
-- Поднять сервер на v1.0.9 → запустить v1.0.8 → проверить полный флоу обновления
-
-### 3. Free-Kassa
-- Зарегистрировать кабинет
-- Прописать webhook: `https://api.total-hunter.com/payments/webhook`
-- Получить FK_SECRET_WORD + FK_SECRET_WORD2 → добавить в GCP env
+### 4. Реклама
+- Пользователь хочет подать заявку на рекламу — уточнить платформу (Google/Facebook/VK/Telegram)
 
 ---
 
-## Шпаргалка команд (для следующей сессии)
+## Шпаргалка команд
 
-### Сборка и публикация новой версии:
 ```powershell
-# version.py → VERSION = "1.0.X"
-python build_release.py
-cd dist\TotalHunter && Compress-Archive -Path * -DestinationPath ..\..\TotalHunter.zip -Force
-& "C:\Program Files\GitHub CLI\gh.exe" release create v1.0.X "C:\BattleBot\TotalHunter.zip" --title "v1.0.X" --repo "Yevgeniy204566/totalhunter"
-curl -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.X" -H "Authorization: Bearer dev-admin-token"
+# Сборка новой версии:
+# version.py → VERSION = "X.X.X"
+Set-Location C:\BattleBot; $env:PYTHONIOENCODING="utf-8"; python build_release.py
+Set-Location C:\BattleBot\dist\TotalHunter; Compress-Archive -Path * -DestinationPath ..\..\TotalHunter.zip -Force
+& "C:\Program Files\GitHub CLI\gh.exe" release create vX.X.X "C:\BattleBot\TotalHunter.zip" --title "vX.X.X" --repo "Yevgeniy204566/totalhunter"
+curl -X POST "https://api.total-hunter.com/admin/version/update?version=X.X.X" -H "Authorization: Bearer dev-admin-token"
 ```
 
-### Деплой сервера:
 ```bash
+# Деплой GCP:
 cd /opt/totalhunter/server && sudo git pull origin main && sudo systemctl restart totalhunter
-```
 
-### Экстренный сброс версии:
-```bash
-curl -s -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.8" -H "Authorization: Bearer dev-admin-token"
-```
-
-### Деплой сайта (3 шага — Клод делает сам):
-```bash
+# Деплой сайта (Клод делает сам — 3 шага):
 git push origin main
 curl -X POST "https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw"
-# + poll READY + alias total-hunter.com (см. CLAUDE.md раздел 6.5)
+# + poll READY + alias (TOKEN в settings.local.json)
+
+# Экстренный сброс версии:
+curl -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.9" -H "Authorization: Bearer dev-admin-token"
 ```
+
+---
+
+## Текущие версии
+- Бот: **v1.0.9** (GitHub Release + сервер)
+- Сайт: задеплоен с Pricing + /contacts + NOWPayments в legal
+- Сервер API: работает, `/version/latest` → `1.0.9`
