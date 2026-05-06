@@ -286,6 +286,79 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing ────────────────────────────────────────────── */}
+      <section id="pricing" style={{ padding: '88px 24px', background: 'var(--bg)', borderTop: '1px solid var(--outline)' }}>
+        <div style={{ maxWidth: 920, margin: '0 auto' }}>
+          <h2 style={{ textAlign: 'center', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>
+            {lang === 'en' ? 'Simple Pricing' : 'Простые цены'}
+          </h2>
+          <p style={{ textAlign: 'center', color: '#C8D8F0', fontSize: 16, maxWidth: 520, margin: '0 auto 16px' }}>
+            {lang === 'en'
+              ? 'Buy diamonds — the internal currency of Total Hunter. Charged only for successful bot actions.'
+              : 'Покупайте алмазы — внутреннюю валюту Total Hunter. Списание только за успешные действия бота.'}
+          </p>
+          <p style={{ textAlign: 'center', color: 'var(--on-surface2)', fontSize: 13, marginBottom: 56 }}>
+            {lang === 'en'
+              ? '−10 ◆ per Exchange found · −1 ◆ per Crypt gathered · 0 ◆ if nothing found'
+              : '−10 ◆ за биржу · −1 ◆ за склеп · 0 ◆ если ничего не найдено'}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 860, margin: '0 auto' }}>
+            {[
+              { name: 'Lite',  price: '$1',  diamonds: '300',   bonus: null,         color: '#64B5F6', popular: false },
+              { name: 'Pro',   price: '$5',  diamonds: '2,000', bonus: '+33%',       color: '#3D7FFF', popular: false },
+              { name: 'Ultra', price: '$10', diamonds: '5,000', bonus: lang === 'en' ? 'MAX VALUE' : 'МАКСИМУМ', color: '#00CFFF', popular: true },
+            ].map(pkg => (
+              <div key={pkg.name} style={{
+                background: pkg.popular ? 'rgba(0,207,255,0.06)' : 'var(--card)',
+                border: `1px solid ${pkg.popular ? 'rgba(0,207,255,0.4)' : 'var(--outline)'}`,
+                borderRadius: 18, padding: '36px 28px', textAlign: 'center',
+                position: 'relative',
+                boxShadow: pkg.popular ? '0 0 40px rgba(0,207,255,0.12)' : 'none',
+              }}>
+                {pkg.popular && (
+                  <div style={{
+                    position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)',
+                    background: 'var(--accent)', color: '#fff', borderRadius: 20,
+                    padding: '3px 18px', fontSize: 11, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase',
+                  }}>
+                    {lang === 'en' ? 'POPULAR' : 'ПОПУЛЯРНО'}
+                  </div>
+                )}
+                <div style={{ fontSize: 17, fontWeight: 700, color: pkg.color, marginBottom: 20 }}>{pkg.name}</div>
+                <div style={{ fontSize: 'clamp(44px, 6vw, 58px)', fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: 6 }}>
+                  {pkg.price}
+                </div>
+                <div style={{ fontSize: 14, color: 'var(--on-surface2)', marginBottom: 24 }}>USD</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: pkg.color }}>◆ {pkg.diamonds}</span>
+                  {pkg.bonus && (
+                    <span style={{ background: `${pkg.color}22`, color: pkg.color, borderRadius: 8, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>
+                      {pkg.bonus}
+                    </span>
+                  )}
+                </div>
+                <Link to={isLoggedIn() ? '/dashboard/balance' : '/login'} style={{
+                  display: 'block', padding: '13px 0', borderRadius: 10,
+                  background: pkg.popular ? 'var(--accent)' : 'transparent',
+                  border: `1px solid ${pkg.popular ? 'var(--accent)' : pkg.color + '66'}`,
+                  color: pkg.popular ? '#fff' : pkg.color,
+                  fontWeight: 700, fontSize: 15, textDecoration: 'none',
+                }}>
+                  {lang === 'en' ? 'Get Diamonds' : 'Купить'}
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ textAlign: 'center', color: 'var(--on-surface2)', fontSize: 13, marginTop: 32 }}>
+            🔒 {lang === 'en'
+              ? 'Payments via NOWPayments (crypto). Diamonds credited instantly. No subscription, no expiry.'
+              : 'Оплата через NOWPayments (крипта). Алмазы зачисляются мгновенно. Без подписки, без срока действия.'}
+          </p>
+        </div>
+      </section>
+
       {/* ── CTA ────────────────────────────────────────────────── */}
       <section style={{
         padding: '88px 24px', textAlign: 'center',
