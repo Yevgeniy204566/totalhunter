@@ -68,6 +68,7 @@ def download_and_install(download_url: str, progress_callback=None) -> str:
         f.write(f'taskkill /f /im {EXE_NAME} 2>nul\n')
         f.write("timeout /t 2 /nobreak >nul\n")
         f.write(f'xcopy /s /y /e "{extract_dir}\\*" "{exe_dir}\\"\n')
+        f.write('ie4uinit.exe -show\n')
         f.write(f'start "" "{os.path.join(exe_dir, EXE_NAME)}"\n')
         f.write('del "%~f0"\n')
 
