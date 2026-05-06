@@ -490,19 +490,6 @@ async def admin_update_version(version: str, db: AsyncSession = Depends(get_db))
     return {"success": True, "version": version, "download_url": dl_url}
 
 
-# ── POST /admin/upload_release ────────────────────────────────────────────────
-
-@app.post("/admin/upload_release", dependencies=[Depends(require_admin)])
-async def admin_upload_release(request: Request):
-    """Загрузить новый TotalHunter.zip на сервер (raw body)."""
-    content = await request.body()
-    if not content:
-        raise HTTPException(status_code=400, detail="Empty body")
-    os.makedirs(_RELEASE_DIR, exist_ok=True)
-    with open(_RELEASE_ZIP, "wb") as f:
-        f.write(content)
-    size_mb = len(content) / 1024 / 1024
-    return {"success": True, "size_mb": round(size_mb, 2)}
 
 
 # ── GET /admin/stats ──────────────────────────────────────────────────────────
