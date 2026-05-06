@@ -30,7 +30,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import Integer, func, select, update, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -430,30 +430,15 @@ async def transfer_referral_balance(req: HwidRequest, db: AsyncSession = Depends
 
 # ── GET /version/latest ───────────────────────────────────────────────────────
 
-_RELEASE_DIR = "/opt/totalhunter/downloads"
-_RELEASE_ZIP = os.path.join(_RELEASE_DIR, "TotalHunter.zip")
-_SELF_BASE   = "https://api.total-hunter.com"
+_DL_BASE = "https://github.com/Yevgeniy204566/totalhunter/releases/download"
 
 @app.get("/version/latest")
 async def version_latest(db: AsyncSession = Depends(get_db)):
     """Возвращает актуальную версию и ссылку для скачивания (из БД)."""
     version = await _get_setting("latest_version", db) or "1.0.6"
-    dl_url  = f"{_SELF_BASE}/download/latest"
+    dl_url  = await _get_setting("latest_download_url", db) or \
+              f"{_DL_BASE}/v{version}/TotalHunter.zip"
     return {"version": version, "download_url": dl_url}
-
-
-# ── GET /download/latest ──────────────────────────────────────────────────────
-
-@app.get("/download/latest")
-async def download_latest():
-    """Отдаёт актуальный TotalHunter.zip напрямую с сервера."""
-    if not os.path.exists(_RELEASE_ZIP):
-        raise HTTPException(status_code=404, detail="Release file not uploaded yet")
-    return FileResponse(
-        _RELEASE_ZIP,
-        filename="TotalHunter.zip",
-        media_type="application/zip",
-    )
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -476,8 +461,8 @@ def require_admin(credentials: HTTPAuthorizationCredentials = Depends(_bearer)):
 
 @app.post("/admin/version/update", dependencies=[Depends(require_admin)])
 async def admin_update_version(version: str, db: AsyncSession = Depends(get_db)):
-    """Обновить текущую версию бота."""
-    dl_url = f"{_SELF_BASE}/download/latest"
+    """Обновить текущую версию бота. URL формируется автоматически."""
+    dl_url = f"{_DL_BASE}/v{version}/TotalHunter.zip"
     async with db.begin():
         for key, val in [("latest_version", version), ("latest_download_url", dl_url)]:
             existing = (await db.execute(
@@ -488,8 +473,6 @@ async def admin_update_version(version: str, db: AsyncSession = Depends(get_db))
             else:
                 db.add(AppSetting(key=key, value=val))
     return {"success": True, "version": version, "download_url": dl_url}
-
-
 
 
 # ── GET /admin/stats ──────────────────────────────────────────────────────────
