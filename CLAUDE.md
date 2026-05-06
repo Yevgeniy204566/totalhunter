@@ -152,7 +152,7 @@ git add web/src/... && git commit -m "..." && git push origin main
 curl -s -X POST "https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw"
 
 # Шаг 3 — ждать READY и прикрепить домен
-TOKEN="$VERCEL_TOKEN"  # хранится в .claude/settings.local.json (не в репо)
+TOKEN="$VERCEL_TOKEN"
 TEAM="team_CkkRPXdwtRtsL9YCk8n4Fzla"
 PROJECT="prj_mWtcb6hJCkl40YLWheeIlxD5NmXj"
 until STATE=$(curl -s "https://api.vercel.com/v6/deployments?projectId=$PROJECT&teamId=$TEAM&limit=1" \

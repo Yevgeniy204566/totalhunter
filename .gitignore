@@ -5,3 +5,6 @@ web/dist/
 # Google OAuth — не хранить в репо
 token.json
 credentials.json
+
+# Claude local settings (contains tokens)
+.claude/settings.local.json
