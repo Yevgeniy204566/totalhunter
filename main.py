@@ -376,6 +376,7 @@ class TotalHunterApp(ctk.CTk):
         self.setup_ref_tab()
         self.setup_calibration_tab()
         self.update_license_info()
+        self.after(30000, self._schedule_balance_refresh)
 
         # Глобальный перехват ESC — стоп в любом окне
         def _esc_handler(event):
@@ -1389,6 +1390,18 @@ class TotalHunterApp(ctk.CTk):
         self.current_credits = n
         self.credits_label.configure(text=str(n))
         self.crypt_credits_label.configure(text=str(n))
+
+    def _schedule_balance_refresh(self):
+        """Обновляет баланс с сервера каждые 30 секунд в фоне."""
+        def _worker():
+            try:
+                data = check_license()
+                if data and data.get("credits") is not None:
+                    self.after(0, lambda: self._update_credits_display(data["credits"]))
+            except Exception:
+                pass
+        threading.Thread(target=_worker, daemon=True).start()
+        self.after(30000, self._schedule_balance_refresh)
 
     def update_license_info(self):
         try:
