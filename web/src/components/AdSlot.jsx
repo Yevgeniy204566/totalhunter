@@ -21,12 +21,12 @@ export default function AdSlot({ size = 'leaderboard', style = {} }) {
       className={`ad-slot ad-slot-${size}`}
       style={{
         width: s.width, maxWidth: '100%', height: s.height,
-        background: 'rgba(0,100,200,0.06)',
-        border: '1px dashed rgba(0,150,255,0.25)',
+        background: '#0a1a2a',
+        border: '2px solid #0066aa',
         borderRadius: 8,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, color: 'rgba(0,180,255,0.45)',
-        letterSpacing: '1px', fontFamily: 'monospace',
+        fontSize: 13, color: '#4499cc',
+        letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700,
         flexShrink: 0,
         overflow: 'hidden',
         ...style,
