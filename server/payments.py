@@ -78,22 +78,14 @@ async def create_nowpayments_invoice(order_id: int, amount: float, description: 
 
 
 def verify_nowpayments_sig(body_bytes: bytes, received_sig: str) -> bool:
-    """HMAC-SHA512 of body with keys sorted alphabetically, compact JSON (no spaces)."""
+    """HMAC-SHA512 of raw body bytes — NP sends pre-sorted compact JSON and signs as-is."""
     try:
-        sorted_body = json.dumps(
-            json.loads(body_bytes), sort_keys=True, separators=(',', ':')
-        )
         expected = hmac.new(
-            NP_IPN_SECRET.encode(), sorted_body.encode(), hashlib.sha512
+            NP_IPN_SECRET.encode(), body_bytes, hashlib.sha512
         ).hexdigest()
-        match = hmac.compare_digest(expected, received_sig)
-        logger.warning(
-            "[SIG] secret_len=%d received=%.20s computed=%.20s match=%s body_preview=%.80s",
-            len(NP_IPN_SECRET), received_sig, expected, match, sorted_body
-        )
-        return match
+        return hmac.compare_digest(expected, received_sig)
     except Exception as exc:
-        logger.error("[SIG] exception: %s | body: %s", exc, body_bytes[:100])
+        logger.error("[SIG] exception: %s", exc)
         return False
 
 
