@@ -135,32 +135,28 @@ async def payment_create(
     if not pkg:
         raise HTTPException(status_code=400, detail="Invalid package")
 
-    # Шаг 1: создаём pending order (короткая транзакция)
-    async with db.begin():
-        order = Order(
-            user_id=web_user.id,
-            package=req.package,
-            usd_amount=str(pkg["usd"]),
-            credits_total=pkg["credits"],
-            idempotency_key=str(uuid.uuid4()),
-            status="pending",
-        )
-        db.add(order)
-        await db.flush()
-        order_id = order.id  # сохраняем PK до закрытия транзакции
+    # flush() даёт нам order.id без коммита — транзакция остаётся открытой
+    order = Order(
+        user_id=web_user.id,
+        package=req.package,
+        usd_amount=str(pkg["usd"]),
+        credits_total=pkg["credits"],
+        idempotency_key=str(uuid.uuid4()),
+        status="pending",
+    )
+    db.add(order)
+    await db.flush()
 
-    # Шаг 2: вызов NP API вне транзакции (чтобы не сломать rollback)
+    # NP API вне любого явного begin() — сессия уже в autobegin
     invoice_url, np_id = await create_nowpayments_invoice(
-        order_id=order_id,
+        order_id=order.id,
         amount=pkg["usd"],
         description=pkg["description"],
     )
 
-    # Шаг 3: сохраняем NP payment ID в order
-    async with db.begin():
-        result = await db.execute(select(Order).where(Order.id == order_id))
-        saved_order = result.scalar_one()
-        saved_order.nowpayments_payment_id = np_id
+    # Если NP API упал — HTTPException выше, flush откатится при закрытии сессии
+    order.nowpayments_payment_id = np_id
+    await db.commit()
 
     return PaymentCreateResponse(redirect_url=invoice_url)
 
