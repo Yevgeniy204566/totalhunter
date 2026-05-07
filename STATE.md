@@ -1,18 +1,14 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-06 (Хангоф #35: автообновление, мобильная админка, v1.0.8 релиз)
+> Последнее обновление: 2026-05-07 (Хангоф #38: NOWPayments ✅, Long-Poll ✅, Earn/Casino ✅, v1.1.0 код готов)
 
-**Frontend URL:** https://total-hunter.com (Vercel + Cloudflare, домен куплен 2026-05-02)
+**Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
-**CORS:** total-hunter.com + totalhunter.vercel.app
-**Git branch:** main (master удалён, auto-deploy через Vercel)
 
-**Frontend Deploy:** Hook + Token (НЕ vercel --prod, НЕ git push alone)
-- Project: `evgeniys-projects-2168e6f8/totalhunter`
-- Hook: `POST https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw`
-- Token: `vcp_2OacfkL9S4wbYB31ngyotlULFv7nedPLGMp6ICpIILlk13PbwP3NVtBj`
-- Полный workflow: см. CLAUDE.md раздел 6.5
+**Frontend Deploy:** forceNew API (НЕ hook — кешируется!) + alias
+- Token: в `.claude/settings.local.json` → env.VERCEL_TOKEN (не в репо!)
+- команда: `POST /v13/deployments?forceNew=1` с gitSource repoId=1215361801
 
 ---
 
@@ -20,456 +16,54 @@
 
 | Модуль | Файл | Статус | Дата |
 |---|---|---|---|
-| **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН. Вкладка убрана из GUI. combiner.py отдельный файл. Что работает: активация окна, обход 5 рядов мышью. Что не работает: OCR цифр, скролл, распознавание попапа | 2026-05-02 |
-| **Авто-калибровка** | auto_calibration.py | ✅ Кнопка АВТОКАЛИБРОВАТЬ: Point A (contour) + Point B (cursor hover), 2 этапа, 13 тестов | 2026-05-03 |
-| GUI | main.py | ✅ Слайдеры: Живость хода (10-100%, дефолт 50%), Дельта возврата (0-20px), Демпфер удалён | 2026-04-30 |
-| Движок бирж | engine.py + navigator.py | ✅ НОВАЯ СТАБИЛЬНАЯ БАЗА — 54 теста ✅. smooth_alpha=0.70, return_delta_px=10 | 2026-04-30 |
-| CoastalSnakeNavigator | navigator.py | ✅ НОВАЯ СТАБИЛЬНАЯ БАЗА — единый smooth_alpha, фонарь, адаптивная дельта, 54 теста ✅ | 2026-04-30 |
-| CoastalSnakeNavigatorBeacon | navigator_beacon.py | 🟡 СОЗДАН, НЕ ПРОШЁЛ ПОЛЕВОЙ ТЕСТ — бот уходит в воду. `use_beacon=true` → сломано. 33 юнит-теста ✅ | 2026-04-29 |
-| MiniMap Reader | minimap_reader.py | ✅ Готов, analyze_footprint_zone теперь возвращает zone_px | 2026-04-28 |
-| CryptHunter (слепой склеп) | crypt_hunter.py | ✅ Хангоф #32: логирование, диалог-гейт [EXP], OCR масла с HUD привязан к Point B, стоп < 70k, GUI лейблы | 2026-05-04 |
-| CoordManager | coord_manager.py | ✅ Готов, 14 тестов, верифицирован | 2026-04-09 |
-| Cloud API (бэкенд) | server/ | ✅ Задеплоен на GCP, PostgreSQL, systemd | 2026-04-20 |
-| Admin Panel | server/admin/index.html | ✅ V2: мобильная нижняя навигация + плашки игроков + версия бота | 2026-05-06 |
-| Web Platform (личный кабинет) | server/web_routes.py + web/ | ✅ SEO, Legal RU/EN, GuidePage полный перевод, иконки, деплой-хук настроен | 2026-05-03 |
-| Economy (Free-Kassa + рефералы) | server/payments.py | ✅ Phase 2B завершена | 2026-04-21 |
-| **Безопасность данных** | server/main.py + web_routes.py | ✅ Phase 2C: атомарный /use_credit (UPDATE...RETURNING), Double-Dipping fix при merge, invited_by_id перенос, backup_db.sh (cron 6ч) | 2026-05-04 |
-| **Auto-update** | updater.py | ✅ v1.0.9: репо публичный, ZIP на GitHub Releases, ie4uinit.exe -show в update.bat | 2026-05-07 |
+| **Платежи** | server/payments.py | ✅ NOWPayments (крипто). IPN raw bytes HMAC-SHA512. Работает. | 2026-05-07 |
+| **Long-poll синхронизация** | server/vault.py | ✅ GET /vault/sync/{hwid} — мгновенный обмен баланса бот↔сайт | 2026-05-07 |
+| **Earn/Casino** | server/earn.py + web/EarnPage.jsx | ✅ Зелёная кнопка +5КР → рандомная награда 5/10/20/30/50 алмазов | 2026-05-07 |
+| **Рекламные слоты** | web/AdSlot.jsx | 🟡 Заглушки стоят. Ждём одобрения Coinzilla (1-3 дня) | 2026-05-07 |
+| **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
+| **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
+| **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
+| **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
+| **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70 | 2026-04-30 |
+| **CryptHunter** | crypt_hunter.py | ✅ слепой T_max/2^N без OCR | 2026-05-04 |
+| **Auto-update** | updater.py | ✅ v1.0.9 работает. v1.1.0 код готов, не собран | 2026-05-07 |
+| **Admin Panel** | server/admin/index.html | ✅ Версия бота, мобильная навигация | 2026-05-07 |
+| **Безопасность** | server/main.py | ✅ atomic /use_credit, backup_db.sh | 2026-05-04 |
 
 ---
 
-## ⛔ Хангоф #27 — Combo: заморожен (2026-05-02)
+## Текущие ключи и токены (хранить только здесь)
 
-### Что работает
-- Активация окна: `pyautogui.click(640,284)` + sleep(1.5s) ✅
-- Обход мышью всех 30 карточек (5 рядов × 6 колонок) ✅
-- Virtual Canvas (`_sync_canvas`) — инфраструктура работает, 49 тестов ✅
-- Константы: GRID_X=630, GRID_Y=372, SLOT_W=87, SLOT_H=88 ✅
+### NOWPayments
+- API Key: `JKPMX8E-YS5MVV1-M0GTWDH-6WQ7SVP`
+- IPN Secret: `iYOJZOwoI1a+M1gZ65bt0PAaul4GJvTd`
+- Public Key: `8d82b5f6-61b6-48e5-9656-19ed7eb68c4b`
+- IPN URL: `https://api.total-hunter.com/web/payment/webhook`
 
-### Что не работает
+### Coinzilla
+- Verification meta: `9c67590e6f729fcc1fd6186aa1b7aa01`
+- Статус: ожидание проверки сайта + паспорта (1-3 дня)
 
-**1. Попап не распознаётся**
-- Координаты попапа (739,502)..(780,522) — пользователь подтвердил
-- Попап появляется ТОЛЬКО при физическом наведении мыши при АКТИВНОМ окне
-- OCR зоны всегда возвращает "3" — это статичный угол карточки, не попап
-- Причина: popup.png показал иконку карточки, а не текст с числом
-- NUM_ROI=(14,43,48,16) указывает на область карточки, а не на попап
-
-**2. Скролл неточный**
-- `pyautogui.scroll(-180)` — сдвигает ~1 строку вместо 5
-- Virtual Canvas должен компенсировать, но недостаточно тестировался
-
-**3. OCR на карточках (старый подход)**
-- `_fast_ocr` читает иконки карточек как числа (false positives)
-- ROI=(14,43,48,16) — правильная позиция числа, но иконка фона даёт шум
-- Deep Verify не спасает — оба метода читают иконку одинаково
-
-### Методы которые пробовали (безуспешно)
-1. OCR иконки карточки напрямую — false positives от иконок
-2. Virtual Canvas для offset — правильная идея, но OCR-проблема осталась
-3. human_input.py SendInput — курсор не двигался вообще
-4. Beacon/маяк подход — маяк выбирал неуникальные значения
-5. Попап-подход — popup зона читает статичный "3", не настоящий попап
-
-### Что осталось в коде
-- `combiner.py` — полный модуль, все методы, 49 тестов
-- Вкладка GUI закомментирована в main.py
-- Подключить обратно: раскомментировать 3 строки в main.py
+### Vercel
+- Token: см. `.claude/settings.local.json` (не в репо)
+- Team: `team_CkkRPXdwtRtsL9YCk8n4Fzla`
+- Project: `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj`
+- GitHub repoId: `1215361801`
 
 ---
 
-## 🔴 Хангоф #23 — Combo: 100% провал, диагностика (2026-05-01)
+## 🔴 Задачи на завтра
 
-### Что работает (единственное подтверждённое)
-- Клики по первой странице без скролла — ТОЧНО в цель ✅
-- Координаты подтверждены пользователем: card[0,0]=(673,416), card[1,0]=(760,416), card[0,1]=(673,504)
-- GRID_X=630, GRID_Y=372, SLOT_W=87, SLOT_H=88 — верны ✅
-- OCR читает числа правильно для первой страницы (CONSENSUS на shift=+50) ✅
-- coord_manager интеграция работает ✅
-
-### Что не работает
-
-**1. Скролл (КРИТИЧНО)**
-- `pyautogui.scroll(-27)` = сдвиг ~1/3 строки (~29px), а не 4 строки (352px)
-- Вывод: 1 unit scroll ≈ 1px на этой машине
-- Попытки: -15, -27, -36, -45 — все неточные
-- Нужно: `scroll(-352)` или `keyboard.press('pagedown')` или точный drag
-
-**2. OCR пропускает slot [0,3] count=4**
-- Method A: никогда не читает
-- Method B: читает '4' только x1 из 5 на shift=-50
-- WEIGHTED_B требует x2 → не срабатывает
-- Карточка count=4 стабильно пропускается
-
-**3. Маяк ненадёжен**
-- Маяк на row=4 col=0 с val=1 (распространённое значение)
-- После скролла поиск находит первую карточку с val=1, не обязательно маяк
-- Нужен маяк с уникальным высоким значением или мульти-слот подтверждение
-
-### Константы (финальные, подтверждены)
-- COMBO_GRID_X=630, COMBO_GRID_Y=372
-- COMBO_SLOT_W=87, COMBO_SLOT_H=88
-- COMBO_COLS=7 (6 рабочих + 1 синяя, пропускается)
-- COMBO_ROWS_VISIBLE=5
-- NUM_ROI=(12,40,52,24)
-- COMBO_SCROLL_CLICKS=27 — СЛОМАНО (1 unit≈1px)
-
-### Что нужно сделать
-1. Заменить scroll() на keyboard Page Down или drag(SLOT_H*4 px) для точного скролла
-2. OCR [0,3]: снизить WEIGHTED_B до x1 или добавить shift=-75
-3. Маяк: выбирать карточку с max значением для уникальности
+1. **Coinzilla** — как придёт одобрение: получить JS-коды зон, вставить в AdSlot.jsx (728×90 и 300×250)
+2. **Проверить рекламные слоты** на мобиле и ПК — убедиться что не перекрывают контент
+3. **Собрать v1.1.0** — закрыть TotalHunter.exe, запустить build_release.py, сделать релиз
+4. **Earn/реклама** — когда Bitmedia/Lootably одобрят, подключить реальный плеер вместо 5-секундной паузы
 
 ---
 
-## 🟡 Хангоф #22 — Модуль Combo реализован (2026-04-30)
-
-### Что сделано
-
-**✅ Реализовано:**
-- `combiner.py` — `CombinerEngine`: parse_number (k/M суффиксы), Zoom-OCR (upscale×2 + OTSU + tesseract), scan_row, click_card (±5px рандомизация, stop флаг внутри цикла), run() loop, scroll + end detection, anti-stuck
-- `test_combiner.py` — 20 тестов, все зелёные
-- `calibrate_combo.py` — авто-калибровка из скринов или live (`--from-screenshot` / `--live --patch --delay N`)
-- `main.py` — вкладка **Combo** (между БИРЖИ и РЕФЕРАЛЫ): слайдер скорости 0.05–0.5с, кнопка СТАРТ/СТОП, ESC hook
-
-**🟡 Калибровка — НЕ ЗАВЕРШЕНА:**
-- Текущие значения: GRID_X=589, GRID_Y=139, SLOT_W/H=87, COLS=8, ROWS=6
-- При первом запуске бот кликал ~200px мимо цели
-- Нужно: скорректировать COMBO_GRID_X (+200px → примерно 789?)
-- Инструмент: `python calibrate_combo.py --live --patch --delay 15`
-
-### Что нужно сделать завтра
-1. Уточнить COMBO_GRID_X — запустить бот, посмотреть куда кликает, добавить разницу
-2. Проверить COMBO_GRID_Y — правильная ли строка
-3. Протестировать OCR на реальных карточках с числами
-
-### Известные ограничения
-- Авто-детектор всегда находит ложный первый разделитель (~85px левее реальной сетки) — решение: вручную задать X после первого теста
-- COMBO_SCROLL_CLICKS=3 — не тестировалось на реальном окне
-
----
-
-## ✅ Хангоф #21 — Навигатор бирж стабилизирован (2026-04-30)
-
-### Успешная рабочая конфигурация (проверено на 30+ локациях)
-
-| Параметр | Значение | Описание |
-|---|---|---|
-| `smooth_alpha` | **70%** (0.70) | Живость хода — быстро следует за берегом |
-| `return_delta_px` | **10px** | Адаптивная дельта (100% горизонт → 10% вертикаль) |
-| `max_inland_steps` | **6** | Глубина нырка |
-| `min_water_px` | **900** | Порог воды |
-| `move_wait` | **0.5с** | Скорость |
-
-### Что сделано в этой сессии
-
-**✅ Исправлено и реализовано:**
-- **Фонарь восстановлен** (`_is_at_coast_now` → `analyze_forward_zone seaward radius=50`) — бот больше не уходит в океан
-- **Слепая фаза** сокращена с `max_inland-1` до `max_inland-3` — фонарь включается за 3 шага до берега
-- **`return_delta_px` адаптивный** — градиент 100%→55%→10% по горизонтальности нырка (`_effective_delta`)
-- **`shift_vec` всегда ⊥ к `inland_vec`** — пересчитывается при каждом HOMING→DIVING
-- **Единый `smooth_alpha`** заменил EMA(0.3) + демпфер(15°) — один ползунок «Живость хода»
-- **`[LANTERN]` логирование** — каждая проверка фонаря видна в nav_debug.log
-- **nav_logger screen()** — теперь показывает реальный клик с дельтой для RETURN
-
-### Рабочие механизмы навигатора
-
-```
-HOMING → is_at_coast?
-  ├─ shift_vec = (-iv[1], iv[0])  ← всегда ⊥ inland_vec
-  └─ DIVING (6 шагов, inland_vec заморожен)
-       └─ SHIFT (1 клик ⊥)
-            └─ RETURNING
-                 ├─ 3 слепых шага (дельта адаптивная)
-                 └─ Фонарь (analyze_forward_zone seaward r=50) → STOP
-                      └─ SHIFT (1 клик ⊥)
-                           └─ HOMING
-```
-
-### Удалено / упрощено
-- ~~`_clamp_vec` (angular damper)~~ — убран
-- ~~`_prev_inland_vec`~~ — убран
-- ~~`_max_pitch_delta`~~ — убран
-- ~~`coast_ema_alpha=0.3` (хардкод)~~ — заменён на `smooth_alpha`
-- ~~Двойное сглаживание~~ — теперь один механизм
-
----
-
-## 🔴 Хангоф #20 — Рефакторинг навигатора бирж, заход в океан НЕ пофиксен (2026-04-30)
-
-### Что сделано в этой сессии
-
-**✅ Реализовано:**
-- `return_delta_px` — подмешивание пикселей в клик RETURNING вправо. Работает, подтверждено пользователем. Ползунок 0-20px в GUI
-- `_is_at_coast_now()` переписана: убран конус/радиус/inland_vec, читает всю миникарту целиком. `water_px >= min_water_px//3` = стоп
-- `_validate_inland_direction()` — гистерезис ×2: флип только при явном перевесе
-- `_shift_click()` — заблокирован `shift_vec` (AP-37 fix)
-- `_update_coast_angle()` — правильное сохранение `shift_vec = (-iv[1], iv[0])`
-- `FootprintCanvas.record()` — float-накопление вместо round (точность canvas)
-- Стена (wall) — ОТКЛЮЧЕНА (закомментирована), не работала из-за ошибки canvas tracking
-- Ползунок "Радиус детекции берега" — УДАЛЁН из GUI (более не нужен)
-- `nav_logger.py` — бортовой самописец каждого клика, состояния, delta
-- 54 теста ✅
-
-**❌ НЕ решено:**
-- **Бот заходит в океан и оттуда начинает новый цикл** — ГЛАВНЫЙ БАГ сессии
-  - Слепая фаза 5 шагов (max_inland=6) иногда проходит сквозь берег в воду
-  - В логе видно: blind=1 → 11сек разрыв → новый нырок с полностью другими векторами
-  - `_is_at_coast_now()` не вызывается в слепой фазе → бот проходит берег вслепую
-  - Предложение на завтра: уменьшить blind на 1 шаг (max_inland-2 вместо max_inland-1)
-- `inland_vec` всё ещё вращается по сессии (EMA drift по кривому берегу)
-- Стена footprint не работает (canvas tracking неточный, хотя float-fix сделан)
-
-### Что нужно проверить завтра
-
-1. **Слепая фаза** — уменьшить на 1 шаг и проверить в игре
-2. **Весь код навигатора бирж** — тщательная ревизия
-3. **`_is_at_coast_now()`** — возможно threshold `min_water_px//3 = 300` всё ещё слишком высокий
-4. **Ротация inland_vec** — EMA drift на кривом берегу, бот "уходит по кругу"
-
----
-
-## 🟡 Хангоф #19 — Dynamic Beacon V2 создан, полевой тест провален (2026-04-29)
-
-### Что сделано в этой сессии
-
-**✅ Реализовано:**
-- `navigator_beacon.py` — `CoastalSnakeNavigatorBeacon(CoastalSnakeNavigator)`, изолирован
-- Три под-состояния RETURNING: RETURNING_BLIND → RETURNING_SCAN → RETURNING_BEACON
-- Двухцветный overlay миникарты: земля=зелёный, вода=синий, маяк=magenta поверх
-- Диагностический лог: `beacon_debug.log` — BEACON_PLACE, BEACON_SCAN, BEACON_HOME
-- Золотое правило: маяк не найден → СТОЯТЬ, не идти к воде (AP-46)
-- Kill-switch: `gui_config.json` `use_beacon: false/true`
-- `engine.py`: factory-паттерн для выбора навигатора
-- 75 тестов: 42 старых ✅ + 33 новых ✅
-
-**❌ Полевой тест провалился:**
-- `use_beacon=true` → бот уходит в воду (дважды)
-- Причина НЕИЗВЕСТНА: лог теста содержал только pytest-данные, не игровые
-- Подозрения: `nav_pps=12` неверный (нет GUI-калибровки), canvas tracking drift, HSV detection issue
-- Горизонтальный берег: 3-5 пикселей сдвига вместо 1 экрана (проблема и в старом коде)
-
-**Статус:** `use_beacon=false` — работает на старом навигаторе. Beacon-версия требует дальнейшей отладки.
-
-### Что нужно решить перед следующей попыткой
-
-1. **Добавить GUI-калибровку nav_pps** — без точного значения маяк будет в неверном месте
-2. **Диагностика с игровыми данными** — запустить с use_beacon=true и собрать реальный beacon_debug.log
-3. **Понять почему бот уходит в воду** — возможно canvas tracking при RETURNING_BEACON идёт не туда
-
----
-
-## 🔴 Хангоф #18 — Откат к стабильной базе (2026-04-29)
-
-### Итоги трёх дней (27-29 апреля 2026)
-
-Три дня попыток улучшить фазу RETURNING в CoastalSnakeNavigator. **Все изменения откатаны к коммиту 536772f (26 апреля).**
-
-**Версия:** коммит 536772f — СТАБИЛЬНАЯ БАЗА
-
-**Что восстановлено:**
-- `navigator.py` — возвращён к состоянию 26 апреля
-- `test_coastal_snake.py` — 42 теста ✅
-- `engine.py`, `main.py`, `calibration_ui.py` — восстановлены
-- `КРАШ_КАЛД.md` — создан, документация всех провалов
-
-**Известные ограничения (принято жить с этим):**
-- RETURNING не имеет точного визуального возврата к маяку
-- Возврат работает по canvas-математике (`_is_beyond_beacon_line`)
-- Бот иногда не точно приземляется в маяк
-
-**Что работает:**
-- Змейка НЫРОК→СДВИГ→ВОЗВРАТ→СДВИГ базово работает
-- Footprint walls предотвращают повторные нырки
-- Ocean column skip работает
-- 42 теста покрывают основной функционал
-
----
-
-## 🟡 CoastalSnakeNavigator — Визуальный возврат к маяку (Хангоф #17, 2026-04-28)
-
-### Что сделано в этой сессии
-
-**✅ Реализовано:**
-- Визуальная навигация RETURNING к маяку: magenta beacon (255,0,255) BGR рисуется на миникарте, детектируется HSV
-- Маяк всегда видим: clamped к краям миникарты
-- `pixels_per_step` = реальный джойстик-шаг (не хардкод 20); передаётся из `nav_pps` gui_config.json
-- Backstop: `ceil(dive_distance) + 10` вместо `inland_steps + 3`
-- Canvas tracking: float-позиции `_cx`, `_cy` для дробных шагов
-- `frac = min(1.0, dist/step_px)` — точные шаги к маяку
-- `_is_at_coast_now`: `beacon_line OR визуальная вода` (OR-логика)
-- `is_water` в RETURNING: УБРАНО (реки давали ложные срабатывания — см. AP-32)
-- 69 тестов зелёные
-
-**Калибровка (calibration_ui.py):**
-- `measure_step_pixels()`: 5 шагов + matchTemplate = `nav_pps`
-- Единая кнопка КАЛИБРОВАТЬ: оба этапа (экран + шаг) последовательно
-- `nav_pps` сохраняется в `gui_config.json`, передаётся как `pixels_per_step`
-
-**❌ Что пробовали и НЕ работает:**
-- Pixel-детект красных пикселей → mirror wall на той же canvas-строке → ложные срабатывания (AP-32)
-- `_return_steps = MAX_STEPS_SAFETY=80` → 80 шагов в океан (AP-33)
-- `is_at_beacon` в `at_coast` (HOMING) → смешивает с ocean-column skip → stuck-in-water loop (AP-35)
-- `is_water` в RETURNING без streak → 1 кадр реки = ложный стоп на середине пути (AP-32 нов.)
-- `pixels_per_step` хардкодом 20 → ошибка 67%, маяк в неверном месте (AP-34)
-
-**⚠️ На полевой проверке:**
-- Достаточно ли `beacon_line OR is_water` для диагональных берегов
-- Корректность HSV-детекции magenta на реальных скриншотах миникарты
-
----
-
-## 🔴 КРИТИЧНО: CoastalSnakeNavigator — НАВИГАЦИЯ СЛОМАНА (Хангоф #15)
-
-### Что было сделано за сессию 2026-04-27/28
-
-**✅ Успешно реализовано:**
-- Ocean march fix — 4 строки в HOMING→DIVING (fwd['land_px'] == 0 → shift)
-- Angular damper `max_pitch_delta` (default 15°) — ограничение угла поворота нырка
-- Footprint overlap check (max_footprint_overlap, default 50%) — не нырять в уже исследованное
-- `analyze_footprint_zone` теперь возвращает `zone_px` для % расчёта
-- GUI: слайдер "Угол нырка" (5-30°), слайдер "Перекрытие следов" (10-100%)
-- Убраны слайдеры diagblind и coastrad (захардкожены в дефолтах)
-- `_peek_step(direction)` — метод чтения миникарты перед шагом (радиусы 30/60/90px)
-- `_move_perpendicular(multiplier)` — масштабирование шага джостика
-- `_dive_distance` — отслеживание физической дистанции нырка
-
-**❌ Что сломалось:**
-- Убрана blind phase из RETURNING → бот стал останавливаться на внутренних реках (is_water = True)
-- Добавили is_water для остановки в RETURNING → бот останавливается в воде (не на берегу)
-- `_peek_step` в RETURNING: когда бот уже в воде, seaward direction показывает сушу (берег позади) → peek возвращает 1.0 → бот продолжает идти В воду
-- `_dive_distance` + `_return_steps` — сложная механика, плохо взаимодействует с реальными тестами
-
-### Принцип змейки (НЕЛЬЗЯ НАРУШАТЬ)
-
-```
-Бот стоит на границе земля/вода
-↓ HOMING (зрячий): движение к берегу, читает миникарту каждый шаг
-↓ DIVING (слепой счётчик, max_inland_steps кликов вглубь суши)
-↓ RETURNING (счётчик назад, то же количество кликов обратно)
-↓ SHIFT: сдвиг вправо вдоль берега
-↓ Повтор (следующая полоса)
-```
-
-**Всё что добавляется — должно ТОЛЬКО обеспечивать эту функцию, не менять её.**
-
-### Что нужно сделать в следующей сессии
-
-**Вариант A — Минимальный (рекомендуется):**
-Вернуть классическую RETURNING логику (blind phase + coast detection), добавить ТОЛЬКО peek для size:
-```python
-if self._state == 'RETURNING':
-    # Blind phase — сначала N шагов вслепую (возвращаемся от глубины)
-    if self._return_blind_steps > 0:
-        self._return_blind_steps -= 1
-        self._return_steps -= 1
-        self._move_perpendicular(toward_water=True)  # multiplier=1.0, без peek
-        return True
-    
-    # Зрячая фаза — проверяем берег
-    at_coast = self._is_at_coast_now()
-    cap_hit  = self._return_steps <= 0
-    if at_coast or cap_hit:
-        self._shift_click()
-        self._state = 'HOMING'
-        ...
-        return True
-    self._return_steps -= 1
-    self._move_perpendicular(toward_water=True)  # multiplier=1.0
-```
-Peek в RETURNING — НЕ для остановки и НЕ для шагов. Только DIVING использует peek.
-
-**Вариант B — Полный (peek симметрично):**
-Если peek используется в RETURNING, нужно разделить:
-1. Определение размера шага: peek возвращает multiplier для прыжка через воду
-2. Остановка: `is_water` из center screen ИЛИ `_is_at_coast_now()` — НЕ peek(None)
-
-Проблема peek(None) в RETURNING: когда бот УЖЕ в воде, smотря в сторону берега, он видит берег → peek = 1.0 (не None) → думает что всё ок → продолжает идти.
-
-### Текущие тесты: 59 passed (но RETURNING сломан на практике)
-
----
-
-## Рабочие механизмы
-
-### CoastalSnakeNavigator — что работает корректно
-- HOMING: читает миникарту каждый шаг, определяет угол берега через EMA
-- Ocean check при HOMING→DIVING: `fwd['land_px'] == 0` → skip (4 строки) ✅
-- Footprint overlap check при HOMING→DIVING ✅
-- Angular damper `_prev_inland_vec` + `_max_pitch_delta` ✅
-- `_peek_step()` метод реализован ✅
-- DIVING: peek перед каждым шагом, прыжки через воду ✅
-
-### GUI (main.py) — актуально
-- Карточка «Навигация»: Шаг (10-20px), Скорость (0.5-5с), Глубина нырка (1-10)
-- Карточка «Дополнительно» (скроллируемая height=120): Граница океан/суша, Мин. размер водоёма, Угол нырка (5-30°), Перекрытие следов (10-100%), Память следов (TTL)
-- Убраны слайдеры: diagblind (захардкожен 0.5), coastrad (захардкожен 50)
-- HuntEngine.start() принимает: max_pitch_delta, max_footprint_overlap ✅
-
-### CryptHunter ✅
-- OCR удалён. Формула `T_one_way = T_max / 2^N`. 39 тестов.
-
-### Координатная система ✅
-- REF_A=(90,925), REF_B=(1149,88)
-
-### Серверный API ✅
-- 8 таблиц БД, 18+ роутов, Free-Kassa, рефералы, leaderboard
-
----
-
-## Известные баги / TODO
-
-| Приоритет | Баг/TODO | Файл |
-|---|---|---|
-| **🔴 ЗАВТРА** | Тест автообновления v1.0.8 → v1.0.9 | Локально |
-| **🔴 ЗАВТРА** | NOWPayments — регистрация кабинета, подача сайта на модерацию | nowpayments.io |
-| **🟡 ЗАВТРА** | NOWPayments — техническая интеграция API (payments.py) | server/ |
-| **🟡 ЗАВТРА** | Реклама — уточнить платформу и подготовить | — |
-| **🟡 OPEN** | CoastalSnakeNavigator RETURNING — нет точного визуального возврата к маяку; работает по canvas-математике, иногда промахивается | navigator.py |
-| **HIGH** | Прописать webhook URL в кабинете Free-Kassa | FK merchant dashboard |
-| **MED** | Вставить иллюстрации в GuidePage | web/src/pages/GuidePage.jsx |
-| LOW | КАЛИБРОВКА: картинки и описания точек А/Б | main.py |
-
----
-
-## SaaS Master Plan — следующие модули
-
-**~~Phase 2B (Economy / Модуль 4)~~ — ЗАВЕРШЕНА** ✅
-**Phase 2C (Community):** Публичный leaderboard, Notifications
-**Phase 3 (Bot):** Translations (EN/CN/DE)
-
----
-
-## Архив закрытого
-
-### Закрыто (Хангоф #18 — 2026-04-29)
-- ~~Три дня экспериментов с визуальным RETURNING~~ — все откатаны, зафиксированы AP-35..38
-- ~~navigator.py / engine.py / main.py / calibration_ui.py~~ — восстановлены к 26 апреля
-- ~~42 теста~~ — зелёные на стабильной базе 536772f
-
-### Закрыто (Хангоф #14 — 2026-04-26)
-- ~~Ocean march bug~~ — спроектирован (4 строки)
-- ~~UI карточка Навигация~~ — добавлена
-- ~~Oil HSV detect~~ — добавлен в CryptHunter
-- ~~39 тестов~~ — все зелёные
-
-### Закрыто (Хангоф #13 — 2026-04-25)
-- ~~Gemini Sync~~ — `sync_to_gemini.py` реализован и протестирован
-
-### Закрыто (Хангоф #12 — 2026-04-24)
-- ~~Gemini Sync попытка через MCP~~ — base64 PowerShell не работает
-
-### Закрыто (Хангоф #11 — 2026-04-24)
-- ~~OCR-проверка масла~~ — удалена
-
-### Закрыто (Хангоф #10 — 2026-04-22)
-- ~~Diamond Rebrand~~ — завершён
-
-### Закрыто (Хангоф #9 — 2026-04-21)
-- ~~LoginPage / GuidePage редизайн~~
-
-### Закрыто (Хангоф #6 — 2026-04-20)
-- ~~Phase 2A Tasks 5–17~~ — все задачи выполнены и задеплоены
-- ~~Бот ходил по воде~~ — EMA np.clip убран
-
-### Закрыто (Хангоф #5 — 2026-04-20)
-- ~~Авторизация через Google~~
+## Архитектура платежей и синхронизации (нерушимо)
+
+- **NOWPayments IPN**: raw bytes HMAC-SHA512 (НЕ json.loads/dumps)
+- **Long-poll**: `/vault/sync/{hwid}` + `notify_balance_changed(hwid)` после commit
+- **Earn endpoint**: `/web/earn/reward` + `/web/earn/status`, лимит 5/день
+- **SQLAlchemy**: flush() + один commit() — никогда два db.begin()

@@ -1,99 +1,68 @@
-# Gemini Buffer — Хангоф #37 — 2026-05-07 01:00
+# Gemini Buffer — Хангоф #38 — 2026-05-07 вечер
 
 ---
 
-## ✅ Что сделано сегодня (06-07 мая)
+## ✅ Что сделано сегодня
 
-### 1. Иконки — полностью обновлены
-- `web/public/favicon.ico` + `Icon_16/32/48/64/128/256.png` → алмаз (обрезан паддинг 54%)
-- `server/admin/favicon.ico` → Рост_PNG (на GCP подтверждено MD5)
-- `assets/icon.ico` → multi-size 16–256px для EXE
-- `updater.py` → `ie4uinit.exe -show` сброс кеша иконок Windows после обновления
+### 1. NOWPayments — работает полностью
+- Платёж $10 прошёл → 5000 алмазов начислены мгновенно
+- Подпись IPN: raw bytes HMAC-SHA512 (НЕ json.loads — нарушало порядок вложенного объекта `fee`)
+- Единственный пакет: $10 / 5000 алмазов
+- Free-Kassa удалена отовсюду: код, тексты, память, CLAUDE.md
 
-### 2. Автообновление — работает
-- Репо `totalhunter` сделан **публичным** → ZIP скачивается без авторизации
-- v1.0.9 собрана, опубликована на GitHub Releases, сервер обновлён
-- Проверено: `ZIP v1.0.9: 200 OK`, `/version/latest` → `1.0.9`
+### 2. Long-poll синхронизация баланса
+- `server/vault.py`: GET /vault/sync/{hwid} держит соединение 50 сек
+- `notify_balance_changed(hwid)` вызывается после payments webhook и earn reward
+- Бот: бесконечный цикл в daemon-треде, обновляет баланс мгновенно
+- Проверено: списали алмаз за поиск склепа → баланс в боте обновился сразу
 
-### 3. Протокол «сначала понять — потом делать»
-- 5 ячеек памяти (deploy arch, no server files, diagnose first, github public, all commands)
-- CLAUDE.md раздел 0 — протокол деплоя и запреты
-- 2 хука в settings.local.json (UserPromptSubmit + PreToolUse)
+### 3. Earn/Casino — страница бесплатных алмазов
+- URL: `/dashboard/earn` (зелёная кнопка +5КР в хедере)
+- Рандомная награда: 90%→5, 5%→10, 3%→20, 1%→30, 1%→50 (джекпот)
+- Анимация: барабан крутит числа, останавливается на выигрыше с эффектами
+- Лимит: 5 раз в день. Сервер: server/earn.py
 
-### 4. Vercel токен — защищён
-- Старый токен был в публичном репо → Vercel отозвал автоматически
-- Новый токен → в `.claude/settings.local.json` и memory (не в репо)
-- Хранится только в `.claude/settings.local.json` (gitignored) и memory
+### 4. Рекламные слоты Coinzilla
+- AdSlot.jsx: компонент-заглушка (728×90, 300×250, 320×50)
+- Desktop: leaderboard под хедером + sidebar >1280px
+- Mobile: sticky 320×50 над нижней навигацией
+- Лендинг: баннер между Stats и Features
+- Верификационный мета-тег: `9c67590e6f729fcc1fd6186aa1b7aa01`
+- Статус: ожидаем одобрение сайта + паспорта (1-3 дня)
 
-### 5. Сайт — подготовлен к NOWPayments
-- `/contacts` — новая страница (email, Telegram, цены, legal)
-- `/legal` → email `totalhunter.support@gmail.com`, `@TotalHunter_bot`, NOWPayments вместо Free-Kassa
-- Лендинг → Pricing секция (Lite $1, Pro $5, Ultra $10)
-- Деплой total-hunter.com ✅
+### 5. Другое
+- Версия в заголовке программы: `f"Total Hunter v{VERSION}"` — автоматически
+- Колонка "Версия бота" в админке — бот отправляет версию при check_auth
+- Кнопка перевода реф. алмазов в Referrals — зелёная, заметная
+- Free-Kassa → NOWPayments везде в текстах сайта
+- v1.1.0 код готов в репо, сборка EXE не сделана (TotalHunter.exe был открыт)
 
 ---
 
-## 🔴 Задачи на завтра (2026-05-07)
+## 🔴 Задачи на завтра
 
-### 1. Тест автообновления (ПЕРВЫМ ДЕЛОМ)
-- Запустить v1.0.8 → не должен предлагать обновление (сейчас сервер на 1.0.9, надо сначала выставить 1.0.8 для теста)
-- Точный порядок:
-  ```bash
-  # 1. Поставить сервер на 1.0.9 (уже стоит)
-  # 2. Запустить старый v1.0.8 → должен показать "New version available: 1.0.9"
-  # 3. Нажать обновить → скачает с GitHub → установит → запустится v1.0.9
-  # 4. Убедиться что иконка алмаза на рабочем столе обновилась
-  ```
-
-### 2. NOWPayments — регистрация и модерация
-- Зайти на nowpayments.io → Create account → Business type: **SaaS and Web Services**
-- Указать сайт: `total-hunter.com`
-- Email поддержки: `totalhunter.support@gmail.com`
-- Сайт готов к проверке: есть `/contacts`, `/legal` (ToS, Privacy, Refund), Pricing на лендинге
-- После одобрения → получить API Key + IPN Secret
-
-### 3. NOWPayments — техническая интеграция (бэкенд)
-После получения API Key:
-```python
-# Этап 2 из буфера Gemini:
-# - POST /payments/create — создание invoice, сохранение в БД
-# - POST /payments/webhook — обработка IPN с проверкой x-nowpayments-sig
-# - Логика: status=finished → начислить алмазы пользователю
-# - Статусы: waiting, confirming, expired
-```
-
-### 4. Реклама
-- Пользователь хочет подать заявку на рекламу — уточнить платформу (Google/Facebook/VK/Telegram)
+1. **Coinzilla** — получить JS-коды зон → вставить в AdSlot.jsx
+2. **Проверить рекламу** PC и мобиле
+3. **Собрать v1.1.0 EXE** — закрыть программу → build_release.py → ZIP → gh release → API update
+4. **Earn реальный плеер** — когда одобрят Bitmedia/Lootably → подключить iframe
 
 ---
 
 ## Шпаргалка команд
 
-```powershell
-# Сборка новой версии:
-# version.py → VERSION = "X.X.X"
-Set-Location C:\BattleBot; $env:PYTHONIOENCODING="utf-8"; python build_release.py
-Set-Location C:\BattleBot\dist\TotalHunter; Compress-Archive -Path * -DestinationPath ..\..\TotalHunter.zip -Force
-& "C:\Program Files\GitHub CLI\gh.exe" release create vX.X.X "C:\BattleBot\TotalHunter.zip" --title "vX.X.X" --repo "Yevgeniy204566/totalhunter"
-curl -X POST "https://api.total-hunter.com/admin/version/update?version=X.X.X" -H "Authorization: Bearer dev-admin-token"
-```
-
 ```bash
+# Деплой сайта (ТОЛЬКО так — hook кешируется):
+TOKEN="$(cat C:/BattleBot/.claude/settings.local.json | python -c "import sys,json; print(json.load(sys.stdin)['env']['VERCEL_TOKEN'])")"
+TEAM="team_CkkRPXdwtRtsL9YCk8n4Fzla"
+curl -s -X POST "https://api.vercel.com/v13/deployments?teamId=$TEAM&forceNew=1" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"totalhunter","project":"prj_mWtcb6hJCkl40YLWheeIlxD5NmXj","gitSource":{"type":"github","repoId":"1215361801","ref":"main"}}'
+# Потом ждать READY и прикрепить домен
+
 # Деплой GCP:
 cd /opt/totalhunter/server && sudo git pull origin main && sudo systemctl restart totalhunter
 
-# Деплой сайта (Клод делает сам — 3 шага):
-git push origin main
-curl -X POST "https://api.vercel.com/v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw"
-# + poll READY + alias (TOKEN в settings.local.json)
-
-# Экстренный сброс версии:
-curl -X POST "https://api.total-hunter.com/admin/version/update?version=1.0.9" -H "Authorization: Bearer dev-admin-token"
+# Сборка бота:
+Set-Location C:\BattleBot; $env:PYTHONIOENCODING="utf-8"; python build_release.py
+# Потом ZIP + gh release + API version/update
 ```
-
----
-
-## Текущие версии
-- Бот: **v1.0.9** (GitHub Release + сервер)
-- Сайт: задеплоен с Pricing + /contacts + NOWPayments в legal
-- Сервер API: работает, `/version/latest` → `1.0.9`
