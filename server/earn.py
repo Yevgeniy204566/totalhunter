@@ -1,12 +1,20 @@
 """
-earn.py — Rewarded ads: watch ad → +5 diamonds (max 5/day per user).
+earn.py — Rewarded ads: watch ad → random diamond reward (max 5/day per user).
 
 GET  /web/earn/status  — today's count
-POST /web/earn/reward  — credit 5 diamonds after watching
+POST /web/earn/reward  — credit random diamonds after watching
+
+Reward table (backend-only, anti-fraud):
+  90% → 5 diamonds
+   5% → 10 diamonds
+   3% → 20 diamonds
+   1% → 30 diamonds
+   1% → 50 diamonds (jackpot)
 """
 
+import random
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,8 +25,14 @@ from vault import notify_balance_changed
 
 router = APIRouter(prefix="/web/earn", tags=["earn"])
 
-REWARD_PER_VIEW  = 5
 MAX_VIEWS_PER_DAY = 5
+
+_REWARDS  = [5,  10, 20, 30, 50]
+_WEIGHTS  = [90,  5,  3,  1,  1]
+
+
+def calculate_ad_reward() -> int:
+    return random.choices(_REWARDS, weights=_WEIGHTS, k=1)[0]
 
 
 async def _today_count(db: AsyncSession, user_id: int) -> int:
@@ -52,14 +66,20 @@ async def earn_reward(
     if today >= MAX_VIEWS_PER_DAY:
         return {"success": False, "message": "Daily limit reached", "credits": web_user.credits}
 
-    web_user.credits += REWARD_PER_VIEW
+    earned = calculate_ad_reward()
+    web_user.credits += earned
     db.add(Transaction(
         user_id=web_user.id,
         type="ad_reward",
-        amount=REWARD_PER_VIEW,
-        meta={"source": "rewarded_ad"},
+        amount=earned,
+        meta={"source": "rewarded_ad", "jackpot": earned >= 50},
     ))
     await db.commit()
 
     notify_balance_changed(web_user.hwid)
-    return {"success": True, "credits": web_user.credits, "earned": REWARD_PER_VIEW}
+    return {
+        "success": True,
+        "credits": web_user.credits,
+        "earned": earned,
+        "jackpot": earned >= 50,
+    }

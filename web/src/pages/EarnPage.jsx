@@ -4,13 +4,28 @@ import { useLang } from '../lang.js'
 
 const MAX_PER_DAY = 5
 
+const TIERS = [
+  { min: 50, label: '🎰 JACKPOT!',  color: '#FFD700', glow: 'rgba(255,215,0,0.8)',  bg: 'rgba(255,180,0,0.15)' },
+  { min: 30, label: '🔥 MEGA WIN!', color: '#FF6600', glow: 'rgba(255,100,0,0.7)',  bg: 'rgba(255,80,0,0.12)'  },
+  { min: 20, label: '⚡ BIG WIN!',  color: '#CC44FF', glow: 'rgba(180,0,255,0.6)',  bg: 'rgba(150,0,255,0.10)' },
+  { min: 10, label: '✨ NICE!',     color: '#00CFFF', glow: 'rgba(0,200,255,0.5)',  bg: 'rgba(0,150,255,0.08)' },
+  { min: 0,  label: '+5 ◆',        color: '#00FF88', glow: 'rgba(0,255,136,0.4)',  bg: 'rgba(0,255,136,0.06)' },
+]
+
+function getTier(earned) {
+  return TIERS.find(t => earned >= t.min) || TIERS[TIERS.length - 1]
+}
+
 export default function EarnPage() {
   const { lang } = useLang()
   const isRu = lang === 'ru'
-  const [watching, setWatching]     = useState(false)
-  const [watched, setWatched]       = useState(0)   // today's count
-  const [result,  setResult]        = useState(null) // 'ok' | 'limit' | 'error'
-  const [credits, setCredits]       = useState(null)
+  const [watching,  setWatching]  = useState(false)
+  const [spinning,  setSpinning]  = useState(false)
+  const [watched,   setWatched]   = useState(0)
+  const [result,    setResult]    = useState(null) // 'ok' | 'limit' | 'error'
+  const [earned,    setEarned]    = useState(null)
+  const [credits,   setCredits]   = useState(null)
+  const [slotNum,   setSlotNum]   = useState('?')
 
   useEffect(() => {
     api.me().then(u => setCredits(u.credits))
@@ -23,18 +38,31 @@ export default function EarnPage() {
     if (remaining === 0 || watching) return
     setWatching(true)
     setResult(null)
+    setEarned(null)
 
-    // ── Здесь будет реальный Bitmedia/Lootably плеер ────────────
-    // Пока симулируем просмотр 5 секунд
+    // Simulate ad watching (5 seconds)
     await new Promise(r => setTimeout(r, 5000))
-    // ────────────────────────────────────────────────────────────
 
     try {
       const data = await api.earnReward()
       if (data.success) {
         setWatched(w => w + 1)
         setCredits(data.credits)
-        setResult('ok')
+        // Casino spin animation
+        setSpinning(true)
+        const finalVal = data.earned
+        let count = 0
+        const interval = setInterval(() => {
+          setSlotNum([5,10,20,30,50][Math.floor(Math.random()*5)])
+          count++
+          if (count > 18) {
+            clearInterval(interval)
+            setSlotNum(finalVal)
+            setEarned(finalVal)
+            setSpinning(false)
+            setResult('ok')
+          }
+        }, 80)
       } else {
         setResult('limit')
       }
@@ -97,37 +125,62 @@ export default function EarnPage() {
         </div>
       </div>
 
-      {/* Ad placeholder / player */}
+      {/* Ad watching spinner */}
       {watching && (
         <div style={{
           background: '#0a1a2a', border: '2px solid #0066aa',
-          borderRadius: 12, height: 250, marginBottom: 24,
+          borderRadius: 12, height: 160, marginBottom: 24,
           display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 16,
+          alignItems: 'center', justifyContent: 'center', gap: 14,
         }}>
-          {/* ── Bitmedia/Lootably iframe будет здесь ── */}
           <div style={{
-            width: 48, height: 48, border: '4px solid #00CFFF',
+            width: 42, height: 42, border: '4px solid #00CFFF',
             borderTopColor: 'transparent', borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
+            animation: 'spin 0.7s linear infinite',
           }} />
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}`}</style>
           <span style={{ color: '#4499cc', fontSize: 13 }}>
-            {isRu ? 'Загрузка рекламы...' : 'Loading ad...'}
+            {isRu ? 'Смотрю рекламу...' : 'Watching ad...'}
           </span>
         </div>
       )}
 
-      {/* Result message */}
-      {result === 'ok' && (
-        <div style={{
-          background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.3)',
-          borderRadius: 10, padding: '12px 16px', marginBottom: 20,
-          color: '#00FF88', fontSize: 14, fontWeight: 700, textAlign: 'center',
-        }}>
-          +5 ◆ {isRu ? 'начислено!' : 'credited!'}
-        </div>
-      )}
+      {/* Casino slot result */}
+      {(spinning || result === 'ok') && earned !== null && (() => {
+        const tier = getTier(earned)
+        return (
+          <div style={{
+            background: tier.bg,
+            border: `2px solid ${tier.color}`,
+            borderRadius: 16, padding: '28px 20px', marginBottom: 24,
+            textAlign: 'center',
+            boxShadow: `0 0 40px ${tier.glow}, 0 0 80px ${tier.glow}55`,
+            animation: !spinning ? 'pop 0.4s ease' : 'none',
+          }}>
+            <div style={{ fontSize: 14, color: tier.color, fontWeight: 700, letterSpacing: '3px', marginBottom: 8 }}>
+              {spinning ? '🎰 ...' : tier.label}
+            </div>
+            <div style={{
+              fontSize: 72, fontWeight: 900, lineHeight: 1,
+              color: tier.color,
+              filter: `drop-shadow(0 0 24px ${tier.glow})`,
+              fontVariantNumeric: 'tabular-nums',
+              animation: spinning ? 'spin 0.08s linear infinite' : 'none',
+              transition: 'all 0.1s',
+            }}>
+              {slotNum}
+            </div>
+            <div style={{ fontSize: 18, color: tier.color, opacity: 0.8, marginTop: 4 }}>◆</div>
+            {!spinning && earned >= 10 && (
+              <div style={{ fontSize: 22, marginTop: 10 }}>
+                {earned >= 50 ? '🎉🎰🎉' : earned >= 30 ? '🔥🔥🔥' : earned >= 20 ? '⚡⚡' : '✨'}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Limit / error messages */}
       {result === 'limit' && (
         <div style={{
           background: 'rgba(255,100,0,0.08)', border: '1px solid rgba(255,100,0,0.3)',
