@@ -14,6 +14,7 @@ from typing import Optional
 class HwidRequest(BaseModel):
     """Базовый запрос — только HWID. Используется в большинстве эндпоинтов."""
     hwid: str
+    bot_version: Optional[str] = None
 
 
 class UseCreditsRequest(BaseModel):

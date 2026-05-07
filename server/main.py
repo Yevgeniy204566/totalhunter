@@ -183,6 +183,8 @@ async def check_auth(req: HwidRequest, request: Request, db: AsyncSession = Depe
     async with db.begin():
         client_ip = request.client.host if request.client else None
         user = await _get_or_create_user(req.hwid, db, ip=client_ip)
+        if req.bot_version:
+            user.bot_version = req.bot_version
 
         if user.is_banned:
             return CheckAuthResponse(

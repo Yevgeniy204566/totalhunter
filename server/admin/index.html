@@ -621,6 +621,7 @@
                 <th>Баланс ◆</th>
                 <th>Реф. ◆</th>
                 <th>L1/L2/L3</th>
+                <th>Версия бота</th>
                 <th>Последний вход</th>
                 <th>IP</th>
                 <th>Действия</th>
@@ -652,6 +653,7 @@
                       <span x-text="u.referrals.l2"></span> /
                       <span x-text="u.referrals.l3"></span>
                     </td>
+                    <td style="font-family:monospace;font-size:11px;color:#00CFFF;font-weight:700" x-text="u.bot_version||'—'"></td>
                     <td style="color:var(--text-dim);white-space:nowrap" x-text="u.last_seen?formatDate(u.last_seen):'—'"></td>
                     <td style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="u.ip_address||'—'"></td>
                     <td>

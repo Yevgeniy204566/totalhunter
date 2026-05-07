@@ -22,9 +22,11 @@ def login_with_google():
 
 def check_license():
     """Запрашивает статус лицензии, баланс, почту и реферальные данные"""
+    from version import VERSION
     hwid = get_hwid()
     try:
-        response = requests.post(f"{SERVER_URL}/check_auth", json={"hwid": hwid}, timeout=5)
+        response = requests.post(f"{SERVER_URL}/check_auth",
+                                 json={"hwid": hwid, "bot_version": VERSION}, timeout=5)
         if response.status_code == 200:
             return response.json()
         return {"authorized": False, "credits": 0, "message": "Ошибка сервера"}
