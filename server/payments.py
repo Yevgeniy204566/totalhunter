@@ -1,17 +1,21 @@
 """
-payments.py — Free-Kassa integration + referral cascade.
+payments.py — NOWPayments (crypto) integration + referral cascade.
 
 Routes: POST /web/payment/create, POST /web/payment/webhook
-Helpers: build_fk_url, verify_fk_webhook_signature, _apply_referral_cascade
 """
 
 import hashlib
+import hmac
+import json
+import logging
 import os
 import uuid
-from urllib.parse import urlencode
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import PlainTextResponse
+
+logger = logging.getLogger(__name__)
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,45 +26,61 @@ from web_routes import get_web_user
 
 router = APIRouter(prefix="/web", tags=["payments"])
 
-FK_MERCHANT_ID  = os.environ.get("FK_MERCHANT_ID", "")
-FK_SECRET_WORD  = os.environ.get("FK_SECRET_WORD", "")
-FK_SECRET_WORD2 = os.environ.get("FK_SECRET_WORD2", "")
+NP_API_KEY    = os.environ.get("NOWPAYMENTS_API_KEY", "")
+NP_IPN_SECRET = os.environ.get("NOWPAYMENTS_IPN_SECRET", "")
+NP_API_BASE   = "https://api.nowpayments.io/v1"
+NP_IPN_URL    = "https://api.total-hunter.com/web/payment/webhook"
+NP_SUCCESS_URL = "https://total-hunter.com/dashboard"
+NP_CANCEL_URL  = "https://total-hunter.com/dashboard"
 
 PACKAGES: dict[str, dict] = {
-    "lite":  {"usd": "1.00",  "credits": 300},
-    "pro":   {"usd": "5.00",  "credits": 2000},
-    "ultra": {"usd": "10.00", "credits": 5000},
+    "lite":  {"usd": 1.00,  "credits": 300,  "description": "Total Hunter Lite — 300 diamonds"},
+    "pro":   {"usd": 5.00,  "credits": 2000, "description": "Total Hunter Pro — 2000 diamonds"},
+    "ultra": {"usd": 10.00, "credits": 5000, "description": "Total Hunter Ultra — 5000 diamonds"},
 }
 
 
-def build_fk_url(order_id: str, amount: str) -> str:
-    sign_str = f"{FK_MERCHANT_ID}:{amount}:{FK_SECRET_WORD}:USD:{order_id}"
-    sign = hashlib.md5(sign_str.encode()).hexdigest()
-    params = {
-        "m":        FK_MERCHANT_ID,
-        "oa":       amount,
-        "currency": "USD",
-        "o":        order_id,
-        "s":        sign,
-        "lang":     "en",
-    }
-    return "https://pay.freekassa.com/?" + urlencode(params)
+async def create_nowpayments_invoice(order_id: int, amount: float, description: str) -> tuple[str, str]:
+    """Call NOWPayments API. Returns (invoice_url, nowpayments_id)."""
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            f"{NP_API_BASE}/invoice",
+            headers={"x-api-key": NP_API_KEY, "Content-Type": "application/json"},
+            json={
+                "price_amount": amount,
+                "price_currency": "usd",
+                "order_id": str(order_id),
+                "order_description": description,
+                "ipn_callback_url": NP_IPN_URL,
+                "success_url": NP_SUCCESS_URL,
+                "cancel_url": NP_CANCEL_URL,
+                "is_fixed_rate": True,
+                "is_fee_paid_by_user": False,
+            },
+        )
+    if resp.status_code != 200:
+        logger.error("[PAYMENT] NOWPayments API error: %s %s", resp.status_code, resp.text[:200])
+        raise HTTPException(status_code=503, detail="Payment gateway unavailable")
+    data = resp.json()
+    return data["invoice_url"], str(data["id"])
 
 
-def verify_fk_webhook_signature(amount: str, order_id: str, received_sign: str) -> bool:
-    sign_str = f"{FK_MERCHANT_ID}:{amount}:{FK_SECRET_WORD2}:{order_id}"
-    expected = hashlib.md5(sign_str.encode()).hexdigest()
-    return expected == received_sign
+def verify_nowpayments_sig(body_bytes: bytes, received_sig: str) -> bool:
+    """HMAC-SHA512 of body with keys sorted alphabetically."""
+    try:
+        sorted_body = json.dumps(json.loads(body_bytes), sort_keys=True)
+        expected = hmac.new(
+            NP_IPN_SECRET.encode(), sorted_body.encode(), hashlib.sha512
+        ).hexdigest()
+        return hmac.compare_digest(expected, received_sig)
+    except Exception:
+        return False
 
 
 async def _apply_referral_cascade(
     db: AsyncSession, buyer: User, credits_total: int
 ) -> None:
-    """
-    Walk up to 3 levels of invited_by_id chain.
-    Base = credits_total (includes bonus). Banned referrers skipped; chain continues.
-    All writes happen inside the caller's transaction.
-    """
+    """Walk up to 3 referral levels. Banned referrers skipped; chain continues."""
     LEVELS = [(1, 0.10), (2, 0.05), (3, 0.01)]
     current_id = buyer.invited_by_id
 
@@ -103,24 +123,26 @@ async def payment_create(
     if not pkg:
         raise HTTPException(status_code=400, detail="Invalid package")
 
-    idem_key = str(uuid.uuid4())
-
     async with db.begin():
         order = Order(
             user_id=web_user.id,
             package=req.package,
-            usd_amount=pkg["usd"],
+            usd_amount=str(pkg["usd"]),
             credits_total=pkg["credits"],
-            idempotency_key=idem_key,
+            idempotency_key=str(uuid.uuid4()),
             status="pending",
         )
         db.add(order)
         await db.flush()
-        order.freekassa_order_id = str(order.id)
-        order_id_str = str(order.id)  # capture before commit expires the object
 
-    redirect_url = build_fk_url(order_id=order_id_str, amount=pkg["usd"])
-    return PaymentCreateResponse(redirect_url=redirect_url)
+        invoice_url, np_id = await create_nowpayments_invoice(
+            order_id=order.id,
+            amount=pkg["usd"],
+            description=pkg["description"],
+        )
+        order.nowpayments_payment_id = np_id
+
+    return PaymentCreateResponse(redirect_url=invoice_url)
 
 
 @router.post("/payment/webhook")
@@ -128,24 +150,32 @@ async def payment_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    form = await request.form()
-    amount            = str(form.get("AMOUNT", ""))
-    merchant_order_id = str(form.get("MERCHANT_ORDER_ID", ""))
-    sign              = str(form.get("SIGN", ""))
+    body = await request.body()
+    sig  = request.headers.get("x-nowpayments-sig", "")
 
-    if not verify_fk_webhook_signature(amount, merchant_order_id, sign):
+    if not verify_nowpayments_sig(body, sig):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
+    data     = json.loads(body)
+    status   = data.get("payment_status", "")
+    order_id_raw = data.get("order_id", "?")
+
+    logger.info("[PAYMENT] Received NP webhook for order %s, status: %s", order_id_raw, status)
+
+    # Only "finished" triggers crediting; accept everything else silently
+    if status != "finished":
+        return JSONResponse({"status": "ok"})
+
+    order_id = int(order_id_raw)
+
     async with db.begin():
-        order_result = await db.execute(
-            select(Order).where(Order.freekassa_order_id == merchant_order_id)
-        )
+        order_result = await db.execute(select(Order).where(Order.id == order_id))
         order = order_result.scalar_one_or_none()
         if not order:
             raise HTTPException(status_code=400, detail="Order not found")
 
         if order.status == "paid":
-            return PlainTextResponse("YES")
+            return JSONResponse({"status": "ok"})
 
         user_result = await db.execute(select(User).where(User.id == order.user_id))
         user = user_result.scalar_one_or_none()
@@ -159,11 +189,10 @@ async def payment_webhook(
             amount=order.credits_total,
             usd_amount=order.usd_amount,
             package=order.package,
-            meta={"freekassa_order_id": merchant_order_id},
+            meta={"nowpayments_payment_id": data.get("payment_id")},
         ))
 
         await _apply_referral_cascade(db, user, order.credits_total)
-
         order.status = "paid"
 
-    return PlainTextResponse("YES")
+    return JSONResponse({"status": "ok"})

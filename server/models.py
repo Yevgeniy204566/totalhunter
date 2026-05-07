@@ -244,8 +244,8 @@ class Feedback(Base):
 class Order(Base):
     """
     One row per payment attempt.
-    status: pending → paid (or failed).
-    freekassa_order_id = str(order.id) — our PK sent to FK as merchant order id.
+    status: pending → paid (or failed/expired).
+    nowpayments_payment_id — ID returned by NOWPayments invoice API.
     Idempotency: webhook checks status == 'paid' before crediting.
     """
     __tablename__ = "orders"
@@ -255,10 +255,10 @@ class Order(Base):
     package             = Column(String(10), nullable=False)
     usd_amount          = Column(Numeric(10, 2), nullable=False)
     credits_total       = Column(Integer, nullable=False)
-    freekassa_order_id  = Column(String(50), unique=True, nullable=True)
-    status              = Column(String(10), nullable=False, server_default=text("'pending'"))
-    idempotency_key     = Column(String(36), unique=True, nullable=False)
-    created_at          = Column(TIMESTAMP(timezone=True), nullable=False,
-                                 server_default=func.now())
+    nowpayments_payment_id = Column(String(50), unique=True, nullable=True)
+    status                 = Column(String(10), nullable=False, server_default=text("'pending'"))
+    idempotency_key        = Column(String(36), unique=True, nullable=False)
+    created_at             = Column(TIMESTAMP(timezone=True), nullable=False,
+                                    server_default=func.now())
 
     user = relationship("User", backref="orders")

@@ -33,6 +33,7 @@ import tkinter.messagebox as messagebox
 import sys
 import keyboard
 import webbrowser
+from version import VERSION
 
 GUI_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gui_config.json')
 
@@ -242,7 +243,7 @@ class TotalHunterApp(ctk.CTk):
         self.is_running = False # ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННОЙ СОСТОЯНИЯ
         self._i18n_labels = []  # (widget, lang_key)
        
-        self.title("Total Battle Hunter Pro v2.4")
+        self.title(f"Total Hunter v{VERSION}")
         self.geometry("460x1010")
         self.resizable(False, True)
         self.minsize(460, 400)

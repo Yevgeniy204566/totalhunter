@@ -1,6 +1,8 @@
-"""Tests for payments.py — referral cascade logic."""
+"""Tests for payments.py — NOWPayments webhook + referral cascade."""
 import pytest
 import hashlib
+import hmac
+import json
 import uuid
 import os
 from httpx import AsyncClient, ASGITransport
@@ -76,7 +78,7 @@ async def test_referral_cascade_uses_credits_total_not_base():
         await db.flush()
         await db.refresh(l1)
 
-        assert l1.ref_credits == 500   # 10% of 5000 (not 10% of 4000 base)
+        assert l1.ref_credits == 500   # 10% of 5000
 
 
 @pytest.mark.asyncio
@@ -119,32 +121,44 @@ async def test_referral_cascade_no_referrer():
         assert len(txns) == 0
 
 
-# ── Webhook constants + helper ────────────────────────────────────────────────
+# ── NOWPayments webhook helpers ───────────────────────────────────────────────
 
-FK_TEST_MERCHANT  = "12345"
-FK_TEST_SECRET    = "secret1"
-FK_TEST_SECRET2   = "secret2"
+NP_TEST_API_KEY    = "test-api-key"
+NP_TEST_IPN_SECRET = "test-ipn-secret"
 
 
-def _make_sign(amount: str, order_id: str) -> str:
-    data = f"{FK_TEST_MERCHANT}:{amount}:{FK_TEST_SECRET2}:{order_id}"
-    return hashlib.md5(data.encode()).hexdigest()
+def _make_np_body(order_id: str, status: str = "finished", amount: str = "5.00") -> dict:
+    return {
+        "payment_id": 123456789,
+        "payment_status": status,
+        "order_id": order_id,
+        "price_amount": float(amount),
+        "price_currency": "usd",
+        "pay_amount": 0.001,
+        "pay_currency": "btc",
+        "actually_paid": 0.001,
+    }
+
+
+def _make_np_sig(body_dict: dict) -> str:
+    sorted_body = json.dumps(body_dict, sort_keys=True)
+    return hmac.new(
+        NP_TEST_IPN_SECRET.encode(), sorted_body.encode(), hashlib.sha512
+    ).hexdigest()
 
 
 @pytest.fixture(autouse=False)
-def fk_env(monkeypatch):
-    monkeypatch.setenv("FK_MERCHANT_ID",  FK_TEST_MERCHANT)
-    monkeypatch.setenv("FK_SECRET_WORD",  FK_TEST_SECRET)
-    monkeypatch.setenv("FK_SECRET_WORD2", FK_TEST_SECRET2)
+def np_env(monkeypatch):
+    monkeypatch.setenv("NOWPAYMENTS_API_KEY",    NP_TEST_API_KEY)
+    monkeypatch.setenv("NOWPAYMENTS_IPN_SECRET",  NP_TEST_IPN_SECRET)
     import payments
-    payments.FK_MERCHANT_ID  = FK_TEST_MERCHANT
-    payments.FK_SECRET_WORD  = FK_TEST_SECRET
-    payments.FK_SECRET_WORD2 = FK_TEST_SECRET2
+    payments.NP_API_KEY    = NP_TEST_API_KEY
+    payments.NP_IPN_SECRET = NP_TEST_IPN_SECRET
 
 
 @pytest.mark.asyncio
-async def test_webhook_happy_path_credits_buyer(fk_env):
-    """Valid webhook credits buyer and marks order paid."""
+async def test_webhook_happy_path_credits_buyer(np_env):
+    """Valid 'finished' webhook credits buyer and marks order paid."""
     async for db in app.dependency_overrides[get_db]():
         from models import Order
         import secrets as _s
@@ -153,33 +167,69 @@ async def test_webhook_happy_path_credits_buyer(fk_env):
         db.add(user)
         await db.flush()
         order = Order(user_id=user.id, package="pro", usd_amount="5.00",
-                      credits_total=2000, freekassa_order_id="ORDER-1",
+                      credits_total=2000, nowpayments_payment_id="NP-1",
                       status="pending", idempotency_key=str(uuid.uuid4()))
         db.add(order)
         await db.commit()
+        order_pk = order.id
+
+    body = _make_np_body(str(order_pk), status="finished", amount="5.00")
+    sig  = _make_np_sig(body)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.post("/web/payment/webhook", data={
-            "MERCHANT_ID":       FK_TEST_MERCHANT,
-            "AMOUNT":            "5.00",
-            "MERCHANT_ORDER_ID": "ORDER-1",
-            "SIGN":              _make_sign("5.00", "ORDER-1"),
-        })
+        resp = await client.post(
+            "/web/payment/webhook",
+            json=body,
+            headers={"x-nowpayments-sig": sig},
+        )
 
     assert resp.status_code == 200
-    assert resp.text == "YES"
 
     async for db in app.dependency_overrides[get_db]():
         from sqlalchemy import select as _sel
         u = (await db.execute(_sel(User).where(User.email == "buyer_w@test.com"))).scalar_one()
         assert u.credits == 2000
-        o = (await db.execute(_sel(Order).where(Order.freekassa_order_id == "ORDER-1"))).scalar_one()
+        o = (await db.execute(_sel(Order).where(Order.id == order_pk))).scalar_one()
         assert o.status == "paid"
 
 
 @pytest.mark.asyncio
-async def test_webhook_duplicate_is_idempotent(fk_env):
-    """Second webhook with same order_id does NOT double-credit."""
+async def test_webhook_non_finished_status_ignored(np_env):
+    """Webhooks with status != finished return 200 but don't credit."""
+    async for db in app.dependency_overrides[get_db]():
+        from models import Order
+        import secrets as _s
+        user = User(email="waiting@test.com", username="waiting",
+                    ref_code=_s.token_urlsafe(6))
+        db.add(user)
+        await db.flush()
+        order = Order(user_id=user.id, package="lite", usd_amount="1.00",
+                      credits_total=300, nowpayments_payment_id="NP-WAIT",
+                      status="pending", idempotency_key=str(uuid.uuid4()))
+        db.add(order)
+        await db.commit()
+        order_pk = order.id
+
+    for status in ("waiting", "confirming", "expired", "failed"):
+        body = _make_np_body(str(order_pk), status=status, amount="1.00")
+        sig  = _make_np_sig(body)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/web/payment/webhook",
+                json=body,
+                headers={"x-nowpayments-sig": sig},
+            )
+        assert resp.status_code == 200
+
+    async for db in app.dependency_overrides[get_db]():
+        from sqlalchemy import select as _sel
+        u = (await db.execute(_sel(User).where(User.email == "waiting@test.com"))).scalar_one()
+        assert u.credits == 0
+
+
+@pytest.mark.asyncio
+async def test_webhook_duplicate_is_idempotent(np_env):
+    """Second 'finished' webhook does NOT double-credit."""
     async for db in app.dependency_overrides[get_db]():
         from models import Order
         import secrets as _s
@@ -188,23 +238,22 @@ async def test_webhook_duplicate_is_idempotent(fk_env):
         db.add(user)
         await db.flush()
         order = Order(user_id=user.id, package="lite", usd_amount="1.00",
-                      credits_total=300, freekassa_order_id="ORDER-IDEM",
+                      credits_total=300, nowpayments_payment_id="NP-IDEM",
                       status="pending", idempotency_key=str(uuid.uuid4()))
         db.add(order)
         await db.commit()
+        order_pk = order.id
 
-    payload = {
-        "MERCHANT_ID":       FK_TEST_MERCHANT,
-        "AMOUNT":            "1.00",
-        "MERCHANT_ORDER_ID": "ORDER-IDEM",
-        "SIGN":              _make_sign("1.00", "ORDER-IDEM"),
-    }
+    body = _make_np_body(str(order_pk), status="finished", amount="1.00")
+    sig  = _make_np_sig(body)
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        await client.post("/web/payment/webhook", data=payload)
-        resp2 = await client.post("/web/payment/webhook", data=payload)
+        await client.post("/web/payment/webhook", json=body,
+                          headers={"x-nowpayments-sig": sig})
+        resp2 = await client.post("/web/payment/webhook", json=body,
+                                  headers={"x-nowpayments-sig": sig})
 
     assert resp2.status_code == 200
-    assert resp2.text == "YES"
 
     async for db in app.dependency_overrides[get_db]():
         from sqlalchemy import select as _sel
@@ -213,20 +262,21 @@ async def test_webhook_duplicate_is_idempotent(fk_env):
 
 
 @pytest.mark.asyncio
-async def test_webhook_invalid_signature_returns_400(fk_env):
+async def test_webhook_invalid_signature_returns_400(np_env):
+    """Tampered signature → 400."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.post("/web/payment/webhook", data={
-            "MERCHANT_ID":       FK_TEST_MERCHANT,
-            "AMOUNT":            "5.00",
-            "MERCHANT_ORDER_ID": "ORDER-BAD",
-            "SIGN":              "badsignature000",
-        })
+        body = _make_np_body("99999", status="finished")
+        resp = await client.post(
+            "/web/payment/webhook",
+            json=body,
+            headers={"x-nowpayments-sig": "badsignature000"},
+        )
     assert resp.status_code == 400
 
 
 @pytest.mark.asyncio
-async def test_webhook_triggers_referral_l1(fk_env):
-    """Webhook credits L1 referrer with 10% of credits_total."""
+async def test_webhook_triggers_referral_l1(np_env):
+    """Finished payment credits L1 referrer with 10% of credits_total."""
     async for db in app.dependency_overrides[get_db]():
         from models import Order
         import secrets as _s
@@ -239,18 +289,18 @@ async def test_webhook_triggers_referral_l1(fk_env):
         db.add(buyer)
         await db.flush()
         order = Order(user_id=buyer.id, package="ultra", usd_amount="10.00",
-                      credits_total=5000, freekassa_order_id="ORDER-REF",
+                      credits_total=5000, nowpayments_payment_id="NP-REF",
                       status="pending", idempotency_key=str(uuid.uuid4()))
         db.add(order)
         await db.commit()
+        order_pk = order.id
+
+    body = _make_np_body(str(order_pk), status="finished", amount="10.00")
+    sig  = _make_np_sig(body)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        await client.post("/web/payment/webhook", data={
-            "MERCHANT_ID":       FK_TEST_MERCHANT,
-            "AMOUNT":            "10.00",
-            "MERCHANT_ORDER_ID": "ORDER-REF",
-            "SIGN":              _make_sign("10.00", "ORDER-REF"),
-        })
+        await client.post("/web/payment/webhook", json=body,
+                          headers={"x-nowpayments-sig": sig})
 
     async for db in app.dependency_overrides[get_db]():
         from sqlalchemy import select as _sel
