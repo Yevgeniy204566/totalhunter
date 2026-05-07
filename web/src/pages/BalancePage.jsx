@@ -90,7 +90,9 @@ function PackageCard({ pkg, buying, onBuy }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        flex: '1 1 200px',
+        width: 280,
+        maxWidth: 320,
+        flexShrink: 0,
         position: 'relative',
         background: hovered || pkg.featured
           ? `linear-gradient(160deg, ${pkg.grad[0]}18 0%, rgba(0,0,5,0.92) 100%)`
@@ -291,6 +293,7 @@ export default function BalancePage() {
       {/* Package cards */}
       <div style={{
         display: 'flex', gap: 16, flexWrap: 'wrap',
+        justifyContent: 'center',
         alignItems: 'flex-start', paddingTop: 20, marginBottom: 36,
       }}>
         {PACKAGES.map(pkg => (
