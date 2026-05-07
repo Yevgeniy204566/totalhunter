@@ -376,7 +376,7 @@ class TotalHunterApp(ctk.CTk):
         self.setup_ref_tab()
         self.setup_calibration_tab()
         self.update_license_info()
-        self.after(30000, self._schedule_balance_refresh)
+        self.after(5000, self._schedule_balance_refresh)
 
         # Глобальный перехват ESC — стоп в любом окне
         def _esc_handler(event):
@@ -1401,7 +1401,7 @@ class TotalHunterApp(ctk.CTk):
             except Exception:
                 pass
         threading.Thread(target=_worker, daemon=True).start()
-        self.after(30000, self._schedule_balance_refresh)
+        self.after(5000, self._schedule_balance_refresh)
 
     def update_license_info(self):
         try:
