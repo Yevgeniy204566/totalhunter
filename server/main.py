@@ -40,6 +40,7 @@ from models import AppSetting, Broadcast, Feedback, Hunt, HwidHistory, LinkCode,
 from web_routes import router as web_router
 from payments import router as payments_router
 from vault import router as vault_router
+from earn import router as earn_router
 from schemas import (
     BasicResponse,
     CheckAuthResponse,
@@ -74,6 +75,7 @@ app.add_middleware(
 app.include_router(web_router)
 app.include_router(payments_router)
 app.include_router(vault_router)
+app.include_router(earn_router)
 
 # Статика для админки (иконка)
 from fastapi.staticfiles import StaticFiles as _SF

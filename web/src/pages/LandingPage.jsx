@@ -237,10 +237,8 @@ export default function LandingPage() {
       {/* ── Ad Banner — between Live Stats and Features ────────── */}
       <div style={{
         display: 'flex', justifyContent: 'center', alignItems: 'center',
-        padding: '24px 16px',
-        background: 'var(--bg)',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        padding: '28px 16px',
+        background: 'var(--card)',
       }}>
         <AdSlot size="leaderboard" />
       </div>

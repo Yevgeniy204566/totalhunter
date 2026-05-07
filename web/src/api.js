@@ -37,4 +37,6 @@ export const api = {
   globalStats:      ()         => request('GET',  '/web/stats/global'),
   sendFeedback:     (text)     => request('POST', '/web/feedback', { text }),
   paymentCreate:    (pkg)      => request('POST', '/web/payment/create', { package: pkg }),
+  earnStatus:       ()         => request('GET',  '/web/earn/status'),
+  earnReward:       ()         => request('POST', '/web/earn/reward'),
 }

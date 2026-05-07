@@ -70,7 +70,7 @@ export default function Layout() {
 
           <Link
             className="header-earn-btn"
-            to="/dashboard/balance"
+            to="/dashboard/earn"
             title="Посмотри короткий ролик и получи кредиты для охоты"
             style={{
               display: 'flex', alignItems: 'center', gap: 7,

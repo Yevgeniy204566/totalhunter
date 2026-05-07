@@ -15,6 +15,7 @@ import LegalPage from './pages/LegalPage.jsx'
 import ContactsPage from './pages/ContactsPage.jsx'
 import RefPage from './pages/RefPage.jsx'
 import DownloadPage from './pages/DownloadPage.jsx'
+import EarnPage from './pages/EarnPage.jsx'
 
 function PrivateRoute({ element }) {
   return isLoggedIn() ? element : <Navigate to="/login" replace />
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="devices"      element={<DevicesPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="feedback"     element={<FeedbackPage />} />
+          <Route path="earn"         element={<EarnPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
