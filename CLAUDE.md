@@ -100,6 +100,31 @@
 
 ---
 
+## 3.5. 🔒 АРХИТЕКТУРА ПЛАТЕЖЕЙ И СИНХРОНИЗАЦИИ (НЕРУШИМО)
+
+### Платёжный провайдер: NOWPayments (крипто)
+- **НИКОГДА** не возвращаться к Free-Kassa или другим провайдерам без явного решения
+- IPN подпись: `hmac.new(IPN_SECRET, raw_body_bytes, sha512)` — **только raw bytes**, без json.loads/dumps
+- Статус для начисления: только `"finished"` — всё остальное игнорировать с ответом 200
+- Идемпотентность: `if order.status == "paid": return 200` без повторного начисления
+- SQLAlchemy: `flush()` + один `commit()` — **никогда два db.begin()** в одном эндпоинте
+
+### Синхронизация баланса: Long Polling (vault.py)
+- **НИКОГДА** не использовать таймер/polling для обновления баланса в боте
+- Архитектура: `GET /vault/sync/{hwid}` — сервер держит соединение 50 сек
+- Триггер: `notify_balance_changed(user.hwid)` вызывать **после commit()** в webhook и spend_credit
+- Бот: бесконечный цикл в daemon-треде, `get_balance_update()` с timeout=58s
+- При добавлении нового способа начисления/списания — **обязательно** добавить `notify_balance_changed`
+
+### Env vars на GCP (в systemd override.conf)
+```
+NOWPAYMENTS_API_KEY=...
+NOWPAYMENTS_IPN_SECRET=...
+```
+Никаких FK_* переменных — они удалены навсегда.
+
+---
+
 ## 4. Правила разработки
 
 - **TDD обязателен** — Superpowers TDD workflow перед любым новым кодом
