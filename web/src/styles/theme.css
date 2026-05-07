@@ -34,6 +34,15 @@
   --credits-glow:  rgba(255, 209, 102, 0.15);
 }
 
+/* ── Рекламные слоты: десктопные умолчания ──────────────────── */
+/* Mobile sticky — скрыт на десктопе */
+.ad-mobile-bottom { display: none; }
+/* Sidebar rectangle — только на широких экранах */
+.ad-sidebar-wrap  { display: none; }
+@media (min-width: 1280px) {
+  .ad-sidebar-wrap { display: block; }
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {

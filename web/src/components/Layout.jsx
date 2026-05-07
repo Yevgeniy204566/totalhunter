@@ -5,6 +5,7 @@ import { api } from '../api.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import AdSlot from './AdSlot.jsx'
 
 const NAV_KEYS = [
   { to: '/dashboard',              icon: '◈', key: 'profile' },
@@ -149,8 +150,39 @@ export default function Layout() {
         minHeight: `calc(100vh - var(--header-height))`,
         overflowY: 'auto',
       }}>
-        <Outlet />
+
+        {/* ── Leaderboard banner — desktop only, under header ── */}
+        <div className="ad-leaderboard-wrap" style={{
+          display: 'flex', justifyContent: 'center',
+          padding: '10px 0 0',
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          <AdSlot size="leaderboard" />
+        </div>
+
+        {/* ── Content + right rectangle ad ─────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Outlet />
+          </div>
+          {/* 300×250 sidebar ad — visible only on very wide screens */}
+          <div className="ad-sidebar-wrap" style={{ paddingTop: 24, flexShrink: 0 }}>
+            <AdSlot size="rectangle" style={{ position: 'sticky', top: 20 }} />
+          </div>
+        </div>
+
       </main>
+
+      {/* ── Mobile sticky bottom ad — above mobile nav ───────── */}
+      <div className="ad-mobile-bottom" style={{
+        position: 'fixed', bottom: 'var(--mobile-nav-height, 60px)',
+        left: 0, right: 0, zIndex: 90,
+        display: 'flex', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.85)',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        <AdSlot size="mobile" />
+      </div>
 
 
     </div>

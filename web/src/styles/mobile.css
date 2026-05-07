@@ -106,6 +106,16 @@
   /* ── Feedback ───────────────────────────────────────────── */
   .feedback-card { max-width: 100% !important; }
 
+  /* ── Реклама: мобильные правила ─────────────────────────── */
+  /* Leaderboard 728px — скрыть на мобиле (не влезет) */
+  .ad-leaderboard-wrap { display: none !important; }
+  /* Sidebar rectangle — скрыть на мобиле */
+  .ad-sidebar-wrap { display: none !important; }
+  /* Mobile sticky banner — показать */
+  .ad-mobile-bottom { display: flex !important; }
+  /* Отступ снизу чтобы контент не залезал под баннер+nav */
+  .main-content { padding-bottom: calc(50px + 64px) !important; }
+
   /* ── Общие улучшения ────────────────────────────────────── */
   h2 { font-size: 18px !important; }
 
