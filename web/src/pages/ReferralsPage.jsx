@@ -143,14 +143,19 @@ export default function ReferralsPage() {
             {refCredits}
           </div>
           <button onClick={transfer} disabled={loading || user.ref_credits === 0} style={{
-            padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 700,
-            background: user.ref_credits > 0 ? '#0F3A2A' : 'var(--elevated)',
-            color: user.ref_credits > 0 ? '#4ADE80' : 'var(--on-surface2)',
-            border: `1px solid ${user.ref_credits > 0 ? '#1A5A3A' : 'var(--outline)'}`,
-            cursor: user.ref_credits > 0 ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
-            transition: 'all 0.15s', boxShadow: user.ref_credits > 0 ? '0 0 12px rgba(74,222,128,0.2)' : 'none',
+            width: '100%', padding: '13px 0', borderRadius: 10,
+            fontSize: 14, fontWeight: 900, fontFamily: 'inherit',
+            background: user.ref_credits > 0
+              ? 'linear-gradient(135deg, #00CC66, #00FF88)'
+              : 'rgba(255,255,255,0.05)',
+            color: user.ref_credits > 0 ? '#000' : 'rgba(255,255,255,0.25)',
+            border: 'none',
+            cursor: user.ref_credits > 0 ? 'pointer' : 'not-allowed',
+            transition: 'all 0.2s',
+            boxShadow: user.ref_credits > 0 ? '0 0 24px rgba(0,255,136,0.4)' : 'none',
+            letterSpacing: '0.5px',
           }}>
-            {loading ? r.transferring : r.transfer}
+            {loading ? '⏳ ' + r.transferring : '💸 ' + r.transfer}
           </button>
           {msg && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--on-surface2)' }}>{msg}</div>}
         </div>
