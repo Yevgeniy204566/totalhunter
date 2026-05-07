@@ -86,8 +86,14 @@ def verify_nowpayments_sig(body_bytes: bytes, received_sig: str) -> bool:
         expected = hmac.new(
             NP_IPN_SECRET.encode(), sorted_body.encode(), hashlib.sha512
         ).hexdigest()
-        return hmac.compare_digest(expected, received_sig)
-    except Exception:
+        match = hmac.compare_digest(expected, received_sig)
+        logger.warning(
+            "[SIG] secret_len=%d received=%.20s computed=%.20s match=%s body_preview=%.80s",
+            len(NP_IPN_SECRET), received_sig, expected, match, sorted_body
+        )
+        return match
+    except Exception as exc:
+        logger.error("[SIG] exception: %s | body: %s", exc, body_bytes[:100])
         return False
 
 
