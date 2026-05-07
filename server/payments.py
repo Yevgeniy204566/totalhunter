@@ -23,6 +23,7 @@ from database import get_db
 from models import Order, Transaction, User
 from schemas import PaymentCreateRequest, PaymentCreateResponse
 from web_routes import get_web_user
+from vault import notify_balance_changed
 
 router = APIRouter(prefix="/web", tags=["payments"])
 
@@ -210,5 +211,7 @@ async def payment_webhook(
 
         await _apply_referral_cascade(db, user, order.credits_total)
         order.status = "paid"
+        user_hwid = user.hwid  # capture before session closes
 
+    notify_balance_changed(user_hwid)  # wake bot's long-poll after commit
     return JSONResponse({"status": "ok"})

@@ -99,6 +99,24 @@ def spend_credit(hunt_type: str = "crypt"):
         return {"success": False}
 
 
+def get_balance_update():
+    """Long-poll: блокирует до изменения баланса или 55-секундного timeout.
+    Возвращает {"credits": N, "ref_credits": M} или None при ошибке."""
+    hwid = get_hwid()
+    try:
+        response = requests.get(
+            f"{SERVER_URL}/vault/sync/{hwid}",
+            timeout=58
+        )
+        if response.status_code == 200:
+            return response.json()
+    except requests.exceptions.Timeout:
+        pass  # Нормально — сервер завершил цикл, переподключаемся
+    except Exception:
+        pass
+    return None
+
+
 def heartbeat():
     """
     Онлайн-пинг — вызывается каждые 2 минуты пока бот запущен.
