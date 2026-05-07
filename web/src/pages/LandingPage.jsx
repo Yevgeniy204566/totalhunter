@@ -303,11 +303,9 @@ export default function LandingPage() {
               : '−10 ◆ за биржу · −1 ◆ за склеп · 0 ◆ если ничего не найдено'}
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 860, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 400, margin: '0 auto' }}>
             {[
-              { name: 'Lite',  price: '$1',  diamonds: '300',   bonus: null,         color: '#64B5F6', popular: false },
-              { name: 'Pro',   price: '$5',  diamonds: '2,000', bonus: '+33%',       color: '#3D7FFF', popular: false },
-              { name: 'Ultra', price: '$10', diamonds: '5,000', bonus: lang === 'en' ? 'MAX VALUE' : 'МАКСИМУМ', color: '#00CFFF', popular: true },
+              { name: 'TOTAL HUNTER', price: '$10', diamonds: '5,000', bonus: null, color: '#00CFFF', popular: true },
             ].map(pkg => (
               <div key={pkg.name} style={{
                 background: pkg.popular ? 'rgba(0,207,255,0.06)' : 'var(--card)',

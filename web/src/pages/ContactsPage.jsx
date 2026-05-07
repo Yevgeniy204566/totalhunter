@@ -19,10 +19,8 @@ export default function ContactsPage() {
     aboutText:     isRu
       ? 'Total Hunter — SaaS-бот для автоматического поиска бирж наёмников и сбора склепов в игре Total Battle. Работает по модели предоплаченных алмазных кредитов. Сервис не аффилирован с Plarium Games Ltd.'
       : 'Total Hunter is a SaaS automation bot for locating mercenary exchanges and gathering crypts in the game Total Battle. It operates on a prepaid diamond credit model. The service is not affiliated with Plarium Games Ltd.',
-    pricingTitle:  isRu ? 'Тарифы' : 'Pricing',
-    liteDesc:  isRu ? '300 алмазов' : '300 diamonds',
-    proDesc:   isRu ? '2 000 алмазов (+33% бонус)' : '2,000 diamonds (+33% bonus)',
-    ultraDesc: isRu ? '5 000 алмазов (максимум выгоды)' : '5,000 diamonds (max value)',
+    pricingTitle:  isRu ? 'Тариф' : 'Pricing',
+    ultraDesc: isRu ? '5 000 алмазов — $10' : '5,000 diamonds — $10',
     legalTitle: isRu ? 'Юридическая информация' : 'Legal',
     legalLink:  isRu ? 'Условия, политика, возвраты →' : 'Terms, Privacy, Refunds →',
   }
@@ -95,13 +93,11 @@ export default function ContactsPage() {
             {t.pricingTitle}
           </h3>
           {[
-            { name: 'Lite',  price: '$1',  desc: t.liteDesc,  color: '#64B5F6' },
-            { name: 'Pro',   price: '$5',  desc: t.proDesc,   color: '#3D7FFF' },
-            { name: 'Ultra', price: '$10', desc: t.ultraDesc, color: '#00CFFF', popular: true },
+            { name: 'Total Hunter', price: '$10', desc: t.ultraDesc, color: '#00CFFF', popular: true },
           ].map((pkg, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 0', borderBottom: i < 2 ? '1px solid var(--outline)' : 'none',
+              padding: '12px 0',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ color: pkg.color, fontWeight: 700, fontSize: 15 }}>{pkg.name}</span>
