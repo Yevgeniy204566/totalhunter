@@ -78,9 +78,11 @@ async def create_nowpayments_invoice(order_id: int, amount: float, description: 
 
 
 def verify_nowpayments_sig(body_bytes: bytes, received_sig: str) -> bool:
-    """HMAC-SHA512 of body with keys sorted alphabetically."""
+    """HMAC-SHA512 of body with keys sorted alphabetically, compact JSON (no spaces)."""
     try:
-        sorted_body = json.dumps(json.loads(body_bytes), sort_keys=True)
+        sorted_body = json.dumps(
+            json.loads(body_bytes), sort_keys=True, separators=(',', ':')
+        )
         expected = hmac.new(
             NP_IPN_SECRET.encode(), sorted_body.encode(), hashlib.sha512
         ).hexdigest()
