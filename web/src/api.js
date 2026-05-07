@@ -19,7 +19,8 @@ async function request(method, path, body) {
     return
   }
 
-  const data = await res.json()
+  let data
+  try { data = await res.json() } catch { throw new Error('Server error') }
   if (!res.ok) throw new Error(data.detail?.message || data.detail || 'Request failed')
   return data
 }

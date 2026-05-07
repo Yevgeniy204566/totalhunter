@@ -42,27 +42,39 @@ PACKAGES: dict[str, dict] = {
 
 async def create_nowpayments_invoice(order_id: int, amount: float, description: str) -> tuple[str, str]:
     """Call NOWPayments API. Returns (invoice_url, nowpayments_id)."""
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.post(
-            f"{NP_API_BASE}/invoice",
-            headers={"x-api-key": NP_API_KEY, "Content-Type": "application/json"},
-            json={
-                "price_amount": amount,
-                "price_currency": "usd",
-                "order_id": str(order_id),
-                "order_description": description,
-                "ipn_callback_url": NP_IPN_URL,
-                "success_url": NP_SUCCESS_URL,
-                "cancel_url": NP_CANCEL_URL,
-                "is_fixed_rate": True,
-                "is_fee_paid_by_user": False,
-            },
-        )
-    if resp.status_code != 200:
-        logger.error("[PAYMENT] NOWPayments API error: %s %s", resp.status_code, resp.text[:200])
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{NP_API_BASE}/invoice",
+                headers={"x-api-key": NP_API_KEY, "Content-Type": "application/json"},
+                json={
+                    "price_amount": amount,
+                    "price_currency": "usd",
+                    "order_id": str(order_id),
+                    "order_description": description,
+                    "ipn_callback_url": NP_IPN_URL,
+                    "success_url": NP_SUCCESS_URL,
+                    "cancel_url": NP_CANCEL_URL,
+                    "is_fixed_rate": True,
+                    "is_fee_paid_by_user": False,
+                },
+            )
+    except Exception as exc:
+        logger.error("[PAYMENT] NP API network error: %s", exc)
         raise HTTPException(status_code=503, detail="Payment gateway unavailable")
+
+    if resp.status_code != 200:
+        logger.error("[PAYMENT] NP API error %s: %s", resp.status_code, resp.text[:300])
+        raise HTTPException(status_code=503, detail="Payment gateway unavailable")
+
     data = resp.json()
-    return data["invoice_url"], str(data["id"])
+    invoice_url = data.get("invoice_url")
+    np_id = data.get("id")
+    if not invoice_url or not np_id:
+        logger.error("[PAYMENT] NP API unexpected response: %s", data)
+        raise HTTPException(status_code=503, detail="Payment gateway unavailable")
+
+    return invoice_url, str(np_id)
 
 
 def verify_nowpayments_sig(body_bytes: bytes, received_sig: str) -> bool:
@@ -123,6 +135,7 @@ async def payment_create(
     if not pkg:
         raise HTTPException(status_code=400, detail="Invalid package")
 
+    # Шаг 1: создаём pending order (короткая транзакция)
     async with db.begin():
         order = Order(
             user_id=web_user.id,
@@ -134,13 +147,20 @@ async def payment_create(
         )
         db.add(order)
         await db.flush()
+        order_id = order.id  # сохраняем PK до закрытия транзакции
 
-        invoice_url, np_id = await create_nowpayments_invoice(
-            order_id=order.id,
-            amount=pkg["usd"],
-            description=pkg["description"],
-        )
-        order.nowpayments_payment_id = np_id
+    # Шаг 2: вызов NP API вне транзакции (чтобы не сломать rollback)
+    invoice_url, np_id = await create_nowpayments_invoice(
+        order_id=order_id,
+        amount=pkg["usd"],
+        description=pkg["description"],
+    )
+
+    # Шаг 3: сохраняем NP payment ID в order
+    async with db.begin():
+        result = await db.execute(select(Order).where(Order.id == order_id))
+        saved_order = result.scalar_one()
+        saved_order.nowpayments_payment_id = np_id
 
     return PaymentCreateResponse(redirect_url=invoice_url)
 
