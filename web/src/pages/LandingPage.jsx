@@ -5,6 +5,7 @@ import { isLoggedIn } from '../auth.js'
 import { LANDING as LANDING_RU } from '../constants.js'
 import { LANDING as LANDING_EN } from '../constants.en.js'
 import { useLang } from '../lang.js'
+import AdSlot from '../components/AdSlot.jsx'
 
 function useCounter(target, duration = 1400) {
   const [value, setValue] = useState(0)
@@ -232,6 +233,17 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Ad Banner — between Live Stats and Features ────────── */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+        padding: '24px 16px',
+        background: 'var(--bg)',
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <AdSlot size="leaderboard" />
+      </div>
 
       {/* ── Features ───────────────────────────────────────────── */}
       <section id="features" style={{ padding: '88px 24px', background: 'var(--card)' }}>
