@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-07 (Хангоф #38: NOWPayments ✅, Long-Poll ✅, Earn/Casino ✅, v1.1.0 код готов)
+> Последнее обновление: 2026-05-08 (Хангоф #39: v1.1.0 Setup.exe ✅, Inno Setup installer ✅, реф-защита HWID ✅, лендинг 3D+SEO ✅)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -26,8 +26,11 @@
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70 | 2026-04-30 |
 | **CryptHunter** | crypt_hunter.py | ✅ слепой T_max/2^N без OCR | 2026-05-04 |
-| **Auto-update** | updater.py | ✅ v1.0.9 работает. v1.1.0 код готов, не собран | 2026-05-07 |
-| **Admin Panel** | server/admin/index.html | ✅ Версия бота, мобильная навигация | 2026-05-07 |
+| **Auto-update** | updater.py | ✅ v1.1.0 собран и выпущен. Setup.exe + ZIP на GitHub | 2026-05-08 |
+| **Installer** | installer.iss | ✅ Inno Setup, VC++ Runtime bundled, Windows 10/11 x64 | 2026-05-08 |
+| **Admin Panel** | server/admin/index.html | ✅ adjust_credits по user_id (веб-пользователи без HWID) | 2026-05-08 |
+| **Реф-безопасность** | server/web_routes.py | ✅ ref_bonus_claimed — бонус только при новом HWID | 2026-05-08 |
+| **Лендинг** | web/LandingPage.jsx | ✅ 3D скриншоты, зелёная кнопка Setup.exe, robots.txt, sitemap | 2026-05-08 |
 | **Безопасность** | server/main.py | ✅ atomic /use_credit, backup_db.sh | 2026-05-04 |
 
 ---

@@ -1,68 +1,80 @@
-# Gemini Buffer — Хангоф #38 — 2026-05-07 вечер
+# Gemini Buffer — Хангоф #39 — 2026-05-08 вечер
 
----
+## Сделано сегодня
+1. v1.1.0: Nuitka + PyInstaller + Inno Setup — TotalHunter_Setup.exe (315MB) с VC++ Runtime bundled
+2. TotalHunter.zip для auto-updater; оба файла на GitHub Release v1.1.0
+3. Лендинг: 3D скриншоты + зелёная кнопка Setup.exe + robots.txt + sitemap.xml
+4. Безопасность: реф-бонусы только при новом HWID (ref_bonus_claimed), миграция на GCP ✅
+5. Админка: adjust_credits по user_id для веб-пользователей без бота
+6. build_release.py: clean() через rd /s /q, application.manifest, installer.iss в репо
 
-## ✅ Что сделано сегодня
+## Задача на завтра — Описание слайдеров GUI
 
-### 1. NOWPayments — работает полностью
-- Платёж $10 прошёл → 5000 алмазов начислены мгновенно
-- Подпись IPN: raw bytes HMAC-SHA512 (НЕ json.loads — нарушало порядок вложенного объекта `fee`)
-- Единственный пакет: $10 / 5000 алмазов
-- Free-Kassa удалена отовсюду: код, тексты, память, CLAUDE.md
+Прописать описание к каждому ползунку на вкладках СКЛЕПЫ и БИРЖИ в main.py.
 
-### 2. Long-poll синхронизация баланса
-- `server/vault.py`: GET /vault/sync/{hwid} держит соединение 50 сек
-- `notify_balance_changed(hwid)` вызывается после payments webhook и earn reward
-- Бот: бесконечный цикл в daemon-треде, обновляет баланс мгновенно
-- Проверено: списали алмаз за поиск склепа → баланс в боте обновился сразу
+Требования:
+- Каждый ползунок — подпись под ним (мелкий серый текст) что он делает
+- Описание совместного эффекта комбинаций настроек
+- Двуязычно RU/EN через константы
 
-### 3. Earn/Casino — страница бесплатных алмазов
-- URL: `/dashboard/earn` (зелёная кнопка +5КР в хедере)
-- Рандомная награда: 90%→5, 5%→10, 3%→20, 1%→30, 1%→50 (джекпот)
-- Анимация: барабан крутит числа, останавливается на выигрыше с эффектами
-- Лимит: 5 раз в день. Сервер: server/earn.py
+Что изучить сначала: main.py (слайдеры), gui_config.json, engine.py, crypt_hunter.py
 
-### 4. Рекламные слоты Coinzilla
-- AdSlot.jsx: компонент-заглушка (728×90, 300×250, 320×50)
-- Desktop: leaderboard под хедером + sidebar >1280px
-- Mobile: sticky 320×50 над нижней навигацией
-- Лендинг: баннер между Stats и Features
-- Верификационный мета-тег: `9c67590e6f729fcc1fd6186aa1b7aa01`
-- Статус: ожидаем одобрение сайта + паспорта (1-3 дня)
-
-### 5. Другое
-- Версия в заголовке программы: `f"Total Hunter v{VERSION}"` — автоматически
-- Колонка "Версия бота" в админке — бот отправляет версию при check_auth
-- Кнопка перевода реф. алмазов в Referrals — зелёная, заметная
-- Free-Kassa → NOWPayments везде в текстах сайта
-- v1.1.0 код готов в репо, сборка EXE не сделана (TotalHunter.exe был открыт)
-
----
-
-## 🔴 Задачи на завтра
-
-1. **Coinzilla** — получить JS-коды зон → вставить в AdSlot.jsx
-2. **Проверить рекламу** PC и мобиле
-3. **Собрать v1.1.0 EXE** — закрыть программу → build_release.py → ZIP → gh release → API update
-4. **Earn реальный плеер** — когда одобрят Bitmedia/Lootably → подключить iframe
-
----
+Пример результата:
+  Скорость поиска [3] — чем выше, тем быстрее движение, но выше шанс пропустить
+  биржу на краю экрана. Оптимум 3-4 при широкой Зоне захвата.
 
 ## Шпаргалка команд
 
-```bash
-# Деплой сайта (ТОЛЬКО так — hook кешируется):
-TOKEN="$(cat C:/BattleBot/.claude/settings.local.json | python -c "import sys,json; print(json.load(sys.stdin)['env']['VERCEL_TOKEN'])")"
-TEAM="team_CkkRPXdwtRtsL9YCk8n4Fzla"
-curl -s -X POST "https://api.vercel.com/v13/deployments?teamId=$TEAM&forceNew=1" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"name":"totalhunter","project":"prj_mWtcb6hJCkl40YLWheeIlxD5NmXj","gitSource":{"type":"github","repoId":"1215361801","ref":"main"}}'
-# Потом ждать READY и прикрепить домен
+Сборка: Set-Location C:\BattleBot; python build_release.py
+Релиз: gh release create + Setup.exe + ZIP + API version/update
+GCP деплой: sudo git pull origin main && sudo systemctl restart totalhunter
+БД миграции: sudo -u postgres psql -d totalhunter (НЕ alembic — нет DATABASE_URL в shell)
 
-# Деплой GCP:
-cd /opt/totalhunter/server && sudo git pull origin main && sudo systemctl restart totalhunter
+---
 
-# Сборка бота:
-Set-Location C:\BattleBot; $env:PYTHONIOENCODING="utf-8"; python build_release.py
-# Потом ZIP + gh release + API version/update
-```
+(предыдущий контент Gemini ниже)
+
+### Диагноз ошибки
+
+Ошибка **0xc000007b (INVALID_IMAGE_FORMAT)** — это классический конфликт разрядности (32-бит vs 64-бит).
+
+1. **Причина:** Твой EXE (x64) пытается подтянуть системную DLL (например, `vcruntime140.dll` или `opencv_world.dll`), которая на компьютере пользователя оказалась 32-битной.
+2. **Риск:** Бот не запустится у 30% пользователей, если у них не установлены свежие пакеты Visual C++ Redistributable или если билд собран в «грязном» окружении.
+
+---
+
+### Шаг 1: Команда для тебя (Quick Fix)
+
+Чтобы пользователь запустил бота прямо сейчас, скажи ему установить:
+
+* **Visual C++ Redistributable x64** (версии 2015-2022). Это лечит 90% случаев этой ошибки.
+
+---
+
+### Шаг 2: Инструкция для Клода (Universal Build Fix)
+
+«Клод, у пользователей вылетает критическая ошибка `0xc000007b`. Наш билд не портативен. Переходим на протокол **Universal Windows Bundle**. Задачи:
+
+1. **Environment Check:** - Убедись, что сборка идет строго в `venv` под Python 3.13 x64.
+* Проверь разрядность всех внешних бинарников (Tesseract, YOLO `.pt`, OpenCV).
+
+
+2. **Dependency Bundling:** - Включи `VC Runtime` прямо в папку с EXE. Используй флаг `--collect-all` в PyInstaller или аналогичный в Nuitka для захвата всех рантайм-библиотек.
+3. **Installer Integration:** - Хватит кидать голый ZIP. Напиши конфиг для **Inno Setup** или **NSIS**.
+* Инсталлер обязан при запуске проверять наличие Visual C++ 2015-2022 и, если их нет, предлагать установку.
+
+
+4. **Manifest Fix:** - Добавь `application.manifest`, явно указывающий на поддержку Windows 10/11 x64, чтобы ОС не пыталась запускать бота в режиме совместимости.
+
+Выдай обновленный `build.spec` и скрипт для создания инсталлера. Никаких внешних зависимостей в системе пользователя быть не должно.»
+
+---
+
+### 🛡 Аудит по ANTI-PATTERNS.md
+
+* **Нарушение:** Бот зависит от системных DLL пользователя (AP-41: External Dependency Leak).
+* **Решение:** Полная статическая линковка или bundling всех зависимых `.dll` внутри папки приложения.
+
+**Вердикт:** Модуль авто-обновления (Phase 2C) должен скачивать не просто ZIP, а инсталлятор `.exe` или `.msi`, чтобы закрыть этот вопрос раз и навсегда.
+
+Жду от Клода подтверждения готовности конфигурации инсталлера. Команды для сборки выдам после аудита его кода.
