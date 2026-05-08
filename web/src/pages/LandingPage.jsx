@@ -88,6 +88,8 @@ function StatCard({ label, color, rawValue }) {
   )
 }
 
+const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
+
 const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
 
 export default function LandingPage() {
@@ -220,25 +222,34 @@ export default function LandingPage() {
             {LANDING.heroSub}
           </p>
 
-          <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
-              padding: '17px 40px', borderRadius: 10, fontSize: 17,
-              background: 'var(--accent)', color: '#FFFFFF',
-              fontWeight: 700, textDecoration: 'none', display: 'inline-block',
+          <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* ── BIG GREEN DOWNLOAD ── */}
+            <a href={RELEASE_URL} style={{
+              padding: '20px 52px', borderRadius: 12, fontSize: 20,
+              background: 'linear-gradient(135deg, #00C853, #00FF88)',
+              color: '#000',
+              fontWeight: 900, textDecoration: 'none', display: 'inline-flex',
+              alignItems: 'center', gap: 12,
+              boxShadow: '0 0 32px rgba(0,255,136,0.55), 0 0 64px rgba(0,255,136,0.28), 0 6px 24px rgba(0,0,0,0.4)',
+              border: '1px solid rgba(0,255,136,0.6)',
+              letterSpacing: '0.3px',
+              animation: 'glow-pulse 2.4s ease-in-out infinite',
             }}>
-              {isLoggedIn() ? (lang === 'en' ? 'Go to Dashboard →' : 'Перейти в Dashboard →') : LANDING.ctaPrimary}
-            </Link>
-            <Link to="/download" style={{
-              padding: '17px 32px', borderRadius: 10, fontSize: 17,
+              <span style={{ fontSize: 24 }}>⬇</span>
+              {lang === 'en' ? 'Download Free' : 'Скачать бесплатно'}
+            </a>
+            <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
+              padding: '20px 36px', borderRadius: 12, fontSize: 17,
               background: 'transparent', color: '#FFFFFF',
               fontWeight: 600, textDecoration: 'none',
-              border: '1px solid rgba(255,255,255,0.18)', display: 'inline-flex',
-              alignItems: 'center', gap: 8,
+              border: '1px solid rgba(255,255,255,0.2)', display: 'inline-block',
             }}>
-              <span>⬇</span>
-              {lang === 'en' ? 'Download' : 'Скачать'}
+              {isLoggedIn() ? (lang === 'en' ? 'Dashboard →' : 'Dashboard →') : (lang === 'en' ? 'Sign In →' : 'Войти →')}
             </Link>
           </div>
+          <p style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            Windows 10/11 · 64-bit · {lang === 'en' ? 'Free to download' : 'Бесплатная загрузка'}
+          </p>
         </div>
       </section>
 
@@ -279,6 +290,25 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Download CTA under screenshots ─────────────────────── */}
+      <div style={{ textAlign: 'center', paddingBottom: 64, background: 'var(--bg)' }}>
+        <a href={RELEASE_URL} style={{
+          padding: '18px 56px', borderRadius: 12, fontSize: 19,
+          background: 'linear-gradient(135deg, #00C853, #00FF88)',
+          color: '#000',
+          fontWeight: 900, textDecoration: 'none', display: 'inline-flex',
+          alignItems: 'center', gap: 12,
+          boxShadow: '0 0 28px rgba(0,255,136,0.5), 0 0 56px rgba(0,255,136,0.22), 0 6px 20px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(0,255,136,0.5)',
+        }}>
+          <span style={{ fontSize: 22 }}>⬇</span>
+          {lang === 'en' ? 'Download TotalHunter.zip' : 'Скачать TotalHunter.zip'}
+        </a>
+        <p style={{ marginTop: 10, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+          v1.1.0 · Windows 10/11 · 64-bit
+        </p>
+      </div>
 
       {/* ── Live Stats ─────────────────────────────────────────── */}
       <section style={{
