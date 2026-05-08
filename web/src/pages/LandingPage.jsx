@@ -88,7 +88,7 @@ function StatCard({ label, color, rawValue }) {
   )
 }
 
-const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
+const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter_Setup.exe'
 
 const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
 
@@ -248,7 +248,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-            Windows 10/11 · 64-bit · {lang === 'en' ? 'Free to download' : 'Бесплатная загрузка'}
+            Windows 10/11 · 64-bit · {lang === 'en' ? 'Installer · VC++ included' : 'Установщик · VC++ встроен'}
           </p>
         </div>
       </section>
@@ -303,7 +303,7 @@ export default function LandingPage() {
           border: '1px solid rgba(0,255,136,0.5)',
         }}>
           <span style={{ fontSize: 22 }}>⬇</span>
-          {lang === 'en' ? 'Download TotalHunter.zip' : 'Скачать TotalHunter.zip'}
+          {lang === 'en' ? 'Install TotalHunter (.exe)' : 'Установить TotalHunter (.exe)'}
         </a>
         <p style={{ marginTop: 10, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
           v1.1.0 · Windows 10/11 · 64-bit
