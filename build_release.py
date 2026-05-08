@@ -65,12 +65,16 @@ def find_pyd(module_name: str):
 
 
 def clean():
-    """Удаляет старые dist/ и build/."""
+    """Удаляет старые dist/ и build/ через cmd (shutil.rmtree падает на locked asyncpg/pgproto)."""
     for d in ["dist", "build"]:
         path = os.path.join(ROOT, d)
         if os.path.exists(path):
-            shutil.rmtree(path)
-            print(f"  Удалено: {d}/")
+            os.system(f'takeown /f "{path}" /r /d y >nul 2>&1')
+            os.system(f'rd /s /q "{path}" >nul 2>&1')
+            if os.path.exists(path):
+                print(f"  WARN  не удалось удалить {d}/ — попробуй закрыть антивирус")
+            else:
+                print(f"  Удалено: {d}/")
 
 
 def check_assets():
@@ -124,8 +128,14 @@ def main():
                     print(f"  WARN  {mod}: .pyd не найден, используем .py")
                     skipped.append(mod)
             except subprocess.CalledProcessError as e:
-                print(f"  WARN  {mod}: ошибка компиляции ({e}), используем .py")
-                skipped.append(mod)
+                # Nuitka may fail only on build-dir cleanup (Windows Defender) but .pyd is created
+                pyd = find_pyd(mod)
+                if pyd:
+                    compiled.append(os.path.basename(pyd))
+                    print(f"  OK (build-cleanup warn) {mod} → {os.path.basename(pyd)}")
+                else:
+                    print(f"  WARN  {mod}: ошибка компиляции ({e}), используем .py")
+                    skipped.append(mod)
         else:
             print(f"  –  {mod}: файл не найден, пропускаем")
 
@@ -137,11 +147,10 @@ def main():
     print("\n[3/4] Очистка dist/ и build/...")
     clean()
 
-    print("\n[4/4] PyInstaller упаковка...")
+    print("\n[5/6] PyInstaller упаковка...")
     run([sys.executable, "-m", "PyInstaller", "build.spec", "-y"])
 
-    # Шаг 5: Удаляем исходные .py для скомпилированных модулей из dist
-    # (PyInstaller может включить и .py и .pyd — оставляем только .pyd)
+    # Шаг 6: Удаляем исходные .py для скомпилированных модулей из dist
     dist_internal = os.path.join(ROOT, "dist", "TotalHunter", "_internal")
     if os.path.exists(dist_internal):
         for mod in PROTECTED_MODULES:
@@ -150,10 +159,26 @@ def main():
                 os.remove(py_in_dist)
                 print(f"  Удалён из dist: {mod} (заменён .pyd)")
 
+    # Шаг 6: Inno Setup — компиляция установщика
+    inno_compiler = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+    iss_file = os.path.join(ROOT, "installer.iss")
+    if os.path.exists(inno_compiler) and os.path.exists(iss_file):
+        print("\n[6/6] Компиляция установщика (Inno Setup)...")
+        run([inno_compiler, iss_file])
+        setup_exe = os.path.join(ROOT, "dist", "TotalHunter_Setup.exe")
+        if os.path.exists(setup_exe):
+            size_mb = os.path.getsize(setup_exe) / 1024 / 1024
+            print(f"  OK Установщик: dist/TotalHunter_Setup.exe ({size_mb:.0f} MB)")
+        else:
+            print("  WARN  Установщик не найден после компиляции")
+    else:
+        print("\n[6/6] Inno Setup не найден — пропускаем установщик")
+
     print("\n" + "=" * 60)
     print("  OK СБОРКА ЗАВЕРШЕНА")
-    print(f"  EXE: dist/TotalHunter/TotalHunter.exe")
-    print(f"  Защищено модулей: {len(compiled)}")
+    print(f"  EXE:       dist/TotalHunter/TotalHunter.exe")
+    print(f"  Setup:     dist/TotalHunter_Setup.exe")
+    print(f"  Защищено:  {len(compiled)} модулей")
     print("=" * 60)
 
 

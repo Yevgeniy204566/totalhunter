@@ -110,8 +110,9 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,          # без консольного окна
+    console=False,
     icon='assets/icon.ico',
+    manifest='application.manifest',
 )
 
 coll = COLLECT(
