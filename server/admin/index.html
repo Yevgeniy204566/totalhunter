@@ -1079,14 +1079,20 @@ function adminApp() {
     },
 
     async adjustCredits(u, amount) {
+      const param = u.hwid
+        ? `hwid=${u.hwid}`
+        : `user_id=${u.id}`;
       const r = await fetch(
-        `${API}/admin/adjust_credits?hwid=${u.hwid}&amount=${amount}&note=admin+panel`,
+        `${API}/admin/adjust_credits?${param}&amount=${amount}&note=admin+panel`,
         { method: 'POST', headers: this.headers() }
       );
       if (r.ok) {
         const d = await r.json();
         u.credits = d.credits;
         this.showToast(`${amount > 0 ? '+' : ''}${amount} ◆ начислено`);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        this.showToast(`Ошибка: ${err.detail || r.status}`);
       }
     },
 

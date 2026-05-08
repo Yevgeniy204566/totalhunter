@@ -625,12 +625,19 @@ async def admin_ban(hwid: str, banned: bool, db: AsyncSession = Depends(get_db))
 
 @app.post("/admin/adjust_credits", dependencies=[Depends(require_admin)])
 async def admin_adjust_credits(
-    hwid: str, amount: int, note: str = "",
+    amount: int, note: str = "",
+    hwid: Optional[str] = None,
+    user_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    """Ручная корректировка баланса. amount может быть отрицательным."""
+    """Ручная корректировка баланса. Принимает hwid или user_id. amount может быть отрицательным."""
     async with db.begin():
-        result = await db.execute(select(User).where(User.hwid == hwid))
+        if hwid:
+            result = await db.execute(select(User).where(User.hwid == hwid))
+        elif user_id:
+            result = await db.execute(select(User).where(User.id == user_id))
+        else:
+            raise HTTPException(status_code=400, detail="Provide hwid or user_id")
         user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
