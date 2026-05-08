@@ -28,6 +28,35 @@ function useCounter(target, duration = 1400) {
   return value
 }
 
+function Screenshot3D({ src, alt, rotY, rotX, glowColor, extraStyle = {} }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <img
+      src={src} alt={alt}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: 'clamp(180px, 34vw, 390px)',
+        height: 'auto',
+        borderRadius: 14,
+        border: `1px solid ${glowColor}55`,
+        boxShadow: hov
+          ? `0 0 70px ${glowColor}80, 0 0 130px ${glowColor}38, 0 28px 70px rgba(0,0,0,0.55)`
+          : `0 0 44px ${glowColor}55, 0 0 90px ${glowColor}26, 0 20px 55px rgba(0,0,0,0.5)`,
+        transform: hov
+          ? `perspective(900px) rotateY(${rotY * 0.22}deg) rotateX(${rotX * 0.22}deg) scale(1.07)`
+          : `perspective(900px) rotateY(${rotY}deg) rotateX(${rotX}deg) scale(1)`,
+        transition: 'transform 0.45s cubic-bezier(0.23,1,0.32,1), box-shadow 0.45s ease',
+        cursor: 'pointer',
+        display: 'block',
+        position: 'relative',
+        ...extraStyle,
+        zIndex: hov ? 10 : (extraStyle.zIndex || 1),
+      }}
+    />
+  )
+}
+
 function StatCard({ label, color, rawValue }) {
   const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
   const display  = typeof rawValue === 'number' ? animated.toLocaleString() : '—'
@@ -209,6 +238,44 @@ export default function LandingPage() {
               <span>⬇</span>
               {lang === 'en' ? 'Download' : 'Скачать'}
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Screenshots 3D ─────────────────────────────────────── */}
+      <section style={{
+        padding: '64px 24px 56px',
+        background: 'var(--bg)',
+        overflow: 'hidden',
+      }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
+          <p style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '2.5px',
+            color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14,
+          }}>
+            {lang === 'en' ? 'Bot Interface' : 'Интерфейс бота'}
+          </p>
+          <h2 style={{
+            fontSize: 'clamp(24px, 3.5vw, 38px)',
+            fontWeight: 800, color: '#FFFFFF', marginBottom: 52,
+          }}>
+            {lang === 'en' ? 'Exchanges & Crypts — in one window' : 'Биржи и Склепы — в одном окне'}
+          </h2>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Screenshot3D
+              src="/img/lending-exchange.png"
+              alt={lang === 'en' ? 'Exchange hunter UI' : 'Интерфейс поиска бирж'}
+              rotY={-17} rotX={5}
+              glowColor="#00CFFF"
+              extraStyle={{ marginRight: '-68px', zIndex: 2 }}
+            />
+            <Screenshot3D
+              src="/img/lending-crypts.png"
+              alt={lang === 'en' ? 'Crypt hunter UI' : 'Интерфейс поиска склепов'}
+              rotY={13} rotX={-4}
+              glowColor="#00FF88"
+              extraStyle={{ zIndex: 1 }}
+            />
           </div>
         </div>
       </section>
