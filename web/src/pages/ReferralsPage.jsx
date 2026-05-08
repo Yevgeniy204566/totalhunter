@@ -167,8 +167,13 @@ export default function ReferralsPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>
             {r.inviterTitle}
           </div>
-          <p style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 16 }}>
+          <p style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 8 }}>
             {r.inviterSub}
+          </p>
+          <p style={{ fontSize: 12, color: 'rgba(255,209,102,0.75)', marginBottom: 16 }}>
+            {lang === 'en'
+              ? '⚡ Bonus (+50 ◆) is credited after your first device link in the bot.'
+              : '⚡ Бонус (+50 ◆) начисляется после первой привязки устройства в боте.'}
           </p>
           <div style={{ display: 'flex', gap: 10 }}>
             <input

@@ -133,21 +133,8 @@ async def auth_google(req: GoogleAuthRequest, db: AsyncSession = Depends(get_db)
             db.add(user)
             await db.flush()
 
-            # Начисляем реф-бонусы при регистрации по ссылке
-            if invited_by_id:
-                user.ref_credits += 50
-                db.add(Transaction(
-                    user_id=user.id, type="ref_welcome", amount=50,
-                    meta={"role": "invited", "via": "web"},
-                ))
-                ref_result = await db.execute(select(User).where(User.id == invited_by_id))
-                inviter = ref_result.scalar_one_or_none()
-                if inviter and not inviter.is_banned:
-                    inviter.ref_credits += 100
-                    db.add(Transaction(
-                        user_id=inviter.id, type="ref_welcome", amount=100,
-                        meta={"role": "inviter", "invited_email": email},
-                    ))
+            # Бонусы НЕ начисляем здесь — только после подтверждения HWID в /link/verify
+            # invited_by_id сохранён, ref_bonus_claimed=False (default)
 
         elif username and user.username != username:
             user.username = username
@@ -331,23 +318,24 @@ async def link_verify(
                 meta={"hwid": hwid, "reason": "first_hwid_link"},
             ))
 
-            # Reward referrer only if not already paid via bot /activate_referral
-            # or via web signup ref bonus (had_inviter_before_merge)
-            if had_inviter_before_merge:
-                skip_ref_welcome = True
-            if web_user.invited_by_id and not skip_ref_welcome:
+            # Pay ref bonus only if HWID is new and bonus not yet claimed
+            if web_user.invited_by_id and not web_user.ref_bonus_claimed and not skip_ref_welcome:
                 referrer_result = await db.execute(
                     select(User).where(User.id == web_user.invited_by_id)
                 )
                 referrer = referrer_result.scalar_one_or_none()
-                if referrer:
-                    referrer.ref_credits += REFERRAL_REWARD
+                if referrer and not referrer.is_banned:
+                    web_user.ref_credits += 50
                     db.add(Transaction(
-                        user_id=referrer.id,
-                        type="ref_welcome",
-                        amount=REFERRAL_REWARD,
-                        meta={"ref_from_user_id": web_user.id, "hwid": hwid},
+                        user_id=web_user.id, type="ref_welcome", amount=50,
+                        meta={"role": "invited", "hwid": hwid},
                     ))
+                    referrer.ref_credits += 100
+                    db.add(Transaction(
+                        user_id=referrer.id, type="ref_welcome", amount=100,
+                        meta={"role": "inviter", "ref_from_user_id": web_user.id, "hwid": hwid},
+                    ))
+            web_user.ref_bonus_claimed = True
         elif not hwid_is_new:
             # Duplicate HWID — link without bonuses, log the attempt
             db.add(Transaction(
@@ -490,13 +478,19 @@ async def web_referral_activate(
 
         web_user.invited_by_id = inviter.id
 
-        # Bonuses → ref_credits
-        web_user.ref_credits += 50
-        db.add(Transaction(user_id=web_user.id, type="ref_welcome", amount=50,
-                           meta={"role": "invited", "via": "web_profile", "related_user_id": inviter.id}))
-        if not inviter.is_banned:
-            inviter.ref_credits += 100
-            db.add(Transaction(user_id=inviter.id, type="ref_welcome", amount=100,
-                               meta={"role": "inviter", "related_user_id": web_user.id}))
+        # Pay bonus immediately only if HWID already verified (user linked bot before entering code)
+        # Otherwise bonus will be paid at /link/verify when bot is linked
+        if web_user.hwid and not web_user.ref_bonus_claimed:
+            web_user.ref_credits += 50
+            db.add(Transaction(user_id=web_user.id, type="ref_welcome", amount=50,
+                               meta={"role": "invited", "via": "web_profile", "related_user_id": inviter.id}))
+            if not inviter.is_banned:
+                inviter.ref_credits += 100
+                db.add(Transaction(user_id=inviter.id, type="ref_welcome", amount=100,
+                                   meta={"role": "inviter", "related_user_id": web_user.id}))
+            web_user.ref_bonus_claimed = True
+            msg = "Code activated! +50 added to referral balance."
+        else:
+            msg = "Code saved! Bonus will be credited after your first device link."
 
-    return BasicResponse(success=True, message="Code activated! +50 → referral balance.")
+    return BasicResponse(success=True, message=msg)
