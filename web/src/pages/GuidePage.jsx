@@ -358,7 +358,42 @@ export default function GuidePage() {
             </Card>
           </Section>
 
-          {/* 7. Credits */}
+          {/* 7. Settings */}
+          <Section id="settings" icon="⚙️" title={G.settings.title}>
+            {[
+              { label: G.settings.exchangeLabel, items: G.settings.exchange, color: '#00CFFF' },
+              { label: G.settings.cryptLabel,    items: G.settings.crypt,    color: '#B060FF' },
+            ].map(({ label, items, color }) => (
+              <Card key={label} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  {label}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {items.map(({ name, range, optimal, desc }) => (
+                    <div key={name} style={{
+                      display: 'grid', gridTemplateColumns: '180px 90px 90px 1fr',
+                      gap: 12, padding: '10px 14px', borderRadius: 8,
+                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                      alignItems: 'start',
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>{name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.rangeLabel}</div>
+                        {range}
+                      </div>
+                      <div style={{ fontSize: 12, color }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.optimalLabel}</div>
+                        {optimal}
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </Section>
+
+          {/* 8. Credits */}
           <Section id="credits" icon={<Diamond size={18}/>} title={G.credits.title}>
             <Card style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 0 }}>

@@ -10,6 +10,7 @@ export const GUIDE = {
     { id: 'install',      label: 'Installation' },
     { id: 'calibration',  label: 'Calibration' },
     { id: 'modes',        label: 'Operating Modes' },
+    { id: 'settings',     label: 'Bot Settings' },
     { id: 'credits',      label: 'Diamonds & Rates' },
     { id: 'referrals',    label: 'Referrals' },
     { id: 'security',     label: 'Security' },
@@ -125,6 +126,34 @@ export const GUIDE = {
       ],
     },
     stopNote: 'Emergency Stop: Press ESC — the bot will instantly cease all actions.',
+  },
+
+  settings: {
+    title: 'Bot Settings',
+    exchangeLabel: 'EXCHANGES tab — neural network & navigation',
+    cryptLabel: 'CRYPTS tab — collection parameters',
+    optimalLabel: 'Optimal',
+    rangeLabel: 'Range',
+    exchange: [
+      { name: 'Detection Accuracy',   range: '0.1 – 0.9', optimal: '0.65–0.75', desc: 'YOLO confidence threshold. Lower = more false positives, higher = missed exchanges at screen edges.' },
+      { name: 'Scan Frequency',       range: '0.1 – 5.0 s', optimal: '0.4–0.8 s', desc: 'Pause between scan frames. Lower = faster, but the neural network may miss a still-loading screen.' },
+      { name: 'Joystick Step',        range: '10 – 20 px', optimal: '13–16', desc: 'Joystick step size in pixels. Smaller = more precise dive and return, larger = faster map movement.' },
+      { name: 'Speed (sec/step)',     range: '0.5 – 5.0 s', optimal: '1.5–2.5 s', desc: 'Wait after each joystick step. Lower = faster sweep, but the map may not finish rendering.' },
+      { name: 'Dive Depth',           range: '1 – 10', optimal: '3–6', desc: 'How many screens deep to dive inland. More = covers distant areas, less = compact dive.' },
+      { name: 'Ocean/Land Boundary',  range: '1 – 15 %', optimal: '3–5 %', desc: 'Min land % on minimap. Below this the bot treats the area as open ocean and turns around.' },
+      { name: 'Min Water Body',       range: '100 – 2000 px', optimal: '≈ 500', desc: 'Min water body size on minimap for coastline detection. Lower = catches rivers, higher = open water only.' },
+      { name: 'Return Diagonal',      range: '0.0 – 1.0', optimal: '0.4–0.6', desc: 'Diagonal fraction during beacon return. 0 = horizontal only, 1 = full diagonal.' },
+      { name: 'Footprint Memory',     range: '60 – 1200 s', optimal: '5–15 min', desc: 'TTL of visited-zone marks. Lower = bot revisits sooner, higher = avoids repeats longer.' },
+      { name: 'Return Delta',         range: '0 – 20 px', optimal: '3–8 px', desc: 'Rightward offset during beacon return. Compensates drift — increase if bot consistently returns left of beacon.' },
+      { name: 'Nav Agility',          range: '10 – 100 %', optimal: '40–60 %', desc: 'Navigator angle smoothing factor. Lower = smooth glide, higher = snaps sharply to coastline.' },
+    ],
+    crypt: [
+      { name: 'Detection Accuracy',   range: '0.1 – 0.9', optimal: '0.65–0.75', desc: 'YOLO confidence for crypts. Lower = false captures, higher = risk of missing a rare crypt.' },
+      { name: 'March Acceleration',   range: '0 – 5', optimal: '2–3', desc: 'Number of "Accelerate" clicks before sending Carter. More = faster army, but requires enough accelerators.' },
+      { name: 'Break Between Crypts', range: '3 – 300 s', optimal: '8–15 s', desc: 'Pause after Carter returns before the next crypt. Increase if the army does not recover in time.' },
+      { name: 'March Range',          range: '5 – 30 min', optimal: '10–20 min', desc: 'Max Carter march time (T_max). Wait time = T_max / 2^N, where N is the number of accelerations.' },
+      { name: 'Detection Frequency',  range: '0.0 – 4.0 s', optimal: '0.8–1.5 s', desc: 'Pause between scrolls during crypt search. Lower = faster scan, higher = more accurate frame processing.' },
+    ],
   },
 
   credits: {
