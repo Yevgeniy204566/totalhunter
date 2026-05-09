@@ -504,12 +504,13 @@ async def crash_report(payload: CrashReportRequest, db: AsyncSession = Depends(g
     """Принимает отчёт о падении бота. Публичный, без JWT. Rate limit: 3/HWID/час."""
     if payload.hwid:
         since = datetime.now(timezone.utc) - timedelta(hours=1)
-        recent = await db.scalar(
-            select(func.count()).select_from(CrashReport).where(
-                and_(CrashReport.hwid == payload.hwid, CrashReport.created_at >= since)
-            )
+        result = await db.execute(
+            select(CrashReport.id).where(
+                CrashReport.hwid == payload.hwid,
+                CrashReport.created_at >= since,
+            ).limit(3)
         )
-        if recent and recent >= 3:
+        if len(result.scalars().all()) >= 3:
             raise HTTPException(status_code=429, detail="Rate limit: max 3 crash reports per hour")
 
     tb_text = (payload.traceback or "")[:8000]
