@@ -1170,13 +1170,25 @@ class TotalHunterApp(ctk.CTk):
                 import ctypes, ctypes.wintypes
                 rect = ctypes.wintypes.RECT()
                 ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)
-                work_h = rect.bottom - rect.top - 35
-                work_y = rect.top
+                work_x  = rect.left
+                work_y  = rect.top
+                work_w  = rect.right  - rect.left
+                work_h  = rect.bottom - rect.top - 35
             except Exception:
-                work_h = self.winfo_screenheight() - 90
-                work_y = 0
-            right_x = self.winfo_screenwidth() - 460
-            self.geometry(f"460x{work_h}+{right_x}+{work_y}")
+                work_x, work_y = 0, 0
+                work_w  = self.winfo_screenwidth()
+                work_h  = self.winfo_screenheight() - 90
+
+            # Берём реальный размер окна ПОСЛЕ отрисовки
+            self.update_idletasks()
+            win_w = self.winfo_width()
+            win_h = min(work_h, work_w)
+
+            # Прижать к правому краю с отступом 10px, не выходя за границы
+            snap_x = max(work_x, work_x + work_w - win_w - 10)
+            snap_y = work_y
+
+            self.geometry(f"{win_w}x{work_h}+{snap_x}+{snap_y}")
             self.update_idletasks()
             x = self.winfo_x()
             y = self.winfo_y()
