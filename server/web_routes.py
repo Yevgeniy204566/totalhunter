@@ -513,12 +513,11 @@ async def crash_report(payload: CrashReportRequest, db: AsyncSession = Depends(g
             raise HTTPException(status_code=429, detail="Rate limit: max 3 crash reports per hour")
 
     tb_text = (payload.traceback or "")[:8000]
-    report = CrashReport(
-        hwid=payload.hwid,
-        version=payload.version,
-        os_info=payload.os_info,
-        traceback=tb_text,
-    )
-    db.add(report)
-    await db.commit()
+    async with db.begin():
+        db.add(CrashReport(
+            hwid=payload.hwid,
+            version=payload.version,
+            os_info=payload.os_info,
+            traceback=tb_text,
+        ))
     return {"ok": True}
