@@ -502,6 +502,9 @@
     <div class="nav-item" :class="{active:page==='logs'}" @click="page='logs';loadLogs()">
       <span class="material-symbols-rounded">bug_report</span> Логи
     </div>
+    <div class="nav-item" :class="{active:page==='crashes'}" @click="page='crashes';loadCrashes()">
+      <span class="material-symbols-rounded">crisis_alert</span> Краши
+    </div>
     <div class="nav-item" :class="{active:page==='broadcast'}" @click="page='broadcast'">
       <span class="material-symbols-rounded">campaign</span> Broadcast
     </div>
@@ -781,6 +784,42 @@
       </div>
     </template>
 
+    <!-- CRASHES -->
+    <template x-if="page==='crashes'">
+      <div>
+        <div class="page-title">Краши ботов</div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Автоматические отчёты о падениях</div>
+            <button class="btn btn-ghost btn-sm" @click="loadCrashes()">
+              <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Время</th><th>HWID</th><th>Версия</th><th>ОС</th><th>Traceback</th>
+              </tr></thead>
+              <tbody>
+                <template x-for="c in crashes" :key="c.id">
+                  <tr>
+                    <td style="white-space:nowrap;color:var(--text-dim)" x-text="formatDate(c.created_at)"></td>
+                    <td style="font-family:monospace;font-size:10px" x-text="c.hwid || '—'"></td>
+                    <td><span style="background:rgba(255,179,0,.12);color:var(--orange);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600" x-text="c.version || '?'"></span></td>
+                    <td style="color:var(--text-dim);font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" x-text="c.os_info || '—'"></td>
+                    <td class="log-payload" style="max-width:340px;font-family:monospace;font-size:10px;white-space:pre-wrap;word-break:break-all" x-text="c.traceback"></td>
+                  </tr>
+                </template>
+                <tr x-show="crashes.length===0">
+                  <td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">Краши не зафиксированы</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+
     <!-- BROADCAST -->
     <template x-if="page==='broadcast'">
       <div>
@@ -940,6 +979,7 @@ function adminApp() {
     users: [], totalUsers: 0,
     page_num: 1, search: '', onlineOnly: false,
     logs: [],
+    crashes: [],
     broadcastMsg: '',
     feedbackItems: [],
     currentVersion: '',
@@ -1099,6 +1139,11 @@ function adminApp() {
     async loadLogs() {
       const r = await fetch(`${API}/admin/logs?limit=50`, { headers: this.headers() });
       if (r.ok) this.logs = await r.json();
+    },
+
+    async loadCrashes() {
+      const r = await fetch(`${API}/admin/crashes?limit=50`, { headers: this.headers() });
+      if (r.ok) this.crashes = await r.json();
     },
 
     async clearBroadcast() {

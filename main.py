@@ -2036,14 +2036,103 @@ class TotalHunterApp(ctk.CTk):
                 pass
 
 
-if __name__ == "__main__":
-    from version import VERSION
-    from updater import check_for_updates, run_update_window
-    latest_tag, url = check_for_updates(VERSION)
-    if latest_tag and url:
-        run_update_window(latest_tag, url)
+def _crash_handler(exc: BaseException) -> None:
+    """Silent Observer: записывает crash_report.txt и отправляет на сервер."""
+    import traceback as _tb
+    import json as _json
+    import platform as _platform
+    import urllib.request as _req
+    import datetime as _dt
 
-    app = TotalHunterApp()
-    app.mainloop()
+    if getattr(sys, 'frozen', False):
+        _root = os.path.dirname(sys.executable)
+    else:
+        _root = os.path.dirname(os.path.abspath(__file__))
+
+    try:
+        _hwid = get_hwid()
+    except Exception:
+        _hwid = None
+
+    report = {
+        "hwid":      _hwid,
+        "version":   VERSION,
+        "os_info":   _platform.platform(),
+        "traceback": _tb.format_exc(),
+        "timestamp": _dt.datetime.now().isoformat(),
+    }
+
+    crash_path = os.path.join(_root, "crash_report.txt")
+    try:
+        with open(crash_path, "w", encoding="utf-8") as _f:
+            _json.dump(report, _f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+    try:
+        _data = _json.dumps({k: v for k, v in report.items() if k != "timestamp"}).encode("utf-8")
+        _req_obj = _req.Request(
+            "https://api.total-hunter.com/web/crash_report",
+            data=_data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        _req.urlopen(_req_obj, timeout=5)
+    except Exception:
+        pass
+
+    try:
+        win = ctk.CTk()
+        win.title("Total Hunter — Ошибка запуска")
+        win.geometry("500x340")
+        win.resizable(False, False)
+        win.configure(fg_color=MD3["bg"])
+
+        ctk.CTkLabel(win, text="Ошибка запуска",
+                     font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=MD3["error_text"]).pack(pady=(20, 4))
+        ctk.CTkLabel(win,
+                     text=f"Отчёт сохранён: crash_report.txt\nОтправлен разработчику автоматически.",
+                     text_color=MD3["on_surface2"], font=ctk.CTkFont(size=12)).pack(pady=(0, 8))
+
+        tb_box = ctk.CTkTextbox(win, height=150,
+                                font=ctk.CTkFont(family="Consolas", size=10),
+                                fg_color=MD3["card"])
+        tb_box.pack(fill="x", padx=20, pady=(0, 10))
+        tb_box.insert("end", report["traceback"][-1200:])
+        tb_box.configure(state="disabled")
+
+        btn_row = ctk.CTkFrame(win, fg_color="transparent")
+        btn_row.pack(fill="x", padx=20, pady=(0, 16))
+
+        ctk.CTkButton(btn_row, text="Открыть crash_report.txt",
+                      command=lambda: os.startfile(crash_path) if os.path.exists(crash_path) else None,
+                      fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
+                      corner_radius=8, height=34).pack(side="left", expand=True, fill="x", padx=(0, 6))
+        ctk.CTkButton(btn_row, text="Закрыть",
+                      command=win.destroy,
+                      fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+                      corner_radius=8, height=34).pack(side="left", expand=True, fill="x")
+        win.mainloop()
+    except Exception:
+        try:
+            import tkinter.messagebox as _mb
+            _mb.showerror("Total Hunter", f"Ошибка запуска.\nОтчёт: {crash_path}\n\n{str(exc)[:400]}")
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    try:
+        from version import VERSION
+        from updater import check_for_updates, run_update_window
+        latest_tag, url = check_for_updates(VERSION)
+        if latest_tag and url:
+            run_update_window(latest_tag, url)
+
+        app = TotalHunterApp()
+        app.mainloop()
+    except Exception as _exc:
+        _crash_handler(_exc)
 
 

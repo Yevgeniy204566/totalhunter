@@ -170,3 +170,10 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     items: list[LeaderboardEntry]
+
+
+class CrashReportRequest(BaseModel):
+    hwid: Optional[str] = None
+    version: Optional[str] = None
+    os_info: Optional[str] = None
+    traceback: str

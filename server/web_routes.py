@@ -18,13 +18,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import Feedback, Hunt, HwidHistory, LinkCode, Transaction, User
+from models import CrashReport, Feedback, Hunt, HwidHistory, LinkCode, Transaction, User
 from schemas import (
     BasicResponse,
+    CrashReportRequest,
     FeedbackRequest,
     GlobalStatsResponse,
     GoogleAuthRequest,
@@ -494,3 +495,30 @@ async def web_referral_activate(
             msg = "Code saved! Bonus will be credited after your first device link."
 
     return BasicResponse(success=True, message=msg)
+
+
+# ── POST /web/crash_report ────────────────────────────────────────────────────
+
+@router.post("/crash_report")
+async def crash_report(payload: CrashReportRequest, db: AsyncSession = Depends(get_db)):
+    """Принимает отчёт о падении бота. Публичный, без JWT. Rate limit: 3/HWID/час."""
+    if payload.hwid:
+        since = datetime.now(timezone.utc) - timedelta(hours=1)
+        recent = await db.scalar(
+            select(func.count()).select_from(CrashReport).where(
+                and_(CrashReport.hwid == payload.hwid, CrashReport.created_at >= since)
+            )
+        )
+        if recent and recent >= 3:
+            raise HTTPException(status_code=429, detail="Rate limit: max 3 crash reports per hour")
+
+    tb_text = (payload.traceback or "")[:8000]
+    report = CrashReport(
+        hwid=payload.hwid,
+        version=payload.version,
+        os_info=payload.os_info,
+        traceback=tb_text,
+    )
+    db.add(report)
+    await db.commit()
+    return {"ok": True}

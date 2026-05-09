@@ -242,6 +242,19 @@ class Feedback(Base):
 # Orders — payment records
 # ─────────────────────────────────────────────
 
+class CrashReport(Base):
+    """Автоматические отчёты о падениях бота — Protocol «Silent Observer»."""
+    __tablename__ = "crash_reports"
+
+    id         = Column(Integer, primary_key=True)
+    hwid       = Column(String(16), nullable=True, index=True)
+    version    = Column(String(20), nullable=True)
+    os_info    = Column(String(150), nullable=True)
+    traceback  = Column(Text, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                        server_default=func.now(), index=True)
+
+
 class Order(Base):
     """
     One row per payment attempt.

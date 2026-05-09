@@ -36,7 +36,7 @@ from sqlalchemy import Integer, func, select, update, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AppSetting, Broadcast, Feedback, Hunt, HwidHistory, LinkCode, Log, Transaction, User
+from models import AppSetting, Broadcast, CrashReport, Feedback, Hunt, HwidHistory, LinkCode, Log, Transaction, User
 from web_routes import router as web_router
 from payments import router as payments_router
 from vault import router as vault_router
@@ -821,6 +821,28 @@ async def admin_logs(db: AsyncSession = Depends(get_db), limit: int = 50):
             "created_at": l.created_at.isoformat() if l.created_at else None,
         }
         for l in logs
+    ]
+
+
+# ── GET /admin/crashes ────────────────────────────────────────────────────────
+
+@app.get("/admin/crashes", dependencies=[Depends(require_admin)])
+async def admin_crashes(db: AsyncSession = Depends(get_db), limit: int = 50):
+    """Последние N crash-отчётов от ботов."""
+    result = await db.execute(
+        select(CrashReport).order_by(CrashReport.created_at.desc()).limit(limit)
+    )
+    items = result.scalars().all()
+    return [
+        {
+            "id":         c.id,
+            "hwid":       c.hwid,
+            "version":    c.version,
+            "os_info":    c.os_info,
+            "traceback":  c.traceback,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in items
     ]
 
 
