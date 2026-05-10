@@ -205,7 +205,7 @@ class CryptHunter:
         self.on_status_callback = None   # fn(message: str)
         self.on_stop_callback   = None   # fn(reason: str)
         self.on_oil_callback    = None   # fn(ordinary: int, epic: int, rare: int)
-        self.oil_check_enabled  = True   # если False — оба механизма масла отключены
+        self.oil_check_enabled  = False  # OCR нестабилен + Tesseract не у всех — AP-21
 
         self._log_file: str | None = None
 

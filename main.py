@@ -145,7 +145,6 @@ LANGS = {
         "crypt_ready": "ГОТОВО", "crypt_stopped": "Остановлено",
         "crypt_select_warn": "Выберите хотя бы один тип!", "crypt_searching": "СТАТУС: В ПОИСКЕ...",
         "crypt_collected": "Собрано", "crypt_last": "последний",
-        "oil_check": "Проверка масла",
         # --- calibration tab ---
         "cal_title": "Калибровка экрана",
         "cal_desc": "Откройте игру в привычном режиме, затем установите две точки.",
@@ -197,7 +196,6 @@ LANGS = {
         "crypt_ready": "READY", "crypt_stopped": "Stopped",
         "crypt_select_warn": "Select at least one type!", "crypt_searching": "STATUS: SEARCHING...",
         "crypt_collected": "Collected", "crypt_last": "last",
-        "oil_check": "Oil check",
         # --- calibration tab ---
         "cal_title": "Screen Calibration",
         "cal_desc": "Open the game normally, then set two anchor points.",
@@ -970,21 +968,6 @@ class TotalHunterApp(ctk.CTk):
             font=ctk.CTkFont(size=13, weight="bold"), text_color="#AB47BC"
         )
         self.oil_epic_label.pack(side="left", padx=10, pady=6)
-        self._oil_check_var = ctk.BooleanVar(value=True)
-        self._oil_check_switch = ctk.CTkSwitch(
-            oil_frame,
-            text=LANGS[self.current_lang]["oil_check"],
-            variable=self._oil_check_var,
-            onvalue=True, offvalue=False,
-            command=self._save_crypt_settings,
-            font=ctk.CTkFont(size=11),
-            text_color=MD3["on_surface2"],
-            button_color=MD3["primary"],
-            button_hover_color=MD3["primary_dim"],
-            progress_color=MD3["primary"],
-        )
-        self._oil_check_switch.pack(side="right", padx=10, pady=6)
-        self._i18n_labels.append((self._oil_check_switch, "oil_check"))
 
         # ─── Кнопка Старт/Стоп ───────────────────────────────
         self.crypt_start_btn = ctk.CTkButton(
@@ -1113,7 +1096,7 @@ class TotalHunterApp(ctk.CTk):
             self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_stop_btn"],
                                            fg_color=MD3["error"],
                                            hover_color=MD3["error_hover"])
-            self.crypt_engine.oil_check_enabled = self._oil_check_var.get()
+            self.crypt_engine.oil_check_enabled = False
             self.crypt_engine.lang = self.current_lang
             self.crypt_engine.start(
                 selected_crypts=selected,
@@ -1215,7 +1198,6 @@ class TotalHunterApp(ctk.CTk):
             cfg['crypt_break_sec']     = int(self.crypt_break_slider.get())
             cfg['crypt_scroll_speed']  = round(self.crypt_scroll_slider.get(), 1)
             cfg['crypt_max_march_min'] = int(self.crypt_march_slider.get())
-            cfg['crypt_oil_check']     = self._oil_check_var.get()
             with open(GUI_CONFIG_PATH, 'w') as f:
                 json.dump(cfg, f, indent=2)
         except Exception:
@@ -1240,7 +1222,6 @@ class TotalHunterApp(ctk.CTk):
                 self.crypt_scroll_slider.set(cfg['crypt_scroll_speed'])
             if 'crypt_max_march_min' in cfg:
                 self.crypt_march_slider.set(cfg['crypt_max_march_min'])
-            self._oil_check_var.set(cfg.get('crypt_oil_check', True))
             self._update_crypt_labels()
         except Exception:
             pass
