@@ -134,7 +134,7 @@ export default function DashboardPage() {
                 </span>
               </div>
             ))}
-            <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 16 }}>
               <Link to="/dashboard/balance" style={{
                 display: 'inline-block', padding: '9px 20px',
                 background: 'var(--accent)', color: '#FFFFFF',
@@ -143,19 +143,6 @@ export default function DashboardPage() {
               }}>
                 {D.profile.topUp}
               </Link>
-              <a
-                href="https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter_Setup.exe"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '9px 20px',
-                  background: 'rgba(74,222,128,0.12)',
-                  border: '1px solid rgba(74,222,128,0.35)',
-                  color: '#4ADE80', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                ↓ {D.profile.download}
-              </a>
             </div>
           </div>
         </div>

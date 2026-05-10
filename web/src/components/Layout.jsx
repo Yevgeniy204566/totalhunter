@@ -68,6 +68,19 @@ export default function Layout() {
             </div>
           )}
 
+          <a
+            href="https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter_Setup.exe"
+            className="header-btn"
+            style={{
+              background: 'rgba(74,222,128,0.12)',
+              border: '1px solid rgba(74,222,128,0.35)',
+              color: '#4ADE80', fontWeight: 700, textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            ↓ {D.profile.download}
+          </a>
+
           <Link
             className="header-earn-btn"
             to="/dashboard/earn"
