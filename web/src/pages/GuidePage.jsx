@@ -361,13 +361,23 @@ export default function GuidePage() {
           {/* 7. Settings */}
           <Section id="settings" icon="⚙️" title={G.settings.title}>
             {[
-              { label: G.settings.exchangeLabel, items: G.settings.exchange, color: '#00CFFF' },
-              { label: G.settings.cryptLabel,    items: G.settings.crypt,    color: '#B060FF' },
-            ].map(({ label, items, color }) => (
+              { label: G.settings.exchangeLabel, note: G.settings.exchangeNote, items: G.settings.exchange, color: '#00CFFF' },
+              { label: G.settings.cryptLabel,    note: G.settings.cryptNote,    items: G.settings.crypt,    color: '#B060FF' },
+            ].map(({ label, note, items, color }) => (
               <Card key={label} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: note ? 10 : 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                   {label}
                 </div>
+                {note && (
+                  <div style={{
+                    fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.6,
+                    background: `rgba(${color === '#00CFFF' ? '0,207,255' : '176,96,255'},0.06)`,
+                    border: `1px solid rgba(${color === '#00CFFF' ? '0,207,255' : '176,96,255'},0.2)`,
+                    borderRadius: 8, padding: '8px 12px', marginBottom: 14,
+                  }}>
+                    {note}
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {items.map(({ name, range, optimal, desc }) => (
                     <div key={name} style={{

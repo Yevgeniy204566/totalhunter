@@ -131,7 +131,9 @@ export const GUIDE = {
   settings: {
     title: 'Bot Settings',
     exchangeLabel: 'EXCHANGES tab — neural network & navigation',
+    exchangeNote: 'Exchange detection accuracy — 80%. Important: "Scan Frequency" must be ≤ "Speed (sec/step)" — the neural network must finish processing each frame before the bot takes the next step.',
     cryptLabel: 'CRYPTS tab — collection parameters',
+    cryptNote: 'Crypt detection accuracy — 30%. This is normal: crypts are small and partially obscured by the game UI.',
     optimalLabel: 'Optimal',
     rangeLabel: 'Range',
     exchange: [
