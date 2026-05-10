@@ -69,6 +69,7 @@ export const DASHBOARD = {
     trialUsed:      'Триал использован',
     trialAvailable: '✓ Триал доступен',
     topUp:          'Пополнить кредиты →',
+    download:       'Скачать бота',
   },
 
   recentHunts: {

@@ -69,6 +69,7 @@ export const DASHBOARD = {
     trialUsed:      'Trial used',
     trialAvailable: '✓ Trial available',
     topUp:          'Top up credits →',
+    download:       'Download Bot',
   },
 
   recentHunts: {
