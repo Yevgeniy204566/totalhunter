@@ -13,8 +13,12 @@ _REF_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import urllib.parse
+
+import httpx
 import jwt
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
@@ -46,7 +50,13 @@ router = APIRouter(prefix="/web", tags=["web"])
 JWT_SECRET    = os.environ.get("JWT_SECRET_KEY", "change-me-before-deploy")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI  = os.environ.get("GOOGLE_REDIRECT_URI", "https://api.total-hunter.com/web/auth/google/callback")
+FRONTEND_URL         = os.environ.get("FRONTEND_URL", "https://total-hunter.com")
+
+# state → ref_code; consumed on use; safe for single-process deployment
+_oauth_states: dict[str, str] = {}
 
 _bearer = HTTPBearer()
 
@@ -145,6 +155,92 @@ async def auth_google(req: GoogleAuthRequest, db: AsyncSession = Depends(get_db)
         email=email,
         username=user.username,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /web/auth/google/start  — мобильный OAuth redirect flow
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/auth/google/start")
+async def auth_google_start(ref_code: str = ""):
+    state = _secrets.token_urlsafe(16)
+    _oauth_states[state] = ref_code
+    params = urllib.parse.urlencode({
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "online",
+    })
+    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{params}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /web/auth/google/callback  — Google возвращает code сюда
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/auth/google/callback")
+async def auth_google_callback(
+    code: str = None,
+    state: str = None,
+    error: str = None,
+    db: AsyncSession = Depends(get_db),
+):
+    if error or not code or not state:
+        return RedirectResponse(f"{FRONTEND_URL}/login?error=cancelled")
+
+    ref_code = _oauth_states.pop(state, None)
+    if ref_code is None:
+        return RedirectResponse(f"{FRONTEND_URL}/login?error=invalid_state")
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "grant_type": "authorization_code",
+            },
+        )
+
+    if resp.status_code != 200:
+        return RedirectResponse(f"{FRONTEND_URL}/login?error=token_exchange")
+
+    id_token_str = resp.json().get("id_token", "")
+    try:
+        claims = _verify_google_token(id_token_str)
+    except Exception:
+        return RedirectResponse(f"{FRONTEND_URL}/login?error=invalid_token")
+
+    email    = claims["email"]
+    username = claims.get("name")
+
+    async with db.begin():
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        if user is None:
+            new_ref = "".join(_secrets.choice(_REF_ALPHABET) for _ in range(8))
+            invited_by_id = None
+            if ref_code:
+                ref_row = await db.execute(select(User).where(User.ref_code == ref_code))
+                referrer = ref_row.scalar_one_or_none()
+                if referrer:
+                    invited_by_id = referrer.id
+            user = User(
+                email=email,
+                username=username,
+                ref_code=new_ref,
+                invited_by_id=invited_by_id,
+            )
+            db.add(user)
+            await db.flush()
+        elif username and user.username != username:
+            user.username = username
+
+    return RedirectResponse(f"{FRONTEND_URL}/login?token={create_jwt(user.id, email)}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
