@@ -102,7 +102,7 @@ export const GUIDE = {
       { title: 'Set Point B',        desc: 'Locate the Silver icon, hover for the "+". Click "Set Point B" → click the "+" symbol.' },
       { title: 'Save Profile',       desc: 'Select a slot and click "Save Profile".' },
     ],
-    slotsNote: '💡 3 Slots available: Slot 1 — Game Client, Slot 2 — Browser (Option 1), Slot 3 — Browser (Option 2).',
+    slotsNote: '💡 3 Profiles: Client — native game client, Browser 1 / Browser 2 — Chrome or Firefox. Each profile stores the full configuration: calibration, crypt selection, all sliders and click fine-tuning. Switching profiles loads everything instantly.',
   },
 
   modes: {
@@ -120,9 +120,10 @@ export const GUIDE = {
       title: 'Crypt Gathering',
       cost: '1 diamond / find',
       rows: [
-        { l: 'Logic',    t: 'The bot locates crypts in the menu and dispatches Carter.' },
-        { l: 'Cycle',    t: 'Waits for Carter\'s return based on calculated travel time.' },
-        { l: 'Parameters', t: 'March Range (min) + Speed-up (0–5 levels).' },
+        { l: 'Logic',      t: 'The bot finds crypts in the menu via neural network and dispatches Carter with coordinate-based clicks.' },
+        { l: 'Cycle',      t: 'Waits for Carter\'s return based on calculated travel time.' },
+        { l: 'Parameters', t: 'March Range (min) + Speed-up (0–5 levels) + Swing click fine-tuning.' },
+        { l: 'Profiles',   t: 'Each profile stores individual settings for different accounts — switching is instant.' },
       ],
     },
     stopNote: 'Emergency Stop: Press ESC — the bot will instantly cease all actions.',
@@ -133,7 +134,7 @@ export const GUIDE = {
     exchangeLabel: 'EXCHANGES tab — neural network & navigation',
     exchangeNote: 'Exchange detection accuracy — 80%. Important: "Scan Frequency" must be ≤ "Speed (sec/step)" — the neural network must finish processing each frame before the bot takes the next step.',
     cryptLabel: 'CRYPTS tab — collection parameters',
-    cryptNote: 'Crypt detection accuracy — 30%. This is normal: crypts are small and partially obscured by the game UI.',
+    cryptNote: 'Crypt detection accuracy — 30%. This is normal: crypts are small and partially obscured by the game UI. All settings are saved to the active profile — create separate profiles for different accounts.',
     optimalLabel: 'Optimal',
     rangeLabel: 'Range',
     exchange: [
@@ -155,6 +156,9 @@ export const GUIDE = {
       { name: 'Break Between Crypts', range: '3 – 300 s', optimal: '8–15 s', desc: 'Pause after Carter returns before the next crypt. Increase if the army does not recover in time.' },
       { name: 'March Range',          range: '5 – 30 min', optimal: '10–20 min', desc: 'Max Carter march time (T_max). Wait time = T_max / 2^N, where N is the number of accelerations.' },
       { name: 'Detection Frequency',  range: '0.0 – 4.0 s', optimal: '0.8–1.5 s', desc: 'Pause between scrolls during crypt search. Lower = faster scan, higher = more accurate frame processing.' },
+      { name: 'Swing 1 — Study',       range: '± buttons', optimal: '0', desc: 'Vertical fine-tuning for the "Study" button click. If the click misses the button, press "+" or "−" in 5px steps until it lands correctly.' },
+      { name: 'Swing 2 — Speed Up',    range: '± buttons', optimal: '0', desc: 'Vertical fine-tuning for the "Use" button in the speed-up window. Works independently from Swing 1.' },
+      { name: 'Click Speed',           range: '−2.0 – +2.0 s', optimal: '0.0 s', desc: 'Adjusts the pause between bot actions. Right = faster (less pause), left = slower. Does not affect march time or neural network.' },
     ],
   },
 
