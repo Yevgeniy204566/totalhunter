@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-08 (Хангоф #39: v1.1.0 Setup.exe ✅, Inno Setup installer ✅, реф-защита HWID ✅, лендинг 3D+SEO ✅)
+> Последнее обновление: 2026-05-11 (Хангоф #44: v1.1.3 выпущен ✅ — oil check убран, Tesseract краш пофикшен)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -25,17 +25,28 @@
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70 | 2026-04-30 |
-| **CryptHunter** | crypt_hunter.py | ✅ слепой T_max/2^N без OCR | 2026-05-04 |
-| **Auto-update** | updater.py | ✅ v1.1.0 собран и выпущен. Setup.exe + ZIP на GitHub | 2026-05-08 |
-| **Installer** | installer.iss | ✅ Inno Setup, VC++ Runtime bundled, Windows 10/11 x64 | 2026-05-08 |
-| **Admin Panel** | server/admin/index.html | ✅ adjust_credits по user_id (веб-пользователи без HWID) | 2026-05-08 |
+| **CryptHunter** | crypt_hunter.py | ✅ Только YOLO + координаты. Swing1/Swing2. Слайдер скорости кликов. Профили = полная конфигурация. | 2026-05-11 |
+| **Auto-update** | updater.py | ✅ v1.1.3 выпущен. Setup.exe (315MB) + ZIP на GitHub | 2026-05-11 |
+| **Installer** | installer.iss | ✅ v1.1.2: Win10+ gate, 64-bit check, авто-язык RU/EN | 2026-05-09 |
+| **Silent Observer** | main.py + server/web_routes.py | ✅ crash reporter: crash_report.txt + POST /web/crash_report + вкладка Краши в админке | 2026-05-09 |
+| **Snap-right fix** | main.py | ✅ winfo_width() + clamp — окно не уходит за экран при любом разрешении | 2026-05-09 |
+| **Mobile OAuth** | web_routes.py + LoginPage.jsx | ✅ /auth/google/start + /callback, детект мобилки, JWT в URL | 2026-05-10 |
+| **Guide — точность детекции** | guide_content.js/en.js + GuidePage.jsx | ✅ Биржи 80%, Склепы 30%, предупреждение про скорость нейросети | 2026-05-10 |
+| **Скачать в хедере** | Layout.jsx | ✅ кнопка ↓ Скачать бота рядом с балансом, видна на всех страницах | 2026-05-10 |
+| **Admin Panel** | server/admin/index.html | ✅ adjust_credits по user_id + вкладка Краши (crash reports) | 2026-05-09 |
 | **Реф-безопасность** | server/web_routes.py | ✅ ref_bonus_claimed — бонус только при новом HWID | 2026-05-08 |
 | **Лендинг** | web/LandingPage.jsx | ✅ 3D скриншоты, зелёная кнопка Setup.exe, robots.txt, sitemap | 2026-05-08 |
+| **Guide Settings** | web/GuidePage.jsx + guide_content*.js | ✅ Раздел "Настройки бота": 16 слайдеров RU/EN с диапазонами | 2026-05-09 |
 | **Безопасность** | server/main.py | ✅ atomic /use_credit, backup_db.sh | 2026-05-04 |
 
 ---
 
 ## Текущие ключи и токены (хранить только здесь)
+
+### Admin API
+- `ADMIN_SECRET_KEY` (в systemd сервиса): `zQ2z8D80xEnLTET0kQ0Bl85EYlTZBLIAtc37dZAmmK8`
+- ⚠️ Нужно добавить `ADMIN_TOKEN=` в override.conf (сейчас работает дефолт `dev-admin-token` — небезопасно!)
+- Команда обновления версии: `curl -X POST "https://api.total-hunter.com/admin/version/update?version=X.X.X" -H "Authorization: Bearer <ADMIN_TOKEN>"`
 
 ### NOWPayments
 - API Key: `JKPMX8E-YS5MVV1-M0GTWDH-6WQ7SVP`
@@ -55,12 +66,24 @@
 
 ---
 
+## 🔧 GCP — важные факты
+- VM: `total-hunter-backend`, zone=`us-central1-f`, project=`digital-arcade-274010` (Debian 12)
+- SSH: через Cloud Shell → `gcloud compute ssh total-hunter-backend --zone=us-central1-f`
+- FK_* переменные (Free-Kassa) удалены из `/etc/systemd/system/totalhunter.service` 2026-05-09
+- Все env vars в порядке: GOOGLE_CLIENT_ID ✅, JWT_SECRET_KEY ✅, NOWPAYMENTS ✅
+
+## 🔍 Конкурент-разведка mercexchangefinder.com
+- Crowd-sourced модель: клиенты сканируют → отправляют на сервер → WS дашборд
+- API: `coords: null` в публичном ответе — координаты только за кредиты
+- Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
+- Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
+
 ## 🔴 Задачи на завтра
 
-1. **Coinzilla** — как придёт одобрение: получить JS-коды зон, вставить в AdSlot.jsx (728×90 и 300×250)
-2. **Проверить рекламные слоты** на мобиле и ПК — убедиться что не перекрывают контент
-3. **Собрать v1.1.0** — закрыть TotalHunter.exe, запустить build_release.py, сделать релиз
-4. **Earn/реклама** — когда Bitmedia/Lootably одобрят, подключить реальный плеер вместо 5-секундной паузы
+1. **Coinzilla** — как придёт одобрение: вставить JS-коды зон в AdSlot.jsx (728×90 и 300×250)
+2. **Earn/реклама** — когда Bitmedia/Lootably одобрят, подключить реальный плеер вместо 5-секундной паузы
+3. **Диагностика GTX 550 Ti** — пользователь обновится на 1.1.2, краш-репорт придёт автоматически в /admin → Краши
+4. **dialog_offset_y для браузерных пользователей** — инструкция выдана (dialog_offset_y=85 в profile_chrome.json). Основной краш (Tesseract) уже пофикшен в v1.1.3.
 
 ---
 

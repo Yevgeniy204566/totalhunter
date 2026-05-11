@@ -21,6 +21,7 @@ if getattr(sys, 'frozen', False):
 
 import json
 import os
+import threading
 import customtkinter as ctk
 from auth import (get_hwid, check_license, get_free_trial, spend_credit,
                   login_with_google, log_error_to_server, activate_referral,
@@ -140,7 +141,9 @@ LANGS = {
         "crypt_conf_lb": "Точность поиска", "crypt_accel_lb": "Ускорение марша (0–5)",
         "crypt_break_lb": "Перерыв между склепами", "crypt_march_lb": "Дальность марша Картера",
         "crypt_scroll_lb": "Частота YOLO-детекции", "crypt_profile_lb": "Профиль:",
-        "crypt_micro_lb": "Микроподстройка кликов ↑↓:", "crypt_save_btn": "💾  Сохранить настройки",
+        "crypt_swing1_lb": "Swing 1 — Исследовать ↑↓:", "crypt_swing2_lb": "Swing 2 — Ускорение ↑↓:",
+        "crypt_speed_lb": "Скорость кликов",
+        "crypt_save_btn": "💾  Сохранить настройки",
         "crypt_start": "ЗАПУСТИТЬ СБОР СКЛЕПОВ", "crypt_stop_btn": "ОСТАНОВИТЬ",
         "crypt_ready": "ГОТОВО", "crypt_stopped": "Остановлено",
         "crypt_select_warn": "Выберите хотя бы один тип!", "crypt_searching": "СТАТУС: В ПОИСКЕ...",
@@ -191,7 +194,9 @@ LANGS = {
         "crypt_conf_lb": "Detection accuracy", "crypt_accel_lb": "March acceleration (0–5)",
         "crypt_break_lb": "Break between crypts", "crypt_march_lb": "Carter march distance",
         "crypt_scroll_lb": "YOLO detection rate", "crypt_profile_lb": "Profile:",
-        "crypt_micro_lb": "Click micro-adjust ↑↓:", "crypt_save_btn": "💾  Save settings",
+        "crypt_swing1_lb": "Swing 1 — Study ↑↓:", "crypt_swing2_lb": "Swing 2 — Speed up ↑↓:",
+        "crypt_speed_lb": "Click speed",
+        "crypt_save_btn": "💾  Save settings",
         "crypt_start": "START CRYPT HUNT", "crypt_stop_btn": "STOP",
         "crypt_ready": "READY", "crypt_stopped": "Stopped",
         "crypt_select_warn": "Select at least one type!", "crypt_searching": "STATUS: SEARCHING...",
@@ -367,6 +372,8 @@ class TotalHunterApp(ctk.CTk):
         }
         self._cal_profile_var    = ctk.StringVar(value="Client")
         self._dialog_offset_y_var = ctk.IntVar(value=0)
+        self._swing1_var = ctk.IntVar(value=0)
+        self._swing2_var = ctk.IntVar(value=0)
 
         self.setup_hunt_tab()
         self.setup_crypt_tab()
@@ -885,6 +892,17 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_scroll_slider.set(1.0)
         self.crypt_scroll_slider.pack(padx=10, pady=(2, 4), fill="x")
 
+        # Скорость кликов (−0.5 медленнее ←→ быстрее +0.5)
+        self.crypt_speed_val = _slider_row("crypt_speed_lb", "0.0 с")
+        self.crypt_speed_slider = ctk.CTkSlider(settings_frame, from_=-2.0, to=2.0,
+                                                number_of_steps=40,
+                                                command=self._update_crypt_labels,
+                                                button_color=MD3["primary"],
+                                                button_hover_color=MD3["primary_dim"],
+                                                progress_color=MD3["primary"])
+        self.crypt_speed_slider.set(0.0)
+        self.crypt_speed_slider.pack(padx=10, pady=(2, 4), fill="x")
+
         # ── Профиль калибровки ────────────────────────────────────
         misc_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
         misc_row.pack(fill="x", padx=10, pady=(2, 0))
@@ -895,33 +913,55 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels.append((_crypt_profile_lb, "crypt_profile_lb"))
         ctk.CTkOptionMenu(misc_row, values=list(self._PROFILES.keys()),
                           variable=self._cal_profile_var, width=100,
+                          command=self._on_crypt_profile_change,
                           fg_color=MD3["card"],
                           button_color=MD3["primary"],
                           button_hover_color=MD3["primary_dim"],
                           text_color=MD3["on_surface"],
                           corner_radius=6).pack(side="left", padx=(4, 6))
-        # ── Смещение диалога (микроподстройка кликов) ────────────
-        offset_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
-        offset_row.pack(fill="x", padx=10, pady=(2, 0))
-        _crypt_micro_lb = ctk.CTkLabel(offset_row, text=LANGS[self.current_lang]["crypt_micro_lb"],
-                                       font=ctk.CTkFont(size=13),
-                                       text_color=MD3["on_surface2"])
-        _crypt_micro_lb.pack(side="left")
-        self._i18n_labels.append((_crypt_micro_lb, "crypt_micro_lb"))
-        ctk.CTkButton(offset_row, text="−", width=28, height=24,
+        # ── Swing 1 — Исследовать ────────────────────────────────
+        swing1_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
+        swing1_row.pack(fill="x", padx=10, pady=(2, 0))
+        _swing1_lb = ctk.CTkLabel(swing1_row, text=LANGS[self.current_lang]["crypt_swing1_lb"],
+                                  font=ctk.CTkFont(size=13), text_color=MD3["on_surface2"])
+        _swing1_lb.pack(side="left")
+        self._i18n_labels.append((_swing1_lb, "crypt_swing1_lb"))
+        ctk.CTkButton(swing1_row, text="−", width=28, height=24,
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
                       text_color=MD3["on_surface"], corner_radius=6,
-                      command=lambda: self._dialog_offset_y_var.set(
-                          self._dialog_offset_y_var.get() - 5)).pack(side="left", padx=(6, 0))
-        ctk.CTkEntry(offset_row, textvariable=self._dialog_offset_y_var,
+                      command=lambda: self._swing1_var.set(
+                          self._swing1_var.get() - 5)).pack(side="left", padx=(6, 0))
+        ctk.CTkEntry(swing1_row, textvariable=self._swing1_var,
                      width=48, height=24, justify="center",
                      fg_color=MD3["card"], border_color=MD3["outline"],
                      text_color=MD3["on_surface"], corner_radius=6).pack(side="left", padx=2)
-        ctk.CTkButton(offset_row, text="+", width=28, height=24,
+        ctk.CTkButton(swing1_row, text="+", width=28, height=24,
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
                       text_color=MD3["on_surface"], corner_radius=6,
-                      command=lambda: self._dialog_offset_y_var.set(
-                          self._dialog_offset_y_var.get() + 5)).pack(side="left")
+                      command=lambda: self._swing1_var.set(
+                          self._swing1_var.get() + 5)).pack(side="left")
+
+        # ── Swing 2 — Ускорение ──────────────────────────────────
+        swing2_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
+        swing2_row.pack(fill="x", padx=10, pady=(2, 0))
+        _swing2_lb = ctk.CTkLabel(swing2_row, text=LANGS[self.current_lang]["crypt_swing2_lb"],
+                                  font=ctk.CTkFont(size=13), text_color=MD3["on_surface2"])
+        _swing2_lb.pack(side="left")
+        self._i18n_labels.append((_swing2_lb, "crypt_swing2_lb"))
+        ctk.CTkButton(swing2_row, text="−", width=28, height=24,
+                      fg_color=MD3["card"], hover_color=MD3["elevated"],
+                      text_color=MD3["on_surface"], corner_radius=6,
+                      command=lambda: self._swing2_var.set(
+                          self._swing2_var.get() - 5)).pack(side="left", padx=(6, 0))
+        ctk.CTkEntry(swing2_row, textvariable=self._swing2_var,
+                     width=48, height=24, justify="center",
+                     fg_color=MD3["card"], border_color=MD3["outline"],
+                     text_color=MD3["on_surface"], corner_radius=6).pack(side="left", padx=2)
+        ctk.CTkButton(swing2_row, text="+", width=28, height=24,
+                      fg_color=MD3["card"], hover_color=MD3["elevated"],
+                      text_color=MD3["on_surface"], corner_radius=6,
+                      command=lambda: self._swing2_var.set(
+                          self._swing2_var.get() + 5)).pack(side="left")
 
         # Единая кнопка сохранения
         self.crypt_save_settings_btn = ctk.CTkButton(
@@ -947,27 +987,6 @@ class TotalHunterApp(ctk.CTk):
             font=ctk.CTkFont(size=13), text_color=MD3["outline"],
         )
         self.crypt_timer_detail_label.pack(pady=(0, 2))
-
-        # ─── Масло — три типа + переключатель проверки (одна строка) ───
-        oil_frame = ctk.CTkFrame(self.tab_crypt, fg_color=MD3["card"],
-                                  corner_radius=10, border_width=1,
-                                  border_color=MD3["outline"])
-        oil_frame.pack(pady=(2, 4), padx=20, fill="x")
-        self.oil_ordinary_label = ctk.CTkLabel(
-            oil_frame, text="🟢 —",
-            font=ctk.CTkFont(size=13, weight="bold"), text_color="#66BB6A"
-        )
-        self.oil_ordinary_label.pack(side="left", padx=10, pady=6)
-        self.oil_rare_label = ctk.CTkLabel(
-            oil_frame, text="🔵 —",
-            font=ctk.CTkFont(size=13, weight="bold"), text_color="#42A5F5"
-        )
-        self.oil_rare_label.pack(side="left", padx=10, pady=6)
-        self.oil_epic_label = ctk.CTkLabel(
-            oil_frame, text="🟣 —",
-            font=ctk.CTkFont(size=13, weight="bold"), text_color="#AB47BC"
-        )
-        self.oil_epic_label.pack(side="left", padx=10, pady=6)
 
         # ─── Кнопка Старт/Стоп ───────────────────────────────
         self.crypt_start_btn = ctk.CTkButton(
@@ -1002,6 +1021,9 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_break_val.configure(text=f"{brk} {sec}")
         sc = round(self.crypt_scroll_slider.get(), 1)
         self.crypt_scroll_val.configure(text=f"{scan} {sc + 0.2:.1f} {sec}")
+        spd = round(self.crypt_speed_slider.get(), 1)
+        spd_text = f"+{spd} {sec}" if spd > 0 else f"{spd} {sec}"
+        self.crypt_speed_val.configure(text=spd_text)
 
     def on_crypt_found(self, crypt_type: str):
         """Вызывается ПОСЛЕ возвращения Картера (коллекция завершена)."""
@@ -1025,19 +1047,6 @@ class TotalHunterApp(ctk.CTk):
     def on_crypt_status(self, msg: str):
         self.after(0, lambda: self.crypt_status_label.configure(text=msg))
 
-    def on_crypt_oil(self, ordinary: int, epic: int, rare: int):
-        def _fmt(n: int) -> str:
-            if n >= 1_000_000:
-                return f"{n/1_000_000:.2f}M"
-            if n >= 1_000:
-                return f"{n//1_000}K"
-            return str(n)
-        def _upd():
-            self.oil_ordinary_label.configure(text=f"🟢 {_fmt(ordinary)}")
-            self.oil_rare_label.configure(text=f"🔵 {_fmt(rare)}")
-            self.oil_epic_label.configure(text=f"🟣 {_fmt(epic)}")
-        self.after(0, _upd)
-
     def on_crypt_countdown(self, remaining: int, total: int,
                            march_one_way: int = 0, buf: int = 0):
         if remaining > 0:
@@ -1053,12 +1062,8 @@ class TotalHunterApp(ctk.CTk):
 
     def on_crypt_stop(self, reason: str):
         self.is_crypt_running = False
-        if reason.startswith("OIL_LOW:"):
-            stop_text = LANGS[self.current_lang].get("add_oil", "Add oil")
-            stop_color = "#FFB300"
-        else:
-            stop_text = f"СТОП: {reason}"
-            stop_color = MD3["error_text"]
+        stop_text = f"СТОП: {reason}"
+        stop_color = MD3["error_text"]
         def _update(t=stop_text, c=stop_color):
             self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_start"],
                                            fg_color=MD3["green_btn"],
@@ -1105,11 +1110,13 @@ class TotalHunterApp(ctk.CTk):
                 break_sec=int(self.crypt_break_slider.get()),
                 scroll_speed=round(self.crypt_scroll_slider.get(), 1),
                 max_march_min=int(self.crypt_march_slider.get()),
+                swing1=self._swing1_var.get(),
+                swing2=self._swing2_var.get(),
+                speed_delta=round(self.crypt_speed_slider.get(), 1),
                 on_found_callback=self.on_crypt_found,
                 on_status_callback=self.on_crypt_status,
                 on_stop_callback=self.on_crypt_stop,
                 on_countdown_callback=self.on_crypt_countdown,
-                on_oil_callback=self.on_crypt_oil,
             )
 
     def toggle_combo_bot(self):
@@ -1182,29 +1189,122 @@ class TotalHunterApp(ctk.CTk):
             self.crypt_engine.set_exclusion_region(None)
 
     def _save_crypt_settings_all(self):
-        """Сохраняет ползунки + микроподстройку кликов (dialog_offset_y) за одно нажатие."""
+        """Сохраняет все настройки Склепов в активный профиль калибровки."""
         self._save_crypt_settings()
-        self._save_dialog_profile()
 
     def _save_crypt_settings(self):
+        """Сохраняет настройки Склепов (слайдеры, свинги, выбор) в файл активного профиля."""
         try:
+            profile_name = self._cal_profile_var.get()
+            path = self._PROFILES[profile_name]
             cfg = {}
-            if os.path.exists(GUI_CONFIG_PATH):
-                with open(GUI_CONFIG_PATH, 'r') as f:
+            if os.path.exists(path):
+                with open(path, 'r') as f:
                     cfg = json.load(f)
+            # Настройки Склепов
             cfg['crypt_selected']      = [k for k, v in self._crypt_vars.items() if v.get()]
             cfg['crypt_conf']          = round(self.crypt_conf_slider.get(), 2)
             cfg['crypt_accelerations'] = int(self.crypt_accel_slider.get())
             cfg['crypt_break_sec']     = int(self.crypt_break_slider.get())
             cfg['crypt_scroll_speed']  = round(self.crypt_scroll_slider.get(), 1)
             cfg['crypt_max_march_min'] = int(self.crypt_march_slider.get())
-            with open(GUI_CONFIG_PATH, 'w') as f:
+            cfg['crypt_swing1']        = self._swing1_var.get()
+            cfg['crypt_swing2']        = self._swing2_var.get()
+            cfg['crypt_speed_delta']   = round(self.crypt_speed_slider.get(), 1)
+            # Настройки Бирж
+            cfg['step']                = int(self.nav_step_slider.get())
+            cfg['conf']                = round(self.conf_slider.get(), 2)
+            cfg['scan_interval']       = round(self.speed_slider.get(), 1)
+            cfg['move_wait']           = round(self.nav_wait_slider.get(), 1)
+            cfg['max_inland_steps']    = int(self.nav_inland_slider.get())
+            cfg['ocean_land_ratio']    = int(self.nav_ocean_slider.get()) / 100.0
+            cfg['min_water_px']        = int(self.nav_waterpx_slider.get())
+            cfg['diagonal_blind_coeff'] = round(self.nav_diagblind_slider.get(), 2)
+            cfg['nav_footprint_ttl']   = int(self.nav_footprint_slider.get())
+            cfg['return_delta_px']     = int(self.nav_delta_slider.get())
+            cfg['smooth_alpha']        = int(self.nav_pitch_slider.get())
+            with open(path, 'w') as f:
                 json.dump(cfg, f, indent=2)
         except Exception:
             pass
 
-    def _load_crypt_settings(self):
+    def _load_crypt_from_profile(self, path: str):
+        """Загружает настройки Склепов из JSON профиля калибровки."""
         try:
+            with open(path, 'r') as f:
+                cfg = json.load(f)
+            # Если в профиле нет crypt-настроек — не трогаем UI
+            if 'crypt_selected' not in cfg and 'crypt_conf' not in cfg:
+                return
+            for v in self._crypt_vars.values():
+                v.set(False)
+            for name in cfg.get('crypt_selected', []):
+                if name in self._crypt_vars:
+                    self._crypt_vars[name].set(True)
+            if 'crypt_conf' in cfg:
+                self.crypt_conf_slider.set(cfg['crypt_conf'])
+            if 'crypt_accelerations' in cfg:
+                self.crypt_accel_slider.set(cfg['crypt_accelerations'])
+            if 'crypt_break_sec' in cfg:
+                self.crypt_break_slider.set(cfg['crypt_break_sec'])
+            if 'crypt_scroll_speed' in cfg:
+                self.crypt_scroll_slider.set(cfg['crypt_scroll_speed'])
+            if 'crypt_max_march_min' in cfg:
+                self.crypt_march_slider.set(cfg['crypt_max_march_min'])
+            if 'crypt_swing1' in cfg:
+                self._swing1_var.set(cfg['crypt_swing1'])
+            if 'crypt_swing2' in cfg:
+                self._swing2_var.set(cfg['crypt_swing2'])
+            if 'crypt_speed_delta' in cfg:
+                self.crypt_speed_slider.set(cfg['crypt_speed_delta'])
+            self._update_crypt_labels()
+            # Настройки Бирж
+            if 'step' in cfg:
+                self.nav_step_slider.set(cfg['step'])
+            if 'conf' in cfg:
+                self.conf_slider.set(cfg['conf'])
+            if 'scan_interval' in cfg:
+                self.speed_slider.set(cfg['scan_interval'])
+            if 'move_wait' in cfg:
+                self.nav_wait_slider.set(cfg['move_wait'])
+            if 'max_inland_steps' in cfg:
+                self.nav_inland_slider.set(cfg['max_inland_steps'])
+            if 'ocean_land_ratio' in cfg:
+                self.nav_ocean_slider.set(int(cfg['ocean_land_ratio'] * 100))
+            if 'min_water_px' in cfg:
+                self.nav_waterpx_slider.set(cfg['min_water_px'])
+            if 'diagonal_blind_coeff' in cfg:
+                self.nav_diagblind_slider.set(cfg['diagonal_blind_coeff'])
+            if 'nav_footprint_ttl' in cfg:
+                raw_ttl = cfg['nav_footprint_ttl']
+                self.nav_footprint_slider.set(max(60, min(1200, int(raw_ttl))))
+            if 'return_delta_px' in cfg:
+                self.nav_delta_slider.set(int(cfg['return_delta_px']))
+            if 'smooth_alpha' in cfg:
+                self.nav_pitch_slider.set(int(cfg['smooth_alpha']))
+            self._update_nav_labels()
+            self.update_slider_labels()
+        except Exception:
+            pass
+
+    def _on_crypt_profile_change(self, profile_name: str):
+        """Смена профиля в Склепах — загружает калибровку + все настройки Склепов."""
+        path = self._PROFILES.get(profile_name, '')
+        if path and os.path.exists(path):
+            coord_manager.load(path)
+            self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
+            self._load_crypt_from_profile(path)
+        self._save_gui_config_key("last_calibration_profile", profile_name)
+
+    def _load_crypt_settings(self):
+        """Загружает настройки Склепов из активного профиля (или gui_config.json как фоллбэк)."""
+        try:
+            profile_name = self._cal_profile_var.get()
+            path = self._PROFILES.get(profile_name, '')
+            if path and os.path.exists(path):
+                self._load_crypt_from_profile(path)
+                return
+            # Фоллбэк: старые установки из gui_config.json
             if not os.path.exists(GUI_CONFIG_PATH):
                 return
             with open(GUI_CONFIG_PATH, 'r') as f:
@@ -1222,6 +1322,10 @@ class TotalHunterApp(ctk.CTk):
                 self.crypt_scroll_slider.set(cfg['crypt_scroll_speed'])
             if 'crypt_max_march_min' in cfg:
                 self.crypt_march_slider.set(cfg['crypt_max_march_min'])
+            if 'crypt_swing1' in cfg:
+                self._swing1_var.set(cfg['crypt_swing1'])
+            if 'crypt_swing2' in cfg:
+                self._swing2_var.set(cfg['crypt_swing2'])
             self._update_crypt_labels()
         except Exception:
             pass
@@ -1494,33 +1598,26 @@ class TotalHunterApp(ctk.CTk):
         self._dot_after = self.after(3000, lambda: self._dot_win.withdraw())
 
     def _save_settings(self):
+        """Сохраняет настройки Бирж в активный профиль."""
         try:
-            cfg = {
-                'step':         int(self.nav_step_slider.get()),
-                'conf':         round(self.conf_slider.get(), 2),
-                'scan_interval': round(self.speed_slider.get(), 1),
-                'move_wait':    round(self.nav_wait_slider.get(), 1),
-            }
-            cfg["max_inland_steps"]      = int(self.nav_inland_slider.get())
-            cfg["ocean_land_ratio"]      = int(self.nav_ocean_slider.get()) / 100.0
-            cfg["min_water_px"]          = int(self.nav_waterpx_slider.get())
-            cfg["diagonal_blind_coeff"]  = round(self.nav_diagblind_slider.get(), 2)
-            cfg["nav_footprint_ttl"]     = int(self.nav_footprint_slider.get())
-            cfg["return_delta_px"]       = int(self.nav_delta_slider.get())
-            cfg["smooth_alpha"]          = int(self.nav_pitch_slider.get())
-            with open(GUI_CONFIG_PATH, 'w') as f:
-                json.dump(cfg, f, indent=2)
+            self._save_crypt_settings()
             messagebox.showinfo("OK", "Настройки сохранены")
         except Exception as e:
             messagebox.showerror("Error", f"Не удалось сохранить: {e}")
 
     def _load_settings(self):
+        """Загружает настройки Бирж из активного профиля."""
         try:
+            profile_name = self._cal_profile_var.get()
+            path = self._PROFILES.get(profile_name, '')
+            if path and os.path.exists(path):
+                self._load_crypt_from_profile(path)
+                return
+            # Фоллбэк: gui_config.json для старых установок
             if not os.path.exists(GUI_CONFIG_PATH):
                 return
             with open(GUI_CONFIG_PATH) as f:
                 cfg = json.load(f)
-            # center_x/center_y больше не хранятся — берутся из coord_manager.ref_a
             if 'step' in cfg:
                 self.nav_step_slider.set(cfg['step'])
             if 'conf' in cfg:
@@ -1895,6 +1992,7 @@ class TotalHunterApp(ctk.CTk):
                 return
             coord_manager.load(path)
             self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
+            self._load_crypt_from_profile(path)
             _update_status()
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
@@ -1956,6 +2054,7 @@ class TotalHunterApp(ctk.CTk):
             path = PROFILES[self._cal_profile_var.get()]
             os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
             coord_manager.save(path)
+            self._save_crypt_settings()
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
             messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
@@ -2024,6 +2123,7 @@ class TotalHunterApp(ctk.CTk):
             try:
                 coord_manager.load(default_path)
                 self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
+                self._load_crypt_from_profile(default_path)
                 _update_status()
             except Exception:
                 pass

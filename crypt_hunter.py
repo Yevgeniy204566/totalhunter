@@ -36,12 +36,6 @@ try:
 except ImportError:
     _VISUAL_NAV_AVAILABLE = False
 
-# Template matching (works in browser + any window size)
-try:
-    from template_finder import find_at_ref, find_in_screen_region
-    _TEMPLATE_AVAILABLE = True
-except ImportError:
-    _TEMPLATE_AVAILABLE = False
 
 
 
@@ -141,10 +135,6 @@ MODEL_PATH     = _MODEL_ENC if os.path.exists(_MODEL_ENC) else _MODEL_PLAIN
 _LOG_DIR       = os.path.join(_SCRIPT_DIR, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 
-# ══════════════════════════════════════════════════════════════
-#  ЭКСПЕРИМЕНТАЛЬНЫЕ ФИЧИ — поставить False чтобы отключить
-# ══════════════════════════════════════════════════════════════
-_EXP_DIALOG_GATE  = True   # перед кликом «Исследовать» проверяет что диалог открыт
 _EXP_OIL_BLUE_THR = 3000   # был 50; поднят чтобы не срабатывать на синие объекты карты
 
 # Типы редких склепов — требуют «Открыть» перед «Исследовать»
@@ -169,20 +159,6 @@ GUI_TO_YOLO: dict[str, str] = {v: k for k, v in YOLO_TO_GUI.items()}
 # ══════════════════════════════════════════════════════════════
 MENU_SCAN_REGION = (597, 242, 721, 575)  # (x, y, w, h) — ровно окно меню склепов
 
-# Порог детекции «меню не сдвинулось» (среднее пиксельное отличие / 255)
-MENU_DIFF_THRESHOLD = 0.03  # 3% — скролл меняет ≥30% пикселей; шум/анимация < 1%
-
-
-def _images_differ(a: 'np.ndarray', b: 'np.ndarray', threshold: float = MENU_DIFF_THRESHOLD) -> bool:
-    """
-    Возвращает True если изображения достаточно разные (меню сдвинулось).
-    Возвращает False если они почти одинаковые (меню не двигалось = конец списка).
-    """
-    if a.shape != b.shape:
-        return True
-    import numpy as _np
-    diff = _np.abs(a.astype(_np.int32) - b.astype(_np.int32))
-    return float(diff.mean()) / 255.0 > threshold
 
 
 # ══════════════════════════════════════════════════════════════
@@ -216,6 +192,9 @@ class CryptHunter:
         self._break_sec:      int       = 10
         self._scroll_speed:   float     = 0.5
         self._max_march_sec:  float     = 900.0
+        self._swing1:         int       = 0
+        self._swing2:         int       = 0
+        self._speed_delta:    float     = 0.0
 
         # Регион, исключённый из YOLO-поиска (координаты окна бота при always-on-top)
         self._exclusion_region: tuple | None = None
@@ -228,6 +207,9 @@ class CryptHunter:
         break_sec:          int   = 10,
         scroll_speed:       float = 0.5,
         max_march_min:      float = 15.0,
+        swing1:             int   = 0,
+        swing2:             int   = 0,
+        speed_delta:        float = 0.0,
         on_found_callback         = None,
         on_status_callback        = None,
         on_stop_callback          = None,
@@ -241,6 +223,9 @@ class CryptHunter:
         self._break_sec      = max(3, int(break_sec))
         self._scroll_speed   = max(0.0, float(scroll_speed))
         self._max_march_sec  = max(300.0, float(max_march_min) * 60.0)
+        self._swing1         = int(swing1)
+        self._swing2         = int(swing2)
+        self._speed_delta    = float(speed_delta)
         self.on_found_callback      = on_found_callback
         self.on_status_callback     = on_status_callback
         self.on_stop_callback       = on_stop_callback
@@ -413,8 +398,10 @@ class CryptHunter:
         pyautogui.mouseUp()
 
     def _random_pause(self, lo: float = 0.6, hi: float = 1.2):
-        """Случайная пауза между действиями (неспешный взрослый)."""
-        self._interruptible_sleep(random.uniform(lo, hi))
+        """Случайная пауза между действиями. speed_delta > 0 = быстрее, < 0 = медленнее."""
+        lo_adj = max(0.1, lo - self._speed_delta)
+        hi_adj = max(0.2, hi - self._speed_delta)
+        self._interruptible_sleep(random.uniform(lo_adj, hi_adj))
 
     def _interruptible_sleep(self, seconds: float):
         """Sleep, который прерывается мгновенно при ESC (is_running=False)."""
@@ -468,50 +455,12 @@ class CryptHunter:
 
     def _open_watchtower(self):
         """Открыть меню Дозорной башни."""
-        # self._status("Открываю Дозорную башню...")
-        pos = None
-        if _TEMPLATE_AVAILABLE:
-            pass
-            # Ищем pipe.png в фиксированном регионе экрана (не через scale_coord —
-            # он зависит от позиции окна Chrome которая может быть любой).
-            # Регион: широкая полоса вокруг известного положения иконки.
-            search_region = (
-                WT_ICON[0] - 200, WT_ICON[1] - 150,
-                400, 300,
-            )
-            pos = find_in_screen_region('pipe.png', search_region, threshold=0.60)
-            if pos:
-                pass
-                # self._status(f"  [template] pipe.png → {pos}")
-            else:
-                pass
-                # self._status("  [template] pipe.png не найден — использую координаты")
-        if pos is not None:
-            self._click(*pos, jitter=5, raw=True)
-        else:
-            self._click(*WT_ICON, jitter=5)
+        self._click(*WT_ICON, jitter=5)
         self._random_pause()
 
     def _select_crypts_tab(self):
         """Кликнуть «Склепы и арены» в боковом меню башни."""
-        # self._status("Выбираю вкладку «Склепы и арены»...")
-        pos = None
-        if _TEMPLATE_AVAILABLE:
-            search_region = (
-                WT_CRYPTS_TAB[0] - 200, WT_CRYPTS_TAB[1] - 150,
-                400, 300,
-            )
-            pos = find_in_screen_region('tab_crypts.png', search_region, threshold=0.60)
-            if pos:
-                pass
-                # self._status(f"  [template] tab_crypts.png → {pos}")
-            else:
-                pass
-                # self._status("  [template] tab_crypts.png не найден — использую координаты")
-        if pos is not None:
-            self._click(*pos, jitter=5, raw=True)
-        else:
-            self._click(*WT_CRYPTS_TAB, jitter=5)
+        self._click(*WT_CRYPTS_TAB, jitter=5)
         self._random_pause()
 
     def _reset_search(self):
@@ -546,12 +495,6 @@ class CryptHunter:
         # Зона меню в экранных координатах (для фильтрации YOLO).
         ms_x, ms_y, ms_w, ms_h = MENU_SCAN_REGION
 
-        # Зона поиска кнопки «Перейти» — правый столбец меню
-        goto_col_ref_x = 1080
-        goto_col_ref_w = 270
-
-        prev_menu_snap:  'np.ndarray | None' = None
-        no_move_count = 0   # сколько раз подряд меню не сдвинулось
         scroll_idx = 0
 
         while self.is_running:
@@ -561,24 +504,6 @@ class CryptHunter:
             self._interruptible_sleep(self._scroll_speed + 0.2)
 
             img = self._screenshot()
-
-            # Детект конца списка по неподвижности меню.
-            # Вырезаем только зону меню для сравнения (не весь экран).
-            menu_snap = img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w].copy()
-            if prev_menu_snap is not None:
-                pass
-                if not _images_differ(prev_menu_snap, menu_snap):
-                    no_move_count += 1
-                    if no_move_count >= 3:
-                        pass
-                        # self._status(
-                        #     f"Конец списка: меню не двигается "
-                        #     f"({scroll_idx} скроллов)"
-                        # )
-                        return None
-                else:
-                    no_move_count = 0
-            prev_menu_snap = menu_snap
 
             scroll_idx += 1
             # self._status(f"Ищу склеп... скролл {scroll_idx}")
@@ -640,19 +565,8 @@ class CryptHunter:
                                 continue
                             break
 
-                    # Ищем кнопку «Перейти» рядом с иконкой.
-                    # Если template не нашёл — всё равно кликаем по позиции (cy+17).
-                    goto_pos = None
-                    if _TEMPLATE_AVAILABLE:
-                        btn_region = (goto_col_ref_x, cy - 35, goto_col_ref_w, 70)
-                        goto_pos = find_in_screen_region('transition.png', btn_region,
-                                                         threshold=0.70)
-                        if goto_pos is None:
-                            pass
-                            # self._status(f"  transition.png не найден — клик по позиции")
-                    if goto_pos is None:
-                        sc_x = scale_coord(WT_GOTO_BTN_X, 0)[0] if _VISUAL_NAV_AVAILABLE else WT_GOTO_BTN_X
-                        goto_pos = (sc_x, cy + 17)
+                    sc_x = scale_coord(WT_GOTO_BTN_X, 0)[0] if _VISUAL_NAV_AVAILABLE else WT_GOTO_BTN_X
+                    goto_pos = (sc_x, cy + 17)
 
                     # self._status(f"Найден: {gui_name} — кнопка «Перейти» → {goto_pos}")
                     self._click(*goto_pos, jitter=2, raw=True)
@@ -720,62 +634,20 @@ class CryptHunter:
         return False
 
 
-    def _find_dialog_button(self, ref: tuple, pick: str) -> tuple | None:
-        """
-        Уточняет позицию кнопки через template в узком регионе вокруг ref.
-        Если template не нашёл — возвращает None, caller кликнет по ref напрямую.
-
-        HSV намеренно НЕ используется: при двух зелёных кнопках рядом
-        ('Открыть' + 'Исследовать') HSV находит обе и промахивается.
-
-        ref:  (x, y) откалиброванные координаты кнопки
-        pick: не используется (оставлен для совместимости)
-        """
-        if _TEMPLATE_AVAILABLE:
-            sc = scale_dialog(*ref) if _VISUAL_NAV_AVAILABLE else ref
-            tight = (sc[0] - 100, sc[1] - 35, 200, 70)
-            pos = find_in_screen_region('btn_issledovat.png', tight, threshold=0.65)
-            if pos:
-                pass
-                # self._status(f"  [tmpl] кнопка уточнена → {pos}")
-                return pos
-
-        return None  # caller кликнет по ref напрямую — координата откалибрована
 
     def _send_captain(self, crypt_type: str) -> bool:
         """Нажать «Исследовать». Возвращает False если появился диалог масла."""
         self._random_pause()
 
-        # Проверяем масло ДО клика — читаем прямо с панели HUD
         if self.oil_check_enabled and not self._check_oil_level(crypt_type):
             return False
 
-        if _EXP_DIALOG_GATE and _TEMPLATE_AVAILABLE:
-            pass
-            # [EXP] Шаг 1: убеждаемся что диалог открыт перед кликом
-            sc_btn = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
-            gate_region = (sc_btn[0] - 150, sc_btn[1] - 60, 300, 120)
-            found = find_in_screen_region('btn_issledovat.png', gate_region, threshold=0.60)
-            if found:
-                self._log("INFO", f"[EXP] btn_issledovat найден → {found} (кликаем по эталону)")
-                # self._status("Диалог открыт — нажимаю «Исследовать»...")
-                sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
-                self._click(*sc, raw=True)
-            else:
-                self._log("WARN", "[EXP] btn_issledovat НЕ найден — диалог не открыт, рестарт цикла")
-                # self._status("[EXP] Диалог склепа не обнаружен — рестарт")
-                return False
-
-            self._interruptible_sleep(1.5)
-        else:
-            pass
-            # self._status("Нажимаю «Исследовать»...")
-            sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
-            self._click(*sc, raw=True)
-            self._interruptible_sleep(1.5)
-            if self.oil_check_enabled and self._check_oil_dialog():
-                self._emergency_stop("OIL_LOW: масло закончилось")
-                return False
+        sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
+        self._click(sc[0], sc[1] + self._swing1, jitter=2, raw=True)
+        self._interruptible_sleep(1.5)
+        if self.oil_check_enabled and self._check_oil_dialog():
+            self._emergency_stop("OIL_LOW: масло закончилось")
+            return False
 
         self._random_pause(0.3, 0.8)
         return True
@@ -789,16 +661,7 @@ class CryptHunter:
         """
         # self._status("Кликаю по полосе Картера...")
         self._random_pause(1.5, 2.0)
-        pos = None
-        if _TEMPLATE_AVAILABLE:
-            pos = find_at_ref('btn_uskorit.png',
-                              ref_cx=CARTER_EVENT_BAR[0], ref_cy=CARTER_EVENT_BAR[1],
-                              rw=400, rh=80)
-            if pos:
-                pass
-                # self._status(f"  [tmpl] Ускорить → {pos}")
-        if pos is None:
-            pos = self._find_button(
+        pos = self._find_button(
                 ref_region=(900, 85, 500, 60),
                 color='purple', pick='largest',
                 fallback=CARTER_EVENT_BAR,
@@ -813,11 +676,11 @@ class CryptHunter:
         if applied == 0:
             return
         sc_use = scale_dialog(*ACCEL_USE_BTN) if _VISUAL_NAV_AVAILABLE else ACCEL_USE_BTN
+        use_x, use_y = sc_use[0], sc_use[1] + self._swing2
         for i in range(applied):
             if not self.is_running:
                 return
-            # self._status(f"Ускорение {i + 1}/{applied}")
-            self._click(*sc_use, raw=True)
+            self._click(use_x, use_y, jitter=2, raw=True)
             self._random_pause(0.8, 1.2)
 
     def _verify_action(self, name: str, verify_fn, timeout: float = 3.0) -> bool:

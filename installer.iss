@@ -1,5 +1,5 @@
 #define MyAppName "Total Hunter"
-#define MyAppVersion "1.1.3"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "Total Hunter"
 #define MyAppURL "https://total-hunter.com"
 #define MyAppExeName "TotalHunter.exe"
