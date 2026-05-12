@@ -501,6 +501,7 @@ class CryptHunter:
         Скроллит список склепов в меню и ищет YOLO-детекцию нужного типа.
         Сканирует только MENU_SCAN_REGION — не смотрит на игровое поле.
         Возвращает GUI-имя найденного типа или None если дошли до конца.
+        Конец списка определяется визуально: если меню не сдвинулось после скролла.
         """
         # self._status("Ищу склеп в меню...")
         # Переводим мышь в зону списка — туда куда будет идти скролл
@@ -512,6 +513,7 @@ class CryptHunter:
         ms_x, ms_y, ms_w, ms_h = MENU_SCAN_REGION
 
         scroll_idx = 0
+        prev_menu_crop: 'np.ndarray | None' = None
 
         while self.is_running:
 
@@ -520,6 +522,14 @@ class CryptHunter:
             self._interruptible_sleep(self._scroll_speed + 0.2)
 
             img = self._screenshot()
+
+            # Конец списка: если меню не изменилось после скролла — список встал
+            curr_menu_crop = img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w]
+            if prev_menu_crop is not None:
+                diff = cv2.absdiff(curr_menu_crop, prev_menu_crop)
+                if diff.mean() < 2.0:
+                    return None
+            prev_menu_crop = curr_menu_crop.copy()
 
             scroll_idx += 1
             # self._status(f"Ищу склеп... скролл {scroll_idx}")
@@ -807,8 +817,15 @@ class CryptHunter:
             crypt_type = self._scroll_and_find(self._selected)
             if crypt_type is None and self.is_running:
                 wait = 30.0
-                # self._status(f"Конец списка — жду {wait:.0f} сек...")
+                if self.lang == "EN":
+                    self._status(f"End of list — waiting {wait:.0f}s...")
+                else:
+                    self._status(f"Конец списка — жду {wait:.0f} сек...")
                 self._interruptible_sleep(wait)
+                if self.lang == "EN":
+                    self._status("Resetting list (Arena ×2)...")
+                else:
+                    self._status("Сброс списка (Арена ×2)...")
                 self._reset_search()
 
         if not self.is_running:
