@@ -315,14 +315,14 @@ export default function LandingPage() {
             <Screenshot3D
               src="/img/lending-exchange.png"
               alt={lang === 'en' ? 'Exchange hunter UI' : 'Интерфейс поиска бирж'}
-              rotY={17} rotX={-5}
+              rotY={-17} rotX={5}
               glowColor="#00CFFF"
               extraStyle={{ marginRight: '-52px', zIndex: 2 }}
             />
             <Screenshot3D
               src="/img/lending-crypts.png"
               alt={lang === 'en' ? 'Crypt hunter UI' : 'Интерфейс поиска склепов'}
-              rotY={-13} rotX={4}
+              rotY={13} rotX={-4}
               glowColor="#00FF88"
               extraStyle={{ zIndex: 1 }}
             />
