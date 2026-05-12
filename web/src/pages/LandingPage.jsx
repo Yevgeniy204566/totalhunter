@@ -6,6 +6,37 @@ import { LANDING as LANDING_RU } from '../constants.js'
 import { LANDING as LANDING_EN } from '../constants.en.js'
 import { useLang } from '../lang.js'
 import AdSlot from '../components/AdSlot.jsx'
+import { useMeta, useFaqSchema } from '../hooks/useMeta.js'
+
+const FAQ_ITEMS_RU = [
+  { q: 'Что такое Total Hunter?',
+    a: 'Total Hunter — десктопный бот для автоматизации Total Battle. Автоматически ищет биржи наёмников и собирает склепы, имитируя действия реального игрока.' },
+  { q: 'Сколько стоит Total Hunter?',
+    a: 'Первые 100 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп.' },
+  { q: 'Работает ли бот с браузером и клиентом Total Battle?',
+    a: 'Да. Total Hunter поддерживает браузерную версию (Chrome, Firefox) и официальный клиент Total Battle. Настройки сохраняются в профилях.' },
+  { q: 'Могут ли меня забанить за использование бота?',
+    a: 'Бот полностью имитирует действия человека: случайные паузы 0.4–0.9 сек, случайное отклонение кликов ±5–8 пикселей. Риск минимален.' },
+  { q: 'Нужен ли боту мой игровой пароль?',
+    a: 'Нет. Бот работает поверх уже запущенной игры через скриншоты экрана. Ваши учётные данные нам не нужны.' },
+  { q: 'На каких системах работает Total Hunter?',
+    a: 'Windows 10 и Windows 11 (64-bit). Установщик включает все необходимые компоненты (VC++ Runtime).' },
+]
+
+const FAQ_ITEMS_EN = [
+  { q: 'What is Total Hunter?',
+    a: 'Total Hunter is a desktop bot for Total Battle automation. It automatically searches for mercenary exchanges and collects crypts, imitating real player actions.' },
+  { q: 'How much does Total Hunter cost?',
+    a: 'First 100 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected.' },
+  { q: 'Does it work with both browser and client versions of Total Battle?',
+    a: 'Yes. Total Hunter supports both browser (Chrome, Firefox) and the official Total Battle client. Settings are saved in profiles.' },
+  { q: 'Can I get banned for using the bot?',
+    a: 'The bot fully imitates human actions: random pauses 0.4–0.9s, random click offsets ±5–8 pixels. Risk is minimal.' },
+  { q: 'Does the bot need my game password?',
+    a: 'No. The bot works on top of an already running game via screen screenshots. Your credentials are never required.' },
+  { q: 'What systems does Total Hunter support?',
+    a: 'Windows 10 and Windows 11 (64-bit). The installer includes all required components (VC++ Runtime).' },
+]
 
 function useCounter(target, duration = 1400) {
   const [value, setValue] = useState(0)
@@ -96,6 +127,14 @@ export default function LandingPage() {
   const [stats, setStats] = useState(null)
   const { lang, toggle } = useLang()
   const LANDING = lang === 'en' ? LANDING_EN : LANDING_RU
+
+  useMeta(lang === 'en'
+    ? { title: 'Total Hunter — Bot for Total Battle | Exchange & Crypt Automation',
+        description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle. Neural network + player imitation. 100 free diamonds on registration.' }
+    : { title: 'Total Hunter — бот для Total Battle | Биржи и склепы на автомате',
+        description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle. Нейросеть + имитация игрока. 100 алмазов бесплатно при регистрации.' }
+  )
+  useFaqSchema(lang === 'en' ? FAQ_ITEMS_EN : FAQ_ITEMS_RU)
 
   useEffect(() => {
     api.globalStats().then(d => setStats(d)).catch(() => {})

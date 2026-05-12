@@ -3,6 +3,7 @@ import { isLoggedIn } from '../auth.js'
 import { useLang } from '../lang.js'
 import { GUIDE as GUIDE_RU } from '../guide_content.js'
 import { GUIDE as GUIDE_EN } from '../guide_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 function Diamond({ size = 28, style = {} }) {
   return (
@@ -100,6 +101,13 @@ export default function GuidePage() {
   const { lang, toggle } = useLang()
   const G = lang === 'en' ? GUIDE_EN : GUIDE_RU
   const isEn = lang === 'en'
+
+  useMeta(isEn
+    ? { title: 'Total Hunter Guide — How to Set Up and Use the Bot',
+        description: 'Step-by-step guide to installing, calibrating and using Total Hunter bot for Total Battle. Exchange search and crypt farming explained.' }
+    : { title: 'Гайд Total Hunter — установка, калибровка и запуск бота',
+        description: 'Пошаговое руководство по установке, калибровке и использованию Total Hunter. Поиск бирж и фарм склепов в Total Battle.' }
+  )
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>

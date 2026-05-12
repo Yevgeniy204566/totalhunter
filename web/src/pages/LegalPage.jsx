@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../lang.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const Section = ({ title, children }) => (
   <div className="card" style={{ marginBottom: 20 }}>
@@ -507,6 +508,13 @@ export default function LegalPage() {
   const { lang, toggle } = useLang()
 
   const isRu = lang === 'ru'
+
+  useMeta(isRu
+    ? { title: 'Правовая информация — Total Hunter',
+        description: 'Условия использования и политика конфиденциальности Total Hunter.' }
+    : { title: 'Legal Information — Total Hunter',
+        description: 'Terms of service and privacy policy for Total Hunter.' }
+  )
   const updated = isRu ? 'Последнее обновление: 2 мая 2026' : 'Last updated: May 2, 2026'
   const title   = isRu ? 'Правовая информация' : 'Legal Information'
   const backBtn = isRu ? '← Назад' : '← Back'

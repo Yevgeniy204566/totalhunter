@@ -1,10 +1,18 @@
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../lang.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 export default function ContactsPage() {
   const navigate = useNavigate()
   const { lang } = useLang()
   const isRu = lang === 'ru'
+
+  useMeta(isRu
+    ? { title: 'Контакты — Total Hunter',
+        description: 'Связаться с поддержкой Total Hunter. Email: totalhunter.support@gmail.com. Ответ в течение 48 часов.' }
+    : { title: 'Contact — Total Hunter',
+        description: 'Contact Total Hunter support. Email: totalhunter.support@gmail.com. We respond within 48 hours.' }
+  )
 
   const t = {
     title:    isRu ? 'Контакты' : 'Contact Us',

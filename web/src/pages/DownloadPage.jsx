@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useLang } from '../lang.js'
 import { DOWNLOAD as DL_RU } from '../constants.js'
 import { DOWNLOAD as DL_EN } from '../constants.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const RELEASE_URL =
   'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter_Setup.exe'
@@ -9,6 +10,13 @@ const RELEASE_URL =
 export default function DownloadPage() {
   const { lang, toggle } = useLang()
   const T = lang === 'en' ? DL_EN : DL_RU
+
+  useMeta(lang === 'en'
+    ? { title: 'Download Total Hunter — Free Bot for Total Battle (Windows)',
+        description: 'Download Total Hunter installer for Windows 10/11. Free setup, 100 free diamonds included. Exchange and crypt automation for Total Battle.' }
+    : { title: 'Скачать Total Hunter — бесплатный бот для Total Battle (Windows)',
+        description: 'Скачай установщик Total Hunter для Windows 10/11. Бесплатная установка, 100 алмазов в подарок. Автоматизация бирж и склепов в Total Battle.' }
+  )
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
