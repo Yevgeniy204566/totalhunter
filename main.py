@@ -894,6 +894,207 @@ LANG_LABELS = {
 }
 LANG_BY_LABEL = {v: k for k, v in LANG_LABELS.items()}
 
+# ── PIL-drawn flag images ──────────────────────────────────────────────────
+
+def _hx(c):
+    c = c.lstrip('#')
+    return tuple(int(c[i:i+2], 16) for i in (0, 2, 4)) + (255,)
+
+_FLAG_SPECS = {
+    "RU":    ("h3",     ["#FFFFFF","#0039A6","#D52B1E"]),
+    "EN":    ("cross",  "#012169","#C8102E","#FFFFFF"),
+    "UK":    ("h2",     ["#005BBB","#FFD500"]),
+    "DE":    ("h3",     ["#000000","#DD0000","#FFCE00"]),
+    "ES":    ("h3",     ["#C60B1E","#FFC400","#C60B1E"]),
+    "FR":    ("v3",     ["#002395","#FFFFFF","#ED2939"]),
+    "IT":    ("v3",     ["#009246","#FFFFFF","#CE2B37"]),
+    "NL":    ("h3",     ["#AE1C28","#FFFFFF","#21468B"]),
+    "NO":    ("ncross", "#EF2B2D","#003680","#FFFFFF"),
+    "PL":    ("h2",     ["#FFFFFF","#DC143C"]),
+    "PT":    ("v2",     ["#006600","#FF0000"]),
+    "SV":    ("ncross", "#006AA7","#FECC02","#006AA7"),
+    "TR":    ("cresc",  "#E30A17","#FFFFFF"),
+    "AR":    ("solid",  "#006C35"),
+    "JA":    ("dot",    "#FFFFFF","#BC002D"),
+    "ZH":    ("solid",  "#DE2910"),
+    "ZH_TW": ("h2",    ["#000095","#FE0000"]),
+    "KO":    ("dot",    "#FFFFFF","#003478"),
+    "ID":    ("h2",     ["#CE1126","#FFFFFF"]),
+}
+
+def _draw_flag(code):
+    from PIL import Image as _Im, ImageDraw as _Dr
+    W, H = 28, 18
+    img = _Im.new("RGBA", (W, H), (60, 60, 60, 255))
+    d = _Dr.Draw(img)
+    s = _FLAG_SPECS.get(code)
+    if not s:
+        return img
+    t = s[0]
+    if t == "h2":
+        c1, c2 = s[1]
+        d.rectangle([0, 0, W, H // 2], fill=_hx(c1))
+        d.rectangle([0, H // 2, W, H], fill=_hx(c2))
+    elif t == "h3":
+        c1, c2, c3 = s[1]
+        h = H // 3
+        d.rectangle([0, 0, W, h],     fill=_hx(c1))
+        d.rectangle([0, h, W, h * 2], fill=_hx(c2))
+        d.rectangle([0, h * 2, W, H], fill=_hx(c3))
+    elif t == "v2":
+        c1, c2 = s[1]
+        w = W // 3
+        d.rectangle([0, 0, w, H],     fill=_hx(c1))
+        d.rectangle([w, 0, W, H],     fill=_hx(c2))
+    elif t == "v3":
+        c1, c2, c3 = s[1]
+        w = W // 3
+        d.rectangle([0, 0, w, H],         fill=_hx(c1))
+        d.rectangle([w, 0, w * 2, H],     fill=_hx(c2))
+        d.rectangle([w * 2, 0, W, H],     fill=_hx(c3))
+    elif t == "ncross":          # Nordic cross (SV, NO)
+        bg, arm, _ = s[1], s[2], s[3]
+        d.rectangle([0, 0, W, H],                fill=_hx(bg))
+        cx = W // 3
+        d.rectangle([cx - 2, 0, cx + 2, H],     fill=_hx(arm))
+        d.rectangle([0, H // 2 - 2, W, H // 2 + 2], fill=_hx(arm))
+    elif t == "cross":           # Union Jack simplified
+        bg, fc, mc = s[1], s[2], s[3]
+        d.rectangle([0, 0, W, H],                    fill=_hx(bg))
+        d.rectangle([0, H // 2 - 3, W, H // 2 + 3], fill=_hx(mc))
+        d.rectangle([W // 2 - 3, 0, W // 2 + 3, H], fill=_hx(mc))
+        d.rectangle([0, H // 2 - 1, W, H // 2 + 1], fill=_hx(fc))
+        d.rectangle([W // 2 - 1, 0, W // 2 + 1, H], fill=_hx(fc))
+    elif t == "solid":
+        d.rectangle([0, 0, W, H], fill=_hx(s[1]))
+    elif t == "crescent":        # Turkey: red + white crescent hint
+        d.rectangle([0, 0, W, H], fill=_hx(s[1]))
+        r = H // 3
+        cx, cy = W // 3, H // 2
+        d.ellipse([cx - r, cy - r, cx + r, cy + r],         fill=_hx(s[2]))
+        d.ellipse([cx - r + 4, cy - r, cx + r + 4, cy + r], fill=_hx(s[1]))
+    elif t == "dot":             # Japan / Korea: bg + center circle
+        d.rectangle([0, 0, W, H], fill=_hx(s[1]))
+        r = H // 3
+        d.ellipse([W // 2 - r, H // 2 - r, W // 2 + r, H // 2 + r], fill=_hx(s[2]))
+    return img
+
+
+_FLAG_CTK: dict = {}
+
+def _lang_flags():
+    if not _FLAG_CTK:
+        for code in LANG_LABELS:
+            pil_img = _draw_flag(code)
+            _FLAG_CTK[code] = ctk.CTkImage(
+                light_image=pil_img, dark_image=pil_img, size=(28, 18))
+    return _FLAG_CTK
+
+
+_LANG_SHORT = {"ZH_TW": "TW", "UK": "UA"}
+
+
+class LangPopupButton(ctk.CTkFrame):
+    """Language selector button that opens a flag-grid popup."""
+
+    def __init__(self, master, values, command, width=110, fg_color="#0F1528", **kw):
+        super().__init__(master, width=width, height=32,
+                         fg_color=fg_color, corner_radius=8)
+        self._values  = values
+        self._cmd     = command
+        self._current = values[0] if values else ""
+        self._popup   = None
+        self._fgc     = fg_color
+        self._btn = ctk.CTkButton(
+            self, text="", image=None, compound="left",
+            width=width, height=30,
+            fg_color=fg_color, hover_color="#1B3A82",
+            corner_radius=6, anchor="w",
+            command=self._toggle,
+        )
+        self._btn.pack(fill="both", expand=True)
+        self._refresh()
+        self.bind_all("<Button-1>", self._outside_click, add="+")
+
+    def _code(self, label):
+        return LANG_BY_LABEL.get(label, label)
+
+    def _short(self, code):
+        return _LANG_SHORT.get(code, code)
+
+    def _refresh(self):
+        code  = self._code(self._current)
+        flags = _lang_flags()
+        self._btn.configure(image=flags.get(code),
+                            text=f"  {self._short(code)}")
+
+    def set(self, label):
+        self._current = label
+        self._refresh()
+
+    def _toggle(self):
+        if self._popup and self._popup.winfo_exists():
+            self._popup.destroy()
+            self._popup = None
+        else:
+            self._open()
+
+    def _open(self):
+        p = ctk.CTkToplevel(self)
+        p.overrideredirect(True)
+        p.attributes("-topmost", True)
+        x = self.winfo_rootx()
+        y = self.winfo_rooty() + self.winfo_height() + 2
+        p.geometry(f"+{x}+{y}")
+        p.configure(fg_color="#0A0F1E")
+        f = ctk.CTkScrollableFrame(p, width=270, height=290,
+                                    fg_color="#0A0F1E", corner_radius=6)
+        f.pack(fill="both", expand=True, padx=2, pady=2)
+        flags = _lang_flags()
+        COLS  = 4
+        for i, lbl in enumerate(self._values):
+            code = self._code(lbl)
+            sel  = (lbl == self._current)
+            ctk.CTkButton(
+                f,
+                text=f" {self._short(code)}",
+                image=flags.get(code),
+                compound="left",
+                width=56, height=28,
+                fg_color="#1B3A82" if sel else "#0F1528",
+                hover_color="#2A4A9E",
+                corner_radius=4, anchor="w",
+                command=lambda lb=lbl, pp=p: self._pick(lb, pp),
+            ).grid(row=i // COLS, column=i % COLS, padx=2, pady=2, sticky="ew")
+        self._popup = p
+
+    def _pick(self, label, popup):
+        self._current = label
+        self._refresh()
+        try:
+            popup.destroy()
+        except Exception:
+            pass
+        self._popup = None
+        if self._cmd:
+            self._cmd(label)
+
+    def _outside_click(self, ev):
+        if not (self._popup and self._popup.winfo_exists()):
+            return
+        try:
+            px, py = self._popup.winfo_rootx(), self._popup.winfo_rooty()
+            pw, ph = self._popup.winfo_width(), self._popup.winfo_height()
+            bx, by = self._btn.winfo_rootx(), self._btn.winfo_rooty()
+            bw, bh = self._btn.winfo_width(), self._btn.winfo_height()
+            in_p = px <= ev.x_root <= px + pw and py <= ev.y_root <= py + ph
+            in_b = bx <= ev.x_root <= bx + bw and by <= ev.y_root <= by + bh
+            if not in_p and not in_b:
+                self._popup.destroy()
+                self._popup = None
+        except Exception:
+            pass
+
 
 class TotalHunterApp(ctk.CTk):
     def __init__(self):
@@ -956,15 +1157,13 @@ class TotalHunterApp(ctk.CTk):
                       width=46,
                       button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
                       progress_color=MD3["primary"]).pack(side="left", padx=(4, 0))
-        self.lang_menu = ctk.CTkOptionMenu(_header, values=list(LANG_LABELS.values()),
-                                           command=self.change_lang, width=115,
-                                           font=ctk.CTkFont(family="Segoe UI Emoji", size=12),
-                                           dropdown_font=ctk.CTkFont(family="Segoe UI Emoji", size=13),
-                                           fg_color=MD3["elevated"],
-                                           button_color=MD3["primary"],
-                                           button_hover_color=MD3["primary_dim"],
-                                           text_color=MD3["on_surface"],
-                                           corner_radius=8)
+        self.lang_menu = LangPopupButton(
+            _header,
+            values=list(LANG_LABELS.values()),
+            command=self.change_lang,
+            width=110,
+            fg_color=MD3["elevated"],
+        )
         self.lang_menu.set(LANG_LABELS.get(self.current_lang, "🇬🇧 EN"))
         self.lang_menu.pack(side="right")
         # Theme selector
