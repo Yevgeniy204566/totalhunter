@@ -1014,7 +1014,8 @@ class LangPopupButton(ctk.CTkFrame):
         )
         self._btn.pack(fill="both", expand=True)
         self._refresh()
-        self.bind_all("<Button-1>", self._outside_click, add="+")
+        # bind_all запрещён в CTk — биндим к корневому окну после размещения
+        self.after(200, self._bind_root)
 
     def _code(self, label):
         return LANG_BY_LABEL.get(label, label)
@@ -1078,6 +1079,12 @@ class LangPopupButton(ctk.CTkFrame):
         self._popup = None
         if self._cmd:
             self._cmd(label)
+
+    def _bind_root(self):
+        try:
+            self.winfo_toplevel().bind("<Button-1>", self._outside_click, add="+")
+        except Exception:
+            pass
 
     def _outside_click(self, ev):
         if not (self._popup and self._popup.winfo_exists()):
