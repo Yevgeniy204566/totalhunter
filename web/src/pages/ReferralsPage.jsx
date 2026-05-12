@@ -175,7 +175,7 @@ export default function ReferralsPage() {
               ? '⚡ Bonus (+50 ◆) is credited after your first device link in the bot.'
               : '⚡ Бонус (+50 ◆) начисляется после первой привязки устройства в боте.'}
           </p>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="ref-code-row" style={{ display: 'flex', gap: 10 }}>
             <input
               value={codeInput}
               onChange={e => setCodeInput(e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8))}

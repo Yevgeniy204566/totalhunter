@@ -31,6 +31,13 @@
     padding: 16px 12px !important;
   }
 
+  /* ── Referrals — кнопка под инпутом ────────────────────── */
+  .ref-code-row {
+    flex-direction: column !important;
+  }
+  .ref-code-row input { width: 100% !important; }
+  .ref-code-row button { width: 100% !important; padding: 12px !important; }
+
   /* ── Landing nav — мобильный хедер ─────────────────────── */
   .landing-nav {
     padding: 0 12px !important;
