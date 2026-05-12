@@ -884,7 +884,7 @@ LANGS = {
 }
 
 LANG_LABELS = {
-    "RU": "🇷🇺 RU", "EN": "🇬🇧 EN", "UK": "🇺🇦 UA",
+    "EN": "🇬🇧 EN", "UK": "🇺🇦 UA", "RU": "🇷🇺 RU",
     "DE": "🇩🇪 DE", "ES": "🇪🇸 ES", "FR": "🇫🇷 FR",
     "IT": "🇮🇹 IT", "NL": "🇳🇱 NL", "NO": "🇳🇴 NO",
     "PL": "🇵🇱 PL", "PT": "🇧🇷 PT", "SV": "🇸🇪 SV",
@@ -1044,29 +1044,34 @@ class LangPopupButton(ctk.CTkFrame):
         p = ctk.CTkToplevel(self)
         p.overrideredirect(True)
         p.attributes("-topmost", True)
-        x = self.winfo_rootx()
+        # Позиционируем: правый край попапа = правый край кнопки, открывается вниз
+        POPUP_W = 150
+        ITEM_H  = 32
+        VISIBLE = min(12, len(self._values))  # не больше 12 строк без скролла
+        POPUP_H = VISIBLE * ITEM_H + 8
+        btn_right = self.winfo_rootx() + self.winfo_width()
+        x = btn_right - POPUP_W
         y = self.winfo_rooty() + self.winfo_height() + 2
-        p.geometry(f"+{x}+{y}")
+        p.geometry(f"{POPUP_W}x{POPUP_H}+{x}+{y}")
         p.configure(fg_color="#0A0F1E")
-        f = ctk.CTkScrollableFrame(p, width=270, height=290,
+        f = ctk.CTkScrollableFrame(p, width=POPUP_W - 4,
                                     fg_color="#0A0F1E", corner_radius=6)
         f.pack(fill="both", expand=True, padx=2, pady=2)
         flags = _lang_flags()
-        COLS  = 4
-        for i, lbl in enumerate(self._values):
+        for lbl in self._values:
             code = self._code(lbl)
             sel  = (lbl == self._current)
             ctk.CTkButton(
                 f,
-                text=f" {self._short(code)}",
+                text=f"  {self._short(code)}",
                 image=flags.get(code),
                 compound="left",
-                width=56, height=28,
+                width=POPUP_W - 12, height=ITEM_H - 4,
                 fg_color="#1B3A82" if sel else "#0F1528",
                 hover_color="#2A4A9E",
                 corner_radius=4, anchor="w",
                 command=lambda lb=lbl, pp=p: self._pick(lb, pp),
-            ).grid(row=i // COLS, column=i % COLS, padx=2, pady=2, sticky="ew")
+            ).pack(fill="x", padx=2, pady=1)
         self._popup = p
 
     def _pick(self, label, popup):
