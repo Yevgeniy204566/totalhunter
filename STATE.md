@@ -38,7 +38,7 @@
 | **Скачать в хедере** | Layout.jsx | ✅ кнопка ↓ Скачать бота рядом с балансом, видна на всех страницах | 2026-05-10 |
 | **Admin Panel** | server/admin/index.html | ✅ adjust_credits по user_id + вкладка Краши (crash reports) | 2026-05-09 |
 | **Реф-безопасность** | server/web_routes.py | ✅ ref_bonus_claimed — бонус только при новом HWID | 2026-05-08 |
-| **Лендинг** | web/LandingPage.jsx | ✅ 3D скриншоты, зелёная кнопка Setup.exe, robots.txt, sitemap | 2026-05-08 |
+| **Лендинг** | web/LandingPage.jsx | ✅ 3D скриншоты (вовнутрь -17/−13), кнопка ZIP v1.2.2, robots.txt, sitemap | 2026-05-12 |
 | **Guide Settings** | web/GuidePage.jsx + guide_content*.js | ✅ Раздел "Настройки бота": 16 слайдеров RU/EN с диапазонами | 2026-05-09 |
 | **Безопасность** | server/main.py | ✅ atomic /use_credit, backup_db.sh | 2026-05-04 |
 
