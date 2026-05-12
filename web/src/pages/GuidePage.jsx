@@ -102,6 +102,7 @@ export default function GuidePage() {
   const { lang, toggle } = useLang()
   const G = lang === 'en' ? GUIDE_EN : GUIDE_RU
   const isEn = lang === 'en'
+  const [tocOpen, setTocOpen] = useState(false)
 
   useMeta(isEn
     ? { title: 'Total Hunter Guide — How to Set Up and Use the Bot',
@@ -214,26 +215,50 @@ export default function GuidePage() {
           </div>
 
           {/* ── Mobile TOC dropdown — hidden on desktop ── */}
-          <div className="guide-toc-mobile">
-            <select
-              defaultValue=""
-              onChange={e => {
-                const el = document.getElementById(e.target.value)
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                e.target.value = ''
-              }}
+          <div className="guide-toc-mobile" style={{ position: 'relative', marginBottom: 28 }}>
+            <button
+              onClick={() => setTocOpen(o => !o)}
               style={{
-                width: '100%', padding: '12px 16px', borderRadius: 10, marginBottom: 28,
+                width: '100%', padding: '11px 16px', borderRadius: 10,
                 background: 'var(--elevated)', border: '1px solid rgba(61,127,255,0.35)',
                 color: 'var(--on-surface)', fontSize: 14, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit', appearance: 'auto',
+                fontFamily: 'inherit', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}
             >
-              <option value="" disabled>{isEn ? '📋 Table of Contents' : '📋 Оглавление — выбери раздел'}</option>
-              {G.toc.map(({ id, label }) => (
-                <option key={id} value={id}>{label}</option>
-              ))}
-            </select>
+              <span>📋 {isEn ? 'Contents' : 'Оглавление'}</span>
+              <span style={{ fontSize: 11, transition: 'transform 0.2s', transform: tocOpen ? 'rotate(180deg)' : 'none', color: 'var(--accent)' }}>▼</span>
+            </button>
+            {tocOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
+                background: 'var(--elevated)', border: '1px solid rgba(61,127,255,0.25)',
+                borderRadius: 10, overflow: 'hidden',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+              }}>
+                {G.toc.map(({ id, label }, i) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      const el = document.getElementById(id)
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      setTocOpen(false)
+                    }}
+                    style={{
+                      display: 'block', width: '100%', padding: '12px 16px', textAlign: 'left',
+                      background: 'transparent', border: 'none',
+                      borderBottom: i < G.toc.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      color: 'var(--on-surface2)', fontSize: 14, fontWeight: 500,
+                      fontFamily: 'inherit', cursor: 'pointer',
+                    }}
+                    onTouchStart={e => e.currentTarget.style.background = 'rgba(61,127,255,0.1)'}
+                    onTouchEnd={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 1. What is Total Hunter */}
