@@ -199,6 +199,9 @@ class CryptHunter:
         # Регион, исключённый из YOLO-поиска (координаты окна бота при always-on-top)
         self._exclusion_region: tuple | None = None
 
+        # Счётчик провалов детекции на карте — для пропуска проблемного склепа
+        self._detect_fail_streak: int = 0
+
     def start(
         self,
         selected_crypts:    list[str],
@@ -473,6 +476,19 @@ class CryptHunter:
         self._interruptible_sleep(random.uniform(0.9, 1.1))
         self._click(*WT_ARENA_TAB, jitter=3)
         self._random_pause(0.5, 0.8)
+
+    def _pre_skip(self):
+        """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций)."""
+        self._status("Пропускаю склеп (3 скролла вниз)...")
+        pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
+                         duration=random.uniform(0.3, 0.5))
+        self._interruptible_sleep(0.3)
+        for _ in range(3):
+            pyautogui.scroll(-3); time.sleep(0.05)
+            pyautogui.scroll(-3); time.sleep(0.05)
+            pyautogui.scroll(-3)
+            self._interruptible_sleep(0.25)
+        self._detect_fail_streak = 0
 
     # ─── YOLO режим 1: поиск в меню ──────────────────────────
 
@@ -781,6 +797,10 @@ class CryptHunter:
         # [1] Открываем башню (вкладку «Склепы и арены» пользователь открывает вручную)
         self._open_watchtower()
 
+        # Если предыдущий цикл провалил детекцию на карте — пропустить проблемный склеп
+        if self._detect_fail_streak > 0:
+            self._pre_skip()
+
         # [3-4] Ищем нужный склеп (с ресетами если нужно)
         crypt_type = None
         while crypt_type is None and self.is_running:
@@ -799,7 +819,7 @@ class CryptHunter:
 
         # [6] YOLO на карте — ищем тот же тип, ближайший к центру
         if not self._detect_on_map(crypt_type):
-            pass
+            self._detect_fail_streak += 1
             # self._status("Склеп не найден на карте — начинаю сначала")
             return  # РЕСТАРТ
 
@@ -818,6 +838,7 @@ class CryptHunter:
             pass
             # self._status("Капитан не отправлен — перезапуск цикла")
             return
+        self._detect_fail_streak = 0   # склеп найден и отправлен — сбрасываем счётчик
 
         if not self.is_running:
             return
