@@ -27,7 +27,7 @@ export const DASHBOARD = {
     nextReset:   'Следующий сброс доступен:',
     linkTitle:   'Привяжи устройство',
     linkSteps:   [
-      'Открой бота на своём компьютере',
+      'Открой Total Hunter на своём компьютере',
       'Перейди на вкладку «Профиль»',
       'Нажми «Создать код привязки»',
       'Введи 6-значный код ниже',
@@ -69,12 +69,12 @@ export const DASHBOARD = {
     trialUsed:      'Триал использован',
     trialAvailable: '✓ Триал доступен',
     topUp:          'Пополнить кредиты →',
-    download:       'Скачать бота',
+    download:       'Скачать программу',
   },
 
   recentHunts: {
     title:      'Последние находки',
-    empty:      'Ещё нет охот. Запусти бота! ⚔',
+    empty:      'Ещё нет охот. Запусти Total Hunter! ⚔',
     found:      '— найден',
     looted:     '+ЛУТНУТО',
     allHistory: 'Вся история →',
@@ -115,7 +115,7 @@ export const DASHBOARD = {
     statTotal:     'Всего охот',
     colType:       'Тип',
     colTime:       'Время',
-    empty:         'Охот пока нет. Запусти бота! ⚔',
+    empty:         'Охот пока нет. Запусти Total Hunter! ⚔',
     lastRecords:   'последние',
     lastRecordsSuffix: 'записей',
     exchangeLabel: 'Биржи',

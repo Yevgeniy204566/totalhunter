@@ -105,7 +105,7 @@ export default function GuidePage() {
   useMeta(isEn
     ? { title: 'Total Hunter Guide — How to Set Up and Use the Bot',
         description: 'Step-by-step guide to installing, calibrating and using Total Hunter bot for Total Battle. Exchange search and crypt farming explained.' }
-    : { title: 'Гайд Total Hunter — установка, калибровка и запуск бота',
+    : { title: 'Гайд Total Hunter — установка, калибровка и запуск программы',
         description: 'Пошаговое руководство по установке, калибровке и использованию Total Hunter. Поиск бирж и фарм склепов в Total Battle.' }
   )
 

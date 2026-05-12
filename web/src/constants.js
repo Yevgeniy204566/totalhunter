@@ -1,7 +1,7 @@
 export const DOWNLOAD = {
   badge:       'Windows · v1.0',
   title:       'Скачать Total Hunter',
-  subtitle:    'Установи бота за 2 минуты и начни фармить биржи и склепы автоматически.',
+  subtitle:    'Установи программу за 2 минуты и начни фармить биржи и склепы автоматически.',
   btnDownload: 'Скачать TotalHunter.zip',
   btnGuide:    'Инструкция по установке',
   sysTitle:    'Системные требования',

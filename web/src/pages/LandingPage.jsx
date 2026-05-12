@@ -131,7 +131,7 @@ export default function LandingPage() {
   useMeta(lang === 'en'
     ? { title: 'Total Hunter — Bot for Total Battle | Exchange & Crypt Automation',
         description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle. Neural network + player imitation. 100 free diamonds on registration.' }
-    : { title: 'Total Hunter — бот для Total Battle | Биржи и склепы на автомате',
+    : { title: 'Total Hunter — автоматизация Total Battle | Биржи и склепы',
         description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle. Нейросеть + имитация игрока. 100 алмазов бесплатно при регистрации.' }
   )
   useFaqSchema(lang === 'en' ? FAQ_ITEMS_EN : FAQ_ITEMS_RU)
@@ -303,7 +303,7 @@ export default function LandingPage() {
             fontSize: 11, fontWeight: 700, letterSpacing: '2.5px',
             color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14,
           }}>
-            {lang === 'en' ? 'Bot Interface' : 'Интерфейс бота'}
+            {lang === 'en' ? 'Program Interface' : 'Интерфейс программы'}
           </p>
           <h2 style={{
             fontSize: 'clamp(24px, 3.5vw, 38px)',

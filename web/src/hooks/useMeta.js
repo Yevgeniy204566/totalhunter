@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const DEFAULT_TITLE = 'Total Hunter — бот для Total Battle | Биржи и склепы на автомате'
+const DEFAULT_TITLE = 'Total Hunter — автоматизация Total Battle | Биржи и склепы'
 const DEFAULT_DESC  = 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle. Нейросеть + имитация игрока. 100 алмазов бесплатно при регистрации.'
 
 function setMeta(selector, attr, value) {
@@ -19,9 +19,9 @@ export function useMeta({ title, description }) {
     return () => {
       document.title = DEFAULT_TITLE
       setMeta('meta[name="description"]',          'content', DEFAULT_DESC)
-      setMeta('meta[property="og:title"]',         'content', 'Total Hunter — бот для Total Battle')
+      setMeta('meta[property="og:title"]',         'content', 'Total Hunter — автоматизация Total Battle')
       setMeta('meta[property="og:description"]',   'content', DEFAULT_DESC)
-      setMeta('meta[name="twitter:title"]',        'content', 'Total Hunter — бот для Total Battle')
+      setMeta('meta[name="twitter:title"]',        'content', 'Total Hunter — автоматизация Total Battle')
       setMeta('meta[name="twitter:description"]',  'content', DEFAULT_DESC)
     }
   }, [title, description])

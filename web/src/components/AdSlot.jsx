@@ -1,40 +1,53 @@
-/**
- * AdSlot — рекламный слот.
- * Сейчас показывает заглушку. Заменить на код Coinzilla:
- *   1. Удалить <div className="ad-placeholder">...</div>
- *   2. Вставить <script> от Coinzilla внутри return
- *
- * size: 'leaderboard' = 728x90 | 'rectangle' = 300x250 | 'mobile' = 320x50
- */
+import { useEffect, useRef } from 'react'
+
+// ── A-Ads publisher IDs ──────────────────────────────────────────
+// После регистрации на a-ads.com → замени значения на свои ID зон
+const AADS_ID = {
+  leaderboard: 'TODO_AADS_LEADERBOARD_ID',  // 728×90
+  rectangle:   'TODO_AADS_RECTANGLE_ID',    // 300×250
+  mobile:      'TODO_AADS_MOBILE_ID',       // 320×50
+}
+
+const AD_SIZES = {
+  leaderboard: { w: 728,  h: 90,  size: '728x90'  },
+  rectangle:   { w: 300,  h: 250, size: '300x250' },
+  mobile:      { w: 320,  h: 50,  size: '320x50'  },
+}
 
 export default function AdSlot({ size = 'leaderboard', style = {} }) {
-  const sizes = {
-    leaderboard: { width: 728, height: 90,  label: '728×90 — Leaderboard' },
-    rectangle:   { width: 300, height: 250, label: '300×250 — Rectangle' },
-    mobile:      { width: 320, height: 50,  label: '320×50 — Mobile Banner' },
-  }
+  const s    = AD_SIZES[size] || AD_SIZES.leaderboard
+  const id   = AADS_ID[size]  || AADS_ID.leaderboard
+  const isReady = !id.startsWith('TODO_')
 
-  const s = sizes[size] || sizes.leaderboard
+  if (!isReady) {
+    // Заглушка до получения реального ID от A-Ads
+    return (
+      <div
+        style={{
+          width: s.w, maxWidth: '100%', height: s.h,
+          background: '#0a1a2a', border: '1px dashed #1a3a5a',
+          borderRadius: 8, display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, color: '#2a5a7a', letterSpacing: '1px',
+          flexShrink: 0, ...style,
+        }}
+      >
+        AD · {s.size}
+      </div>
+    )
+  }
 
   return (
     <div
       className={`ad-slot ad-slot-${size}`}
-      style={{
-        width: s.width, maxWidth: '100%', height: s.height,
-        background: '#0a1a2a',
-        border: '2px solid #0066aa',
-        borderRadius: 8,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 13, color: '#4499cc',
-        letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 700,
-        flexShrink: 0,
-        overflow: 'hidden',
-        ...style,
-      }}
-      data-ad-size={size}
+      style={{ width: s.w, maxWidth: '100%', height: s.h, flexShrink: 0, ...style }}
     >
-      {/* ── COINZILLA: вставить сюда <script> код зоны ── */}
-      <span>AD · {s.label}</span>
+      <iframe
+        src={`//ad.a-ads.com/${id}?size=${s.size}`}
+        style={{ width: s.w, height: s.h, border: 0, padding: 0, overflow: 'hidden', background: 'transparent' }}
+        scrolling="no"
+        title="advertisement"
+      />
     </div>
   )
 }
