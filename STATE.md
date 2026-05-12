@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-12 (Хангоф #47: v1.2.2 выпущен ✅ — 19 языков, PIL-флаги, OG-превью, лендинг)
+> Последнее обновление: 2026-05-12 (Хангоф #48: v1.2.2 финальный ✅ — 19 языков+флаги, OG-превью, лендинг ZIP, скриншоты исправлены)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -26,7 +26,9 @@
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70 | 2026-04-30 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog (_detect_fail_streak + _pre_skip). Конец списка — визуальный cv2.absdiff. Статусы конца/сброса. | 2026-05-12 |
-| **Auto-update** | updater.py | ✅ v1.2.2 выпущен. ZIP (399MB) на GitHub | 2026-05-12 |
+| **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
+| **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
+| **Auto-update** | updater.py | ✅ v1.2.2 выпущен. ZIP (399MB) на GitHub. EXE убран — только ZIP. | 2026-05-12 |
 | **Динамическое окно** | main.py | ✅ SPI_GETWORKAREA при старте — высота под экран, прижато вправо. Работает на любом разрешении. | 2026-05-12 |
 | **SEO** | web/ | ✅ useMeta hook (title+desc+OG per page), FAQ Schema JSON-LD (6 вопросов), sitemap обновлён | 2026-05-12 |
 | **Статистика лендинга** | server/web_routes.py | ✅ Накопительная: base 300 бирж + 5000 склепов + реальные данные. Только растёт. | 2026-05-12 |
@@ -85,9 +87,10 @@
 
 ## 🔴 Задачи на завтра
 
-1. **PopAds** — как придёт одобрение: вставить код в AdSlot.jsx
-2. **Тест v1.2.1 у пользователей** — проверить anti-groundhog и конец списка
-3. **GCP deploy** — `cd /opt/totalhunter/server && sudo git pull origin main && sudo systemctl restart totalhunter` (stats base 300/5000)
+1. **PopAds** — как придёт одобрение: вставить код в `web/src/components/AdSlot.jsx` и задеплоить Vercel
+2. **Тест v1.2.2 у пользователей** — 19 языков, флаги, anti-groundhog, конец списка
+3. **GitHub ZIP** — при следующем релизе заливать ТОЛЬКО через браузер (Edit release → перетащить файл), не через gh CLI
+4. **Скачать в хедере** — обновить ссылку на ZIP вместо EXE (Layout.jsx)
 
 ---
 
