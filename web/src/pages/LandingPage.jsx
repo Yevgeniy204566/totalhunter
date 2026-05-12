@@ -67,7 +67,7 @@ function Screenshot3D({ src, alt, rotY, rotX, glowColor, extraStyle = {} }) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        width: 'clamp(180px, 34vw, 390px)',
+        width: 'clamp(140px, 26vw, 295px)',
         height: 'auto',
         borderRadius: 14,
         border: `1px solid ${glowColor}55`,
@@ -315,14 +315,14 @@ export default function LandingPage() {
             <Screenshot3D
               src="/img/lending-exchange.png"
               alt={lang === 'en' ? 'Exchange hunter UI' : 'Интерфейс поиска бирж'}
-              rotY={-17} rotX={5}
+              rotY={17} rotX={-5}
               glowColor="#00CFFF"
-              extraStyle={{ marginRight: '-68px', zIndex: 2 }}
+              extraStyle={{ marginRight: '-52px', zIndex: 2 }}
             />
             <Screenshot3D
               src="/img/lending-crypts.png"
               alt={lang === 'en' ? 'Crypt hunter UI' : 'Интерфейс поиска склепов'}
-              rotY={13} rotX={-4}
+              rotY={-13} rotX={4}
               glowColor="#00FF88"
               extraStyle={{ zIndex: 1 }}
             />
