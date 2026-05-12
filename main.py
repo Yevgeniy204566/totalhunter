@@ -247,7 +247,19 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels = []  # (widget, lang_key)
        
         self.title(f"Total Hunter v{VERSION}")
-        self.geometry("460x1010")
+        # Динамический размер и позиция: высота = рабочая область экрана, прижато вправо
+        try:
+            import ctypes, ctypes.wintypes
+            _rect = ctypes.wintypes.RECT()
+            ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(_rect), 0)
+            _work_x = _rect.left
+            _work_h = _rect.bottom - _rect.top - 35
+            _snap_x = _rect.right - 460 - 10
+        except Exception:
+            _work_x = 0
+            _work_h = self.winfo_screenheight() - 90
+            _snap_x = self.winfo_screenwidth() - 460 - 10
+        self.geometry(f"460x{_work_h}+{_snap_x}+{_work_x}")
         self.resizable(False, True)
         self.minsize(460, 400)
         self.configure(fg_color=MD3["bg"])
