@@ -154,7 +154,7 @@ export default function LandingPage() {
           <Link to="/guide" className="landing-nav-guide landing-nav-btn">
             {lang === 'en' ? 'Guide' : 'Гайд'}
           </Link>
-          <Link to="/download" className="landing-nav-btn landing-nav-btn--accent">
+          <Link to="/download" className="landing-nav-btn landing-nav-btn--accent landing-nav-download">
             <span className="landing-nav-dl-text">{lang === 'en' ? '⬇ Download' : '⬇ Скачать'}</span>
             <span className="landing-nav-dl-icon">⬇</span>
           </Link>

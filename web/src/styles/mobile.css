@@ -37,8 +37,9 @@
     height: 52px !important;
   }
 
-  /* Скрыть "Гайд" на мобиле */
-  .landing-nav-guide { display: none !important; }
+  /* На мобиле: Гайд — показать, Download — скрыть */
+  .landing-nav-guide  { display: inline-flex !important; }
+  .landing-nav-download { display: none !important; }
 
   /* Иконки — скрыты, показываем текст */
   .landing-nav-dl-icon  { display: none !important; }
