@@ -817,15 +817,9 @@ class CryptHunter:
             crypt_type = self._scroll_and_find(self._selected)
             if crypt_type is None and self.is_running:
                 wait = 30.0
-                if self.lang == "EN":
-                    self._status(f"End of list — waiting {wait:.0f}s...")
-                else:
-                    self._status(f"Конец списка — жду {wait:.0f} сек...")
+                self._status(f"End of list — waiting {wait:.0f}s...")
                 self._interruptible_sleep(wait)
-                if self.lang == "EN":
-                    self._status("Resetting list (Arena ×2)...")
-                else:
-                    self._status("Сброс списка (Арена ×2)...")
+                self._status("Resetting list (Arena ×2)...")
                 self._reset_search()
 
         if not self.is_running:
@@ -876,10 +870,7 @@ class CryptHunter:
         wait_time = t_one_way * 2
         total_wait = int(wait_time) + _buf
         _march_one_way = int(t_one_way)
-        if self.lang == "EN":
-            self._status(f"Waiting Carter: {_march_one_way}s there + {_march_one_way}s back + {_buf}s pause")
-        else:
-            self._status(f"Ждём Картера: {_march_one_way}с туда + {_march_one_way}с обратно + {_buf}с пауза")
+        self._status(f"Carter: {_march_one_way}s + {_march_one_way}s + {_buf}s")
         for remaining in range(total_wait, 0, -1):
             if not self.is_running:
                 break
