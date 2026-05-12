@@ -884,7 +884,7 @@ LANGS = {
 }
 
 LANG_LABELS = {
-    "RU": "🇷🇺 RU", "EN": "🇬🇧 EN", "UK": "🇺🇦 UK",
+    "RU": "🇷🇺 RU", "EN": "🇬🇧 EN", "UK": "🇺🇦 UA",
     "DE": "🇩🇪 DE", "ES": "🇪🇸 ES", "FR": "🇫🇷 FR",
     "IT": "🇮🇹 IT", "NL": "🇳🇱 NL", "NO": "🇳🇴 NO",
     "PL": "🇵🇱 PL", "PT": "🇧🇷 PT", "SV": "🇸🇪 SV",
@@ -958,6 +958,8 @@ class TotalHunterApp(ctk.CTk):
                       progress_color=MD3["primary"]).pack(side="left", padx=(4, 0))
         self.lang_menu = ctk.CTkOptionMenu(_header, values=list(LANG_LABELS.values()),
                                            command=self.change_lang, width=115,
+                                           font=ctk.CTkFont(family="Segoe UI Emoji", size=12),
+                                           dropdown_font=ctk.CTkFont(family="Segoe UI Emoji", size=13),
                                            fg_color=MD3["elevated"],
                                            button_color=MD3["primary"],
                                            button_hover_color=MD3["primary_dim"],
