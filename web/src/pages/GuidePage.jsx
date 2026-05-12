@@ -112,7 +112,7 @@ export default function GuidePage() {
   )
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+    <div className="guide-page-root" style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }}>
 
       {/* Nav */}
       <nav style={{
@@ -267,7 +267,7 @@ export default function GuidePage() {
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 20 }}>
                 <strong style={{ color: '#FFFFFF' }}>Total Hunter</strong> — {G.whatIs.intro}
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <NeonCard color="#00CFFF">
                   <div style={{ fontSize: 22, marginBottom: 8 }}>🔍</div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{G.whatIs.exchange.title}</div>
@@ -306,7 +306,7 @@ export default function GuidePage() {
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.algorithm.yoloLabel}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+              <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <NeonCard color="#00CFFF">
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.algorithm.exchangeModel.title}</div>
                   <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.algorithm.exchangeModel.desc}</div>
@@ -367,7 +367,7 @@ export default function GuidePage() {
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
                 {G.calibration.intro}
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
+              <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
                 {G.calibration.points.map(({ label, sublabel, color, desc }, i) => (
                   <NeonCard key={label} color={color}>
                     <div style={{ fontSize: 15, fontWeight: 700, color, marginBottom: 2 }}>{label}</div>
@@ -399,7 +399,7 @@ export default function GuidePage() {
 
           {/* 6. Modes */}
           <Section id="modes" icon="⚡" title={G.modes.title}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+            <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
               <NeonCard color="#00CFFF">
                 <div style={{ fontSize: 24, marginBottom: 10 }}>🔍</div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.modes.exchange.title}</div>
@@ -458,7 +458,7 @@ export default function GuidePage() {
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {items.map(({ name, range, optimal, desc }) => (
-                    <div key={name} style={{
+                    <div key={name} className="guide-setting-row" style={{
                       display: 'grid', gridTemplateColumns: '180px 90px 90px 1fr',
                       gap: 12, padding: '10px 14px', borderRadius: 8,
                       background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
@@ -489,7 +489,7 @@ export default function GuidePage() {
               </p>
             </Card>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 16 }}>
+            <div className="guide-packages" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 16 }}>
               {G.packages.map(({ name, price, diamonds, bonus, color, popular }) => (
                 <div key={name} style={{
                   position: 'relative', borderRadius: 16, padding: '28px 20px', textAlign: 'center',
@@ -551,7 +551,7 @@ export default function GuidePage() {
               <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 28 }}>
                 {G.referrals.intro}
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              <div className="guide-ref-levels" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
                 {G.referrals.levels.map(({ level, pct, desc, color }) => (
                   <div key={level} style={{
                     textAlign: 'center', padding: '24px 12px', borderRadius: 14,
