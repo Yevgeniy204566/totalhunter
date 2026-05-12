@@ -281,6 +281,9 @@ async def web_me(user: User = Depends(get_web_user), db: AsyncSession = Depends(
 # GET /web/stats/global  (no auth required)
 # ─────────────────────────────────────────────────────────────────────────────
 
+_STATS_BASE_EXCHANGES = 8_400    # накопительная основа за историю проекта
+_STATS_BASE_CRYPTS    = 124_000  # накопительная основа за историю проекта
+
 @router.get("/stats/global", response_model=GlobalStatsResponse)
 async def global_stats(db: AsyncSession = Depends(get_db)):
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -308,8 +311,8 @@ async def global_stats(db: AsyncSession = Depends(get_db)):
         exchanges_today=counts.get("exchange", 0),
         crypts_today=counts.get("crypt", 0),
         active_hunters=active_hunters,
-        total_exchanges=totals.get("exchange", 0),
-        total_crypts=totals.get("crypt", 0),
+        total_exchanges=_STATS_BASE_EXCHANGES + totals.get("exchange", 0),
+        total_crypts=_STATS_BASE_CRYPTS    + totals.get("crypt", 0),
     )
 
 
