@@ -281,8 +281,8 @@ async def web_me(user: User = Depends(get_web_user), db: AsyncSession = Depends(
 # GET /web/stats/global  (no auth required)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_STATS_BASE_EXCHANGES = 8_400    # накопительная основа за историю проекта
-_STATS_BASE_CRYPTS    = 124_000  # накопительная основа за историю проекта
+_STATS_BASE_EXCHANGES = 300    # накопительная основа за историю проекта
+_STATS_BASE_CRYPTS    = 5_000  # накопительная основа за историю проекта
 
 @router.get("/stats/global", response_model=GlobalStatsResponse)
 async def global_stats(db: AsyncSession = Depends(get_db)):
