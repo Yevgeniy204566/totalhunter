@@ -144,48 +144,26 @@ export default function LandingPage() {
     <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
 
       {/* ── Sticky nav ─────────────────────────────────────────── */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(5, 8, 16, 0.92)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid var(--outline)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', height: 64,
-        boxShadow: '0 2px 32px var(--accent-glow)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 700, fontSize: 18 }}>
+      <nav className="landing-nav">
+        <div className="landing-nav-logo">
           <span style={{ color: 'var(--accent)', fontSize: 20 }}>⚔</span>
-          <span style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
-          <span style={{ color: '#FFFFFF' }}>Hunter</span>
+          <span className="landing-nav-logo-text" style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
+          <span className="landing-nav-logo-text" style={{ color: '#FFFFFF' }}>Hunter</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link to="/guide" style={{
-            padding: '8px 16px', borderRadius: 8, fontSize: 14,
-            color: 'var(--on-surface2)', border: '1px solid var(--outline)', fontWeight: 500,
-          }}>
+        <div className="landing-nav-actions">
+          <Link to="/guide" className="landing-nav-guide landing-nav-btn">
             {lang === 'en' ? 'Guide' : 'Гайд'}
           </Link>
-          <Link to="/download" style={{
-            padding: '8px 16px', borderRadius: 8, fontSize: 14,
-            color: 'var(--accent)', border: '1px solid rgba(61,127,255,0.4)', fontWeight: 600,
-          }}>
-            {lang === 'en' ? '⬇ Download' : '⬇ Скачать'}
+          <Link to="/download" className="landing-nav-btn landing-nav-btn--accent">
+            <span className="landing-nav-dl-text">{lang === 'en' ? '⬇ Download' : '⬇ Скачать'}</span>
+            <span className="landing-nav-dl-icon">⬇</span>
           </Link>
-          <button onClick={toggle} style={{
-            padding: '8px 12px', borderRadius: 8, fontSize: 13,
-            background: 'transparent', color: 'var(--on-surface2)',
-            border: '1px solid var(--outline)', cursor: 'pointer',
-            fontWeight: 600, fontFamily: 'inherit',
-          }}>
+          <button onClick={toggle} className="landing-nav-btn landing-nav-btn--lang">
             {lang.toUpperCase()}
           </button>
-          <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
-            padding: '9px 22px', borderRadius: 8, fontSize: 14,
-            background: 'var(--accent)', color: '#FFFFFF',
-            fontWeight: 700, textDecoration: 'none', display: 'inline-block',
-          }}>
-            {isLoggedIn() ? 'Dashboard →' : (lang === 'en' ? 'Sign In' : 'Войти')}
+          <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse landing-nav-btn landing-nav-btn--cta">
+            <span className="landing-nav-cta-text">{isLoggedIn() ? 'Dashboard →' : (lang === 'en' ? 'Sign In' : 'Войти')}</span>
+            <span className="landing-nav-cta-icon">→</span>
           </Link>
         </div>
       </nav>

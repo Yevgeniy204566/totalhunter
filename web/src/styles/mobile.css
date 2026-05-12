@@ -31,6 +31,28 @@
     padding: 16px 12px !important;
   }
 
+  /* ── Landing nav — мобильный хедер ─────────────────────── */
+  .landing-nav {
+    padding: 0 14px !important;
+    height: 52px !important;
+  }
+  .landing-nav-actions { gap: 6px !important; }
+
+  /* Скрыть "Гайд" на мобиле (есть в футере) */
+  .landing-nav-guide { display: none !important; }
+
+  /* Скачать: скрыть текст, показать иконку */
+  .landing-nav-dl-text { display: none !important; }
+  .landing-nav-dl-icon { display: inline !important; }
+
+  /* Dashboard/Войти: скрыть текст, показать → */
+  .landing-nav-cta-text { display: none !important; }
+  .landing-nav-cta-icon { display: inline !important; }
+
+  /* Уменьшить паддинг всех кнопок */
+  .landing-nav-btn { padding: 0 10px !important; font-size: 13px !important; }
+  .landing-nav-btn--lang { padding: 0 8px !important; }
+
   /* ── Landing Page ───────────────────────────────────────── */
   .landing-hero {
     min-height: 70vh !important;

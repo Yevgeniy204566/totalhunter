@@ -258,3 +258,52 @@ a:hover { color: var(--on-surface); }
   padding: 6px 12px;
   letter-spacing: 0.2px;
 }
+
+/* ── Landing nav ─────────────────────────────────────────── */
+.landing-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5, 8, 16, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--outline);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 64px;
+  box-shadow: 0 2px 32px var(--accent-glow);
+}
+.landing-nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 18px; letter-spacing: 0.3px;
+}
+.landing-nav-actions {
+  display: flex; align-items: center; gap: 10px;
+}
+.landing-nav-btn {
+  height: 36px; padding: 0 16px; border-radius: 8px;
+  font-size: 14px; font-family: inherit; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+  box-sizing: border-box; transition: opacity 0.15s;
+}
+.landing-nav-btn:hover { opacity: 0.8; }
+.landing-nav-btn--accent {
+  color: var(--accent);
+  border: 1px solid rgba(61, 127, 255, 0.4);
+  background: transparent;
+}
+.landing-nav-guide {
+  color: var(--on-surface2);
+  border: 1px solid var(--outline);
+  background: transparent;
+}
+.landing-nav-btn--lang {
+  color: var(--on-surface2);
+  border: 1px solid var(--outline);
+  background: transparent; padding: 0 12px;
+}
+.landing-nav-btn--cta {
+  background: var(--accent); color: #FFFFFF;
+  border: none; padding: 0 20px; font-weight: 700;
+}
+/* На десктопе иконки скрыты — показываем текст */
+.landing-nav-dl-icon  { display: none; }
+.landing-nav-cta-icon { display: none; }
