@@ -259,6 +259,9 @@ a:hover { color: var(--on-surface); }
   letter-spacing: 0.2px;
 }
 
+/* Guide mobile TOC — hidden on desktop */
+.guide-toc-mobile { display: none; }
+
 /* ── Landing nav ─────────────────────────────────────────── */
 .landing-nav {
   position: sticky; top: 0; z-index: 100;

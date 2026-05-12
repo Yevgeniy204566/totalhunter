@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isLoggedIn } from '../auth.js'
 import { useLang } from '../lang.js'
@@ -165,13 +166,13 @@ export default function GuidePage() {
       </div>
 
       {/* Layout: TOC + Content */}
-      <div style={{
+      <div className="guide-layout" style={{
         maxWidth: 1060, margin: '0 auto', padding: '48px 24px',
         display: 'grid', gridTemplateColumns: '220px 1fr', gap: 48, alignItems: 'start',
       }}>
 
-        {/* Sidebar TOC */}
-        <div style={{ position: 'sticky', top: 80 }}>
+        {/* Sidebar TOC — desktop only */}
+        <div className="guide-toc-sidebar" style={{ position: 'sticky', top: 80 }}>
           <div style={{ background: 'var(--elevated)', border: '1px solid var(--outline)', borderRadius: 14, padding: '20px' }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 16 }}>
               {isEn ? 'Contents' : 'Содержание'}
@@ -190,6 +191,50 @@ export default function GuidePage() {
 
         {/* Main content */}
         <div>
+
+          {/* ── Windows-only banner ── */}
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            background: 'rgba(255,100,30,0.1)',
+            border: '1px solid rgba(255,120,40,0.45)',
+            borderLeft: '4px solid #FF6420',
+            borderRadius: 12, padding: '16px 20px', marginBottom: 32,
+          }}>
+            <span style={{ fontSize: 30, flexShrink: 0 }}>🪟</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#FF8C50', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>
+                {isEn ? 'WINDOWS ONLY — 10 / 11 (64-bit)' : 'ТОЛЬКО WINDOWS — 10 / 11 (64-bit)'}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+                {isEn
+                  ? 'Total Hunter is a desktop program for Windows PC. It does not run on mobile devices, Mac or Linux.'
+                  : 'Total Hunter — десктопная программа для Windows. Не работает на телефоне, Mac и Linux.'}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Mobile TOC dropdown — hidden on desktop ── */}
+          <div className="guide-toc-mobile">
+            <select
+              defaultValue=""
+              onChange={e => {
+                const el = document.getElementById(e.target.value)
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                e.target.value = ''
+              }}
+              style={{
+                width: '100%', padding: '12px 16px', borderRadius: 10, marginBottom: 28,
+                background: 'var(--elevated)', border: '1px solid rgba(61,127,255,0.35)',
+                color: 'var(--on-surface)', fontSize: 14, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', appearance: 'auto',
+              }}
+            >
+              <option value="" disabled>{isEn ? '📋 Table of Contents' : '📋 Оглавление — выбери раздел'}</option>
+              {G.toc.map(({ id, label }) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
+          </div>
 
           {/* 1. What is Total Hunter */}
           <Section id="what-is" icon={<Diamond size={18}/>} title={G.whatIs.title}>

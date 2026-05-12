@@ -77,6 +77,17 @@
   /* Текст кнопок не переносится */
   .landing-nav-btn { overflow: hidden !important; white-space: nowrap !important; }
 
+  /* ── Guide Page — мобильный layout ─────────────────────── */
+  .guide-layout {
+    grid-template-columns: 1fr !important;
+    padding: 24px 16px !important;
+    gap: 0 !important;
+  }
+  /* Сайдбар скрыт — вместо него dropdown */
+  .guide-toc-sidebar { display: none !important; }
+  /* Dropdown TOC показывается */
+  .guide-toc-mobile  { display: block !important; }
+
   /* ── Landing Page ───────────────────────────────────────── */
   .landing-hero {
     min-height: 70vh !important;
