@@ -33,25 +33,48 @@
 
   /* ── Landing nav — мобильный хедер ─────────────────────── */
   .landing-nav {
-    padding: 0 14px !important;
+    padding: 0 12px !important;
     height: 52px !important;
   }
-  .landing-nav-actions { gap: 6px !important; }
 
-  /* Скрыть "Гайд" на мобиле (есть в футере) */
+  /* Скрыть "Гайд" на мобиле */
   .landing-nav-guide { display: none !important; }
 
-  /* Скачать: скрыть текст, показать иконку */
-  .landing-nav-dl-text { display: none !important; }
-  .landing-nav-dl-icon { display: inline !important; }
+  /* Иконки — скрыты, показываем текст */
+  .landing-nav-dl-icon  { display: none !important; }
+  .landing-nav-cta-icon { display: none !important; }
+  .landing-nav-dl-text  { display: inline !important; }
+  .landing-nav-cta-text { display: inline !important; }
 
-  /* Dashboard/Войти: скрыть текст, показать → */
-  .landing-nav-cta-text { display: none !important; }
-  .landing-nav-cta-icon { display: inline !important; }
+  /* Actions: растянуть на оставшееся место */
+  .landing-nav-actions {
+    flex: 1 !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+    margin-left: 8px !important;
+  }
 
-  /* Уменьшить паддинг всех кнопок */
-  .landing-nav-btn { padding: 0 10px !important; font-size: 13px !important; }
-  .landing-nav-btn--lang { padding: 0 8px !important; }
+  /* Каждая кнопка — равная ширина, растянутая */
+  .landing-nav-btn {
+    flex: 1 !important;
+    max-width: 110px !important;
+    padding: 0 6px !important;
+    font-size: 12px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Скачать: показать коротко */
+  .landing-nav-dl-text::after { content: '' !important; }
+
+  /* Кнопка языка — чуть меньше */
+  .landing-nav-btn--lang { max-width: 52px !important; }
+
+  /* Лого не сжимается */
+  .landing-nav-logo { flex-shrink: 0 !important; font-size: 15px !important; }
+
+  /* Текст кнопок не переносится */
+  .landing-nav-btn { overflow: hidden !important; white-space: nowrap !important; }
 
   /* ── Landing Page ───────────────────────────────────────── */
   .landing-hero {
