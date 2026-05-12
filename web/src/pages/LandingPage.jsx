@@ -119,7 +119,7 @@ function StatCard({ label, color, rawValue }) {
   )
 }
 
-const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter_Setup.exe'
+const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
 
 const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
 
@@ -322,7 +322,7 @@ export default function LandingPage() {
             <Screenshot3D
               src="/img/lending-crypts.png"
               alt={lang === 'en' ? 'Crypt hunter UI' : 'Интерфейс поиска склепов'}
-              rotY={13} rotX={-4}
+              rotY={-13} rotX={4}
               glowColor="#00FF88"
               extraStyle={{ zIndex: 1 }}
             />
@@ -342,10 +342,10 @@ export default function LandingPage() {
           border: '1px solid rgba(0,255,136,0.5)',
         }}>
           <span style={{ fontSize: 22 }}>⬇</span>
-          {lang === 'en' ? 'Install TotalHunter (.exe)' : 'Установить TotalHunter (.exe)'}
+          {lang === 'en' ? 'Download TotalHunter (.zip)' : 'Скачать TotalHunter (.zip)'}
         </a>
         <p style={{ marginTop: 10, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-          v1.1.0 · Windows 10/11 · 64-bit
+          v1.2.2 · Windows 10/11 · 64-bit
         </p>
       </div>
 
