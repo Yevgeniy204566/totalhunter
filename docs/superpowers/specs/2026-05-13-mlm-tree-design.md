@@ -74,6 +74,8 @@ L3 nodes have no `l3` field (depth = 3 max).
 
 **Performance:** Max 3 DB round-trips. No recursive CTE needed — depth is fixed at 3.
 
+**Index:** `users.invited_by_id` currently has no index in `models.py`. This endpoint requires an Alembic migration to add `Index('ix_users_invited_by_id', 'invited_by_id')` — otherwise L2/L3 queries do full table scans.
+
 ---
 
 ## Frontend
@@ -113,10 +115,11 @@ ReferralTree
 - Horizontal bar across children: `::before` on children inner flex row
 - Per-node vertical drop: `::before` on `.node-col`
 - Colors: L1 = `#3D7FFF`, L2 = `#B060FF`, L3 = `#FFD166`
+- Children row uses `align-items: flex-start` so cards of varying height don't misalign connector lines
 
 **Expand/collapse:** Toggle `expandedIds.has(node.id)` on card click. `▶` icon when collapsed, `▲` when expanded.
 
-**Show more:** `showAllL1` state. Button label: `+ ещё {l1.length - 5}`. Clicking sets `showAllL1 = true` (irreversible in session).
+**Show more:** `showAllL1` state. Button label: `+ ещё {l1.length - 5}`. Clicking sets `showAllL1 = true`. When expanded, a `Свернуть` button appears to collapse back to 5 (prevents 100+ node sprawl).
 
 **L2/L3 pagination:** None. All L2 children of an expanded L1 node are shown in full, same for L3. In practice these numbers are small (a user rarely has 10+ L2 under one L1).
 
@@ -158,10 +161,18 @@ Each L1 row:
 
 ---
 
+## Loading state
+
+Show a skeleton (3 placeholder NodeCard outlines) while `treeData === null`. Prevents blank flash during the 3 sequential DB queries. Skeleton matches the shape of NodeCard: same width/height, `background: rgba(255,255,255,0.05)`, animated pulse via CSS `@keyframes`.
+
+---
+
 ## Files changed
 
 | File | Change |
 |---|---|
+| `server/alembic/versions/<hash>_add_index_invited_by_id.py` | New migration — index on `users.invited_by_id` |
+| `server/models.py` | Add `index=True` to `invited_by_id` column |
 | `server/web_routes.py` | Add `GET /web/referral/tree` endpoint |
 | `web/src/components/ReferralTree.jsx` | New file |
 | `web/src/pages/ReferralsPage.jsx` | Import + render `<ReferralTree />` |
