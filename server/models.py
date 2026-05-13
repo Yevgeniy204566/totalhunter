@@ -64,7 +64,7 @@ class User(Base):
     credits       = Column(Integer, nullable=False, server_default=text('0'))
     ref_credits   = Column(Integer, nullable=False, server_default=text('0'))
     ref_code      = Column(String(12), unique=True, nullable=False, index=True)
-    invited_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    invited_by_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     trial_used        = Column(Boolean, nullable=False, server_default=text('false'))
     ref_bonus_claimed = Column(Boolean, nullable=False, server_default=text('false'))
     is_banned         = Column(Boolean, nullable=False, server_default=text('false'))
