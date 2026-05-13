@@ -108,6 +108,7 @@ function NodeCard({ node, level, expandedIds, onToggle }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div
         onClick={() => hasChildren && onToggle(node.id)}
+        onMouseDown={e => e.stopPropagation()}
         style={{
           background: '#0d1628', border: `1px solid ${color}44`,
           borderRadius: 10, padding: '10px 14px', minWidth: 130, textAlign: 'center',
