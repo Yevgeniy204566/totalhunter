@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
-import ReferralTree from '../components/ReferralTree.jsx'
 
 export default function ReferralsPage() {
   const [user,       setUser]       = useState(null)
@@ -257,10 +257,30 @@ export default function ReferralsPage() {
         </div>
       </div>
 
-      {/* Referral tree */}
-      <div className="card" style={{ borderRadius: 14, marginTop: 20 }}>
-        <ReferralTree currentUser={user} />
-      </div>
+      {/* Tree link */}
+      <Link to="/dashboard/tree" style={{ textDecoration: 'none' }}>
+        <div style={{
+          marginTop: 20, padding: '18px 24px', borderRadius: 14,
+          background: 'linear-gradient(135deg, rgba(61,127,255,0.12), rgba(176,96,255,0.08))',
+          border: '1px solid rgba(61,127,255,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          cursor: 'pointer', transition: 'border-color 0.2s',
+          boxShadow: '0 4px 24px rgba(61,127,255,0.1)',
+        }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+              {r.treeTitle}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
+              {lang === 'ru' ? 'Интерактивное дерево · тяни, зумируй' : 'Interactive tree · drag & zoom'}
+            </div>
+          </div>
+          <div style={{
+            fontSize: 22, color: 'var(--accent)',
+            textShadow: '0 0 16px rgba(61,127,255,0.6)',
+          }}>⬡ →</div>
+        </div>
+      </Link>
     </div>
   )
 }

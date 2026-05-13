@@ -146,7 +146,7 @@ export const DASHBOARD = {
     note:          'Earnings are generated from every credit purchase in your referral chain. Blocked users are skipped, and the chain continues.',
     networkTitle:  'My Network',
     networkPeople: 'people',
-    treeTitle:     'Your Referral Network',
+    treeTitle:     'Referral Network',
     treeEmpty:     'No referrals yet',
     treeSince:     'since',
   },

@@ -8,7 +8,7 @@ const COLORS = { l1: '#3D7FFF', l2: '#B060FF', l3: '#FFD166' }
 
 // ── Zoomable pan+zoom canvas ──────────────────────────────────────────────────
 
-function ZoomableCanvas({ children }) {
+function ZoomableCanvas({ children, height = 520 }) {
   const [pan, setPan]       = useState({ x: 0, y: 24 })
   const [zoom, setZoom]     = useState(0.9)
   const [dragging, setDragging] = useState(false)
@@ -51,7 +51,7 @@ function ZoomableCanvas({ children }) {
   return (
     <div
       style={{
-        width: '100%', height: 520,
+        width: '100%', height,
         background: 'rgba(5,8,18,0.55)',
         borderRadius: 12, border: '1px solid rgba(61,127,255,0.13)',
         position: 'relative', overflow: 'hidden',
@@ -309,7 +309,7 @@ function MobileAccordion({ treeData, expandedIds, onToggle, showAllL1, onShowAll
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function ReferralTree({ currentUser }) {
+export default function ReferralTree({ currentUser, canvasHeight = 520 }) {
   const [treeData,    setTreeData]    = useState(null)
   const [expandedIds, setExpandedIds] = useState(new Set())
   const [showAllL1,   setShowAllL1]   = useState(false)
@@ -367,7 +367,7 @@ export default function ReferralTree({ currentUser }) {
       {treeData !== null && treeData.l1.length > 0 && (
         <>
           <div className="rt-desktop">
-            <ZoomableCanvas>
+            <ZoomableCanvas height={canvasHeight}>
               <DesktopTree {...sharedProps} currentUser={currentUser} />
             </ZoomableCanvas>
           </div>

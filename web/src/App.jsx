@@ -16,6 +16,7 @@ import ContactsPage from './pages/ContactsPage.jsx'
 import RefPage from './pages/RefPage.jsx'
 import DownloadPage from './pages/DownloadPage.jsx'
 import EarnPage from './pages/EarnPage.jsx'
+import ReferralTreePage from './pages/ReferralTreePage.jsx'
 
 function PrivateRoute({ element }) {
   return isLoggedIn() ? element : <Navigate to="/login" replace />
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="feedback"     element={<FeedbackPage />} />
           <Route path="earn"         element={<EarnPage />} />
         </Route>
+        <Route path="/dashboard/tree" element={<PrivateRoute element={<ReferralTreePage />} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
