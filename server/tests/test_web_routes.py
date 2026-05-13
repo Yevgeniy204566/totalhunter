@@ -195,3 +195,16 @@ async def test_global_stats_returns_zeroes_on_empty_db():
     assert data["exchanges_today"] == 0
     assert data["crypts_today"] == 0
     assert data["active_hunters"] == 0
+
+
+# ─── Task 2: ReferralTreeResponse schema ────────────────────────────────────
+
+def test_referral_tree_schema_serializes():
+    from schemas import TreeNodeL3, TreeNodeL2, TreeNodeL1, ReferralTreeResponse
+    l3 = TreeNodeL3(id=3, email_masked="pet***", credits=4, created_at="2026-04-01")
+    l2 = TreeNodeL2(id=2, email_masked="ser***", credits=12, created_at="2026-03-20", l3=[l3])
+    l1 = TreeNodeL1(id=1, email_masked="yev***", credits=50, created_at="2026-02-15", l2=[l2])
+    resp = ReferralTreeResponse(l1=[l1])
+    d = resp.model_dump()
+    assert d["l1"][0]["email_masked"] == "yev***"
+    assert d["l1"][0]["l2"][0]["l3"][0]["credits"] == 4

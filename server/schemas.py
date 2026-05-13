@@ -149,6 +149,35 @@ class FeedbackRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
 
 
+# ── Referral Tree ─────────────────────────────────────────────────────────────
+
+class TreeNodeL3(BaseModel):
+    id: int
+    email_masked: str
+    credits: int
+    created_at: str
+
+
+class TreeNodeL2(BaseModel):
+    id: int
+    email_masked: str
+    credits: int
+    created_at: str
+    l3: list[TreeNodeL3] = []
+
+
+class TreeNodeL1(BaseModel):
+    id: int
+    email_masked: str
+    credits: int
+    created_at: str
+    l2: list[TreeNodeL2] = []
+
+
+class ReferralTreeResponse(BaseModel):
+    l1: list[TreeNodeL1] = []
+
+
 # ── Payments ──────────────────────────────────────────────────────────────────
 
 class PaymentCreateRequest(BaseModel):
