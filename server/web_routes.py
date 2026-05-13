@@ -39,8 +39,12 @@ from schemas import (
     LinkGenerateRequest,
     LinkGenerateResponse,
     LinkVerifyRequest,
+    ReferralTreeResponse,
     TransactionEntry,
     TransactionsResponse,
+    TreeNodeL1,
+    TreeNodeL2,
+    TreeNodeL3,
     WebAuthResponse,
     WebMeResponse,
 )
@@ -594,6 +598,86 @@ async def web_referral_activate(
             msg = "Code saved! Bonus will be credited after your first device link."
 
     return BasicResponse(success=True, message=msg)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /web/referral/tree
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/referral/tree", response_model=ReferralTreeResponse)
+async def web_referral_tree(
+    web_user: User = Depends(get_web_user),
+    db: AsyncSession = Depends(get_db),
+):
+    def _mask(email: str) -> str:
+        return email[:3] + "***"
+
+    def _fmt(dt) -> str:
+        return dt.strftime("%Y-%m-%d") if dt else ""
+
+    # L1
+    l1_rows = (await db.execute(
+        select(User.id, User.email, User.credits, User.created_at)
+        .where(User.invited_by_id == web_user.id)
+    )).all()
+
+    if not l1_rows:
+        return ReferralTreeResponse(l1=[])
+
+    l1_ids = [r.id for r in l1_rows]
+
+    # L2
+    l2_rows = (await db.execute(
+        select(User.id, User.email, User.credits, User.created_at, User.invited_by_id)
+        .where(User.invited_by_id.in_(l1_ids))
+    )).all()
+
+    l2_by_parent: dict[int, list] = {}
+    for r in l2_rows:
+        l2_by_parent.setdefault(r.invited_by_id, []).append(r)
+
+    l2_ids = [r.id for r in l2_rows]
+
+    # L3
+    l3_by_parent: dict[int, list] = {}
+    if l2_ids:
+        l3_rows = (await db.execute(
+            select(User.id, User.email, User.credits, User.created_at, User.invited_by_id)
+            .where(User.invited_by_id.in_(l2_ids))
+        )).all()
+        for r in l3_rows:
+            l3_by_parent.setdefault(r.invited_by_id, []).append(r)
+
+    # Assemble nested structure
+    result = []
+    for l1 in l1_rows:
+        l2_list = []
+        for l2 in l2_by_parent.get(l1.id, []):
+            l3_list = [
+                TreeNodeL3(
+                    id=l3.id,
+                    email_masked=_mask(l3.email),
+                    credits=l3.credits,
+                    created_at=_fmt(l3.created_at),
+                )
+                for l3 in l3_by_parent.get(l2.id, [])
+            ]
+            l2_list.append(TreeNodeL2(
+                id=l2.id,
+                email_masked=_mask(l2.email),
+                credits=l2.credits,
+                created_at=_fmt(l2.created_at),
+                l3=l3_list,
+            ))
+        result.append(TreeNodeL1(
+            id=l1.id,
+            email_masked=_mask(l1.email),
+            credits=l1.credits,
+            created_at=_fmt(l1.created_at),
+            l2=l2_list,
+        ))
+
+    return ReferralTreeResponse(l1=result)
 
 
 # ── POST /web/crash_report ────────────────────────────────────────────────────

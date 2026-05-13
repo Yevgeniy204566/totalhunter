@@ -197,6 +197,64 @@ async def test_global_stats_returns_zeroes_on_empty_db():
     assert data["active_hunters"] == 0
 
 
+# ─── Task 3: GET /web/referral/tree ─────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_referral_tree_empty(fake_google_claims):
+    """User with no referrals gets empty l1 list."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _get_jwt(client, fake_google_claims)
+        resp = await client.get("/web/referral/tree", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    assert resp.json() == {"l1": []}
+
+
+@pytest.mark.asyncio
+async def test_referral_tree_requires_auth():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/referral/tree")
+    assert resp.status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_referral_tree_with_l1(fake_google_claims):
+    """Root user sees L1 referral in tree."""
+    l1_claims = {"email": "l1user@example.com", "name": "L1 User", "sub": "sub-l1-tree"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Register root
+        with patch("web_routes._verify_google_token", return_value=fake_google_claims):
+            resp = await client.post("/web/auth/google", json={"id_token": "tok"})
+        root_jwt = resp.json()["jwt"]
+        # Get root's ref_code
+        me = (await client.get("/web/me", headers={"Authorization": f"Bearer {root_jwt}"})).json()
+        root_ref_code = me["ref_code"]
+        # Register L1 user with root's code
+        with patch("web_routes._verify_google_token", return_value=l1_claims):
+            await client.post("/web/auth/google", json={"id_token": "tok", "ref_code": root_ref_code})
+        # Fetch tree as root
+        resp = await client.get("/web/referral/tree", headers={"Authorization": f"Bearer {root_jwt}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["l1"]) == 1
+    assert data["l1"][0]["email_masked"] == "l1u***"
+    assert data["l1"][0]["l2"] == []
+
+
+@pytest.mark.asyncio
+async def test_referral_tree_email_masking(fake_google_claims):
+    """Email masking: first 3 chars + ***"""
+    l1_claims = {"email": "ab@example.com", "name": "Short", "sub": "sub-short-tree"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        with patch("web_routes._verify_google_token", return_value=fake_google_claims):
+            resp = await client.post("/web/auth/google", json={"id_token": "tok"})
+        root_jwt = resp.json()["jwt"]
+        me = (await client.get("/web/me", headers={"Authorization": f"Bearer {root_jwt}"})).json()
+        with patch("web_routes._verify_google_token", return_value=l1_claims):
+            await client.post("/web/auth/google", json={"id_token": "tok", "ref_code": me["ref_code"]})
+        resp = await client.get("/web/referral/tree", headers={"Authorization": f"Bearer {root_jwt}"})
+    assert resp.json()["l1"][0]["email_masked"] == "ab@***"
+
+
 # ─── Task 2: ReferralTreeResponse schema ────────────────────────────────────
 
 def test_referral_tree_schema_serializes():
