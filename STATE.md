@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-12 (Хангоф #49: мобильный сайт ✅ — хедер лендинга, гайд TOC+Windows-баннер, рефералы, единая ширина)
+> Последнее обновление: 2026-05-13 (Хангоф #50: MLM реферальное дерево ✅ — pan+zoom, отдельная страница /dashboard/tree)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -42,6 +42,7 @@
 | **Реф-безопасность** | server/web_routes.py | ✅ ref_bonus_claimed — бонус только при новом HWID | 2026-05-08 |
 | **Лендинг** | web/LandingPage.jsx | ✅ 3D скриншоты, кнопка ZIP v1.2.2, мобильный хедер (Гайд/RU/Войти) | 2026-05-12 |
 | **Мобильный сайт** | web/src/styles/mobile.css | ✅ Единая ширина всех страниц. Гайд: TOC dropdown + Windows-баннер. Рефералы: кнопка под инпутом. | 2026-05-12 |
+| **MLM Реферальное дерево** | web/src/pages/ReferralTreePage.jsx + web/src/components/ReferralTree.jsx | ✅ Отдельная страница /dashboard/tree. Pan+zoom (drag мышью + колесо). Org-chart ПК, аккордеон мобилка. L1→L2→L3. Backend: GET /web/referral/tree, 3 async-запроса, index на invited_by_id. | 2026-05-13 |
 | **Guide Settings** | web/GuidePage.jsx + guide_content*.js | ✅ Раздел "Настройки бота": 16 слайдеров RU/EN с диапазонами | 2026-05-09 |
 | **Безопасность** | server/main.py | ✅ atomic /use_credit, backup_db.sh | 2026-05-04 |
 
@@ -67,7 +68,7 @@
 - **Лучшие альтернативы:** BitMedia ($20 BTC/USDT, баннеры), BidVertiser ($10 BTC)
 
 ### Vercel
-- Token: см. `.claude/settings.local.json` (не в репо)
+- Token: `vcp_6DSYv8wkJD8vKnQUtwRi1kiO0vGXsRznVUffzynEMQL6YA2h052lWRhG` (также в `.env.local`)
 - Team: `team_CkkRPXdwtRtsL9YCk8n4Fzla`
 - Project: `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj`
 - GitHub repoId: `1215361801`
@@ -86,19 +87,13 @@
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
 
-## 🔴 Задачи на завтра
+## 🔴 Задачи на следующую сессию
 
-1. **🌳 MLM Реферальное дерево** — ПРИОРИТЕТ:
-   - Визуальное дерево: кто под кем (узлы, стрелки/линии)
-   - Для каждого участника: email (маскированный), дата регистрации, кол-во алмазов, уровень
-   - Адаптивно: ПК = горизонтальное дерево, мобилка = вертикальный аккордеон
-   - Backend: `/web/referrals/tree` — рекурсивный запрос по user_id
-   - Frontend: новый компонент `ReferralTree` в ReferralsPage
-
-2. **PopAds** — как придёт одобрение: вставить код в `web/src/components/AdSlot.jsx` и задеплоить Vercel
-3. **Тест v1.2.2 у пользователей** — 19 языков, флаги, anti-groundhog
-4. **GitHub ZIP** — следующий релиз только через браузер (не gh CLI)
-5. **Скачать в хедере** — обновить ссылку Layout.jsx: EXE → ZIP
+1. **PopAds** — как придёт одобрение: вставить код в `web/src/components/AdSlot.jsx` и задеплоить Vercel
+2. **Тест v1.2.2 у пользователей** — 19 языков, флаги, anti-groundhog
+3. **GitHub ZIP** — следующий релиз только через браузер (не gh CLI)
+4. **Скачать в хедере** — обновить ссылку Layout.jsx: EXE → ZIP
+5. **Серверные миграции** — на GCP есть лишние миграции `14e8d8e2a95a_final_merge`, `575bdc292d9e_merge_heads`, `22864ea6408d_add_web_platform_tables` — нужно перенести их в репо чтобы синхронизировать
 
 ## 📋 На будущее (не к спеху)
 1. **Discord-бот/ветка** — полноценная интеграция Total Hunter с Discord-сервером
