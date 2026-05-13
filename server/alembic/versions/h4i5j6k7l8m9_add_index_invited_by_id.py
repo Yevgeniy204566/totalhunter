@@ -1,7 +1,7 @@
 """add index on users.invited_by_id
 
 Revision ID: h4i5j6k7l8m9
-Revises: g3h4i5j6k7l8
+Revises: 14e8d8e2a95a
 Create Date: 2026-05-13
 
 Optimization: index on invited_by_id enables efficient L2/L3 referral tree queries
@@ -10,7 +10,7 @@ without full table scans when filtering by invited_by_id IN (list_of_user_ids).
 from alembic import op
 
 revision = 'h4i5j6k7l8m9'
-down_revision = 'g3h4i5j6k7l8'
+down_revision = '14e8d8e2a95a'
 branch_labels = None
 depends_on = None
 
