@@ -4,6 +4,7 @@ import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import ReferralTree from '../components/ReferralTree.jsx'
 
 export default function ReferralsPage() {
   const [user,       setUser]       = useState(null)
@@ -254,6 +255,11 @@ export default function ReferralsPage() {
         <div style={{ marginTop: 14, fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
           {r.note}
         </div>
+      </div>
+
+      {/* Referral tree */}
+      <div className="card" style={{ borderRadius: 14, marginTop: 20 }}>
+        <ReferralTree currentUser={user} />
       </div>
     </div>
   )
