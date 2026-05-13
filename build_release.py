@@ -52,6 +52,7 @@ def compile_module(src: str):
         "--remove-output",
         "--no-pyi-file",
         "--assume-yes-for-downloads",
+        "--lto=no",
         src,
     ])
 
