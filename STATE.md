@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-13 (Хангоф #50: MLM реферальное дерево ✅ — pan+zoom, отдельная страница /dashboard/tree)
+> Последнее обновление: 2026-05-14 (Хангоф #51: диагностика клиента — краш STATUS_ILLEGAL_INSTRUCTION на старых CPU, откат к 1.2.2, план совместимости в буфере)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -89,11 +89,17 @@
 
 ## 🔴 Задачи на следующую сессию
 
-1. **PopAds** — как придёт одобрение: вставить код в `web/src/components/AdSlot.jsx` и задеплоить Vercel
-2. **Тест v1.2.2 у пользователей** — 19 языков, флаги, anti-groundhog
-3. **GitHub ZIP** — следующий релиз только через браузер (не gh CLI)
-4. **Скачать в хедере** — обновить ссылку Layout.jsx: EXE → ZIP
-5. **Серверные миграции** — на GCP есть лишние миграции `14e8d8e2a95a_final_merge`, `575bdc292d9e_merge_heads`, `22864ea6408d_add_web_platform_tables` — нужно перенести их в репо чтобы синхронизировать
+1. **🔴 МЕГА-ОБНОВЛЕНИЕ СОВМЕСТИМОСТИ** — план в `docs/gemini_buffer.md`. Приоритет:
+   - `--lto=no` в Nuitka + пересборка v1.2.3 + тест у клиента со старым CPU
+   - CUDA graceful fallback (YOLO CPU mode если нет GPU)
+   - DPI awareness проверка
+   - Defender exclusion в installer
+2. **PopAds** — как придёт одобрение: вставить код в `web/src/components/AdSlot.jsx` и задеплоить Vercel
+3. **Серверные миграции** — на GCP есть лишние миграции `14e8d8e2a95a_final_merge`, `575bdc292d9e_merge_heads`, `22864ea6408d_add_web_platform_tables` — нужно перенести их в репо чтобы синхронизировать
+
+## ⚠️ ИЗВЕСТНЫЕ БАГИ
+- **Старые CPU (без AVX2, pre-2013)** — краш `STATUS_ILLEGAL_INSTRUCTION` в `auth.pyd`. Фикс: `--lto=no` в Nuitka. Нужна пересборка v1.2.3.
+- **installer.iss** — `Flags: ignoreversion` перезаписывает `profiles/*.json` при обновлении. Нужен `onlyifdoesntexist` для user-data файлов.
 
 ## 📋 На будущее (не к спеху)
 1. **Discord-бот/ветка** — полноценная интеграция Total Hunter с Discord-сервером
