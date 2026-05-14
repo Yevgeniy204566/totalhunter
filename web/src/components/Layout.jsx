@@ -69,7 +69,7 @@ export default function Layout() {
           )}
 
           <a
-            href="https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter_Setup.exe"
+            href="https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip"
             className="header-btn"
             style={{
               background: 'rgba(74,222,128,0.12)',
