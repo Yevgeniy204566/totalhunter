@@ -4,7 +4,8 @@ import { DOWNLOAD as DL_RU } from '../constants.js'
 import { DOWNLOAD as DL_EN } from '../constants.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 
-const RELEASE_URL = 'https://api.total-hunter.com/web/download'
+const RELEASE_URL =
+  'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
 
 export default function DownloadPage() {
   const { lang, toggle } = useLang()
