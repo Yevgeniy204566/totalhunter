@@ -31,7 +31,7 @@ class HuntEngine:
             except Exception:
                 self.model.to('cpu')
                 _device = 'cpu'
-            print(f"[TH v1.2.3] YOLO device (pt): {_device}")
+            print(f"[TH v1.2.5] YOLO device (pt): {_device}")
 
         import sys
         _base = getattr(sys, '_MEIPASS', script_dir)

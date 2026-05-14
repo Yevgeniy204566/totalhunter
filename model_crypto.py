@@ -85,7 +85,7 @@ def yolo_from_encrypted(enc_path: str):
     except Exception:
         model.to('cpu')
         _device = 'cpu'
-    print(f"[TH v1.2.3] YOLO device: {_device}")
+    print(f"[TH v1.2.5] YOLO device: {_device}")
     return model
 
 
