@@ -188,25 +188,12 @@ def main():
                     os.remove(py_in_dist)
                     print(f"  Удалён из dist: {mod} (заменён .pyd)")
 
-        # Шаг 6: Inno Setup — компиляция установщика
-        inno_compiler = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-        iss_file = os.path.join(ROOT, "installer.iss")
-        if os.path.exists(inno_compiler) and os.path.exists(iss_file):
-            print("\n[6/6] Компиляция установщика (Inno Setup)...")
-            run([inno_compiler, iss_file])
-            setup_exe = os.path.join(ROOT, "dist", "TotalHunter_Setup.exe")
-            if os.path.exists(setup_exe):
-                size_mb = os.path.getsize(setup_exe) / 1024 / 1024
-                print(f"  OK Установщик: dist/TotalHunter_Setup.exe ({size_mb:.0f} MB)")
-            else:
-                print("  WARN  Установщик не найден после компиляции")
-        else:
-            print("\n[6/6] Inno Setup не найден — пропускаем установщик")
+        # Шаг 6: Inno Setup пропущен — дистрибуция только через ZIP
+        print("\n[6/6] Inno Setup пропущен — дистрибуция только через TotalHunter.zip")
 
         print("\n" + "=" * 60)
         print("  OK СБОРКА ЗАВЕРШЕНА")
         print(f"  EXE:       dist/TotalHunter/TotalHunter.exe")
-        print(f"  Setup:     dist/TotalHunter_Setup.exe")
         print(f"  Защищено:  {len(compiled)} модулей")
         print("=" * 60)
 
