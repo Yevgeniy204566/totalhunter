@@ -42,8 +42,13 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; VC++ Runtime — устанавливается только если нет
 Source: "vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
-; Все файлы программы
-Source: "dist\TotalHunter\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Программные файлы — всегда обновляются (кроме профилей)
+Source: "dist\TotalHunter\*"; DestDir: "{app}"; \
+  Flags: ignoreversion recursesubdirs createallsubdirs; \
+  Excludes: "profiles\*.json,gui_config.json"
+; Профили калибровок и настройки GUI — сохраняются при обновлении
+Source: "dist\TotalHunter\profiles\*.json"; DestDir: "{app}\profiles"; Flags: onlyifdoesntexist
+Source: "dist\TotalHunter\gui_config.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
