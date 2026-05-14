@@ -984,7 +984,7 @@ class PacmanEngine:
                 # Navigate (skip if manual mode)
                 if self.navigation_enabled:
                     self.joystick.step(is_water=is_water)
-                    time.sleep(self.move_wait + random.uniform(0.1, 0.4))
+                    time.sleep(max(0.1, self.move_wait + random.uniform(-0.1, 0.1)))
                 else:
                     time.sleep(self.scan_interval * 0.5)
 

@@ -9,6 +9,8 @@ import customtkinter as _ctk
 _ctk_path = os.path.dirname(_ctk.__file__)
 
 datas = [
+    # Дефолтные настройки GUI (копируется рядом с exe при первой установке)
+    ('gui_config.json', '.'),
     # Звуковой файл биржи
     ('Logo_exchange.wav', '.'),
     # YOLO модели (зашифрованные .pte — .pt в EXE не попадают)

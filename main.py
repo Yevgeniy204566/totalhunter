@@ -36,7 +36,11 @@ import keyboard
 import webbrowser
 from version import VERSION
 
-GUI_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gui_config.json')
+if getattr(sys, 'frozen', False):
+    _config_dir = os.path.dirname(sys.executable)
+else:
+    _config_dir = os.path.dirname(os.path.abspath(__file__))
+GUI_CONFIG_PATH = os.path.join(_config_dir, 'gui_config.json')
 
 
 # Настройки внешнего вида
@@ -1401,7 +1405,7 @@ class TotalHunterApp(ctk.CTk):
                                          font=ctk.CTkFont(size=14, weight="bold"),
                                          text_color=MD3["value_text"])
         self.nav_wait_val.pack(side="right")
-        self.nav_wait_slider = ctk.CTkSlider(nav_main_frame, from_=0.5, to=5.0,
+        self.nav_wait_slider = ctk.CTkSlider(nav_main_frame, from_=0.4, to=5.0,
                                              command=self._update_nav_labels,
                                              button_color=MD3["primary"],
                                              button_hover_color=MD3["primary_dim"],
