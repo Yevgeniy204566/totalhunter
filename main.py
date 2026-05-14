@@ -38,9 +38,15 @@ from version import VERSION
 
 if getattr(sys, 'frozen', False):
     _config_dir = os.path.dirname(sys.executable)
+    _bundled_config = os.path.join(sys._MEIPASS, 'gui_config.json')
 else:
     _config_dir = os.path.dirname(os.path.abspath(__file__))
+    _bundled_config = None
 GUI_CONFIG_PATH = os.path.join(_config_dir, 'gui_config.json')
+# Первый запуск: копируем дефолт из bundle, если конфига ещё нет
+if not os.path.exists(GUI_CONFIG_PATH) and _bundled_config and os.path.exists(_bundled_config):
+    import shutil as _shutil
+    _shutil.copy2(_bundled_config, GUI_CONFIG_PATH)
 
 
 # Настройки внешнего вида
