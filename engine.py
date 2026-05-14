@@ -22,8 +22,16 @@ class HuntEngine:
             self.model = yolo_from_encrypted(enc_path)
             self.model_path = enc_path
         else:
+            import torch
             self.model_path = pt_path
             self.model = YOLO(pt_path)
+            try:
+                _device = 'cuda' if torch.cuda.is_available() else 'cpu'
+                self.model.to(_device)
+            except Exception:
+                self.model.to('cpu')
+                _device = 'cpu'
+            print(f"[TH v1.2.3] YOLO device (pt): {_device}")
 
         import sys
         _base = getattr(sys, '_MEIPASS', script_dir)
