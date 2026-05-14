@@ -69,9 +69,9 @@ def load_model_bytes(enc_path: str) -> bytes:
 def yolo_from_encrypted(enc_path: str):
     """Загружает YOLO-модель из зашифрованного .pte файла через temp-файл."""
     import tempfile
+    import torch
     from ultralytics import YOLO
     raw = load_model_bytes(enc_path)
-    # YOLO требует путь к файлу — пишем во временный и сразу удаляем
     with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as tmp:
         tmp.write(raw)
         tmp_path = tmp.name
@@ -79,6 +79,13 @@ def yolo_from_encrypted(enc_path: str):
         model = YOLO(tmp_path)
     finally:
         os.remove(tmp_path)
+    try:
+        _device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        model.to(_device)
+    except Exception:
+        model.to('cpu')
+        _device = 'cpu'
+    print(f"[TH v1.2.3] YOLO device: {_device}")
     return model
 
 
