@@ -4,12 +4,16 @@ import time
 import threading
 import winsound
 import numpy as np
+import pyautogui
 from ultralytics import YOLO
 
 from navigator import PacmanEngine
 from auth import heartbeat as _heartbeat
 import nav_logger
 nav_logger.install()
+
+# Убираем глобальную задержку PyAutoGUI — антидетект обеспечивается move_wait в навигаторе
+pyautogui.PAUSE = 0.0
 
 
 class HuntEngine:
