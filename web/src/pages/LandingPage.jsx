@@ -119,7 +119,7 @@ function StatCard({ label, color, rawValue }) {
   )
 }
 
-const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
+const RELEASE_URL = 'https://api.total-hunter.com/web/download'
 
 const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
 

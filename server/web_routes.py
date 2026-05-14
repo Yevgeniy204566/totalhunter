@@ -682,6 +682,16 @@ async def web_referral_tree(
 
 # ── POST /web/crash_report ────────────────────────────────────────────────────
 
+@router.get("/download")
+async def download_latest():
+    """Редирект на актуальный ZIP — пользователь не видит GitHub."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(
+        url="https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip",
+        status_code=302,
+    )
+
+
 @router.post("/crash_report")
 async def crash_report(payload: CrashReportRequest, db: AsyncSession = Depends(get_db)):
     """Принимает отчёт о падении бота. Публичный, без JWT. Rate limit: 3/HWID/час."""
