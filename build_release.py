@@ -52,7 +52,7 @@ def compile_module(src: str):
         "--remove-output",
         "--no-pyi-file",
         "--assume-yes-for-downloads",
-        "--mingw64",       # GCC/MinGW64: SSE2 baseline, no AVX2 (Nuitka auto-downloads if missing)
+        "--msvc=14.3",     # MSVC 2022: SSE2 baseline x64, no AVX2 auto-vectorization
         "--lto=no",
         src,
     ])

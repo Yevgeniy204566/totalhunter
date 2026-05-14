@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-14 (Хангоф #51: диагностика клиента — краш STATUS_ILLEGAL_INSTRUCTION на старых CPU, откат к 1.2.2, план совместимости в буфере)
+> Последнее обновление: 2026-05-14 (сессия: v1.2.5 + v1.2.6 — совместимость CPU/CUDA, честный слайдер скорости, gui_config fix, Gemini sync на Service Account)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -28,7 +28,7 @@
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog (_detect_fail_streak + _pre_skip). Конец списка — визуальный cv2.absdiff. Статусы конца/сброса. | 2026-05-12 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
-| **Auto-update** | updater.py | ✅ v1.2.2 выпущен. ZIP (399MB) на GitHub. EXE убран — только ZIP. | 2026-05-12 |
+| **Auto-update** | updater.py | ✅ v1.2.6 в сборке. ZIP только. EXE убран. gui_config.json fix. | 2026-05-14 |
 | **Динамическое окно** | main.py | ✅ SPI_GETWORKAREA при старте — высота под экран, прижато вправо. Работает на любом разрешении. | 2026-05-12 |
 | **SEO** | web/ | ✅ useMeta hook (title+desc+OG per page), FAQ Schema JSON-LD (6 вопросов), sitemap обновлён | 2026-05-12 |
 | **Статистика лендинга** | server/web_routes.py | ✅ Накопительная: base 300 бирж + 5000 склепов + реальные данные. Только растёт. | 2026-05-12 |
@@ -87,19 +87,32 @@
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
 
+## 🔴 СРОЧНО — СЛЕДУЮЩИЙ ШАГ (после перезагрузки)
+
+**ЗАДАЧА:** Пересобрать v1.2.8 с MSVC 14.3 (VS Build Tools C++ установлен, нужна перезагрузка)
+
+1. `python build_release.py` — должно скомпилировать 9 .pyd через MSVC
+2. Проверить `Скомпилировано: 9 модулей`
+3. Создать ZIP → GitHub Release v1.2.8 → обновить сервер
+4. Дать клиенту (i5-3470) — проверить что auth.pyd больше не падает с 0xc000001d
+
+**Почему MSVC нужен:** Nuitka zig генерирует AVX2, auth.pyd падает с STATUS_ILLEGAL_INSTRUCTION (0xc000001d) на i5-3470 Ivy Bridge. MSVC x64 по умолчанию SSE2 baseline.
+
+**build_release.py уже содержит:** `--msvc=14.3` и `--lto=no`
+
+---
+
 ## 🔴 Задачи на следующую сессию
 
-1. **🔴 МЕГА-ОБНОВЛЕНИЕ СОВМЕСТИМОСТИ** — план в `docs/gemini_buffer.md`. Приоритет:
-   - `--lto=no` в Nuitka + пересборка v1.2.3 + тест у клиента со старым CPU
-   - CUDA graceful fallback (YOLO CPU mode если нет GPU)
-   - DPI awareness проверка
-   - Defender exclusion в installer
-2. **PopAds** — как придёт одобрение: вставить код в `web/src/components/AdSlot.jsx` и задеплоить Vercel
-3. **Серверные миграции** — на GCP есть лишние миграции `14e8d8e2a95a_final_merge`, `575bdc292d9e_merge_heads`, `22864ea6408d_add_web_platform_tables` — нужно перенести их в репо чтобы синхронизировать
+1. **PopAds** — как придёт одобрение: вставить код в `web/src/components/AdSlot.jsx` и задеплоить Vercel
+2. **Серверные миграции** — на GCP есть лишние миграции `14e8d8e2a95a_final_merge`, `575bdc292d9e_merge_heads`, `22864ea6408d_add_web_platform_tables` — нужно перенести их в репо
+3. **DPI awareness** — отложено на v1.2.7. SetProcessDpiAwareness(2) должна быть первой строкой main.py до GUI импортов. Требует тест на 125%/150% DPI.
+4. **Баг: бот выкидывает в магазин** — клиент жаловался, не диагностировали. Нужно выяснить при следующем случае.
+5. **v1.2.6** — сборка запущена (2026-05-14 ~20:45). Ждать завершения, создать релиз на GitHub, обновить сервер.
 
 ## ⚠️ ИЗВЕСТНЫЕ БАГИ
-- **Старые CPU (без AVX2, pre-2013)** — краш `STATUS_ILLEGAL_INSTRUCTION` в `auth.pyd`. Фикс: `--lto=no` в Nuitka. Нужна пересборка v1.2.3.
-- **installer.iss** — `Flags: ignoreversion` перезаписывает `profiles/*.json` при обновлении. Нужен `onlyifdoesntexist` для user-data файлов.
+- **Скорость бирж на CPU** — async YOLO запланирован на v1.2.7. Сейчас workaround: scan_interval >= 3с.
+- **Баг: выкидывает в магазин** — не диагностирован, жалоба от клиента.
 
 ## 📋 На будущее (не к спеху)
 1. **Discord-бот/ветка** — полноценная интеграция Total Hunter с Discord-сервером
