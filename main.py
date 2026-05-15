@@ -136,7 +136,7 @@ LANGS = {
         "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: В ПОИСКЕ...",
         "add_oil": "Добавь масла",
         # --- новые tab names ---
-        "tab_crypt": "СКЛЕПЫ", "tab_cal": "КАЛИБРОВКА",
+        "tab_crypt": "СКЛЕПЫ", "tab_cal": "КАЛИБРОВКА", "tab_roy": "РОЙ",
         # --- hunt tab ---
         "nn_title": "Нейросеть", "nav_main_title": "Навигация",
         "nav_extra_title": "Дополнительно", "nav_auto": "Авто",
@@ -189,7 +189,7 @@ LANGS = {
         "status_ready": "READY", "status_running": "STATUS: SEARCHING...",
         "add_oil": "Add Oil",
         # --- новые tab names ---
-        "tab_crypt": "CRYPTS", "tab_cal": "CALIBRATION",
+        "tab_crypt": "CRYPTS", "tab_cal": "CALIBRATION", "tab_roy": "ROY",
         # --- hunt tab ---
         "nn_title": "Neural Net", "nav_main_title": "Navigation",
         "nav_extra_title": "Advanced", "nav_auto": "Auto",
@@ -239,7 +239,7 @@ LANGS = {
         "copy": "KOPIEREN", "share_text": "CODE TEILEN UND % ERHALTEN", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVIERT", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "BEREIT", "status_running": "STATUS: SUCHE...", "add_oil": "Öl hinzufügen",
-        "tab_crypt": "KRYPTEN", "tab_cal": "KALIBRIERUNG",
+        "tab_crypt": "KRYPTEN", "tab_cal": "KALIBRIERUNG", "tab_roy": "ROY",
         "nn_title": "Neuronales Netz", "nav_main_title": "Navigation",
         "nav_extra_title": "Erweitert", "nav_auto": "Auto", "save_settings": "Einstellungen speichern",
         "nav_step": "Schritt:", "nav_wait": "Geschw. (Sek/Schritt):",
@@ -278,7 +278,7 @@ LANGS = {
         "copy": "COPIAR", "share_text": "COMPARTE EL CÓDIGO Y GANA %", "copied": "¡Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVADO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "LISTO", "status_running": "ESTADO: BUSCANDO...", "add_oil": "Agregar aceite",
-        "tab_crypt": "CRIPTAS", "tab_cal": "CALIBRACIÓN",
+        "tab_crypt": "CRIPTAS", "tab_cal": "CALIBRACIÓN", "tab_roy": "ROY",
         "nn_title": "Red Neuronal", "nav_main_title": "Navegación",
         "nav_extra_title": "Avanzado", "nav_auto": "Auto", "save_settings": "Guardar ajustes",
         "nav_step": "Paso:", "nav_wait": "Velocidad (seg/paso):",
@@ -317,7 +317,7 @@ LANGS = {
         "copy": "COPIER", "share_text": "PARTAGEZ LE CODE ET GAGNEZ %", "copied": "Copié !",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVÉ", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRÊT", "status_running": "STATUT : RECHERCHE...", "add_oil": "Ajouter de l'huile",
-        "tab_crypt": "CRYPTES", "tab_cal": "CALIBRATION",
+        "tab_crypt": "CRYPTES", "tab_cal": "CALIBRATION", "tab_roy": "ROY",
         "nn_title": "Réseau de neurones", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancé", "nav_auto": "Auto", "save_settings": "Sauvegarder les paramètres",
         "nav_step": "Pas :", "nav_wait": "Vitesse (sec/pas) :",
@@ -356,7 +356,7 @@ LANGS = {
         "copy": "COPIA", "share_text": "CONDIVIDI IL CODICE E GUADAGNA %", "copied": "Copiato!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ABILITATO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRONTO", "status_running": "STATO: RICERCA...", "add_oil": "Aggiungi olio",
-        "tab_crypt": "CRIPTE", "tab_cal": "CALIBRAZIONE",
+        "tab_crypt": "CRIPTE", "tab_cal": "CALIBRAZIONE", "tab_roy": "ROY",
         "nn_title": "Rete Neurale", "nav_main_title": "Navigazione",
         "nav_extra_title": "Avanzato", "nav_auto": "Auto", "save_settings": "Salva impostazioni",
         "nav_step": "Passo:", "nav_wait": "Velocità (sec/passo):",
@@ -395,7 +395,7 @@ LANGS = {
         "copy": "KOPIËREN", "share_text": "DEEL CODE EN VERDIEN %", "copied": "Gekopieerd!",
         "clicker_title": "Clickermann Sync", "clicker_on": "INGESCHAKELD", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "KLAAR", "status_running": "STATUS: ZOEKEN...", "add_oil": "Olie toevoegen",
-        "tab_crypt": "CRYPTEN", "tab_cal": "KALIBRATIE",
+        "tab_crypt": "CRYPTEN", "tab_cal": "KALIBRATIE", "tab_roy": "ROY",
         "nn_title": "Neuraal Netwerk", "nav_main_title": "Navigatie",
         "nav_extra_title": "Geavanceerd", "nav_auto": "Auto", "save_settings": "Instellingen opslaan",
         "nav_step": "Stap:", "nav_wait": "Snelheid (sec/stap):",
@@ -434,7 +434,7 @@ LANGS = {
         "copy": "KOPIER", "share_text": "DEL KODE OG TJEN %", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERT", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "KLAR", "status_running": "STATUS: SØKER...", "add_oil": "Legg til olje",
-        "tab_crypt": "KRYPTER", "tab_cal": "KALIBRERING",
+        "tab_crypt": "KRYPTER", "tab_cal": "KALIBRERING", "tab_roy": "ROY",
         "nn_title": "Nevralt Nettverk", "nav_main_title": "Navigasjon",
         "nav_extra_title": "Avansert", "nav_auto": "Auto", "save_settings": "Lagre innstillinger",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -473,7 +473,7 @@ LANGS = {
         "copy": "KOPIUJ", "share_text": "UDOSTĘPNIJ KOD I ZDOBĄDŹ %", "copied": "Skopiowano!",
         "clicker_title": "Clickermann Sync", "clicker_on": "WŁĄCZONO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "GOTOWY", "status_running": "STATUS: SZUKAM...", "add_oil": "Dodaj olej",
-        "tab_crypt": "KRYPTY", "tab_cal": "KALIBRACJA",
+        "tab_crypt": "KRYPTY", "tab_cal": "KALIBRACJA", "tab_roy": "ROY",
         "nn_title": "Sieć Neuronowa", "nav_main_title": "Nawigacja",
         "nav_extra_title": "Zaawansowane", "nav_auto": "Auto", "save_settings": "Zapisz ustawienia",
         "nav_step": "Krok:", "nav_wait": "Prędkość (sek/krok):",
@@ -512,7 +512,7 @@ LANGS = {
         "copy": "COPIAR", "share_text": "COMPARTILHE O CÓDIGO E GANHE %", "copied": "Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ATIVADO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRONTO", "status_running": "STATUS: BUSCANDO...", "add_oil": "Adicionar óleo",
-        "tab_crypt": "CRIPTAS", "tab_cal": "CALIBRAÇÃO",
+        "tab_crypt": "CRIPTAS", "tab_cal": "CALIBRAÇÃO", "tab_roy": "ROY",
         "nn_title": "Rede Neural", "nav_main_title": "Navegação",
         "nav_extra_title": "Avançado", "nav_auto": "Auto", "save_settings": "Salvar configurações",
         "nav_step": "Passo:", "nav_wait": "Velocidade (seg/passo):",
@@ -551,7 +551,7 @@ LANGS = {
         "copy": "KOPIERA", "share_text": "DELA KOD OCH TJÄNA %", "copied": "Kopierat!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERAD", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "REDO", "status_running": "STATUS: SÖKER...", "add_oil": "Lägg till olja",
-        "tab_crypt": "KRYPTOR", "tab_cal": "KALIBRERING",
+        "tab_crypt": "KRYPTOR", "tab_cal": "KALIBRERING", "tab_roy": "ROY",
         "nn_title": "Neuralt Nätverk", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancerat", "nav_auto": "Auto", "save_settings": "Spara inställningar",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -590,7 +590,7 @@ LANGS = {
         "copy": "KOPYALA", "share_text": "KODU PAYLAŞ VE % KAZAN", "copied": "Kopyalandı!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ETKİN", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "HAZIR", "status_running": "DURUM: ARIYOR...", "add_oil": "Yağ ekle",
-        "tab_crypt": "KRİPTALAR", "tab_cal": "KALİBRASYON",
+        "tab_crypt": "KRİPTALAR", "tab_cal": "KALİBRASYON", "tab_roy": "ROY",
         "nn_title": "Sinir Ağı", "nav_main_title": "Navigasyon",
         "nav_extra_title": "Gelişmiş", "nav_auto": "Otomatik", "save_settings": "Ayarları kaydet",
         "nav_step": "Adım:", "nav_wait": "Hız (sn/adım):",
@@ -629,7 +629,7 @@ LANGS = {
         "copy": "نسخ", "share_text": "شارك الرمز واكسب %", "copied": "تم النسخ!",
         "clicker_title": "Clickermann Sync", "clicker_on": "مفعّل", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "جاهز", "status_running": "الحالة: يبحث...", "add_oil": "أضف زيتاً",
-        "tab_crypt": "المقابر", "tab_cal": "المعايرة",
+        "tab_crypt": "المقابر", "tab_cal": "المعايرة", "tab_roy": "ROY",
         "nn_title": "الشبكة العصبية", "nav_main_title": "التنقل",
         "nav_extra_title": "متقدم", "nav_auto": "تلقائي", "save_settings": "حفظ الإعدادات",
         "nav_step": "خطوة:", "nav_wait": "السرعة (ث/خطوة):",
@@ -668,7 +668,7 @@ LANGS = {
         "copy": "コピー", "share_text": "コードを共有して%を獲得", "copied": "コピーしました！",
         "clicker_title": "Clickermann Sync", "clicker_on": "有効", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "準備完了", "status_running": "ステータス: 検索中...", "add_oil": "オイルを追加",
-        "tab_crypt": "クリプト", "tab_cal": "キャリブレーション",
+        "tab_crypt": "クリプト", "tab_cal": "キャリブレーション", "tab_roy": "ROY",
         "nn_title": "ニューラルネット", "nav_main_title": "ナビゲーション",
         "nav_extra_title": "詳細設定", "nav_auto": "自動", "save_settings": "設定を保存",
         "nav_step": "ステップ:", "nav_wait": "速度 (秒/ステップ):",
@@ -707,7 +707,7 @@ LANGS = {
         "copy": "复制", "share_text": "分享代码获得%", "copied": "已复制！",
         "clicker_title": "Clickermann Sync", "clicker_on": "已启用", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "准备就绪", "status_running": "状态: 搜索中...", "add_oil": "添加油",
-        "tab_crypt": "地下墓穴", "tab_cal": "校准",
+        "tab_crypt": "地下墓穴", "tab_cal": "校准", "tab_roy": "ROY",
         "nn_title": "神经网络", "nav_main_title": "导航",
         "nav_extra_title": "高级设置", "nav_auto": "自动", "save_settings": "保存设置",
         "nav_step": "步长:", "nav_wait": "速度 (秒/步):",
@@ -746,7 +746,7 @@ LANGS = {
         "copy": "複製", "share_text": "分享代碼獲得%", "copied": "已複製！",
         "clicker_title": "Clickermann Sync", "clicker_on": "已啟用", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "準備就緒", "status_running": "狀態: 搜尋中...", "add_oil": "添加油",
-        "tab_crypt": "地下墓穴", "tab_cal": "校準",
+        "tab_crypt": "地下墓穴", "tab_cal": "校準", "tab_roy": "ROY",
         "nn_title": "神經網路", "nav_main_title": "導航",
         "nav_extra_title": "進階設定", "nav_auto": "自動", "save_settings": "儲存設定",
         "nav_step": "步長:", "nav_wait": "速度 (秒/步):",
@@ -785,7 +785,7 @@ LANGS = {
         "copy": "복사", "share_text": "코드 공유하여 % 획득", "copied": "복사됨!",
         "clicker_title": "Clickermann Sync", "clicker_on": "활성화됨", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "준비 완료", "status_running": "상태: 검색 중...", "add_oil": "오일 추가",
-        "tab_crypt": "크립트", "tab_cal": "보정",
+        "tab_crypt": "크립트", "tab_cal": "보정", "tab_roy": "ROY",
         "nn_title": "신경망", "nav_main_title": "네비게이션",
         "nav_extra_title": "고급 설정", "nav_auto": "자동", "save_settings": "설정 저장",
         "nav_step": "단계:", "nav_wait": "속도 (초/단계):",
@@ -824,7 +824,7 @@ LANGS = {
         "copy": "КОПІЮВАТИ", "share_text": "ПОДІЛІТЬСЯ КОДОМ І ОТРИМАЙТЕ %", "copied": "Скопійовано!",
         "clicker_title": "Синхронізація Clickermann", "clicker_on": "УВІМКНУТИ", "key_start": "Старт:", "key_stop": "Стоп:",
         "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: У ПОШУКУ...", "add_oil": "Додай масла",
-        "tab_crypt": "СКЛЕПИ", "tab_cal": "КАЛІБРУВАННЯ",
+        "tab_crypt": "СКЛЕПИ", "tab_cal": "КАЛІБРУВАННЯ", "tab_roy": "РОЙ",
         "nn_title": "Нейромережа", "nav_main_title": "Навігація",
         "nav_extra_title": "Додатково", "nav_auto": "Авто", "save_settings": "Зберегти налаштування",
         "nav_step": "Крок:", "nav_wait": "Швидкість (сек/крок):",
@@ -863,7 +863,7 @@ LANGS = {
         "copy": "SALIN", "share_text": "BAGIKAN KODE DAN DAPATKAN %", "copied": "Disalin!",
         "clicker_title": "Clickermann Sync", "clicker_on": "DIAKTIFKAN", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "SIAP", "status_running": "STATUS: MENCARI...", "add_oil": "Tambah minyak",
-        "tab_crypt": "KRIPTA", "tab_cal": "KALIBRASI",
+        "tab_crypt": "KRIPTA", "tab_cal": "KALIBRASI", "tab_roy": "ROY",
         "nn_title": "Jaringan Saraf", "nav_main_title": "Navigasi",
         "nav_extra_title": "Lanjutan", "nav_auto": "Otomatis", "save_settings": "Simpan pengaturan",
         "nav_step": "Langkah:", "nav_wait": "Kecepatan (dtk/langkah):",
@@ -1265,12 +1265,13 @@ class TotalHunterApp(ctk.CTk):
        
         # Сохраняем имена вкладок при создании — change_lang ищет по ним
         self._tab_init_names = {k: LANGS[self.current_lang][k]
-                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_cal")}
+                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_cal", "tab_roy")}
         self.tab_crypt = self.tabview.add(self._tab_init_names["tab_crypt"])
         self.tab_hunt  = self.tabview.add(self._tab_init_names["tab_hunt"])
         # self.tab_combo = self.tabview.add("Combo")  # временно отключён
         self.tab_ref   = self.tabview.add(self._tab_init_names["tab_ref"])
         self.tab_calibration = self.tabview.add(self._tab_init_names["tab_cal"])
+        self.tab_roy   = self.tabview.add(self._tab_init_names["tab_roy"])
 
 
         # Общие переменные для калибровки (нужны в нескольких вкладках)
@@ -2567,6 +2568,7 @@ class TotalHunterApp(ctk.CTk):
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
 
             try:
+                self.engine.roy_enabled = self._roy_enabled_var.get()
                 self.engine.start(
                     conf=self.conf_slider.get(),
                     center_x=cx,
@@ -2722,6 +2724,80 @@ class TotalHunterApp(ctk.CTk):
         messagebox.showinfo("System", res.get("message"))
         self.update_license_info()
 
+
+    # ── ROY методы ───────────────────────────────────────────────────────────
+
+    def _on_roy_toggle(self):
+        enabled = self._roy_enabled_var.get()
+        self._save_gui_config_key("roy_enabled", enabled)
+        if hasattr(self, 'engine') and self.engine:
+            self.engine.roy_enabled = enabled
+        if enabled:
+            self._roy_refresh_balance()
+            self._roy_refresh_pool()
+
+    def _roy_refresh_balance(self):
+        """Обновляет баланс времени с сервера."""
+        def _fetch():
+            try:
+                from roy.roy_client import RoyClient
+                from auth import get_hwid
+                client = RoyClient(get_hwid())
+                bal = client.get_balance()
+                mins = bal // 60
+                secs = bal % 60
+                text = f"{mins}:{secs:02d} мин" if mins > 0 else f"{secs} сек"
+                color = "#4ADE80" if bal > 300 else ("#FACC15" if bal > 60 else "#F87171")
+                self.after(0, lambda: self._roy_balance_lb.configure(text=text, text_color=color))
+            except Exception:
+                self.after(0, lambda: self._roy_balance_lb.configure(text="—"))
+        threading.Thread(target=_fetch, daemon=True).start()
+
+    def _roy_refresh_pool(self):
+        """Загружает список координат из пула Роя и обновляет список."""
+        def _fetch():
+            try:
+                from roy.roy_client import RoyClient
+                from auth import get_hwid
+                client = RoyClient(get_hwid())
+                pool = client.get_pool(consume=False)
+                self.after(0, lambda: self._roy_update_list(pool))
+            except Exception as e:
+                self.after(0, lambda: self._roy_status_lb.configure(text=f"Ошибка: {e}"))
+        threading.Thread(target=_fetch, daemon=True).start()
+
+    def _roy_update_list(self, pool: list):
+        """Перерисовывает список координат в ScrollableFrame."""
+        for w in self._roy_list_frame.winfo_children():
+            w.destroy()
+
+        if not pool:
+            ctk.CTkLabel(
+                self._roy_list_frame,
+                text="Нет активных координат.",
+                font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+            ).pack(pady=20)
+            self._roy_status_lb.configure(text="Пул пуст")
+            return
+
+        self._roy_status_lb.configure(text=f"Координат в пуле: {len(pool)}")
+        for entry in pool:
+            row = ctk.CTkFrame(self._roy_list_frame, fg_color=MD3["card"], corner_radius=6)
+            row.pack(fill="x", padx=4, pady=2)
+            pct = entry.get('percent', 0)
+            pct_color = "#4ADE80" if pct < 50 else ("#FACC15" if pct < 80 else "#F87171")
+            ctk.CTkLabel(
+                row,
+                text=f"K:{entry['kingdom']}  X:{entry['x']}  Y:{entry['y']}",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=MD3["on_surface"],
+            ).pack(side="left", padx=10, pady=4)
+            ctk.CTkLabel(
+                row,
+                text=f"{pct}%",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=pct_color,
+            ).pack(side="right", padx=10)
 
     def change_lang(self, val):
         old_val = self.current_lang
@@ -3026,6 +3102,91 @@ class TotalHunterApp(ctk.CTk):
             text_color=MD3["outline"],
             justify="center",
         ).pack(pady=(20, 0))
+
+        # ── Вкладка РОЙ ──────────────────────────────────────────────────
+        self._roy_enabled_var = ctk.BooleanVar(value=self._load_gui_config().get("roy_enabled", False))
+
+        # Заголовок
+        ctk.CTkLabel(
+            self.tab_roy,
+            text="⬡  СИСТЕМА РОЙ",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=MD3["accent"],
+        ).pack(pady=(16, 4))
+
+        ctk.CTkLabel(
+            self.tab_roy,
+            text="Делись координатами бирж — получай чужие",
+            font=ctk.CTkFont(size=11),
+            text_color=MD3["on_surface2"],
+        ).pack(pady=(0, 12))
+
+        # Баланс времени
+        bal_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
+        bal_card.pack(fill="x", padx=20, pady=(0, 10))
+        ctk.CTkLabel(bal_card, text="⏱ Баланс доступа",
+                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]).pack(pady=(8, 2))
+        self._roy_balance_lb = ctk.CTkLabel(
+            bal_card, text="— мин",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color=MD3["accent"],
+        )
+        self._roy_balance_lb.pack(pady=(0, 8))
+
+        # Тумблер
+        toggle_row = ctk.CTkFrame(self.tab_roy, fg_color="transparent")
+        toggle_row.pack(fill="x", padx=20, pady=(0, 8))
+        ctk.CTkLabel(toggle_row, text="Участвовать в Рое",
+                     font=ctk.CTkFont(size=13)).pack(side="left")
+        self._roy_switch = ctk.CTkSwitch(
+            toggle_row, text="", variable=self._roy_enabled_var,
+            onvalue=True, offvalue=False,
+            command=self._on_roy_toggle,
+            fg_color=MD3["outline"], progress_color=MD3["accent"],
+        )
+        self._roy_switch.pack(side="right")
+
+        # Разделитель
+        ctk.CTkFrame(self.tab_roy, height=1, fg_color=MD3["outline"]).pack(
+            fill="x", padx=20, pady=(4, 8))
+
+        # Список координат
+        ctk.CTkLabel(
+            self.tab_roy, text="Координаты от участников:",
+            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+        ).pack(anchor="w", padx=22)
+
+        self._roy_list_frame = ctk.CTkScrollableFrame(
+            self.tab_roy, height=200, fg_color=MD3["elevated"], corner_radius=8,
+        )
+        self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
+
+        self._roy_empty_lb = ctk.CTkLabel(
+            self._roy_list_frame,
+            text="Нет данных. Включи Рой и запусти бота.",
+            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+        )
+        self._roy_empty_lb.pack(pady=20)
+
+        # Кнопка обновить
+        ctk.CTkButton(
+            self.tab_roy, text="↻  Обновить пул",
+            height=34, corner_radius=8,
+            fg_color=MD3["elevated"], hover_color=MD3["card"],
+            text_color=MD3["on_surface"],
+            command=self._roy_refresh_pool,
+        ).pack(fill="x", padx=20, pady=(0, 8))
+
+        # Статус Роя
+        self._roy_status_lb = ctk.CTkLabel(
+            self.tab_roy, text="",
+            font=ctk.CTkFont(size=10), text_color=MD3["on_surface2"],
+        )
+        self._roy_status_lb.pack(pady=(0, 4))
+
+        # Если был включён при прошлом запуске — сразу обновляем баланс
+        if self._roy_enabled_var.get():
+            self.after(1500, self._roy_refresh_balance)
 
         # ── Auto-load on startup ──────────────────────────────────────────
         last = self._load_gui_config().get("last_calibration_profile", "Client")
