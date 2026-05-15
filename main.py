@@ -1291,6 +1291,7 @@ class TotalHunterApp(ctk.CTk):
         # self.setup_combo_tab()  # временно отключён
         self.setup_ref_tab()
         self.setup_calibration_tab()
+        self.setup_roy_tab()
         self.update_license_info()
         self.after(1000, self._start_balance_sync)
 
@@ -2727,6 +2728,82 @@ class TotalHunterApp(ctk.CTk):
 
     # ── ROY методы ───────────────────────────────────────────────────────────
 
+    def setup_roy_tab(self):
+        self._roy_enabled_var = ctk.BooleanVar(value=self._load_gui_config().get("roy_enabled", False))
+
+        ctk.CTkLabel(
+            self.tab_roy,
+            text="⬡  СИСТЕМА РОЙ",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=MD3["primary"],
+        ).pack(pady=(16, 4))
+
+        ctk.CTkLabel(
+            self.tab_roy,
+            text="Делись координатами бирж — получай чужие",
+            font=ctk.CTkFont(size=11),
+            text_color=MD3["on_surface2"],
+        ).pack(pady=(0, 12))
+
+        bal_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
+        bal_card.pack(fill="x", padx=20, pady=(0, 10))
+        ctk.CTkLabel(bal_card, text="⏱ Баланс доступа",
+                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]).pack(pady=(8, 2))
+        self._roy_balance_lb = ctk.CTkLabel(
+            bal_card, text="— мин",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color=MD3["primary"],
+        )
+        self._roy_balance_lb.pack(pady=(0, 8))
+
+        toggle_row = ctk.CTkFrame(self.tab_roy, fg_color="transparent")
+        toggle_row.pack(fill="x", padx=20, pady=(0, 8))
+        ctk.CTkLabel(toggle_row, text="Участвовать в Рое",
+                     font=ctk.CTkFont(size=13)).pack(side="left")
+        self._roy_switch = ctk.CTkSwitch(
+            toggle_row, text="", variable=self._roy_enabled_var,
+            onvalue=True, offvalue=False,
+            command=self._on_roy_toggle,
+            fg_color=MD3["outline"], progress_color=MD3["primary"],
+        )
+        self._roy_switch.pack(side="right")
+
+        ctk.CTkFrame(self.tab_roy, height=1, fg_color=MD3["outline"]).pack(
+            fill="x", padx=20, pady=(4, 8))
+
+        ctk.CTkLabel(
+            self.tab_roy, text="Координаты от участников:",
+            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+        ).pack(anchor="w", padx=22)
+
+        self._roy_list_frame = ctk.CTkScrollableFrame(
+            self.tab_roy, height=200, fg_color=MD3["elevated"], corner_radius=8,
+        )
+        self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
+
+        ctk.CTkLabel(
+            self._roy_list_frame,
+            text="Нет данных. Включи Рой и запусти бота.",
+            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+        ).pack(pady=20)
+
+        ctk.CTkButton(
+            self.tab_roy, text="↻  Обновить пул",
+            height=34, corner_radius=8,
+            fg_color=MD3["elevated"], hover_color=MD3["card"],
+            text_color=MD3["on_surface"],
+            command=self._roy_refresh_pool,
+        ).pack(fill="x", padx=20, pady=(0, 8))
+
+        self._roy_status_lb = ctk.CTkLabel(
+            self.tab_roy, text="",
+            font=ctk.CTkFont(size=10), text_color=MD3["on_surface2"],
+        )
+        self._roy_status_lb.pack(pady=(0, 4))
+
+        if self._roy_enabled_var.get():
+            self.after(1500, self._roy_refresh_balance)
+
     def _on_roy_toggle(self):
         enabled = self._roy_enabled_var.get()
         self._save_gui_config_key("roy_enabled", enabled)
@@ -3102,91 +3179,6 @@ class TotalHunterApp(ctk.CTk):
             text_color=MD3["outline"],
             justify="center",
         ).pack(pady=(20, 0))
-
-        # ── Вкладка РОЙ ──────────────────────────────────────────────────
-        self._roy_enabled_var = ctk.BooleanVar(value=self._load_gui_config().get("roy_enabled", False))
-
-        # Заголовок
-        ctk.CTkLabel(
-            self.tab_roy,
-            text="⬡  СИСТЕМА РОЙ",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=MD3["accent"],
-        ).pack(pady=(16, 4))
-
-        ctk.CTkLabel(
-            self.tab_roy,
-            text="Делись координатами бирж — получай чужие",
-            font=ctk.CTkFont(size=11),
-            text_color=MD3["on_surface2"],
-        ).pack(pady=(0, 12))
-
-        # Баланс времени
-        bal_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
-        bal_card.pack(fill="x", padx=20, pady=(0, 10))
-        ctk.CTkLabel(bal_card, text="⏱ Баланс доступа",
-                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]).pack(pady=(8, 2))
-        self._roy_balance_lb = ctk.CTkLabel(
-            bal_card, text="— мин",
-            font=ctk.CTkFont(size=20, weight="bold"),
-            text_color=MD3["accent"],
-        )
-        self._roy_balance_lb.pack(pady=(0, 8))
-
-        # Тумблер
-        toggle_row = ctk.CTkFrame(self.tab_roy, fg_color="transparent")
-        toggle_row.pack(fill="x", padx=20, pady=(0, 8))
-        ctk.CTkLabel(toggle_row, text="Участвовать в Рое",
-                     font=ctk.CTkFont(size=13)).pack(side="left")
-        self._roy_switch = ctk.CTkSwitch(
-            toggle_row, text="", variable=self._roy_enabled_var,
-            onvalue=True, offvalue=False,
-            command=self._on_roy_toggle,
-            fg_color=MD3["outline"], progress_color=MD3["accent"],
-        )
-        self._roy_switch.pack(side="right")
-
-        # Разделитель
-        ctk.CTkFrame(self.tab_roy, height=1, fg_color=MD3["outline"]).pack(
-            fill="x", padx=20, pady=(4, 8))
-
-        # Список координат
-        ctk.CTkLabel(
-            self.tab_roy, text="Координаты от участников:",
-            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
-        ).pack(anchor="w", padx=22)
-
-        self._roy_list_frame = ctk.CTkScrollableFrame(
-            self.tab_roy, height=200, fg_color=MD3["elevated"], corner_radius=8,
-        )
-        self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
-
-        self._roy_empty_lb = ctk.CTkLabel(
-            self._roy_list_frame,
-            text="Нет данных. Включи Рой и запусти бота.",
-            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
-        )
-        self._roy_empty_lb.pack(pady=20)
-
-        # Кнопка обновить
-        ctk.CTkButton(
-            self.tab_roy, text="↻  Обновить пул",
-            height=34, corner_radius=8,
-            fg_color=MD3["elevated"], hover_color=MD3["card"],
-            text_color=MD3["on_surface"],
-            command=self._roy_refresh_pool,
-        ).pack(fill="x", padx=20, pady=(0, 8))
-
-        # Статус Роя
-        self._roy_status_lb = ctk.CTkLabel(
-            self.tab_roy, text="",
-            font=ctk.CTkFont(size=10), text_color=MD3["on_surface2"],
-        )
-        self._roy_status_lb.pack(pady=(0, 4))
-
-        # Если был включён при прошлом запуске — сразу обновляем баланс
-        if self._roy_enabled_var.get():
-            self.after(1500, self._roy_refresh_balance)
 
         # ── Auto-load on startup ──────────────────────────────────────────
         last = self._load_gui_config().get("last_calibration_profile", "Client")
