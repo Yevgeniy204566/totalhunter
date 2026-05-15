@@ -255,6 +255,48 @@ class CrashReport(Base):
                         server_default=func.now(), index=True)
 
 
+# ─────────────────────────────────────────────
+# Roy — Swarm exchange coordinate pool
+# ─────────────────────────────────────────────
+
+class RoyPool(Base):
+    """
+    Активные координаты бирж от участников Роя.
+    TTL 20 минут — обновляется при каждом новом репорте по тем же K:X:Y.
+    percent >= 90 считается выкупленной — не показывается другим.
+    """
+    __tablename__ = "roy_pool"
+
+    id            = Column(Integer, primary_key=True)
+    kingdom       = Column(Integer, nullable=False, index=True)
+    x             = Column(Integer, nullable=False)
+    y             = Column(Integer, nullable=False)
+    percent       = Column(Integer, nullable=False)
+    reporter_hwid = Column(String(16), nullable=False, index=True)
+    created_at    = Column(TIMESTAMP(timezone=True), nullable=False,
+                           server_default=func.now())
+    updated_at    = Column(TIMESTAMP(timezone=True), nullable=False,
+                           server_default=func.now())
+    expires_at    = Column(TIMESTAMP(timezone=True), nullable=False, index=True)
+
+
+class RoyBalance(Base):
+    """
+    Накопленное время доступа к Рою (в секундах).
+    +45 сек за каждые 30 сек активного сканирования (1.5x).
+    """
+    __tablename__ = "roy_balance"
+
+    hwid        = Column(String(16), primary_key=True)
+    balance_sec = Column(Integer, nullable=False, server_default=text('0'))
+    updated_at  = Column(TIMESTAMP(timezone=True), nullable=False,
+                         server_default=func.now())
+
+
+# ─────────────────────────────────────────────
+# Orders — payment records
+# ─────────────────────────────────────────────
+
 class Order(Base):
     """
     One row per payment attempt.
