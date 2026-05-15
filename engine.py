@@ -8,7 +8,7 @@ import pyautogui
 from ultralytics import YOLO
 
 from navigator import PacmanEngine
-from auth import heartbeat as _heartbeat
+from auth import heartbeat as _heartbeat, get_hwid
 import nav_logger
 nav_logger.install()
 
@@ -46,6 +46,10 @@ class HuntEngine:
         self.is_running = False
         self.on_found_callback = None
         self._pacman: PacmanEngine | None = None
+
+        # Roy — отключён по умолчанию, включается из GUI
+        self.roy_enabled   = False
+        self._roy_client   = None
 
     def start(
         self,
@@ -120,16 +124,57 @@ class HuntEngine:
                 return_delta_px=return_delta_px,
                 smooth_alpha=smooth_alpha,
             )
-        self._pacman.on_found_callback = self.on_found_callback
+        # Roy: оборачиваем callback и запускаем scan-цикл
+        if self.roy_enabled:
+            from roy.roy_client import RoyClient
+            self._roy_client = RoyClient(hwid=get_hwid())
+            original_cb = self.on_found_callback
+
+            def _roy_found_wrapper(*args, **kwargs):
+                if original_cb:
+                    original_cb(*args, **kwargs)
+                threading.Thread(target=self._roy_on_found, daemon=True).start()
+
+            self._pacman.on_found_callback = _roy_found_wrapper
+        else:
+            self._pacman.on_found_callback = self.on_found_callback
 
         self.is_running = True
         self._pacman.start()
         self._start_heartbeat()
+        if self.roy_enabled:
+            self._start_roy_scan()
 
     def stop(self):
         self.is_running = False
         if self._pacman:
             self._pacman.stop()
+
+    def _roy_on_found(self):
+        """OCR диалога биржи → отправка координат в Рой (если % < 90)."""
+        try:
+            from roy.exchange_reader import wait_and_read
+            result = wait_and_read(timeout=4.0)
+            if result and result['percent'] < 90:
+                self._roy_client.report(
+                    kingdom=result['kingdom'],
+                    x=result['x'],
+                    y=result['y'],
+                    percent=result['percent'],
+                )
+        except Exception:
+            pass
+
+    def _start_roy_scan(self):
+        """Proof of Scan: каждые 30 сек фиксирует активность (+45 сек баланса)."""
+        def _loop():
+            while self.is_running:
+                self._roy_client.scan()
+                for _ in range(30):
+                    if not self.is_running:
+                        break
+                    time.sleep(1)
+        threading.Thread(target=_loop, daemon=True).start()
 
     def _start_heartbeat(self):
         """Фоновый поток: пингует сервер каждые 2 минуты пока бот запущен."""
