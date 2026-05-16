@@ -73,9 +73,9 @@ def install():
 def _patch_step(cls):
     orig = cls.step
 
-    def _step(self, is_water: bool = False):
+    def _step(self, is_water: bool = False, frame=None):
         state_before = self._state
-        result = orig(self, is_water=is_water)
+        result = orig(self, is_water=is_water, frame=frame)
         state_after  = self._state
 
         if state_before != state_after:
@@ -159,12 +159,12 @@ def _patch_move_perpendicular(cls):
 def _patch_is_at_coast_now(cls):
     orig = cls._is_at_coast_now
 
-    def _coast_now(self):
-        result = orig(self)
+    def _coast_now(self, frame=None):
+        result = orig(self, frame=frame)
         # We need z values — re-run the check for logging only (cheap, same minimap)
         try:
             from minimap_reader import analyze_forward_zone
-            mm = self._grab_minimap()
+            mm = self._grab_minimap(frame=frame)
             seaward = (-self._inland_vec[0], -self._inland_vec[1])
             z = analyze_forward_zone(mm, seaward, radius=self.coast_detect_radius)
             _write(
