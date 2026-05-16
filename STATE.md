@@ -52,13 +52,13 @@
 ## Текущие ключи и токены (хранить только здесь)
 
 ### Admin API
-- `ADMIN_SECRET_KEY` (в systemd сервиса): `zQ2z8D80xEnLTET0kQ0Bl85EYlTZBLIAtc37dZAmmK8`
+- `ADMIN_SECRET_KEY`: `[в systemd override.conf на GCP]` ⚠️ НЕ хранить здесь
 - ⚠️ Нужно добавить `ADMIN_TOKEN=` в override.conf (сейчас работает дефолт `dev-admin-token` — небезопасно!)
 - Команда обновления версии: `curl -X POST "https://api.total-hunter.com/admin/version/update?version=X.X.X" -H "Authorization: Bearer <ADMIN_TOKEN>"`
 
 ### NOWPayments
-- API Key: `JKPMX8E-YS5MVV1-M0GTWDH-6WQ7SVP`
-- IPN Secret: `iYOJZOwoI1a+M1gZ65bt0PAaul4GJvTd`
+- API Key: `[в systemd override.conf на GCP — NOWPAYMENTS_API_KEY]` ⚠️ НЕ хранить здесь
+- IPN Secret: `[в systemd override.conf на GCP — NOWPAYMENTS_IPN_SECRET]` ⚠️ НЕ хранить здесь
 - Public Key: `8d82b5f6-61b6-48e5-9656-19ed7eb68c4b`
 - IPN URL: `https://api.total-hunter.com/web/payment/webhook`
 
@@ -69,7 +69,7 @@
 - **Лучшие альтернативы:** BitMedia ($20 BTC/USDT, баннеры), BidVertiser ($10 BTC)
 
 ### Vercel
-- Token: `vcp_6DSYv8wkJD8vKnQUtwRi1kiO0vGXsRznVUffzynEMQL6YA2h052lWRhG` (также в `.env.local`)
+- Token: `[см. .claude/settings.local.json → env.VERCEL_TOKEN]` ⚠️ НЕ хранить в STATE.md (публичный репо!)
 - Team: `team_CkkRPXdwtRtsL9YCk8n4Fzla`
 - Project: `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj`
 - GitHub repoId: `1215361801`
