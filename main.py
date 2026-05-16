@@ -2842,31 +2842,40 @@ class TotalHunterApp(ctk.CTk):
 
         self._roy_status_lb.configure(text=f"Координат в пуле: {len(pool)}")
         from datetime import datetime, timezone, timedelta
+
+        # Сортировка: свежие (маленький elapsed) сверху
+        def _elapsed_sec(e):
+            try:
+                upd = datetime.fromisoformat(e.get('updated_at', ''))
+                return (datetime.now(timezone.utc) - upd).total_seconds()
+            except Exception:
+                return 9999
+        pool = sorted(pool, key=_elapsed_sec)
+
         for entry in pool:
             row = ctk.CTkFrame(self._roy_list_frame, fg_color=MD3["card"], corner_radius=6)
             row.pack(fill="x", padx=4, pady=2)
             pct = entry.get('percent', 0)
             pct_color = "#4ADE80" if pct < 50 else ("#FACC15" if pct < 80 else "#F87171")
 
-            # Таймер обратного отсчёта (TTL = 20 мин от updated_at)
+            # Таймер = прошедшее время. Зелёный = свежая, красный = старая
             updated_raw = entry.get('updated_at')
             if updated_raw:
                 try:
                     upd = datetime.fromisoformat(updated_raw)
-                    remaining = ((upd + timedelta(minutes=20)) - datetime.now(timezone.utc)).total_seconds()
-                    remaining = max(0, remaining)
-                    timer_text = f"⏱ {int(remaining//60):02d}:{int(remaining%60):02d}"
-                    timer_color = "#4ADE80" if remaining > 600 else ("#FACC15" if remaining > 300 else "#F87171")
+                    elapsed = max(0, (datetime.now(timezone.utc) - upd).total_seconds())
+                    timer_text = f"⏱ {int(elapsed//60):02d}:{int(elapsed%60):02d}"
+                    timer_color = "#4ADE80" if elapsed < 300 else ("#FACC15" if elapsed < 720 else "#F87171")
                 except Exception:
                     timer_text, timer_color = "⏱ --:--", MD3["on_surface2"]
             else:
                 timer_text, timer_color = "⏱ --:--", MD3["on_surface2"]
 
-            # ГОС — жирный, бежевый/золотой
+            # Королевство — жирный, золотой (без слова ГОС)
             ctk.CTkLabel(
                 row,
-                text=f"ГОС {entry['kingdom']}",
-                font=ctk.CTkFont(size=13, weight="bold"),
+                text=str(entry['kingdom']),
+                font=ctk.CTkFont(size=14, weight="bold"),
                 text_color="#F0C070",
             ).pack(side="left", padx=(10, 6), pady=5)
             # Координаты
@@ -2876,7 +2885,7 @@ class TotalHunterApp(ctk.CTk):
                 font=ctk.CTkFont(size=12),
                 text_color=MD3["on_surface"],
             ).pack(side="left", padx=(0, 4), pady=5)
-            # Таймер
+            # Таймер (прошедшее время)
             ctk.CTkLabel(
                 row, text=timer_text,
                 font=ctk.CTkFont(size=11),
