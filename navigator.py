@@ -975,8 +975,7 @@ class PacmanEngine:
                         frame, conf=self.conf, imgsz=1280, verbose=False)
                     for r in results:
                         if len(r.boxes) > 0:
-                            self._click_exchange(r.boxes[0])
-                            self._on_exchange_found()
+                            self._exchange_detected(r.boxes[0])
                             return
 
                 # Navigate — pass frame to avoid second screenshot for minimap
@@ -995,18 +994,44 @@ class PacmanEngine:
 
         self.is_running = False
 
-    def _click_exchange(self, box) -> None:
-        """Клик по центру bbox биржи — открывает диалог (как клик по склепу)."""
+    def _exchange_detected(self, box) -> None:
+        """
+        Полный flow после нахождения биржи:
+        1. Стоп навигации + звук (немедленно)
+        2. sleep 0.1-0.2с — карта замирает
+        3. Клик по статичной цели
+        4. sleep 0.4-0.6с — игра открывает диалог
+        5. Callback (запускает ROY OCR)
+        """
+        # Шаг 1: стоп + звук
+        self.is_running = False
+        try:
+            winsound.PlaySound(self.sound_path,
+                               winsound.SND_FILENAME | winsound.SND_ASYNC)
+        except Exception:
+            winsound.Beep(1000, 500)
+
+        # Шаг 2: карта останавливается
+        time.sleep(random.uniform(0.1, 0.2))
+
+        # Шаг 3: клик по неподвижной бирже
         try:
             coords = box.xyxy.cpu().tolist()[0]
             cx = int((coords[0] + coords[2]) / 2) + random.randint(-5, 5)
             cy = int((coords[1] + coords[3]) / 2) + random.randint(-5, 5)
             pyautogui.click(cx, cy)
-            time.sleep(random.uniform(0.4, 0.6))  # ждём открытия диалога
         except Exception:
-            pass  # не блокируем основной flow если клик упал
+            pass
+
+        # Шаг 4: ждём анимацию открытия диалога
+        time.sleep(random.uniform(0.4, 0.6))
+
+        # Шаг 5: callback → ROY OCR читает уже открытый диалог
+        if self.on_found_callback:
+            self.on_found_callback()
 
     def _on_exchange_found(self):
+        """Legacy — оставлен для обратной совместимости с тестами."""
         self.is_running = False
         try:
             winsound.PlaySound(self.sound_path,
