@@ -136,7 +136,7 @@ LANGS = {
         "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: В ПОИСКЕ...",
         "add_oil": "Добавь масла",
         # --- новые tab names ---
-        "tab_crypt": "СКЛЕПЫ", "tab_cal": "КАЛ.", "tab_roy": "РОЙ",
+        "tab_crypt": "СКЛЕПЫ", "tab_cal": "⚙", "tab_roy": "РОЙ",
         # --- hunt tab ---
         "nn_title": "Нейросеть", "nav_main_title": "Навигация",
         "nav_extra_title": "Дополнительно", "nav_auto": "Авто",
@@ -189,7 +189,7 @@ LANGS = {
         "status_ready": "READY", "status_running": "STATUS: SEARCHING...",
         "add_oil": "Add Oil",
         # --- новые tab names ---
-        "tab_crypt": "CRYPTS", "tab_cal": "CAL.", "tab_roy": "ROY",
+        "tab_crypt": "CRYPTS", "tab_cal": "⚙", "tab_roy": "ROY",
         # --- hunt tab ---
         "nn_title": "Neural Net", "nav_main_title": "Navigation",
         "nav_extra_title": "Advanced", "nav_auto": "Auto",
@@ -239,7 +239,7 @@ LANGS = {
         "copy": "KOPIEREN", "share_text": "CODE TEILEN UND % ERHALTEN", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVIERT", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "BEREIT", "status_running": "STATUS: SUCHE...", "add_oil": "Öl hinzufügen",
-        "tab_crypt": "KRYPTEN", "tab_cal": "KAL.", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTEN", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Neuronales Netz", "nav_main_title": "Navigation",
         "nav_extra_title": "Erweitert", "nav_auto": "Auto", "save_settings": "Einstellungen speichern",
         "nav_step": "Schritt:", "nav_wait": "Geschw. (Sek/Schritt):",
@@ -278,7 +278,7 @@ LANGS = {
         "copy": "COPIAR", "share_text": "COMPARTE EL CÓDIGO Y GANA %", "copied": "¡Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVADO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "LISTO", "status_running": "ESTADO: BUSCANDO...", "add_oil": "Agregar aceite",
-        "tab_crypt": "CRIPTAS", "tab_cal": "CAL.", "tab_roy": "ROY",
+        "tab_crypt": "CRIPTAS", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Red Neuronal", "nav_main_title": "Navegación",
         "nav_extra_title": "Avanzado", "nav_auto": "Auto", "save_settings": "Guardar ajustes",
         "nav_step": "Paso:", "nav_wait": "Velocidad (seg/paso):",
@@ -317,7 +317,7 @@ LANGS = {
         "copy": "COPIER", "share_text": "PARTAGEZ LE CODE ET GAGNEZ %", "copied": "Copié !",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVÉ", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRÊT", "status_running": "STATUT : RECHERCHE...", "add_oil": "Ajouter de l'huile",
-        "tab_crypt": "CRYPTES", "tab_cal": "CAL.", "tab_roy": "ROY",
+        "tab_crypt": "CRYPTES", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Réseau de neurones", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancé", "nav_auto": "Auto", "save_settings": "Sauvegarder les paramètres",
         "nav_step": "Pas :", "nav_wait": "Vitesse (sec/pas) :",
@@ -356,7 +356,7 @@ LANGS = {
         "copy": "COPIA", "share_text": "CONDIVIDI IL CODICE E GUADAGNA %", "copied": "Copiato!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ABILITATO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRONTO", "status_running": "STATO: RICERCA...", "add_oil": "Aggiungi olio",
-        "tab_crypt": "CRIPTE", "tab_cal": "CAL.", "tab_roy": "ROY",
+        "tab_crypt": "CRIPTE", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Rete Neurale", "nav_main_title": "Navigazione",
         "nav_extra_title": "Avanzato", "nav_auto": "Auto", "save_settings": "Salva impostazioni",
         "nav_step": "Passo:", "nav_wait": "Velocità (sec/passo):",
@@ -395,7 +395,7 @@ LANGS = {
         "copy": "KOPIËREN", "share_text": "DEEL CODE EN VERDIEN %", "copied": "Gekopieerd!",
         "clicker_title": "Clickermann Sync", "clicker_on": "INGESCHAKELD", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "KLAAR", "status_running": "STATUS: ZOEKEN...", "add_oil": "Olie toevoegen",
-        "tab_crypt": "CRYPTEN", "tab_cal": "KAL.", "tab_roy": "ROY",
+        "tab_crypt": "CRYPTEN", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Neuraal Netwerk", "nav_main_title": "Navigatie",
         "nav_extra_title": "Geavanceerd", "nav_auto": "Auto", "save_settings": "Instellingen opslaan",
         "nav_step": "Stap:", "nav_wait": "Snelheid (sec/stap):",
@@ -434,7 +434,7 @@ LANGS = {
         "copy": "KOPIER", "share_text": "DEL KODE OG TJEN %", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERT", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "KLAR", "status_running": "STATUS: SØKER...", "add_oil": "Legg til olje",
-        "tab_crypt": "KRYPTER", "tab_cal": "KAL.", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTER", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Nevralt Nettverk", "nav_main_title": "Navigasjon",
         "nav_extra_title": "Avansert", "nav_auto": "Auto", "save_settings": "Lagre innstillinger",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -473,7 +473,7 @@ LANGS = {
         "copy": "KOPIUJ", "share_text": "UDOSTĘPNIJ KOD I ZDOBĄDŹ %", "copied": "Skopiowano!",
         "clicker_title": "Clickermann Sync", "clicker_on": "WŁĄCZONO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "GOTOWY", "status_running": "STATUS: SZUKAM...", "add_oil": "Dodaj olej",
-        "tab_crypt": "KRYPTY", "tab_cal": "KAL.", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTY", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Sieć Neuronowa", "nav_main_title": "Nawigacja",
         "nav_extra_title": "Zaawansowane", "nav_auto": "Auto", "save_settings": "Zapisz ustawienia",
         "nav_step": "Krok:", "nav_wait": "Prędkość (sek/krok):",
@@ -512,7 +512,7 @@ LANGS = {
         "copy": "COPIAR", "share_text": "COMPARTILHE O CÓDIGO E GANHE %", "copied": "Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ATIVADO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRONTO", "status_running": "STATUS: BUSCANDO...", "add_oil": "Adicionar óleo",
-        "tab_crypt": "CRIPTAS", "tab_cal": "CAL.", "tab_roy": "ROY",
+        "tab_crypt": "CRIPTAS", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Rede Neural", "nav_main_title": "Navegação",
         "nav_extra_title": "Avançado", "nav_auto": "Auto", "save_settings": "Salvar configurações",
         "nav_step": "Passo:", "nav_wait": "Velocidade (seg/passo):",
@@ -551,7 +551,7 @@ LANGS = {
         "copy": "KOPIERA", "share_text": "DELA KOD OCH TJÄNA %", "copied": "Kopierat!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERAD", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "REDO", "status_running": "STATUS: SÖKER...", "add_oil": "Lägg till olja",
-        "tab_crypt": "KRYPTOR", "tab_cal": "KAL.", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTOR", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Neuralt Nätverk", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancerat", "nav_auto": "Auto", "save_settings": "Spara inställningar",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -590,7 +590,7 @@ LANGS = {
         "copy": "KOPYALA", "share_text": "KODU PAYLAŞ VE % KAZAN", "copied": "Kopyalandı!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ETKİN", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "HAZIR", "status_running": "DURUM: ARIYOR...", "add_oil": "Yağ ekle",
-        "tab_crypt": "KRİPTALAR", "tab_cal": "KAL.", "tab_roy": "ROY",
+        "tab_crypt": "KRİPTALAR", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Sinir Ağı", "nav_main_title": "Navigasyon",
         "nav_extra_title": "Gelişmiş", "nav_auto": "Otomatik", "save_settings": "Ayarları kaydet",
         "nav_step": "Adım:", "nav_wait": "Hız (sn/adım):",
@@ -629,7 +629,7 @@ LANGS = {
         "copy": "نسخ", "share_text": "شارك الرمز واكسب %", "copied": "تم النسخ!",
         "clicker_title": "Clickermann Sync", "clicker_on": "مفعّل", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "جاهز", "status_running": "الحالة: يبحث...", "add_oil": "أضف زيتاً",
-        "tab_crypt": "المقابر", "tab_cal": "CAL.", "tab_roy": "ROY",
+        "tab_crypt": "المقابر", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "الشبكة العصبية", "nav_main_title": "التنقل",
         "nav_extra_title": "متقدم", "nav_auto": "تلقائي", "save_settings": "حفظ الإعدادات",
         "nav_step": "خطوة:", "nav_wait": "السرعة (ث/خطوة):",
@@ -668,7 +668,7 @@ LANGS = {
         "copy": "コピー", "share_text": "コードを共有して%を獲得", "copied": "コピーしました！",
         "clicker_title": "Clickermann Sync", "clicker_on": "有効", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "準備完了", "status_running": "ステータス: 検索中...", "add_oil": "オイルを追加",
-        "tab_crypt": "クリプト", "tab_cal": "CAL.", "tab_roy": "ROY",
+        "tab_crypt": "クリプト", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "ニューラルネット", "nav_main_title": "ナビゲーション",
         "nav_extra_title": "詳細設定", "nav_auto": "自動", "save_settings": "設定を保存",
         "nav_step": "ステップ:", "nav_wait": "速度 (秒/ステップ):",
@@ -824,7 +824,7 @@ LANGS = {
         "copy": "КОПІЮВАТИ", "share_text": "ПОДІЛІТЬСЯ КОДОМ І ОТРИМАЙТЕ %", "copied": "Скопійовано!",
         "clicker_title": "Синхронізація Clickermann", "clicker_on": "УВІМКНУТИ", "key_start": "Старт:", "key_stop": "Стоп:",
         "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: У ПОШУКУ...", "add_oil": "Додай масла",
-        "tab_crypt": "СКЛЕПИ", "tab_cal": "КАЛ.", "tab_roy": "РОЙ",
+        "tab_crypt": "СКЛЕПИ", "tab_cal": "⚙", "tab_roy": "РОЙ",
         "nn_title": "Нейромережа", "nav_main_title": "Навігація",
         "nav_extra_title": "Додатково", "nav_auto": "Авто", "save_settings": "Зберегти налаштування",
         "nav_step": "Крок:", "nav_wait": "Швидкість (сек/крок):",
@@ -863,7 +863,7 @@ LANGS = {
         "copy": "SALIN", "share_text": "BAGIKAN KODE DAN DAPATKAN %", "copied": "Disalin!",
         "clicker_title": "Clickermann Sync", "clicker_on": "DIAKTIFKAN", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "SIAP", "status_running": "STATUS: MENCARI...", "add_oil": "Tambah minyak",
-        "tab_crypt": "KRIPTA", "tab_cal": "KAL.", "tab_roy": "ROY",
+        "tab_crypt": "KRIPTA", "tab_cal": "⚙", "tab_roy": "ROY",
         "nn_title": "Jaringan Saraf", "nav_main_title": "Navigasi",
         "nav_extra_title": "Lanjutan", "nav_auto": "Otomatis", "save_settings": "Simpan pengaturan",
         "nav_step": "Langkah:", "nav_wait": "Kecepatan (dtk/langkah):",
@@ -1261,8 +1261,18 @@ class TotalHunterApp(ctk.CTk):
                                       text_color=MD3["on_surface"],
                                       text_color_disabled=MD3["on_surface2"],
                                       corner_radius=12)
-        self.tabview.pack(padx=20, pady=10, fill="x")
-       
+        self.tabview.pack(padx=20, pady=(10, 0), fill="x")
+
+        # Кнопка "Калибровка" под tabview — полное название, отдельная строка
+        ctk.CTkButton(
+            self._outer, text="⚙  Калибровка",
+            height=30, corner_radius=8,
+            fg_color=MD3["elevated"], hover_color=MD3["card"],
+            text_color=MD3["on_surface2"],
+            font=ctk.CTkFont(size=12),
+            command=lambda: self.tabview.set(LANGS[self.current_lang]["tab_cal"]),
+        ).pack(padx=20, pady=(0, 6), fill="x")
+
         # Сохраняем имена вкладок при создании — change_lang ищет по ним
         self._tab_init_names = {k: LANGS[self.current_lang][k]
                                 for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_cal", "tab_roy")}
@@ -2767,22 +2777,28 @@ class TotalHunterApp(ctk.CTk):
         )
         self._roy_status_lb.pack(pady=(0, 4))
 
-        # ТЕСТ: хардкод 10 бирж для визуальной проверки
-        from datetime import datetime, timezone, timedelta as _td
-        _now = datetime.now(timezone.utc)
-        def _ago(m): return (_now - _td(minutes=m)).isoformat()
-        self._roy_update_list([
-            {"kingdom": 471, "x": 383, "y": 812, "percent":  7, "updated_at": _ago(1)},
-            {"kingdom": 471, "x": 512, "y": 340, "percent": 33, "updated_at": _ago(3)},
-            {"kingdom": 471, "x": 198, "y": 655, "percent": 15, "updated_at": _ago(5)},
-            {"kingdom": 471, "x": 820, "y": 120, "percent": 42, "updated_at": _ago(8)},
-            {"kingdom": 471, "x": 401, "y": 900, "percent": 61, "updated_at": _ago(11)},
-            {"kingdom": 205, "x": 711, "y": 199, "percent": 78, "updated_at": _ago(13)},
-            {"kingdom": 205, "x": 300, "y": 450, "percent": 12, "updated_at": _ago(15)},
-            {"kingdom": 205, "x": 555, "y": 700, "percent": 55, "updated_at": _ago(17)},
-            {"kingdom": 317, "x": 100, "y": 250, "percent":  3, "updated_at": _ago(18)},
-            {"kingdom": 317, "x": 440, "y": 380, "percent": 88, "updated_at": _ago(19)},
-        ])
+        # ТЕСТ (закомментирован — раскомментировать для визуальной проверки):
+        # from datetime import datetime, timezone, timedelta as _td
+        # _now = datetime.now(timezone.utc)
+        # def _ago(m): return (_now - _td(minutes=m)).isoformat()
+        # self._roy_update_list([
+        #     {"kingdom": 471, "x": 383, "y": 812, "percent":  7, "updated_at": _ago(1)},
+        #     {"kingdom": 471, "x": 512, "y": 340, "percent": 33, "updated_at": _ago(3)},
+        #     {"kingdom": 471, "x": 198, "y": 655, "percent": 15, "updated_at": _ago(5)},
+        #     {"kingdom": 471, "x": 820, "y": 120, "percent": 42, "updated_at": _ago(8)},
+        #     {"kingdom": 471, "x": 401, "y": 900, "percent": 61, "updated_at": _ago(11)},
+        #     {"kingdom": 205, "x": 711, "y": 199, "percent": 78, "updated_at": _ago(13)},
+        #     {"kingdom": 205, "x": 300, "y": 450, "percent": 12, "updated_at": _ago(15)},
+        #     {"kingdom": 205, "x": 555, "y": 700, "percent": 55, "updated_at": _ago(17)},
+        #     {"kingdom": 317, "x": 100, "y": 250, "percent":  3, "updated_at": _ago(18)},
+        #     {"kingdom": 317, "x": 440, "y": 380, "percent": 88, "updated_at": _ago(19)},
+        # ])
+
+        ctk.CTkLabel(
+            self._roy_list_frame,
+            text="Нет данных. Включи Рой и запусти бота.",
+            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
+        ).pack(pady=20)
 
         if self._roy_enabled_var.get():
             self.after(1500, self._roy_refresh_balance)
