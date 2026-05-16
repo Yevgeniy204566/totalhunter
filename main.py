@@ -1278,7 +1278,7 @@ class TotalHunterApp(ctk.CTk):
             fg_color=MD3["card"],
             segmented_button_fg_color=MD3["elevated"],
             segmented_button_selected_color=MD3["tab_selected"],
-            segmented_button_selected_hover_color=MD3["tab_hover"],
+            segmented_button_selected_hover_color=MD3["tab_selected_hover"],
             segmented_button_unselected_color=MD3["elevated"],
             segmented_button_unselected_hover_color=MD3["card"],
             text_color=MD3["on_surface"],
