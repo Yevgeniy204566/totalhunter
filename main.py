@@ -2752,19 +2752,6 @@ class TotalHunterApp(ctk.CTk):
         )
         self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
 
-        # ТЕСТ: хардкод 10 бирж для визуальной проверки
-        self._roy_update_list([
-            {"kingdom": 471, "x": 383, "y": 812, "percent": 7},
-            {"kingdom": 471, "x": 512, "y": 340, "percent": 33},
-            {"kingdom": 471, "x": 198, "y": 655, "percent": 15},
-            {"kingdom": 471, "x": 820, "y": 120, "percent": 42},
-            {"kingdom": 471, "x": 401, "y": 900, "percent": 61},
-            {"kingdom": 205, "x": 711, "y": 199, "percent": 78},
-            {"kingdom": 205, "x": 300, "y": 450, "percent": 12},
-            {"kingdom": 205, "x": 555, "y": 700, "percent": 55},
-            {"kingdom": 317, "x": 100, "y": 250, "percent": 3},
-            {"kingdom": 317, "x": 440, "y": 380, "percent": 88},
-        ])
 
         ctk.CTkButton(
             self.tab_roy, text="↻  Обновить пул",
@@ -2779,6 +2766,20 @@ class TotalHunterApp(ctk.CTk):
             font=ctk.CTkFont(size=10), text_color=MD3["on_surface2"],
         )
         self._roy_status_lb.pack(pady=(0, 4))
+
+        # ТЕСТ: хардкод 10 бирж для визуальной проверки
+        self._roy_update_list([
+            {"kingdom": 471, "x": 383, "y": 812, "percent": 7},
+            {"kingdom": 471, "x": 512, "y": 340, "percent": 33},
+            {"kingdom": 471, "x": 198, "y": 655, "percent": 15},
+            {"kingdom": 471, "x": 820, "y": 120, "percent": 42},
+            {"kingdom": 471, "x": 401, "y": 900, "percent": 61},
+            {"kingdom": 205, "x": 711, "y": 199, "percent": 78},
+            {"kingdom": 205, "x": 300, "y": 450, "percent": 12},
+            {"kingdom": 205, "x": 555, "y": 700, "percent": 55},
+            {"kingdom": 317, "x": 100, "y": 250, "percent": 3},
+            {"kingdom": 317, "x": 440, "y": 380, "percent": 88},
+        ])
 
         if self._roy_enabled_var.get():
             self.after(1500, self._roy_refresh_balance)
