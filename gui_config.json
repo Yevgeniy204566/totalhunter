@@ -1,13 +1,14 @@
 {
   "step": 16,
   "conf": 0.8,
-  "scan_interval": 5.0,
-  "move_wait": 0.5,
+  "bot_speed": 1.5,
   "max_inland_steps": 1,
   "ocean_land_ratio": 0.04,
   "min_water_px": 900,
   "diagonal_blind_coeff": 0.5,
   "nav_footprint_ttl": 600,
   "return_delta_px": 5,
-  "smooth_alpha": 60
+  "smooth_alpha": 60,
+  "last_calibration_profile": "Client",
+  "lang": "UK"
 }

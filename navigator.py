@@ -959,8 +959,6 @@ class PacmanEngine:
     def _run(self):
         from mss import mss
 
-        last_scan  = 0.0
-
         with mss() as sct:
             monitor = sct.monitors[1]
             screen  = np.array(sct.grab(monitor))
@@ -970,12 +968,10 @@ class PacmanEngine:
                 # Check current position before moving
                 is_water = is_water_center_screen(frame, radius=120)
 
-                # YOLO scan — throttled by scan_interval
-                now = time.time()
-                if self.yolo_model is not None and (now - last_scan) >= self.scan_interval:
+                # YOLO scan — every step (синхронно, бот ждёт результата перед шагом)
+                if self.yolo_model is not None:
                     results = self.yolo_model.predict(
                         frame, conf=self.conf, imgsz=1280, verbose=False)
-                    last_scan = now
                     for r in results:
                         if len(r.boxes) > 0:
                             self._on_exchange_found()
@@ -986,7 +982,7 @@ class PacmanEngine:
                     self.joystick.step(is_water=is_water)
                     time.sleep(max(0.1, self.move_wait + random.uniform(-0.1, 0.1)))
                 else:
-                    time.sleep(self.scan_interval * 0.5)
+                    time.sleep(self.move_wait * 0.5)
 
                 # Grab next frame
                 screen = np.array(sct.grab(monitor))

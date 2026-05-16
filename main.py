@@ -141,7 +141,7 @@ LANGS = {
         "nn_title": "Нейросеть", "nav_main_title": "Навигация",
         "nav_extra_title": "Дополнительно", "nav_auto": "Авто",
         "save_settings": "Сохранить настройки",
-        "nav_step": "Шаг:", "nav_wait": "Скорость (сек/шаг):",
+        "nav_step": "Шаг:", "nav_wait": "Скорость работы (сек/шаг):",
         "nav_inland": "Глубина нырка (экранов):", "nav_ocean": "Граница океан/суша (%):",
         "nav_waterpx": "Мин. размер водоёма:", "nav_diagblind": "Коэф. диагонали возврата:",
         "nav_footprint": "Память следов (сек):", "nav_delta": "Дельта возврата (px):",
@@ -194,7 +194,7 @@ LANGS = {
         "nn_title": "Neural Net", "nav_main_title": "Navigation",
         "nav_extra_title": "Advanced", "nav_auto": "Auto",
         "save_settings": "Save settings",
-        "nav_step": "Step:", "nav_wait": "Speed (sec/step):",
+        "nav_step": "Step:", "nav_wait": "Bot speed (sec/step):",
         "nav_inland": "Dive depth (screens):", "nav_ocean": "Ocean/land ratio (%):",
         "nav_waterpx": "Min. water area (px):", "nav_diagblind": "Return diagonal coeff:",
         "nav_footprint": "Footprint TTL (sec):", "nav_delta": "Return delta (px):",
@@ -1348,25 +1348,6 @@ class TotalHunterApp(ctk.CTk):
         self.conf_slider.set(0.7)
         self.conf_slider.pack(padx=12, pady=(2, 2), fill="x")
 
-        self.speed_frame = ctk.CTkFrame(nn_frame, fg_color="transparent")
-        self.speed_frame.pack(fill="x", padx=12, pady=(0, 0))
-        self.speed_lb = ctk.CTkLabel(self.speed_frame,
-                                     text=LANGS[self.current_lang]["scan_rate"],
-                                     font=ctk.CTkFont(size=13),
-                                     text_color=MD3["on_surface2"])
-        self.speed_lb.pack(side="left")
-        self.speed_val_lb = ctk.CTkLabel(self.speed_frame,
-                                         text=f"0.6 {LANGS[self.current_lang]['sec']}",
-                                         font=ctk.CTkFont(size=14, weight="bold"),
-                                         text_color=MD3["value_text"])
-        self.speed_val_lb.pack(side="right")
-        self.speed_slider = ctk.CTkSlider(nn_frame, from_=0.1, to=5.0,
-                                          command=self.update_slider_labels,
-                                          button_color=MD3["primary"],
-                                          button_hover_color=MD3["primary_dim"],
-                                          progress_color=MD3["primary"])
-        self.speed_slider.set(0.6)
-        self.speed_slider.pack(padx=12, pady=(2, 4), fill="x")
 
 
         # ─── Карточка «Навигация» — три главных ползунка ─────────────────────
@@ -1413,12 +1394,13 @@ class TotalHunterApp(ctk.CTk):
                                          font=ctk.CTkFont(size=14, weight="bold"),
                                          text_color=MD3["value_text"])
         self.nav_wait_val.pack(side="right")
-        self.nav_wait_slider = ctk.CTkSlider(nav_main_frame, from_=0.4, to=5.0,
+        self.nav_wait_slider = ctk.CTkSlider(nav_main_frame, from_=0.5, to=5.0,
+                                             number_of_steps=45,
                                              command=self._update_nav_labels,
                                              button_color=MD3["primary"],
                                              button_hover_color=MD3["primary_dim"],
                                              progress_color=MD3["primary"])
-        self.nav_wait_slider.set(2.0)
+        self.nav_wait_slider.set(1.5)
         self.nav_wait_slider.pack(padx=12, pady=(2, 2), fill="x")
 
         # Глубина нырка
@@ -2126,8 +2108,7 @@ class TotalHunterApp(ctk.CTk):
             # Настройки Бирж
             cfg['step']                = int(self.nav_step_slider.get())
             cfg['conf']                = round(self.conf_slider.get(), 2)
-            cfg['scan_interval']       = round(self.speed_slider.get(), 1)
-            cfg['move_wait']           = round(self.nav_wait_slider.get(), 1)
+            cfg['bot_speed']           = round(self.nav_wait_slider.get(), 1)
             cfg['max_inland_steps']    = int(self.nav_inland_slider.get())
             cfg['ocean_land_ratio']    = int(self.nav_ocean_slider.get()) / 100.0
             cfg['min_water_px']        = int(self.nav_waterpx_slider.get())
@@ -2175,10 +2156,8 @@ class TotalHunterApp(ctk.CTk):
                 self.nav_step_slider.set(cfg['step'])
             if 'conf' in cfg:
                 self.conf_slider.set(cfg['conf'])
-            if 'scan_interval' in cfg:
-                self.speed_slider.set(cfg['scan_interval'])
-            if 'move_wait' in cfg:
-                self.nav_wait_slider.set(cfg['move_wait'])
+            spd = cfg.get('bot_speed') or cfg.get('move_wait', 1.5)
+            self.nav_wait_slider.set(spd)
             if 'max_inland_steps' in cfg:
                 self.nav_inland_slider.set(cfg['max_inland_steps'])
             if 'ocean_land_ratio' in cfg:
@@ -2390,8 +2369,6 @@ class TotalHunterApp(ctk.CTk):
     def update_slider_labels(self, _=None):
         acc = int(self.conf_slider.get() * 100)
         self.acc_val_lb.configure(text=f"{acc}%")
-        spd = round(self.speed_slider.get(), 1)
-        self.speed_val_lb.configure(text=f"{spd} {LANGS[self.current_lang]['sec']}")
 
 
     def _update_credits_display(self, n: int):
@@ -2534,10 +2511,8 @@ class TotalHunterApp(ctk.CTk):
                 self.nav_step_slider.set(cfg['step'])
             if 'conf' in cfg:
                 self.conf_slider.set(cfg['conf'])
-            if 'scan_interval' in cfg:
-                self.speed_slider.set(cfg['scan_interval'])
-            if 'move_wait' in cfg:
-                self.nav_wait_slider.set(cfg['move_wait'])
+            spd = cfg.get('bot_speed') or cfg.get('move_wait', 1.5)
+            self.nav_wait_slider.set(spd)
             self.nav_inland_slider.set(cfg.get("max_inland_steps", 5))
             self.nav_ocean_slider.set(int(cfg.get("ocean_land_ratio", 0.03) * 100))
             self.nav_waterpx_slider.set(cfg.get("min_water_px", 500))
@@ -2563,8 +2538,7 @@ class TotalHunterApp(ctk.CTk):
                 # Центр джойстика — из калибровки (единственный источник правды)
                 cx, cy = int(coord_manager.anchor_x), int(coord_manager.anchor_y)
                 step = int(self.nav_step_slider.get())
-                scan_interval = float(self.speed_slider.get())
-                move_wait = float(self.nav_wait_slider.get())
+                bot_speed = float(self.nav_wait_slider.get())
             except ValueError:
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
 
@@ -2575,8 +2549,7 @@ class TotalHunterApp(ctk.CTk):
                     center_x=cx,
                     center_y=cy,
                     joystick_step=int(self.nav_step_slider.get()),
-                    scan_interval=self.speed_slider.get(),
-                    move_wait=self.nav_wait_slider.get(),
+                    move_wait=bot_speed,
                     navigation_enabled=self.nav_enabled_var.get(),
                     max_inland_steps=int(self.nav_inland_slider.get()),
                     ocean_land_ratio=int(self.nav_ocean_slider.get()) / 100.0,
@@ -2884,7 +2857,6 @@ class TotalHunterApp(ctk.CTk):
         self._save_gui_config_key("lang", code)
         self.label_title.configure(text=LANGS[val]["title"])
         self.acc_lb.configure(text=LANGS[val]["accuracy"])
-        self.speed_lb.configure(text=LANGS[val]["scan_rate"])
         self.start_button.configure(text=LANGS[val]["start"] if not self.is_running else LANGS[val]["stop"])
         self.ref_title_lb.configure(text=LANGS[val]["ref_title"])
         self.share_lb.configure(text=LANGS[val]["share_text"])
