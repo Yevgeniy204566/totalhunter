@@ -975,6 +975,7 @@ class PacmanEngine:
                         frame, conf=self.conf, imgsz=1280, verbose=False)
                     for r in results:
                         if len(r.boxes) > 0:
+                            self._click_exchange(r.boxes[0])
                             self._on_exchange_found()
                             return
 
@@ -993,6 +994,17 @@ class PacmanEngine:
                 frame  = cv2.cvtColor(screen, cv2.COLOR_BGRA2BGR)
 
         self.is_running = False
+
+    def _click_exchange(self, box) -> None:
+        """Клик по центру bbox биржи — открывает диалог (как клик по склепу)."""
+        try:
+            coords = box.xyxy.cpu().tolist()[0]
+            cx = int((coords[0] + coords[2]) / 2) + random.randint(-5, 5)
+            cy = int((coords[1] + coords[3]) / 2) + random.randint(-5, 5)
+            pyautogui.click(cx, cy)
+            time.sleep(random.uniform(0.4, 0.6))  # ждём открытия диалога
+        except Exception:
+            pass  # не блокируем основной flow если клик упал
 
     def _on_exchange_found(self):
         self.is_running = False
