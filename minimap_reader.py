@@ -207,11 +207,24 @@ def get_minimap_snapshot(
     center_x: int = 90,
     center_y: int = 925,
     size: int = 180,
+    frame: np.ndarray | None = None,
 ) -> np.ndarray:
     """
-    Grab a live minimap screenshot from the game and return as BGR numpy array.
+    Return minimap crop as BGR numpy array.
+    If frame (full-screen BGR) is provided — zero-cost crop, no OS call.
+    Fallback: mss grab (fast, replaces old pyautogui.screenshot).
     """
-    import pyautogui
     offset = size // 2
-    shot = pyautogui.screenshot(region=(center_x - offset, center_y - offset, size, size))
-    return cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2BGR)
+    if frame is not None:
+        h, w = frame.shape[:2]
+        x1 = max(0, center_x - offset)
+        y1 = max(0, center_y - offset)
+        x2 = min(w, x1 + size)
+        y2 = min(h, y1 + size)
+        return frame[y1:y2, x1:x2].copy()
+    from mss import mss as _mss
+    with _mss() as sct:
+        region = {'left': center_x - offset, 'top': center_y - offset,
+                  'width': size, 'height': size}
+        shot = np.array(sct.grab(region))
+        return cv2.cvtColor(shot, cv2.COLOR_BGRA2BGR)

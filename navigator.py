@@ -312,11 +312,11 @@ class CompassNavigator:
         etc.
         """
         offset = SCAN_AREA // 2
-        shot = pyautogui.screenshot(region=(
-            self.center_x - offset, self.center_y - offset,
-            SCAN_AREA, SCAN_AREA,
-        ))
-        minimap = cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2BGR)
+        from mss import mss as _mss
+        with _mss() as sct:
+            region = {'left': self.center_x - offset, 'top': self.center_y - offset,
+                      'width': SCAN_AREA, 'height': SCAN_AREA}
+            minimap = cv2.cvtColor(np.array(sct.grab(region)), cv2.COLOR_BGRA2BGR)
 
         _, water_z = get_land_water_masks(minimap)
         water = cv2.resize(water_z, (SCAN_AREA, SCAN_AREA),
@@ -512,9 +512,9 @@ class CoastalSnakeNavigator:
                         self.center_y + dy * self.p_range_y)
 
     # ── internal helpers ─────────────────────────────────────────────────
-    def _grab_minimap(self) -> np.ndarray:
+    def _grab_minimap(self, frame=None) -> np.ndarray:
         from minimap_reader import get_minimap_snapshot
-        mm = get_minimap_snapshot(self.center_x, self.center_y)
+        mm = get_minimap_snapshot(self.center_x, self.center_y, frame=frame)
         if self._footprint_enabled:
             overlay = self._footprint.render_overlay(
                 mm.shape, self._footprint_ttl, self._pixels_per_step)
@@ -549,7 +549,6 @@ class CoastalSnakeNavigator:
         Clicks at center + sv * fraction * p_range (sub-step position).
         Only fires when footprint canvas has data (no false trigger at session start).
         """
-        import pyautogui as _pag
         sv = self._shift_vec if self._shift_vec_set else (-self._inland_vec[1], self._inland_vec[0])
         norm = np.hypot(sv[0], sv[1])
         if norm == 0 or fraction <= 0:
@@ -557,7 +556,7 @@ class CoastalSnakeNavigator:
         ndx, ndy = sv[0] / norm, sv[1] / norm
         x = int(self.center_x + ndx * self.p_range_x * fraction)
         y = int(self.center_y + ndy * self.p_range_y * fraction)
-        _pag.click(x, y)
+        pyautogui.click(x, y)
         if self._footprint_enabled:
             self._footprint.record(ndx * fraction, ndy * fraction)
 
@@ -679,18 +678,18 @@ class CoastalSnakeNavigator:
                     self._inland_vec = perp1
 
 
-    def _is_at_coast_now(self) -> bool:
+    def _is_at_coast_now(self, frame=None) -> bool:
         """
         Check for water in the seaward direction using the FROZEN inland_vec.
         Does NOT update coast_angle or inland_vec — safe to call from RETURNING.
         """
         from minimap_reader import analyze_forward_zone
-        mm = self._grab_minimap()
+        mm = self._grab_minimap(frame=frame)
         seaward = (-self._inland_vec[0], -self._inland_vec[1])
         z = analyze_forward_zone(mm, seaward, radius=self.coast_detect_radius)
         return z['water_px'] > 50 and z['land_ratio'] < 0.5
 
-    def _read_minimap(self) -> dict:
+    def _read_minimap(self, frame=None) -> dict:
         """
         Grab minimap, update coast angle/direction, return navigation info.
         Called only from HOMING state — vectors are frozen for DIVING/RETURNING.
@@ -700,7 +699,7 @@ class CoastalSnakeNavigator:
         """
         from minimap_reader import detect_coast_angle, analyze_forward_zone, analyze_footprint_zone
 
-        mm = self._grab_minimap()  # 180px standard snapshot + red footprint overlay
+        mm = self._grab_minimap(frame=frame)  # 180px standard snapshot + red footprint overlay
 
         raw_angle = detect_coast_angle(mm)
         if raw_angle != 0.0 or not self._angle_init:
@@ -773,7 +772,7 @@ class CoastalSnakeNavigator:
         }
 
     # ── main navigation step ─────────────────────────────────────────────
-    def step(self, is_water: bool = False) -> bool:
+    def step(self, is_water: bool = False, frame=None) -> bool:
         """
         One navigation step — hard-corridor lawnmower.
 
@@ -788,7 +787,7 @@ class CoastalSnakeNavigator:
         Walls (left + mirror) are drawn at each HOMING→DIVING transition.
         """
         if self._state == 'HOMING':
-            info = self._read_minimap()   # angle/direction update happens here
+            info = self._read_minimap(frame=frame)   # angle/direction update happens here
 
             if info['is_at_coast']:
                 # shift_vec = perpendicular to current inland_vec.
@@ -873,7 +872,7 @@ class CoastalSnakeNavigator:
 
             # Check for coast WITHOUT calling _read_minimap — inland_vec must
             # stay frozen so the bot returns on the exact same vector it dived.
-            at_coast = self._is_at_coast_now()
+            at_coast = self._is_at_coast_now(frame=frame)
             cap_hit  = self._return_steps <= 0
             if at_coast or cap_hit:
                 self._shift_click()
@@ -965,6 +964,8 @@ class PacmanEngine:
             frame   = cv2.cvtColor(screen, cv2.COLOR_BGRA2BGR)
 
             while self.is_running:
+                loop_start = time.time()
+
                 # Check current position before moving
                 is_water = is_water_center_screen(frame, radius=120)
 
@@ -977,14 +978,17 @@ class PacmanEngine:
                             self._on_exchange_found()
                             return
 
-                # Navigate (skip if manual mode)
+                # Navigate — pass frame to avoid second screenshot for minimap
                 if self.navigation_enabled:
-                    self.joystick.step(is_water=is_water)
-                    time.sleep(max(0.1, self.move_wait + random.uniform(-0.1, 0.1)))
+                    self.joystick.step(is_water=is_water, frame=frame)
                 else:
-                    time.sleep(self.move_wait * 0.5)
+                    pass  # manual mode: no step
 
-                # Grab next frame
+                # Динамический sleep: bot_speed = TOTAL цикл, не просто пауза
+                elapsed = time.time() - loop_start
+                time.sleep(max(0.01, self.move_wait - elapsed))
+
+                # Grab next frame (один захват на итерацию)
                 screen = np.array(sct.grab(monitor))
                 frame  = cv2.cvtColor(screen, cv2.COLOR_BGRA2BGR)
 
