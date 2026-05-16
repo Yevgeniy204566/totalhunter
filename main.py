@@ -1348,7 +1348,26 @@ class TotalHunterApp(ctk.CTk):
         self.conf_slider.set(0.7)
         self.conf_slider.pack(padx=12, pady=(2, 2), fill="x")
 
-
+        # Скорость работы — второй ползунок в карточке Нейросеть
+        self.nav_wait_frame = ctk.CTkFrame(nn_frame, fg_color="transparent")
+        self.nav_wait_frame.pack(fill="x", padx=12, pady=(4, 0))
+        _nav_wait_lb = ctk.CTkLabel(self.nav_wait_frame, text=LANGS[self.current_lang]["nav_wait"],
+                     font=ctk.CTkFont(size=13),
+                     text_color=MD3["on_surface2"])
+        _nav_wait_lb.pack(side="left")
+        self._i18n_labels.append((_nav_wait_lb, "nav_wait"))
+        self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="1.5 сек",
+                                         font=ctk.CTkFont(size=14, weight="bold"),
+                                         text_color=MD3["value_text"])
+        self.nav_wait_val.pack(side="right")
+        self.nav_wait_slider = ctk.CTkSlider(nn_frame, from_=0.4, to=2.0,
+                                             number_of_steps=16,
+                                             command=self._update_nav_labels,
+                                             button_color=MD3["primary"],
+                                             button_hover_color=MD3["primary_dim"],
+                                             progress_color=MD3["primary"])
+        self.nav_wait_slider.set(1.5)
+        self.nav_wait_slider.pack(padx=12, pady=(2, 8), fill="x")
 
         # ─── Карточка «Навигация» — три главных ползунка ─────────────────────
         nav_main_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
@@ -1381,27 +1400,6 @@ class TotalHunterApp(ctk.CTk):
                                               progress_color=MD3["primary"])
         self.nav_step_slider.set(13)
         self.nav_step_slider.pack(padx=12, pady=(2, 2), fill="x")
-
-        # Скорость (ожидание после шага)
-        self.nav_wait_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
-        self.nav_wait_frame.pack(fill="x", padx=12, pady=(2, 0))
-        _nav_wait_lb = ctk.CTkLabel(self.nav_wait_frame, text=LANGS[self.current_lang]["nav_wait"],
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"])
-        _nav_wait_lb.pack(side="left")
-        self._i18n_labels.append((_nav_wait_lb, "nav_wait"))
-        self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="2.0 с",
-                                         font=ctk.CTkFont(size=14, weight="bold"),
-                                         text_color=MD3["value_text"])
-        self.nav_wait_val.pack(side="right")
-        self.nav_wait_slider = ctk.CTkSlider(nav_main_frame, from_=0.5, to=5.0,
-                                             number_of_steps=45,
-                                             command=self._update_nav_labels,
-                                             button_color=MD3["primary"],
-                                             button_hover_color=MD3["primary_dim"],
-                                             progress_color=MD3["primary"])
-        self.nav_wait_slider.set(1.5)
-        self.nav_wait_slider.pack(padx=12, pady=(2, 2), fill="x")
 
         # Глубина нырка
         self.nav_inland_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
@@ -2438,7 +2436,7 @@ class TotalHunterApp(ctk.CTk):
         """Dim nav controls when auto-navigation is disabled."""
         enabled = self.nav_enabled_var.get()
         state = "normal" if enabled else "disabled"
-        for w in (self.nav_step_slider, self.nav_wait_slider):
+        for w in (self.nav_step_slider,):
             w.configure(state=state)
 
     def _update_nav_labels(self, _=None):
