@@ -124,7 +124,7 @@ MD3 = _load_theme(MD3_NAME)
 LANGS = {
     "RU": {
         # --- существующие ---
-        "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_combo": "Combo", "tab_ref": "РЕФЕР.",
+        "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛЫ",
         "get_trial": "ПОЛУЧИТЬ 300 ПОПЫТОК", "start": "ЗАПУСТИТЬ ОХОТУ", "stop": "ОСТАНОВИТЬ",
         "no_credits": "У вас 0 алмазов! Привяжите устройство на сайте.", "login_btn": "ПРИВЯЗАТЬ УСТРОЙСТВО",
         "banned": "ВАШ АККАУНТ ЗАБЛОКИРОВАН", "ref_title": "ПАРТНЕРСКАЯ ПРОГРАММА",
@@ -177,7 +177,7 @@ LANGS = {
     },
     "EN": {
         # --- существующие ---
-        "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_combo": "Combo", "tab_ref": "REFS",
+        "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_combo": "Combo", "tab_ref": "REFERRALS",
         "get_trial": "GET 300 TRIALS", "start": "START HUNT", "stop": "STOP",
         "no_credits": "0 diamonds! Link your device on the website.", "login_btn": "LINK DEVICE",
         "banned": "ACCOUNT BANNED", "ref_title": "REFERRAL SYSTEM",
@@ -814,7 +814,7 @@ LANGS = {
         "unit_sec": "초", "unit_min": "분", "unit_scan": "스캔",
     },
     "UK": {
-        "title": "Total Hunter", "tab_hunt": "БІРЖІ", "tab_combo": "Combo", "tab_ref": "РЕФЕР.",
+        "title": "Total Hunter", "tab_hunt": "БІРЖІ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛИ",
         "get_trial": "ОТРИМАТИ 300 СПРОБ", "start": "ЗАПУСТИТИ ПОЛЮВАННЯ", "stop": "ЗУПИНИТИ",
         "no_credits": "У вас 0 алмазів! Прив'яжіть пристрій на сайті.", "login_btn": "ПРИВ'ЯЗАТИ ПРИСТРІЙ",
         "banned": "ВАШ АКАУНТ ЗАБЛОКОВАНО", "ref_title": "ПАРТНЕРСЬКА ПРОГРАМА",
@@ -1261,17 +1261,32 @@ class TotalHunterApp(ctk.CTk):
                                       text_color=MD3["on_surface"],
                                       text_color_disabled=MD3["on_surface2"],
                                       corner_radius=12)
-        self.tabview.pack(padx=20, pady=10, fill="x")
+        self.tabview.pack(padx=20, pady=(10, 0), fill="x")
 
-        # Сохраняем имена вкладок при создании — change_lang ищет по ним
+        # 4 основные вкладки — change_lang ищет по ним
         self._tab_init_names = {k: LANGS[self.current_lang][k]
-                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_cal", "tab_roy")}
+                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_roy")}
         self.tab_crypt = self.tabview.add(self._tab_init_names["tab_crypt"])
         self.tab_hunt  = self.tabview.add(self._tab_init_names["tab_hunt"])
         # self.tab_combo = self.tabview.add("Combo")  # временно отключён
         self.tab_ref   = self.tabview.add(self._tab_init_names["tab_ref"])
-        self.tab_calibration = self.tabview.add(self._tab_init_names["tab_cal"])
         self.tab_roy   = self.tabview.add(self._tab_init_names["tab_roy"])
+
+        # Калибровка — отдельный tabview под основными вкладками
+        self._cal_tabview = ctk.CTkTabview(
+            self._outer,
+            fg_color=MD3["card"],
+            segmented_button_fg_color=MD3["elevated"],
+            segmented_button_selected_color=MD3["tab_selected"],
+            segmented_button_selected_hover_color=MD3["tab_hover"],
+            segmented_button_unselected_color=MD3["elevated"],
+            segmented_button_unselected_hover_color=MD3["card"],
+            text_color=MD3["on_surface"],
+            corner_radius=12,
+        )
+        self._cal_tab_name = LANGS[self.current_lang]["tab_cal"]
+        self.tab_calibration = self._cal_tabview.add(self._cal_tab_name)
+        self._cal_tabview.pack(padx=20, pady=(0, 6), fill="x")
 
         # Общие переменные для калибровки (нужны в нескольких вкладках)
         _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -2927,6 +2942,15 @@ class TotalHunterApp(ctk.CTk):
         for tab_key, init_name in self._tab_init_names.items():
             if init_name in btns:
                 btns[init_name].configure(text=LANGS[val][tab_key])
+
+        # Обновляем кнопку Калибровки в отдельном tabview
+        try:
+            cal_btns = self._cal_tabview._segmented_button._buttons_dict
+            if self._cal_tab_name in cal_btns:
+                cal_btns[self._cal_tab_name].configure(text=LANGS[val]["tab_cal"])
+                self._cal_tab_name = LANGS[val]["tab_cal"]
+        except Exception:
+            pass
 
         # crypt_start_btn — только если бот не запущен
         if not self.is_crypt_running:
