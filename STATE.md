@@ -20,12 +20,12 @@
 | **Long-poll синхронизация** | server/vault.py | ✅ GET /vault/sync/{hwid} — мгновенный обмен баланса бот↔сайт | 2026-05-07 |
 | **Earn/Casino** | server/earn.py + web/EarnPage.jsx | ✅ Зелёная кнопка +5КР → рандомная награда 5/10/20/30/50 алмазов | 2026-05-07 |
 | **Рекламные слоты** | web/AdSlot.jsx | ⛔ PopAds убран (pop-under — не подходит). Ждём сеть с баннерами (BitMedia и др. — высокий порог вывода). | 2026-05-15 |
-| **Система РОЙ** | roy/ + server/roy.py | ✅ Server API (4 эндпоинта), OCR (exchange_reader.py), engine интеграция, GUI вкладка. Таблицы: roy_pool, roy_balance. GCP: права выданы. Требует сборки для теста с реальной игрой. | 2026-05-15 |
+| **Система РОЙ** | roy/ + server/roy.py | ✅ Server API (4 эндпоинта), OCR (exchange_reader.py), engine интеграция, GUI вкладка. Таблицы: roy_pool, roy_balance. GCP: права выданы. ⚠️ После YOLO-детекции клик по бирже НЕ реализован — нужно добавить клик по bbox для открытия диалога. Требует теста с живой игрой. | 2026-05-16 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70 | 2026-04-30 |
+| **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70. Рефакторинг 16.05.26: один ползунок bot_speed, честный динамический sleep, единый кадр (mss→crop, убран pyautogui.screenshot из hot path) | 2026-05-16 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog (_detect_fail_streak + _pre_skip). Конец списка — визуальный cv2.absdiff. Статусы конца/сброса. | 2026-05-12 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
