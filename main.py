@@ -2752,11 +2752,19 @@ class TotalHunterApp(ctk.CTk):
         )
         self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
 
-        ctk.CTkLabel(
-            self._roy_list_frame,
-            text="Нет данных. Включи Рой и запусти бота.",
-            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
-        ).pack(pady=20)
+        # ТЕСТ: хардкод 10 бирж для визуальной проверки
+        self._roy_update_list([
+            {"kingdom": 471, "x": 383, "y": 812, "percent": 7},
+            {"kingdom": 471, "x": 512, "y": 340, "percent": 33},
+            {"kingdom": 471, "x": 198, "y": 655, "percent": 15},
+            {"kingdom": 471, "x": 820, "y": 120, "percent": 42},
+            {"kingdom": 471, "x": 401, "y": 900, "percent": 61},
+            {"kingdom": 205, "x": 711, "y": 199, "percent": 78},
+            {"kingdom": 205, "x": 300, "y": 450, "percent": 12},
+            {"kingdom": 205, "x": 555, "y": 700, "percent": 55},
+            {"kingdom": 317, "x": 100, "y": 250, "percent": 3},
+            {"kingdom": 317, "x": 440, "y": 380, "percent": 88},
+        ])
 
         ctk.CTkButton(
             self.tab_roy, text="↻  Обновить пул",
