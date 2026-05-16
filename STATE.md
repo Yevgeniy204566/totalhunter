@@ -69,7 +69,7 @@
 - **Лучшие альтернативы:** BitMedia ($20 BTC/USDT, баннеры), BidVertiser ($10 BTC)
 
 ### Vercel
-- Token: `[см. .claude/settings.local.json → env.VERCEL_TOKEN]` ⚠️ НЕ хранить в STATE.md (публичный репо!)
+- Token: `[см. .claude/settings.local.json → env.VERCEL_TOKEN]` — название токена: **16.05.2026** ⚠️ НЕ хранить сам токен здесь (публичный репо!)
 - Team: `team_CkkRPXdwtRtsL9YCk8n4Fzla`
 - Project: `prj_mWtcb6hJCkl40YLWheeIlxD5NmXj`
 - GitHub repoId: `1215361801`
