@@ -2768,17 +2768,20 @@ class TotalHunterApp(ctk.CTk):
         self._roy_status_lb.pack(pady=(0, 4))
 
         # ТЕСТ: хардкод 10 бирж для визуальной проверки
+        from datetime import datetime, timezone, timedelta as _td
+        _now = datetime.now(timezone.utc)
+        def _ago(m): return (_now - _td(minutes=m)).isoformat()
         self._roy_update_list([
-            {"kingdom": 471, "x": 383, "y": 812, "percent": 7},
-            {"kingdom": 471, "x": 512, "y": 340, "percent": 33},
-            {"kingdom": 471, "x": 198, "y": 655, "percent": 15},
-            {"kingdom": 471, "x": 820, "y": 120, "percent": 42},
-            {"kingdom": 471, "x": 401, "y": 900, "percent": 61},
-            {"kingdom": 205, "x": 711, "y": 199, "percent": 78},
-            {"kingdom": 205, "x": 300, "y": 450, "percent": 12},
-            {"kingdom": 205, "x": 555, "y": 700, "percent": 55},
-            {"kingdom": 317, "x": 100, "y": 250, "percent": 3},
-            {"kingdom": 317, "x": 440, "y": 380, "percent": 88},
+            {"kingdom": 471, "x": 383, "y": 812, "percent":  7, "updated_at": _ago(1)},
+            {"kingdom": 471, "x": 512, "y": 340, "percent": 33, "updated_at": _ago(3)},
+            {"kingdom": 471, "x": 198, "y": 655, "percent": 15, "updated_at": _ago(5)},
+            {"kingdom": 471, "x": 820, "y": 120, "percent": 42, "updated_at": _ago(8)},
+            {"kingdom": 471, "x": 401, "y": 900, "percent": 61, "updated_at": _ago(11)},
+            {"kingdom": 205, "x": 711, "y": 199, "percent": 78, "updated_at": _ago(13)},
+            {"kingdom": 205, "x": 300, "y": 450, "percent": 12, "updated_at": _ago(15)},
+            {"kingdom": 205, "x": 555, "y": 700, "percent": 55, "updated_at": _ago(17)},
+            {"kingdom": 317, "x": 100, "y": 250, "percent":  3, "updated_at": _ago(18)},
+            {"kingdom": 317, "x": 440, "y": 380, "percent": 88, "updated_at": _ago(19)},
         ])
 
         if self._roy_enabled_var.get():
@@ -2838,23 +2841,53 @@ class TotalHunterApp(ctk.CTk):
             return
 
         self._roy_status_lb.configure(text=f"Координат в пуле: {len(pool)}")
+        from datetime import datetime, timezone, timedelta
         for entry in pool:
             row = ctk.CTkFrame(self._roy_list_frame, fg_color=MD3["card"], corner_radius=6)
             row.pack(fill="x", padx=4, pady=2)
             pct = entry.get('percent', 0)
             pct_color = "#4ADE80" if pct < 50 else ("#FACC15" if pct < 80 else "#F87171")
+
+            # Таймер обратного отсчёта (TTL = 20 мин от updated_at)
+            updated_raw = entry.get('updated_at')
+            if updated_raw:
+                try:
+                    upd = datetime.fromisoformat(updated_raw)
+                    remaining = ((upd + timedelta(minutes=20)) - datetime.now(timezone.utc)).total_seconds()
+                    remaining = max(0, remaining)
+                    timer_text = f"⏱ {int(remaining//60):02d}:{int(remaining%60):02d}"
+                    timer_color = "#4ADE80" if remaining > 600 else ("#FACC15" if remaining > 300 else "#F87171")
+                except Exception:
+                    timer_text, timer_color = "⏱ --:--", MD3["on_surface2"]
+            else:
+                timer_text, timer_color = "⏱ --:--", MD3["on_surface2"]
+
+            # ГОС — жирный, бежевый/золотой
             ctk.CTkLabel(
                 row,
-                text=f"K:{entry['kingdom']}  X:{entry['x']}  Y:{entry['y']}",
-                font=ctk.CTkFont(size=12, weight="bold"),
+                text=f"ГОС {entry['kingdom']}",
+                font=ctk.CTkFont(size=13, weight="bold"),
+                text_color="#F0C070",
+            ).pack(side="left", padx=(10, 6), pady=5)
+            # Координаты
+            ctk.CTkLabel(
+                row,
+                text=f"X:{entry['x']}  Y:{entry['y']}",
+                font=ctk.CTkFont(size=12),
                 text_color=MD3["on_surface"],
-            ).pack(side="left", padx=10, pady=4)
+            ).pack(side="left", padx=(0, 4), pady=5)
+            # Таймер
             ctk.CTkLabel(
-                row,
-                text=f"{pct}%",
+                row, text=timer_text,
+                font=ctk.CTkFont(size=11),
+                text_color=timer_color,
+            ).pack(side="right", padx=6)
+            # Процент
+            ctk.CTkLabel(
+                row, text=f"{pct}%",
                 font=ctk.CTkFont(size=12, weight="bold"),
                 text_color=pct_color,
-            ).pack(side="right", padx=10)
+            ).pack(side="right", padx=(6, 2))
 
     def change_lang(self, val):
         old_val = self.current_lang
