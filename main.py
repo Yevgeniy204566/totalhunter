@@ -1261,7 +1261,7 @@ class TotalHunterApp(ctk.CTk):
                                       text_color=MD3["on_surface"],
                                       text_color_disabled=MD3["on_surface2"],
                                       corner_radius=12)
-        self.tabview.pack(padx=20, pady=(10, 0), fill="x")
+        self.tabview.pack(padx=20, pady=10, fill="x")
 
         # Сохраняем имена вкладок при создании — change_lang ищет по ним
         self._tab_init_names = {k: LANGS[self.current_lang][k]
@@ -1272,16 +1272,6 @@ class TotalHunterApp(ctk.CTk):
         self.tab_ref   = self.tabview.add(self._tab_init_names["tab_ref"])
         self.tab_calibration = self.tabview.add(self._tab_init_names["tab_cal"])
         self.tab_roy   = self.tabview.add(self._tab_init_names["tab_roy"])
-
-        # Кнопка «Калибровка» — под таб-баром, полное слово
-        ctk.CTkButton(
-            self._outer, text="Калибровка",
-            height=32, corner_radius=8,
-            fg_color=MD3["elevated"], hover_color=MD3["card"],
-            text_color=MD3["on_surface"],
-            font=ctk.CTkFont(size=13),
-            command=lambda: self.tabview.set(self._tab_init_names["tab_cal"]),
-        ).pack(padx=20, pady=(0, 4), fill="x")
 
         # Общие переменные для калибровки (нужны в нескольких вкладках)
         _BASE = os.path.dirname(os.path.abspath(__file__))
