@@ -1261,9 +1261,9 @@ class TotalHunterApp(ctk.CTk):
                                       text_color=MD3["on_surface"],
                                       text_color_disabled=MD3["on_surface2"],
                                       corner_radius=12)
-        self.tabview.pack(padx=20, pady=10, fill="x")
+        self.tabview.pack(padx=20, pady=(10, 0), fill="x")
 
-        # Все вкладки в одном tabview — change_lang ищет по ним
+        # 4 основные вкладки + Калибровка (она в tabview но её кнопка переносится вниз)
         self._tab_init_names = {k: LANGS[self.current_lang][k]
                                 for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_cal", "tab_roy")}
         self.tab_crypt = self.tabview.add(self._tab_init_names["tab_crypt"])
@@ -1272,6 +1272,9 @@ class TotalHunterApp(ctk.CTk):
         self.tab_ref   = self.tabview.add(self._tab_init_names["tab_ref"])
         self.tab_calibration = self.tabview.add(self._tab_init_names["tab_cal"])
         self.tab_roy   = self.tabview.add(self._tab_init_names["tab_roy"])
+
+        # Переносим кнопку Калибровки из верхней строки в отдельную строку ниже
+        self.after(50, self._move_cal_button_below)
 
         # Общие переменные для калибровки (нужны в нескольких вкладках)
         _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -2430,6 +2433,19 @@ class TotalHunterApp(ctk.CTk):
                     self.info_banner.pack_forget()
         except: pass
 
+
+    def _move_cal_button_below(self):
+        """Извлекает кнопку Калибровки из таб-бара и перепаковывает её ниже tabview."""
+        try:
+            cal_name = self._tab_init_names["tab_cal"]
+            btns = self.tabview._segmented_button._buttons_dict
+            if cal_name not in btns:
+                return
+            btn = btns[cal_name]
+            btn.pack_forget()
+            btn.pack(in_=self._outer, fill="x", padx=20, pady=(0, 6))
+        except Exception:
+            pass
 
     def _on_nav_toggle(self):
         """Dim nav controls when auto-navigation is disabled."""
