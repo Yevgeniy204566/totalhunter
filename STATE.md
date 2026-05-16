@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-15 (сессия: Система РОЙ v1 — Server API + OCR + GUI + интеграция engine)
+> Последнее обновление: 2026-05-16 (сессия: оптимизация скорости, GUI вкладки, безопасность, РОЙ доработки)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -98,6 +98,17 @@
 - Сервер: /version/latest → 1.2.8 ✅
 
 ---
+
+## ✅ Сделано 16.05.2026
+
+- **Миграции в репо**: 3 файла (22864ea6408d, 575bdc292d9e, 14e8d8e2a95a) — crash_reports, link_codes, hwid_history
+- **Сервер**: swap 1GB добавлен, cron-очистка каждое воскресенье 03:00
+- **Безопасность**: Vercel token утёк через STATE.md → аннулирован → заменён. Токены убраны из STATE.md
+- **bot_speed**: один ползунок вместо scan_interval+move_wait. Честный динамический sleep
+- **Оптимизация**: single-frame pipeline (убрали pyautogui.screenshot из hot path), dynamic sleep
+- **РОЙ клик**: stop→sleep(0.1-0.2)→click bbox→sleep(0.4-0.6)→OCR
+- **GUI вкладки**: РЕФЕРАЛЫ в полном слове, Калибровка под 4 вкладками (CTkButton + pack_forget)
+- **Telegram канал**: шаблоны постов записаны в буфер
 
 ## 🔴 Задачи на завтра (приоритет по порядку)
 
