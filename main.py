@@ -1273,8 +1273,21 @@ class TotalHunterApp(ctk.CTk):
         self.tab_calibration = self.tabview.add(self._tab_init_names["tab_cal"])
         self.tab_roy   = self.tabview.add(self._tab_init_names["tab_roy"])
 
-        # Переносим кнопку Калибровки из верхней строки в отдельную строку ниже
-        self.after(50, self._move_cal_button_below)
+        # Убираем Калибровку из верхней строки — она будет отдельной кнопкой снизу
+        self.after(50, self._hide_cal_from_tabbar)
+
+        # Кнопка Калибровки под 4 вкладками
+        self._cal_btn = ctk.CTkButton(
+            self._outer,
+            text=self._tab_init_names["tab_cal"],
+            height=32, corner_radius=8,
+            fg_color=MD3["elevated"],
+            hover_color=MD3["tab_selected"],
+            text_color=MD3["on_surface"],
+            font=ctk.CTkFont(size=13),
+            command=lambda: self.tabview.set(self._tab_init_names["tab_cal"]),
+        )
+        self._cal_btn.pack(padx=20, pady=(0, 6), fill="x")
 
         # Общие переменные для калибровки (нужны в нескольких вкладках)
         _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -2434,16 +2447,13 @@ class TotalHunterApp(ctk.CTk):
         except: pass
 
 
-    def _move_cal_button_below(self):
-        """Извлекает кнопку Калибровки из таб-бара и перепаковывает её ниже tabview."""
+    def _hide_cal_from_tabbar(self):
+        """Убирает Калибровку из верхней строки вкладок — она отдельной кнопкой ниже."""
         try:
             cal_name = self._tab_init_names["tab_cal"]
             btns = self.tabview._segmented_button._buttons_dict
-            if cal_name not in btns:
-                return
-            btn = btns[cal_name]
-            btn.pack_forget()
-            btn.pack(in_=self._outer, fill="x", padx=20, pady=(0, 6))
+            if cal_name in btns:
+                btns[cal_name].pack_forget()
         except Exception:
             pass
 
