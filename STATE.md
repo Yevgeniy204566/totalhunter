@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-16 (сессия: оптимизация скорости, GUI вкладки, безопасность, РОЙ доработки)
+> Последнее обновление: 2026-05-18 (сессия: Fortune Wheel v6 — физика трения, ratchet-звук, Unsplash текстуры, итеративный UI)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -18,7 +18,7 @@
 |---|---|---|---|
 | **Платежи** | server/payments.py | ✅ NOWPayments (крипто). IPN raw bytes HMAC-SHA512. Работает. | 2026-05-07 |
 | **Long-poll синхронизация** | server/vault.py | ✅ GET /vault/sync/{hwid} — мгновенный обмен баланса бот↔сайт | 2026-05-07 |
-| **Earn/Casino** | server/earn.py + web/EarnPage.jsx | ✅ Зелёная кнопка +5КР → рандомная награда 5/10/20/30/50 алмазов | 2026-05-07 |
+| **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ v6. 4-слойный рендер (base+disc+glass+pointer). Физика трения (accel→coast→decel→elastic settle). Noise-based ratchet-клик (Web Audio). 2×DPR canvas. Unsplash текстуры (дерево+золото) — загружаются async, CORS may block → fallback gradient. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). 7 TDD тестов. | 2026-05-18 |
 | **Рекламные слоты** | web/AdSlot.jsx | ⛔ PopAds убран (pop-under — не подходит). Ждём сеть с баннерами (BitMedia и др. — высокий порог вывода). | 2026-05-15 |
 | **Система РОЙ** | roy/ + server/roy.py | ✅ Server API (4 эндпоинта), OCR (exchange_reader.py), engine интеграция, GUI вкладка, клик по bbox реализован (стоп→стабилизация→клик→OCR). Требует теста с живым ивентом бирж. | 2026-05-16 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
@@ -136,6 +136,16 @@
 - **.gitignore**: создан, __pycache__ убраны из git-индекса навсегда
 - **GCP**: git pull + restart ✅, конфликт untracked migrations решён через rm
 
+## ✅ Сделано 18.05.2026
+
+- **Fortune Wheel v1→v6**: итеративная разработка, 6 версий за сессию
+  - Бэкенд: новая таблица призов (78/12/6/3/1%), SECTORS[], pick_sector(), sector_to_angle(), sector_index+angle в response. 7 TDD тестов.
+  - Фронтенд: 4-слойный canvas (metallic base + neon disc + glass + pointer), физика трения, ratchet-звук через Web Audio noise burst, spring pointer physics, 2×DPR
+  - Текстуры: Unsplash photo-1546484396/photo-1736506159893 (дерево) + photo-1545873509 (золото), загружаются crossOrigin='anonymous', fallback gradient если CORS блок
+  - v6 исправил тёмные цвета секторов и тяжёлый лаковый overlay
+- **GCP deploy команда** исправлена в CLAUDE.md: `cd /opt/totalhunter && sudo git clean -fd server/alembic/versions/ && sudo git pull origin main`
+- **Кнопка бота**: "+5" зелёная оставлена как была (изменение откатано)
+
 ## 🔴 Задачи (приоритет по порядку)
 
 ### 1. 🎮 Живой тест v1.3.0
@@ -144,14 +154,17 @@
   - Бот продолжил змейку (не остановился)
   - `GET /roy/pool` вернул запись
 
-### 2. 📢 Реклама
+### 2. 🎰 Fortune Wheel — доработка визуала
+- Unsplash текстуры CORS-blocked — нужно либо проверить другой источник, либо смириться с fallback
+- Колесо_4 (v4) было признано пользователем неудовлетворительным. v6 исправляет яркость — ждём финальную оценку
+- Возможное направление: подготовить реальные PNG-ассеты (нарисованные дизайнером) и положить в `web/public/img/wheel/`
+
+### 3. 📢 Реклама
 - **Adsterra** — нативные баннеры, вывод от $5 WebMoney/Paxum. Позиционировать как "Game Tools"
-- Adsterra стоит попробовать — у них есть нативные баннеры и вывод от $5 через WebMoney
 - Позиционировать: "Game Tools & Automation", не "bot"
 
 ### 4. 🔧 Технический долг
-- Серверные миграции — перенести в репо: `14e8d8e2a95a_final_merge`, `575bdc292d9e_merge_heads`, `22864ea6408d_add_web_platform_tables`
-- DPI awareness — v1.2.9, SetProcessDpiAwareness(2) первой строкой main.py
+- Миграции в репо уже есть (22864ea6408d, 575bdc292d9e, 14e8d8e2a95a) ✅
 - Баг «бот выкидывает в магазин» — не диагностирован, следить
 
 ## ⚠️ ИЗВЕСТНЫЕ БАГИ
