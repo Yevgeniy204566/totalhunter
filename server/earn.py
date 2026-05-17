@@ -27,12 +27,24 @@ router = APIRouter(prefix="/web/earn", tags=["earn"])
 
 MAX_VIEWS_PER_DAY = 5
 
-_REWARDS  = [5,  10, 20, 30, 50]
-_WEIGHTS  = [90,  5,  3,  1,  1]
+_REWARDS = [5,  7, 15, 30, 50]
+_WEIGHTS = [78, 12,  6,  3,  1]
+
+# 20-sector wheel layout (indexes 0-19, each = 18°)
+SECTORS = [5, 7, 5, 15, 5, 30, 5, 7, 5, 15, 5, 7, 5, 15, 5, 50, 5, 7, 5, 30]
 
 
 def calculate_ad_reward() -> int:
     return random.choices(_REWARDS, weights=_WEIGHTS, k=1)[0]
+
+
+def pick_sector(earned: int) -> int:
+    candidates = [i for i, v in enumerate(SECTORS) if v == earned]
+    return random.choice(candidates)
+
+
+def sector_to_angle(sector_index: int) -> int:
+    return sector_index * 18 + 9
 
 
 async def _today_count(db: AsyncSession, user_id: int) -> int:
@@ -67,6 +79,7 @@ async def earn_reward(
         return {"success": False, "message": "Daily limit reached", "credits": web_user.credits}
 
     earned = calculate_ad_reward()
+    sector_idx = pick_sector(earned)
     web_user.credits += earned
     db.add(Transaction(
         user_id=web_user.id,
@@ -82,4 +95,6 @@ async def earn_reward(
         "credits": web_user.credits,
         "earned": earned,
         "jackpot": earned >= 50,
+        "sector_index": sector_idx,
+        "angle": sector_to_angle(sector_idx),
     }

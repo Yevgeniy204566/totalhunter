@@ -1212,11 +1212,11 @@ class TotalHunterApp(ctk.CTk):
         )
         self.theme_menu.pack(side="right", padx=(0, 4))
         ctk.CTkButton(
-            _header, text="+5", width=36, height=24,
-            fg_color="#1A5C2A", hover_color="#226B33",
-            text_color="#4ADE80", corner_radius=6,
-            font=ctk.CTkFont(size=11, weight="bold"),
-            command=lambda: webbrowser.open("https://total-hunter.com/dashboard"),
+            _header, text="🎰", width=36, height=24,
+            fg_color="#3d2800", hover_color="#5a3d00",
+            text_color="#FFD700", corner_radius=6,
+            font=ctk.CTkFont(size=13),
+            command=lambda: webbrowser.open("https://total-hunter.com/dashboard/earn"),
         ).pack(side="right", padx=(0, 2))
 
 
