@@ -2,7 +2,23 @@
 
 > Не тратить время повторно на эти решения.
 > Обновляется командой **«Хангоф»**.
-> Последнее обновление: 2026-05-16 (Хангоф #53)
+> Последнее обновление: 2026-05-17 (Хангоф #54)
+
+---
+
+## ⛔ GIT / ДЕПЛОЙ — Новые грабли (Хангоф #54)
+
+**AP-GIT-1: `__pycache__` в git-индексе — блокирует git stash/pull**
+- Симптом: `git stash` / `git pull` падает с `error: Your local changes to __pycache__/xxx.pyc would be overwritten`
+- Причина: `.pyc` файлы попали в индекс через `git add .` до создания `.gitignore`
+- Решение: `git rm -r --cached __pycache__/ && echo "__pycache__/" >> .gitignore && git commit`
+- **Теперь закрыто**: `.gitignore` создан в v1.3.0, все `.pyc` убраны из индекса навсегда
+
+**AP-GIT-2: `git pull` на GCP с untracked migrations — падает merge**
+- Симптом: `error: The following untracked working tree files would be overwritten by merge: server/alembic/versions/XXX.py`
+- Причина: миграции создавались вручную через `psql` (без alembic) и не коммитились в репо, но потом появились в репо через другую сессию
+- Решение: `sudo rm server/alembic/versions/XXX.py && sudo git pull`
+- Файлы безопасно удалять — они придут из репо в том же виде
 
 ---
 
