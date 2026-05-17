@@ -1,6 +1,10 @@
 
 
-
+import ctypes as _ctypes
+try:
+    _ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-Monitor DPI — фикс размытости на HiDPI
+except Exception:
+    pass
 
 # ── PyInstaller: preload torch DLLs before any import ────────────────────────
 import sys, os
