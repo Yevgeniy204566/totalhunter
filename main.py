@@ -189,7 +189,7 @@ LANGS = {
         "status_ready": "READY", "status_running": "STATUS: SEARCHING...",
         "add_oil": "Add Oil",
         # --- новые tab names ---
-        "tab_crypt": "CRYPTS", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "CRYPTS", "tab_cal": "Calibration", "tab_roy": "SWARM",
         # --- hunt tab ---
         "nn_title": "Neural Net", "nav_main_title": "Navigation",
         "nav_extra_title": "Advanced", "nav_auto": "Auto",
@@ -239,7 +239,7 @@ LANGS = {
         "copy": "KOPIEREN", "share_text": "CODE TEILEN UND % ERHALTEN", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVIERT", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "BEREIT", "status_running": "STATUS: SUCHE...", "add_oil": "Öl hinzufügen",
-        "tab_crypt": "KRYPTEN", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTEN", "tab_cal": "Kalibrierung", "tab_roy": "SCHWARM",
         "nn_title": "Neuronales Netz", "nav_main_title": "Navigation",
         "nav_extra_title": "Erweitert", "nav_auto": "Auto", "save_settings": "Einstellungen speichern",
         "nav_step": "Schritt:", "nav_wait": "Geschw. (Sek/Schritt):",
@@ -278,7 +278,7 @@ LANGS = {
         "copy": "COPIAR", "share_text": "COMPARTE EL CÓDIGO Y GANA %", "copied": "¡Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVADO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "LISTO", "status_running": "ESTADO: BUSCANDO...", "add_oil": "Agregar aceite",
-        "tab_crypt": "CRIPTAS", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "CRIPTAS", "tab_cal": "Calibración", "tab_roy": "ENJAMBRE",
         "nn_title": "Red Neuronal", "nav_main_title": "Navegación",
         "nav_extra_title": "Avanzado", "nav_auto": "Auto", "save_settings": "Guardar ajustes",
         "nav_step": "Paso:", "nav_wait": "Velocidad (seg/paso):",
@@ -317,7 +317,7 @@ LANGS = {
         "copy": "COPIER", "share_text": "PARTAGEZ LE CODE ET GAGNEZ %", "copied": "Copié !",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVÉ", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRÊT", "status_running": "STATUT : RECHERCHE...", "add_oil": "Ajouter de l'huile",
-        "tab_crypt": "CRYPTES", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "CRYPTES", "tab_cal": "Calibration", "tab_roy": "ESSAIM",
         "nn_title": "Réseau de neurones", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancé", "nav_auto": "Auto", "save_settings": "Sauvegarder les paramètres",
         "nav_step": "Pas :", "nav_wait": "Vitesse (sec/pas) :",
@@ -356,7 +356,7 @@ LANGS = {
         "copy": "COPIA", "share_text": "CONDIVIDI IL CODICE E GUADAGNA %", "copied": "Copiato!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ABILITATO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRONTO", "status_running": "STATO: RICERCA...", "add_oil": "Aggiungi olio",
-        "tab_crypt": "CRIPTE", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "CRIPTE", "tab_cal": "Calibrazione", "tab_roy": "SCIAME",
         "nn_title": "Rete Neurale", "nav_main_title": "Navigazione",
         "nav_extra_title": "Avanzato", "nav_auto": "Auto", "save_settings": "Salva impostazioni",
         "nav_step": "Passo:", "nav_wait": "Velocità (sec/passo):",
@@ -395,7 +395,7 @@ LANGS = {
         "copy": "KOPIËREN", "share_text": "DEEL CODE EN VERDIEN %", "copied": "Gekopieerd!",
         "clicker_title": "Clickermann Sync", "clicker_on": "INGESCHAKELD", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "KLAAR", "status_running": "STATUS: ZOEKEN...", "add_oil": "Olie toevoegen",
-        "tab_crypt": "CRYPTEN", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "CRYPTEN", "tab_cal": "Kalibratie", "tab_roy": "ZWERM",
         "nn_title": "Neuraal Netwerk", "nav_main_title": "Navigatie",
         "nav_extra_title": "Geavanceerd", "nav_auto": "Auto", "save_settings": "Instellingen opslaan",
         "nav_step": "Stap:", "nav_wait": "Snelheid (sec/stap):",
@@ -434,7 +434,7 @@ LANGS = {
         "copy": "KOPIER", "share_text": "DEL KODE OG TJEN %", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERT", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "KLAR", "status_running": "STATUS: SØKER...", "add_oil": "Legg til olje",
-        "tab_crypt": "KRYPTER", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTER", "tab_cal": "Kalibrering", "tab_roy": "SVERM",
         "nn_title": "Nevralt Nettverk", "nav_main_title": "Navigasjon",
         "nav_extra_title": "Avansert", "nav_auto": "Auto", "save_settings": "Lagre innstillinger",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -473,7 +473,7 @@ LANGS = {
         "copy": "KOPIUJ", "share_text": "UDOSTĘPNIJ KOD I ZDOBĄDŹ %", "copied": "Skopiowano!",
         "clicker_title": "Clickermann Sync", "clicker_on": "WŁĄCZONO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "GOTOWY", "status_running": "STATUS: SZUKAM...", "add_oil": "Dodaj olej",
-        "tab_crypt": "KRYPTY", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTY", "tab_cal": "Kalibracja", "tab_roy": "RÓJ",
         "nn_title": "Sieć Neuronowa", "nav_main_title": "Nawigacja",
         "nav_extra_title": "Zaawansowane", "nav_auto": "Auto", "save_settings": "Zapisz ustawienia",
         "nav_step": "Krok:", "nav_wait": "Prędkość (sek/krok):",
@@ -512,7 +512,7 @@ LANGS = {
         "copy": "COPIAR", "share_text": "COMPARTILHE O CÓDIGO E GANHE %", "copied": "Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ATIVADO", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "PRONTO", "status_running": "STATUS: BUSCANDO...", "add_oil": "Adicionar óleo",
-        "tab_crypt": "CRIPTAS", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "CRIPTAS", "tab_cal": "Calibração", "tab_roy": "ENXAME",
         "nn_title": "Rede Neural", "nav_main_title": "Navegação",
         "nav_extra_title": "Avançado", "nav_auto": "Auto", "save_settings": "Salvar configurações",
         "nav_step": "Passo:", "nav_wait": "Velocidade (seg/passo):",
@@ -551,7 +551,7 @@ LANGS = {
         "copy": "KOPIERA", "share_text": "DELA KOD OCH TJÄNA %", "copied": "Kopierat!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERAD", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "REDO", "status_running": "STATUS: SÖKER...", "add_oil": "Lägg till olja",
-        "tab_crypt": "KRYPTOR", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "KRYPTOR", "tab_cal": "Kalibrering", "tab_roy": "SVÄRM",
         "nn_title": "Neuralt Nätverk", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancerat", "nav_auto": "Auto", "save_settings": "Spara inställningar",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -590,7 +590,7 @@ LANGS = {
         "copy": "KOPYALA", "share_text": "KODU PAYLAŞ VE % KAZAN", "copied": "Kopyalandı!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ETKİN", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "HAZIR", "status_running": "DURUM: ARIYOR...", "add_oil": "Yağ ekle",
-        "tab_crypt": "KRİPTALAR", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "KRİPTALAR", "tab_cal": "Kalibrasyon", "tab_roy": "OĞUL",
         "nn_title": "Sinir Ağı", "nav_main_title": "Navigasyon",
         "nav_extra_title": "Gelişmiş", "nav_auto": "Otomatik", "save_settings": "Ayarları kaydet",
         "nav_step": "Adım:", "nav_wait": "Hız (sn/adım):",
@@ -629,7 +629,7 @@ LANGS = {
         "copy": "نسخ", "share_text": "شارك الرمز واكسب %", "copied": "تم النسخ!",
         "clicker_title": "Clickermann Sync", "clicker_on": "مفعّل", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "جاهز", "status_running": "الحالة: يبحث...", "add_oil": "أضف زيتاً",
-        "tab_crypt": "المقابر", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "المقابر", "tab_cal": "معايرة", "tab_roy": "سرب",
         "nn_title": "الشبكة العصبية", "nav_main_title": "التنقل",
         "nav_extra_title": "متقدم", "nav_auto": "تلقائي", "save_settings": "حفظ الإعدادات",
         "nav_step": "خطوة:", "nav_wait": "السرعة (ث/خطوة):",
@@ -668,7 +668,7 @@ LANGS = {
         "copy": "コピー", "share_text": "コードを共有して%を獲得", "copied": "コピーしました！",
         "clicker_title": "Clickermann Sync", "clicker_on": "有効", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "準備完了", "status_running": "ステータス: 検索中...", "add_oil": "オイルを追加",
-        "tab_crypt": "クリプト", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "クリプト", "tab_cal": "キャリブレーション", "tab_roy": "群れ",
         "nn_title": "ニューラルネット", "nav_main_title": "ナビゲーション",
         "nav_extra_title": "詳細設定", "nav_auto": "自動", "save_settings": "設定を保存",
         "nav_step": "ステップ:", "nav_wait": "速度 (秒/ステップ):",
@@ -707,7 +707,7 @@ LANGS = {
         "copy": "复制", "share_text": "分享代码获得%", "copied": "已复制！",
         "clicker_title": "Clickermann Sync", "clicker_on": "已启用", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "准备就绪", "status_running": "状态: 搜索中...", "add_oil": "添加油",
-        "tab_crypt": "地下墓穴", "tab_cal": "校准", "tab_roy": "ROY",
+        "tab_crypt": "地下墓穴", "tab_cal": "校准", "tab_roy": "蜂群",
         "nn_title": "神经网络", "nav_main_title": "导航",
         "nav_extra_title": "高级设置", "nav_auto": "自动", "save_settings": "保存设置",
         "nav_step": "步长:", "nav_wait": "速度 (秒/步):",
@@ -746,7 +746,7 @@ LANGS = {
         "copy": "複製", "share_text": "分享代碼獲得%", "copied": "已複製！",
         "clicker_title": "Clickermann Sync", "clicker_on": "已啟用", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "準備就緒", "status_running": "狀態: 搜尋中...", "add_oil": "添加油",
-        "tab_crypt": "地下墓穴", "tab_cal": "校準", "tab_roy": "ROY",
+        "tab_crypt": "地下墓穴", "tab_cal": "校準", "tab_roy": "蜂群",
         "nn_title": "神經網路", "nav_main_title": "導航",
         "nav_extra_title": "進階設定", "nav_auto": "自動", "save_settings": "儲存設定",
         "nav_step": "步長:", "nav_wait": "速度 (秒/步):",
@@ -785,7 +785,7 @@ LANGS = {
         "copy": "복사", "share_text": "코드 공유하여 % 획득", "copied": "복사됨!",
         "clicker_title": "Clickermann Sync", "clicker_on": "활성화됨", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "준비 완료", "status_running": "상태: 검색 중...", "add_oil": "오일 추가",
-        "tab_crypt": "크립트", "tab_cal": "보정", "tab_roy": "ROY",
+        "tab_crypt": "크립트", "tab_cal": "보정", "tab_roy": "군집",
         "nn_title": "신경망", "nav_main_title": "네비게이션",
         "nav_extra_title": "고급 설정", "nav_auto": "자동", "save_settings": "설정 저장",
         "nav_step": "단계:", "nav_wait": "속도 (초/단계):",
@@ -824,7 +824,7 @@ LANGS = {
         "copy": "КОПІЮВАТИ", "share_text": "ПОДІЛІТЬСЯ КОДОМ І ОТРИМАЙТЕ %", "copied": "Скопійовано!",
         "clicker_title": "Синхронізація Clickermann", "clicker_on": "УВІМКНУТИ", "key_start": "Старт:", "key_stop": "Стоп:",
         "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: У ПОШУКУ...", "add_oil": "Додай масла",
-        "tab_crypt": "СКЛЕПИ", "tab_cal": "Калибровка", "tab_roy": "РОЙ",
+        "tab_crypt": "СКЛЕПИ", "tab_cal": "Калібрування", "tab_roy": "РОЙ",
         "nn_title": "Нейромережа", "nav_main_title": "Навігація",
         "nav_extra_title": "Додатково", "nav_auto": "Авто", "save_settings": "Зберегти налаштування",
         "nav_step": "Крок:", "nav_wait": "Швидкість (сек/крок):",
@@ -863,7 +863,7 @@ LANGS = {
         "copy": "SALIN", "share_text": "BAGIKAN KODE DAN DAPATKAN %", "copied": "Disalin!",
         "clicker_title": "Clickermann Sync", "clicker_on": "DIAKTIFKAN", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "SIAP", "status_running": "STATUS: MENCARI...", "add_oil": "Tambah minyak",
-        "tab_crypt": "KRIPTA", "tab_cal": "Калибровка", "tab_roy": "ROY",
+        "tab_crypt": "KRIPTA", "tab_cal": "Kalibrasi", "tab_roy": "KAWANAN",
         "nn_title": "Jaringan Saraf", "nav_main_title": "Navigasi",
         "nav_extra_title": "Lanjutan", "nav_auto": "Otomatis", "save_settings": "Simpan pengaturan",
         "nav_step": "Langkah:", "nav_wait": "Kecepatan (dtk/langkah):",
@@ -1123,6 +1123,7 @@ class TotalHunterApp(ctk.CTk):
         super().__init__()
         self.engine = HuntEngine()
         self.engine.on_found_callback = self.on_target_found
+        self.engine.on_last_exchange_callback = self._on_last_exchange_found
         self.crypt_engine = CryptHunter()
         self.is_crypt_running = False
         self._crypt_found_count = 0
@@ -1250,44 +1251,61 @@ class TotalHunterApp(ctk.CTk):
                                             font=ctk.CTkFont(size=13),
                                             text_color="#00CFFF", wraplength=380)
 
-        # Вкладки
-        self.tabview = ctk.CTkTabview(self._outer, width=420, height=780,
-                                      fg_color=MD3["card"],
-                                      segmented_button_fg_color=MD3["elevated"],
-                                      segmented_button_selected_color=MD3["tab_selected"],
-                                      segmented_button_selected_hover_color=MD3["tab_selected_hover"],
-                                      segmented_button_unselected_color=MD3["elevated"],
-                                      segmented_button_unselected_hover_color=MD3["card"],
-                                      text_color=MD3["on_surface"],
-                                      text_color_disabled=MD3["on_surface2"],
-                                      corner_radius=12)
-        self.tabview.pack(padx=20, pady=(10, 0), fill="x")
+        # ── Навигация: два ряда (grid) ───────────────────────────────────
+        self._nav_frame = ctk.CTkFrame(self._outer, fg_color=MD3["elevated"], corner_radius=12)
+        self._nav_frame.pack(padx=20, pady=(10, 0), fill="x")
+        self._nav_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        # 4 основные вкладки + Калибровка (она в tabview но её кнопка переносится вниз)
+        # Ряд 0 — 4 основные вкладки
         self._tab_init_names = {k: LANGS[self.current_lang][k]
-                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_cal", "tab_roy")}
-        self.tab_crypt = self.tabview.add(self._tab_init_names["tab_crypt"])
-        self.tab_hunt  = self.tabview.add(self._tab_init_names["tab_hunt"])
-        # self.tab_combo = self.tabview.add("Combo")  # временно отключён
-        self.tab_ref   = self.tabview.add(self._tab_init_names["tab_ref"])
-        self.tab_calibration = self.tabview.add(self._tab_init_names["tab_cal"])
-        self.tab_roy   = self.tabview.add(self._tab_init_names["tab_roy"])
-
-        # Убираем Калибровку из верхней строки — она будет отдельной кнопкой снизу
-        self.after(50, self._hide_cal_from_tabbar)
-
-        # Кнопка Калибровки под 4 вкладками
-        self._cal_btn = ctk.CTkButton(
-            self._outer,
-            text=self._tab_init_names["tab_cal"],
-            height=32, corner_radius=8,
+                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_roy")}
+        self._main_seg = ctk.CTkSegmentedButton(
+            self._nav_frame,
+            values=list(self._tab_init_names.values()),
+            command=self._on_seg_change,
+            height=32,
             fg_color=MD3["elevated"],
-            hover_color=MD3["tab_selected"],
+            selected_color=MD3["tab_selected"],
+            selected_hover_color=MD3["tab_selected_hover"],
+            unselected_color=MD3["elevated"],
+            unselected_hover_color=MD3["card"],
+            text_color=MD3["on_surface"],
+            corner_radius=6,
+            font=ctk.CTkFont(size=13),
+        )
+        self._main_seg.grid(row=0, column=0, columnspan=4, sticky="ew", padx=4, pady=(4, 0))
+        self._main_seg.set(self._tab_init_names["tab_crypt"])
+
+        # Ряд 1 — Калибровка, по центру
+        self._cal_btn = ctk.CTkButton(
+            self._nav_frame,
+            text=LANGS[self.current_lang]["tab_cal"],
+            width=190, height=28, corner_radius=6,
+            fg_color=MD3["elevated"],
+            hover_color=MD3["card"],
             text_color=MD3["on_surface"],
             font=ctk.CTkFont(size=13),
-            command=lambda: self.tabview.set(self._tab_init_names["tab_cal"]),
+            command=self._toggle_cal,
         )
-        self._cal_btn.pack(padx=20, pady=(0, 6), fill="x")
+        self._cal_btn.grid(row=1, column=0, columnspan=4, pady=(2, 4))
+
+        # ── Контентная область ────────────────────────────────────────────
+        self._content_frame = ctk.CTkFrame(self._outer, fg_color=MD3["card"],
+                                            corner_radius=12, height=740)
+        self._content_frame.pack(padx=20, pady=(4, 0), fill="x")
+        self._content_frame.pack_propagate(False)
+
+        # Фреймы вкладок (показываются/скрываются вручную)
+        self.tab_crypt = ctk.CTkFrame(self._content_frame, fg_color="transparent")
+        self.tab_hunt  = ctk.CTkFrame(self._content_frame, fg_color="transparent")
+        # self.tab_combo = ...  # временно отключён
+        self.tab_ref   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
+        self.tab_roy   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
+        self._cal_frame = ctk.CTkScrollableFrame(self._content_frame, fg_color="transparent")
+
+        self._active_tab_key = "tab_crypt"
+        self._cal_visible = False
+        self.tab_crypt.pack(fill="both", expand=True)
 
         # Общие переменные для калибровки (нужны в нескольких вкладках)
         _BASE = os.path.dirname(os.path.abspath(__file__))
@@ -1621,6 +1639,19 @@ class TotalHunterApp(ctk.CTk):
 
         # Загружаем сохранённые настройки если есть
         self._load_settings()
+
+        # ─── Карточка «Последняя найденная биржа» ───────────────────────
+        _last_ex_card = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
+                                     corner_radius=10, border_width=1,
+                                     border_color=MD3["outline"])
+        _last_ex_card.pack(fill="x", padx=20, pady=(4, 2))
+        ctk.CTkLabel(_last_ex_card, text="Последняя биржа:",
+                     font=ctk.CTkFont(size=12),
+                     text_color=MD3["on_surface2"]).pack(anchor="w", padx=12, pady=(4, 0))
+        self._last_exchange_lb = ctk.CTkLabel(_last_ex_card, text="—",
+                                              font=ctk.CTkFont(size=13, weight="bold"),
+                                              text_color=MD3["value_text"])
+        self._last_exchange_lb.pack(anchor="w", padx=12, pady=(0, 4))
 
         # Кнопка Запуска (FAB-style prominent action)
         self.start_button = ctk.CTkButton(
@@ -2447,15 +2478,43 @@ class TotalHunterApp(ctk.CTk):
         except: pass
 
 
-    def _hide_cal_from_tabbar(self):
-        """Убирает Калибровку из верхней строки вкладок — она отдельной кнопкой ниже."""
-        try:
-            cal_name = self._tab_init_names["tab_cal"]
-            btns = self.tabview._segmented_button._buttons_dict
-            if cal_name in btns:
-                btns[cal_name].pack_forget()
-        except Exception:
-            pass
+    def _show_tab(self, key):
+        """Показать фрейм вкладки по ключу, скрыть остальные."""
+        _all = (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self._cal_frame)
+        for f in _all:
+            f.pack_forget()
+        self._cal_btn.configure(fg_color=MD3["elevated"], hover_color=MD3["card"])
+        self._cal_visible = False
+        tab_map = {
+            "tab_crypt": self.tab_crypt,
+            "tab_hunt":  self.tab_hunt,
+            "tab_ref":   self.tab_ref,
+            "tab_roy":   self.tab_roy,
+        }
+        frame = tab_map.get(key)
+        if frame:
+            self._active_tab_key = key
+            frame.pack(fill="both", expand=True)
+        self._main_seg.set(self._tab_init_names.get(key, ""))
+
+    def _on_seg_change(self, val):
+        """Вызывается при клике на CTkSegmentedButton."""
+        for k, v in self._tab_init_names.items():
+            if v == val:
+                self._show_tab(k)
+                return
+
+    def _toggle_cal(self):
+        if self._cal_visible:
+            self._cal_btn.configure(fg_color=MD3["elevated"], hover_color=MD3["card"])
+            self._cal_visible = False
+            self._show_tab(self._active_tab_key)
+        else:
+            for f in (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy):
+                f.pack_forget()
+            self._cal_frame.pack(fill="both", expand=True)
+            self._cal_btn.configure(fg_color=MD3["tab_selected"], hover_color=MD3["tab_selected_hover"])
+            self._cal_visible = True
 
     def _on_nav_toggle(self):
         """Dim nav controls when auto-navigation is disabled."""
@@ -2637,17 +2696,20 @@ class TotalHunterApp(ctk.CTk):
 
 
     def _process_found(self):
-        """Безопасно обновляем UI в главном потоке"""
+        """Безопасно обновляем UI в главном потоке. Змейка продолжается — бот не останавливается."""
         res = spend_credit("exchange")
         if res and res.get("success"):
             self._update_credits_display(res.get("credits", res.get("remaining", self.current_credits - 10)))
         elif res and res.get("low_credits"):
-            self.toggle_bot()  # сначала стоп
+            self.toggle_bot()
             webbrowser.open("https://total-hunter.com/dashboard/balance")
-            return
 
-        # Визуально переключаем кнопку обратно
-        self.toggle_bot()
+    def _on_last_exchange_found(self, result: dict) -> None:
+        """Callback из engine: обновляет карточку последней найденной биржи (вкладка Биржи)."""
+        import time as _t
+        ts   = _t.strftime("%H:%M:%S")
+        text = f"K:{result['kingdom']}  X:{result['x']}  Y:{result['y']}  ·  {ts}"
+        self.after(0, lambda t=text: self._last_exchange_lb.configure(text=t))
 
 
     def handle_login(self):
@@ -2946,13 +3008,12 @@ class TotalHunterApp(ctk.CTk):
         for widget, key in self._i18n_labels:
             widget.configure(text=LANGS[val][key])
 
-        # Вкладки — ищем по имени созданному при запуске (_tab_init_names).
-        # btns dict НЕ трогаем — ключи остаются оригинальными навсегда,
-        # иначе ломается click-callback (lambda замыкает оригинальное имя).
-        btns = self.tabview._segmented_button._buttons_dict
-        for tab_key, init_name in self._tab_init_names.items():
-            if init_name in btns:
-                btns[init_name].configure(text=LANGS[val][tab_key])
+        # Навигация — обновляем segmented button и кнопку калибровки
+        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_roy")}
+        self._tab_init_names = new_names
+        self._main_seg.configure(values=list(new_names.values()))
+        self._main_seg.set(new_names.get(self._active_tab_key, list(new_names.values())[0]))
+        self._cal_btn.configure(text=LANGS[val]["tab_cal"])
 
         # crypt_start_btn — только если бот не запущен
         if not self.is_crypt_running:
@@ -3005,7 +3066,7 @@ class TotalHunterApp(ctk.CTk):
         _assets = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
 
         _cal_title_lb = ctk.CTkLabel(
-            self.tab_calibration,
+            self._cal_frame,
             text=LANGS[self.current_lang]["cal_title"],
             font=ctk.CTkFont(size=16, weight="bold"),
             text_color=MD3["on_surface"],
@@ -3014,7 +3075,7 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels.append((_cal_title_lb, "cal_title"))
 
         _cal_desc_lb = ctk.CTkLabel(
-            self.tab_calibration,
+            self._cal_frame,
             text=LANGS[self.current_lang]["cal_desc"],
             font=ctk.CTkFont(size=12),
             text_color=MD3["on_surface2"],
@@ -3024,7 +3085,7 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels.append((_cal_desc_lb, "cal_desc"))
 
         # ── Фото + описание точек ─────────────────────────────────────────
-        points_frame = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
+        points_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
         points_frame.pack(fill="x", padx=16, pady=(0, 6))
 
         self._cal_point_label_widgets = []
@@ -3065,7 +3126,7 @@ class TotalHunterApp(ctk.CTk):
             self._cal_point_label_widgets.append((pt_lb, pt_desc_lb, pt_label_key, pt_desc_key))
 
         # ── Profile dropdown ──────────────────────────────────────────────
-        profile_frame = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
+        profile_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
         profile_frame.pack(fill="x", padx=40, pady=4)
         _cal_profile_lb = ctk.CTkLabel(profile_frame, text=LANGS[self.current_lang]["cal_profile_lb"],
                                        text_color=MD3["on_surface2"])
@@ -3084,7 +3145,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ── Status label ──────────────────────────────────────────────────
         self._cal_status_label = ctk.CTkLabel(
-            self.tab_calibration,
+            self._cal_frame,
             text=LANGS[self.current_lang]["cal_not_calibrated"],
             font=ctk.CTkFont(size=13),
             text_color="#FFB300",
@@ -3177,7 +3238,7 @@ class TotalHunterApp(ctk.CTk):
             messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
 
         self._cal_auto_btn = ctk.CTkButton(
-            self.tab_calibration,
+            self._cal_frame,
             text=LANGS[self.current_lang]["cal_auto_btn"],
             command=_auto_calibrate,
             fg_color=MD3["blue_btn"],
@@ -3192,7 +3253,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ── Кнопка Калибровать — главная (error tonal) ───────────────────
         self._cal_manual_btn = ctk.CTkButton(
-            self.tab_calibration,
+            self._cal_frame,
             text=LANGS[self.current_lang]["cal_manual_btn"],
             command=_calibrate,
             fg_color=MD3["error"],
@@ -3206,7 +3267,7 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels.append((self._cal_manual_btn, "cal_manual_btn"))
 
         # ── Сохранить / Загрузить — в одну строку ────────────────────────
-        save_load_row = ctk.CTkFrame(self.tab_calibration, fg_color="transparent")
+        save_load_row = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
         save_load_row.pack(fill="x", padx=40, pady=(0, 8))
         self._cal_save_btn = ctk.CTkButton(save_load_row, text=LANGS[self.current_lang]["cal_save_btn"],
                       command=_save_profile,
@@ -3225,7 +3286,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ── REF info ──────────────────────────────────────────────────────
         ctk.CTkLabel(
-            self.tab_calibration,
+            self._cal_frame,
             text=f"Эталон 1920×1080:\nА={REF_A} мини-карта   Б={REF_B} серебро",
             font=ctk.CTkFont(size=10),
             text_color=MD3["outline"],

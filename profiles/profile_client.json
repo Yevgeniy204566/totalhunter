@@ -34,7 +34,7 @@
   "crypt_max_march_min": 10,
   "crypt_swing1": -60,
   "crypt_swing2": -60,
-  "step": 13,
+  "step": 17,
   "conf": 0.8,
   "scan_interval": 0.7,
   "move_wait": 0.7,
@@ -45,5 +45,6 @@
   "nav_footprint_ttl": 1200,
   "return_delta_px": 6,
   "smooth_alpha": 50,
-  "crypt_speed_delta": 1.0
+  "crypt_speed_delta": 0.2,
+  "bot_speed": 0.5
 }

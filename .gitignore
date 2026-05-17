@@ -1,10 +1,5 @@
-web/.env.local
-web/node_modules/
-web/dist/
-
-# Google OAuth — не хранить в репо
-token.json
-credentials.json
-
-# Claude local settings (contains tokens)
-.claude/settings.local.json
+﻿__pycache__/
+*.pyc
+*.pyo
+.env
+.env.local

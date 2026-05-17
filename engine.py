@@ -50,6 +50,7 @@ class HuntEngine:
         # Roy — отключён по умолчанию, включается из GUI
         self.roy_enabled   = False
         self._roy_client   = None
+        self.on_last_exchange_callback = None  # (result: dict) → обновляет GUI владельца
 
     def start(
         self,
@@ -151,17 +152,22 @@ class HuntEngine:
             self._pacman.stop()
 
     def _roy_on_found(self):
-        """OCR диалога биржи → отправка координат в Рой (если % < 90)."""
+        """OCR диалога биржи → GUI-карточка владельца + отправка в Рой (если % < 90)."""
         try:
             from roy.exchange_reader import wait_and_read
             result = wait_and_read(timeout=4.0)
-            if result and result['percent'] < 90:
-                self._roy_client.report(
-                    kingdom=result['kingdom'],
-                    x=result['x'],
-                    y=result['y'],
-                    percent=result['percent'],
-                )
+            if result:
+                # Показываем координаты владельцу всегда (любой %)
+                if self.on_last_exchange_callback:
+                    self.on_last_exchange_callback(result)
+                # В общий РОЙ — только если биржа ещё не выкуплена
+                if result['percent'] < 90:
+                    self._roy_client.report(
+                        kingdom=result['kingdom'],
+                        x=result['x'],
+                        y=result['y'],
+                        percent=result['percent'],
+                    )
         except Exception:
             pass
 

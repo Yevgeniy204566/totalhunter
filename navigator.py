@@ -944,6 +944,7 @@ class PacmanEngine:
         self.navigation_enabled = navigation_enabled
         self.is_running         = False
         self.on_found_callback  = None
+        self._yolo_blocked      = False
         self._thread: threading.Thread | None = None
 
     def start(self):
@@ -954,6 +955,14 @@ class PacmanEngine:
 
     def stop(self):
         self.is_running = False
+
+    def _trigger_yolo_block(self, block_seconds: float = 10.0) -> None:
+        """Блокирует YOLO-детекцию на block_seconds — защита от повторного срабатывания на той же бирже."""
+        self._yolo_blocked = True
+        def _reset():
+            time.sleep(block_seconds)
+            self._yolo_blocked = False
+        threading.Thread(target=_reset, daemon=True).start()
 
     def _run(self):
         from mss import mss
@@ -969,14 +978,14 @@ class PacmanEngine:
                 # Check current position before moving
                 is_water = is_water_center_screen(frame, radius=120)
 
-                # YOLO scan — every step (синхронно, бот ждёт результата перед шагом)
-                if self.yolo_model is not None:
+                # YOLO scan — пропускаем если блок активен (10 сек после детекции)
+                if self.yolo_model is not None and not self._yolo_blocked:
                     results = self.yolo_model.predict(
                         frame, conf=self.conf, imgsz=1280, verbose=False)
                     for r in results:
                         if len(r.boxes) > 0:
                             self._exchange_detected(r.boxes[0])
-                            return
+                            break
 
                 # Navigate — pass frame to avoid second screenshot for minimap
                 if self.navigation_enabled:
@@ -1003,15 +1012,14 @@ class PacmanEngine:
         4. sleep 0.4-0.6с — игра открывает диалог
         5. Callback (запускает ROY OCR)
         """
-        # Шаг 1: стоп + звук
-        self.is_running = False
+        # Шаг 1: звук (навигация не останавливается — змейка продолжится после OCR)
         try:
             winsound.PlaySound(self.sound_path,
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
         except Exception:
             winsound.Beep(1000, 500)
 
-        # Шаг 2: карта останавливается
+        # Шаг 2: карта замирает на 0.1-0.2 сек
         time.sleep(random.uniform(0.1, 0.2))
 
         # Шаг 3: клик по неподвижной бирже
@@ -1029,6 +1037,9 @@ class PacmanEngine:
         # Шаг 5: callback → ROY OCR читает уже открытый диалог
         if self.on_found_callback:
             self.on_found_callback()
+
+        # Шаг 6: блокируем YOLO на 10 сек — змейка уходит от биржи без повторного срабатывания
+        self._trigger_yolo_block()
 
     def _on_exchange_found(self):
         """Legacy — оставлен для обратной совместимости с тестами."""

@@ -10,5 +10,6 @@
   "return_delta_px": 5,
   "smooth_alpha": 60,
   "last_calibration_profile": "Client",
-  "lang": "UK"
+  "lang": "UK",
+  "roy_enabled": true
 }

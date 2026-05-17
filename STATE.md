@@ -107,7 +107,7 @@
 - **bot_speed**: один ползунок вместо scan_interval+move_wait. Честный динамический sleep
 - **Оптимизация**: single-frame pipeline (убрали pyautogui.screenshot из hot path), dynamic sleep
 - **РОЙ клик**: stop→sleep(0.1-0.2)→click bbox→sleep(0.4-0.6)→OCR
-- **GUI вкладки**: РЕФЕРАЛЫ в полном слове, Калибровка под 4 вкладками (CTkButton + pack_forget)
+- **GUI вкладки**: РЕФЕРАЛЫ в полном слове. Двухрядная навигация: 4 вкладки (CTkSegmentedButton) + Калибровка по центру снизу (CTkButton) — без CTkTabview, чистый grid. tab_cal и tab_roy переведены на все 19 языков.
 - **Telegram канал**: шаблоны постов записаны в буфер
 
 ## 🔴 Задачи на завтра (приоритет по порядку)

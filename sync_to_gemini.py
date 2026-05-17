@@ -1,9 +1,8 @@
 import os
 import time
 
-CREDS_PATH = r"C:\BattleBot\credentials.json"
-TOKEN_PATH  = r"C:\BattleBot\token.json"
-SCOPES      = ["https://www.googleapis.com/auth/documents"]
+SA_PATH = r"C:\BattleBot\service_account.json"
+SCOPES  = ["https://www.googleapis.com/auth/documents"]
 
 FILES = [
     (r"C:\BattleBot\ANTI-PATTERNS.md",
@@ -68,22 +67,10 @@ def sync(service):
 
 
 def build_service():
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from google.auth.transport.requests import Request
+    from google.oauth2.service_account import Credentials
     from googleapiclient.discovery import build
 
-    creds = None
-    if os.path.exists(TOKEN_PATH):
-        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDS_PATH, SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open(TOKEN_PATH, "w") as f:
-            f.write(creds.to_json())
+    creds = Credentials.from_service_account_file(SA_PATH, scopes=SCOPES)
     return build("docs", "v1", credentials=creds)
 
 
