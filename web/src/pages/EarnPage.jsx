@@ -24,13 +24,13 @@ const TEX_WOOD  = 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=6
 const TEX_WALNUT= 'https://images.unsplash.com/photo-1736506159893-22cca29b8018?w=600&q=88'
 const TEX_GOLD  = 'https://images.unsplash.com/photo-1545873509-33e944ca7655?w=512&q=88'
 
-// Neon colours per prize value
+// Neon colours per prize value — VIVID, casino-bright
 const SC = {
-  5:  { d:'#050b38', m:'#0c1a64', e:'#1428a0', g:'#2040CC', t:'#7090FF', p:'#2040CC' },
-  7:  { d:'#001520', m:'#01263c', e:'#034468', g:'#0088AA', t:'#33BBDD', p:'#0088AA' },
-  15: { d:'#011306', m:'#02230e', e:'#043c1a', g:'#008822', t:'#22BB44', p:'#008822' },
-  30: { d:'#260010', m:'#48001c', e:'#720030', g:'#BB0040', t:'#FF3366', p:'#BB0040' },
-  50: { d:'#110800', m:'#231200', e:'#3c1e00', g:'#C8A000', t:'#FFD700', p:'#C8A000' },
+  5:  { d:'#08104A', m:'#1530A0', e:'#2C55EE', g:'#4466FF', t:'#99BBFF', p:'#4466FF' },
+  7:  { d:'#002235', m:'#004480', e:'#0077CC', g:'#00AAEE', t:'#55DDFF', p:'#00AAEE' },
+  15: { d:'#001F08', m:'#004A18', e:'#008844', g:'#00CC55', t:'#55EE99', p:'#00CC55' },
+  30: { d:'#3A0015', m:'#780030', e:'#CC0055', g:'#EE2266', t:'#FF66AA', p:'#EE2266' },
+  50: { d:'#1F1000', m:'#4A2800', e:'#8A5200', g:'#DDAA00', t:'#FFD700', p:'#DDAA00' },
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -87,15 +87,15 @@ function buildBase(woodImg, goldImg) {
     ctx.fill('evenodd')
     ctx.restore()
 
-    // Lacquer overlay — turns raw wood into deep polished mahogany
+    // Light lacquer — let the wood grain show through
     const lac = ctx.createRadialGradient(
       CCX - R_RIM * 0.32, CCY - R_RIM * 0.28, 8,
       CCX, CCY, R_RIM
     )
-    lac.addColorStop(0,    'rgba(80,30,5,0.42)')
-    lac.addColorStop(0.38, 'rgba(20,8,2,0.60)')
-    lac.addColorStop(0.72, 'rgba(5,2,0,0.72)')
-    lac.addColorStop(1,    'rgba(0,0,0,0.82)')
+    lac.addColorStop(0,    'rgba(80,30,5,0.10)')
+    lac.addColorStop(0.38, 'rgba(20,8,2,0.28)')
+    lac.addColorStop(0.72, 'rgba(5,2,0,0.38)')
+    lac.addColorStop(1,    'rgba(0,0,0,0.50)')
     ctx.beginPath()
     ctx.arc(CCX, CCY, R_RIM, 0, Math.PI * 2)
     ctx.arc(CCX, CCY, R_DISC - 3, 0, Math.PI * 2, true)
@@ -106,18 +106,22 @@ function buildBase(woodImg, goldImg) {
       CCX - R_RIM * 0.30, CCY - R_RIM * 0.34, 4,
       CCX, CCY, R_RIM * 0.85
     )
-    sh.addColorStop(0,    'rgba(230,170,80,0.30)')
-    sh.addColorStop(0.45, 'rgba(180,120,40,0.10)')
+    sh.addColorStop(0,    'rgba(255,200,100,0.55)')
+    sh.addColorStop(0.45, 'rgba(200,150,60,0.20)')
     sh.addColorStop(1,    'rgba(0,0,0,0)')
     ctx.beginPath()
     ctx.arc(CCX, CCY, R_RIM, 0, Math.PI * 2)
     ctx.arc(CCX, CCY, R_DISC - 3, 0, Math.PI * 2, true)
     ctx.fillStyle = sh; ctx.fill('evenodd')
   } else {
-    // Fallback gradient rim
-    const rg = ctx.createRadialGradient(CCX - 55, CCY - 55, 8, CCX, CCY, R_RIM)
-    rg.addColorStop(0, '#C8A040'); rg.addColorStop(0.45, '#7A5010')
-    rg.addColorStop(0.78, '#3A2408'); rg.addColorStop(1, '#150C02')
+    // Fallback: rich polished mahogany gradient (visible even without texture)
+    const rg = ctx.createRadialGradient(CCX - R_RIM*0.34, CCY - R_RIM*0.28, 6, CCX, CCY, R_RIM)
+    rg.addColorStop(0,    '#F0C060')  // bright warm highlight
+    rg.addColorStop(0.18, '#D09030')  // polished gold
+    rg.addColorStop(0.40, '#8A5A14')  // medium mahogany
+    rg.addColorStop(0.62, '#5C3208')  // deep brown
+    rg.addColorStop(0.80, '#7A4A10')  // edge catch light
+    rg.addColorStop(1,    '#201006')  // dark edge
     ctx.beginPath()
     ctx.arc(CCX, CCY, R_RIM, 0, Math.PI * 2)
     ctx.arc(CCX, CCY, R_DISC - 3, 0, Math.PI * 2, true)
@@ -223,11 +227,17 @@ function buildDisc() {
     ctx.arc(CCX, CCY, R_DISC, sA, eA); ctx.closePath()
     ctx.fillStyle = gr; ctx.fill()
 
-    // LED neon strip at outer rim of each sector
+    // LED neon strip at outer rim of each sector — INTENSE
     ctx.save()
-    ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC * 0.90, sA + 0.022, eA - 0.022)
-    ctx.strokeStyle = c.g; ctx.lineWidth = R_DISC * 0.095
-    ctx.shadowBlur = 30 * DPR; ctx.shadowColor = c.g; ctx.globalAlpha = 0.65
+    ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC * 0.88, sA + 0.022, eA - 0.022)
+    ctx.strokeStyle = c.g; ctx.lineWidth = R_DISC * 0.11
+    ctx.shadowBlur = 44 * DPR; ctx.shadowColor = c.g; ctx.globalAlpha = 0.85
+    ctx.stroke(); ctx.restore()
+    // Second, tighter inner glow ring
+    ctx.save()
+    ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC * 0.82, sA + 0.03, eA - 0.03)
+    ctx.strokeStyle = c.t; ctx.lineWidth = R_DISC * 0.04
+    ctx.shadowBlur = 20 * DPR; ctx.shadowColor = c.g; ctx.globalAlpha = 0.50
     ctx.stroke(); ctx.restore()
 
     // Text — flip bottom half to prevent upside-down rendering
