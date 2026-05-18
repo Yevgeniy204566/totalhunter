@@ -91,6 +91,7 @@ const WHEEL_CSS = `
     radial-gradient(ellipse 80% 32% at 50% 12%, rgba(255,230,180,0.35) 0%, transparent 55%),
     radial-gradient(ellipse 65% 25% at 50% 88%, rgba(220,120,60,0.18) 0%, transparent 60%),
     radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.45) 100%),
+    url("/textures/red-mahogany.png") center/cover no-repeat,
     #2a0a06;
   box-shadow: 0 0 0 3px #060816, 0 0 0 6px #0a2a8a, 0 0 0 8px #2864ff,
     0 0 0 11px #050816, 0 30px 80px rgba(0,0,0,0.75), inset 0 0 60px rgba(0,0,0,0.55);
@@ -671,6 +672,7 @@ export default function EarnPage() {
 
     // Textures
     window.TEXTURES = {
+      wood:         '/textures/red-mahogany.png',
       redvelvet:    '/textures/red-velvet.jpg',
       blueplaster:  '/textures/blue-plaster.jpg',
       greenvelvet:  '/textures/green-velvet.jpg',
