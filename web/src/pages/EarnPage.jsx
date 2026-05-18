@@ -1,756 +1,820 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
 
-// ═══════════════════════════════════════════════════════════════
-//  CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const N       = 20
-const SECTORS = [5, 7, 5, 15, 5, 30, 5, 7, 5, 15, 5, 7, 5, 15, 5, 50, 5, 7, 5, 30]
-const SLICE   = (2 * Math.PI) / N
 const MAX_DAY = 5
 
-const DPR  = 2
-const SIZE = 360
-const CS   = SIZE * DPR      // 720 canvas pixels
-const CCX  = CS / 2
-const CCY  = CS / 2
-const R_RIM  = 172 * DPR
-const R_DISC = 151 * DPR
-const R_HUB  = 22 * DPR
-
-// Real photo texture URLs (Unsplash, CORS-open, free license)
-const TEX_WOOD  = 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=600&q=88'
-const TEX_WALNUT= 'https://images.unsplash.com/photo-1736506159893-22cca29b8018?w=600&q=88'
-const TEX_GOLD  = 'https://images.unsplash.com/photo-1545873509-33e944ca7655?w=512&q=88'
-
-// Neon colours per prize value — VIVID, casino-bright
-const SC = {
-  5:  { d:'#08104A', m:'#1530A0', e:'#2C55EE', g:'#4466FF', t:'#99BBFF', p:'#4466FF' },
-  7:  { d:'#002235', m:'#004480', e:'#0077CC', g:'#00AAEE', t:'#55DDFF', p:'#00AAEE' },
-  15: { d:'#001F08', m:'#004A18', e:'#008844', g:'#00CC55', t:'#55EE99', p:'#00CC55' },
-  30: { d:'#3A0015', m:'#780030', e:'#CC0055', g:'#EE2266', t:'#FF66AA', p:'#EE2266' },
-  50: { d:'#1F1000', m:'#4A2800', e:'#8A5200', g:'#DDAA00', t:'#FFD700', p:'#DDAA00' },
+// ─── Adapted CSS from design bundle (scoped to #earn-page-root) ───────────────
+const WHEEL_CSS = `
+:root {
+  --gold-1: #b78a32; --gold-2: #e9c66a; --gold-3: #fff4c2;
+  --ink: #f4e9d2; --ink-dim: #b6a585;
 }
-
-// ═══════════════════════════════════════════════════════════════
-//  TEXTURE LOADER — crossOrigin anonymous, graceful fallback
-// ═══════════════════════════════════════════════════════════════
-function loadImg(url) {
-  return new Promise(resolve => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload  = () => resolve(img)
-    img.onerror = () => resolve(null)
-    img.src = url
-  })
+#earn-page-root {
+  position: fixed; inset: 0; z-index: 9999;
+  overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--ink); font-family: 'Manrope', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased; user-select: none;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240' preserveAspectRatio='none'><filter id='v'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' seed='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.06  0 0 0 0 0.04  0 0 0 0 0.18  0.55 0 0 0 -0.2'/></filter><rect width='100%25' height='100%25' filter='url(%23v)'/></svg>"),
+    radial-gradient(ellipse 65% 60% at 50% 38%, #1a1444 0%, #0c0830 35%, #050218 75%, #02010c 100%);
 }
-
-async function loadTextures() {
-  const [wood, walnut, gold] = await Promise.all([
-    loadImg(TEX_WOOD), loadImg(TEX_WALNUT), loadImg(TEX_GOLD),
-  ])
-  // Pick darkest/best wood available
-  return { wood: walnut || wood, gold }
+#earn-page-root::before {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.72) 100%);
+  pointer-events: none; z-index: 100;
 }
+#earn-page-root .topbar {
+  position: relative; z-index: 10;
+  display: flex; justify-content: center; align-items: center;
+  margin-top: 14px; margin-bottom: 10px;
+}
+#earn-page-root .brand {
+  font-family: 'Cormorant SC', 'Cinzel', serif; font-weight: 700;
+  font-size: 42px; letter-spacing: 0.10em;
+  background: linear-gradient(180deg, #fffce6 0%, #ffe833 30%, #ffd31a 60%, #c98e10 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter:
+    drop-shadow(0 2px 0 rgba(20,8,2,0.85))
+    drop-shadow(0 0 6px rgba(255,230,80,0.25))
+    drop-shadow(0 0 14px rgba(120,200,255,0.95))
+    drop-shadow(0 0 30px rgba(80,170,255,0.75))
+    drop-shadow(0 4px 6px rgba(0,0,0,0.65));
+}
+#earn-page-root .stage {
+  position: relative; width: 640px; height: 640px;
+  display: flex; align-items: center; justify-content: center;
+}
+#earn-page-root .neon-ring {
+  position: absolute; inset: -8px; border-radius: 50%;
+  background: conic-gradient(
+    from 0deg, transparent 0deg,
+    rgba(20,90,255,0.85) 30deg, rgba(60,160,255,1) 50deg,
+    rgba(20,90,255,0.85) 70deg, transparent 110deg, transparent 180deg,
+    rgba(20,90,255,0.5) 210deg, rgba(60,160,255,0.9) 230deg,
+    rgba(20,90,255,0.5) 250deg, transparent 290deg, transparent 360deg);
+  filter: blur(14px); z-index: 0; pointer-events: none;
+  animation: neon-rotate 4s linear infinite; mix-blend-mode: screen; opacity: 0.95;
+}
+#earn-page-root .neon-ring::after {
+  content: ''; position: absolute; inset: 14px; border-radius: 50%; background: #060309;
+}
+@keyframes neon-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+#earn-page-root .stage.spinning .neon-ring { animation-duration: 1.4s; }
+#earn-page-root .rivets { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+#earn-page-root .rivet {
+  position: absolute; width: 32px; height: 32px; border-radius: 50%;
+  background-size: cover; background-position: center; transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.85)) drop-shadow(0 1px 0 rgba(255,200,130,0.2));
+}
+#earn-page-root .rivet-spark {
+  position: absolute; inset: 15%; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,235,1) 0%, rgba(255,235,140,1) 18%, rgba(255,200,60,0.95) 40%, rgba(255,170,30,0.55) 65%, rgba(255,170,30,0) 85%);
+  box-shadow: 0 0 12px rgba(255,220,80,0.95), 0 0 24px rgba(255,190,40,0.7);
+  filter: blur(0.5px); opacity: 0; animation: rivetFlash 8s ease-in-out infinite;
+  pointer-events: none; mix-blend-mode: screen;
+}
+@keyframes rivetFlash {
+  0%,100% { opacity:0; transform:scale(0.5); } 5% { opacity:1; transform:scale(1.35); }
+  8% { opacity:1; transform:scale(1.2); } 13% { opacity:0.55; transform:scale(1); }
+  18% { opacity:0; transform:scale(0.55); }
+}
+#earn-page-root .rivet::after { content: none; }
+#earn-page-root .wood-base {
+  position: absolute; inset: 18px; border-radius: 50%;
+  background:
+    radial-gradient(ellipse 80% 32% at 50% 12%, rgba(255,230,180,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 65% 25% at 50% 88%, rgba(220,120,60,0.18) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.45) 100%),
+    #2a0a06;
+  box-shadow: 0 0 0 3px #060816, 0 0 0 6px #0a2a8a, 0 0 0 8px #2864ff,
+    0 0 0 11px #050816, 0 30px 80px rgba(0,0,0,0.75), inset 0 0 60px rgba(0,0,0,0.55);
+  z-index: 1;
+}
+#earn-page-root .disk-wrap {
+  position: absolute; width: 510px; height: 510px; border-radius: 50%;
+  will-change: transform; transform-origin: 50% 50%; z-index: 2;
+}
+#earn-page-root .disk-wrap svg { width: 100%; height: 100%; display: block; }
+#earn-page-root .glass {
+  position: absolute; width: 510px; height: 510px; border-radius: 50%;
+  pointer-events: none; z-index: 5;
+  background:
+    radial-gradient(ellipse 55% 32% at 32% 16%, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0.14) 32%, transparent 60%),
+    radial-gradient(ellipse 18% 55% at 78% 28%, rgba(255,255,255,0.22) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, transparent 60%, rgba(0,0,0,0.45) 100%);
+  mix-blend-mode: screen;
+}
+#earn-page-root .static-overlay {
+  position: absolute; width: 530px; height: 530px; pointer-events: none; z-index: 7;
+}
+#earn-page-root .static-overlay svg { width: 100%; height: 100%; display: block; }
+#earn-page-root .static-overlay .led { animation: led-chase 2.4s linear infinite; }
+@keyframes led-chase {
+  0% { opacity:0.18; filter:brightness(0.5); } 18% { opacity:1; filter:brightness(2.2); }
+  38% { opacity:0.18; filter:brightness(0.5); } 100% { opacity:0.18; filter:brightness(0.5); }
+}
+#earn-page-root .stage.spinning .static-overlay .led { animation-duration: 0.9s; }
+#earn-page-root .static-overlay .light-beams {
+  animation: beams-rotate 18s linear infinite; transform-origin: 300px 300px;
+}
+@keyframes beams-rotate { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+#earn-page-root .stage.spinning .static-overlay .light-beams { animation-duration: 4s; }
+#earn-page-root .pointer-wrap {
+  position: absolute; top: 10px; left: 50%;
+  width: 62px; height: 110px; margin-left: -31px;
+  transform-origin: 50% 22px; z-index: 12; will-change: transform;
+}
+#earn-page-root .pointer-wrap svg {
+  width: 100%; height: 100%; display: block;
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,0.75)) drop-shadow(0 0 12px rgba(233,198,106,0.6));
+}
+#earn-page-root .controls {
+  margin-top: 22px; position: relative; z-index: 10; display: flex; justify-content: center;
+}
+#earn-page-root .premium-spin-btn {
+  position: relative; isolation: isolate; overflow: visible;
+  background: transparent; border: none; padding: 0;
+  width: 300px; height: 72px; cursor: pointer; outline: none;
+  transition: transform 110ms cubic-bezier(.3,1.6,.4,1), filter 200ms ease;
+  animation: btnBreathe 3.6s ease-in-out infinite; will-change: transform;
+}
+@keyframes btnBreathe {
+  0%,100% { transform:translateY(0); filter:brightness(1); }
+  50% { transform:translateY(-2px); filter:brightness(1.08); }
+}
+#earn-page-root .premium-spin-btn:hover:not(:disabled) {
+  animation-play-state: paused;
+  transform: translateY(-3px) scale(1.02);
+  filter: brightness(1.12) saturate(1.15);
+}
+#earn-page-root .premium-spin-btn:active:not(:disabled) { transform:translateY(5px) scale(0.97); transition-duration:60ms; }
+#earn-page-root .premium-spin-btn:disabled { cursor:not-allowed; filter:saturate(0.55) brightness(0.82); animation-play-state:paused; }
+#earn-page-root .premium-spin-btn .btn-bg-body {
+  position: absolute; z-index: 2; top:0; left:0; width:100%; height:100%; border-radius:999px;
+  background:
+    radial-gradient(ellipse 90% 65% at 50% -10%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 60%),
+    radial-gradient(ellipse 90% 55% at 50% 110%, rgba(0,40,0,0.45) 0%, rgba(0,40,0,0) 60%),
+    #39ff14;
+  pointer-events: none;
+  box-shadow: inset 0 4px 8px rgba(255,255,255,0.7), inset 0 -6px 12px rgba(0,40,0,0.55), inset 0 0 0 1px rgba(0,40,0,0.6);
+}
+#earn-page-root .premium-spin-btn .btn-glow-ring {
+  position: absolute; z-index: 1; top:0; left:0; width:100%; height:100%;
+  border-radius: 999px; pointer-events: none;
+  box-shadow: 0 0 0 2px #06180a, 0 4px 0 #2a5a08, 0 8px 0 #143a02, 0 12px 0 #061a04,
+    0 16px 30px rgba(0,0,0,0.8), 0 0 40px rgba(180,255,40,0.9), 0 0 90px rgba(120,220,40,0.5);
+  animation: btnRingPulse 2.4s ease-in-out infinite;
+}
+@keyframes btnRingPulse { 0%,100% { filter:brightness(1); } 50% { filter:brightness(1.25); } }
+#earn-page-root .premium-spin-btn .btn-text-holder {
+  position: relative; z-index: 20 !important;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; padding: 0 24px;
+  font-family: 'Russo One', 'Cinzel', sans-serif; font-weight: 700;
+  font-size: 26px; letter-spacing: 0.28em; text-transform: uppercase;
+  white-space: nowrap; color: #ffffff !important; opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000,
+    1.5px 1.5px 0 #000, 0 -1.5px 0 #000, 0 1.5px 0 #000, -1.5px 0 0 #000,
+    1.5px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9);
+}
+#earn-page-root .premium-spin-btn.show-prize .btn-glow-ring {
+  animation: btnPrizePulse 1.6s ease-in-out infinite;
+}
+@keyframes btnPrizePulse {
+  0%,100% { box-shadow: 0 6px 0 #0a3a02, 0 9px 0 #051a04, 0 14px 26px rgba(0,0,0,0.7),
+    0 0 60px var(--prize-glow,rgba(255,200,60,0.95)), 0 0 140px var(--prize-glow,rgba(255,180,40,0.55)); }
+  50% { box-shadow: 0 6px 0 #0a3a02, 0 9px 0 #051a04, 0 14px 26px rgba(0,0,0,0.7),
+    0 0 100px var(--prize-glow,rgba(255,200,60,1)), 0 0 220px var(--prize-glow,rgba(255,180,40,0.7)); }
+}
+#earn-page-root .premium-spin-btn.show-prize .btn-text-holder { font-size: 34px; letter-spacing: 0.04em; }
+#earn-page-root .premium-spin-btn.show-prize.jackpot .btn-text-holder { font-size: 40px; animation: jackpot-shake 700ms ease; }
+#earn-page-root .premium-spin-btn.show-prize { animation: prize-pop 700ms cubic-bezier(.2,1.5,.4,1), btnBreathe 3s ease-in-out infinite 0.8s; }
+@keyframes prize-pop { 0% { transform:scale(0.82); } 60% { transform:scale(1.14); } 100% { transform:scale(1); } }
+@keyframes jackpot-shake { 0%,100% { transform:scale(1); } 25% { transform:scale(1.10) rotate(-1.5deg); } 75% { transform:scale(1.06) rotate(1.5deg); } }
+#earn-page-root .btn-spark {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  background: radial-gradient(circle, #fff8d4 0%, #ffd960 45%, transparent 75%);
+  box-shadow: 0 0 8px #ffd960; pointer-events: none; will-change: transform,opacity; z-index: 30;
+}
+#earn-page-root .particles { position:absolute; inset:0; pointer-events:none; z-index:25; overflow:hidden; }
+#earn-page-root .particle { position:absolute; width:8px; height:8px; border-radius:2px; will-change:transform,opacity; }
+#earn-page-root .ambient { position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden; }
+#earn-page-root .ambient-spark { position:absolute; border-radius:50%; animation:drift 10s linear forwards; opacity:0; }
+@keyframes drift {
+  0% { transform:translate(0,0) scale(0.4); opacity:0; } 10% { opacity:1; }
+  100% { transform:translate(var(--drift,0),-110vh) scale(1.1); opacity:0; }
+}
+@keyframes jackpot-pulse { 0%,100% { opacity:0.45; } 50% { opacity:1; } }
+.jackpot-pulse { animation:jackpot-pulse 1.6s ease-in-out infinite; transform-origin:center; }
+/* HUD overlay */
+#earn-page-root .earn-hud {
+  position: relative; z-index: 200;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  margin-top: 12px; pointer-events: none;
+}
+#earn-page-root .earn-hud > * { pointer-events: auto; }
+#earn-page-root .earn-balance-hud {
+  font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800;
+  color: var(--gold-2);
+  text-shadow: 0 0 14px rgba(233,198,106,0.5);
+  letter-spacing: 0.06em;
+}
+#earn-page-root .earn-counter-hud {
+  font-size: 11px; letter-spacing: 0.2em; color: var(--ink-dim); text-transform: uppercase;
+}
+#earn-page-root .earn-result-card {
+  margin-top: 4px; padding: 12px 28px; border-radius: 14px; text-align: center;
+  border: 2px solid currentColor; background: rgba(0,0,0,0.45);
+  animation: prize-pop 0.42s cubic-bezier(.175,.885,.32,1.275);
+}
+#earn-page-root .earn-result-label { font-size: 12px; letter-spacing: 2px; font-weight: 700; margin-bottom: 4px; }
+#earn-page-root .earn-result-value { font-size: 56px; font-weight: 900; line-height: 1; }
+#earn-page-root .earn-limit-msg {
+  font-size: 12px; color: rgba(255,200,80,0.65); letter-spacing: 0.05em; text-align: center;
+}
+#earn-page-root .earn-close-btn {
+  position: fixed; top: 14px; right: 18px; z-index: 10000;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.5); width: 36px; height: 36px; border-radius: 50%;
+  font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+#earn-page-root .earn-close-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+@media (max-height: 820px) {
+  #earn-page-root .brand { font-size: 32px; }
+  #earn-page-root .topbar { margin-bottom: 6px; }
+  #earn-page-root .stage { width: 560px; height: 560px; }
+  #earn-page-root .disk-wrap, #earn-page-root .glass { width: 440px; height: 440px; }
+  #earn-page-root .static-overlay { width: 460px; height: 460px; }
+  #earn-page-root .controls { margin-top: 14px; }
+}
+@media (max-height: 680px) {
+  #earn-page-root .stage { width: 460px; height: 460px; }
+  #earn-page-root .disk-wrap, #earn-page-root .glass { width: 360px; height: 360px; }
+  #earn-page-root .static-overlay { width: 378px; height: 378px; }
+  #earn-page-root .pointer-wrap { width: 50px; height: 88px; margin-left: -25px; }
+  #earn-page-root .controls { margin-top: 10px; }
+  #earn-page-root .earn-hud { margin-top: 8px; gap: 4px; }
+}
+`
 
-// ═══════════════════════════════════════════════════════════════
-//  BASE LAYER — real mahogany wood rim + real gold foil accents
-// ═══════════════════════════════════════════════════════════════
-function buildBase(woodImg, goldImg) {
-  const oc = document.createElement('canvas')
-  oc.width = oc.height = CS
-  const ctx = oc.getContext('2d')
+// ─── Adapted wheel logic from design bundle ────────────────────────────────────
+function mountWheel() {
+  const VALUES = [5,7,5,15,5,30,5,7,5,15,5,7,5,15,5,50,5,7,5,30]
+  const N = VALUES.length
+  const SECTOR_DEG = 360 / N
+  const PALETTE = {
+    5:  { outer:'#e7194a', mid:'#9c0c2e', inner:'#3a0410', glow:'#ff5577' },
+    7:  { outer:'#3a86c8', mid:'#1a4a7e', inner:'#06182e', glow:'#7fb6ff' },
+    15: { outer:'#22a674', mid:'#0e6a48', inner:'#022014', glow:'#5fe6a8' },
+    30: { outer:'#8a3eda', mid:'#4a1a8a', inner:'#16043a', glow:'#bc88ff' },
+    50: { outer:'#f0c63a', mid:'#a8761a', inner:'#3a2304', glow:'#fff4c2' },
+  }
+  const CX=300, CY=300, R_OUTER=295, R_INNER=70, R_TEXT=252, R_ICON=198
+  const LED_RADIUS=286, LED_COUNT=60
+  const deg2rad = d => d*Math.PI/180
 
-  // Dark backdrop
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_RIM + 12, 0, Math.PI * 2)
-  ctx.fillStyle = '#020408'; ctx.fill()
-
-  // Outer glow ring (casino neon atmosphere)
-  const og = ctx.createRadialGradient(CCX, CCY, R_RIM - 8, CCX, CCY, R_RIM + 12)
-  og.addColorStop(0, 'rgba(255,160,0,0)'); og.addColorStop(1, 'rgba(255,100,0,0.25)')
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_RIM + 12, 0, Math.PI * 2)
-  ctx.fillStyle = og; ctx.fill()
-
-  // ── REAL WOOD TEXTURE for the rim ring ───────────────────────
-  if (woodImg) {
-    const pat = ctx.createPattern(woodImg, 'repeat')
-    // Scale texture so grain is visible at canvas resolution
-    const scale = (CS / woodImg.width) * 0.75
-    pat.setTransform(new DOMMatrix([scale, 0, 0, scale, 0, 0]))
-
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(CCX, CCY, R_RIM, 0, Math.PI * 2)
-    ctx.arc(CCX, CCY, R_DISC - 3, 0, Math.PI * 2, true)
-    ctx.fillStyle = pat
-    ctx.fill('evenodd')
-    ctx.restore()
-
-    // Light lacquer — let the wood grain show through
-    const lac = ctx.createRadialGradient(
-      CCX - R_RIM * 0.32, CCY - R_RIM * 0.28, 8,
-      CCX, CCY, R_RIM
-    )
-    lac.addColorStop(0,    'rgba(80,30,5,0.10)')
-    lac.addColorStop(0.38, 'rgba(20,8,2,0.28)')
-    lac.addColorStop(0.72, 'rgba(5,2,0,0.38)')
-    lac.addColorStop(1,    'rgba(0,0,0,0.50)')
-    ctx.beginPath()
-    ctx.arc(CCX, CCY, R_RIM, 0, Math.PI * 2)
-    ctx.arc(CCX, CCY, R_DISC - 3, 0, Math.PI * 2, true)
-    ctx.fillStyle = lac; ctx.fill('evenodd')
-
-    // Specular sheen (light catching polished surface)
-    const sh = ctx.createRadialGradient(
-      CCX - R_RIM * 0.30, CCY - R_RIM * 0.34, 4,
-      CCX, CCY, R_RIM * 0.85
-    )
-    sh.addColorStop(0,    'rgba(255,200,100,0.55)')
-    sh.addColorStop(0.45, 'rgba(200,150,60,0.20)')
-    sh.addColorStop(1,    'rgba(0,0,0,0)')
-    ctx.beginPath()
-    ctx.arc(CCX, CCY, R_RIM, 0, Math.PI * 2)
-    ctx.arc(CCX, CCY, R_DISC - 3, 0, Math.PI * 2, true)
-    ctx.fillStyle = sh; ctx.fill('evenodd')
-  } else {
-    // Fallback: rich polished mahogany gradient (visible even without texture)
-    const rg = ctx.createRadialGradient(CCX - R_RIM*0.34, CCY - R_RIM*0.28, 6, CCX, CCY, R_RIM)
-    rg.addColorStop(0,    '#F0C060')  // bright warm highlight
-    rg.addColorStop(0.18, '#D09030')  // polished gold
-    rg.addColorStop(0.40, '#8A5A14')  // medium mahogany
-    rg.addColorStop(0.62, '#5C3208')  // deep brown
-    rg.addColorStop(0.80, '#7A4A10')  // edge catch light
-    rg.addColorStop(1,    '#201006')  // dark edge
-    ctx.beginPath()
-    ctx.arc(CCX, CCY, R_RIM, 0, Math.PI * 2)
-    ctx.arc(CCX, CCY, R_DISC - 3, 0, Math.PI * 2, true)
-    ctx.fillStyle = rg; ctx.fill('evenodd')
+  function sectorPath(i) {
+    const a0=i*SECTOR_DEG, a1=(i+1)*SECTOR_DEG
+    const toXY=(deg,r)=>[CX+r*Math.cos(deg2rad(deg-90)), CY+r*Math.sin(deg2rad(deg-90))]
+    const [x0o,y0o]=toXY(a0,R_OUTER), [x1o,y1o]=toXY(a1,R_OUTER)
+    const [x0i,y0i]=toXY(a0,R_INNER), [x1i,y1i]=toXY(a1,R_INNER)
+    return `M ${x0i},${y0i} L ${x0o},${y0o} A ${R_OUTER},${R_OUTER} 0 0 1 ${x1o},${y1o} L ${x1i},${y1i} A ${R_INNER},${R_INNER} 0 0 0 ${x0i},${y0i} Z`
   }
 
-  // ── REAL GOLD FOIL TEXTURE for inner ring band ───────────────
-  if (goldImg) {
-    const gp = ctx.createPattern(goldImg, 'repeat')
-    const gs = (CS / goldImg.width) * 0.30
-    gp.setTransform(new DOMMatrix([gs, 0, 0, gs, 0, 0]))
-
-    ctx.beginPath()
-    ctx.arc(CCX, CCY, R_DISC + 6 * DPR, 0, Math.PI * 2)
-    ctx.arc(CCX, CCY, R_DISC - 6 * DPR, 0, Math.PI * 2, true)
-    ctx.fillStyle = gp; ctx.fill('evenodd')
-
-    // Gold colour boost
-    ctx.beginPath()
-    ctx.arc(CCX, CCY, R_DISC + 6 * DPR, 0, Math.PI * 2)
-    ctx.arc(CCX, CCY, R_DISC - 6 * DPR, 0, Math.PI * 2, true)
-    ctx.fillStyle = 'rgba(255,200,0,0.28)'; ctx.fill('evenodd')
-  }
-
-  // Inner ring glow
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC + 4 * DPR, 0, Math.PI * 2)
-  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3 * DPR
-  ctx.shadowBlur = 20 * DPR; ctx.shadowColor = 'rgba(255,215,0,0.7)'; ctx.stroke()
-  ctx.shadowBlur = 0
-
-  // Outer rim border
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_RIM - 1, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(255,195,40,0.55)'; ctx.lineWidth = 2 * DPR
-  ctx.shadowBlur = 10 * DPR; ctx.shadowColor = '#FFD700'; ctx.stroke()
-  ctx.shadowBlur = 0
-
-  // ── STUDS with real gold texture ─────────────────────────────
-  const nS = 40, sRad = R_RIM - 22 * DPR
-  for (let i = 0; i < nS; i++) {
-    const a = (i / nS) * Math.PI * 2
-    const sx = CCX + Math.cos(a) * sRad, sy = CCY + Math.sin(a) * sRad
-    const big = i % 5 === 0, r = big ? 5.5 * DPR : 3.5 * DPR
-
-    ctx.save()
-    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.clip()
-
-    if (goldImg) {
-      const gp2 = ctx.createPattern(goldImg, 'repeat')
-      const gs2 = 0.10
-      gp2.setTransform(new DOMMatrix([gs2, 0, 0, gs2, -sx * gs2, -sy * gs2]))
-      ctx.fillStyle = gp2; ctx.fillRect(sx - r, sy - r, r * 2, r * 2)
-      // Highlight
-      const hl = ctx.createRadialGradient(sx - r * 0.35, sy - r * 0.35, 0, sx, sy, r)
-      hl.addColorStop(0, 'rgba(255,255,200,0.45)'); hl.addColorStop(1, 'rgba(0,0,0,0.40)')
-      ctx.fillStyle = hl; ctx.fillRect(sx - r, sy - r, r * 2, r * 2)
-    } else {
-      const sg = ctx.createRadialGradient(sx - r*0.38, sy - r*0.38, 0, sx, sy, r)
-      sg.addColorStop(0, '#FFFAE0'); sg.addColorStop(0.45, '#CC9900'); sg.addColorStop(1, '#3A2500')
-      ctx.fillStyle = sg; ctx.fillRect(sx - r, sy - r, r * 2, r * 2)
+  function buildWheelSVG() {
+    const ns='http://www.w3.org/2000/svg'
+    const svg=document.createElementNS(ns,'svg')
+    svg.setAttribute('viewBox','0 0 600 600'); svg.setAttribute('xmlns',ns)
+    const gradDefs=VALUES.map((v,i)=>{const p=PALETTE[v];return `<radialGradient id="g${i}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${p.inner}"/><stop offset="55%" stop-color="${p.mid}"/><stop offset="100%" stop-color="${p.outer}"/></radialGradient>`}).join('')
+    const rv=(window.TEXTURES&&window.TEXTURES.redvelvet)||'/textures/red-velvet.jpg'
+    const bp=(window.TEXTURES&&window.TEXTURES.blueplaster)||'/textures/blue-plaster.jpg'
+    const gv=(window.TEXTURES&&window.TEXTURES.greenvelvet)||'/textures/green-velvet.jpg'
+    const pv=(window.TEXTURES&&window.TEXTURES.purplevelvet)||'/textures/purple-velvet.jpg'
+    const photoPatterns=`
+      <pattern id="pat-5" patternUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><image href="${rv}" x="0" y="0" width="600" height="600" preserveAspectRatio="xMidYMid slice"/></pattern>
+      <pattern id="pat-7" patternUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><image href="${bp}" x="0" y="0" width="600" height="600" preserveAspectRatio="xMidYMid slice"/></pattern>
+      <pattern id="pat-15" patternUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><image href="${gv}" x="0" y="0" width="600" height="600" preserveAspectRatio="xMidYMid slice"/></pattern>
+      <pattern id="pat-30" patternUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><image href="${pv}" x="0" y="0" width="600" height="600" preserveAspectRatio="xMidYMid slice"/></pattern>`
+    const matFilters=`
+      <filter id="tex-grain" x="0%" y="0%" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="2.0" numOctaves="2" seed="11" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.15 0"/></filter>
+      <filter id="diamond-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.2"/></filter>`
+    const otherDefs=`
+      <radialGradient id="depth-shade" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(0,0,0,0.7)"/><stop offset="42%" stop-color="rgba(0,0,0,0.32)"/><stop offset="85%" stop-color="rgba(0,0,0,0.05)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+      <radialGradient id="top-sheen" cx="50%" cy="14%" r="60%"><stop offset="0%" stop-color="rgba(255,240,210,0.34)"/><stop offset="55%" stop-color="rgba(255,240,210,0)"/></radialGradient>
+      <radialGradient id="gold-rim-grad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="transparent"/><stop offset="92%" stop-color="transparent"/><stop offset="93.5%" stop-color="#3a1f08"/><stop offset="95%" stop-color="#fff4c2"/><stop offset="97%" stop-color="#a8741e"/><stop offset="100%" stop-color="#3a1f08"/></radialGradient>
+      <radialGradient id="jackpot-flare" cx="50%" cy="50%" r="50%"><stop offset="55%" stop-color="#fff4c2" stop-opacity="0"/><stop offset="100%" stop-color="#ffd960" stop-opacity="0.18"/></radialGradient>
+      <linearGradient id="num-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#fff4c2"/><stop offset="100%" stop-color="#d4a544"/></linearGradient>
+      <linearGradient id="num-shine-jp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff8d4"/><stop offset="50%" stop-color="#ffd960"/><stop offset="100%" stop-color="#8e5d18"/></linearGradient>`
+    const defs=document.createElementNS(ns,'defs')
+    defs.innerHTML=gradDefs+photoPatterns+matFilters+otherDefs
+    svg.appendChild(defs)
+    const rim=document.createElementNS(ns,'circle')
+    rim.setAttribute('cx',CX); rim.setAttribute('cy',CY); rim.setAttribute('r',R_OUTER+4); rim.setAttribute('fill','url(#gold-rim-grad)')
+    svg.appendChild(rim)
+    const PHOTO_VALUES=new Set([5,7,15,30])
+    for(let i=0;i<N;i++){
+      const v=VALUES[i],p=document.createElementNS(ns,'path')
+      p.setAttribute('d',sectorPath(i)); p.setAttribute('fill',PHOTO_VALUES.has(v)?`url(#pat-${v})`:`url(#g${i})`)
+      p.setAttribute('stroke','#0a0508'); p.setAttribute('stroke-width','1'); svg.appendChild(p)
     }
-    ctx.restore()
+    const grain=document.createElementNS(ns,'circle')
+    grain.setAttribute('cx',CX); grain.setAttribute('cy',CY); grain.setAttribute('r',R_OUTER)
+    grain.setAttribute('fill','#000'); grain.setAttribute('filter','url(#tex-grain)')
+    grain.setAttribute('style','mix-blend-mode:overlay;opacity:0.6'); svg.appendChild(grain)
+    for(let i=0;i<N;i++){
+      const v=VALUES[i],a0=i*SECTOR_DEG-90,a1=(i+1)*SECTOR_DEG-90,ac=(a0+a1)/2,rad=deg2rad(ac)
+      const fi=v===50?56:18,tx=CX+(R_OUTER-fi)*Math.cos(rad),ty=CY+(R_OUTER-fi)*Math.sin(rad)
+      const flare=document.createElementNS(ns,'circle')
+      flare.setAttribute('cx',tx); flare.setAttribute('cy',ty); flare.setAttribute('r',v===50?24:22)
+      flare.setAttribute('fill',PALETTE[v].glow); flare.setAttribute('opacity',v===50?'0.45':'0.32')
+      flare.setAttribute('style',`mix-blend-mode:screen;filter:blur(${v===50?8:14}px)`); svg.appendChild(flare)
+    }
+    const depth=document.createElementNS(ns,'circle'); depth.setAttribute('cx',CX); depth.setAttribute('cy',CY); depth.setAttribute('r',R_OUTER); depth.setAttribute('fill','url(#depth-shade)'); svg.appendChild(depth)
+    const sheen=document.createElementNS(ns,'circle'); sheen.setAttribute('cx',CX); sheen.setAttribute('cy',CY); sheen.setAttribute('r',R_OUTER); sheen.setAttribute('fill','url(#top-sheen)'); sheen.setAttribute('style','mix-blend-mode:screen'); svg.appendChild(sheen)
+    const jIdx=VALUES.indexOf(50)
+    if(jIdx>=0){const halo=document.createElementNS(ns,'path');halo.setAttribute('d',sectorPath(jIdx));halo.setAttribute('fill','url(#jackpot-flare)');halo.setAttribute('class','jackpot-pulse');halo.setAttribute('style','mix-blend-mode:screen');svg.appendChild(halo)}
+    for(let i=0;i<N;i++){
+      const a=i*SECTOR_DEG-90,rad=deg2rad(a),x1=CX+R_INNER*Math.cos(rad),y1=CY+R_INNER*Math.sin(rad),x2=CX+R_OUTER*Math.cos(rad),y2=CY+R_OUTER*Math.sin(rad)
+      const dark=document.createElementNS(ns,'line'); dark.setAttribute('x1',x1);dark.setAttribute('y1',y1);dark.setAttribute('x2',x2);dark.setAttribute('y2',y2);dark.setAttribute('stroke','#0a0408');dark.setAttribute('stroke-width','2.2');svg.appendChild(dark)
+      const gold=document.createElementNS(ns,'line'); gold.setAttribute('x1',x1);gold.setAttribute('y1',y1);gold.setAttribute('x2',x2);gold.setAttribute('y2',y2);gold.setAttribute('stroke','#ffe9a8');gold.setAttribute('stroke-width','0.9');gold.setAttribute('opacity','0.85');svg.appendChild(gold)
+    }
+    const pegR=R_OUTER-14
+    for(let i=0;i<N;i++){
+      const a=i*SECTOR_DEG-90,rad=deg2rad(a),sx=CX+pegR*Math.cos(rad),sy=CY+pegR*Math.sin(rad)
+      const seat=document.createElementNS(ns,'circle');seat.setAttribute('cx',sx);seat.setAttribute('cy',sy);seat.setAttribute('r',6);seat.setAttribute('fill','#0a0408');svg.appendChild(seat)
+      const peg=document.createElementNS(ns,'circle');peg.setAttribute('cx',sx);peg.setAttribute('cy',sy);peg.setAttribute('r',4);peg.setAttribute('fill','#dde2e6');svg.appendChild(peg)
+      const halo=document.createElementNS(ns,'circle');halo.setAttribute('cx',sx);halo.setAttribute('cy',sy);halo.setAttribute('r',6.5);halo.setAttribute('fill','#ffffff');halo.setAttribute('opacity','0');halo.setAttribute('class','peg-glow');halo.setAttribute('style','filter:blur(3px);mix-blend-mode:screen');svg.appendChild(halo)
+      const spec=document.createElementNS(ns,'circle');spec.setAttribute('cx',sx-1.1);spec.setAttribute('cy',sy-1.1);spec.setAttribute('r',1.4);spec.setAttribute('fill','#ffffff');svg.appendChild(spec)
+    }
+    for(let i=0;i<N;i++){
+      const v=VALUES[i],centerDeg=i*SECTOR_DEG+SECTOR_DEG/2,g=document.createElementNS(ns,'g')
+      g.setAttribute('transform',`rotate(${centerDeg} ${CX} ${CY})`)
+      const dSize=v===50?18:13,dia=document.createElementNS(ns,'g')
+      dia.setAttribute('transform',`translate(${CX} ${CY-R_ICON}) rotate(45)`)
+      dia.innerHTML=`<rect x="${-dSize/2}" y="${-dSize/2}" width="${dSize}" height="${dSize}" rx="1.5" fill="#1e4ec4" stroke="#0a1a4a" stroke-width="0.8" filter="url(#diamond-glow)"/><rect x="${-dSize/2}" y="${-dSize/2}" width="${dSize}" height="${dSize/2}" rx="1.5" fill="#5a8cff" opacity="0.65"/><circle cx="${-dSize/4}" cy="${-dSize/4}" r="${dSize/7}" fill="#ffffff" opacity="0.95"/>`
+      g.appendChild(dia)
+      const t=document.createElementNS(ns,'text')
+      t.setAttribute('x',CX); t.setAttribute('y',CY-R_TEXT); t.setAttribute('text-anchor','middle')
+      t.setAttribute('dominant-baseline','middle'); t.setAttribute('font-family','Cinzel,serif'); t.setAttribute('font-weight','800')
+      t.setAttribute('font-size',v===50?'62':v>=15?'50':'46')
+      t.setAttribute('fill',v===50?'url(#num-shine-jp)':'url(#num-shine)')
+      t.setAttribute('stroke','#0a0408'); t.setAttribute('stroke-width',v===50?'2.4':'2.0'); t.setAttribute('paint-order','stroke fill')
+      t.setAttribute('style',`filter:drop-shadow(0 2px 4px rgba(0,0,0,0.9)) drop-shadow(0 0 5px ${PALETTE[v].glow}) drop-shadow(0 0 14px ${PALETTE[v].glow})`)
+      t.textContent=v; g.appendChild(t); svg.appendChild(g)
+    }
+    return svg
+  }
 
-    if (big) {
-      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2)
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 0.5 * DPR; ctx.stroke()
+  function buildStaticOverlaySVG() {
+    const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg')
+    svg.setAttribute('viewBox','0 0 600 600'); svg.setAttribute('xmlns',ns)
+    let inner=`<defs>
+      <radialGradient id="hub-plate" cx="38%" cy="32%" r="68%"><stop offset="0%" stop-color="#fff8d4"/><stop offset="22%" stop-color="#f0d488"/><stop offset="55%" stop-color="#a87f2c"/><stop offset="85%" stop-color="#3a230a"/><stop offset="100%" stop-color="#0a0508"/></radialGradient>
+      <radialGradient id="hub-inner" cx="40%" cy="35%" r="65%"><stop offset="0%" stop-color="#fafafa"/><stop offset="35%" stop-color="#c4c8cc"/><stop offset="75%" stop-color="#5a5e62"/><stop offset="100%" stop-color="#0a0a0a"/></radialGradient>
+      <linearGradient id="hub-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(255,255,255,0.65)"/><stop offset="50%" stop-color="rgba(255,255,255,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.4)"/></linearGradient>
+      <radialGradient id="led-bulb" cx="30%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="#ffe9a8"/><stop offset="100%" stop-color="#a8740c"/></radialGradient>
+      <radialGradient id="led-glow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe9a8" stop-opacity="0.95"/><stop offset="60%" stop-color="#ff9a00" stop-opacity="0.35"/><stop offset="100%" stop-color="#ff9a00" stop-opacity="0"/></radialGradient>
+    </defs>`
+    let leds=''
+    for(let i=0;i<LED_COUNT;i++){
+      const a=(i/LED_COUNT)*360-90,rad=deg2rad(a),x=300+LED_RADIUS*Math.cos(rad),y=300+LED_RADIUS*Math.sin(rad),delay=(i/LED_COUNT)*2.4
+      leds+=`<g class="led" style="animation-delay:-${delay.toFixed(3)}s;transform-origin:${x}px ${y}px"><circle cx="${x}" cy="${y}" r="11" fill="url(#led-glow)"/><circle cx="${x}" cy="${y}" r="4.5" fill="url(#led-bulb)"/><circle cx="${x-1.2}" cy="${y-1.2}" r="1.4" fill="#ffffff" opacity="0.9"/></g>`
+    }
+    const beams=`<g class="light-beams"><defs><linearGradient id="beam-grad" x1="0.5" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="#fff4c2" stop-opacity="0.9"/><stop offset="100%" stop-color="#fff4c2" stop-opacity="0"/></linearGradient></defs>${[0,1,2,3,4,5].map(i=>{const ang=i*60;return `<polygon points="300,300 ${300+250*Math.cos(deg2rad(ang-4-90))},${300+250*Math.sin(deg2rad(ang-4-90))} ${300+250*Math.cos(deg2rad(ang+4-90))},${300+250*Math.sin(deg2rad(ang+4-90))}" fill="url(#beam-grad)" opacity="0.18" style="mix-blend-mode:screen"/>`}).join('')}</g>`
+    const hub=`<circle cx="300" cy="300" r="72" fill="#0a0508"/><circle cx="300" cy="300" r="70" fill="url(#hub-plate)"/><circle cx="300" cy="300" r="56" fill="url(#hub-inner)"/><circle cx="300" cy="300" r="56" fill="url(#hub-shine)" opacity="0.7"/><circle cx="300" cy="300" r="18" fill="url(#hub-plate)" stroke="#1a0c04" stroke-width="1.2"/><circle cx="296" cy="296" r="6" fill="#fff8d4" opacity="0.85"/>`
+    inner+=beams+leds+hub; svg.innerHTML=inner; return svg
+  }
+
+  function buildPointerSVG() {
+    const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg')
+    svg.setAttribute('viewBox','0 0 64 116')
+    svg.innerHTML=`<defs>
+      <linearGradient id="ptr-gold-blade" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7a4a10"/><stop offset="25%" stop-color="#e6c46a"/><stop offset="48%" stop-color="#fff8d4"/><stop offset="72%" stop-color="#d4a544"/><stop offset="100%" stop-color="#5a3a10"/></linearGradient>
+      <radialGradient id="ptr-knob" cx="35%" cy="32%" r="68%"><stop offset="0%" stop-color="#fff8d4"/><stop offset="35%" stop-color="#f0d488"/><stop offset="75%" stop-color="#a87f2c"/><stop offset="100%" stop-color="#3a230a"/></radialGradient>
+      <radialGradient id="ptr-gem" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffd9d2"/><stop offset="35%" stop-color="#e8324a"/><stop offset="100%" stop-color="#5c0a14"/></radialGradient>
+    </defs>
+    <circle cx="32" cy="11" r="9.5" fill="url(#ptr-knob)" stroke="#2a1606" stroke-width="1"/>
+    <circle cx="32" cy="11" r="4.5" fill="url(#ptr-gem)" stroke="#2a0608" stroke-width="0.6"/>
+    <circle cx="30.5" cy="9.5" r="1.3" fill="#fff" opacity="0.9"/>
+    <path d="M 30,20 L 34,20 L 34,26 L 30,26 Z" fill="url(#ptr-knob)" stroke="#2a1606" stroke-width="0.6"/>
+    <path d="M 32,25 C 40,35 41,55 36,80 C 34.5,92 33,103 32,114 C 31,103 29.5,92 28,80 C 23,55 24,35 32,25 Z" fill="url(#ptr-gold-blade)" stroke="#2a1606" stroke-width="1.1" stroke-linejoin="round"/>
+    <path d="M 32,28 L 32,108" stroke="rgba(255,255,210,0.7)" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+    <circle cx="32" cy="27.5" r="3.5" fill="url(#ptr-knob)" stroke="#2a1606" stroke-width="0.7"/>
+    <circle cx="32" cy="27.5" r="1.2" fill="#2a1606"/>`
+    return svg
+  }
+
+  function spawnAmbientSparks() {
+    const layer=document.getElementById('ambient'); if(!layer) return
+    function emit() {
+      if(document.hidden) return setTimeout(emit,800)
+      const s=document.createElement('div'); s.className='ambient-spark'
+      const size=2+Math.random()*4; s.style.width=size+'px'; s.style.height=size+'px'
+      s.style.left=(Math.random()*100)+'%'; s.style.top=(90+Math.random()*30)+'%'
+      const drift=(Math.random()-0.5)*80,dur=6+Math.random()*5
+      s.style.animationDuration=dur+'s'; s.style.setProperty('--drift',drift+'px')
+      const tone=Math.random()
+      s.style.background=tone<0.5?'#fff4c2':tone<0.85?'#d4a544':'#ffe9a8'
+      s.style.boxShadow=`0 0 8px ${s.style.background}`
+      layer.appendChild(s); setTimeout(()=>s.remove(),dur*1000)
+      setTimeout(emit,220+Math.random()*380)
+    }
+    for(let i=0;i<4;i++) setTimeout(emit,i*600)
+  }
+
+  const diskWrap=document.getElementById('disk')
+  const overlay=document.getElementById('static-overlay')
+  const pointerEl=document.getElementById('pointer')
+  if(!diskWrap||!overlay||!pointerEl) return
+  diskWrap.appendChild(buildWheelSVG())
+  overlay.appendChild(buildStaticOverlaySVG())
+  pointerEl.appendChild(buildPointerSVG())
+  spawnAmbientSparks()
+
+  if(window.TEXTURES&&window.TEXTURES.wood){
+    const wb=document.querySelector('.wood-base')
+    if(wb) {
+      wb.style.backgroundImage=`radial-gradient(ellipse 80% 32% at 50% 12%,rgba(255,230,180,0.35) 0%,transparent 55%),radial-gradient(ellipse 65% 25% at 50% 88%,rgba(220,120,60,0.18) 0%,transparent 60%),radial-gradient(circle at 50% 50%,rgba(0,0,0,0) 60%,rgba(0,0,0,0.45) 100%),url("${window.TEXTURES.wood}")`
+      wb.style.backgroundSize='auto,auto,auto,cover'; wb.style.backgroundPosition='center,center,center,center'
     }
   }
 
-  // Inner depth shadow at disc boundary
-  const ds = ctx.createRadialGradient(CCX, CCY, R_DISC - 14*DPR, CCX, CCY, R_DISC + 8*DPR)
-  ds.addColorStop(0, 'rgba(0,0,0,0)'); ds.addColorStop(1, 'rgba(0,0,0,0.65)')
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC + 8*DPR, 0, Math.PI * 2)
-  ctx.fillStyle = ds; ctx.fill()
+  ;(function placeRivets(){
+    const layer=document.getElementById('rivets'); if(!layer) return
+    const rivetTex=(window.TEXTURES&&window.TEXTURES.rivet)||'/textures/rivet.webp'
+    for(let i=0;i<6;i++){
+      const a=(i/6)*360-60,rad=a*Math.PI/180,x=50+43.5*Math.cos(rad),y=50+43.5*Math.sin(rad)
+      const r=document.createElement('div'); r.className='rivet'
+      r.style.left=x+'%'; r.style.top=y+'%'; r.style.backgroundImage=`url("${rivetTex}")`
+      const delay=-(Math.random()*8),dur=7+Math.random()*5
+      const spark=document.createElement('div'); spark.className='rivet-spark'
+      spark.style.animationDelay=delay+'s'; spark.style.animationDuration=dur+'s'
+      r.appendChild(spark); layer.appendChild(r)
+    }
+  })()
 
-  return oc
-}
+  let angle=0,pendingSector=-1,pAngle=0,pVel=0
+  const PK=320,PC=18
+  let spinning=false,spinStart=0,spinDur=0,fromAngle=0,totalDelta=0
 
-// ═══════════════════════════════════════════════════════════════
-//  DISC LAYER — neon sectors, 2× resolution, correct text
-// ═══════════════════════════════════════════════════════════════
-function buildDisc() {
-  const oc = document.createElement('canvas')
-  oc.width = oc.height = CS
-  const ctx = oc.getContext('2d')
+  function easeOutSmooth(t){ return 1-Math.pow(1-t,4) }
 
-  for (let i = 0; i < N; i++) {
-    const v = SECTORS[i], c = SC[v]
-    const sA = -Math.PI / 2 + i * SLICE
-    const eA = sA + SLICE, mA = sA + SLICE / 2
-
-    // 3D pocket gradient: very dark at inner + outer edges, vivid in middle
-    const irx = CCX + Math.cos(mA) * R_DISC * 0.06
-    const iry = CCY + Math.sin(mA) * R_DISC * 0.06
-    const orx = CCX + Math.cos(mA) * R_DISC * 0.97
-    const ory = CCY + Math.sin(mA) * R_DISC * 0.97
-    const gr = ctx.createLinearGradient(irx, iry, orx, ory)
-    gr.addColorStop(0,    c.d)
-    gr.addColorStop(0.15, c.d)
-    gr.addColorStop(0.42, c.m)
-    gr.addColorStop(0.70, c.e)
-    gr.addColorStop(1,    c.d)
-    ctx.beginPath(); ctx.moveTo(CCX, CCY)
-    ctx.arc(CCX, CCY, R_DISC, sA, eA); ctx.closePath()
-    ctx.fillStyle = gr; ctx.fill()
-
-    // LED neon strip at outer rim of each sector — INTENSE
-    ctx.save()
-    ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC * 0.88, sA + 0.022, eA - 0.022)
-    ctx.strokeStyle = c.g; ctx.lineWidth = R_DISC * 0.11
-    ctx.shadowBlur = 44 * DPR; ctx.shadowColor = c.g; ctx.globalAlpha = 0.85
-    ctx.stroke(); ctx.restore()
-    // Second, tighter inner glow ring
-    ctx.save()
-    ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC * 0.82, sA + 0.03, eA - 0.03)
-    ctx.strokeStyle = c.t; ctx.lineWidth = R_DISC * 0.04
-    ctx.shadowBlur = 20 * DPR; ctx.shadowColor = c.g; ctx.globalAlpha = 0.50
-    ctx.stroke(); ctx.restore()
-
-    // Text — flip bottom half to prevent upside-down rendering
-    const tr = R_DISC * 0.61
-    const tx = CCX + Math.cos(mA) * tr, ty = CCY + Math.sin(mA) * tr
-    ctx.save(); ctx.translate(tx, ty)
-    let rot = mA + Math.PI / 2
-    const nm = ((mA % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-    if (nm >= Math.PI / 2 && nm <= 3 * Math.PI / 2) rot += Math.PI
-    ctx.rotate(rot)
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-
-    const fs = R_DISC * (v === 50 ? 0.172 : v >= 15 ? 0.152 : 0.130)
-    ctx.font = `900 ${fs | 0}px 'Arial Black', Arial, sans-serif`
-    ctx.fillStyle = '#ffffff'
-    ctx.shadowBlur = 22 * DPR; ctx.shadowColor = c.g
-    ctx.fillText(String(v), 0, -(fs * 0.30))
-
-    ctx.font = `700 ${(fs * 0.56) | 0}px Arial, sans-serif`
-    ctx.fillStyle = c.t; ctx.shadowBlur = 16 * DPR
-    ctx.fillText('◆', 0, fs * 0.66)
-    ctx.restore()
+  function startSpin(targetSectorIndex){
+    if(spinning) return
+    if(targetSectorIndex==null) targetSectorIndex=Math.floor(Math.random()*N)
+    pendingSector=targetSectorIndex
+    const sectorRad=2*Math.PI/N
+    let target=-(targetSectorIndex+0.5)*sectorRad
+    target+=((Math.random()-0.5)*sectorRad*0.45)
+    target=((target%(2*Math.PI))+2*Math.PI)%(2*Math.PI)
+    const cur=((angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI)
+    let delta=target-cur; if(delta<=0) delta+=2*Math.PI
+    totalDelta=5*2*Math.PI+delta; fromAngle=angle
+    spinStart=performance.now(); spinDur=7200+Math.random()*800
+    spinning=true
+    const spinBtn=document.getElementById('spin')
+    if(spinBtn) spinBtn.disabled=true
+    document.querySelector('#earn-page-root .stage')?.classList.add('spinning')
   }
 
-  // Gold metallic divider lines between sectors
-  for (let i = 0; i < N; i++) {
-    const a = -Math.PI / 2 + i * SLICE
-    const x1 = CCX + Math.cos(a) * R_DISC * 0.12
-    const y1 = CCY + Math.sin(a) * R_DISC * 0.12
-    const x2 = CCX + Math.cos(a) * R_DISC * 0.99
-    const y2 = CCY + Math.sin(a) * R_DISC * 0.99
-    const dl = ctx.createLinearGradient(x1, y1, x2, y2)
-    dl.addColorStop(0,    'rgba(255,215,0,0.0)')
-    dl.addColorStop(0.28, 'rgba(255,215,0,0.65)')
-    dl.addColorStop(0.78, 'rgba(255,215,0,0.55)')
-    dl.addColorStop(1,    'rgba(255,215,0,0.18)')
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2)
-    ctx.strokeStyle = dl; ctx.lineWidth = 1.5 * DPR
-    ctx.shadowBlur = 5 * DPR; ctx.shadowColor = '#FFD700'; ctx.stroke()
+  function currentSectorIndex(){
+    const sectorRad=2*Math.PI/N
+    const ea=(((-angle)%(2*Math.PI))+2*Math.PI)%(2*Math.PI)
+    return Math.floor(ea/sectorRad)%N
   }
-  ctx.shadowBlur = 0
 
-  // Outer disc border ring
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(255,215,0,0.72)'; ctx.lineWidth = 2 * DPR
-  ctx.shadowBlur = 14 * DPR; ctx.shadowColor = '#FFD700'; ctx.stroke()
-  ctx.shadowBlur = 0
+  function hexToRgba(hex,a){
+    const h=hex.replace('#',''),n=h.length===3?h.split('').map(c=>parseInt(c+c,16)):[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]
+    return `rgba(${n[0]},${n[1]},${n[2]},${a})`
+  }
 
-  // Chrome centre hub
-  const hg = ctx.createRadialGradient(
-    CCX - R_HUB * 0.38, CCY - R_HUB * 0.38, 1, CCX, CCY, R_HUB)
-  hg.addColorStop(0, '#CCCCEE'); hg.addColorStop(0.38, '#2535A0')
-  hg.addColorStop(0.72, '#0E1530'); hg.addColorStop(1, '#040810')
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_HUB, 0, Math.PI * 2)
-  ctx.fillStyle = hg; ctx.fill()
-  ctx.strokeStyle = 'rgba(255,215,0,0.7)'; ctx.lineWidth = 2 * DPR
-  ctx.shadowBlur = 12 * DPR; ctx.shadowColor = '#FFD700'; ctx.stroke()
-  ctx.shadowBlur = 0
-  return oc
-}
+  let prizeRevertT
+  function showPrize(v){
+    const spinBtn=document.getElementById('spin'); if(!spinBtn) return
+    const holder=spinBtn.querySelector('.btn-text-holder')
+    if(holder) holder.textContent='+'+v
+    spinBtn.classList.add('show-prize')
+    if(v===50) spinBtn.classList.add('jackpot')
+    const glow=(PALETTE[v]&&PALETTE[v].glow)||'#ffd960'
+    spinBtn.style.setProperty('--prize-glow',hexToRgba(glow,0.9))
+    clearTimeout(prizeRevertT)
+    prizeRevertT=setTimeout(()=>{
+      spinBtn.classList.remove('show-prize','jackpot')
+      spinBtn.style.removeProperty('--prize-glow')
+      if(holder) holder.textContent=window.__wheelSpinLabel||'КРУТИТЬ'
+    },2600)
+  }
 
-// ═══════════════════════════════════════════════════════════════
-//  GLASS LAYER — PBR specular overlay (static, wheel spins under it)
-// ═══════════════════════════════════════════════════════════════
-function buildGlass() {
-  const oc = document.createElement('canvas')
-  oc.width = oc.height = CS
-  const ctx = oc.getContext('2d')
+  function onLanded(){
+    const visualIdx=currentSectorIndex()
+    const idx=pendingSector>=0?pendingSector:visualIdx
+    const value=VALUES[idx]
+    showPrize(value)
+    burstParticles(PALETTE[value].glow,PALETTE[value].outer,value===50)
+    playWin(value===50)
+    document.querySelector('#earn-page-root .stage')?.classList.remove('spinning')
+    pendingSector=-1
+    const spinBtn=document.getElementById('spin')
+    if(spinBtn) spinBtn.disabled=false
+    if(typeof window.__wheelOnLanded==='function') window.__wheelOnLanded(value)
+  }
 
-  // Primary specular highlight (upper-left light source)
-  const g1 = ctx.createRadialGradient(
-    CCX - 110 * DPR, CCY - 130 * DPR, 8 * DPR, CCX, CCY, R_DISC)
-  g1.addColorStop(0,    'rgba(255,255,255,0.19)')
-  g1.addColorStop(0.38, 'rgba(255,255,255,0.07)')
-  g1.addColorStop(0.72, 'rgba(255,255,255,0.02)')
-  g1.addColorStop(1,    'rgba(255,255,255,0.00)')
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC, 0, Math.PI * 2)
-  ctx.fillStyle = g1; ctx.fill()
-
-  // Glint streak (lens flare effect)
-  ctx.save(); ctx.globalAlpha = 0.065
-  ctx.beginPath()
-  ctx.ellipse(CCX - 54*DPR, CCY - 104*DPR, 98*DPR, 20*DPR, -0.44, 0, Math.PI * 2)
-  ctx.fillStyle = '#ffffff'; ctx.fill()
-  ctx.restore()
-
-  // Bottom vignette
-  const vg = ctx.createRadialGradient(CCX, CCY + R_DISC * 0.5, R_DISC*0.2, CCX, CCY, R_DISC)
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.28)')
-  ctx.beginPath(); ctx.arc(CCX, CCY, R_DISC, 0, Math.PI * 2)
-  ctx.fillStyle = vg; ctx.fill()
-  return oc
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  POINTER — 3D chrome-gold arrow with spring physics
-// ═══════════════════════════════════════════════════════════════
-function drawPointer(ctx, deflection) {
-  const px = CCX, py = CCY - R_RIM + 7 * DPR
-  ctx.save()
-  ctx.translate(px, py + 14*DPR); ctx.rotate(deflection); ctx.translate(-px, -(py + 14*DPR))
-
-  // Drop shadow
-  ctx.shadowBlur = 9 * DPR; ctx.shadowColor = 'rgba(0,0,0,0.65)'
-  ctx.beginPath()
-  ctx.moveTo(px - 14*DPR, py + 6*DPR); ctx.lineTo(px + 14*DPR, py + 6*DPR)
-  ctx.lineTo(px, py - 22*DPR); ctx.closePath()
-  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill()
-  ctx.shadowBlur = 0
-
-  // Chrome-gold body gradient
-  const pg = ctx.createLinearGradient(px - 14*DPR, py, px + 14*DPR, py)
-  pg.addColorStop(0,    '#6A4000')
-  pg.addColorStop(0.16, '#CC8800')
-  pg.addColorStop(0.50, '#FFE860')
-  pg.addColorStop(0.84, '#CC8800')
-  pg.addColorStop(1,    '#6A4000')
-  ctx.beginPath()
-  ctx.moveTo(px - 13*DPR, py + 5*DPR); ctx.lineTo(px + 13*DPR, py + 5*DPR)
-  ctx.lineTo(px, py - 21*DPR); ctx.closePath()
-  ctx.fillStyle = pg
-  ctx.shadowBlur = 24 * DPR; ctx.shadowColor = '#FFD700'; ctx.fill()
-  ctx.shadowBlur = 0
-
-  // Edge highlight
-  ctx.beginPath()
-  ctx.moveTo(px - 13*DPR, py + 5*DPR); ctx.lineTo(px + 13*DPR, py + 5*DPR)
-  ctx.lineTo(px, py - 21*DPR); ctx.closePath()
-  ctx.strokeStyle = 'rgba(255,255,220,0.38)'; ctx.lineWidth = 1.5 * DPR; ctx.stroke()
-  ctx.restore()
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  RATCHET SOUND — noise burst (sampled mechanical click)
-// ═══════════════════════════════════════════════════════════════
-function playRatchet(actx, pitch = 1.0) {
-  try {
-    const sr = actx.sampleRate, len = (sr * 0.054) | 0
-    const buf = actx.createBuffer(1, len, sr), d = buf.getChannelData(0)
-    for (let i = 0; i < len; i++) {
-      const t = i / len
-      d[i] = ((Math.random()*2-1)*Math.exp(-t*30)
-              + Math.sin(Math.PI*2*2200*pitch*t)*Math.exp(-t*75)*0.5) * 0.42
+  let lastTime=performance.now()
+  function tick(now){
+    const dt=Math.min(0.05,(now-lastTime)/1000); lastTime=now
+    if(spinning){
+      const t=Math.min(1,(now-spinStart)/spinDur),eased=easeOutSmooth(t),prev=angle
+      angle=fromAngle+totalDelta*eased
+      detectBoundaryCrossings(prev,angle)
+      if(t>=1){ angle=fromAngle+totalDelta; spinning=false; onLanded() }
     }
-    const src = actx.createBufferSource(); src.buffer = buf
-    const bpf = actx.createBiquadFilter()
-    bpf.type = 'bandpass'; bpf.frequency.value = 3500 * pitch; bpf.Q.value = 0.45
-    const g = actx.createGain(); g.gain.value = 0.28
-    src.connect(bpf); bpf.connect(g); g.connect(actx.destination)
-    src.start(actx.currentTime)
-  } catch(e) {}
-}
+    pVel+=(-PK*pAngle-PC*pVel)*dt; pAngle+=pVel*dt
+    if(Math.abs(pAngle)<0.0005&&Math.abs(pVel)<0.001){pAngle=0;pVel=0}
+    const diskWrap=document.getElementById('disk')
+    const pointerEl=document.getElementById('pointer')
+    if(diskWrap) diskWrap.style.transform=`rotate(${angle}rad)`
+    if(pointerEl) pointerEl.style.transform=`rotate(${pAngle*0.55}rad)`
+    requestAnimationFrame(tick)
+  }
 
-// ═══════════════════════════════════════════════════════════════
-//  PARTICLES
-// ═══════════════════════════════════════════════════════════════
-function ParticleCanvas({ active, color }) {
-  const cvRef = useRef(null), rafRef = useRef(null)
-  useEffect(() => {
-    if (!active || !cvRef.current) return
-    const cv = cvRef.current, ctx = cv.getContext('2d')
-    const pts = Array.from({ length: 115 }, () => ({
-      x: SIZE/2+(Math.random()-.5)*40, y: SIZE/2+(Math.random()-.5)*40,
-      vx: (Math.random()-.5)*16, vy: -Math.random()*20-2,
-      r: Math.random()*5+1.5, life: 1, decay: Math.random()*0.012+0.007,
-      hue: [color,'#FFD700','#fff',color][Math.floor(Math.random()*4)],
-    }))
-    const tick = () => {
-      ctx.clearRect(0,0,SIZE,SIZE); let alive = false
-      pts.forEach(p => {
-        if (p.life<=0) return; alive=true
-        p.x+=p.vx; p.y+=p.vy; p.vy+=0.42; p.vx*=0.984; p.life-=p.decay
-        ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.hue
-        ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2); ctx.fill()
-      })
-      ctx.globalAlpha=1
-      if (alive) rafRef.current=requestAnimationFrame(tick)
+  function detectBoundaryCrossings(prev,curr){
+    const sectorRad=2*Math.PI/N,prevIdx=Math.floor(prev/sectorRad),currIdx=Math.floor(curr/sectorRad)
+    if(currIdx===prevIdx) return
+    const speed=curr-prev,kick=Math.min(0.9,speed*1.4); pVel+=kick*28
+    document.querySelectorAll('.peg-glow').forEach(p=>{p.style.opacity='1';setTimeout(()=>{p.style.opacity='0'},80)})
+    playTick(Math.min(0.55+Math.abs(curr-prev)*1000,2.4))
+  }
+
+  let audioCtx=null
+  function ensureAudio(){
+    if(audioCtx) return audioCtx
+    const AC=window.AudioContext||window.webkitAudioContext
+    if(!AC) return null
+    audioCtx=new AC(); return audioCtx
+  }
+  const PENTATONIC=[220,246.94,293.66,329.63,392,440,493.88,587.33]
+  let lastTickAt=0
+  function playTick(velocityScale=1){
+    const ctx=ensureAudio(); if(!ctx||ctx.state==='suspended') ctx?.resume?.(); if(!ctx) return
+    const t=ctx.currentTime; if(t-lastTickAt<0.045) return; lastTickAt=t
+    const v=Math.max(0.2,Math.min(1,velocityScale)),freq=PENTATONIC[Math.floor(Math.random()*PENTATONIC.length)]
+    const osc1=ctx.createOscillator(); osc1.type='sine'; osc1.frequency.setValueAtTime(freq,t)
+    const osc2=ctx.createOscillator(); osc2.type='triangle'; osc2.frequency.setValueAtTime(freq*1.005,t)
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=6
+    lp.frequency.setValueAtTime(400,t); lp.frequency.exponentialRampToValueAtTime(1600,t+0.12); lp.frequency.exponentialRampToValueAtTime(700,t+0.55)
+    const g=ctx.createGain(),peak=Math.min(0.10,0.04+0.07*v)
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+0.06)
+    g.gain.linearRampToValueAtTime(peak*0.6,t+0.20); g.gain.exponentialRampToValueAtTime(0.0001,t+0.55)
+    osc1.connect(lp); osc2.connect(lp); lp.connect(g).connect(ctx.destination)
+    osc1.start(t); osc2.start(t); osc1.stop(t+0.6); osc2.stop(t+0.6)
+  }
+  function playWin(jackpot){
+    const ctx=ensureAudio(); if(!ctx) return; ctx.resume?.()
+    const t=ctx.currentTime,notes=jackpot?[523,659,784,1047,1319]:[659,880,1175]
+    notes.forEach((freq,i)=>{
+      const osc=ctx.createOscillator(); osc.type='triangle'; osc.frequency.setValueAtTime(freq,t+i*0.09)
+      const g=ctx.createGain(); g.gain.setValueAtTime(0.0001,t+i*0.09); g.gain.exponentialRampToValueAtTime(0.18,t+i*0.09+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+i*0.09+0.4)
+      osc.connect(g).connect(ctx.destination); osc.start(t+i*0.09); osc.stop(t+i*0.09+0.45)
+    })
+  }
+
+  const particleLayer=document.getElementById('particles')
+  function burstParticles(c1,c2,jackpot){
+    if(!particleLayer) return
+    const count=jackpot?160:80,rect=particleLayer.getBoundingClientRect(),cx=rect.width/2,cy=rect.height/2
+    for(let i=0;i<count;i++){
+      const p=document.createElement('div'); p.className='particle'
+      const tone=i%3===0?'#fff4c2':(i%3===1?c2:c1); p.style.background=tone; p.style.boxShadow=`0 0 10px ${tone}`
+      const size=4+Math.random()*8; p.style.width=size+'px'; p.style.height=(size*(0.6+Math.random()*0.8))+'px'
+      p.style.left=cx+'px'; p.style.top=cy+'px'; p.style.borderRadius=Math.random()<0.3?'50%':'2px'
+      particleLayer.appendChild(p)
+      const ang=Math.random()*Math.PI*2,speed=200+Math.random()*400
+      let vx=Math.cos(ang)*speed,vy=Math.sin(ang)*speed-80
+      const gravity=800,drag=0.985,rot0=Math.random()*360,rotV=(Math.random()-0.5)*720
+      const t0=performance.now(),life=1400+Math.random()*1000
+      function pstep(now){ const dt=1/60; vx*=drag; vy=vy*drag+gravity*dt; const elapsed=now-t0,u=elapsed/life; if(u>=1){p.remove();return} const x=(elapsed/1000)*vx,y=(elapsed/1000)*vy+0.5*gravity*Math.pow(elapsed/1000,2); p.style.transform=`translate(${x}px,${y}px) rotate(${rot0+rotV*(elapsed/1000)}deg)`; p.style.opacity=String(1-u*u); requestAnimationFrame(pstep) }
+      requestAnimationFrame(pstep)
     }
-    rafRef.current=requestAnimationFrame(tick)
-    return ()=>{ if(rafRef.current) cancelAnimationFrame(rafRef.current) }
-  }, [active, color])
-  return <canvas ref={cvRef} width={SIZE} height={SIZE}
-    style={{position:'absolute',top:0,left:0,pointerEvents:'none',opacity:active?1:0}}/>
+  }
+
+  function burstButtonSparks(){
+    const spinBtn=document.getElementById('spin'); if(!spinBtn) return
+    const shell=spinBtn.parentElement; if(!shell) return
+    const rect=spinBtn.getBoundingClientRect(),shellRect=shell.getBoundingClientRect()
+    const cx=rect.left-shellRect.left+rect.width/2,cy=rect.top-shellRect.top+rect.height/2
+    for(let i=0;i<14;i++){
+      const s=document.createElement('div'); s.className='btn-spark'
+      s.style.left=cx+'px'; s.style.top=cy+'px'; shell.appendChild(s)
+      const ang=(i/14)*Math.PI*2+(Math.random()-0.5)*0.4,dist=60+Math.random()*70
+      const dx=Math.cos(ang)*dist,dy=Math.sin(ang)*dist,dur=520+Math.random()*220
+      s.animate([{transform:'translate(-50%,-50%) translate(0,0) scale(1)',opacity:1},{transform:`translate(-50%,-50%) translate(${dx*0.6}px,${dy*0.6}px) scale(1.2)`,opacity:1,offset:0.5},{transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) scale(0.4)`,opacity:0}],{duration:dur,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'})
+      setTimeout(()=>s.remove(),dur+20)
+    }
+  }
+
+  const sectorRad=2*Math.PI/N
+  angle=(((-0.5*sectorRad)%(2*Math.PI)+2*Math.PI)%(2*Math.PI))
+  const diskEl=document.getElementById('disk')
+  if(diskEl) diskEl.style.transform=`rotate(${angle}rad)`
+
+  window.addEventListener('keydown',e=>{if((e.code==='Space'||e.code==='Enter')&&!document.getElementById('spin')?.disabled){e.preventDefault();startSpin()}})
+  requestAnimationFrame(tick)
+
+  window.__wheel={ startSpin, currentSectorIndex, VALUES, burstButtonSparks, ensureAudio, getAngle:()=>angle }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════
+// ─── Component ────────────────────────────────────────────────────────────────
+const TIER = {
+  50: { l: '🎰 JACKPOT!!!', c: '#f0c63a' },
+  30: { l: '🔥 MEGA WIN!',  c: '#bc88ff' },
+  15: { l: '⚡ BIG DROP!',  c: '#5fe6a8' },
+  7:  { l: '✨ NICE!',      c: '#7fb6ff' },
+  5:  { l: '+5 ◆',          c: '#ff9999' },
+}
+
 export default function EarnPage() {
-  const { lang } = useLang(); const isRu = lang === 'ru'
+  const { lang } = useLang()
+  const navigate  = useNavigate()
+  const isRu      = lang === 'ru'
 
-  const [watched,   setWatched]   = useState(0)
-  const [credits,   setCredits]   = useState(null)
-  const [spinning,  setSpinning]  = useState(false)
-  const [result,    setResult]    = useState(null)
-  const [particles, setParticles] = useState(false)
-  const [partColor, setPartColor] = useState('#FFD700')
-  const [btnDown,   setBtnDown]   = useState(false)
-  const [loading,   setLoading]   = useState(true)
+  const [credits,  setCredits]  = useState(null)
+  const [watched,  setWatched]  = useState(0)
+  const [spinning, setSpinning] = useState(false)
+  const [result,   setResult]   = useState(null)
 
-  const cvRef    = useRef(null)
-  const baseOff  = useRef(null)
-  const discOff  = useRef(null)
-  const glassOff = useRef(null)
-  const audioRef = useRef(null)
-  const rafId    = useRef(null)
-  const phys     = useRef({ angle:0, omega:0, phase:'idle',
-    target:0, alpha:0, earned:0, frame:0, _data:null })
-  const ptr      = useRef({ a:0, v:0 })
-  const lastSec  = useRef(-1)
+  const spinTextRef  = useRef(null)
+  const wheelReady   = useRef(false)
 
-  // ── Load real photo textures, then render ──────────────────
+  // ── Load initial data ──────────────────────────────────────────
   useEffect(() => {
-    let cancelled = false
-    async function init() {
-      const { wood, gold } = await loadTextures()
-      if (cancelled) return
-      baseOff.current  = buildBase(wood, gold)
-      discOff.current  = buildDisc()
-      glassOff.current = buildGlass()
-      setLoading(false)
-      // Let React re-render, then draw
-      setTimeout(renderFrame, 0)
-    }
-    init()
-    return () => { cancelled = true }
+    api.me().then(u => setCredits(u.credits)).catch(() => {})
+    api.earnStatus().then(d => setWatched(d.today ?? 0)).catch(() => {})
   }, [])
 
-  // Re-draw after loading=false
+  // ── Mount wheel once after DOM is ready ───────────────────────
   useEffect(() => {
-    if (!loading) renderFrame()
-  }, [loading])
+    if (wheelReady.current) return
+    wheelReady.current = true
 
-  useEffect(() => {
-    api.me().then(u=>setCredits(u.credits)).catch(()=>{})
-    api.earnStatus().then(d=>setWatched(d.today??0)).catch(()=>{})
+    // Fonts
+    const link = document.createElement('link')
+    link.rel  = 'stylesheet'
+    link.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+SC:wght@500;600;700&family=Russo+One&family=Manrope:wght@400;500;600;700;800&display=swap'
+    document.head.appendChild(link)
+
+    // Textures
+    window.TEXTURES = {
+      redvelvet:    '/textures/red-velvet.jpg',
+      blueplaster:  '/textures/blue-plaster.jpg',
+      greenvelvet:  '/textures/green-velvet.jpg',
+      purplevelvet: '/textures/purple-velvet.jpg',
+      rivet:        '/textures/rivet.webp',
+    }
+
+    mountWheel()
+
+    return () => {
+      link.remove()
+      window.TEXTURES      = undefined
+      window.__wheel       = undefined
+      window.__wheelOnLanded = undefined
+    }
   }, [])
 
-  function getAudio() {
-    if (!audioRef.current)
-      try { audioRef.current = new (window.AudioContext||window.webkitAudioContext)() } catch(e){}
-    return audioRef.current
-  }
+  // ── Keep button text in sync ───────────────────────────────────
+  useEffect(() => {
+    const el = spinTextRef.current
+    if (!el) return
+    // Don't overwrite while show-prize animation is running
+    const btn = document.getElementById('spin')
+    if (btn?.classList.contains('show-prize')) return
+    const label = spinning
+      ? (isRu ? '🎰 Крутится...' : '🎰 Spinning...')
+      : watched >= MAX_DAY
+        ? (isRu ? '✓ Лимит исчерпан' : '✓ Limit reached')
+        : (isRu ? 'КРУТИТЬ' : 'SPIN')
+    el.textContent = label
+    window.__wheelSpinLabel = isRu ? 'КРУТИТЬ' : 'SPIN'
+  }, [spinning, watched, isRu])
 
-  function renderFrame() {
-    const cv = cvRef.current; if (!cv) return
-    const ctx = cv.getContext('2d')
-    ctx.clearRect(0, 0, CS, CS)
-
-    // Layer 1: real wood rim + gold foil accents
-    if (baseOff.current) ctx.drawImage(baseOff.current, 0, 0)
-
-    // Layer 2: rotating neon disc (motion blur at high speed)
-    if (discOff.current) {
-      const blur = Math.min(Math.abs(phys.current.omega) * 1500, 13)
-      if (blur > 0.5) ctx.filter = `blur(${blur.toFixed(1)}px)`
-      ctx.save()
-      ctx.translate(CCX, CCY); ctx.rotate(phys.current.angle)
-      ctx.drawImage(discOff.current, -R_DISC, -R_DISC, R_DISC*2, R_DISC*2)
-      ctx.restore()
-      if (blur > 0.5) ctx.filter = 'none'
-    }
-
-    // Layer 3: glass specular
-    if (glassOff.current) ctx.drawImage(glassOff.current, 0, 0)
-
-    // Layer 4: animated pointer
-    drawPointer(ctx, ptr.current.a)
-  }
-
-  function loop() {
-    const p = phys.current, pt = ptr.current
-    p.frame++
-
-    // Pointer spring physics
-    pt.v += (-96 * pt.a) * 0.016
-    pt.v *= 0.73; pt.a += pt.v * 0.016
-    pt.a = Math.max(-0.52, Math.min(0.52, pt.a))
-
-    // Ratchet trigger on sector crossing
-    const modA   = ((p.angle%(Math.PI*2))+Math.PI*2)%(Math.PI*2)
-    const curSec = Math.floor(modA/SLICE)%N
-    if (curSec !== lastSec.current) {
-      const ac = getAudio()
-      if (ac) playRatchet(ac, Math.min(0.55+Math.abs(p.omega)*1000, 2.4))
-      pt.v += 0.30; lastSec.current = curSec
-    }
-
-    const PEAK=0.075, ACCEL=0.003
-
-    if (p.phase==='accel') {
-      p.omega = Math.min(p.omega+ACCEL, PEAK); p.angle+=p.omega
-      if (p.omega>=PEAK) { p.phase='coast'; p.frame=0 }
-    }
-    else if (p.phase==='coast') {
-      p.angle+=PEAK
-      const rem=(( p.target-p.angle)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)
-      const dd=(PEAK*PEAK)/(2*p.alpha)
-      if (rem<=dd+0.08) { p.phase='decel'; p.omega=PEAK; p.frame=0 }
-    }
-    else if (p.phase==='decel') {
-      p.omega=Math.max(0,p.omega-p.alpha); p.angle+=p.omega
-      if (p.omega<0.0008) {
-        p.angle=p.target; p.omega=-0.0045; p.phase='settle'; p.frame=0
-      }
-    }
-    else if (p.phase==='settle') {
-      const diff=p.target-p.angle
-      p.omega=p.omega*0.76+diff*0.07; p.angle+=p.omega
-      if (p.frame>28||Math.abs(diff)<0.0003) {
-        p.angle=p.target; p.omega=0; p.phase='idle'
-        const ac=getAudio(); if(ac) playRatchet(ac, 1.9)
-        const data=p._data
-        setWatched(w=>w+1); setCredits(data.credits)
-        setResult({ earned:p.earned, jackpot:data.jackpot }); setSpinning(false)
-        if (p.earned>=30) { setPartColor(SC[p.earned]?.p||'#FFD700'); setParticles(true) }
-        renderFrame(); return
-      }
-    }
-
-    renderFrame(); rafId.current=requestAnimationFrame(loop)
-  }
-
+  // ── Spin handler ───────────────────────────────────────────────
   const handleSpin = useCallback(async () => {
-    if (spinning||Math.max(0,MAX_DAY-watched)===0||loading) return
-    setSpinning(true); setResult(null); setParticles(false)
+    if (spinning || watched >= MAX_DAY) return
+    setSpinning(true)
+    setResult(null)
 
-    try { const ac=getAudio(); if(ac?.state==='suspended') await ac.resume() } catch(e){}
+    try {
+      const ac = window.__wheel?.ensureAudio?.()
+      if (ac?.state === 'suspended') await ac.resume()
+    } catch (_) {}
+    window.__wheel?.burstButtonSparks?.()
 
     let data
-    try { data=await api.earnReward() } catch(e) { setSpinning(false); return }
-    if (!data.success) { setSpinning(false); setResult({limit:true}); return }
+    try {
+      data = await api.earnReward()
+    } catch (_) {
+      setSpinning(false)
+      return
+    }
 
-    const { earned, sector_index }=data, p=phys.current
-    const sCenter=-Math.PI/2+sector_index*SLICE+SLICE/2
-    const rawTarget=-sCenter
-    let norm=((rawTarget-p.angle)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)
-    if (norm===0) norm=Math.PI*2
-    p.omega=0; p.phase='accel'
-    p.target=p.angle+4*Math.PI*2+norm
-    p.alpha=(0.075*0.075)/(2*2.5)
-    p.frame=0; p.earned=earned; p._data=data
-    lastSec.current=Math.floor((((-p.angle)%(Math.PI*2)+Math.PI*2)%(Math.PI*2))/SLICE)%N
-    if (rafId.current) cancelAnimationFrame(rafId.current)
-    rafId.current=requestAnimationFrame(loop)
-  }, [spinning, watched, loading])
+    if (!data.success) {
+      setSpinning(false)
+      setResult({ limit: true })
+      return
+    }
 
-  const remaining=Math.max(0,MAX_DAY-watched)
-  const TIER={
-    50:{l:isRu?'🎰 ДЖЕКПОТ!!!':'🎰 JACKPOT!!!',c:'#FFD700'},
-    30:{l:isRu?'🔥 MEGA WIN!':'🔥 MEGA WIN!',c:'#FF3366'},
-    15:{l:isRu?'⚡ БОЛЬШОЙ ДРО́П!':'⚡ BIG DROP!',c:'#33CC55'},
-    7: {l:isRu?'✨ НЕПЛОХО!':'✨ NICE!',c:'#44CCEE'},
-    5: {l:'+5 ◆',c:'#7090FF'},
-  }
+    window.__wheelOnLanded = () => {
+      // Delay state update so show-prize animation finishes first
+      setTimeout(() => {
+        setWatched(w => w + 1)
+        setCredits(data.credits)
+        setResult({ earned: data.earned, jackpot: data.jackpot })
+        setSpinning(false)
+        window.__wheelOnLanded = null
+      }, 2700)
+    }
+
+    window.__wheel?.startSpin?.(data.sector_index)
+  }, [spinning, watched])
+
+  const remaining = Math.max(0, MAX_DAY - watched)
 
   return (
-    <div style={{maxWidth:480,margin:'0 auto',padding:'24px 20px'}}>
+    <div id="earn-page-root">
+      <style>{WHEEL_CSS}</style>
 
-      <h2 style={{
-        fontSize:28,fontWeight:900,margin:'0 0 5px',
-        background:'linear-gradient(90deg,#FFD700 0%,#FF8800 50%,#FFD700 100%)',
-        WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
-        letterSpacing:'1px',
-      }}>
-        {isRu ? '🎰 Колесо Фортуны' : '🎰 Fortune Wheel'}
-      </h2>
-      <p style={{color:'rgba(255,255,255,0.35)',fontSize:13,margin:'0 0 18px'}}>
-        {isRu?`Крути и выигрывай алмазы — до ${MAX_DAY} раз в день`
-              :`Spin and win diamonds — up to ${MAX_DAY} times per day`}
-      </p>
+      {/* Close button */}
+      <button className="earn-close-btn" onClick={() => navigate('/dashboard')} title="Назад">✕</button>
 
-      {credits!==null&&(
-        <div style={{
-          background:'rgba(255,215,0,0.05)',border:'1px solid rgba(255,215,0,0.18)',
-          borderRadius:12,padding:'12px 18px',marginBottom:18,
-          display:'flex',alignItems:'center',justifyContent:'space-between',
-        }}>
-          <span style={{color:'rgba(255,255,255,0.4)',fontSize:12}}>
-            {isRu?'Баланс':'Balance'}
-          </span>
-          <span style={{color:'#FFD700',fontSize:22,fontWeight:900,
-            textShadow:'0 0 14px rgba(255,215,0,0.5)'}}>
-            {credits.toLocaleString()} ◆
-          </span>
-        </div>
-      )}
+      {/* Ambient sparks layer */}
+      <div id="ambient" className="ambient" />
 
-      <div style={{marginBottom:20}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
-          <span style={{color:'rgba(255,255,255,0.3)',fontSize:11,letterSpacing:'1px'}}>
-            {isRu?'СЕГОДНЯ':'TODAY'}
-          </span>
-          <span style={{color:watched>=MAX_DAY?'#FF4444':'#FFD700',fontSize:11,fontWeight:700}}>
-            {watched} / {MAX_DAY}
-          </span>
-        </div>
-        <div style={{height:4,background:'rgba(255,255,255,0.07)',borderRadius:2}}>
-          <div style={{
-            height:'100%',borderRadius:2,width:`${(watched/MAX_DAY)*100}%`,
-            background:watched>=MAX_DAY?'linear-gradient(90deg,#FF4444,#FF8800)'
-              :'linear-gradient(90deg,#FFD700,#FF8800)',
-            boxShadow:'0 0 6px rgba(255,215,0,0.45)',transition:'width 0.4s',
-          }}/>
-        </div>
+      {/* Brand header */}
+      <div className="topbar">
+        <div className="brand">Fortuna Royale</div>
+        <span id="balance" style={{ display: 'none' }} />
       </div>
 
-      {/* Wheel — 2× DPR canvas shown at SIZE×SIZE */}
-      <div style={{
-        position:'relative',width:SIZE,margin:'0 auto 20px',
-        filter:'drop-shadow(0 8px 44px rgba(255,140,0,0.38))',
-      }}>
-        {loading && (
-          <div style={{
-            position:'absolute',inset:0,display:'flex',alignItems:'center',
-            justifyContent:'center',color:'rgba(255,215,0,0.7)',fontSize:13,
-            borderRadius:'50%',background:'rgba(5,8,18,0.9)',
-          }}>
-            {isRu?'Загружаю текстуры...':'Loading textures...'}
+      {/* Wheel stage */}
+      <div className="stage">
+        <div className="neon-ring" />
+        <div className="wood-base" />
+        <div className="rivets" id="rivets" />
+        <div id="disk" className="disk-wrap" />
+        <div className="glass" />
+        <div id="static-overlay" className="static-overlay" />
+        <div id="pointer" className="pointer-wrap" />
+        <div id="particles" className="particles" />
+      </div>
+
+      {/* Spin button */}
+      <div className="controls">
+        <button
+          id="spin"
+          className="premium-spin-btn"
+          type="button"
+          onClick={handleSpin}
+          disabled={spinning || remaining === 0}
+          aria-label={isRu ? 'Крутить' : 'Spin'}
+        >
+          <div className="btn-glow-ring" />
+          <div className="btn-bg-body" />
+          <div className="btn-text-holder" ref={spinTextRef}>
+            {isRu ? 'КРУТИТЬ' : 'SPIN'}
+          </div>
+        </button>
+      </div>
+
+      {/* HUD: balance + counter + result */}
+      <div className="earn-hud">
+        {credits !== null && (
+          <div className="earn-balance-hud">{credits.toLocaleString()} ◆</div>
+        )}
+        <div className="earn-counter-hud">
+          {watched} / {MAX_DAY} {isRu ? 'сегодня' : 'today'}
+        </div>
+
+        {result && !result.limit && (() => {
+          const t = TIER[result.earned] || TIER[5]
+          return (
+            <div className="earn-result-card" style={{ color: t.c }}>
+              <div className="earn-result-label">{t.l}</div>
+              <div className="earn-result-value">{result.earned}</div>
+              <div style={{ fontSize: 22, opacity: 0.8 }}>◆</div>
+            </div>
+          )
+        })()}
+
+        {(result?.limit || remaining === 0) && (
+          <div className="earn-limit-msg">
+            {isRu ? '🌙 Лимит исчерпан. Возвращайся завтра!' : '🌙 Daily limit reached. Come back tomorrow!'}
           </div>
         )}
-        <canvas ref={cvRef} width={CS} height={CS}
-          style={{width:SIZE,height:SIZE,display:'block'}}/>
-        <ParticleCanvas active={particles} color={partColor}/>
-      </div>
-
-      {result&&!result.limit&&(()=>{
-        const t=TIER[result.earned]||TIER[5]
-        return (
-          <div style={{
-            border:`2px solid ${t.c}`,borderRadius:16,padding:'18px 20px',
-            marginBottom:16,textAlign:'center',background:`${t.c}0e`,
-            boxShadow:`0 0 44px ${t.c}44,inset 0 0 24px ${t.c}08`,
-            animation:'popIn .42s cubic-bezier(.175,.885,.32,1.275)',
-          }}>
-            <style>{`@keyframes popIn{0%{transform:scale(.55);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
-            <div style={{color:t.c,fontWeight:900,fontSize:14,letterSpacing:'2px',marginBottom:5}}>
-              {t.l}
-            </div>
-            <div style={{fontSize:70,fontWeight:900,lineHeight:1,
-              color:t.c,filter:`drop-shadow(0 0 20px ${t.c})`}}>
-              {result.earned}
-            </div>
-            <div style={{color:t.c,fontSize:22,opacity:.8,marginTop:2}}>◆</div>
-          </div>
-        )
-      })()}
-
-      {(result?.limit||remaining===0)&&(
-        <div style={{
-          background:'rgba(255,80,0,0.07)',border:'1px solid rgba(255,80,0,0.25)',
-          borderRadius:10,padding:'12px 16px',marginBottom:16,
-          color:'#FF8844',fontSize:13,textAlign:'center',
-        }}>
-          {isRu?'🌙 Лимит исчерпан. Возвращайся завтра!':'🌙 Daily limit reached. Come back tomorrow!'}
-        </div>
-      )}
-
-      <button
-        onPointerDown={()=>setBtnDown(true)}
-        onPointerUp={()=>setBtnDown(false)}
-        onPointerLeave={()=>setBtnDown(false)}
-        onClick={handleSpin}
-        disabled={spinning||remaining===0||loading}
-        style={{
-          width:'100%',padding:'18px 0',
-          background:remaining===0||loading?'rgba(255,255,255,0.05)'
-            :spinning?'rgba(255,215,0,0.08)'
-            :btnDown?'linear-gradient(180deg,#BB7A00 0%,#996600 100%)'
-            :'linear-gradient(180deg,#FFE855 0%,#EAAD00 55%,#B88000 100%)',
-          color:remaining===0||loading?'rgba(255,255,255,0.2)':spinning?'#FFD700':'#160900',
-          border:remaining===0||loading?'1px solid rgba(255,255,255,0.08)'
-            :spinning?'1px solid rgba(255,215,0,0.25)':'1px solid #A07000',
-          borderBottom:(!spinning&&remaining>0&&!btnDown&&!loading)?'4px solid #7A5000':undefined,
-          borderRadius:14,fontSize:17,fontWeight:900,letterSpacing:'2px',
-          cursor:remaining===0||spinning||loading?'not-allowed':'pointer',
-          transition:'all .1s',
-          transform:btnDown?'translateY(3px) scale(.988)':'none',
-          boxShadow:remaining>0&&!spinning&&!loading
-            ?btnDown?'0 1px 10px rgba(255,170,0,.4)'
-                    :'0 5px 0 #6A4200,0 0 34px rgba(255,160,0,.55)':'none',
-          fontFamily:'inherit',
-          animation:remaining>0&&!spinning&&!result&&!loading?'pulseBtn 2.2s ease-in-out infinite':'none',
-        }}
-      >
-        <style>{`@keyframes pulseBtn{0%,100%{box-shadow:0 5px 0 #6A4200,0 0 26px rgba(255,160,0,.5)}50%{box-shadow:0 5px 0 #6A4200,0 0 56px rgba(255,190,0,.85)}}`}</style>
-        {loading?(isRu?'⏳ Загрузка...':'⏳ Loading...')
-          :remaining===0?(isRu?'✓ Лимит исчерпан':'✓ Limit reached')
-          :spinning?(isRu?'🎰  Крутится...':'🎰  Spinning...')
-          :(isRu?`🎰  КРУТИТЬ  (осталось ${remaining})`:`🎰  SPIN  (${remaining} left)`)}
-      </button>
-
-      <div style={{marginTop:28,borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:20}}>
-        <div style={{color:'rgba(255,255,255,0.22)',fontSize:10,letterSpacing:'3px',
-          textAlign:'center',marginBottom:12,textTransform:'uppercase'}}>
-          {isRu?'Таблица призов':'Prize Table'}
-        </div>
-        {[[50,'1%',TIER[50].l],[30,'3%',TIER[30].l],[15,'6%',TIER[15].l],
-          [7,'12%',TIER[7].l],[5,'78%',isRu?'Базовый приз':'Base prize']
-        ].map(([v,pct,lbl])=>(
-          <div key={v} style={{
-            display:'flex',alignItems:'center',justifyContent:'space-between',
-            padding:'9px 14px',marginBottom:5,borderRadius:10,
-            background:`${SC[v].g}0a`,border:`1px solid ${SC[v].g}20`,
-          }}>
-            <span style={{color:SC[v].t,fontSize:13,fontWeight:700}}>{lbl}</span>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <span style={{color:SC[v].t,fontSize:20,fontWeight:900,
-                textShadow:`0 0 12px ${SC[v].g}`}}>{v}◆</span>
-              <span style={{color:'rgba(255,255,255,0.2)',fontSize:11}}>{pct}</span>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   )
