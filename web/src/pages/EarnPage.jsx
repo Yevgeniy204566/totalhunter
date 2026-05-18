@@ -704,9 +704,7 @@ export default function EarnPage() {
     if (!el) return
     const btn = document.getElementById('spin')
     if (btn?.classList.contains('show-prize')) return
-    const label = spinning
-      ? (isRu ? '🎰 Крутится...' : '🎰 Spinning...')
-      : remaining === 0
+    const label = remaining === 0
         ? (isRu ? '✓ Лимит исчерпан' : '✓ Limit reached')
         : (isRu ? 'КРУТИТЬ' : 'SPIN')
     el.textContent = label
