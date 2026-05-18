@@ -17,7 +17,7 @@
 | Что | Куда | Команда |
 |---|---|---|
 | Фронтенд (`web/`) | Vercel | git push + hook + alias |
-| Бэкенд код (`server/`) | GCP git pull | `cd /opt/totalhunter/server && sudo git pull && sudo systemctl restart totalhunter` |
+| Бэкенд код (`server/`) | GCP git pull | `cd /opt/totalhunter && sudo git clean -fd server/alembic/versions/ && sudo git pull origin main && sudo systemctl restart totalhunter` |
 | Релизы бота (`TotalHunter.zip`) | GitHub Releases (ПУБЛИЧНЫЙ) | `gh release create vX.X.X` + API version/update |
 
 **ЗАПРЕЩЕНО:**
@@ -197,7 +197,13 @@ curl -s -X POST "https://api.vercel.com/v2/deployments/$DEP_ID/aliases?teamId=$T
 
 ## 7. Workflow памяти и контекста
 
-- **«Хангоф»** — команда перед `/compact` или `/clear`. Обновляет STATE.md + ANTI-PATTERNS.md.
+- **«Хангоф»** — команда перед `/compact` или `/clear`. Выполнить ВСЕ шаги:
+  1. Прочитать `version.py` → зафиксировать текущую версию
+  2. Оценить: накопились ли изменения для нового релиза? Написать вывод явно
+  3. Обновить `STATE.md` (модули, статус, версия)
+  4. Обновить `docs/gemini_buffer.md` (что сделано, что осталось)
+  5. Обновить `ANTI-PATTERNS.md` если появились новые антипаттерны
 - **STATE.md** — бортжурнал: что готово, что в работе, известные баги
 - **ANTI-PATTERNS.md** — запреты и тупиковые решения
 - **MEMORY/** — персистентная память между сессиями Claude
+- **docs/INFRA_HEALTH.md** — профилактика инфраструктуры (для владельца, не часть хангофа)
