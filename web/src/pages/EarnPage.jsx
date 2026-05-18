@@ -695,11 +695,13 @@ export default function EarnPage() {
     }
   }, [])
 
+  // ── Must be declared before useEffect/useCallback that use it ──
+  const remaining = Math.max(0, serverMax - watched)
+
   // ── Keep button text in sync ───────────────────────────────────
   useEffect(() => {
     const el = spinTextRef.current
     if (!el) return
-    // Don't overwrite while show-prize animation is running
     const btn = document.getElementById('spin')
     if (btn?.classList.contains('show-prize')) return
     const label = spinning
@@ -709,7 +711,7 @@ export default function EarnPage() {
         : (isRu ? 'КРУТИТЬ' : 'SPIN')
     el.textContent = label
     window.__wheelSpinLabel = isRu ? 'КРУТИТЬ' : 'SPIN'
-  }, [spinning, watched, isRu])
+  }, [spinning, remaining, isRu])
 
   // ── Spin handler ───────────────────────────────────────────────
   const handleSpin = useCallback(async () => {
@@ -754,8 +756,6 @@ export default function EarnPage() {
 
     window.__wheel?.startSpin?.(data.sector_index)
   }, [spinning, remaining])
-
-  const remaining = Math.max(0, serverMax - watched)
 
   return (
     <div id="earn-page-root">
