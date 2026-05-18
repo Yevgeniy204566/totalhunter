@@ -646,7 +646,8 @@ export default function EarnPage() {
   const isRu      = lang === 'ru'
 
   const [credits,  setCredits]  = useState(null)
-  const [watched,  setWatched]  = useState(0)
+  const [watched,   setWatched]   = useState(0)
+  const [serverMax, setServerMax] = useState(MAX_DAY)
   const [spinning, setSpinning] = useState(false)
   const [result,   setResult]   = useState(null)
 
@@ -656,7 +657,11 @@ export default function EarnPage() {
   // ── Load initial data ──────────────────────────────────────────
   useEffect(() => {
     api.me().then(u => setCredits(u.credits)).catch(() => {})
-    api.earnStatus().then(d => setWatched(d.today ?? 0)).catch(() => {})
+    api.earnStatus().then(d => {
+      setWatched(d.today ?? 0)
+      // Use server-side remaining so owner accounts bypass the hardcoded limit
+      if (d.remaining !== undefined) setServerMax((d.today ?? 0) + d.remaining)
+    }).catch(() => {})
   }, [])
 
   // ── Mount wheel once after DOM is ready ───────────────────────
@@ -699,7 +704,7 @@ export default function EarnPage() {
     if (btn?.classList.contains('show-prize')) return
     const label = spinning
       ? (isRu ? '🎰 Крутится...' : '🎰 Spinning...')
-      : watched >= MAX_DAY
+      : remaining === 0
         ? (isRu ? '✓ Лимит исчерпан' : '✓ Limit reached')
         : (isRu ? 'КРУТИТЬ' : 'SPIN')
     el.textContent = label
@@ -708,7 +713,7 @@ export default function EarnPage() {
 
   // ── Spin handler ───────────────────────────────────────────────
   const handleSpin = useCallback(async () => {
-    if (spinning || watched >= MAX_DAY) return
+    if (spinning || remaining === 0) return
     setSpinning(true)
     setResult(null)
 
@@ -735,18 +740,22 @@ export default function EarnPage() {
     window.__wheelOnLanded = () => {
       // Delay state update so show-prize animation finishes first
       setTimeout(() => {
-        setWatched(w => w + 1)
         setCredits(data.credits)
         setResult({ earned: data.earned, jackpot: data.jackpot })
         setSpinning(false)
+        // Refresh from server so owner accounts stay unlimited
+        api.earnStatus().then(d => {
+          setWatched(d.today ?? 0)
+          if (d.remaining !== undefined) setServerMax((d.today ?? 0) + d.remaining)
+        }).catch(() => {})
         window.__wheelOnLanded = null
       }, 2700)
     }
 
     window.__wheel?.startSpin?.(data.sector_index)
-  }, [spinning, watched])
+  }, [spinning, remaining])
 
-  const remaining = Math.max(0, MAX_DAY - watched)
+  const remaining = Math.max(0, serverMax - watched)
 
   return (
     <div id="earn-page-root">
