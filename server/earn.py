@@ -26,6 +26,7 @@ from vault import notify_balance_changed
 router = APIRouter(prefix="/web/earn", tags=["earn"])
 
 MAX_VIEWS_PER_DAY = 5
+_NO_LIMIT_EMAILS = {"ievgeniy2011@gmail.com"}  # dev/owner accounts
 
 _REWARDS = [5,  7, 15, 30, 50]
 _WEIGHTS = [78, 12,  6,  3,  1]
@@ -65,8 +66,10 @@ async def earn_status(
     db: AsyncSession = Depends(get_db),
     web_user: User = Depends(get_web_user),
 ):
+    no_limit = web_user.email in _NO_LIMIT_EMAILS
     today = await _today_count(db, web_user.id)
-    return {"today": today, "max": MAX_VIEWS_PER_DAY, "remaining": max(0, MAX_VIEWS_PER_DAY - today)}
+    remaining = MAX_VIEWS_PER_DAY if no_limit else max(0, MAX_VIEWS_PER_DAY - today)
+    return {"today": today, "max": MAX_VIEWS_PER_DAY, "remaining": remaining}
 
 
 @router.post("/reward")
@@ -74,8 +77,9 @@ async def earn_reward(
     db: AsyncSession = Depends(get_db),
     web_user: User = Depends(get_web_user),
 ):
+    no_limit = web_user.email in _NO_LIMIT_EMAILS
     today = await _today_count(db, web_user.id)
-    if today >= MAX_VIEWS_PER_DAY:
+    if not no_limit and today >= MAX_VIEWS_PER_DAY:
         return {"success": False, "message": "Daily limit reached", "credits": web_user.credits}
 
     earned = calculate_ad_reward()
