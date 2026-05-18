@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-18 (сессия: Fortune Wheel v6 — физика трения, ratchet-звук, Unsplash текстуры, итеративный UI)
+> Последнее обновление: 2026-05-18 (сессия: GUI-правки main.py + Fortuna Royale — новая SVG-рулетка + Quick Start README)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -18,7 +18,8 @@
 |---|---|---|---|
 | **Платежи** | server/payments.py | ✅ NOWPayments (крипто). IPN raw bytes HMAC-SHA512. Работает. | 2026-05-07 |
 | **Long-poll синхронизация** | server/vault.py | ✅ GET /vault/sync/{hwid} — мгновенный обмен баланса бот↔сайт | 2026-05-07 |
-| **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ v6. 4-слойный рендер (base+disc+glass+pointer). Физика трения (accel→coast→decel→elastic settle). Noise-based ratchet-клик (Web Audio). 2×DPR canvas. Unsplash текстуры (дерево+золото) — загружаются async, CORS may block → fallback gradient. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). 7 TDD тестов. | 2026-05-18 |
+| **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
+| **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. | 2026-05-18 |
 | **Рекламные слоты** | web/AdSlot.jsx | ⛔ PopAds убран (pop-under — не подходит). Ждём сеть с баннерами (BitMedia и др. — высокий порог вывода). | 2026-05-15 |
 | **Система РОЙ** | roy/ + server/roy.py | ✅ Server API (4 эндпоинта), OCR (exchange_reader.py), engine интеграция, GUI вкладка, клик по bbox реализован (стоп→стабилизация→клик→OCR). Требует теста с живым ивентом бирж. | 2026-05-16 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
