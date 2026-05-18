@@ -549,7 +549,7 @@ function mountWheel() {
     if(currIdx===prevIdx) return
     const speed=curr-prev,kick=Math.min(0.9,speed*1.4); pVel+=kick*28
     document.querySelectorAll('.peg-glow').forEach(p=>{p.style.opacity='1';setTimeout(()=>{p.style.opacity='0'},80)})
-    playTick(Math.min(0.55+Math.abs(curr-prev)*1000,2.4))
+    // tick sound removed per user request
   }
 
   let audioCtx=null
