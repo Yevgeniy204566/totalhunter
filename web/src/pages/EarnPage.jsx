@@ -66,8 +66,11 @@ const WHEEL_CSS = `
 #earn-page-root .rivets { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
 #earn-page-root .rivet {
   position: absolute; width: 32px; height: 32px; border-radius: 50%;
-  background-size: cover; background-position: center; transform: translate(-50%, -50%);
-  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.85)) drop-shadow(0 1px 0 rgba(255,200,130,0.2));
+  overflow: hidden; transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%,
+    #fff8d4 0%, #f5d978 14%, #c89020 36%, #8a5c0a 62%, #4a2e04 85%, #1a0c02 100%);
+  box-shadow: inset 0 2px 4px rgba(255,240,160,0.5), inset 0 -2px 3px rgba(0,0,0,0.6),
+    0 3px 6px rgba(0,0,0,0.8), 0 1px 0 rgba(255,200,100,0.2);
 }
 #earn-page-root .rivet-spark {
   position: absolute; inset: 15%; border-radius: 50%;
@@ -446,11 +449,10 @@ function mountWheel() {
 
   ;(function placeRivets(){
     const layer=document.getElementById('rivets'); if(!layer) return
-    const rivetTex=(window.TEXTURES&&window.TEXTURES.rivet)||'/textures/rivet.webp'
     for(let i=0;i<6;i++){
       const a=(i/6)*360-60,rad=a*Math.PI/180,x=50+43.5*Math.cos(rad),y=50+43.5*Math.sin(rad)
       const r=document.createElement('div'); r.className='rivet'
-      r.style.left=x+'%'; r.style.top=y+'%'; r.style.backgroundImage=`url("${rivetTex}")`
+      r.style.left=x+'%'; r.style.top=y+'%'
       const delay=-(Math.random()*8),dur=7+Math.random()*5
       const spark=document.createElement('div'); spark.className='rivet-spark'
       spark.style.animationDelay=delay+'s'; spark.style.animationDuration=dur+'s'
@@ -524,6 +526,8 @@ function mountWheel() {
     if(typeof window.__wheelOnLanded==='function') window.__wheelOnLanded(value)
   }
 
+  const _diskEl=document.getElementById('disk')
+  const _ptrEl=document.getElementById('pointer')
   let lastTime=performance.now()
   function tick(now){
     const dt=Math.min(0.05,(now-lastTime)/1000); lastTime=now
@@ -535,10 +539,8 @@ function mountWheel() {
     }
     pVel+=(-PK*pAngle-PC*pVel)*dt; pAngle+=pVel*dt
     if(Math.abs(pAngle)<0.0005&&Math.abs(pVel)<0.001){pAngle=0;pVel=0}
-    const diskWrap=document.getElementById('disk')
-    const pointerEl=document.getElementById('pointer')
-    if(diskWrap) diskWrap.style.transform=`rotate(${angle}rad)`
-    if(pointerEl) pointerEl.style.transform=`rotate(${pAngle*0.55}rad)`
+    if(_diskEl) _diskEl.style.transform=`rotate(${angle}rad)`
+    if(_ptrEl) _ptrEl.style.transform=`rotate(${pAngle*0.55}rad)`
     requestAnimationFrame(tick)
   }
 
@@ -790,7 +792,7 @@ export default function EarnPage() {
         </button>
       </div>
 
-      {/* HUD: balance + counter + result */}
+      {/* HUD: balance + counter */}
       <div className="earn-hud">
         {credits !== null && (
           <div className="earn-balance-hud">{credits.toLocaleString()} ◆</div>
@@ -798,23 +800,6 @@ export default function EarnPage() {
         <div className="earn-counter-hud">
           {watched} / {MAX_DAY} {isRu ? 'сегодня' : 'today'}
         </div>
-
-        {result && !result.limit && (() => {
-          const t = TIER[result.earned] || TIER[5]
-          return (
-            <div className="earn-result-card" style={{ color: t.c }}>
-              <div className="earn-result-label">{t.l}</div>
-              <div className="earn-result-value">{result.earned}</div>
-              <div style={{ fontSize: 22, opacity: 0.8 }}>◆</div>
-            </div>
-          )
-        })()}
-
-        {(result?.limit || remaining === 0) && (
-          <div className="earn-limit-msg">
-            {isRu ? '🌙 Лимит исчерпан. Возвращайся завтра!' : '🌙 Daily limit reached. Come back tomorrow!'}
-          </div>
-        )}
       </div>
     </div>
   )
