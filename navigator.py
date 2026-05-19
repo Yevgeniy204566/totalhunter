@@ -1023,7 +1023,8 @@ class PacmanEngine:
             try:
                 from debug_reporter import report_find
                 from auth import get_hwid
-                report_find(get_hwid(), frame, box)
+                _conf = float(box.conf[0]) if hasattr(box, 'conf') else 0.0
+                report_find(get_hwid(), frame, box, conf=_conf)
             except Exception:
                 pass
 

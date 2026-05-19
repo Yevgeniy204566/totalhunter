@@ -21,6 +21,7 @@ async def upload_shot(
     file:      UploadFile = File(...),
     hwid:      str        = Form(...),
     shot_type: str        = Form(...),   # "FIND" | "DIALOG"
+    conf:      str        = Form("—"),   # точность нейросети, напр. "94.3%"
 ):
     if not _TG_TOKEN or not _TG_CHAT_ID:
         # Telegram не настроен — молча принимаем и игнорируем
@@ -31,7 +32,8 @@ async def upload_shot(
         raise HTTPException(status_code=400, detail="empty file")
 
     now_kyiv = datetime.now(_KYIV).strftime("%d.%m.%Y %H:%M:%S")
-    caption  = f"🔍 HWID: {hwid}\nТип: {shot_type}\nВремя: {now_kyiv} (Киев)"
+    conf_line = f"\n🎯 Точность: {conf}" if shot_type == "FIND" else ""
+    caption   = f"🔍 HWID: {hwid}\nТип: {shot_type}{conf_line}\nВремя: {now_kyiv} (Киев)"
 
     try:
         resp = _requests.post(
