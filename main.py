@@ -1648,7 +1648,7 @@ class TotalHunterApp(ctk.CTk):
             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
             progress_color=MD3["primary"],
         )
-        self.nav_pitch_slider.set(50)
+        self.nav_pitch_slider.set(100)
         self.nav_pitch_slider.pack(padx=10, pady=(0, 4), fill="x")
 
         # Кнопка сохранения настроек
@@ -2643,7 +2643,7 @@ class TotalHunterApp(ctk.CTk):
             raw_ttl = cfg.get("nav_footprint_ttl", 120)
             self.nav_footprint_slider.set(max(60, min(1200, int(raw_ttl))))
             self.nav_delta_slider.set(int(cfg.get("return_delta_px", 0)))
-            self.nav_pitch_slider.set(int(cfg.get("smooth_alpha", 50)))
+            self.nav_pitch_slider.set(int(cfg.get("smooth_alpha", 100)))
             self._update_nav_labels()
             self.update_slider_labels()
         except Exception:
