@@ -524,14 +524,15 @@ export default function GuidePage() {
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {items.map(({ name, range, optimal, desc, img }) => (
+                  {items.map(({ name, range, optimal, desc, img, highlight }) => (
                     <div key={name} className="guide-setting-row" style={{
                       display: 'grid', gridTemplateColumns: '180px 90px 90px 1fr',
                       gap: 12, padding: '10px 14px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                      background: highlight ? 'rgba(255,200,60,0.06)' : 'rgba(255,255,255,0.03)',
+                      border: highlight ? '1px solid rgba(255,200,60,0.25)' : '1px solid rgba(255,255,255,0.06)',
                       alignItems: 'start',
                     }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>{name}</div>
+                      <div style={{ fontSize: 13, fontWeight: highlight ? 800 : 700, color: highlight ? '#FFC83C' : '#FFFFFF' }}>{name}</div>
                       <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
                         <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.rangeLabel}</div>
                         {range}
