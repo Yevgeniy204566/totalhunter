@@ -13,6 +13,8 @@ datas = [
     ('gui_config.json', '.'),
     # Звуковой файл биржи
     ('Logo_exchange.wav', '.'),
+    # Краткое руководство пользователя (лежит рядом с exe)
+    ('README.txt', '.'),
     # YOLO модели (зашифрованные .pte — .pt в EXE не попадают)
     ('exchange.pte', '.'),
     ('targets/crypts.pte', 'targets'),
