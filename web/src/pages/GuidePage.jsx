@@ -524,7 +524,7 @@ export default function GuidePage() {
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {items.map(({ name, range, optimal, desc }) => (
+                  {items.map(({ name, range, optimal, desc, img }) => (
                     <div key={name} className="guide-setting-row" style={{
                       display: 'grid', gridTemplateColumns: '180px 90px 90px 1fr',
                       gap: 12, padding: '10px 14px', borderRadius: 8,
@@ -540,7 +540,15 @@ export default function GuidePage() {
                         <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.optimalLabel}</div>
                         {optimal}
                       </div>
-                      <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{desc}</div>
+                      <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+                        {desc}
+                        {img && (
+                          <img src={img} alt={name} style={{
+                            display: 'block', marginTop: 10, maxWidth: 260,
+                            borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                          }} />
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
