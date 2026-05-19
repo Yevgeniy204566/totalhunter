@@ -436,6 +436,73 @@ export default function GuidePage() {
             </Card>
           </Section>
 
+          {/* 6.5 ROY */}
+          <Section id="roy" icon="🐝" title={G.roy.title}>
+            <Card style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+                {G.roy.intro}
+              </p>
+
+              {/* How balance works */}
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFD166', marginBottom: 12, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {G.roy.howTitle}
+              </div>
+              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
+                {G.roy.howDesc}
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+                {G.roy.howRows.map(({ icon, label, value }) => (
+                  <div key={label} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    background: 'rgba(255,209,102,0.06)', border: '1px solid rgba(255,209,102,0.18)',
+                    borderRadius: 10, padding: '10px 16px',
+                  }}>
+                    <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{icon}</span>
+                    <span style={{ fontSize: 14, color: 'var(--on-surface2)', flex: 1 }}>{label}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#FFD166' }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Rules */}
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFD166', marginBottom: 12, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {G.roy.rulesTitle}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+                {G.roy.rules.map(({ icon, title, desc }) => (
+                  <div key={title} style={{
+                    display: 'flex', gap: 14,
+                    background: 'rgba(61,127,255,0.05)', border: '1px solid rgba(61,127,255,0.2)',
+                    borderRadius: 12, padding: '16px 18px',
+                  }}>
+                    <span style={{ fontSize: 24, flexShrink: 0 }}>{icon}</span>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
+                      <div style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.75 }}>{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* How to use */}
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFD166', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {G.roy.useTitle}
+              </div>
+              {G.roy.useSteps.map(({ n, title, desc }) => (
+                <Step key={n} n={n} title={title} desc={desc} />
+              ))}
+
+              {/* Note */}
+              <div style={{
+                marginTop: 8, padding: '14px 18px', borderRadius: 10,
+                background: 'rgba(255,209,102,0.06)', border: '1px solid rgba(255,209,102,0.25)',
+                fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.7,
+              }}>
+                {G.roy.note}
+              </div>
+            </Card>
+          </Section>
+
           {/* 7. Settings */}
           <Section id="settings" icon="⚙️" title={G.settings.title}>
             {[

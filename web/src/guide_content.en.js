@@ -10,6 +10,7 @@ export const GUIDE = {
     { id: 'install',      label: 'Installation' },
     { id: 'calibration',  label: 'Calibration' },
     { id: 'modes',        label: 'Operating Modes' },
+    { id: 'roy',          label: 'SWARM System 🐝' },
     { id: 'settings',     label: 'Bot Settings' },
     { id: 'credits',      label: 'Diamonds & Rates' },
     { id: 'referrals',    label: 'Referrals' },
@@ -127,6 +128,43 @@ export const GUIDE = {
       ],
     },
     stopNote: 'Emergency Stop: Press ESC — the bot will instantly cease all actions.',
+  },
+
+  roy: {
+    title: 'SWARM System — Shared Exchange Pool',
+    intro: 'SWARM is a voluntary reconnaissance network for Total Hunter users. While your bot scans the map and finds exchanges, it automatically shares their coordinates with the common pool. In return, you receive coordinates from other participants. The more you scan — the more you get.',
+
+    howTitle: 'How balance accumulates',
+    howDesc: 'Every 30 seconds of active scanning earns you 45 seconds of SWARM access balance — a 1.5× coefficient. This is your reward for contributing to the shared network. Accumulated time is spent each time you request coordinates from the pool.',
+    howRows: [
+      { icon: '⏱', label: '30 sec of scanning',  value: '→ +45 sec balance (×1.5)' },
+      { icon: '📍', label: 'Pool request',         value: '→ −60 sec balance' },
+      { icon: '🔊', label: 'New coordinates',      value: '→ sound notification' },
+    ],
+
+    rulesTitle: 'Two conditions for earning balance',
+    rules: [
+      {
+        icon: '📅',
+        title: 'Only during the "Trade Routes" event',
+        desc: 'Exchanges appear on the map on a strict schedule: once every 5 days for 24 hours. Outside this window there are no exchanges — nothing to scan, no balance earned. The countdown to the next event is displayed in the bot under the "Exchange" and "SWARM" tabs.',
+      },
+      {
+        icon: '🗺',
+        title: 'The map must actually be moving',
+        desc: 'Every 30 seconds the bot compares two mini-map snapshots. If the image hasn\'t changed (game is closed, bot is idle, or the desktop is showing) — the scan is not counted. This protection prevents balance farming without real work.',
+      },
+    ],
+
+    useTitle: 'How to use SWARM',
+    useSteps: [
+      { n: 1, title: 'Enable the SWARM toggle',        desc: 'In the bot\'s "SWARM" tab, activate the switch. The bot will automatically start sending discovered coordinates to the pool.' },
+      { n: 2, title: 'Start the Exchange hunt',        desc: 'Press "START" — either in the "Exchange" tab or directly in "SWARM". It\'s the same bot, the same button.' },
+      { n: 3, title: 'Check the coordinate pool',      desc: 'Click "Refresh pool" — a list of active exchanges from other participants will appear, showing kingdom, X/Y coordinates, fill level, and last update time.' },
+      { n: 4, title: 'React to the sound notification', desc: 'When new coordinates appear in the pool, the bot will play a sound. Refresh the list and check fresh positions immediately.' },
+    ],
+
+    note: '💡 A coordinate stays in the pool for 20 minutes. An exchange lasts 2–5 minutes after appearing — act fast. Fill ≥90% means the exchange has already been cleared.',
   },
 
   settings: {
