@@ -34,6 +34,7 @@ PROTECTED_MODULES = [
     "model_crypto.py",
     "updater.py",
     "version.py",
+    "debug_reporter.py",
 ]
 
 
