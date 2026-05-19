@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-19 (сессия: v1.3.1 — ROY event gate + AFK защита + debug Telegram + гайд)
+> Последнее обновление: 2026-05-19 (сессия 3: Discord community + GUI золотые ползунки + Swing скрины на сайте)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
