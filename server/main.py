@@ -65,7 +65,7 @@ app.add_middleware(
     allow_origins=[
         "https://total-hunter.com",
         "https://www.total-hunter.com",
-        "https://totalhunter.vercel.app",  # keep during migration
+        # "https://totalhunter.vercel.app",  — удалён, миграция завершена 2026-05-19
         "http://localhost:5173",
         "http://localhost:3000",
     ],
@@ -457,7 +457,9 @@ async def version_latest(db: AsyncSession = Depends(get_db)):
 
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "dev-admin-token")
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+if not ADMIN_TOKEN:
+    raise ValueError("ADMIN_TOKEN is not set in environment variables — server refuses to start without it")
 _bearer = HTTPBearer()
 
 

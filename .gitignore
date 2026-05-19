@@ -3,3 +3,15 @@
 *.pyo
 .env
 .env.local
+*.local.json
+
+# Секреты и OAuth
+credentials.json
+
+# Локальная конфигурация Claude (токены)
+.claude/
+
+# Артефакты сборки
+dist/
+build/
+TotalHunter.zip
