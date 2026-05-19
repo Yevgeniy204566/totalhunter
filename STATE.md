@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-19 (сессия 3: Discord community + GUI золотые ползунки + Swing скрины на сайте)
+> Последнее обновление: 2026-05-20 (хангоф #60: большая сессия безопасности + аудиты + петля обновлений)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -62,7 +62,7 @@
 ### NOWPayments
 - API Key: `[в systemd override.conf на GCP — NOWPAYMENTS_API_KEY]` ⚠️ НЕ хранить здесь
 - IPN Secret: `[в systemd override.conf на GCP — NOWPAYMENTS_IPN_SECRET]` ⚠️ НЕ хранить здесь
-- Public Key: `8d82b5f6-61b6-48e5-9656-19ed7eb68c4b`
+- Public Key: `7cfa559f-b834-4d2e-9200-c29f921d1b5e`
 - IPN URL: `https://api.total-hunter.com/web/payment/webhook`
 
 ### Реклама
@@ -90,6 +90,38 @@
 - API: `coords: null` в публичном ответе — координаты только за кредиты
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
+
+## ⚠️ ТЕКУЩАЯ СИТУАЦИЯ (2026-05-20)
+
+**Сервер /version/latest → 1.3.2 (откат)** — из-за петли обновлений
+Код в репо: v1.3.4 (xcopy fix готов)
+Стратегия выкатки v1.3.4 — НЕ РЕШЕНА. Обсудить в следующей сессии.
+
+**Подробности → docs/gemini_buffer.md (хангоф #60)**
+
+---
+
+## ✅ v1.3.4 — СОБРАН, НЕ АКТИВЕН (2026-05-20)
+
+- xcopy fix в updater.py (был баг нестинга папки)
+- HTTPS в auth.py / debug_reporter.py / roy_client.py
+- Все security fixes из сессии
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.3.4
+- Сервер: /version/latest → 1.3.2 (ОТКАТ, петля)
+
+## ⚠️ v1.3.3 — СЛОМАН (петля обновлений, 2026-05-19)
+
+- updater.py с багом xcopy → бесконечный цикл обновлений
+- НЕ делать этот релиз последним никогда
+- GitHub Release существует: v1.3.3
+
+## ✅ v1.3.2 — АКТИВНЫЙ РЕЛИЗ (2026-05-19)
+
+- README.txt в ZIP, золотые ползунки GUI, lightbox для картинок
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.3.2
+- Сервер: /version/latest → 1.3.2 ✅
+
+---
 
 ## ✅ v1.3.1 — ВЫПУЩЕН (2026-05-19)
 
