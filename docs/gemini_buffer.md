@@ -1,83 +1,50 @@
-# ХАНГОФ #60 — Total Hunter
-### Дата: 2026-05-20 | Большая сессия безопасности + аудиты + релизы
+# ХАНГОФ #61 — Total Hunter
+### Дата: 2026-05-20 | Устранение петли автообновления (День Сурка) → v1.4.0
 
 ---
 
-## ⚠️ КРИТИЧЕСКАЯ СИТУАЦИЯ (ЗАФИКСИРОВАТЬ)
+## ✅ ЧТО БЫЛО СДЕЛАНО ЗА СЕССИЮ
 
-### Бесконечная петля обновлений — ДЕНЬ СУРКА
+### Проблема
+Хангоф #60 оставил нерешённой стратегию выкатки v1.3.4 — сервер стоял на 1.3.2 из-за петли обновлений.
 
-**Статус сервера прямо сейчас:** /version/latest → 1.3.2 (ОТКАТИЛИ ВРУЧНУЮ)
-**Код в репо:** version.py = 1.3.4
-**Выпущены релизы:** v1.3.3 и v1.3.4 на GitHub (оба ПРОБЛЕМНЫЕ)
+### Корень проблемы (диагностика)
+- v1.3.2 и ранее: ZIP плоский (`TotalHunter.exe` в корне), xcopy = `extract_dir\*` → всё работало
+- v1.3.3: ZIP стал вложенным (`TotalHunter/TotalHunter.exe`), xcopy остался `extract_dir\*` → копировал папку → нестинг → петля
+- v1.3.4: xcopy исправлен на `extract_dir\TotalHunter\*` — верно для вложенного ZIP, но недостижимо через автообновление
+- Сервер откатан на 1.3.2 → все пользователи на 1.3.2
 
-### Корень проблемы:
-В updater.py (строка 70) был баг в xcopy команде:
+### Решение (элегантный хак от Gemini)
+Вернуть ZIP к плоскому формату для v1.4.0:
+- Старый xcopy у клиентов 1.3.2: `extract_dir\*` → плоский ZIP → копирует файлы напрямую → ✅ работает
+- Новый updater v1.4.0 тоже использует `extract_dir\*` (плоский стандарт навсегда)
 
-**БЫЛО (сломано):**
-```
-xcopy /s /y /e "{extract_dir}\*" "{exe_dir}\"
-```
-ZIP структура: TotalHunter/TotalHunter.exe (папка внутри архива)
-После extractall: extract_dir\TotalHunter\TotalHunter.exe
-xcopy \* копировал папку TotalHunter\ ВНУТРЬ exe_dir → нестинг
-Результат: exe_dir\TotalHunter\TotalHunter.exe (вложено!)
-Старый exe оставался нетронутым → бот запускал старую версию → ПЕТЛЯ
-
-**СТАЛО (исправлено в коде, v1.3.4):**
-```
-xcopy /s /y /e "{extract_dir}\TotalHunter\*" "{exe_dir}\"
-```
-Копирует СОДЕРЖИМОЕ папки TotalHunter\ → правильно заменяет файлы
-
-### Почему фикс не помог:
-Сломанный updater нельзя починить через само обновление.
-Пользователь с v1.3.2 запускает update.bat со СТАРЫМ xcopy даже если
-скачал v1.3.4. Физически невозможно.
-
-### Текущий статус релизов:
-- v1.3.2 — рабочий, но без всех исправлений безопасности
-- v1.3.3 — сломан (updater с багом xcopy). НЕ ДЕЛАТЬ ПОСЛЕДНИМ.
-- v1.3.4 — исправлен xcopy, но недостижим через автообновление
-
-### Что нужно решить:
-1. Понять как безопасно выкатить 1.3.4 не вызывая петли
-2. Либо изменить механизм обновления (не xcopy, а PowerShell/python скрипт)
-3. Либо убрать автообновление совсем и делать вручную
+### Что сделано
+- `updater.py` строка 70: `extract_dir\TotalHunter\*` → `extract_dir\*` ✅
+- `version.py`: `1.3.4` → `1.4.0` ✅
+- Сборка: 10 модулей Nuitka + PyInstaller ✅
+- ZIP: плоский 391 MB, `TotalHunter.exe` в корне ✅
+- GitHub Release v1.4.0 + ZIP загружен ✅
+- Сервер: `/version/latest` → `1.4.0` ✅
+- `ANTI-PATTERNS.md`: исправлена неверная запись AP-UPDATER ✅
 
 ---
 
-## ЧТО БЫЛО СДЕЛАНО ЗА СЕССИЮ (2026-05-19/20)
+## ТЕКУЩЕЕ СОСТОЯНИЕ ПРОДУКТА
 
-### Релизы
-- v1.3.2 — README.txt, золотые ползунки, картинки кликабельны на сайте
-- v1.3.3 — HTTPS, JWT raise, security фиксы (СЛОМАН updater)
-- v1.3.4 — xcopy fix (НЕ АКТИВЕН — сервер на 1.3.2)
+| Что | Версия/Статус |
+|---|---|
+| Сервер /version/latest | **1.4.0** ✅ |
+| Код в репо | **1.4.0** ✅ |
+| GitHub Latest Release | v1.4.0 ✅ |
+| ZIP структура | Плоская (exe в корне) ✅ |
+| Сайт total-hunter.com | ✅ последняя версия |
+| GCP бэкенд | ✅ работает (серверный код не менялся) |
 
-### Безопасность — сделано
-- HTTP → HTTPS в auth.py, debug_reporter.py, roy/roy_client.py ✅
-- ADMIN_TOKEN: raise ValueError при отсутствии ✅
-- JWT_SECRET_KEY: raise ValueError при отсутствии ✅
-- OWNER_EMAIL: убран из хардкода в env var (earn.py) ✅
-- CORS: убран totalhunter.vercel.app ✅
-- .gitignore: +credentials.json, service_account.json, .claude/, .tmp.driveupload/, *.log, *.bak ✅
-- 302 .tmp.driveupload удалены из git ✅
-- CLAUDE.md.bak удалён из git ✅
-- web/.env.example: реальный IP заменён на домен ✅
-- Все три ключа ротированы: ADMIN_TOKEN, NOWPAYMENTS_API_KEY, IPN_SECRET ✅
-- JWT_SECRET_KEY добавлен на GCP в override.conf ✅
-- OWNER_EMAIL добавлен на GCP в override.conf ✅
-- beacon import: try-except в engine.py ✅
-- combo toggle_combo_bot: hasattr guard ✅
-- coord_manager.py: json.load в try-except (краш при битом профиле) ✅
-- _emergency_stop: hasattr guard для combo ✅
+---
 
-### Код — сделано
-- CombinerEngine import закомментирован в main.py ✅
-- Дублированные импорты os/sys убраны в main.py ✅
-- Main old Packmen.py — в репо, убрать позже
+## GCP override.conf — текущее содержимое
 
-### GCP override.conf — текущее содержимое
 ```
 [Service]
 Environment="NOWPAYMENTS_API_KEY=XCBYC3W-2YXM19X-HMPNC1D-CG43J28"
@@ -93,33 +60,27 @@ Environment="OWNER_EMAIL=ievgeniy2011@gmail.com"
 
 ---
 
+## НЕРУШИМЫЙ СТАНДАРТ UPDATER (v1.4.0+)
+
+```
+ZIP:   7z a -tzip TotalHunter.zip "dist/TotalHunter/*"     ← плоский
+xcopy: xcopy /s /y /e "{extract_dir}\*" "{exe_dir}\"        ← плоский
+```
+
+Менять одно без другого = петля. Проверка: `7z l TotalHunter.zip | grep TotalHunter.exe` должно показать путь без вложенной папки.
+
+---
+
 ## ЧТО ОСТАЛОСЬ (следующая сессия)
 
-### 🔴 ПЕРВОСТЕПЕННО — обновление без петли
-Нужно придумать и утвердить стратегию выкатки v1.3.4.
-Варианты:
-A) Убрать автообновление совсем. Сделать кнопку "Проверить обновление" которая
-   открывает браузер на странице скачивания. Просто. Надёжно.
-B) Переписать update.bat на Python скрипт (нет зависимости от xcopy)
-C) Оставить как есть, но написать в Discord инструкцию по ручной установке
-
-### 🟡 ТЕХНИЧЕСКИЙ ДОЛГ
+### 🟡 ТЕХНИЧЕСКИЙ ДОЛГ (из хангофа #60, не трогали)
 - server/payments.py: race condition в webhook (with_for_update())
 - crypt_hunter.py: _detect_fail_streak без максимума → возможный бесконечный цикл
 - engine.py + crypt_hunter.py: YOLO try-except при загрузке моделей
 - updater.py: disk full не обрабатывается
 - Main old Packmen.py: убрать из репо
 
----
-
-## ТЕКУЩЕЕ СОСТОЯНИЕ ПРОДУКТА
-
-| Что | Версия/Статус |
-|---|---|
-| Сервер /version/latest | 1.3.2 (откат) |
-| Код в репо | 1.3.4 |
-| GitHub Latest Release | v1.3.4 (НЕ активен на сервере) |
-| Сайт total-hunter.com | ✅ последняя версия |
-| GCP бэкенд | ✅ работает, все секреты обновлены |
-
-**Следующий шаг: обсудить стратегию выкатки v1.3.4 без петли.**
+### 🟢 ПРОДУКТОВЫЕ ИДЕИ
+- Живой тест РОЙ v1.3.1 (ивент «Торговые Пути» — якорь 20.05.2026 20:00 Киев, цикл 5 дней)
+- Fortune Wheel: PNG-текстуры в web/public/img/wheel/ (Unsplash CORS блочит)
+- Adsterra реклама: нативные баннеры, позиционировать как "Game Tools"
