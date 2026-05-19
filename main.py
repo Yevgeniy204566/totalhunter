@@ -8,6 +8,7 @@ except Exception:
 
 # ── PyInstaller: preload torch DLLs before any import ────────────────────────
 import sys, os
+import datetime as _dt
 if getattr(sys, 'frozen', False):
     import ctypes, glob as _glob
     _torch_lib = os.path.join(sys._MEIPASS, 'torch', 'lib')
@@ -178,6 +179,7 @@ LANGS = {
         "ref_stats_title": "Рефералы",
         # --- units ---
         "unit_sec": "с", "unit_min": "мин", "unit_scan": "скан",
+        "tr_event": "Торговые Пути", "tr_active": "🟢 ИДЁТ — осталось", "tr_ends_in": "🟢 ИДЁТ — до конца:", "tr_starts_in": "до начала:",
     },
     "EN": {
         # --- существующие ---
@@ -231,6 +233,7 @@ LANGS = {
         "ref_stats_title": "Referrals",
         # --- units ---
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Trade Routes", "tr_active": "🟢 ACTIVE — left:", "tr_ends_in": "🟢 ACTIVE — ends in:", "tr_starts_in": "starts in:",
     },
     "DE": {
         "title": "Total Hunter", "tab_hunt": "BÖRSEN", "tab_combo": "Combo", "tab_ref": "PARTNER",
@@ -270,6 +273,7 @@ LANGS = {
         "ref_bal_title": "Partner-Guthaben", "ref_transfer_btn": "💸  Auf Guthaben übertragen  →",
         "ref_link_title": "Dein Empfehlungslink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Partner",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Handelsrouten", "tr_active": "🟢 AKTIV — verbleibend:", "tr_ends_in": "🟢 AKTIV — endet in:", "tr_starts_in": "beginnt in:",
     },
     "ES": {
         "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "REFERIDOS",
@@ -309,6 +313,7 @@ LANGS = {
         "ref_bal_title": "Saldo de referidos", "ref_transfer_btn": "💸  Transferir al saldo  →",
         "ref_link_title": "Tu enlace de referido:", "ref_code_prefix": "Código: ", "ref_stats_title": "Referidos",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Rutas Comerciales", "tr_active": "🟢 ACTIVO — quedan:", "tr_ends_in": "🟢 ACTIVO — termina en:", "tr_starts_in": "comienza en:",
     },
     "FR": {
         "title": "Total Hunter", "tab_hunt": "ÉCHANGES", "tab_combo": "Combo", "tab_ref": "PARRAINAGES",
@@ -348,6 +353,7 @@ LANGS = {
         "ref_bal_title": "Solde parrainage", "ref_transfer_btn": "💸  Transférer au solde  →",
         "ref_link_title": "Votre lien de parrainage :", "ref_code_prefix": "Code : ", "ref_stats_title": "Parrainages",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Routes Commerciales", "tr_active": "🟢 ACTIF — reste :", "tr_ends_in": "🟢 ACTIF — fin dans :", "tr_starts_in": "commence dans :",
     },
     "IT": {
         "title": "Total Hunter", "tab_hunt": "BORSE", "tab_combo": "Combo", "tab_ref": "REFERRAL",
@@ -387,6 +393,7 @@ LANGS = {
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Trasferisci al saldo  →",
         "ref_link_title": "Il tuo link referral:", "ref_code_prefix": "Codice: ", "ref_stats_title": "Referral",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Rotte Commerciali", "tr_active": "🟢 ATTIVO — rimane:", "tr_ends_in": "🟢 ATTIVO — finisce in:", "tr_starts_in": "inizia tra:",
     },
     "NL": {
         "title": "Total Hunter", "tab_hunt": "BEURZEN", "tab_combo": "Combo", "tab_ref": "REFS",
@@ -426,6 +433,7 @@ LANGS = {
         "ref_bal_title": "Referralsaldo", "ref_transfer_btn": "💸  Overzetten naar saldo  →",
         "ref_link_title": "Jouw referrallink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Referrals",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Handelsroutes", "tr_active": "🟢 ACTIEF — over:", "tr_ends_in": "🟢 ACTIEF — eindigt in:", "tr_starts_in": "begint over:",
     },
     "NO": {
         "title": "Total Hunter", "tab_hunt": "BØRSER", "tab_combo": "Combo", "tab_ref": "REFERANSER",
@@ -465,6 +473,7 @@ LANGS = {
         "ref_bal_title": "Referansesaldo", "ref_transfer_btn": "💸  Overfør til saldo  →",
         "ref_link_title": "Din referanselink:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referanser",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Handelsruter", "tr_active": "🟢 AKTIV — gjenstår:", "tr_ends_in": "🟢 AKTIV — slutter om:", "tr_starts_in": "starter om:",
     },
     "PL": {
         "title": "Total Hunter", "tab_hunt": "GIEŁDY", "tab_combo": "Combo", "tab_ref": "POLECENIA",
@@ -504,6 +513,7 @@ LANGS = {
         "ref_bal_title": "Saldo polecień", "ref_transfer_btn": "💸  Przenieś na saldo  →",
         "ref_link_title": "Twój link polecający:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Polecenia",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "skan",
+        "tr_event": "Szlaki Handlowe", "tr_active": "🟢 TRWA — zostało:", "tr_ends_in": "🟢 TRWA — kończy się za:", "tr_starts_in": "zaczyna się za:",
     },
     "PT": {
         "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "INDICAÇÕES",
@@ -543,6 +553,7 @@ LANGS = {
         "ref_bal_title": "Saldo de indicações", "ref_transfer_btn": "💸  Transferir para saldo  →",
         "ref_link_title": "Seu link de indicação:", "ref_code_prefix": "Código: ", "ref_stats_title": "Indicações",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Rotas Comerciais", "tr_active": "🟢 ATIVO — restam:", "tr_ends_in": "🟢 ATIVO — termina em:", "tr_starts_in": "começa em:",
     },
     "SV": {
         "title": "Total Hunter", "tab_hunt": "BÖRSER", "tab_combo": "Combo", "tab_ref": "HÄNVISNINGAR",
@@ -582,6 +593,7 @@ LANGS = {
         "ref_bal_title": "Hänvisningssaldo", "ref_transfer_btn": "💸  Överför till saldo  →",
         "ref_link_title": "Din hänvisningslänk:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Hänvisningar",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
+        "tr_event": "Handelsrutter", "tr_active": "🟢 AKTIV — kvar:", "tr_ends_in": "🟢 AKTIV — slutar om:", "tr_starts_in": "börjar om:",
     },
     "TR": {
         "title": "Total Hunter", "tab_hunt": "BORSALAR", "tab_combo": "Combo", "tab_ref": "REFERANSLAR",
@@ -621,6 +633,7 @@ LANGS = {
         "ref_bal_title": "Referans bakiyesi", "ref_transfer_btn": "💸  Bakiyeye aktar  →",
         "ref_link_title": "Referans linkiniz:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Referanslar",
         "unit_sec": "s", "unit_min": "dk", "unit_scan": "scan",
+        "tr_event": "Ticaret Yolları", "tr_active": "🟢 AKTİF — kaldı:", "tr_ends_in": "🟢 AKTİF — bitiş:", "tr_starts_in": "başlıyor:",
     },
     "AR": {
         "title": "Total Hunter", "tab_hunt": "البورصات", "tab_combo": "Combo", "tab_ref": "الإحالات",
@@ -660,6 +673,7 @@ LANGS = {
         "ref_bal_title": "رصيد الإحالات", "ref_transfer_btn": "💸  تحويل إلى الرصيد  →",
         "ref_link_title": "رابط إحالتك:", "ref_code_prefix": "الرمز: ", "ref_stats_title": "الإحالات",
         "unit_sec": "ث", "unit_min": "د", "unit_scan": "مسح",
+        "tr_event": "طرق التجارة", "tr_active": "🟢 نشط — متبقي:", "tr_ends_in": "🟢 نشط — ينتهي خلال:", "tr_starts_in": "يبدأ خلال:",
     },
     "JA": {
         "title": "Total Hunter", "tab_hunt": "取引所", "tab_combo": "Combo", "tab_ref": "紹介",
@@ -699,6 +713,7 @@ LANGS = {
         "ref_bal_title": "紹介残高", "ref_transfer_btn": "💸  残高に転送  →",
         "ref_link_title": "あなたの紹介リンク:", "ref_code_prefix": "コード: ", "ref_stats_title": "紹介",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "スキャン",
+        "tr_event": "交易路", "tr_active": "🟢 開催中 — 残り:", "tr_ends_in": "🟢 開催中 — 終了まで:", "tr_starts_in": "開始まで:",
     },
     "ZH": {
         "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推荐",
@@ -738,6 +753,7 @@ LANGS = {
         "ref_bal_title": "推荐余额", "ref_transfer_btn": "💸  转入余额  →",
         "ref_link_title": "您的推荐链接:", "ref_code_prefix": "代码: ", "ref_stats_title": "推荐",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "扫描",
+        "tr_event": "贸易路线", "tr_active": "🟢 进行中 — 剩余:", "tr_ends_in": "🟢 进行中 — 结束于:", "tr_starts_in": "开始于:",
     },
     "ZH_TW": {
         "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推薦",
@@ -777,6 +793,7 @@ LANGS = {
         "ref_bal_title": "推薦餘額", "ref_transfer_btn": "💸  轉入餘額  →",
         "ref_link_title": "您的推薦連結:", "ref_code_prefix": "代碼: ", "ref_stats_title": "推薦",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "掃描",
+        "tr_event": "貿易路線", "tr_active": "🟢 進行中 — 剩餘:", "tr_ends_in": "🟢 進行中 — 結束於:", "tr_starts_in": "開始於:",
     },
     "KO": {
         "title": "Total Hunter", "tab_hunt": "거래소", "tab_combo": "Combo", "tab_ref": "추천",
@@ -816,6 +833,7 @@ LANGS = {
         "ref_bal_title": "추천 잔액", "ref_transfer_btn": "💸  잔액으로 이전  →",
         "ref_link_title": "추천 링크:", "ref_code_prefix": "코드: ", "ref_stats_title": "추천",
         "unit_sec": "초", "unit_min": "분", "unit_scan": "스캔",
+        "tr_event": "교역로", "tr_active": "🟢 진행중 — 남은:", "tr_ends_in": "🟢 진행중 — 종료까지:", "tr_starts_in": "시작까지:",
     },
     "UK": {
         "title": "Total Hunter", "tab_hunt": "БІРЖІ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛИ",
@@ -855,6 +873,7 @@ LANGS = {
         "ref_bal_title": "Реферальний баланс", "ref_transfer_btn": "💸  Перевести на баланс  →",
         "ref_link_title": "Ваше реферальне посилання:", "ref_code_prefix": "Код: ", "ref_stats_title": "Реферали",
         "unit_sec": "с", "unit_min": "хв", "unit_scan": "скан",
+        "tr_event": "Торгові Шляхи", "tr_active": "🟢 ЙДЕ — залишилось", "tr_ends_in": "🟢 ЙДЕ — до кінця:", "tr_starts_in": "до початку:",
     },
     "ID": {
         "title": "Total Hunter", "tab_hunt": "BURSA", "tab_combo": "Combo", "tab_ref": "REFERRAL",
@@ -894,6 +913,7 @@ LANGS = {
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Transfer ke saldo  →",
         "ref_link_title": "Tautan referral Anda:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referral",
         "unit_sec": "d", "unit_min": "mnt", "unit_scan": "scan",
+        "tr_event": "Jalur Perdagangan", "tr_active": "🟢 AKTIF — sisa:", "tr_ends_in": "🟢 AKTIF — berakhir dalam:", "tr_starts_in": "dimulai dalam:",
     },
 }
 
@@ -1216,7 +1236,7 @@ class TotalHunterApp(ctk.CTk):
             fg_color="#1A5C2A", hover_color="#226B33",
             text_color="#4ADE80", corner_radius=6,
             font=ctk.CTkFont(size=11, weight="bold"),
-            command=lambda: webbrowser.open("https://total-hunter.com/dashboard"),
+            command=lambda: webbrowser.open("https://total-hunter.com/dashboard/earn"),
         ).pack(side="right", padx=(0, 2))
 
 
@@ -1262,7 +1282,7 @@ class TotalHunterApp(ctk.CTk):
 
         # Ряд 0 — 4 основные вкладки
         self._tab_init_names = {k: LANGS[self.current_lang][k]
-                                for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_roy")}
+                                for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
         self._main_seg = ctk.CTkSegmentedButton(
             self._nav_frame,
             values=list(self._tab_init_names.values()),
@@ -1331,6 +1351,7 @@ class TotalHunterApp(ctk.CTk):
         self.setup_roy_tab()
         self.update_license_info()
         self.after(1000, self._start_balance_sync)
+        self.after(500, self._tick_trade_routes)
 
         # Глобальный перехват ESC — стоп в любом окне
         def _esc_handler(event):
@@ -1671,6 +1692,22 @@ class TotalHunterApp(ctk.CTk):
                                          text=LANGS[self.current_lang]["status_ready"],
                                          text_color=MD3["on_surface2"])
         self.status_label.pack()
+
+        # ─── Торговые Пути — обратный отсчёт ────────────────────────────────────
+        _tr_card = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"], corner_radius=10)
+        _tr_card.pack(fill="x", padx=20, pady=(8, 4))
+        self._tr_hunt_title_lb = ctk.CTkLabel(
+            _tr_card, text=f"⏰ {LANGS[self.current_lang].get('tr_event', 'Trade Routes')}",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=MD3["on_surface2"],
+        )
+        self._tr_hunt_title_lb.pack(pady=(6, 2))
+        self._tr_hunt_label = ctk.CTkLabel(
+            _tr_card, text="...",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color="#4ADE80",
+        )
+        self._tr_hunt_label.pack(pady=(0, 8))
 
 
     def setup_crypt_tab(self):
@@ -2650,6 +2687,10 @@ class TotalHunterApp(ctk.CTk):
                 self.start_button.configure(text=LANGS[self.current_lang]["stop"],
                                             fg_color=MD3["error"],
                                             hover_color=MD3["error_hover"])
+                if hasattr(self, '_roy_hunt_btn'):
+                    self._roy_hunt_btn.configure(text=LANGS[self.current_lang]["stop"],
+                                                 fg_color=MD3["error"],
+                                                 hover_color=MD3["error_hover"])
                 self.status_label.configure(text=LANGS[self.current_lang]["status_running"],
                                             text_color="#FFD740")
                 self.is_running = True
@@ -2660,6 +2701,10 @@ class TotalHunterApp(ctk.CTk):
             self.start_button.configure(text=LANGS[self.current_lang]["start"],
                                         fg_color=MD3["green_btn"],
                                         hover_color=MD3["green_hover"])
+            if hasattr(self, '_roy_hunt_btn'):
+                self._roy_hunt_btn.configure(text=LANGS[self.current_lang]["start"],
+                                             fg_color=MD3["green_btn"],
+                                             hover_color=MD3["green_hover"])
             self.status_label.configure(text=LANGS[self.current_lang]["status_ready"],
                                         text_color=MD3["on_surface2"])
             self.is_running = False
@@ -2672,6 +2717,10 @@ class TotalHunterApp(ctk.CTk):
             self.start_button.configure(text=LANGS[self.current_lang]["start"],
                                         fg_color=MD3["green_btn"],
                                         hover_color=MD3["green_hover"])
+            if hasattr(self, '_roy_hunt_btn'):
+                self._roy_hunt_btn.configure(text=LANGS[self.current_lang]["start"],
+                                             fg_color=MD3["green_btn"],
+                                             hover_color=MD3["green_hover"])
             self.status_label.configure(text=LANGS[self.current_lang]["status_ready"],
                                         text_color=MD3["on_surface2"])
             self.is_running = False
@@ -2792,6 +2841,7 @@ class TotalHunterApp(ctk.CTk):
 
     def setup_roy_tab(self):
         self._roy_enabled_var = ctk.BooleanVar(value=self._load_gui_config().get("roy_enabled", False))
+        self._roy_pool_known_ids: set = set()  # (kingdom, x, y) — уже виденные координаты
 
         ctk.CTkLabel(
             self.tab_roy,
@@ -2805,7 +2855,37 @@ class TotalHunterApp(ctk.CTk):
             text="Делись координатами бирж — получай чужие",
             font=ctk.CTkFont(size=11),
             text_color=MD3["on_surface2"],
-        ).pack(pady=(0, 12))
+        ).pack(pady=(0, 8))
+
+        # ─── Торговые Пути — таймер события ─────────────────────────────────────
+        _tr_roy_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
+        _tr_roy_card.pack(fill="x", padx=20, pady=(0, 6))
+        self._tr_roy_title_lb = ctk.CTkLabel(
+            _tr_roy_card, text=f"⏰ {LANGS[self.current_lang].get('tr_event', 'Trade Routes')}",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=MD3["on_surface2"],
+        )
+        self._tr_roy_title_lb.pack(pady=(6, 2))
+        self._tr_roy_label = ctk.CTkLabel(
+            _tr_roy_card, text="...",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color="#4ADE80",
+        )
+        self._tr_roy_label.pack(pady=(0, 8))
+
+        # ─── Кнопки управления поиском (дубль вкладки Биржи) ─────────────────────
+        self._roy_hunt_btn = ctk.CTkButton(
+            self.tab_roy,
+            text=LANGS[self.current_lang]["start"],
+            height=44, font=ctk.CTkFont(size=16, weight="bold"),
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], corner_radius=12,
+            command=self.toggle_bot,
+        )
+        self._roy_hunt_btn.pack(fill="x", padx=20, pady=(0, 8))
+
+        ctk.CTkFrame(self.tab_roy, height=1, fg_color=MD3["outline"]).pack(
+            fill="x", padx=20, pady=(0, 6))
 
         bal_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
         bal_card.pack(fill="x", padx=20, pady=(0, 10))
@@ -2884,6 +2964,54 @@ class TotalHunterApp(ctk.CTk):
         if self._roy_enabled_var.get():
             self.after(1500, self._roy_refresh_balance)
 
+    def _update_trade_routes_labels(self):
+        """Вычисляет состояние Торговых Путей и обновляет лейблы (без reschedule)."""
+        _KYIV = _dt.timezone(_dt.timedelta(hours=3))
+        _ANCHOR = _dt.datetime(2026, 5, 20, 20, 0, 0, tzinfo=_KYIV)
+        _CYCLE = _dt.timedelta(days=5)
+        _DUR = _dt.timedelta(hours=24)
+
+        now = _dt.datetime.now(_KYIV)
+        delta = now - _ANCHOR
+        if delta.total_seconds() < 0:
+            start, end, is_active = _ANCHOR, _ANCHOR + _DUR, False
+        else:
+            cycles = int(delta.total_seconds() // _CYCLE.total_seconds())
+            start = _ANCHOR + cycles * _CYCLE
+            end = start + _DUR
+            if now > end:
+                start += _CYCLE
+                end = start + _DUR
+            is_active = now >= start
+
+        def _fmt(td):
+            s = int(td.total_seconds())
+            d, r = divmod(s, 86400)
+            h, r = divmod(r, 3600)
+            m = r // 60
+            parts = ([f"{d}д"] if d else []) + ([f"{h}ч"] if h else []) + [f"{m}м"]
+            return " ".join(parts)
+
+        L = LANGS[self.current_lang]
+        if is_active:
+            txt_hunt = f"{L['tr_active']} {_fmt(end - now)}"
+            txt_roy  = f"{L['tr_ends_in']} {_fmt(end - now)}"
+        else:
+            txt_hunt = txt_roy = f"{L['tr_starts_in']} {_fmt(start - now)}"
+
+        if hasattr(self, '_tr_hunt_label'):
+            self._tr_hunt_label.configure(text=txt_hunt, text_color="#4ADE80")
+        if hasattr(self, '_tr_roy_label'):
+            self._tr_roy_label.configure(text=txt_roy, text_color="#4ADE80")
+
+        if hasattr(self, 'engine') and self.engine:
+            self.engine.event_active = is_active
+
+    def _tick_trade_routes(self):
+        """Повторяющийся тик каждую минуту."""
+        self._update_trade_routes_labels()
+        self.after(60_000, self._tick_trade_routes)
+
     def _on_roy_toggle(self):
         enabled = self._roy_enabled_var.get()
         self._save_gui_config_key("roy_enabled", enabled)
@@ -2925,6 +3053,20 @@ class TotalHunterApp(ctk.CTk):
 
     def _roy_update_list(self, pool: list):
         """Перерисовывает список координат в ScrollableFrame."""
+        # Звук если появились новые координаты которых раньше не было
+        new_ids = {(e.get('kingdom'), e.get('x'), e.get('y')) for e in pool}
+        if new_ids - self._roy_pool_known_ids:
+            _sound = getattr(self.engine, 'sound_path', None) if hasattr(self, 'engine') and self.engine else None
+            try:
+                import winsound
+                if _sound:
+                    winsound.PlaySound(_sound, winsound.SND_FILENAME | winsound.SND_ASYNC)
+                else:
+                    winsound.Beep(1000, 400)
+            except Exception:
+                pass
+        self._roy_pool_known_ids = new_ids
+
         for w in self._roy_list_frame.winfo_children():
             w.destroy()
 
@@ -3013,11 +3155,25 @@ class TotalHunterApp(ctk.CTk):
             widget.configure(text=LANGS[val][key])
 
         # Навигация — обновляем segmented button и кнопку калибровки
-        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_ref", "tab_roy")}
+        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
         self._tab_init_names = new_names
         self._main_seg.configure(values=list(new_names.values()))
         self._main_seg.set(new_names.get(self._active_tab_key, list(new_names.values())[0]))
         self._cal_btn.configure(text=LANGS[val]["tab_cal"])
+
+        # Таймер Торговых Путей — заголовки и текст
+        _tr_name = f"⏰ {LANGS[val].get('tr_event', 'Trade Routes')}"
+        if hasattr(self, '_tr_hunt_title_lb'):
+            self._tr_hunt_title_lb.configure(text=_tr_name)
+        if hasattr(self, '_tr_roy_title_lb'):
+            self._tr_roy_title_lb.configure(text=_tr_name)
+        self._update_trade_routes_labels()
+
+        # ROY hunt button
+        if hasattr(self, '_roy_hunt_btn'):
+            self._roy_hunt_btn.configure(
+                text=LANGS[val]["stop"] if self.is_running else LANGS[val]["start"]
+            )
 
         # crypt_start_btn — только если бот не запущен
         if not self.is_crypt_running:

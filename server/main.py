@@ -42,6 +42,7 @@ from payments import router as payments_router
 from vault import router as vault_router
 from earn import router as earn_router
 from roy import router as roy_router
+from debug_router import router as debug_router
 from schemas import (
     BasicResponse,
     CheckAuthResponse,
@@ -78,6 +79,7 @@ app.include_router(payments_router)
 app.include_router(vault_router)
 app.include_router(earn_router)
 app.include_router(roy_router)
+app.include_router(debug_router)
 
 # Статика для админки (иконка)
 from fastapi.staticfiles import StaticFiles as _SF

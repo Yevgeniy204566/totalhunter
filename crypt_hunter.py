@@ -840,7 +840,7 @@ class CryptHunter:
             pass
             # self._status("Редкий склеп — нажимаю «Открыть»")
             sc_open = scale_dialog(*CRYPT_OPEN_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_OPEN_BTN
-            self._click(*sc_open, raw=True)
+            self._click(sc_open[0], sc_open[1] + self._swing1, jitter=2, raw=True)
             time.sleep(0.4)
             pyautogui.moveTo(sc_open[0], sc_open[1] - random.randint(450, 550))
 

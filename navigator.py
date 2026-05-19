@@ -984,7 +984,7 @@ class PacmanEngine:
                         frame, conf=self.conf, imgsz=1280, verbose=False)
                     for r in results:
                         if len(r.boxes) > 0:
-                            self._exchange_detected(r.boxes[0])
+                            self._exchange_detected(r.boxes[0], frame=frame)
                             break
 
                 # Navigate — pass frame to avoid second screenshot for minimap
@@ -1003,7 +1003,7 @@ class PacmanEngine:
 
         self.is_running = False
 
-    def _exchange_detected(self, box) -> None:
+    def _exchange_detected(self, box, frame=None) -> None:
         """
         Полный flow после нахождения биржи:
         1. Стоп навигации + звук (немедленно)
@@ -1012,12 +1012,20 @@ class PacmanEngine:
         4. sleep 0.4-0.6с — игра открывает диалог
         5. Callback (запускает ROY OCR)
         """
-        # Шаг 1: звук (навигация не останавливается — змейка продолжится после OCR)
+        # Шаг 1: звук + debug FIND скрин
         try:
             winsound.PlaySound(self.sound_path,
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
         except Exception:
             winsound.Beep(1000, 500)
+
+        if frame is not None:
+            try:
+                from debug_reporter import report_find
+                from auth import get_hwid
+                report_find(get_hwid(), frame, box)
+            except Exception:
+                pass
 
         # Шаг 2: карта замирает на 0.1-0.2 сек
         time.sleep(random.uniform(0.1, 0.2))
@@ -1033,6 +1041,14 @@ class PacmanEngine:
 
         # Шаг 4: ждём анимацию открытия диалога
         time.sleep(random.uniform(0.4, 0.6))
+
+        # Debug DIALOG скрин — диалог уже открыт
+        try:
+            from debug_reporter import report_dialog
+            from auth import get_hwid
+            report_dialog(get_hwid())
+        except Exception:
+            pass
 
         # Шаг 5: callback → ROY OCR читает уже открытый диалог
         if self.on_found_callback:

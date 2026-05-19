@@ -51,6 +51,9 @@ class HuntEngine:
         self.roy_enabled   = False
         self._roy_client   = None
         self.on_last_exchange_callback = None  # (result: dict) → обновляет GUI владельца
+        self.event_active  = False  # True только пока идёт ивент Торговые Пути
+        self._mm_cx        = 90    # координаты центра миникарты (джойстик)
+        self._mm_cy        = 925
 
     def start(
         self,
@@ -72,6 +75,8 @@ class HuntEngine:
         use_beacon:      bool  = False,
         pixels_per_step: int   = 20,
     ):
+        self._mm_cx = center_x
+        self._mm_cy = center_y
         if use_beacon:
             from navigator_beacon import CoastalSnakeNavigatorBeacon
             nav = CoastalSnakeNavigatorBeacon(
@@ -172,14 +177,45 @@ class HuntEngine:
             pass
 
     def _start_roy_scan(self):
-        """Proof of Scan: каждые 30 сек фиксирует активность (+45 сек баланса)."""
+        """Proof of Scan: каждые 30 сек фиксирует активность (+45 сек баланса).
+        Два условия для засчитывания: ивент активен И миникарта изменилась ≥15%.
+        """
+        _SIZE     = 180
+        _DIFF_THR = 0.15   # 15% пикселей должны измениться
+        _PIX_THR  = 30     # порог яркости на пиксель
+
+        def _grab():
+            from mss import mss as _mss
+            off = _SIZE // 2
+            region = {'left': self._mm_cx - off, 'top': self._mm_cy - off,
+                      'width': _SIZE, 'height': _SIZE}
+            with _mss() as sct:
+                return np.array(sct.grab(region), dtype=np.int16)
+
         def _loop():
+            frame_prev = _grab()
             while self.is_running:
-                self._roy_client.scan()
                 for _ in range(30):
                     if not self.is_running:
-                        break
+                        return
                     time.sleep(1)
+
+                frame_curr = _grab()
+                diff_frac  = np.any(
+                    np.abs(frame_curr - frame_prev) > _PIX_THR, axis=-1
+                ).mean()
+                frame_prev = frame_curr
+
+                if not self.event_active:
+                    print("[ROY] Ивент не активен — скан не засчитан.")
+                    continue
+
+                if diff_frac < _DIFF_THR:
+                    print(f"[ROY] Карта статична ({diff_frac:.1%}). Пропущено (AFK защита).")
+                    continue
+
+                self._roy_client.scan()
+
         threading.Thread(target=_loop, daemon=True).start()
 
     def _start_heartbeat(self):
