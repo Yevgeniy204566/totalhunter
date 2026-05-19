@@ -1410,8 +1410,8 @@ class TotalHunterApp(ctk.CTk):
         self.nav_wait_frame = ctk.CTkFrame(nn_frame, fg_color="transparent")
         self.nav_wait_frame.pack(fill="x", padx=12, pady=(4, 0))
         _nav_wait_lb = ctk.CTkLabel(self.nav_wait_frame, text=LANGS[self.current_lang]["nav_wait"],
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"])
+                     font=ctk.CTkFont(size=13, weight="bold"),
+                     text_color="#FFC83C")
         _nav_wait_lb.pack(side="left")
         self._i18n_labels.append((_nav_wait_lb, "nav_wait"))
         self.nav_wait_val = ctk.CTkLabel(self.nav_wait_frame, text="1.5 сек",
@@ -1442,8 +1442,8 @@ class TotalHunterApp(ctk.CTk):
         self.nav_step_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
         self.nav_step_frame.pack(fill="x", padx=12, pady=(2, 0))
         _nav_step_lb = ctk.CTkLabel(self.nav_step_frame, text=LANGS[self.current_lang]["nav_step"],
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"])
+                     font=ctk.CTkFont(size=13, weight="bold"),
+                     text_color="#FFC83C")
         _nav_step_lb.pack(side="left")
         self._i18n_labels.append((_nav_step_lb, "nav_step"))
         self.nav_step_val = ctk.CTkLabel(self.nav_step_frame, text="13 px",
@@ -1463,8 +1463,8 @@ class TotalHunterApp(ctk.CTk):
         self.nav_inland_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
         self.nav_inland_frame.pack(fill="x", padx=12, pady=(2, 0))
         _nav_inland_lb = ctk.CTkLabel(self.nav_inland_frame, text=LANGS[self.current_lang]["nav_inland"],
-                     font=ctk.CTkFont(size=13),
-                     text_color=MD3["on_surface2"])
+                     font=ctk.CTkFont(size=13, weight="bold"),
+                     text_color="#FFC83C")
         _nav_inland_lb.pack(side="left")
         self._i18n_labels.append((_nav_inland_lb, "nav_inland"))
         self.nav_inland_val = ctk.CTkLabel(self.nav_inland_frame, text="5",
@@ -1805,13 +1805,13 @@ class TotalHunterApp(ctk.CTk):
                                                  scrollbar_button_hover_color=MD3["value_text"])
         settings_frame.pack(fill="x", padx=20, pady=4)
 
-        def _slider_row(lang_key, default_text):
+        def _slider_row(lang_key, default_text, highlight=False):
             """Хелпер: строка-заголовок слайдера."""
             row = ctk.CTkFrame(settings_frame, fg_color="transparent")
             row.pack(fill="x", padx=10, pady=(4, 0))
             name_lb = ctk.CTkLabel(row, text=LANGS[self.current_lang][lang_key],
-                                   font=ctk.CTkFont(size=13),
-                                   text_color=MD3["on_surface2"])
+                                   font=ctk.CTkFont(size=13, weight="bold" if highlight else "normal"),
+                                   text_color="#FFC83C" if highlight else MD3["on_surface2"])
             name_lb.pack(side="left")
             val = ctk.CTkLabel(row, text=default_text,
                                font=ctk.CTkFont(size=14, weight="bold"),
@@ -1831,7 +1831,7 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_conf_slider.pack(padx=10, pady=(2, 4), fill="x")
 
         # Ускорение марша
-        self.crypt_accel_val = _slider_row("crypt_accel_lb", "3")
+        self.crypt_accel_val = _slider_row("crypt_accel_lb", "3", highlight=True)
         self.crypt_accel_slider = ctk.CTkSlider(settings_frame, from_=0, to=5,
                                                 number_of_steps=5,
                                                 command=self._update_crypt_labels,
@@ -1852,7 +1852,7 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_break_slider.pack(padx=10, pady=(2, 4), fill="x")
 
         # Дальность марша Картера
-        self.crypt_march_val = _slider_row("crypt_march_lb", "15 мин")
+        self.crypt_march_val = _slider_row("crypt_march_lb", "15 мин", highlight=True)
         self.crypt_march_slider = ctk.CTkSlider(settings_frame, from_=5, to=30,
                                                 command=self._update_crypt_labels,
                                                 button_color=MD3["primary"],
@@ -1872,7 +1872,7 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_scroll_slider.pack(padx=10, pady=(2, 4), fill="x")
 
         # Скорость кликов (−0.5 медленнее ←→ быстрее +0.5)
-        self.crypt_speed_val = _slider_row("crypt_speed_lb", "0.0 с")
+        self.crypt_speed_val = _slider_row("crypt_speed_lb", "0.0 с", highlight=True)
         self.crypt_speed_slider = ctk.CTkSlider(settings_frame, from_=-2.0, to=2.0,
                                                 number_of_steps=40,
                                                 command=self._update_crypt_labels,
