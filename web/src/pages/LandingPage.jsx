@@ -527,7 +527,7 @@ export default function LandingPage() {
             rel="noopener noreferrer"
             style={{ color: '#5865F2', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}
           >
-            <svg width="16" height="16" fill="#5865F2"><use href="/icons.svg#discord-icon"/></svg>
+            <img src="/img/discord.png" alt="Discord" width="16" height="16" style={{ objectFit: 'contain' }} />
             Discord
           </a>
           <Link to="/legal" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>Legal</Link>

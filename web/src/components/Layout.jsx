@@ -118,7 +118,7 @@ export default function Layout() {
             title="Discord"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none', color: '#5865F2' }}
           >
-            <svg width="18" height="18" fill="#5865F2"><use href="/icons.svg#discord-icon"/></svg>
+            <img src="/img/discord.png" alt="Discord" width="18" height="18" style={{ objectFit: 'contain' }} />
           </a>
           <button className="header-btn" onClick={toggle}>{lang.toUpperCase()}</button>
           <button className="header-btn header-btn--logout" onClick={logout}>{D.nav.logout}</button>
