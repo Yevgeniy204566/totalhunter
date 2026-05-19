@@ -97,11 +97,16 @@ class CoordinateManager:
 
     def load(self, path: str) -> None:
         """Load calibration from JSON profile and re-calibrate."""
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        self.calibrate(tuple(data["point_a"]), tuple(data["point_b"]))
-        self.dialog_offset_x = int(data.get("dialog_offset_x", 0))
-        self.dialog_offset_y = int(data.get("dialog_offset_y", 0))
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if "point_a" not in data or "point_b" not in data:
+                raise ValueError("Missing calibration points in profile")
+            self.calibrate(tuple(data["point_a"]), tuple(data["point_b"]))
+            self.dialog_offset_x = int(data.get("dialog_offset_x", 0))
+            self.dialog_offset_y = int(data.get("dialog_offset_y", 0))
+        except Exception:
+            pass  # Keep default REF_A/REF_B if profile is corrupted
 
 
 # Global singleton — import this everywhere instead of window_scaler

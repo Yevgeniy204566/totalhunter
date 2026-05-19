@@ -2097,6 +2097,8 @@ class TotalHunterApp(ctk.CTk):
             )
 
     def toggle_combo_bot(self):
+        if not hasattr(self, 'combo_engine'):
+            return  # Combo заморожен
         if self.is_combo_running:
             self.is_combo_running = False
             self.combo_engine.stop()
