@@ -103,6 +103,7 @@ export default function GuidePage() {
   const G = lang === 'en' ? GUIDE_EN : GUIDE_RU
   const isEn = lang === 'en'
   const [tocOpen, setTocOpen] = useState(false)
+  const [lightboxImg, setLightboxImg] = useState(null)
 
   useMeta(isEn
     ? { title: 'Total Hunter Guide — How to Set Up and Use the Bot',
@@ -111,7 +112,7 @@ export default function GuidePage() {
         description: 'Пошаговое руководство по установке, калибровке и использованию Total Hunter. Поиск бирж и фарм склепов в Total Battle.' }
   )
 
-  return (
+  return (<>
     <div className="guide-page-root" style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }}>
 
       {/* Nav */}
@@ -544,9 +545,10 @@ export default function GuidePage() {
                       <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
                         {desc}
                         {img && (
-                          <img src={img} alt={name} style={{
+                          <img src={img} alt={name} onClick={() => setLightboxImg(img)} style={{
                             display: 'block', marginTop: 10, maxWidth: 260,
                             borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                            cursor: 'zoom-in',
                           }} />
                         )}
                       </div>
@@ -711,5 +713,20 @@ export default function GuidePage() {
         </div>
       </div>
     </div>
-  )
+
+    {lightboxImg && (
+      <div onClick={() => setLightboxImg(null)} style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'zoom-out',
+      }}>
+        <img src={lightboxImg} alt="" style={{
+          maxWidth: '90vw', maxHeight: '90vh',
+          borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)',
+          boxShadow: '0 0 60px rgba(0,0,0,0.8)',
+        }} />
+      </div>
+    )}
+  </>)
 }
