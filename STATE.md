@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-18 (сессия: GUI-правки main.py + Fortuna Royale — новая SVG-рулетка + Quick Start README)
+> Последнее обновление: 2026-05-19 (сессия: v1.3.1 — ROY event gate + AFK защита + debug Telegram + гайд)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -21,16 +21,18 @@
 | **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
 | **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. | 2026-05-18 |
 | **Рекламные слоты** | web/AdSlot.jsx | ⛔ PopAds убран (pop-under — не подходит). Ждём сеть с баннерами (BitMedia и др. — высокий порог вывода). | 2026-05-15 |
-| **Система РОЙ** | roy/ + server/roy.py | ✅ Server API (4 эндпоинта), OCR (exchange_reader.py), engine интеграция, GUI вкладка, клик по bbox реализован (стоп→стабилизация→клик→OCR). Требует теста с живым ивентом бирж. | 2026-05-16 |
+| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ event_active gate (засчитывается ТОЛЬКО во время Торговых Путей), AFK защита (миникарта ≥15% diff), звук при новых координатах в пуле, Server API 4 эндпоинта, OCR, GUI. | 2026-05-19 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70. Рефакторинг 16.05.26: один ползунок bot_speed, честный динамический sleep, единый кадр (mss→crop, убран pyautogui.screenshot из hot path) | 2026-05-16 |
-| **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog (_detect_fail_streak + _pre_skip). Конец списка — визуальный cv2.absdiff. Статусы конца/сброса. | 2026-05-12 |
+| **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
-| **Auto-update** | updater.py | ✅ v1.3.0 текущая. ZIP только. EXE убран. Следующая: v1.3.1 | 2026-05-18 |
+| **Auto-update** | updater.py | ✅ v1.3.1 текущая. ZIP только. EXE убран. | 2026-05-19 |
+| **Debug Reporter** | debug_reporter.py + server/debug_router.py | ✅ Fire-and-forget FIND+DIALOG скрины → GCP → Telegram @total_hunter_debug_bot. YOLO conf на bbox. Без сохранения на диск. python-multipart установлен на GCP. | 2026-05-19 |
+| **Гайд сайта — ROY секция** | web/src/guide_content.js + .en.js + GuidePage.jsx | ✅ Раздел «Система РОЙ 🐝» (RU+EN): механика баланса, event gate, AFK защита, инструкция 4 шага. | 2026-05-19 |
 | **Динамическое окно** | main.py | ✅ SPI_GETWORKAREA при старте — высота под экран, прижато вправо. Работает на любом разрешении. | 2026-05-12 |
 | **SEO** | web/ | ✅ useMeta hook (title+desc+OG per page), FAQ Schema JSON-LD (6 вопросов), sitemap обновлён | 2026-05-12 |
 | **Статистика лендинга** | server/web_routes.py | ✅ Накопительная: base 300 бирж + 5000 склепов + реальные данные. Только растёт. | 2026-05-12 |
@@ -88,6 +90,22 @@
 - API: `coords: null` в публичном ответе — координаты только за кредиты
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
+
+## ✅ v1.3.1 — ВЫПУЩЕН (2026-05-19)
+
+- Собран с MSVC 14.3, 10 модулей Nuitka ✅ (добавлен debug_reporter)
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.3.1
+- Сервер: /version/latest → 1.3.1 ✅
+- ZIP загружен в GitHub Release ✅
+
+### Что нового в v1.3.1
+- CryptHunter: swing1 применяется к кнопке «Открыть» редких склепов
+- ROY: сканирование засчитывается ТОЛЬКО во время ивента «Торговые Пути»
+- ROY: AFK защита — миникарта должна меняться ≥15% за 30 сек
+- ROY: звук при появлении новых координат в пуле
+- Debug: автоматические FIND+DIALOG скрины с YOLO conf → Telegram разработчику
+
+---
 
 ## ✅ v1.3.0 — ВЫПУЩЕН (2026-05-17)
 

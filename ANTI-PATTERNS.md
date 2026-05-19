@@ -2,7 +2,22 @@
 
 > Не тратить время повторно на эти решения.
 > Обновляется командой **«Хангоф»**.
-> Последнее обновление: 2026-05-18 (Хангоф #55)
+> Последнее обновление: 2026-05-19 (Хангоф #57)
+
+---
+
+## ⛔ SERVER / FASTAPI — Новые грабли (Хангоф #57)
+
+**AP-FASTAPI-1: FastAPI Form + UploadFile без python-multipart — СЕРВЕР ПАДАЕТ ПРИ СТАРТЕ**
+- Симптом: `RuntimeError: Form data requires "python-multipart" to be installed` → uvicorn умирает при load
+- Причина: FastAPI не включает python-multipart в свои зависимости — это отдельный пакет
+- Правило: ВСЕГДА добавлять `python-multipart` в `server/requirements.txt` при создании любого эндпоинта с `Form(...)` или `UploadFile`
+- Диагностика: `sudo journalctl -u totalhunter -n 20 --no-pager` — покажет `RuntimeError` при старте
+
+**AP-FASTAPI-2: Токен Telegram в публичном коде — ЗАПРЕЩЕНО**
+- Токены `TELEGRAM_DEBUG_TOKEN` и `TELEGRAM_DEBUG_CHAT_ID` — ТОЛЬКО в GCP systemd override.conf
+- Читаются через `os.getenv(...)` — дефолт пустая строка, сервер молча игнорирует без Telegram
+- `forwarded: false` в ответе = токены не настроены или Telegram API вернул ошибку
 
 ---
 
