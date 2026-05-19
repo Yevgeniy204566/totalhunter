@@ -12,6 +12,7 @@ Reward table (backend-only, anti-fraud):
    1% → 50 diamonds (jackpot)
 """
 
+import os
 import random
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
@@ -26,7 +27,8 @@ from vault import notify_balance_changed
 router = APIRouter(prefix="/web/earn", tags=["earn"])
 
 MAX_VIEWS_PER_DAY = 5
-_NO_LIMIT_EMAILS = {"ievgeniy2011@gmail.com"}  # dev/owner accounts
+_owner_email = os.environ.get("OWNER_EMAIL", "")
+_NO_LIMIT_EMAILS = {_owner_email} if _owner_email else set()
 
 _REWARDS = [5,  7, 15, 30, 50]
 _WEIGHTS = [78, 12,  6,  3,  1]

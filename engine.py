@@ -78,7 +78,11 @@ class HuntEngine:
         self._mm_cx = center_x
         self._mm_cy = center_y
         if use_beacon:
-            from navigator_beacon import CoastalSnakeNavigatorBeacon
+            try:
+                from navigator_beacon import CoastalSnakeNavigatorBeacon
+            except ImportError:
+                use_beacon = False
+        if use_beacon:
             nav = CoastalSnakeNavigatorBeacon(
                 center_x=center_x,
                 center_y=center_y,

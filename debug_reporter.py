@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import requests
 
-SERVER_URL = "http://34.68.86.57:8000"
+SERVER_URL = "https://api.total-hunter.com"
 _TIMEOUT   = 10
 
 

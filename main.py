@@ -33,7 +33,7 @@ from auth import (get_hwid, check_license, get_free_trial, spend_credit,
                   transfer_referral_balance, generate_link_code, get_balance_update)
 from engine import HuntEngine
 from crypt_hunter import CryptHunter
-from combiner import CombinerEngine
+# from combiner import CombinerEngine  # Combo заморожен — импорт отключён
 from coord_manager import coord_manager, REF_A, REF_B
 import tkinter.messagebox as messagebox
 import sys

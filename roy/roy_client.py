@@ -5,7 +5,7 @@ roy_client.py — HTTP-клиент для Системы РОЙ (вызывае
 import threading
 import requests
 
-SERVER_URL = "http://34.68.86.57:8000"
+SERVER_URL = "https://api.total-hunter.com"
 _TIMEOUT   = 5
 
 

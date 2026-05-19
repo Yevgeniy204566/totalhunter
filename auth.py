@@ -3,10 +3,8 @@ import uuid
 import hashlib
 import webbrowser
 
-# Основной адрес сервера для API (Бот)
-SERVER_URL = "http://34.68.86.57:8000"
-# Домен для авторизации через Google (через nip.io для обхода ограничений IP)
-AUTH_DOMAIN = "http://34.68.86.57.nip.io:8000"
+SERVER_URL  = "https://api.total-hunter.com"
+AUTH_DOMAIN = "https://api.total-hunter.com"
 
 def get_hwid():
     """HWID = SHA256(MAC) — стабильная привязка к сетевой карте."""

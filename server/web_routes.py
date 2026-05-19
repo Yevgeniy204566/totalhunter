@@ -51,7 +51,9 @@ from schemas import (
 
 router = APIRouter(prefix="/web", tags=["web"])
 
-JWT_SECRET    = os.environ.get("JWT_SECRET_KEY", "change-me-before-deploy")
+JWT_SECRET    = os.environ.get("JWT_SECRET_KEY", "")
+if not JWT_SECRET:
+    raise ValueError("JWT_SECRET_KEY is not set in environment variables — server refuses to start without it")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
