@@ -25,7 +25,6 @@ if getattr(sys, 'frozen', False):
 # ─────────────────────────────────────────────────────────────────────────────
 
 import json
-import os
 import threading
 import customtkinter as ctk
 from auth import (get_hwid, check_license, get_free_trial, spend_credit,
@@ -36,7 +35,6 @@ from crypt_hunter import CryptHunter
 # from combiner import CombinerEngine  # Combo заморожен — импорт отключён
 from coord_manager import coord_manager, REF_A, REF_B
 import tkinter.messagebox as messagebox
-import sys
 import keyboard
 import webbrowser
 from version import VERSION
@@ -2733,15 +2731,10 @@ class TotalHunterApp(ctk.CTk):
                                            hover_color=MD3["green_hover"])
             self.crypt_status_label.configure(text=f"{LANGS[self.current_lang]['crypt_stopped']} (ESC)",
                                               text_color=MD3["on_surface2"])
-        # Combo
-        if self.is_combo_running:
+        # Combo (заморожен — guard на случай если engine не инициализирован)
+        if self.is_combo_running and hasattr(self, 'combo_engine'):
             self.is_combo_running = False
             self.combo_engine.stop()
-            self.combo_start_btn.configure(text="ЗАПУСТИТЬ COMBO",
-                                           fg_color=MD3["green_btn"],
-                                           hover_color=MD3["green_hover"])
-            self.combo_status_label.configure(text="Остановлено (ESC)",
-                                              text_color=MD3["on_surface2"])
 
     def on_target_found(self):
         """Вызывается из фонового потока движка"""

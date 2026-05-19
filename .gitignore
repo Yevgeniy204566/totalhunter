@@ -7,6 +7,18 @@
 
 # Секреты и OAuth
 credentials.json
+service_account.json
+token.json
+
+# Логи разработки
+*.log
+*.bak
+
+# Временные файлы Google Drive
+.tmp.driveupload/
+
+# Локальные артефакты Claude Code
+.superpowers/
 
 # Локальная конфигурация Claude (токены)
 .claude/
