@@ -166,7 +166,7 @@ class HuntEngine:
             def _roy_found_wrapper(*args, **kwargs):
                 if original_cb:
                     original_cb(*args, **kwargs)
-                threading.Thread(target=self._roy_on_found, daemon=True).start()
+                self._roy_on_found()  # синхронно — навигация ждёт пока OCR прочитает диалог
 
             self._pacman.on_found_callback = _roy_found_wrapper
         else:
