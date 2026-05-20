@@ -2,6 +2,7 @@ import os
 import json
 import time
 import threading
+import datetime as _dt
 import winsound
 import numpy as np
 import pyautogui
@@ -11,6 +12,25 @@ from navigator import PacmanEngine
 from auth import heartbeat as _heartbeat, get_hwid
 import nav_logger
 nav_logger.install()
+
+
+def _is_trade_routes_active() -> bool:
+    """Вычисляет активность ивента Торговые Пути напрямую, без зависимости от GUI-флага."""
+    _KYIV   = _dt.timezone(_dt.timedelta(hours=3))
+    _ANCHOR = _dt.datetime(2026, 5, 20, 20, 0, 0, tzinfo=_KYIV)
+    _CYCLE  = _dt.timedelta(days=5)
+    _DUR    = _dt.timedelta(hours=24)
+
+    now   = _dt.datetime.now(_KYIV)
+    delta = now - _ANCHOR
+    if delta.total_seconds() < 0:
+        return False
+    cycles = int(delta.total_seconds() // _CYCLE.total_seconds())
+    start  = _ANCHOR + cycles * _CYCLE
+    end    = start + _DUR
+    if now > end:
+        return False
+    return now >= start
 
 # Убираем глобальную задержку PyAutoGUI — антидетект обеспечивается move_wait в навигаторе
 pyautogui.PAUSE = 0.0
@@ -95,6 +115,7 @@ class HuntEngine:
                 coast_detect_radius=coast_detect_radius,
                 return_delta_px=return_delta_px,
                 pixels_per_step=pixels_per_step,
+                smooth_alpha=smooth_alpha,
             )
             self._pacman = PacmanEngine(
                 center_x=center_x,
@@ -112,6 +133,8 @@ class HuntEngine:
                 footprint_ttl=footprint_ttl,
                 diagonal_blind_coeff=diagonal_blind_coeff,
                 coast_detect_radius=coast_detect_radius,
+                return_delta_px=return_delta_px,
+                smooth_alpha=smooth_alpha,
             )
             self._pacman.joystick = nav   # inject beacon navigator
         else:
@@ -210,7 +233,7 @@ class HuntEngine:
                 ).mean()
                 frame_prev = frame_curr
 
-                if not self.event_active:
+                if not _is_trade_routes_active():
                     print("[ROY] Ивент не активен — скан не засчитан.")
                     continue
 
