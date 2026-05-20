@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-20 (хангоф #62: v1.4.1 — ROY фиксы + биржа линейный workflow)
+> Последнее обновление: 2026-05-21 (хангоф #63: v1.4.2 — точный клик биржи, НЕЗАВЕРШЁННЫЙ РЕЛИЗ)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -26,7 +26,7 @@
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70. smooth_alpha и return_delta_px теперь передаются в beacon-режим. После биржи: OCR синхронный → стоп 10с → YOLO-блок 20с → loop_start сброс → нормальная скорость. | 2026-05-20 |
+| **Движок бирж** | engine.py + navigator.py | ⚠️ v1.4.2 код готов, релиз НЕ завершён. _exchange_detected: стоп 0.15с → свежий YOLO → клик (cx=center, cy=y1+h*0.35) → звук → OCR → sleep(10) → ESC → YOLO-блок 20с. loop_start сброс после паузы. | 2026-05-21 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
@@ -91,10 +91,20 @@
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
 
-## ✅ ТЕКУЩАЯ СИТУАЦИЯ (2026-05-20)
+## ⚠️ ТЕКУЩАЯ СИТУАЦИЯ (2026-05-21) — НЕЗАВЕРШЁННЫЙ РЕЛИЗ v1.4.2
 
-**Сервер /version/latest → 1.4.0 ✅** — петля обновлений устранена
-Код в репо: v1.4.0. Все клиенты с 1.3.2 обновятся автоматически.
+**Сервер /version/latest → 1.4.1** (намеренно — ZIP v1.4.2 не загружен)
+**Код в репо → v1.4.2** (коммит 97fdbcb — navigator.py, debug_reporter.py исправлены)
+
+### Что нужно сделать для завершения релиза v1.4.2:
+1. Пересобрать с исправленным build.spec (polars excluded) → ZIP ~400 MB
+2. Загрузить ZIP в https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.4.2
+3. Проверить доступность: `curl -I https://github.com/Yevgeniy204566/totalhunter/releases/download/v1.4.2/TotalHunter.zip`
+4. ТОЛЬКО ПОСЛЕ — обновить сервер: `POST /admin/version/update?version=1.4.2`
+
+### Проблема build.spec (исправлена, но не пересобрана):
+- Было: `polars` (154 MB), 2× OpenCV ffmpeg DLL (54 MB) в ZIP → 789 MB вместо ~389 MB
+- Исправлено: `polars, pyarrow, dask, numba, statsmodels` добавлены в excludes
 
 ---
 

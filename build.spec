@@ -82,6 +82,7 @@ hiddenimports += collect_submodules('torch')
 excludes = [
     'matplotlib', 'scipy', 'pandas', 'jupyter', 'notebook',
     'IPython', 'jedi', 'sphinx', 'pytest',
+    'polars', 'pyarrow', 'dask', 'numba', 'statsmodels',
 ]
 
 _torch_binaries = collect_dynamic_libs('torch')
