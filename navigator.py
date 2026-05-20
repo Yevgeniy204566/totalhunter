@@ -1051,11 +1051,14 @@ class PacmanEngine:
         except Exception:
             pass
 
-        # Шаг 5: callback → ROY OCR читает уже открытый диалог
+        # Шаг 5: callback → ROY OCR читает уже открытый диалог (синхронно)
         if self.on_found_callback:
             self.on_found_callback()
 
-        # Шаг 6: блокируем YOLO на 10 сек — змейка уходит от биржи без повторного срабатывания
+        # Шаг 6: стоп 10 сек — бот стоит на месте, не двигается
+        time.sleep(10)
+
+        # Шаг 7: YOLO-блок запускается ПОСЛЕ паузы — бот уходит под защитой
         self._trigger_yolo_block()
 
     def _on_exchange_found(self):
