@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-20 (хангоф #61: v1.4.0 — устранена петля автообновления)
+> Последнее обновление: 2026-05-20 (хангоф #62: v1.4.1 — ROY фиксы + биржа линейный workflow)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -21,16 +21,16 @@
 | **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
 | **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. | 2026-05-18 |
 | **Рекламные слоты** | web/AdSlot.jsx | ⛔ PopAds убран (pop-under — не подходит). Ждём сеть с баннерами (BitMedia и др. — высокий порог вывода). | 2026-05-15 |
-| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ event_active gate (засчитывается ТОЛЬКО во время Торговых Путей), AFK защита (миникарта ≥15% diff), звук при новых координатах в пуле, Server API 4 эндпоинта, OCR, GUI. | 2026-05-19 |
+| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ event gate вычисляется inline в _is_trade_routes_active() — не зависит от GUI-флага. AFK защита ≥15% diff. OCR биржи синхронный (до 4с). После биржи: стоп 10с → YOLO-блок 20с → нормальное движение + loop_start сброс. | 2026-05-20 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70. Рефакторинг 16.05.26: один ползунок bot_speed, честный динамический sleep, единый кадр (mss→crop, убран pyautogui.screenshot из hot path) | 2026-05-16 |
+| **Движок бирж** | engine.py + navigator.py | ✅ 54 теста, smooth_alpha=0.70. smooth_alpha и return_delta_px теперь передаются в beacon-режим. После биржи: OCR синхронный → стоп 10с → YOLO-блок 20с → loop_start сброс → нормальная скорость. | 2026-05-20 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
-| **Auto-update** | updater.py | ✅ v1.4.0. ZIP плоский (exe в корне). xcopy `extract_dir\*`. Петля устранена. | 2026-05-20 |
+| **Auto-update** | updater.py | ✅ v1.4.1. ZIP плоский (exe в корне). xcopy `extract_dir\*`. Петля устранена. | 2026-05-20 |
 | **Debug Reporter** | debug_reporter.py + server/debug_router.py | ✅ Fire-and-forget FIND+DIALOG скрины → GCP → Telegram @total_hunter_debug_bot. YOLO conf на bbox. Без сохранения на диск. python-multipart установлен на GCP. | 2026-05-19 |
 | **Гайд сайта — ROY секция** | web/src/guide_content.js + .en.js + GuidePage.jsx | ✅ Раздел «Система РОЙ 🐝» (RU+EN): механика баланса, event gate, AFK защита, инструкция 4 шага. | 2026-05-19 |
 | **Динамическое окно** | main.py | ✅ SPI_GETWORKAREA при старте — высота под экран, прижато вправо. Работает на любом разрешении. | 2026-05-12 |
