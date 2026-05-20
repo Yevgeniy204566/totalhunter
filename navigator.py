@@ -985,6 +985,7 @@ class PacmanEngine:
                     for r in results:
                         if len(r.boxes) > 0:
                             self._exchange_detected(r.boxes[0], frame=frame)
+                            loop_start = time.time()  # сброс таймера — первый шаг с нормальной скоростью
                             break
 
                 # Navigate — pass frame to avoid second screenshot for minimap
