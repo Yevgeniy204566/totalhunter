@@ -39,6 +39,19 @@ def report_find(hwid: str, frame_bgr: np.ndarray, bbox=None, conf: float = 0.0) 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 2)
         except Exception:
             pass
+    # DPI диагностика — сравниваем размер захвата mss vs pyautogui
+    try:
+        import pyautogui as _pag
+        from mss import mss as _mss
+        with _mss() as _sct:
+            _m = _sct.monitors[1]
+            _mss_w, _mss_h = _m['width'], _m['height']
+        _pag_w, _pag_h = _pag.size()
+        _dpi_label = f"mss={_mss_w}x{_mss_h} pag={_pag_w}x{_pag_h}"
+        cv2.putText(img, _dpi_label, (10, img.shape[0] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
+    except Exception:
+        pass
     conf_str = f"{conf:.1%}" if conf else "—"
     threading.Thread(target=_send, args=(img, hwid, "FIND", conf_str), daemon=True).start()
 

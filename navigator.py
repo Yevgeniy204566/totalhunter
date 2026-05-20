@@ -985,7 +985,7 @@ class PacmanEngine:
                     for r in results:
                         if len(r.boxes) > 0:
                             self._exchange_detected(r.boxes[0], frame=frame)
-                            loop_start = time.time()  # сброс таймера — первый шаг с нормальной скоростью
+                            loop_start = time.time()  # сброс dt после паузы — первый шаг нормальной скорости
                             break
 
                 # Navigate — pass frame to avoid second screenshot for minimap
@@ -1006,20 +1006,12 @@ class PacmanEngine:
 
     def _exchange_detected(self, box, frame=None) -> None:
         """
-        Полный flow после нахождения биржи:
-        1. Стоп навигации + звук (немедленно)
-        2. sleep 0.1-0.2с — карта замирает
-        3. Клик по статичной цели
-        4. sleep 0.4-0.6с — игра открывает диалог
-        5. Callback (запускает ROY OCR)
-        """
-        # Шаг 1: звук + debug FIND скрин
-        try:
-            winsound.PlaySound(self.sound_path,
-                               winsound.SND_FILENAME | winsound.SND_ASYNC)
-        except Exception:
-            winsound.Beep(1000, 500)
+        Стоп → Актуализация → Один точный клик.
 
+        Биржа крошечная — карта успевает сдвинуться за время YOLO-инференса.
+        Старые координаты из `box` устарели. Берём свежий прицел.
+        """
+        # Шаг 1: FIND скрин со старыми координатами (только для отладки)
         if frame is not None:
             try:
                 from debug_reporter import report_find
@@ -1029,22 +1021,50 @@ class PacmanEngine:
             except Exception:
                 pass
 
-        # Шаг 2: карта замирает на 0.1-0.2 сек
-        time.sleep(random.uniform(0.1, 0.2))
+        # Шаг 2: ждём пока карта остановится (гасим инерцию движения)
+        time.sleep(0.15)
 
-        # Шаг 3: клик по неподвижной бирже
+        # Шаг 3: свежий скриншот + YOLO → актуальные координаты биржи
+        fresh_box = None
         try:
-            coords = box.xyxy.cpu().tolist()[0]
-            cx = int((coords[0] + coords[2]) / 2) + random.randint(-5, 5)
-            cy = int((coords[1] + coords[3]) / 2) + random.randint(-5, 5)
-            pyautogui.click(cx, cy)
+            from mss import mss as _mss
+            with _mss() as _sct:
+                _screen = np.array(_sct.grab(_sct.monitors[1]))
+            _fresh_frame = cv2.cvtColor(_screen, cv2.COLOR_BGRA2BGR)
+            _fresh_results = self.yolo_model.predict(
+                _fresh_frame, conf=self.conf, imgsz=1280, verbose=False)
+            for _r in _fresh_results:
+                if len(_r.boxes) > 0:
+                    fresh_box = _r.boxes[0]
+                    break
         except Exception:
             pass
 
-        # Шаг 4: ждём анимацию открытия диалога
-        time.sleep(random.uniform(0.4, 0.6))
+        # Если биржа ушла с экрана — не кликать, вернуться к навигации
+        if fresh_box is None:
+            return
 
-        # Debug DIALOG скрин — диалог уже открыт
+        # Шаг 4: один точный клик (верхняя треть башни = кликабельная зона)
+        try:
+            _coords = fresh_box.xyxy.cpu().tolist()[0]
+            x1, y1, x2, y2 = _coords
+            cx = int((x1 + x2) / 2)
+            cy = int(y1 + (y2 - y1) * 0.35)
+            pyautogui.click(cx, cy)
+        except Exception:
+            return
+
+        # Шаг 5: звук — ПОСЛЕ клика (подтверждение попадания)
+        try:
+            winsound.PlaySound(self.sound_path,
+                               winsound.SND_FILENAME | winsound.SND_ASYNC)
+        except Exception:
+            winsound.Beep(1000, 500)
+
+        # Шаг 6: ждём открытия диалога
+        time.sleep(0.5)
+
+        # Шаг 7: DIALOG скрин — что реально открылось
         try:
             from debug_reporter import report_dialog
             from auth import get_hwid
@@ -1052,14 +1072,18 @@ class PacmanEngine:
         except Exception:
             pass
 
-        # Шаг 5: callback → ROY OCR читает уже открытый диалог (синхронно)
+        # Шаг 8: ROY OCR читает открытый диалог биржи (синхронно)
         if self.on_found_callback:
             self.on_found_callback()
 
-        # Шаг 6: стоп 10 сек — бот стоит на месте, не двигается
+        # Шаг 9: стоп 10 сек
         time.sleep(10)
 
-        # Шаг 7: YOLO-блок 20с запускается ПОСЛЕ паузы — бот уходит под защитой
+        # Шаг 10: закрыть любой открытый диалог перед возобновлением навигации
+        pyautogui.press('escape')
+        time.sleep(0.3)
+
+        # Шаг 11: YOLO-блок 20с — бот уходит от биржи под защитой
         self._trigger_yolo_block(20)
 
     def _on_exchange_found(self):
