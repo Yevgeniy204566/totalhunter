@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-21 (хангоф #66: v1.5.0 — выпущен, ZIP СЛОМАН ⚠️ — требует замены)
+> Последнее обновление: 2026-05-21 (хангоф #67: v1.5.5 — биржевый бот полностью исправлен и задокументирован)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -26,7 +26,7 @@
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py | ✅ v1.5.0. Backtracking: если биржа улетела за край — шаг назад + повторный YOLO. _last_move_vec в _click_vec. 13 тестов ✅. | 2026-05-21 |
+| **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.5**. Backtracking ✅. ROY пакет в EXE ✅. pytesseract timeout=3 ✅. YOLO timestamp (нет race condition) ✅. 13 тестов ✅. Эталон: docs/exchange_bot_spec.md | 2026-05-21 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |

@@ -1,64 +1,81 @@
-# Хангоф #66 — 2026-05-21 (v1.5.0 выпущен, ZIP сломан)
+# Хангоф #67 — 2026-05-21 (v1.5.5 — биржевый бот полностью исправлен)
 
-## ПЕРВОЕ ДЕЙСТВИЕ — ФИКС ZIP v1.5.0
+## СТАТУС: v1.5.5 ВЫПУЩЕН ✅
 
-**Проблема:** ZIP в релизе v1.5.0 упакован неплоско. Клиенты в петле автообновлений.
-
-**Причина:** `7z a TotalHunter.zip "dist/TotalHunter/*"` из корня → пути `dist/TotalHunter/TotalHunter.exe` внутри архива → xcopy не заменяет exe → петля.
-
-**Фикс:** Запустить `python build_release.py` — скрипт теперь сам создаёт плоский ZIP из `dist/TotalHunter/` и проверяет структуру. Потом залить ZIP в Release v1.5.0 через браузер (Edit release).
-
-**Порядок:**
-1. `python build_release.py` (пересборка + правильный ZIP автоматически)
-2. Открыть https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.0
-3. Edit release → удалить старый TotalHunter.zip → перетащить новый → Update release
-4. Версию на сервере НЕ менять (уже 1.5.0)
-5. Петля у клиентов прекратится
+**Сервер /version/latest → 1.5.5** ✅
+**GitHub Release:** https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.5
+**ZIP:** 337 MB, плоский, TotalHunter.exe в корне ✅
 
 ---
 
-## Что было сделано в этой сессии
+## ЧТО СДЕЛАНО ЗА СЕССИЮ (хангоф #66 → #67)
 
-### Backtracking в _exchange_detected (navigator.py)
-- `CoastalSnakeNavigator._click_vec`: записывает `_last_move_vec = (ndx, ndy)` после каждого клика
-- `PacmanEngine._backtrack_step()`: инвертирует `_last_move_vec`, делает один клик назад
-- `PacmanEngine._exchange_detected`: рефактор с `_fresh_scan()` helper + ветка backtrack:
-  - sleep(0.5) → YOLO #1 → нашли: клик
-  - не нашли → `_backtrack_step()` → sleep(0.3) → YOLO #2 → нашли: клик
-  - оба пустые → return (ложное срабатывание)
-- 5 новых TDD тестов `test_exchange_backtrack.py` (5/5 ✅)
-- Все 13 тестов ✅
+### v1.5.0 — ZIP фикс (плоская упаковка)
+Был неплоский ZIP → петля автообновлений. Пересобрали правильно.
 
-### Инфраструктура сборки (исправление ошибки)
-- `build_release.py` шаг 6: теперь сам создаёт плоский ZIP из `dist/TotalHunter/` (`cwd=dist_dir`)
-- Валидация: если `TotalHunter.exe` не в корне архива — FATAL, сборка падает
-- `CLAUDE.md`: добавлено критическое правило ZIP
-- `ANTI-PATTERNS.md`: добавлен AP-UPDATER-NESTING
-- `MEMORY/feedback_zip_flat_packing.md`: новая запись в память
+### v1.5.1 — ROY OCR фикс
+- `tesseract_cmd` прописан явно (пропущен в exchange_reader.py)
+- `_COORD_ROI_REL` расширена до `(0.0, 0.03, 1.0, 0.20)` — старая зона обрезала строку K/X/Y
+- OCR переписан на plain gray + `--psm 11` (вместо HSV-маски красного текста V≤160)
 
-### Релиз
-- version.py: 1.4.3 → 1.5.0
-- GitHub Release v1.5.0 создан, ZIP загружен (но НЕПЛОСКИЙ — требует замены)
-- Сервер: /version/latest = 1.5.0
+### v1.5.2 — ROY пакет в EXE (корневая причина)
+- `engine.pyd` содержит `from roy.exchange_reader import ...` (динамический)
+- PyInstaller не видит импорты в `.pyd` → `roy/` отсутствовал в `dist/_internal/`
+- **Фикс:** `roy/__init__.py` создан + `hiddenimports` + `datas` в build.spec
+- `except Exception: pass` → `except Exception as e: print(...)` — видна причина ошибки
+
+### v1.5.3 — pytesseract timeout=3
+- `pytesseract.image_to_string()` без таймаута → tesseract.exe мог зависнуть
+- Весь `_exchange_detected` замораживался → бот стоял после каждой биржи вечно
+- **Фикс:** `timeout=3` на оба pytesseract вызова + try/except fallback
+
+### v1.5.5 — YOLO timestamp (race condition fix)
+- daemon thread `_trigger_yolo_block` → при СТОП→СТАРТ старый тред снимал блок досрочно
+- **Фикс:** `_yolo_unblock_time = time.time() + N` вместо threading
+- `start()` теперь сбрасывает `_yolo_unblock_time = 0`
+- 13/13 тестов ✅
+
+### docs/exchange_bot_spec.md — ЭТАЛОН
+Создан канонический документ механики биржевого бота (12 шагов, временная шкала, ROY pipeline, чеклист для новых идей). Привязан к CLAUDE.md и memory.
 
 ---
 
-## Коммиты этой сессии
+## КОММИТЫ СЕССИИ
 
 | Хэш | Описание |
 |---|---|
-| a656426 | feat: backtracking в _exchange_detected (5 TDD тестов) |
-| 410f40e | chore: bump version 1.4.3 → 1.5.0 |
-| d83f0d5 | fix: ZIP плоская упаковка — AP-UPDATER-NESTING + автовалидация |
+| edd6d41 | fix: ROY OCR — tesseract_cmd + psm 11 + wider coord ROI (v1.5.1) |
+| 083928e | fix: ROY пакет не попадал в EXE — roy/__init__.py + hiddenimports (v1.5.2) |
+| 5d58903 | fix: pytesseract timeout=3 — блокировка потока после биржи (v1.5.3) |
+| 86a470b | refactor: YOLO-блок на timestamp вместо daemon thread (v1.5.5) |
+| d147f95 | chore: bump version 1.5.3 → 1.5.5 |
+| 652e837 | docs: exchange_bot_spec.md — эталонный документ механики биржевого бота |
 
 ---
 
-## Известные проблемы / следующие задачи
+## ТЕКУЩЕЕ СОСТОЯНИЕ БОТА v1.5.5
 
-| Приоритет | Задача |
-|---|---|
-| 🔴 СРОЧНО | Фикс ZIP v1.5.0 (инструкция выше) |
-| Средний | ROY OCR координат из диалога — проверить что именно читается (уже работает в engine.py) |
-| Средний | Fortune Wheel — финальный визуал (Unsplash CORS, real PNG ассеты) |
-| Низкий | Реклама: Adsterra нативные баннеры |
-| Низкий | Баг «выкидывает в магазин» — не диагностирован |
+### Работает ✅
+- Backtracking (возврат к бирже при проскоке карты)
+- ROY OCR (координаты биржи попадают в пул)
+- pytesseract не зависает (timeout=3)
+- YOLO-блок 20с без race condition
+- 13 TDD тестов
+- Эталонный документ: docs/exchange_bot_spec.md
+
+### На будущее (не срочно)
+- Баг «выкидывает в магазин» — не диагностирован
+- Fortune Wheel — финальный визуал (Unsplash CORS, реальные PNG ассеты)
+- Реклама: Adsterra нативные баннеры
+
+---
+
+## ПЕРВОЕ ДЕЙСТВИЕ СЛЕДУЮЩЕЙ СЕССИИ
+
+Живой тест v1.5.5:
+1. Запустить бота
+2. Найти биржу
+3. Проверить: бот продолжил движение после биржи?
+4. Проверить: карточка «Последняя биржа» обновилась?
+5. Проверить: координаты в ROY пуле?
+6. В консоли: есть `[ROY]` сообщения?
