@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-21 (хангоф #63: v1.4.2 — точный клик биржи, НЕЗАВЕРШЁННЫЙ РЕЛИЗ)
+> Последнее обновление: 2026-05-21 (хангоф #66: v1.5.0 — выпущен, ZIP СЛОМАН ⚠️ — требует замены)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -26,7 +26,7 @@
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py | ⚠️ v1.4.3 код готов, релиз ЗАВТРА (2026-05-22). Фиксы: fallback bbox (бот всегда останавливается) + пауза 0.5с перед свежим YOLO. Два фото в Telegram всегда (FIND+DIALOG). | 2026-05-21 |
+| **Движок бирж** | engine.py + navigator.py | ✅ v1.5.0. Backtracking: если биржа улетела за край — шаг назад + повторный YOLO. _last_move_vec в _click_vec. 13 тестов ✅. | 2026-05-21 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
@@ -91,19 +91,51 @@
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
 
-## ⚠️ v1.4.3 — РЕЛИЗ ЗАВТРА (2026-05-22)
+## ⚠️ v1.5.0 — ВЫПУЩЕН НО ZIP СЛОМАН (2026-05-21)
 
-**Код готов** (коммиты 2ad4104, 30245c0)
-### Что нового:
+**Сервер /version/latest → 1.5.0** ✅
+**ZIP на GitHub: 338 МБ — НО НЕПЛОСКИЙ** ⚠️ (пути dist/TotalHunter/TotalHunter.exe внутри)
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.0
+- Клиенты в петле автообновлений (Groundhog Day)
+
+### 🔴 ПЕРВОЕ ДЕЙСТВИЕ СЛЕДУЮЩЕЙ СЕССИИ — ФИКС ZIP
+
+```powershell
+# Шаг 1: Пересобрать ZIP плоским (build_release.py теперь делает это сам):
+python build_release.py
+# Шаг 6 скрипта сам создаст правильный ZIP из dist/TotalHunter/ и проверит структуру
+
+# Шаг 2: Проверить:
+# 7z l TotalHunter.zip → TotalHunter.exe должен быть БЕЗ dist/ префикса
+
+# Шаг 3: Загрузить в GitHub Release v1.5.0:
+# https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.0
+# Edit release → удалить старый TotalHunter.zip → перетащить новый → Update release
+# (gh release upload зависает на 300+ MB — только через браузер!)
+
+# Шаг 4: Версию на сервере НЕ менять — уже 1.5.0
+```
+
+### Что нового в v1.5.0:
+1. Backtracking в _exchange_detected: шаг назад если биржа улетела за край экрана
+2. CoastalSnakeNavigator._click_vec записывает _last_move_vec
+3. PacmanEngine._backtrack_step() — инвертирует вектор движения
+4. build_release.py автоматически создаёт плоский ZIP + валидирует структуру
+5. ANTI-PATTERNS.md: AP-UPDATER-NESTING
+
+---
+
+## ✅ v1.4.3 — ВЫПУЩЕН (2026-05-21)
+
+**Сервер /version/latest → 1.4.3** ✅
+**ZIP: 338 МБ** (10 Nuitka модулей MSVC 14.3)
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.4.3
+- Клиенты с v1.4.2 обновятся автоматически
+
+### Что нового в v1.4.3:
 1. Биржа: fallback на исходный bbox если свежий YOLO промахнулся → бот ВСЕГДА останавливается
 2. Биржа: пауза 0.15с → 0.5с перед повторным YOLO — карта успевает остановиться
 3. Два фото в Telegram гарантированы (FIND + DIALOG)
-
-### Что нужно сделать (завтра):
-1. Обновить `version.py` → `"1.4.3"`
-2. `python build_release.py` (~30-40 мин)
-3. Загрузить ZIP в новый GitHub Release v1.4.3 (через браузер)
-4. `POST /admin/version/update?version=1.4.3`
 
 ---
 
