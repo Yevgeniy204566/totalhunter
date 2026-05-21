@@ -28,6 +28,8 @@ datas = [
     ('profiles',      'profiles'),
     # CustomTkinter (темы, шрифты, изображения)
     (_ctk_path,       'customtkinter'),
+    # ROY пакет — страховка: копируем .py файлы явно (namespace packages не бандлятся)
+    ('roy', 'roy'),
 ]
 
 # ultralytics тащит yaml-конфиги и прочие data-файлы
@@ -73,6 +75,8 @@ hiddenimports = [
     'button_finder', 'template_finder', 'human_input',
     'nav_logger', 'navigator_beacon',
     'version', 'updater',
+    # ROY пакет — динамически импортируется из engine.pyd (PyInstaller не видит .pyd импорты)
+    'roy', 'roy.exchange_reader', 'roy.roy_client',
 ]
 
 hiddenimports += collect_submodules('ultralytics')

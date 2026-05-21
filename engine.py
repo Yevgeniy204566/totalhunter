@@ -200,8 +200,8 @@ class HuntEngine:
                         y=result['y'],
                         percent=result['percent'],
                     )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[ROY] _roy_on_found ERROR: {e!r}")
 
     def _start_roy_scan(self):
         """Proof of Scan: каждые 30 сек фиксирует активность (+45 сек баланса).
