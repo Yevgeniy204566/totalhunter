@@ -153,7 +153,10 @@ def _ocr_coords(roi: np.ndarray) -> tuple | None:
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
-    text = pytesseract.image_to_string(gray, config='--psm 11').strip()
+    try:
+        text = pytesseract.image_to_string(gray, config='--psm 11', timeout=3).strip()
+    except Exception:
+        return None
     return _parse_coords(text)
 
 
@@ -193,7 +196,10 @@ def _measure_progress(roi: np.ndarray) -> int:
         scale = 3
         thresh = cv2.resize(thresh, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
         config = '--psm 6 -c tessedit_char_whitelist=0123456789%: '
-        text = pytesseract.image_to_string(thresh, config=config)
+        try:
+            text = pytesseract.image_to_string(thresh, config=config, timeout=3)
+        except Exception:
+            text = ""
         m = re.search(r'(\d{1,3})\s*%', text)
         if m:
             return min(int(m.group(1)), 100)
