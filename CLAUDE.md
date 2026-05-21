@@ -1,7 +1,7 @@
 # BattleBot — Total Battle Hunter
 ## Конституция проекта (неизменяемый фундамент)
 
-> Детальный статус → STATE.md | Запреты → ANTI-PATTERNS.md
+> Детальный статус → STATE.md | Запреты → ANTI-PATTERNS.md | **Эталон биржевого бота → docs/exchange_bot_spec.md**
 
 ---
 
