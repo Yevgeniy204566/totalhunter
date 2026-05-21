@@ -190,12 +190,44 @@ def main():
                     os.remove(py_in_dist)
                     print(f"  Удалён из dist: {mod} (заменён .pyd)")
 
-        # Шаг 6: Inno Setup пропущен — дистрибуция только через ZIP
-        print("\n[6/6] Inno Setup пропущен — дистрибуция только через TotalHunter.zip")
+        # Шаг 6: Создание плоского ZIP (ОБЯЗАТЕЛЬНО из dist/TotalHunter/)
+        print("\n[6/6] Создание плоского ZIP...")
+        zip_path = os.path.join(ROOT, "TotalHunter.zip")
+        dist_dir = os.path.join(ROOT, "dist", "TotalHunter")
+
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+
+        seven_zip = r"C:\Program Files\7-Zip\7z.exe"
+        if os.path.exists(seven_zip):
+            # КРИТИЧНО: запускаем 7z из dist/TotalHunter — иначе пути будут вложенными
+            result = subprocess.run(
+                [seven_zip, "a", "-tzip", zip_path, "*", "-mx=5"],
+                cwd=dist_dir, check=True
+            )
+
+            # Валидация: TotalHunter.exe должен быть в КОРНЕ архива (без dist/ префикса)
+            import zipfile as _zf
+            with _zf.ZipFile(zip_path, "r") as _z:
+                names = _z.namelist()
+            exe_entries = [n for n in names if n.endswith("TotalHunter.exe")]
+            bad = [n for n in exe_entries if "/" in n or "\\" in n]
+            if bad:
+                raise RuntimeError(
+                    f"ДЕНЬ СУРКА: ZIP содержит вложенные пути {bad}!\n"
+                    f"TotalHunter.exe должен быть в КОРНЕ архива. Сборка отменена."
+                )
+            zip_mb = round(os.path.getsize(zip_path) / 1024 / 1024)
+            print(f"  OK TotalHunter.zip = {zip_mb} MB (плоский, TotalHunter.exe в корне)")
+            if zip_mb > 500:
+                print(f"  WARN ZIP > 500 MB ({zip_mb} MB) — возможно затащилось лишнее!")
+        else:
+            print("  WARN 7z.exe не найден — ZIP не создан, упакуй вручную из dist/TotalHunter/")
 
         print("\n" + "=" * 60)
         print("  OK СБОРКА ЗАВЕРШЕНА")
         print(f"  EXE:       dist/TotalHunter/TotalHunter.exe")
+        print(f"  ZIP:       TotalHunter.zip (плоский)")
         print(f"  Защищено:  {len(compiled)} модулей")
         print("=" * 60)
 

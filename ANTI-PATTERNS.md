@@ -62,6 +62,19 @@
 
 ---
 
+## ⛔ AP-UPDATER-NESTING: Не-плоский ZIP → День Сурка у клиентов — ЗАПРЕЩЕНО (v1.5.0)
+
+**Симптом:** Пользователи уходят в бесконечный цикл скачивания одной и той же версии.
+**Причина:** `7z a TotalHunter.zip "dist/TotalHunter/*"` из КОРНЯ создаёт вложенные пути `dist/TotalHunter/TotalHunter.exe`. xcopy копирует папку `dist/` в exe_dir — оригинальный exe не заменяется.
+**Как надо:** ВСЕГДА запускать 7z ИЗНУТРИ `dist/TotalHunter/`:
+```
+cd C:\BattleBot\dist\TotalHunter
+7z a -tzip C:\BattleBot\TotalHunter.zip "*"
+```
+**Проверка перед загрузкой:** `7z l TotalHunter.zip | grep TotalHunter.exe` → путь должен быть `TotalHunter.exe` (БЕЗ `dist/TotalHunter/` префикса). Если есть префикс — СТОП, переделать.
+
+---
+
 ## ⛔ UPDATER — Грабли xcopy (Хангоф #61 — ИСПРАВЛЕНО)
 
 ### НЕРУШИМОЕ ПРАВИЛО: ZIP и xcopy обязаны соответствовать друг другу
@@ -69,7 +82,8 @@
 **Стандарт проекта (v1.4.0+):** ZIP ПЛОСКИЙ + xcopy `extract_dir\*`
 
 ```
-7z: "7z.exe" a -tzip TotalHunter.zip "dist/TotalHunter/*"  ← плоская упаковка
+7z: cd dist/TotalHunter && 7z a -tzip ../../TotalHunter.zip "*"  ← ПЛОСКАЯ (из папки!)
+7z: "7z.exe" a -tzip TotalHunter.zip "dist/TotalHunter/*"  ← НЕПЛОСКАЯ (из корня!) ЗАПРЕЩЕНО
 xcopy: xcopy /s /y /e "{extract_dir}\*" "{exe_dir}\"        ← плоское копирование
 ```
 

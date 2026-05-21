@@ -25,6 +25,19 @@
 - Изменять `server/main.py` без диагностики первопричины
 - Добавлять зависимости без проверки что они установлены на GCP
 - Создавать или заливать `TotalHunter_Setup.exe` — дистрибутив ТОЛЬКО `TotalHunter.zip`
+- Запускать `7z` для создания ZIP из КОРНЯ проекта — ТОЛЬКО из `dist/TotalHunter/` (см. ниже)
+
+**🔒 КРИТИЧЕСКОЕ ПРАВИЛО ZIP (АНТИ-ДЕНЬ СУРКА):**
+ZIP-архив для автообновления ОБЯЗАН быть плоским. Нарушение = петля обновлений у всех клиентов.
+```powershell
+# ПРАВИЛЬНО — запускать из dist/TotalHunter:
+Set-Location "C:\BattleBot\dist\TotalHunter"
+& "C:\Program Files\7-Zip\7z.exe" a -tzip "C:\BattleBot\TotalHunter.zip" "*" -mx=5
+Set-Location "C:\BattleBot"
+
+# ПРОВЕРКА ОБЯЗАТЕЛЬНА перед загрузкой:
+# 7z l TotalHunter.zip | grep TotalHunter.exe → должно быть "TotalHunter.exe" БЕЗ dist/ префикса
+```
 
 ---
 
