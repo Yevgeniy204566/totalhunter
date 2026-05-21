@@ -22,6 +22,7 @@ import numpy as np
 
 try:
     import pytesseract
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 except ImportError:
     pytesseract = None
 
@@ -52,7 +53,7 @@ _DIALOG_BG_HIGH = np.array([35, 100, 255])
 
 # ── Относительные зоны внутри диалога (от верхнего левого угла) ──────────────
 # Координаты — строка в ~15% высоты диалога
-_COORD_ROI_REL    = (0.02, 0.05, 0.98, 0.13)   # строка K/X/Y под заголовком
+_COORD_ROI_REL    = (0.0, 0.03, 1.0, 0.20)     # строка K/X/Y под заголовком (с запасом)
 _PROGRESS_ROI_REL = (0.02, 0.57, 0.98, 0.72)   # текст «Прогресс сделок: XX%» + бар
 
 # Минимальный размер диалога в пикселях (защита от ложных срабатываний)
@@ -142,30 +143,17 @@ def _crop_roi(frame: np.ndarray, dialog: tuple, rel: tuple) -> np.ndarray:
 
 def _ocr_coords(roi: np.ndarray) -> tuple | None:
     """
-    Применяет маску красного цвета и pytesseract к зоне координат.
-    Ищет паттерн вида: K:471 X:383 Y:812 или К:471 X:383 Y:812
+    Читает координаты K/X/Y из зоны диалога.
+    Ищет паттерн вида: K:471 X:383 Y:812 или (K:471 X:383 Y:812)
     Возвращает (kingdom, x, y) или None.
     """
     if pytesseract is None:
         return None
 
-    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-    m1 = cv2.inRange(hsv, _RED_LOW1, _RED_HIGH1)
-    m2 = cv2.inRange(hsv, _RED_LOW2, _RED_HIGH2)
-    mask = cv2.bitwise_or(m1, m2)
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
-    # Белый текст на чёрном фоне
-    result = np.zeros_like(roi)
-    result[mask > 0] = (255, 255, 255)
-    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-
-    # Масштабируем для лучшего OCR
-    scale = 3
-    gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-
-    config = "--psm 7 -c tessedit_char_whitelist=KkХхXxYy:0123456789 "
-    text = pytesseract.image_to_string(gray, config=config).strip()
-
+    text = pytesseract.image_to_string(gray, config='--psm 11').strip()
     return _parse_coords(text)
 
 
