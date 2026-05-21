@@ -946,10 +946,11 @@ class PacmanEngine:
         self.navigation_enabled = navigation_enabled
         self.is_running         = False
         self.on_found_callback  = None
-        self._yolo_blocked      = False
+        self._yolo_unblock_time = 0.0   # timestamp: YOLO разблокирован когда time.time() >= этого значения
         self._thread: threading.Thread | None = None
 
     def start(self):
+        self._yolo_unblock_time = 0.0   # сброс при старте — нет гонки с daemon-тредами
         self.joystick.reset()
         self.is_running = True
         self._thread = threading.Thread(target=self._run, daemon=True)
@@ -960,11 +961,7 @@ class PacmanEngine:
 
     def _trigger_yolo_block(self, block_seconds: float = 10.0) -> None:
         """Блокирует YOLO-детекцию на block_seconds — защита от повторного срабатывания на той же бирже."""
-        self._yolo_blocked = True
-        def _reset():
-            time.sleep(block_seconds)
-            self._yolo_blocked = False
-        threading.Thread(target=_reset, daemon=True).start()
+        self._yolo_unblock_time = time.time() + block_seconds
 
     def _run(self):
         from mss import mss
@@ -980,8 +977,8 @@ class PacmanEngine:
                 # Check current position before moving
                 is_water = is_water_center_screen(frame, radius=120)
 
-                # YOLO scan — пропускаем если блок активен (10 сек после детекции)
-                if self.yolo_model is not None and not self._yolo_blocked:
+                # YOLO scan — пропускаем пока активен блок после детекции
+                if self.yolo_model is not None and time.time() >= self._yolo_unblock_time:
                     results = self.yolo_model.predict(
                         frame, conf=self.conf, imgsz=1280, verbose=False)
                     for r in results:

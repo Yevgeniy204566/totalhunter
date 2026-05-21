@@ -45,7 +45,7 @@ def _make_engine(yolo):
     eng = PacmanEngine.__new__(PacmanEngine)
     eng.sound_path = ''
     eng.on_found_callback = None
-    eng._yolo_blocked = False
+    eng._yolo_unblock_time = 0.0
     eng.conf = 0.7
     eng.yolo_model = yolo
 

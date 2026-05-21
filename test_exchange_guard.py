@@ -11,29 +11,29 @@ class TestPacmanYoloGuard:
     """PacmanEngine блокирует YOLO на N сек после любой детекции."""
 
     def test_yolo_blocked_starts_false(self):
-        """_yolo_blocked по умолчанию False."""
+        """_yolo_unblock_time=0 по умолчанию — YOLO разблокирован."""
         from navigator import PacmanEngine
         eng = PacmanEngine.__new__(PacmanEngine)
-        eng._yolo_blocked = False
-        assert eng._yolo_blocked is False
+        eng._yolo_unblock_time = 0.0
+        assert time.time() >= eng._yolo_unblock_time  # YOLO активен
 
     def test_trigger_sets_blocked_true(self):
-        """_trigger_yolo_block() немедленно выставляет флаг в True."""
+        """_trigger_yolo_block() немедленно выставляет unblock_time в будущее."""
         from navigator import PacmanEngine
         eng = PacmanEngine.__new__(PacmanEngine)
-        eng._yolo_blocked = False
-        eng._trigger_yolo_block(block_seconds=60)   # длинный — не сбросится в тесте
-        assert eng._yolo_blocked is True
+        eng._yolo_unblock_time = 0.0
+        eng._trigger_yolo_block(block_seconds=60)   # длинный — точно в будущем
+        assert time.time() < eng._yolo_unblock_time  # YOLO заблокирован
 
     def test_flag_resets_after_timeout(self):
-        """Флаг сбрасывается в False автоматически после block_seconds."""
+        """После block_seconds timestamp уже в прошлом — YOLO разблокирован."""
         from navigator import PacmanEngine
         eng = PacmanEngine.__new__(PacmanEngine)
-        eng._yolo_blocked = False
+        eng._yolo_unblock_time = 0.0
         eng._trigger_yolo_block(block_seconds=0.05)
-        assert eng._yolo_blocked is True
+        assert time.time() < eng._yolo_unblock_time  # сразу — заблокирован
         time.sleep(0.2)
-        assert eng._yolo_blocked is False
+        assert time.time() >= eng._yolo_unblock_time  # после — разблокирован
 
 
 class TestHuntEngineCallback:
