@@ -13,6 +13,17 @@ class RoyClient:
     def __init__(self, hwid: str):
         self.hwid = hwid
 
+    def register(self, kingdom: int) -> None:
+        """Сохраняет намерение охотника на сервере (серый кружок). Fire-and-forget."""
+        def _send():
+            try:
+                requests.post(f"{SERVER_URL}/roy/register", json={
+                    "hwid": self.hwid, "kingdom": kingdom,
+                }, timeout=_TIMEOUT)
+            except Exception:
+                pass
+        threading.Thread(target=_send, daemon=True).start()
+
     def report(self, kingdom: int, x: int, y: int, percent: int) -> None:
         """Отправляет координаты биржи в пул Роя. Fire-and-forget."""
         def _send():
@@ -25,13 +36,28 @@ class RoyClient:
                 pass
         threading.Thread(target=_send, daemon=True).start()
 
-    def scan(self) -> None:
-        """Фиксирует 30 сек активного сканирования (+45 сек баланса)."""
+    def scan(self, kingdom: int | None = None) -> None:
+        """Фиксирует 30 сек активного сканирования (+45 сек баланса).
+        Если передан kingdom — обновляет live-счётчик ГОСа на сервере.
+        """
+        payload: dict = {"hwid": self.hwid}
+        if kingdom:
+            payload["kingdom"] = kingdom
         try:
-            requests.post(f"{SERVER_URL}/roy/scan",
-                          json={"hwid": self.hwid}, timeout=_TIMEOUT)
+            requests.post(f"{SERVER_URL}/roy/scan", json=payload, timeout=_TIMEOUT)
         except Exception:
             pass
+
+    def stop_session(self, kingdom: int) -> None:
+        """Сигнал серверу об остановке поиска в ГОСе. Fire-and-forget."""
+        def _send():
+            try:
+                requests.post(f"{SERVER_URL}/roy/stop",
+                              json={"hwid": self.hwid, "kingdom": kingdom},
+                              timeout=_TIMEOUT)
+            except Exception:
+                pass
+        threading.Thread(target=_send, daemon=True).start()
 
     def get_pool(self, consume: bool = False) -> list:
         """Возвращает список актуальных координат от других участников Роя."""

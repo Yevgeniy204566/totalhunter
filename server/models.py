@@ -308,6 +308,20 @@ class RoyKingdomStatus(Base):
                           server_default=func.now())
 
 
+class RoyKingdomMember(Base):
+    """
+    Намерение охотника: в каком королевстве он будет искать биржи.
+    Одна строка на hwid (PK). Без TTL — хранится постоянно до смены.
+    Даёт registered_count на сайте (серый кружок).
+    """
+    __tablename__ = "roy_kingdom_members"
+
+    hwid       = Column(String(16), primary_key=True)
+    kingdom    = Column(Integer, nullable=False, index=True)
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                        server_default=func.now())
+
+
 # ─────────────────────────────────────────────
 # Orders — payment records
 # ─────────────────────────────────────────────

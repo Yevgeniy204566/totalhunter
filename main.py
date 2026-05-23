@@ -2666,7 +2666,8 @@ class TotalHunterApp(ctk.CTk):
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
 
             try:
-                self.engine.roy_enabled = self._roy_enabled_var.get()
+                self.engine.roy_enabled  = self._roy_enabled_var.get()
+                self.engine.roy_kingdom  = self._get_roy_kingdom()
                 self.engine.start(
                     conf=self.conf_slider.get(),
                     center_x=cx,
@@ -2905,6 +2906,33 @@ class TotalHunterApp(ctk.CTk):
         )
         self._roy_switch.pack(side="right")
 
+        # ─── Номер Королевства ───────────────────────────────────────────────
+        kingdom_row = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=8)
+        kingdom_row.pack(fill="x", padx=20, pady=(0, 8))
+        ctk.CTkLabel(kingdom_row, text="Королевство №:",
+                     font=ctk.CTkFont(size=12),
+                     text_color=MD3["on_surface2"]).pack(side="left", padx=(12, 8))
+        self._roy_kingdom_entry = ctk.CTkEntry(
+            kingdom_row, width=80, height=28,
+            placeholder_text="233",
+            justify="center",
+            fg_color=MD3["card"], border_color=MD3["outline"],
+        )
+        self._roy_kingdom_entry.pack(side="left", padx=(0, 4), pady=6)
+        saved_k = self._load_gui_config().get("roy_kingdom", 0)
+        if saved_k:
+            self._roy_kingdom_entry.insert(0, str(saved_k))
+        self._roy_kingdom_entry.bind("<Return>", self._on_roy_kingdom_change)
+        self._roy_kingdom_entry.bind("<FocusOut>", self._on_roy_kingdom_change)
+        self._roy_kingdom_confirm_btn = ctk.CTkButton(
+            kingdom_row, text="✓", width=28, height=28,
+            corner_radius=6,
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"],
+            command=self._on_roy_kingdom_change,
+        )
+        self._roy_kingdom_confirm_btn.pack(side="left", padx=(0, 8), pady=6)
+
         ctk.CTkFrame(self.tab_roy, height=1, fg_color=MD3["outline"]).pack(
             fill="x", padx=20, pady=(4, 8))
 
@@ -3015,6 +3043,25 @@ class TotalHunterApp(ctk.CTk):
         if enabled:
             self._roy_refresh_balance()
             self._roy_refresh_pool()
+
+    def _on_roy_kingdom_change(self, event=None):
+        try:
+            val = int(self._roy_kingdom_entry.get())
+            self._save_gui_config_key("roy_kingdom", val)
+            from roy.roy_client import RoyClient
+            from auth import get_hwid
+            threading.Thread(
+                target=lambda: RoyClient(hwid=get_hwid()).register(val),
+                daemon=True,
+            ).start()
+        except (ValueError, AttributeError):
+            pass
+
+    def _get_roy_kingdom(self) -> int:
+        try:
+            return int(self._roy_kingdom_entry.get())
+        except (ValueError, AttributeError):
+            return 0
 
     def _roy_refresh_balance(self):
         """Обновляет баланс времени с сервера."""

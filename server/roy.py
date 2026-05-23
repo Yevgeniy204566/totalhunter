@@ -23,7 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import AsyncSessionLocal, get_db
-from models import RoyBalance, RoyKingdomStatus, RoyPool
+from models import RoyBalance, RoyKingdomMember, RoyKingdomStatus, RoyPool
 
 router = APIRouter(prefix="/roy", tags=["roy"])
 
@@ -53,16 +53,26 @@ def _active_count(kingdom: int) -> int:
 
 
 async def _kingdoms_payload(db: AsyncSession) -> str:
-    """JSON-строка со списком всех королевств и их live-счётчиками."""
-    rows = (await db.execute(select(RoyKingdomStatus))).scalars().all()
-    return json.dumps([
+    """JSON-строка со списком всех королевств: registered_count + active_count."""
+    status_rows = (await db.execute(select(RoyKingdomStatus))).scalars().all()
+    member_rows = (await db.execute(select(RoyKingdomMember))).scalars().all()
+
+    reg_count: dict[int, int] = {}
+    for r in member_rows:
+        reg_count[r.kingdom] = reg_count.get(r.kingdom, 0) + 1
+
+    kingdoms = {r.kingdom for r in status_rows} | set(reg_count.keys())
+    result = [
         {
-            "kingdom":      row.kingdom,
-            "active_count": _active_count(row.kingdom),
-            "active":       _active_count(row.kingdom) > 0,
+            "kingdom":          k,
+            "registered_count": reg_count.get(k, 0),
+            "active_count":     _active_count(k),
+            "active":           _active_count(k) > 0,
         }
-        for row in rows
-    ])
+        for k in kingdoms
+        if reg_count.get(k, 0) > 0 or _active_count(k) > 0
+    ]
+    return json.dumps(sorted(result, key=lambda x: (-x["active_count"], -x["registered_count"])))
 
 
 async def _broadcast(db: AsyncSession) -> None:
@@ -135,6 +145,34 @@ class ScanRequest(BaseModel):
 class StopRequest(BaseModel):
     hwid:    str
     kingdom: int
+
+
+class RegisterRequest(BaseModel):
+    hwid:    str
+    kingdom: int
+
+
+# ── POST /roy/register ───────────────────────────────────────────────────────
+
+@router.post("/register")
+async def register_kingdom(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Сохраняет намерение охотника: в каком ГОСе он будет искать биржи.
+    Вызывается при сохранении номера королевства в GUI (кнопка ✓).
+    Без TTL — хранится до следующей смены. Даёт серый кружок на сайте.
+    """
+    async with db.begin():
+        row = (await db.execute(
+            select(RoyKingdomMember).where(RoyKingdomMember.hwid == req.hwid)
+        )).scalar_one_or_none()
+        now = datetime.now(timezone.utc)
+        if row:
+            row.kingdom    = req.kingdom
+            row.updated_at = now
+        else:
+            db.add(RoyKingdomMember(hwid=req.hwid, kingdom=req.kingdom, updated_at=now))
+    await _broadcast(db)
+    return {"success": True}
 
 
 # ── POST /roy/report ──────────────────────────────────────────────────────────
@@ -230,18 +268,9 @@ async def stop_scan(req: StopRequest, db: AsyncSession = Depends(get_db)):
 
 @router.get("/kingdoms")
 async def get_kingdoms(db: AsyncSession = Depends(get_db)):
-    """Список всех королевств с live-счётчиком активных искателей."""
-    rows = (await db.execute(select(RoyKingdomStatus))).scalars().all()
-    return {
-        "kingdoms": [
-            {
-                "kingdom":      row.kingdom,
-                "active_count": _active_count(row.kingdom),
-                "active":       _active_count(row.kingdom) > 0,
-            }
-            for row in rows
-        ]
-    }
+    """Список всех королевств с registered_count (серый) и active_count (зелёный)."""
+    payload = await _kingdoms_payload(db)
+    return {"kingdoms": json.loads(payload)}
 
 
 # ── GET /roy/status-stream (SSE) ──────────────────────────────────────────────

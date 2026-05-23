@@ -35,8 +35,6 @@ export default function RoyPage() {
     return () => { es.close(); esRef.current = null }
   }, [])
 
-  const sorted = [...kingdoms].sort((a, b) => b.active_count - a.active_count)
-
   return (
     <div style={{ padding: '24px 20px', maxWidth: 560, margin: '0 auto' }}>
 
@@ -54,8 +52,8 @@ export default function RoyPage() {
         </div>
         <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.55 }}>
           {isRu
-            ? 'Королевства, в которых прямо сейчас идёт поиск бирж. Зелёная лампочка — в этом ГОСе есть активные искатели.'
-            : 'Kingdoms where exchange hunting is running right now. Green dot means hunters are active.'}
+            ? 'Королевства, где охотники настроили поиск бирж. Зелёный — активное сканирование прямо сейчас (ивент идёт). Серый — охотник зарегистрирован в этом ГОСе.'
+            : 'Kingdoms where hunters are configured. Green = actively scanning right now (event live). Grey = hunter registered in this kingdom.'}
         </p>
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{
@@ -78,25 +76,26 @@ export default function RoyPage() {
         border: '1px solid var(--outline)', overflow: 'hidden',
         marginBottom: 16,
       }}>
-        {sorted.length === 0 ? (
+        {kingdoms.length === 0 ? (
           <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--on-surface2)', fontSize: 14 }}>
             {isRu
-              ? 'Нет активных королевств. Запусти бота с номером своего Королевства — и он появится здесь.'
-              : 'No kingdoms yet. Launch the bot with your kingdom number and it will appear here.'}
+              ? 'Нет зарегистрированных королевств. Укажи номер своего Королевства в боте — и оно появится здесь.'
+              : 'No kingdoms yet. Set your kingdom number in the bot and it will appear here.'}
           </div>
-        ) : sorted.map((k, i) => (
+        ) : kingdoms.map((k, i) => (
           <div key={k.kingdom} style={{
             display: 'flex', alignItems: 'center', gap: 14,
             padding: '14px 20px',
-            borderBottom: i < sorted.length - 1 ? '1px solid var(--outline)' : 'none',
+            borderBottom: i < kingdoms.length - 1 ? '1px solid var(--outline)' : 'none',
             background: k.active ? 'rgba(61,127,255,0.04)' : 'transparent',
             transition: 'background 0.4s',
           }}>
             {/* Status dot */}
             <span style={{
               width: 11, height: 11, borderRadius: '50%', flexShrink: 0,
-              background: k.active ? '#4ADE80' : '#2A3550',
+              background: k.active ? '#4ADE80' : '#3A4560',
               boxShadow: k.active ? '0 0 10px rgba(74,222,128,0.65)' : 'none',
+              border: k.active ? 'none' : '1.5px solid #5A6580',
               transition: 'all 0.4s',
             }} />
 
@@ -108,25 +107,65 @@ export default function RoyPage() {
               {isRu ? 'Королевство' : 'Kingdom'} {k.kingdom}
             </span>
 
-            {/* Count badge */}
-            {k.active_count > 0 ? (
-              <span style={{
-                background: 'rgba(74,222,128,0.12)',
-                border: '1px solid rgba(74,222,128,0.28)',
-                color: '#4ADE80', borderRadius: 20,
-                padding: '3px 12px', fontSize: 12, fontWeight: 600,
-              }}>
-                {k.active_count} {isRu
-                  ? plural(k.active_count, 'искатель', 'искателя', 'искателей')
-                  : (k.active_count === 1 ? 'hunter' : 'hunters')}
-              </span>
-            ) : (
-              <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
-                {isRu ? 'нет активных' : 'offline'}
-              </span>
-            )}
+            {/* Badges */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Registered (grey) */}
+              {k.registered_count > 0 && (
+                <span style={{
+                  background: 'rgba(90,101,128,0.18)',
+                  border: '1px solid rgba(90,101,128,0.35)',
+                  color: '#8A9AB5', borderRadius: 20,
+                  padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                }}>
+                  {k.registered_count} {isRu
+                    ? plural(k.registered_count, 'охотник', 'охотника', 'охотников')
+                    : (k.registered_count === 1 ? 'member' : 'members')}
+                </span>
+              )}
+              {/* Active (green) */}
+              {k.active_count > 0 ? (
+                <span style={{
+                  background: 'rgba(74,222,128,0.12)',
+                  border: '1px solid rgba(74,222,128,0.28)',
+                  color: '#4ADE80', borderRadius: 20,
+                  padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                }}>
+                  {k.active_count} {isRu
+                    ? plural(k.active_count, 'онлайн', 'онлайн', 'онлайн')
+                    : (k.active_count === 1 ? 'online' : 'online')}
+                </span>
+              ) : (
+                <span style={{ fontSize: 11, color: 'var(--on-surface2)' }}>
+                  {isRu ? 'ивент не идёт' : 'event offline'}
+                </span>
+              )}
+            </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Legend ── */}
+      <div style={{
+        display: 'flex', gap: 20, marginBottom: 12,
+        padding: '10px 16px',
+        background: 'rgba(61,127,255,0.04)',
+        border: '1px solid rgba(61,127,255,0.10)',
+        borderRadius: 10,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--on-surface2)' }}>
+          <span style={{
+            width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+            background: '#3A4560', border: '1.5px solid #5A6580',
+          }} />
+          {isRu ? 'Зарегистрирован в ГОСе' : 'Registered in kingdom'}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--on-surface2)' }}>
+          <span style={{
+            width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+            background: '#4ADE80', boxShadow: '0 0 6px rgba(74,222,128,0.5)',
+          }} />
+          {isRu ? 'Сканирует во время ивента' : 'Scanning during event'}
+        </div>
       </div>
 
       {/* ── Hint ── */}
@@ -137,7 +176,7 @@ export default function RoyPage() {
         borderRadius: 10, fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.55,
       }}>
         💡 {isRu
-          ? 'Оптимально — 5–7 искателей на одно Королевство. Если ГОС переполнен, выбери соседний.'
+          ? 'Оптимально — 5–7 охотников на одно Королевство. Если ГОС переполнен, выбери соседний.'
           : 'Optimal is 5–7 hunters per kingdom. If a kingdom is crowded, pick a nearby one.'}
       </div>
     </div>
