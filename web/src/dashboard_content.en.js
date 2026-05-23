@@ -18,6 +18,7 @@ export const DASHBOARD = {
     devices:      'Devices',
     transactions: 'Transactions',
     feedback:     'Feedback',
+    roy:          'SWARM',
   },
 
   devices: {
