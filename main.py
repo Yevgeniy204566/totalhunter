@@ -2973,19 +2973,21 @@ class TotalHunterApp(ctk.CTk):
         self._roy_pool_known_ids: set = set()  # (kingdom, x, y) — уже виденные координаты
         L = LANGS[self.current_lang]
 
-        ctk.CTkLabel(
+        self._roy_title_lb = ctk.CTkLabel(
             self.tab_roy,
             text=L['roy_title'],
             font=ctk.CTkFont(size=14, weight="bold"),
             text_color=MD3["primary"],
-        ).pack(pady=(16, 4))
+        )
+        self._roy_title_lb.pack(pady=(16, 4))
 
-        ctk.CTkLabel(
+        self._roy_subtitle_lb = ctk.CTkLabel(
             self.tab_roy,
             text=L['roy_subtitle'],
             font=ctk.CTkFont(size=11),
             text_color=MD3["on_surface2"],
-        ).pack(pady=(0, 8))
+        )
+        self._roy_subtitle_lb.pack(pady=(0, 8))
 
         # ─── Торговые Пути — таймер события ─────────────────────────────────────
         _tr_roy_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
@@ -3019,8 +3021,9 @@ class TotalHunterApp(ctk.CTk):
 
         bal_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
         bal_card.pack(fill="x", padx=20, pady=(0, 10))
-        ctk.CTkLabel(bal_card, text=L['roy_balance_title'],
-                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]).pack(pady=(8, 2))
+        self._roy_balance_title_lb = ctk.CTkLabel(bal_card, text=L['roy_balance_title'],
+                     font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"])
+        self._roy_balance_title_lb.pack(pady=(8, 2))
         self._roy_balance_lb = ctk.CTkLabel(
             bal_card, text="— мин",
             font=ctk.CTkFont(size=20, weight="bold"),
@@ -3030,8 +3033,9 @@ class TotalHunterApp(ctk.CTk):
 
         toggle_row = ctk.CTkFrame(self.tab_roy, fg_color="transparent")
         toggle_row.pack(fill="x", padx=20, pady=(0, 8))
-        ctk.CTkLabel(toggle_row, text=L['roy_join'],
-                     font=ctk.CTkFont(size=13)).pack(side="left")
+        self._roy_join_lb = ctk.CTkLabel(toggle_row, text=L['roy_join'],
+                     font=ctk.CTkFont(size=13))
+        self._roy_join_lb.pack(side="left")
         self._roy_switch = ctk.CTkSwitch(
             toggle_row, text="", variable=self._roy_enabled_var,
             onvalue=True, offvalue=False,
@@ -3043,9 +3047,10 @@ class TotalHunterApp(ctk.CTk):
         # ─── Номер Королевства ───────────────────────────────────────────────
         kingdom_row = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=8)
         kingdom_row.pack(fill="x", padx=20, pady=(0, 8))
-        ctk.CTkLabel(kingdom_row, text=L['roy_kingdom_label'],
+        self._roy_kingdom_lb = ctk.CTkLabel(kingdom_row, text=L['roy_kingdom_label'],
                      font=ctk.CTkFont(size=12),
-                     text_color=MD3["on_surface2"]).pack(side="left", padx=(12, 8))
+                     text_color=MD3["on_surface2"])
+        self._roy_kingdom_lb.pack(side="left", padx=(12, 8))
         self._roy_kingdom_entry = ctk.CTkEntry(
             kingdom_row, width=80, height=28,
             placeholder_text="233",
@@ -3070,10 +3075,11 @@ class TotalHunterApp(ctk.CTk):
         ctk.CTkFrame(self.tab_roy, height=1, fg_color=MD3["outline"]).pack(
             fill="x", padx=20, pady=(4, 8))
 
-        ctk.CTkLabel(
+        self._roy_coords_lb = ctk.CTkLabel(
             self.tab_roy, text=L['roy_coords_title'],
             font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
-        ).pack(anchor="w", padx=22)
+        )
+        self._roy_coords_lb.pack(anchor="w", padx=22)
 
         self._roy_list_frame = ctk.CTkScrollableFrame(
             self.tab_roy, height=200, fg_color=MD3["elevated"], corner_radius=8,
@@ -3081,13 +3087,14 @@ class TotalHunterApp(ctk.CTk):
         self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
 
 
-        ctk.CTkButton(
+        self._roy_refresh_btn = ctk.CTkButton(
             self.tab_roy, text=L['roy_refresh'],
             height=34, corner_radius=8,
             fg_color=MD3["elevated"], hover_color=MD3["card"],
             text_color=MD3["on_surface"],
             command=self._roy_refresh_pool,
-        ).pack(fill="x", padx=20, pady=(0, 8))
+        )
+        self._roy_refresh_btn.pack(fill="x", padx=20, pady=(0, 8))
 
         self._roy_status_lb = ctk.CTkLabel(
             self.tab_roy, text="",
@@ -3112,11 +3119,12 @@ class TotalHunterApp(ctk.CTk):
         #     {"kingdom": 317, "x": 440, "y": 380, "percent": 88, "updated_at": _ago(19)},
         # ])
 
-        ctk.CTkLabel(
+        self._roy_no_data_lb = ctk.CTkLabel(
             self._roy_list_frame,
             text=L['roy_no_data'],
             font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
-        ).pack(pady=20)
+        )
+        self._roy_no_data_lb.pack(pady=20)
 
         if self._roy_enabled_var.get():
             self.after(1500, self._roy_refresh_balance)
@@ -3353,6 +3361,27 @@ class TotalHunterApp(ctk.CTk):
             self._roy_hunt_btn.configure(
                 text=LANGS[val]["stop"] if self.is_running else LANGS[val]["start"]
             )
+
+        # ROY static labels
+        if hasattr(self, '_roy_title_lb'):
+            self._roy_title_lb.configure(text=LANGS[val]['roy_title'])
+        if hasattr(self, '_roy_subtitle_lb'):
+            self._roy_subtitle_lb.configure(text=LANGS[val]['roy_subtitle'])
+        if hasattr(self, '_roy_balance_title_lb'):
+            self._roy_balance_title_lb.configure(text=LANGS[val]['roy_balance_title'])
+        if hasattr(self, '_roy_join_lb'):
+            self._roy_join_lb.configure(text=LANGS[val]['roy_join'])
+        if hasattr(self, '_roy_kingdom_lb'):
+            self._roy_kingdom_lb.configure(text=LANGS[val]['roy_kingdom_label'])
+        if hasattr(self, '_roy_coords_lb'):
+            self._roy_coords_lb.configure(text=LANGS[val]['roy_coords_title'])
+        if hasattr(self, '_roy_refresh_btn'):
+            self._roy_refresh_btn.configure(text=LANGS[val]['roy_refresh'])
+        if hasattr(self, '_roy_no_data_lb'):
+            self._roy_no_data_lb.configure(text=LANGS[val]['roy_no_data'])
+        # Перезапросить баланс чтобы единицы времени обновились
+        if hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get():
+            self._roy_refresh_balance()
 
         # crypt_start_btn — только если бот не запущен
         if not self.is_crypt_running:
