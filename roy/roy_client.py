@@ -41,7 +41,7 @@ class RoyClient:
         Если передан kingdom — обновляет live-счётчик ГОСа на сервере.
         """
         payload: dict = {"hwid": self.hwid}
-        if kingdom:
+        if kingdom is not None:
             payload["kingdom"] = kingdom
         try:
             requests.post(f"{SERVER_URL}/roy/scan", json=payload, timeout=_TIMEOUT)

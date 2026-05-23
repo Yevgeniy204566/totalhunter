@@ -13,9 +13,9 @@ const NAV_KEYS = [
   { to: '/dashboard/hunts',        icon: '⚔', key: 'hunts' },
   { to: '/dashboard/referrals',    icon: '⬡', key: 'referrals' },
   { to: '/dashboard/devices',      icon: '▣', key: 'devices' },
+  { to: '/dashboard/roy',          icon: '⬡', key: 'roy' },
   { to: '/dashboard/transactions', icon: '≡', key: 'transactions' },
   { to: '/dashboard/feedback',     icon: '✦', key: 'feedback' },
-  { to: '/dashboard/roy',          icon: '⬡', key: 'roy' },
 ]
 
 
