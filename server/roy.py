@@ -70,7 +70,7 @@ async def _kingdoms_payload(db: AsyncSession) -> str:
             "active":           _active_count(k) > 0,
         }
         for k in kingdoms
-        if reg_count.get(k, 0) > 0 or _active_count(k) > 0
+        if k > 0 and (reg_count.get(k, 0) > 0 or _active_count(k) > 0)
     ]
     return json.dumps(sorted(result, key=lambda x: (-x["active_count"], -x["registered_count"])))
 
