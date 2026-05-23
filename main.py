@@ -178,6 +178,13 @@ LANGS = {
         # --- units ---
         "unit_sec": "с", "unit_min": "мин", "unit_scan": "скан",
         "tr_event": "Торговые Пути", "tr_active": "🟢 ИДЁТ — осталось", "tr_ends_in": "🟢 ИДЁТ — до конца:", "tr_starts_in": "до начала:",
+        # --- roy tab ---
+        "roy_title": "⬡  СИСТЕМА РОЙ", "roy_subtitle": "Делись координатами бирж — получай чужие",
+        "roy_balance_title": "⏱ Баланс доступа", "roy_join": "Участвовать в Рое",
+        "roy_kingdom_label": "Королевство №:", "roy_coords_title": "Координаты от участников:",
+        "roy_refresh": "↻  Обновить пул", "roy_no_data": "Нет данных. Включи Рой и запусти бота.",
+        "roy_error": "Ошибка", "roy_empty_pool": "Нет активных координат.",
+        "roy_pool_empty": "Пул пуст", "roy_pool_count": "Координат в пуле",
     },
     "EN": {
         # --- существующие ---
@@ -232,6 +239,13 @@ LANGS = {
         # --- units ---
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Trade Routes", "tr_active": "🟢 ACTIVE — left:", "tr_ends_in": "🟢 ACTIVE — ends in:", "tr_starts_in": "starts in:",
+        # --- roy tab ---
+        "roy_title": "⬡  SWARM SYSTEM", "roy_subtitle": "Share exchange coords — get others' in return",
+        "roy_balance_title": "⏱ Access Balance", "roy_join": "Join the Swarm",
+        "roy_kingdom_label": "Kingdom №:", "roy_coords_title": "Coordinates from members:",
+        "roy_refresh": "↻  Refresh pool", "roy_no_data": "No data. Enable Swarm and start the bot.",
+        "roy_error": "Error", "roy_empty_pool": "No active coordinates.",
+        "roy_pool_empty": "Pool empty", "roy_pool_count": "Coords in pool",
     },
     "DE": {
         "title": "Total Hunter", "tab_hunt": "BÖRSEN", "tab_combo": "Combo", "tab_ref": "PARTNER",
@@ -272,6 +286,13 @@ LANGS = {
         "ref_link_title": "Dein Empfehlungslink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Partner",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Handelsrouten", "tr_active": "🟢 AKTIV — verbleibend:", "tr_ends_in": "🟢 AKTIV — endet in:", "tr_starts_in": "beginnt in:",
+        # --- roy tab ---
+        "roy_title": "⬡  SCHWARM-SYSTEM", "roy_subtitle": "Koordinaten teilen — andere erhalten",
+        "roy_balance_title": "⏱ Zugangsguthaben", "roy_join": "Am Schwarm teilnehmen",
+        "roy_kingdom_label": "Königreich №:", "roy_coords_title": "Koordinaten der Mitglieder:",
+        "roy_refresh": "↻  Pool aktualisieren", "roy_no_data": "Keine Daten. Schwarm aktivieren und Bot starten.",
+        "roy_error": "Fehler", "roy_empty_pool": "Keine aktiven Koordinaten.",
+        "roy_pool_empty": "Pool leer", "roy_pool_count": "Koordinaten im Pool",
     },
     "ES": {
         "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "REFERIDOS",
@@ -312,6 +333,13 @@ LANGS = {
         "ref_link_title": "Tu enlace de referido:", "ref_code_prefix": "Código: ", "ref_stats_title": "Referidos",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Rutas Comerciales", "tr_active": "🟢 ACTIVO — quedan:", "tr_ends_in": "🟢 ACTIVO — termina en:", "tr_starts_in": "comienza en:",
+        # --- roy tab ---
+        "roy_title": "⬡  SISTEMA ENJAMBRE", "roy_subtitle": "Comparte coordenadas — recibe las de otros",
+        "roy_balance_title": "⏱ Saldo de acceso", "roy_join": "Unirse al Enjambre",
+        "roy_kingdom_label": "Reino №:", "roy_coords_title": "Coordenadas de participantes:",
+        "roy_refresh": "↻  Actualizar pool", "roy_no_data": "Sin datos. Activa el Enjambre y lanza el bot.",
+        "roy_error": "Error", "roy_empty_pool": "Sin coordenadas activas.",
+        "roy_pool_empty": "Pool vacío", "roy_pool_count": "Coords en el pool",
     },
     "FR": {
         "title": "Total Hunter", "tab_hunt": "ÉCHANGES", "tab_combo": "Combo", "tab_ref": "PARRAINAGES",
@@ -352,6 +380,13 @@ LANGS = {
         "ref_link_title": "Votre lien de parrainage :", "ref_code_prefix": "Code : ", "ref_stats_title": "Parrainages",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Routes Commerciales", "tr_active": "🟢 ACTIF — reste :", "tr_ends_in": "🟢 ACTIF — fin dans :", "tr_starts_in": "commence dans :",
+        # --- roy tab ---
+        "roy_title": "⬡  SYSTÈME ESSAIM", "roy_subtitle": "Partage des coords — reçois celles des autres",
+        "roy_balance_title": "⏱ Solde d'accès", "roy_join": "Rejoindre l'Essaim",
+        "roy_kingdom_label": "Royaume №:", "roy_coords_title": "Coordonnées des membres :",
+        "roy_refresh": "↻  Actualiser le pool", "roy_no_data": "Pas de données. Active l'Essaim et lance le bot.",
+        "roy_error": "Erreur", "roy_empty_pool": "Aucune coordonnée active.",
+        "roy_pool_empty": "Pool vide", "roy_pool_count": "Coords dans le pool",
     },
     "IT": {
         "title": "Total Hunter", "tab_hunt": "BORSE", "tab_combo": "Combo", "tab_ref": "REFERRAL",
@@ -392,6 +427,13 @@ LANGS = {
         "ref_link_title": "Il tuo link referral:", "ref_code_prefix": "Codice: ", "ref_stats_title": "Referral",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Rotte Commerciali", "tr_active": "🟢 ATTIVO — rimane:", "tr_ends_in": "🟢 ATTIVO — finisce in:", "tr_starts_in": "inizia tra:",
+        # --- roy tab ---
+        "roy_title": "⬡  SISTEMA SCIAME", "roy_subtitle": "Condividi coordinate — ricevi quelle degli altri",
+        "roy_balance_title": "⏱ Saldo accesso", "roy_join": "Partecipa allo Sciame",
+        "roy_kingdom_label": "Regno №:", "roy_coords_title": "Coordinate dei membri:",
+        "roy_refresh": "↻  Aggiorna pool", "roy_no_data": "Nessun dato. Attiva lo Sciame e avvia il bot.",
+        "roy_error": "Errore", "roy_empty_pool": "Nessuna coordinata attiva.",
+        "roy_pool_empty": "Pool vuoto", "roy_pool_count": "Coord nel pool",
     },
     "NL": {
         "title": "Total Hunter", "tab_hunt": "BEURZEN", "tab_combo": "Combo", "tab_ref": "REFS",
@@ -432,6 +474,13 @@ LANGS = {
         "ref_link_title": "Jouw referrallink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Referrals",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Handelsroutes", "tr_active": "🟢 ACTIEF — over:", "tr_ends_in": "🟢 ACTIEF — eindigt in:", "tr_starts_in": "begint over:",
+        # --- roy tab ---
+        "roy_title": "⬡  ZWERM-SYSTEEM", "roy_subtitle": "Deel coördinaten — ontvang die van anderen",
+        "roy_balance_title": "⏱ Toegangssaldo", "roy_join": "Deelnemen aan Zwerm",
+        "roy_kingdom_label": "Koninkrijk №:", "roy_coords_title": "Coördinaten van leden:",
+        "roy_refresh": "↻  Pool vernieuwen", "roy_no_data": "Geen data. Activeer Zwerm en start de bot.",
+        "roy_error": "Fout", "roy_empty_pool": "Geen actieve coördinaten.",
+        "roy_pool_empty": "Pool leeg", "roy_pool_count": "Coords in pool",
     },
     "NO": {
         "title": "Total Hunter", "tab_hunt": "BØRSER", "tab_combo": "Combo", "tab_ref": "REFERANSER",
@@ -472,6 +521,13 @@ LANGS = {
         "ref_link_title": "Din referanselink:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referanser",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Handelsruter", "tr_active": "🟢 AKTIV — gjenstår:", "tr_ends_in": "🟢 AKTIV — slutter om:", "tr_starts_in": "starter om:",
+        # --- roy tab ---
+        "roy_title": "⬡  SVERM-SYSTEM", "roy_subtitle": "Del koordinater — motta andres",
+        "roy_balance_title": "⏱ Tilgangssaldo", "roy_join": "Delta i Svermen",
+        "roy_kingdom_label": "Kongerike №:", "roy_coords_title": "Koordinater fra medlemmer:",
+        "roy_refresh": "↻  Oppdater pool", "roy_no_data": "Ingen data. Aktiver Sverm og start boten.",
+        "roy_error": "Feil", "roy_empty_pool": "Ingen aktive koordinater.",
+        "roy_pool_empty": "Pool tom", "roy_pool_count": "Coords i pool",
     },
     "PL": {
         "title": "Total Hunter", "tab_hunt": "GIEŁDY", "tab_combo": "Combo", "tab_ref": "POLECENIA",
@@ -512,6 +568,13 @@ LANGS = {
         "ref_link_title": "Twój link polecający:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Polecenia",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "skan",
         "tr_event": "Szlaki Handlowe", "tr_active": "🟢 TRWA — zostało:", "tr_ends_in": "🟢 TRWA — kończy się za:", "tr_starts_in": "zaczyna się za:",
+        # --- roy tab ---
+        "roy_title": "⬡  SYSTEM RÓJ", "roy_subtitle": "Udostępnij koordynaty — otrzymaj innych",
+        "roy_balance_title": "⏱ Saldo dostępu", "roy_join": "Dołącz do Roju",
+        "roy_kingdom_label": "Królestwo №:", "roy_coords_title": "Koordynaty od uczestników:",
+        "roy_refresh": "↻  Odśwież pulę", "roy_no_data": "Brak danych. Włącz Rój i uruchom bota.",
+        "roy_error": "Błąd", "roy_empty_pool": "Brak aktywnych koordynatów.",
+        "roy_pool_empty": "Pula pusta", "roy_pool_count": "Koord. w puli",
     },
     "PT": {
         "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "INDICAÇÕES",
@@ -552,6 +615,13 @@ LANGS = {
         "ref_link_title": "Seu link de indicação:", "ref_code_prefix": "Código: ", "ref_stats_title": "Indicações",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Rotas Comerciais", "tr_active": "🟢 ATIVO — restam:", "tr_ends_in": "🟢 ATIVO — termina em:", "tr_starts_in": "começa em:",
+        # --- roy tab ---
+        "roy_title": "⬡  SISTEMA ENXAME", "roy_subtitle": "Partilha coordenadas — recebe as dos outros",
+        "roy_balance_title": "⏱ Saldo de acesso", "roy_join": "Participar no Enxame",
+        "roy_kingdom_label": "Reino №:", "roy_coords_title": "Coordenadas dos membros:",
+        "roy_refresh": "↻  Atualizar pool", "roy_no_data": "Sem dados. Ativa o Enxame e inicia o bot.",
+        "roy_error": "Erro", "roy_empty_pool": "Sem coordenadas ativas.",
+        "roy_pool_empty": "Pool vazio", "roy_pool_count": "Coords no pool",
     },
     "SV": {
         "title": "Total Hunter", "tab_hunt": "BÖRSER", "tab_combo": "Combo", "tab_ref": "HÄNVISNINGAR",
@@ -592,6 +662,13 @@ LANGS = {
         "ref_link_title": "Din hänvisningslänk:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Hänvisningar",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
         "tr_event": "Handelsrutter", "tr_active": "🟢 AKTIV — kvar:", "tr_ends_in": "🟢 AKTIV — slutar om:", "tr_starts_in": "börjar om:",
+        # --- roy tab ---
+        "roy_title": "⬡  SVÄRM-SYSTEM", "roy_subtitle": "Dela koordinater — få andras",
+        "roy_balance_title": "⏱ Åtkomstsaldo", "roy_join": "Delta i Svärmen",
+        "roy_kingdom_label": "Kungadöme №:", "roy_coords_title": "Koordinater från medlemmar:",
+        "roy_refresh": "↻  Uppdatera pool", "roy_no_data": "Inga data. Aktivera Svärm och starta boten.",
+        "roy_error": "Fel", "roy_empty_pool": "Inga aktiva koordinater.",
+        "roy_pool_empty": "Pool tom", "roy_pool_count": "Koords i pool",
     },
     "TR": {
         "title": "Total Hunter", "tab_hunt": "BORSALAR", "tab_combo": "Combo", "tab_ref": "REFERANSLAR",
@@ -632,6 +709,13 @@ LANGS = {
         "ref_link_title": "Referans linkiniz:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Referanslar",
         "unit_sec": "s", "unit_min": "dk", "unit_scan": "scan",
         "tr_event": "Ticaret Yolları", "tr_active": "🟢 AKTİF — kaldı:", "tr_ends_in": "🟢 AKTİF — bitiş:", "tr_starts_in": "başlıyor:",
+        # --- roy tab ---
+        "roy_title": "⬡  OĞUL SİSTEMİ", "roy_subtitle": "Koordinatları paylaş — diğerlerinkini al",
+        "roy_balance_title": "⏱ Erişim Bakiyesi", "roy_join": "Oğula Katıl",
+        "roy_kingdom_label": "Krallık №:", "roy_coords_title": "Üyelerden koordinatlar:",
+        "roy_refresh": "↻  Havuzu yenile", "roy_no_data": "Veri yok. Oğulu etkinleştir ve botu başlat.",
+        "roy_error": "Hata", "roy_empty_pool": "Aktif koordinat yok.",
+        "roy_pool_empty": "Havuz boş", "roy_pool_count": "Havuzdaki koord.",
     },
     "AR": {
         "title": "Total Hunter", "tab_hunt": "البورصات", "tab_combo": "Combo", "tab_ref": "الإحالات",
@@ -672,6 +756,13 @@ LANGS = {
         "ref_link_title": "رابط إحالتك:", "ref_code_prefix": "الرمز: ", "ref_stats_title": "الإحالات",
         "unit_sec": "ث", "unit_min": "د", "unit_scan": "مسح",
         "tr_event": "طرق التجارة", "tr_active": "🟢 نشط — متبقي:", "tr_ends_in": "🟢 نشط — ينتهي خلال:", "tr_starts_in": "يبدأ خلال:",
+        # --- roy tab ---
+        "roy_title": "⬡  نظام السرب", "roy_subtitle": "شارك الإحداثيات — احصل على إحداثيات الآخرين",
+        "roy_balance_title": "⏱ رصيد الوصول", "roy_join": "انضم إلى السرب",
+        "roy_kingdom_label": "المملكة №:", "roy_coords_title": "إحداثيات الأعضاء:",
+        "roy_refresh": "↻  تحديث المجمع", "roy_no_data": "لا بيانات. فعّل السرب وشغّل البوت.",
+        "roy_error": "خطأ", "roy_empty_pool": "لا إحداثيات نشطة.",
+        "roy_pool_empty": "المجمع فارغ", "roy_pool_count": "إحداثيات في المجمع",
     },
     "JA": {
         "title": "Total Hunter", "tab_hunt": "取引所", "tab_combo": "Combo", "tab_ref": "紹介",
@@ -712,6 +803,13 @@ LANGS = {
         "ref_link_title": "あなたの紹介リンク:", "ref_code_prefix": "コード: ", "ref_stats_title": "紹介",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "スキャン",
         "tr_event": "交易路", "tr_active": "🟢 開催中 — 残り:", "tr_ends_in": "🟢 開催中 — 終了まで:", "tr_starts_in": "開始まで:",
+        # --- roy tab ---
+        "roy_title": "⬡  群れシステム", "roy_subtitle": "座標を共有 — 他のメンバーの座標を受け取る",
+        "roy_balance_title": "⏱ アクセス残高", "roy_join": "群れに参加",
+        "roy_kingdom_label": "王国 №:", "roy_coords_title": "メンバーからの座標:",
+        "roy_refresh": "↻  プール更新", "roy_no_data": "データなし。群れを有効にしてボットを起動。",
+        "roy_error": "エラー", "roy_empty_pool": "アクティブな座標なし。",
+        "roy_pool_empty": "プール空", "roy_pool_count": "プール内座標数",
     },
     "ZH": {
         "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推荐",
@@ -752,6 +850,13 @@ LANGS = {
         "ref_link_title": "您的推荐链接:", "ref_code_prefix": "代码: ", "ref_stats_title": "推荐",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "扫描",
         "tr_event": "贸易路线", "tr_active": "🟢 进行中 — 剩余:", "tr_ends_in": "🟢 进行中 — 结束于:", "tr_starts_in": "开始于:",
+        # --- roy tab ---
+        "roy_title": "⬡  蜂群系统", "roy_subtitle": "分享交易所坐标 — 获取他人的坐标",
+        "roy_balance_title": "⏱ 访问余额", "roy_join": "加入蜂群",
+        "roy_kingdom_label": "王国 №:", "roy_coords_title": "成员坐标:",
+        "roy_refresh": "↻  刷新池", "roy_no_data": "无数据。启用蜂群并启动机器人。",
+        "roy_error": "错误", "roy_empty_pool": "没有活跃坐标。",
+        "roy_pool_empty": "池为空", "roy_pool_count": "池中坐标数",
     },
     "ZH_TW": {
         "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推薦",
@@ -792,6 +897,13 @@ LANGS = {
         "ref_link_title": "您的推薦連結:", "ref_code_prefix": "代碼: ", "ref_stats_title": "推薦",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "掃描",
         "tr_event": "貿易路線", "tr_active": "🟢 進行中 — 剩餘:", "tr_ends_in": "🟢 進行中 — 結束於:", "tr_starts_in": "開始於:",
+        # --- roy tab ---
+        "roy_title": "⬡  蜂群系統", "roy_subtitle": "分享交易所座標 — 獲取他人的座標",
+        "roy_balance_title": "⏱ 訪問餘額", "roy_join": "加入蜂群",
+        "roy_kingdom_label": "王國 №:", "roy_coords_title": "成員座標:",
+        "roy_refresh": "↻  刷新池", "roy_no_data": "無數據。啟用蜂群並啟動機器人。",
+        "roy_error": "錯誤", "roy_empty_pool": "沒有活躍座標。",
+        "roy_pool_empty": "池為空", "roy_pool_count": "池中座標數",
     },
     "KO": {
         "title": "Total Hunter", "tab_hunt": "거래소", "tab_combo": "Combo", "tab_ref": "추천",
@@ -832,6 +944,13 @@ LANGS = {
         "ref_link_title": "추천 링크:", "ref_code_prefix": "코드: ", "ref_stats_title": "추천",
         "unit_sec": "초", "unit_min": "분", "unit_scan": "스캔",
         "tr_event": "교역로", "tr_active": "🟢 진행중 — 남은:", "tr_ends_in": "🟢 진행중 — 종료까지:", "tr_starts_in": "시작까지:",
+        # --- roy tab ---
+        "roy_title": "⬡  군집 시스템", "roy_subtitle": "교역소 좌표 공유 — 다른 멤버의 좌표 받기",
+        "roy_balance_title": "⏱ 접속 잔액", "roy_join": "군집 참가",
+        "roy_kingdom_label": "왕국 №:", "roy_coords_title": "멤버 좌표:",
+        "roy_refresh": "↻  풀 새로고침", "roy_no_data": "데이터 없음. 군집을 활성화하고 봇을 실행하세요.",
+        "roy_error": "오류", "roy_empty_pool": "활성 좌표 없음.",
+        "roy_pool_empty": "풀 비어 있음", "roy_pool_count": "풀 내 좌표 수",
     },
     "UK": {
         "title": "Total Hunter", "tab_hunt": "БІРЖІ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛИ",
@@ -872,6 +991,13 @@ LANGS = {
         "ref_link_title": "Ваше реферальне посилання:", "ref_code_prefix": "Код: ", "ref_stats_title": "Реферали",
         "unit_sec": "с", "unit_min": "хв", "unit_scan": "скан",
         "tr_event": "Торгові Шляхи", "tr_active": "🟢 ЙДЕ — залишилось", "tr_ends_in": "🟢 ЙДЕ — до кінця:", "tr_starts_in": "до початку:",
+        # --- roy tab ---
+        "roy_title": "⬡  СИСТЕМА РОЙ", "roy_subtitle": "Ділись координатами — отримуй координати інших",
+        "roy_balance_title": "⏱ Баланс доступу", "roy_join": "Приєднатись до Рою",
+        "roy_kingdom_label": "Королівство №:", "roy_coords_title": "Координати учасників:",
+        "roy_refresh": "↻  Оновити пул", "roy_no_data": "Немає даних. Увімкни Рій і запусти бота.",
+        "roy_error": "Помилка", "roy_empty_pool": "Немає активних координат.",
+        "roy_pool_empty": "Пул порожній", "roy_pool_count": "Координат у пулі",
     },
     "ID": {
         "title": "Total Hunter", "tab_hunt": "BURSA", "tab_combo": "Combo", "tab_ref": "REFERRAL",
@@ -912,6 +1038,13 @@ LANGS = {
         "ref_link_title": "Tautan referral Anda:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referral",
         "unit_sec": "d", "unit_min": "mnt", "unit_scan": "scan",
         "tr_event": "Jalur Perdagangan", "tr_active": "🟢 AKTIF — sisa:", "tr_ends_in": "🟢 AKTIF — berakhir dalam:", "tr_starts_in": "dimulai dalam:",
+        # --- roy tab ---
+        "roy_title": "⬡  SISTEM KAWANAN", "roy_subtitle": "Bagikan koordinat bursa — terima koordinat anggota lain",
+        "roy_balance_title": "⏱ Saldo akses", "roy_join": "Bergabung ke Kawanan",
+        "roy_kingdom_label": "Kerajaan №:", "roy_coords_title": "Koordinat anggota:",
+        "roy_refresh": "↻  Perbarui pool", "roy_no_data": "Tidak ada data. Aktifkan Kawanan dan jalankan bot.",
+        "roy_error": "Kesalahan", "roy_empty_pool": "Tidak ada koordinat aktif.",
+        "roy_pool_empty": "Pool kosong", "roy_pool_count": "Koordinat dalam pool",
     },
 }
 
@@ -2838,17 +2971,18 @@ class TotalHunterApp(ctk.CTk):
     def setup_roy_tab(self):
         self._roy_enabled_var = ctk.BooleanVar(value=self._load_gui_config().get("roy_enabled", False))
         self._roy_pool_known_ids: set = set()  # (kingdom, x, y) — уже виденные координаты
+        L = LANGS[self.current_lang]
 
         ctk.CTkLabel(
             self.tab_roy,
-            text="⬡  СИСТЕМА РОЙ",
+            text=L['roy_title'],
             font=ctk.CTkFont(size=14, weight="bold"),
             text_color=MD3["primary"],
         ).pack(pady=(16, 4))
 
         ctk.CTkLabel(
             self.tab_roy,
-            text="Делись координатами бирж — получай чужие",
+            text=L['roy_subtitle'],
             font=ctk.CTkFont(size=11),
             text_color=MD3["on_surface2"],
         ).pack(pady=(0, 8))
@@ -2885,7 +3019,7 @@ class TotalHunterApp(ctk.CTk):
 
         bal_card = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=10)
         bal_card.pack(fill="x", padx=20, pady=(0, 10))
-        ctk.CTkLabel(bal_card, text="⏱ Баланс доступа",
+        ctk.CTkLabel(bal_card, text=L['roy_balance_title'],
                      font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"]).pack(pady=(8, 2))
         self._roy_balance_lb = ctk.CTkLabel(
             bal_card, text="— мин",
@@ -2896,7 +3030,7 @@ class TotalHunterApp(ctk.CTk):
 
         toggle_row = ctk.CTkFrame(self.tab_roy, fg_color="transparent")
         toggle_row.pack(fill="x", padx=20, pady=(0, 8))
-        ctk.CTkLabel(toggle_row, text="Участвовать в Рое",
+        ctk.CTkLabel(toggle_row, text=L['roy_join'],
                      font=ctk.CTkFont(size=13)).pack(side="left")
         self._roy_switch = ctk.CTkSwitch(
             toggle_row, text="", variable=self._roy_enabled_var,
@@ -2909,7 +3043,7 @@ class TotalHunterApp(ctk.CTk):
         # ─── Номер Королевства ───────────────────────────────────────────────
         kingdom_row = ctk.CTkFrame(self.tab_roy, fg_color=MD3["elevated"], corner_radius=8)
         kingdom_row.pack(fill="x", padx=20, pady=(0, 8))
-        ctk.CTkLabel(kingdom_row, text="Королевство №:",
+        ctk.CTkLabel(kingdom_row, text=L['roy_kingdom_label'],
                      font=ctk.CTkFont(size=12),
                      text_color=MD3["on_surface2"]).pack(side="left", padx=(12, 8))
         self._roy_kingdom_entry = ctk.CTkEntry(
@@ -2937,7 +3071,7 @@ class TotalHunterApp(ctk.CTk):
             fill="x", padx=20, pady=(4, 8))
 
         ctk.CTkLabel(
-            self.tab_roy, text="Координаты от участников:",
+            self.tab_roy, text=L['roy_coords_title'],
             font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
         ).pack(anchor="w", padx=22)
 
@@ -2948,7 +3082,7 @@ class TotalHunterApp(ctk.CTk):
 
 
         ctk.CTkButton(
-            self.tab_roy, text="↻  Обновить пул",
+            self.tab_roy, text=L['roy_refresh'],
             height=34, corner_radius=8,
             fg_color=MD3["elevated"], hover_color=MD3["card"],
             text_color=MD3["on_surface"],
@@ -2980,7 +3114,7 @@ class TotalHunterApp(ctk.CTk):
 
         ctk.CTkLabel(
             self._roy_list_frame,
-            text="Нет данных. Включи Рой и запусти бота.",
+            text=L['roy_no_data'],
             font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
         ).pack(pady=20)
 
@@ -3065,6 +3199,7 @@ class TotalHunterApp(ctk.CTk):
 
     def _roy_refresh_balance(self):
         """Обновляет баланс времени с сервера."""
+        L = LANGS[self.current_lang]
         def _fetch():
             try:
                 from roy.roy_client import RoyClient
@@ -3073,7 +3208,7 @@ class TotalHunterApp(ctk.CTk):
                 bal = client.get_balance()
                 mins = bal // 60
                 secs = bal % 60
-                text = f"{mins}:{secs:02d} мин" if mins > 0 else f"{secs} сек"
+                text = f"{mins}:{secs:02d} {L['unit_min']}" if mins > 0 else f"{secs} {L['unit_sec']}"
                 color = "#4ADE80" if bal > 300 else ("#FACC15" if bal > 60 else "#F87171")
                 self.after(0, lambda: self._roy_balance_lb.configure(text=text, text_color=color))
             except Exception:
@@ -3082,6 +3217,7 @@ class TotalHunterApp(ctk.CTk):
 
     def _roy_refresh_pool(self):
         """Загружает список координат из пула Роя и обновляет список."""
+        err_label = LANGS[self.current_lang]['roy_error']
         def _fetch():
             try:
                 from roy.roy_client import RoyClient
@@ -3090,11 +3226,12 @@ class TotalHunterApp(ctk.CTk):
                 pool = client.get_pool(consume=False)
                 self.after(0, lambda: self._roy_update_list(pool))
             except Exception as e:
-                self.after(0, lambda: self._roy_status_lb.configure(text=f"Ошибка: {e}"))
+                self.after(0, lambda: self._roy_status_lb.configure(text=f"{err_label}: {e}"))
         threading.Thread(target=_fetch, daemon=True).start()
 
     def _roy_update_list(self, pool: list):
         """Перерисовывает список координат в ScrollableFrame."""
+        L = LANGS[self.current_lang]
         # Звук если появились новые координаты которых раньше не было
         new_ids = {(e.get('kingdom'), e.get('x'), e.get('y')) for e in pool}
         if new_ids - self._roy_pool_known_ids:
@@ -3115,13 +3252,13 @@ class TotalHunterApp(ctk.CTk):
         if not pool:
             ctk.CTkLabel(
                 self._roy_list_frame,
-                text="Нет активных координат.",
+                text=L['roy_empty_pool'],
                 font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
             ).pack(pady=20)
-            self._roy_status_lb.configure(text="Пул пуст")
+            self._roy_status_lb.configure(text=L['roy_pool_empty'])
             return
 
-        self._roy_status_lb.configure(text=f"Координат в пуле: {len(pool)}")
+        self._roy_status_lb.configure(text=f"{L['roy_pool_count']}: {len(pool)}")
         from datetime import datetime, timezone, timedelta
 
         # Сортировка: свежие (маленький elapsed) сверху
