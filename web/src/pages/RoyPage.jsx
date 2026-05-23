@@ -52,7 +52,7 @@ export default function RoyPage() {
         </div>
         <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.55 }}>
           {isRu
-            ? 'Королевства, где охотники настроили поиск бирж. Зелёный — активное сканирование прямо сейчас (ивент идёт). Серый — охотник зарегистрирован в этом ГОСе.'
+            ? 'Королевства, где охотники настроили поиск бирж. Зелёный — активное сканирование прямо сейчас (ивент идёт). Серый — охотник зарегистрирован в этом Королевстве.'
             : 'Kingdoms where hunters are configured. Green = actively scanning right now (event live). Grey = hunter registered in this kingdom.'}
         </p>
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -157,7 +157,7 @@ export default function RoyPage() {
             width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
             background: '#3A4560', border: '1.5px solid #5A6580',
           }} />
-          {isRu ? 'Зарегистрирован в ГОСе' : 'Registered in kingdom'}
+          {isRu ? 'Зарегистрирован в Королевстве' : 'Registered in kingdom'}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--on-surface2)' }}>
           <span style={{
@@ -176,7 +176,7 @@ export default function RoyPage() {
         borderRadius: 10, fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.55,
       }}>
         💡 {isRu
-          ? 'Оптимально — 5–7 охотников на одно Королевство. Если ГОС переполнен, выбери соседний.'
+          ? 'Оптимально — 5–7 охотников на одно Королевство. Если Королевство переполнено, выбери соседнее.'
           : 'Optimal is 5–7 hunters per kingdom. If a kingdom is crowded, pick a nearby one.'}
       </div>
     </div>
