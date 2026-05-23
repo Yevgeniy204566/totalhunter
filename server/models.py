@@ -293,6 +293,21 @@ class RoyBalance(Base):
                          server_default=func.now())
 
 
+class RoyKingdomStatus(Base):
+    """
+    Статус активности Роя по каждому Королевству.
+    active_count — сколько ботов сейчас сканирует этот ГОС.
+    last_seen_at — время последнего /roy/scan с этим kingdom.
+    Если last_seen_at > 5 мин назад — ГОС считается неактивным (cleanup task).
+    """
+    __tablename__ = "roy_kingdom_status"
+
+    kingdom      = Column(Integer, primary_key=True)
+    active_count = Column(Integer, nullable=False, server_default=text('0'))
+    last_seen_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                          server_default=func.now())
+
+
 # ─────────────────────────────────────────────
 # Orders — payment records
 # ─────────────────────────────────────────────
