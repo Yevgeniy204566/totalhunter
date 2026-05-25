@@ -4,6 +4,7 @@ import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const HUNT_COLORS = {
   exchange: { color: '#B060FF', bg: 'rgba(176,96,255,0.12)' },
@@ -36,6 +37,10 @@ export default function HuntsPage() {
   const D = lang === 'ru' ? D_RU : D_EN
   const h = D.hunts
   const ta = D.timeAgo
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — История охот' : 'Total Hunter — Hunt History',
+    description: lang === 'ru' ? 'Статистика и история ваших охот на биржи и склепы в Total Hunter.' : 'Stats and history of your exchange and crypt hunts in Total Hunter.',
+  })
 
   function timeAgo(iso) {
     const diff = (Date.now() - new Date(iso)) / 1000

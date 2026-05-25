@@ -3,6 +3,7 @@ import { api } from '../api.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const TYPE_ICONS = {
   purchase:               { icon: '◆', color: '#4ADE80' },
@@ -20,6 +21,10 @@ export default function TransactionsPage() {
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const t = D.transactions
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — История транзакций' : 'Total Hunter — Transaction History',
+    description: lang === 'ru' ? 'Все пополнения и списания алмазов в вашем аккаунте Total Hunter.' : 'All diamond credits and charges in your Total Hunter account.',
+  })
 
   function formatDate(iso) {
     const d = new Date(iso)

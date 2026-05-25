@@ -708,6 +708,14 @@ export default function GuidePage() {
             }}>
               {isLoggedIn() ? G.cta.btnDashboard : G.cta.btnStart}
             </Link>
+            <div style={{ marginTop: 24, display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/download" style={{ color: 'var(--accent)', fontSize: 14, textDecoration: 'none', opacity: 0.85 }}>
+                ⬇ {lang === 'ru' ? 'Скачать программу' : 'Download app'}
+              </Link>
+              <Link to="/contacts" style={{ color: 'var(--on-surface2)', fontSize: 14, textDecoration: 'none', opacity: 0.85 }}>
+                ✉ {lang === 'ru' ? 'Написать в поддержку' : 'Contact support'}
+              </Link>
+            </div>
           </div>
 
         </div>

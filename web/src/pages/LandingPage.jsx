@@ -6,7 +6,7 @@ import { LANDING as LANDING_RU } from '../constants.js'
 import { LANDING as LANDING_EN } from '../constants.en.js'
 import { useLang } from '../lang.js'
 import AdSlot from '../components/AdSlot.jsx'
-import { useMeta, useFaqSchema } from '../hooks/useMeta.js'
+import { useMeta } from '../hooks/useMeta.js'
 import { track } from '@vercel/analytics'
 
 const FAQ_ITEMS_RU = [
@@ -135,8 +135,6 @@ export default function LandingPage() {
     : { title: 'Total Hunter — автоматизация Total Battle | Биржи и склепы',
         description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle. Нейросеть + имитация игрока. 100 алмазов бесплатно при регистрации.' }
   )
-  useFaqSchema(lang === 'en' ? FAQ_ITEMS_EN : FAQ_ITEMS_RU)
-
   useEffect(() => {
     api.globalStats().then(d => setStats(d)).catch(() => {})
   }, [])

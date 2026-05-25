@@ -5,6 +5,7 @@ import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import ReferralTree from '../components/ReferralTree.jsx'
+import { useMeta } from '../hooks/useMeta.js'
 
 const HEADER_H = 52
 
@@ -13,6 +14,10 @@ export default function ReferralTreePage() {
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const r = D.referrals
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — Реферальное дерево' : 'Total Hunter — Referral Tree',
+    description: lang === 'ru' ? 'Интерактивное дерево вашей реферальной сети в Total Hunter.' : 'Interactive tree of your referral network in Total Hunter.',
+  })
 
   useEffect(() => { api.me().then(setUser).catch(() => {}) }, [])
 

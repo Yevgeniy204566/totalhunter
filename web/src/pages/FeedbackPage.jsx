@@ -3,6 +3,7 @@ import { api } from '../api.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 export default function FeedbackPage() {
   const [text, setText]       = useState('')
@@ -11,6 +12,10 @@ export default function FeedbackPage() {
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const f = D.feedback
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — Обратная связь' : 'Total Hunter — Feedback',
+    description: lang === 'ru' ? 'Отправьте отзыв или сообщение о проблеме команде Total Hunter.' : 'Send feedback or report an issue to the Total Hunter team.',
+  })
 
   async function send() {
     if (!text.trim()) return

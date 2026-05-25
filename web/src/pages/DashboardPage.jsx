@@ -5,6 +5,7 @@ import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const STAT_KEYS = [
   { key: 'exchanges_today', icon: '⚔', color: 'var(--accent)'       },
@@ -63,6 +64,10 @@ export default function DashboardPage() {
   const [error, setError] = useState('')
   const { lang } = useLang()
   const D = lang === 'en' ? D_EN : D_RU
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — Дашборд' : 'Total Hunter — Dashboard',
+    description: lang === 'ru' ? 'Обзор вашего аккаунта Total Hunter: статистика охот, баланс, активность.' : 'Your Total Hunter account overview: hunt stats, balance, activity.',
+  })
 
   useEffect(() => {
     api.me().then(setUser).catch(e => setError(e.message))

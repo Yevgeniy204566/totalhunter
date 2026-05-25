@@ -4,6 +4,7 @@ import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const PACKAGES = [
   {
@@ -223,6 +224,10 @@ export default function BalancePage() {
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const b = D.balance
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — Пополнение баланса' : 'Total Hunter — Buy Diamonds',
+    description: lang === 'ru' ? 'Пополните баланс алмазов для использования бота Total Hunter.' : 'Buy diamonds to use the Total Hunter bot.',
+  })
 
   useEffect(() => { api.me().then(setUser) }, [])
 

@@ -3,6 +3,7 @@ import { api } from '../api.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 export default function DevicesPage() {
   const [user, setUser]       = useState(null)
@@ -12,6 +13,10 @@ export default function DevicesPage() {
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const dv = D.devices
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — Устройства' : 'Total Hunter — Devices',
+    description: lang === 'ru' ? 'Управление привязанными устройствами в аккаунте Total Hunter.' : 'Manage linked devices in your Total Hunter account.',
+  })
 
   async function refresh() { const u = await api.me(); setUser(u) }
   useEffect(() => { refresh() }, [])

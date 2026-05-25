@@ -5,6 +5,7 @@ import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 export default function ReferralsPage() {
   const [user,       setUser]       = useState(null)
@@ -17,6 +18,10 @@ export default function ReferralsPage() {
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const r = D.referrals
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — Рефералы' : 'Total Hunter — Referrals',
+    description: lang === 'ru' ? 'Реферальная программа Total Hunter — приглашай друзей и получай алмазы.' : 'Total Hunter referral program — invite friends and earn diamonds.',
+  })
 
   const refCredits = useCounter(user ? user.ref_credits : null, 900)
 
