@@ -3,6 +3,7 @@ import { useLang } from '../lang.js'
 import { DOWNLOAD as DL_RU } from '../constants.js'
 import { DOWNLOAD as DL_EN } from '../constants.en.js'
 import { useMeta } from '../hooks/useMeta.js'
+import { track } from '@vercel/analytics'
 
 const RELEASE_URL =
   'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
@@ -92,6 +93,7 @@ export default function DownloadPage() {
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a
               href={RELEASE_URL}
+              onClick={() => track('App_Downloaded', { source: 'download_page' })}
               className="btn-pulse"
               style={{
                 padding: '18px 44px', borderRadius: 12, fontSize: 18,

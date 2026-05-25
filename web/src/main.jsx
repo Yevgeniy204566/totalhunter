@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { Analytics } from '@vercel/analytics/react'
 import App from './App.jsx'
 import { LangProvider } from './lang.js'
 import './styles/theme.css'
@@ -17,6 +18,7 @@ const app = (
         <App />
       </LangProvider>
     </GoogleOAuthProvider>
+    <Analytics />
   </React.StrictMode>
 )
 

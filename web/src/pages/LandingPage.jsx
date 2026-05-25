@@ -7,6 +7,7 @@ import { LANDING as LANDING_EN } from '../constants.en.js'
 import { useLang } from '../lang.js'
 import AdSlot from '../components/AdSlot.jsx'
 import { useMeta, useFaqSchema } from '../hooks/useMeta.js'
+import { track } from '@vercel/analytics'
 
 const FAQ_ITEMS_RU = [
   { q: 'Что такое Total Hunter?',
@@ -241,7 +242,7 @@ export default function LandingPage() {
 
           <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* ── BIG GREEN DOWNLOAD ── */}
-            <a href={RELEASE_URL} style={{
+            <a href={RELEASE_URL} onClick={() => track('App_Downloaded', { source: 'hero' })} style={{
               padding: '20px 52px', borderRadius: 12, fontSize: 20,
               background: 'linear-gradient(135deg, #00C853, #00FF88)',
               color: '#000',
@@ -310,7 +311,7 @@ export default function LandingPage() {
 
       {/* ── Download CTA under screenshots ─────────────────────── */}
       <div style={{ textAlign: 'center', paddingBottom: 64, background: 'var(--bg)' }}>
-        <a href={RELEASE_URL} style={{
+        <a href={RELEASE_URL} onClick={() => track('App_Downloaded', { source: 'screenshots_cta' })} style={{
           padding: '18px 56px', borderRadius: 12, fontSize: 19,
           background: 'linear-gradient(135deg, #00C853, #00FF88)',
           color: '#000',
