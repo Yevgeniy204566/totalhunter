@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const MAX_DAY = 5
 
@@ -644,6 +645,10 @@ export default function EarnPage() {
   const { lang } = useLang()
   const navigate  = useNavigate()
   const isRu      = lang === 'ru'
+  useMeta({
+    title:       isRu ? 'Total Hunter — Заработать алмазы' : 'Total Hunter — Earn Diamonds',
+    description: isRu ? 'Ежедневное колесо фортуны для получения бесплатных алмазов Total Hunter.' : 'Daily fortune wheel to get free Total Hunter diamonds.',
+  })
 
   const [credits,  setCredits]  = useState(null)
   const [watched,   setWatched]   = useState(0)
@@ -768,7 +773,6 @@ export default function EarnPage() {
       {/* Brand header */}
       <div className="topbar">
         <div className="brand">Fortuna Royale</div>
-        <span id="balance" style={{ display: 'none' }} />
       </div>
 
       {/* Wheel stage */}

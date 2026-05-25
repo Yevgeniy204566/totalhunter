@@ -18,6 +18,7 @@ import DownloadPage from './pages/DownloadPage.jsx'
 import EarnPage from './pages/EarnPage.jsx'
 import ReferralTreePage from './pages/ReferralTreePage.jsx'
 import RoyPage from './pages/RoyPage.jsx'
+import FeaturesPage from './pages/FeaturesPage.jsx'
 
 function PrivateRoute({ element }) {
   return isLoggedIn() ? element : <Navigate to="/login" replace />
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/contacts"   element={<ContactsPage />} />
         <Route path="/ref/:code"  element={<RefPage />} />
         <Route path="/download"   element={<DownloadPage />} />
+        <Route path="/features"  element={<FeaturesPage />} />
         <Route path="/dashboard"  element={<PrivateRoute element={<Layout />} />}>
           <Route index             element={<DashboardPage />} />
           <Route path="balance"      element={<BalancePage />} />

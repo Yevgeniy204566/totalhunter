@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLang } from '../lang.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -13,6 +14,10 @@ export default function RoyPage() {
   const [kingdoms, setKingdoms]   = useState([])
   const [connected, setConnected] = useState(false)
   const { lang } = useLang()
+  useMeta({
+    title:       lang === 'ru' ? 'Total Hunter — Система РОЙ' : 'Total Hunter — SWARM System',
+    description: lang === 'ru' ? 'Коллективный пул координат бирж. Живые данные от охотников королевства.' : 'Collective exchange coordinate pool. Live data from kingdom hunters.',
+  })
   const isRu = lang === 'ru'
   const esRef = useRef(null)
 

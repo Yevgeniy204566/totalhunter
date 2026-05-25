@@ -148,7 +148,11 @@ export default function Layout() {
           </NavLink>
         ))}
         <div style={{ flex: 1 }} />
-        <a href="/guide" className="nav-item" style={{ borderTop: '1px solid var(--outline)', marginTop: 8 }}>
+        <a href="/features" className="nav-item" style={{ borderTop: '1px solid var(--outline)', marginTop: 8 }}>
+          <span className="nav-icon" style={{ fontSize: 14 }}>⚡</span>
+          {lang === 'ru' ? 'Возможности' : 'Features'}
+        </a>
+        <a href="/guide" className="nav-item">
           <span className="nav-icon" style={{ fontSize: 14 }}>📖</span>
           {D.nav.guide}
         </a>

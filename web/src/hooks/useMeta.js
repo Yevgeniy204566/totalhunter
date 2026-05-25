@@ -14,6 +14,7 @@ export function useMeta({ title, description }) {
     setMeta('meta[name="description"]',          'content', description)
     setMeta('meta[property="og:title"]',         'content', title)
     setMeta('meta[property="og:description"]',   'content', description)
+    setMeta('meta[property="og:url"]',           'content', window.location.href)
     setMeta('meta[name="twitter:title"]',        'content', title)
     setMeta('meta[name="twitter:description"]',  'content', description)
     return () => {
@@ -21,6 +22,7 @@ export function useMeta({ title, description }) {
       setMeta('meta[name="description"]',          'content', DEFAULT_DESC)
       setMeta('meta[property="og:title"]',         'content', 'Total Hunter — автоматизация Total Battle')
       setMeta('meta[property="og:description"]',   'content', DEFAULT_DESC)
+      setMeta('meta[property="og:url"]',           'content', 'https://total-hunter.com')
       setMeta('meta[name="twitter:title"]',        'content', 'Total Hunter — автоматизация Total Battle')
       setMeta('meta[name="twitter:description"]',  'content', DEFAULT_DESC)
     }

@@ -8,7 +8,9 @@ import './styles/mobile.css'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const container = document.getElementById('root')
+
+const app = (
   <React.StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <LangProvider>
@@ -17,3 +19,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </GoogleOAuthProvider>
   </React.StrictMode>
 )
+
+if (container.hasChildNodes()) {
+  ReactDOM.hydrateRoot(container, app)
+} else {
+  ReactDOM.createRoot(container).render(app)
+}

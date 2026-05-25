@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
+import { useMeta } from '../hooks/useMeta.js'
 
 const _API_BASE = import.meta.env.VITE_API_URL || '/api'
 const _isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
@@ -22,6 +23,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { lang } = useLang()
   const T = lang === 'ru' ? D_RU.login : D_EN.login
+  useMeta({
+    title:       lang === 'ru' ? 'Войти в Total Hunter — авторизация' : 'Sign In — Total Hunter',
+    description: lang === 'ru' ? 'Войдите через Google чтобы начать автоматизацию Total Battle.' : 'Sign in with Google to start automating Total Battle.',
+  })
 
   // Mobile redirect flow: Google → backend callback → /login?token=JWT
   useEffect(() => {
