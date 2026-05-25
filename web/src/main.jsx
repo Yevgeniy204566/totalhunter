@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Analytics } from '@vercel/analytics/react'
 import App from './App.jsx'
@@ -14,9 +15,11 @@ const container = document.getElementById('root')
 const app = (
   <React.StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <LangProvider>
-        <App />
-      </LangProvider>
+      <BrowserRouter>
+        <LangProvider>
+          <App />
+        </LangProvider>
+      </BrowserRouter>
     </GoogleOAuthProvider>
     <Analytics />
   </React.StrictMode>

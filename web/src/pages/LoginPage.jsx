@@ -7,6 +7,7 @@ import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
+import { track } from '@vercel/analytics'
 
 const _API_BASE = import.meta.env.VITE_API_URL || '/api'
 const _isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
@@ -44,6 +45,7 @@ export default function LoginPage() {
   }, [])
 
   const handleSuccess = async (credentialResponse) => {
+    track('Register_Started', { method: 'google_popup' })
     setLoading(true)
     setError(null)
     try {
@@ -59,6 +61,7 @@ export default function LoginPage() {
   }
 
   const handleMobileLogin = () => {
+    track('Register_Started', { method: 'google_redirect' })
     const refCode = getRefCookie()
     const qs = refCode ? `?ref_code=${encodeURIComponent(refCode)}` : ''
     window.location.href = `${_API_BASE}/web/auth/google/start${qs}`

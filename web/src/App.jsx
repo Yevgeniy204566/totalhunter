@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { isLoggedIn } from './auth.js'
 import Layout from './components/Layout.jsx'
 import LandingPage from './pages/LandingPage.jsx'
@@ -26,30 +26,41 @@ function PrivateRoute({ element }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/"           element={<LandingPage />} />
-        <Route path="/login"      element={<LoginPage />} />
-        <Route path="/guide"      element={<GuidePage />} />
-        <Route path="/legal"      element={<LegalPage />} />
-        <Route path="/contacts"   element={<ContactsPage />} />
-        <Route path="/ref/:code"  element={<RefPage />} />
-        <Route path="/download"   element={<DownloadPage />} />
-        <Route path="/features"  element={<FeaturesPage />} />
-        <Route path="/dashboard"  element={<PrivateRoute element={<Layout />} />}>
-          <Route index             element={<DashboardPage />} />
-          <Route path="balance"      element={<BalancePage />} />
-          <Route path="hunts"        element={<HuntsPage />} />
-          <Route path="referrals"    element={<ReferralsPage />} />
-          <Route path="devices"      element={<DevicesPage />} />
-          <Route path="transactions" element={<TransactionsPage />} />
-          <Route path="feedback"     element={<FeedbackPage />} />
-          <Route path="earn"         element={<EarnPage />} />
-          <Route path="roy"          element={<RoyPage />} />
-        </Route>
-        <Route path="/dashboard/tree" element={<PrivateRoute element={<ReferralTreePage />} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      {/* ── EN public routes (default) ──────────────────── */}
+      <Route path="/"          element={<LandingPage />} />
+      <Route path="/features"  element={<FeaturesPage />} />
+      <Route path="/guide"     element={<GuidePage />} />
+      <Route path="/legal"     element={<LegalPage />} />
+      <Route path="/contacts"  element={<ContactsPage />} />
+      <Route path="/download"  element={<DownloadPage />} />
+      <Route path="/login"     element={<LoginPage />} />
+      <Route path="/ref/:code" element={<RefPage />} />
+
+      {/* ── RU public routes (/ru prefix) ───────────────── */}
+      <Route path="/ru"              element={<LandingPage />} />
+      <Route path="/ru/features"     element={<FeaturesPage />} />
+      <Route path="/ru/guide"        element={<GuidePage />} />
+      <Route path="/ru/legal"        element={<LegalPage />} />
+      <Route path="/ru/contacts"     element={<ContactsPage />} />
+      <Route path="/ru/download"     element={<DownloadPage />} />
+      <Route path="/ru/login"        element={<LoginPage />} />
+
+      {/* ── Dashboard (no lang prefix, auth-protected) ──── */}
+      <Route path="/dashboard" element={<PrivateRoute element={<Layout />} />}>
+        <Route index               element={<DashboardPage />} />
+        <Route path="balance"      element={<BalancePage />} />
+        <Route path="hunts"        element={<HuntsPage />} />
+        <Route path="referrals"    element={<ReferralsPage />} />
+        <Route path="devices"      element={<DevicesPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="feedback"     element={<FeedbackPage />} />
+        <Route path="earn"         element={<EarnPage />} />
+        <Route path="roy"          element={<RoyPage />} />
+      </Route>
+      <Route path="/dashboard/tree" element={<PrivateRoute element={<ReferralTreePage />} />} />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }

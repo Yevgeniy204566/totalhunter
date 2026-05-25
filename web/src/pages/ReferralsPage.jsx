@@ -6,6 +6,7 @@ import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
+import { track } from '@vercel/analytics'
 
 export default function ReferralsPage() {
   const [user,       setUser]       = useState(null)
@@ -30,6 +31,7 @@ export default function ReferralsPage() {
 
   function copyLink() {
     navigator.clipboard.writeText(`https://total-hunter.com/ref/${user.ref_code}`)
+    track('Referral_Link_Copied')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
