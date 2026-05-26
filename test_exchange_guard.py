@@ -102,3 +102,47 @@ class TestHuntEngineCallback:
             eng._roy_on_found()
 
         eng._roy_client.report.assert_not_called()
+
+
+class TestRoyFoundWrapper:
+    """B2: _build_roy_wrapper изолирует original_cb — _roy_on_found вызывается всегда."""
+
+    def test_on_found_called_despite_original_cb_raising(self):
+        """_roy_on_found вызывается даже если original_cb бросает исключение."""
+        from engine import HuntEngine
+        eng = HuntEngine.__new__(HuntEngine)
+
+        on_found_calls = []
+        eng._roy_on_found = lambda: on_found_calls.append(True)
+
+        crashing_cb = MagicMock(side_effect=RuntimeError("GUI crash"))
+        wrapper = eng._build_roy_wrapper(crashing_cb)  # метод ещё не существует → RED
+        wrapper()
+
+        assert len(on_found_calls) == 1
+        crashing_cb.assert_called_once()
+
+    def test_on_found_called_when_no_original_cb(self):
+        """_roy_on_found вызывается если original_cb = None."""
+        from engine import HuntEngine
+        eng = HuntEngine.__new__(HuntEngine)
+
+        on_found_calls = []
+        eng._roy_on_found = lambda: on_found_calls.append(True)
+
+        wrapper = eng._build_roy_wrapper(None)
+        wrapper()
+
+        assert len(on_found_calls) == 1
+
+    def test_original_cb_receives_args_when_no_exception(self):
+        """original_cb получает все аргументы без изменений."""
+        from engine import HuntEngine
+        eng = HuntEngine.__new__(HuntEngine)
+        eng._roy_on_found = lambda: None
+
+        normal_cb = MagicMock()
+        wrapper = eng._build_roy_wrapper(normal_cb)
+        wrapper("pos_arg", kw="val")
+
+        normal_cb.assert_called_once_with("pos_arg", kw="val")

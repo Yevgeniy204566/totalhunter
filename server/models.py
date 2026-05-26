@@ -9,7 +9,7 @@ Naming convention: предсказуемые имена для индексов
 
 from sqlalchemy import (
     Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
-    JSON, MetaData, Numeric, String, Text, text,
+    JSON, MetaData, Numeric, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
@@ -264,8 +264,12 @@ class RoyPool(Base):
     Активные координаты бирж от участников Роя.
     TTL 20 минут — обновляется при каждом новом репорте по тем же K:X:Y.
     percent >= 90 считается выкупленной — не показывается другим.
+    UniqueConstraint(kingdom, x, y) — одна живая запись на координату.
     """
     __tablename__ = "roy_pool"
+    __table_args__ = (
+        UniqueConstraint('kingdom', 'x', 'y', name='uq_roypool_kingdom_x_y'),
+    )
 
     id            = Column(Integer, primary_key=True)
     kingdom       = Column(Integer, nullable=False, index=True)

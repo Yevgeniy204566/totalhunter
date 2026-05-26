@@ -69,6 +69,7 @@ class HuntEngine:
 
         # Roy — отключён по умолчанию, включается из GUI
         self.roy_enabled   = False
+        self.roy_kingdom   = 0     # ГОС для live-счётчика (0 = не задан)
         self._roy_client   = None
         self.on_last_exchange_callback = None  # (result: dict) → обновляет GUI владельца
         self.event_active  = False  # True только пока идёт ивент Торговые Пути
@@ -161,14 +162,7 @@ class HuntEngine:
         if self.roy_enabled:
             from roy.roy_client import RoyClient
             self._roy_client = RoyClient(hwid=get_hwid())
-            original_cb = self.on_found_callback
-
-            def _roy_found_wrapper(*args, **kwargs):
-                if original_cb:
-                    original_cb(*args, **kwargs)
-                self._roy_on_found()  # синхронно — навигация ждёт пока OCR прочитает диалог
-
-            self._pacman.on_found_callback = _roy_found_wrapper
+            self._pacman.on_found_callback = self._build_roy_wrapper(self.on_found_callback)
         else:
             self._pacman.on_found_callback = self.on_found_callback
 
@@ -182,6 +176,19 @@ class HuntEngine:
         self.is_running = False
         if self._pacman:
             self._pacman.stop()
+        if self.roy_enabled and self._roy_client and self.roy_kingdom:
+            self._roy_client.stop_session(self.roy_kingdom)
+
+    def _build_roy_wrapper(self, original_cb):
+        """Возвращает wrapper: вызывает original_cb в try/except, затем _roy_on_found."""
+        def _wrapper(*args, **kwargs):
+            if original_cb:
+                try:
+                    original_cb(*args, **kwargs)
+                except Exception as e:
+                    print(f"[ROY] original_cb ERROR: {e!r}")
+            self._roy_on_found()
+        return _wrapper
 
     def _roy_on_found(self):
         """OCR диалога биржи → GUI-карточка владельца + отправка в Рой (если % < 90)."""
@@ -241,7 +248,7 @@ class HuntEngine:
                     print(f"[ROY] Карта статична ({diff_frac:.1%}). Пропущено (AFK защита).")
                     continue
 
-                self._roy_client.scan()
+                self._roy_client.scan(kingdom=self.roy_kingdom or None)
 
         threading.Thread(target=_loop, daemon=True).start()
 

@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import AsyncSessionLocal, get_db
@@ -32,10 +33,12 @@ SCAN_REWARD_SEC   = 45    # 30 сек скана → 45 сек баланса (1
 POOL_COST_SEC     = 60    # стоимость одного запроса пула
 PERCENT_THRESHOLD = 90    # >= 90% — биржа выкуплена, не показываем
 RATE_LIMIT_SEC    = 10    # минимальный интервал репортов с одного hwid
+SCAN_RATE_SEC     = 28    # минимальный интервал /scan с одного hwid (клиент шлёт раз в 30с)
 SESSION_TTL_SEC   = 300   # 5 минут без пинга = сессия считается мёртвой
 
-# in-memory rate limiter: hwid → unix timestamp последнего репорта
+# in-memory rate limiters: hwid → unix timestamp последнего запроса
 _report_rate:  dict[str, float]             = {}
+_scan_rate:    dict[str, float]             = {}
 # активные сессии: (hwid, kingdom) → timestamp последнего пинга
 _hwid_kingdom: dict[tuple[str, int], float] = {}
 # подписчики SSE
@@ -191,26 +194,29 @@ async def report_exchange(req: ReportRequest, db: AsyncSession = Depends(get_db)
     now     = datetime.now(timezone.utc)
     expires = now + timedelta(minutes=POOL_TTL_MIN)
 
-    async with db.begin():
-        existing = (await db.execute(
-            select(RoyPool).where(
-                RoyPool.kingdom   == req.kingdom,
-                RoyPool.x         == req.x,
-                RoyPool.y         == req.y,
-                RoyPool.expires_at > now,
-            )
-        )).scalar_one_or_none()
+    try:
+        async with db.begin():
+            existing = (await db.execute(
+                select(RoyPool).where(
+                    RoyPool.kingdom   == req.kingdom,
+                    RoyPool.x         == req.x,
+                    RoyPool.y         == req.y,
+                    RoyPool.expires_at > now,
+                )
+            )).scalar_one_or_none()
 
-        if existing:
-            existing.percent    = req.percent
-            existing.updated_at = now
-            existing.expires_at = expires
-        else:
-            db.add(RoyPool(
-                kingdom=req.kingdom, x=req.x, y=req.y,
-                percent=req.percent, reporter_hwid=req.hwid,
-                expires_at=expires,
-            ))
+            if existing:
+                existing.percent    = req.percent
+                existing.updated_at = now
+                existing.expires_at = expires
+            else:
+                db.add(RoyPool(
+                    kingdom=req.kingdom, x=req.x, y=req.y,
+                    percent=req.percent, reporter_hwid=req.hwid,
+                    expires_at=expires,
+                ))
+    except IntegrityError:
+        pass  # конкурентный INSERT той же координаты — уже есть в БД
 
     return {"success": True}
 
@@ -224,6 +230,11 @@ async def report_scan(req: ScanRequest, db: AsyncSession = Depends(get_db)):
     Начисляет 45 сек баланса (1.5x).
     Если передан kingdom — обновляет статус ГОСа и уведомляет SSE.
     """
+    now_ts = time.time()
+    if now_ts - _scan_rate.get(req.hwid, 0) < SCAN_RATE_SEC:
+        return {"success": True, "note": "rate_limited"}
+    _scan_rate[req.hwid] = now_ts
+
     _ensure_cleanup()
     now = datetime.now(timezone.utc)
 
@@ -311,9 +322,15 @@ async def kingdom_status_stream():
 # ── GET /roy/pool ─────────────────────────────────────────────────────────────
 
 @router.get("/pool")
-async def get_pool(hwid: str, consume: bool = False, db: AsyncSession = Depends(get_db)):
+async def get_pool(
+    hwid: str,
+    consume: bool = False,
+    kingdom: int | None = None,
+    db: AsyncSession = Depends(get_db),
+):
     """
     Возвращает актуальные координаты бирж (<90%, не истёкшие).
+    kingdom — фильтр по ГОСу (если не задан — возвращает все).
     consume=true — списывает 60 сек баланса за запрос.
     """
     now = datetime.now(timezone.utc)
@@ -327,11 +344,15 @@ async def get_pool(hwid: str, consume: bool = False, db: AsyncSession = Depends(
     if balance <= 0:
         return {"success": False, "reason": "no_balance", "balance_sec": 0, "pool": []}
 
+    pool_filter = [
+        RoyPool.expires_at > now,
+        RoyPool.percent    < PERCENT_THRESHOLD,
+    ]
+    if kingdom is not None:
+        pool_filter.append(RoyPool.kingdom == kingdom)
+
     entries = (await db.execute(
-        select(RoyPool).where(
-            RoyPool.expires_at > now,
-            RoyPool.percent    < PERCENT_THRESHOLD,
-        ).order_by(RoyPool.updated_at.desc()).limit(50)
+        select(RoyPool).where(*pool_filter).order_by(RoyPool.updated_at.desc()).limit(50)
     )).scalars().all()
 
     if consume and bal_row:
