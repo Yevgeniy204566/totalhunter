@@ -226,6 +226,9 @@ class HuntEngine:
                     pass
             if self._last_start_kwargs:
                 self.start(**self._last_start_kwargs)
+                # Блокируем YOLO на 20с после старта — бот уходит от биржи без повторного срабатывания
+                if self._pacman:
+                    self._pacman._yolo_unblock_time = time.time() + 20
 
         threading.Timer(delay, _delayed_start).start()
 

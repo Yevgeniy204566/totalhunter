@@ -86,7 +86,7 @@ class TestRestartAfterExchange:
         assert states.index('stopped') < states.index('starting')
 
     def test_empty_kwargs_does_not_start(self):
-        """Если _last_start_kwargs пуст — start() не вызывается (защита от краша)."""
+        """Если _last_start_kwargs пуст — start() не вызываться (защита от краша)."""
         eng = self._make_engine()
         eng._last_start_kwargs = {}
         started = threading.Event()
@@ -97,6 +97,34 @@ class TestRestartAfterExchange:
             started.wait(timeout=0.3)
 
         assert not started.is_set(), "start() не должен вызываться с пустыми kwargs"
+
+    def test_yolo_block_applied_after_restart(self):
+        """После restart _pacman._yolo_unblock_time установлен в будущее (≥20с)."""
+        import time
+        eng = self._make_engine()
+        eng._last_start_kwargs = {'conf': 0.5}
+
+        mock_pacman = MagicMock()
+        mock_pacman._yolo_unblock_time = 0.0
+
+        def fake_start(**_):
+            eng._pacman = mock_pacman
+
+        started = threading.Event()
+        original_fake = fake_start
+
+        def fake_start_and_signal(**kwargs):
+            original_fake(**kwargs)
+            started.set()
+
+        with patch.object(eng, 'stop'), \
+             patch.object(eng, 'start', side_effect=fake_start_and_signal):
+            eng.restart_after_exchange(delay=0)
+            started.wait(timeout=2.0)
+
+        assert started.is_set(), "start() не был вызван"
+        assert mock_pacman._yolo_unblock_time > time.time() + 15, \
+            f"YOLO блок после рестарта должен быть ≥15с в будущем, got {mock_pacman._yolo_unblock_time - time.time():.1f}с"
 
 
 # ---------------------------------------------------------------------------
