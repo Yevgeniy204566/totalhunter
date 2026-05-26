@@ -1,300 +1,161 @@
 """
-TDD: stop/auto-restart после находки биржи.
-Бот находит биржу → engine.stop() → 10с таймер → engine.start(saved_kwargs).
+TDD: поведение после рефактора на Tkinter-based restart.
+
+Архитектура (новая):
+  - navigator: is_running=False немедленно, restart_callback() без аргументов
+  - engine: нет restart_after_exchange, есть on_exchange_found_callback
+  - main.py: after(10000, _programmatic_restart)
+
+Старые тесты на restart_after_exchange удалены вместе с методом.
 """
 
-import threading
 import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 
 # ---------------------------------------------------------------------------
-# 1. engine.restart_after_exchange
-# ---------------------------------------------------------------------------
-
-class TestRestartAfterExchange:
-    """HuntEngine.restart_after_exchange() — остановка + таймер + перезапуск."""
-
-    def _make_engine(self):
-        from engine import HuntEngine
-        eng = HuntEngine.__new__(HuntEngine)
-        eng.is_running = True
-        eng.roy_enabled = False
-        eng._pacman = None
-        eng._roy_client = None
-        eng.roy_kingdom = 0
-        eng._last_start_kwargs = {'conf': 0.5, 'center_x': 90}
-        eng.on_engine_restart_callback = None
-        return eng
-
-    def test_stop_called_immediately(self):
-        """restart_after_exchange() немедленно вызывает stop()."""
-        eng = self._make_engine()
-        with patch.object(eng, 'stop') as mock_stop, \
-             patch.object(eng, 'start'):
-            eng.restart_after_exchange(delay=0)
-            threading.Event().wait(0.1)
-            mock_stop.assert_called_once()
-
-    def test_start_called_with_saved_kwargs(self):
-        """После задержки start() вызывается с сохранёнными параметрами."""
-        eng = self._make_engine()
-        started = threading.Event()
-        captured_kwargs = {}
-
-        def fake_start(**kwargs):
-            captured_kwargs.update(kwargs)
-            started.set()
-
-        with patch.object(eng, 'stop'), \
-             patch.object(eng, 'start', side_effect=fake_start):
-            eng.restart_after_exchange(delay=0)
-            started.wait(timeout=2.0)
-
-        assert started.is_set(), "start() не был вызван"
-        assert captured_kwargs == {'conf': 0.5, 'center_x': 90}
-
-    def test_on_engine_restart_callback_stopped(self):
-        """Callback получает 'stopped' сразу после stop()."""
-        eng = self._make_engine()
-        states = []
-        eng.on_engine_restart_callback = lambda s: states.append(s)
-
-        with patch.object(eng, 'stop'), \
-             patch.object(eng, 'start'):
-            eng.restart_after_exchange(delay=0)
-            threading.Event().wait(0.15)
-
-        assert 'stopped' in states
-
-    def test_on_engine_restart_callback_starting(self):
-        """Callback получает 'starting' перед вызовом start()."""
-        eng = self._make_engine()
-        states = []
-        started = threading.Event()
-        eng.on_engine_restart_callback = lambda s: states.append(s)
-
-        def fake_start(**_):
-            started.set()
-
-        with patch.object(eng, 'stop'), \
-             patch.object(eng, 'start', side_effect=fake_start):
-            eng.restart_after_exchange(delay=0)
-            started.wait(timeout=2.0)
-
-        assert 'starting' in states
-        assert states.index('stopped') < states.index('starting')
-
-    def test_empty_kwargs_does_not_start(self):
-        """Если _last_start_kwargs пуст — start() не вызываться (защита от краша)."""
-        eng = self._make_engine()
-        eng._last_start_kwargs = {}
-        started = threading.Event()
-
-        with patch.object(eng, 'stop'), \
-             patch.object(eng, 'start', side_effect=lambda **_: started.set()):
-            eng.restart_after_exchange(delay=0)
-            started.wait(timeout=0.3)
-
-        assert not started.is_set(), "start() не должен вызываться с пустыми kwargs"
-
-    def test_yolo_block_applied_after_restart(self):
-        """restart_after_exchange устанавливает _initial_yolo_block_sec=30.0 перед вызовом start()."""
-        eng = self._make_engine()
-        eng._last_start_kwargs = {'conf': 0.5}
-        eng._initial_yolo_block_sec = 0.0
-
-        captured_block = []
-        started = threading.Event()
-
-        def fake_start(**kwargs):
-            captured_block.append(eng._initial_yolo_block_sec)
-            started.set()
-
-        with patch.object(eng, 'stop'), \
-             patch.object(eng, 'start', side_effect=fake_start):
-            eng.restart_after_exchange(delay=0)
-            started.wait(timeout=2.0)
-
-        assert started.is_set(), "start() не был вызван"
-        assert captured_block[0] == 30.0, \
-            f"_initial_yolo_block_sec должен быть 30.0 перед start(), получили: {captured_block[0]}"
-
-
-# ---------------------------------------------------------------------------
-# 2. engine.start() сохраняет kwargs
+# 1. engine.start() сохраняет kwargs — нужны для _programmatic_restart
 # ---------------------------------------------------------------------------
 
 class TestStartSavesKwargs:
-    """HuntEngine.start() сохраняет все аргументы в _last_start_kwargs."""
+    """engine.start() сохраняет все параметры в _last_start_kwargs."""
 
     def test_start_saves_all_kwargs(self):
-        """Все параметры start() сохраняются в _last_start_kwargs."""
+        """start() сохраняет move_wait, conf и все остальные параметры."""
         from engine import HuntEngine
         eng = HuntEngine.__new__(HuntEngine)
-        eng.roy_enabled = False
-        eng._pacman = None
         eng.is_running = False
+        eng.roy_enabled = False
+        eng._roy_client = None
+        eng.roy_kingdom = 0
+        eng._last_start_kwargs = {}
         eng.on_engine_restart_callback = None
+        eng.on_pool_refresh_callback = None
+        eng.on_found_callback = None
+        eng.on_last_exchange_callback = None
+        eng._mm_cx = 90; eng._mm_cy = 925
+        eng._initial_yolo_block_sec = 0.0
+        eng._bg_gen = 0
+        eng.sound_path = None
+        eng.model = MagicMock()
+        eng._pacman = None
+        eng.on_exchange_found_callback = None
 
-        # Не даём реально запускать — только проверяем сохранение kwargs
-        with patch('engine.PacmanEngine') as MockPacman, \
-             patch.object(eng, '_start_heartbeat'):
-            mock_instance = MagicMock()
-            MockPacman.return_value = mock_instance
-            try:
-                eng.start(
-                    conf=0.7,
-                    center_x=100,
-                    center_y=900,
-                    joystick_step=13,
-                    scan_interval=0.6,
-                    move_wait=2.0,
-                    navigation_enabled=True,
-                    max_inland_steps=5,
-                    ocean_land_ratio=0.03,
-                    min_water_px=500,
-                    footprint_ttl=120.0,
-                    diagonal_blind_coeff=0.5,
-                    coast_detect_radius=50,
-                    return_delta_px=0,
-                    smooth_alpha=0.5,
-                    use_beacon=False,
-                    pixels_per_step=20,
-                )
-            except Exception:
-                pass  # движок может упасть без реального YOLO — это нормально
+        class FakePacman:
+            def __init__(self_p, **kw):
+                self_p.is_running = False; self_p._yolo_unblock_time = 0.0
+                self_p.on_found_callback = None; self_p.restart_callback = None
+                self_p._thread = None
+            def start(self_p): self_p.is_running = True
+            def stop(self_p): self_p.is_running = False
 
-        assert hasattr(eng, '_last_start_kwargs'), "_last_start_kwargs не создан"
-        kw = eng._last_start_kwargs
-        assert kw.get('conf') == 0.7
-        assert kw.get('center_x') == 100
-        assert kw.get('center_y') == 900
-        assert kw.get('joystick_step') == 13
+        with patch('engine.PacmanEngine', FakePacman), patch.object(eng, '_start_heartbeat'):
+            eng.start(conf=0.8, move_wait=1.5, center_x=90)
+
+        assert eng._last_start_kwargs.get('move_wait') == 1.5
+        assert eng._last_start_kwargs.get('conf') == 0.8
+        assert 'joystick_step' in eng._last_start_kwargs
+        assert 'navigation_enabled' in eng._last_start_kwargs
 
 
 # ---------------------------------------------------------------------------
-# 3. navigator._exchange_detected — нет time.sleep(10), есть restart_callback
+# 2. Navigator: ESC нажимается перед остановкой
 # ---------------------------------------------------------------------------
 
-def _make_mss_mock(img_array=None):
-    """Возвращает контекст-менеджер для mss, имитирующий захват экрана."""
-    import numpy as np
-    if img_array is None:
-        img_array = np.zeros((1080, 1920, 4), dtype=np.uint8)
-    mock_sct = MagicMock()
-    mock_sct.monitors = [None, {'left': 0, 'top': 0, 'width': 1920, 'height': 1080}]
-    mock_sct.grab.return_value = img_array
-    mock_sct.__enter__ = lambda s: s
-    mock_sct.__exit__ = MagicMock(return_value=False)
-    return mock_sct
+class TestExchangeDetectedNewBehavior:
+    """navigator._exchange_detected: новое поведение — мгновенная остановка."""
 
-
-def _make_box_mock():
-    box = MagicMock()
-    box.xyxy.cpu.return_value.tolist.return_value = [[100.0, 100.0, 200.0, 200.0]]
-    box.conf = [0.9]
-    return box
-
-
-class TestExchangeDetectedNoSleep10:
-    """_exchange_detected не вызывает time.sleep(10), вместо этого — restart_callback."""
-
-    def _make_pacman(self):
-        """Минимальный PacmanEngine без реального YOLO/экрана."""
-        from navigator import PacmanEngine
+    def _setup(self):
+        import numpy as np
+        from navigator import PacmanEngine, CoastalSnakeNavigator
         eng = PacmanEngine.__new__(PacmanEngine)
         eng.is_running = True
-        eng.conf = 0.5
-        eng.scan_interval = 0.6
-        eng.yolo_model = MagicMock()
-        eng.sound_path = None
-        eng.move_wait = 2.0
-        eng.navigation_enabled = True
-        eng.on_found_callback = None
         eng._yolo_unblock_time = 0.0
+        eng.on_found_callback = None
+        eng.restart_callback = None
         eng._suppressing_esc = False
-        eng.restart_callback = None
-        eng.joystick = MagicMock()
-        eng.joystick.last_dx = 1
-        eng.joystick.last_dy = 0
-        return eng
+        eng._thread = None
+        eng.conf = 0.7
+        eng.sound_path = ''
+        b = MagicMock()
+        b.xyxy.cpu.return_value.tolist.return_value = [[100., 100., 200., 200.]]
+        b.conf = [0.9]
+        r = MagicMock(); r.boxes = [b]
+        m = MagicMock(); m.predict.return_value = [r]
+        eng.yolo_model = m
+        j = CoastalSnakeNavigator.__new__(CoastalSnakeNavigator)
+        j._last_move_vec = (1.0, 0.0); j._footprint_enabled = False
+        j.center_x = 90; j.center_y = 925; j.p_range_x = 23; j.p_range_y = 13
+        eng.joystick = j
+        frame = np.zeros((100, 100, 3), dtype=np.uint8)
+        return eng, frame
 
-    def _run_exchange_detected(self, eng, box, fake_sleep=None, fake_press=None):
-        """Запускает _exchange_detected с полным набором моков."""
+    def test_esc_pressed_after_found_callback(self):
+        """ESC нажимается ПОСЛЕ on_found_callback — диалог закрывается корректно."""
         import numpy as np
-        fake_frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        mss_mock = _make_mss_mock()
-
-        # Настраиваем yolo_model.predict чтобы _fresh_scan возвращал box
-        pred_result = MagicMock()
-        pred_result.boxes = [box]
-        eng.yolo_model.predict.return_value = [pred_result]
-
-        patch_sleep = patch('navigator.time.sleep', side_effect=fake_sleep or (lambda s: None))
-        patch_press = patch('navigator.pyautogui.press', side_effect=fake_press or (lambda k: None))
-
-        with patch_sleep, patch_press, \
-             patch('navigator.pyautogui.click'), \
-             patch('navigator.winsound.PlaySound'), \
-             patch('navigator.winsound.Beep'), \
-             patch('mss.mss', return_value=mss_mock):
-            eng._exchange_detected(box, frame=fake_frame)
-
-    def test_restart_callback_called_with_delay_zero_and_sleep10_present(self):
-        """restart_callback вызывается с delay=0; time.sleep(10) ДО этого вызывается."""
-        eng = self._make_pacman()
-        restart_called = threading.Event()
-        restart_delay = []
-
-        def fake_restart(delay):
-            restart_delay.append(delay)
-            restart_called.set()
-
-        eng.restart_callback = fake_restart
-
-        sleep_calls = []
-
-        def fake_sleep(s):
-            sleep_calls.append(s)
-
-        self._run_exchange_detected(eng, _make_box_mock(), fake_sleep=fake_sleep)
-
-        assert restart_called.is_set(), "restart_callback не был вызван"
-        assert restart_delay == [0], f"restart_callback должен быть вызван с delay=0, получили {restart_delay}"
-        assert 10 in sleep_calls, "time.sleep(10) не вызывается — должна быть 10с пауза для просмотра координат"
-
-    def test_esc_pressed_before_restart(self):
-        """ESC нажимается ДО вызова restart_callback."""
-        eng = self._make_pacman()
+        from navigator import CoastalSnakeNavigator
+        eng, frame = self._setup()
         order = []
+        eng.on_found_callback = lambda: order.append('ocr')
 
-        def fake_press(key):
-            if key == 'escape':
-                order.append('esc')
+        sct = MagicMock()
+        sct.monitors = [None, MagicMock()]
+        sct.grab.return_value = np.zeros((100, 100, 4), dtype=np.uint8)
+        cm = MagicMock(); cm.__enter__.return_value = sct; cm.__exit__.return_value = False
 
-        def fake_restart(delay):
-            order.append('restart')
+        with (
+            patch('navigator.time.sleep'),
+            patch('navigator.pyautogui.click'),
+            patch('navigator.pyautogui.press', side_effect=lambda k: order.append(f'press_{k}')),
+            patch('navigator.winsound.PlaySound'),
+            patch('navigator.winsound.Beep'),
+            patch('navigator.PacmanEngine._trigger_yolo_block'),
+            patch('mss.mss', return_value=cm),
+            patch.object(CoastalSnakeNavigator, '_click_vec'),
+            patch('debug_reporter.report_find', MagicMock()),
+            patch('debug_reporter.report_dialog', MagicMock()),
+            patch('auth.get_hwid', return_value='test-hwid'),
+        ):
+            eng._exchange_detected(MagicMock(
+                xyxy=MagicMock(cpu=lambda: MagicMock(tolist=lambda: [[100., 100., 200., 200.]])),
+                conf=[0.9]
+            ), frame=frame)
 
-        eng.restart_callback = fake_restart
+        assert 'ocr' in order
+        assert any('escape' in e for e in order), \
+            f"ESC должен быть нажат, события: {order}"
+        ocr_idx = order.index('ocr')
+        esc_idx = next(i for i, e in enumerate(order) if 'escape' in e)
+        assert ocr_idx < esc_idx, "OCR должен быть ДО ESC"
 
-        self._run_exchange_detected(eng, _make_box_mock(), fake_press=fake_press)
+    def test_fallback_no_yolo_block_when_callback_set(self):
+        """Если restart_callback задан — _trigger_yolo_block НЕ вызывается (не нужен)."""
+        import numpy as np
+        from navigator import CoastalSnakeNavigator
+        eng, frame = self._setup()
+        eng.restart_callback = lambda: None
 
-        assert 'esc' in order, "ESC не был нажат"
-        assert 'restart' in order, "restart_callback не был вызван"
-        assert order.index('esc') < order.index('restart'), \
-            f"ESC должен быть ДО restart, порядок: {order}"
+        sct = MagicMock()
+        sct.monitors = [None, MagicMock()]
+        sct.grab.return_value = np.zeros((100, 100, 4), dtype=np.uint8)
+        cm = MagicMock(); cm.__enter__.return_value = sct; cm.__exit__.return_value = False
 
-    def test_fallback_yolo_block_when_no_restart_callback(self):
-        """Если restart_callback=None — YOLO-блок работает (fallback)."""
-        eng = self._make_pacman()
-        eng.restart_callback = None
+        with (
+            patch('navigator.time.sleep'),
+            patch('navigator.pyautogui.click'),
+            patch('navigator.pyautogui.press'),
+            patch('navigator.winsound.PlaySound'),
+            patch('navigator.winsound.Beep'),
+            patch('navigator.PacmanEngine._trigger_yolo_block') as mock_block,
+            patch('mss.mss', return_value=cm),
+            patch.object(CoastalSnakeNavigator, '_click_vec'),
+            patch('debug_reporter.report_find', MagicMock()),
+            patch('debug_reporter.report_dialog', MagicMock()),
+            patch('auth.get_hwid', return_value='test-hwid'),
+        ):
+            b = MagicMock()
+            b.xyxy.cpu.return_value.tolist.return_value = [[100., 100., 200., 200.]]
+            b.conf = [0.9]
+            eng._exchange_detected(b, frame=frame)
 
-        yolo_block_called = threading.Event()
-        orig_trigger = eng.__class__._trigger_yolo_block
-
-        with patch.object(eng.__class__, '_trigger_yolo_block',
-                          lambda self, s=20: yolo_block_called.set()):
-            self._run_exchange_detected(eng, _make_box_mock())
-
-        assert yolo_block_called.is_set(), "_trigger_yolo_block должен вызываться как fallback"
+        mock_block.assert_not_called()

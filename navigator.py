@@ -1087,21 +1087,18 @@ class PacmanEngine:
         if self.on_found_callback:
             self.on_found_callback()
 
-        # Шаг 10: держим диалог открытым 10с — пользователь видит координаты
-        time.sleep(10)
-
-        # Шаг 11: закрыть диалог биржи ПЕРЕД остановкой — экран чистый
+        # Шаг 10: закрыть диалог биржи — экран чистый для YOLO
+        # (10с ожидания теперь в main.py через Tkinter.after — нет sleep в треде)
         self._suppressing_esc = True
         pyautogui.press('escape')
         time.sleep(0.3)
         self._suppressing_esc = False
 
-        # Шаг 12: немедленный рестарт (пауза уже выдержана в шаге 10)
+        # Шаг 11: тред умирает немедленно; main.py перезапустит через after(10000)
+        self.is_running = False
         if self.restart_callback:
-            self.restart_callback(0)
-            return  # навигатор завершает итерацию — движок остановит поток
-        # Fallback: если restart_callback не задан — YOLO-блок
-        self._trigger_yolo_block(20)
+            self.restart_callback()  # без аргументов — main.py управляет задержкой
+        return
 
     def _backtrack_step(self) -> None:
         """Один шаг назад (инверт последнего вектора джойстика) после инерционного пролёта биржи."""

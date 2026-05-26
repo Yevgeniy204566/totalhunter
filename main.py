@@ -1281,6 +1281,7 @@ class TotalHunterApp(ctk.CTk):
         self.engine.on_last_exchange_callback = self._on_last_exchange_found
         self.engine.on_engine_restart_callback = self._on_exchange_restart
         self.engine.on_pool_refresh_callback   = self._on_pool_auto_refresh
+        self.engine.on_exchange_found_callback = self._on_exchange_found
         self.crypt_engine = CryptHunter()
         self.is_crypt_running = False
         self._crypt_found_count = 0
@@ -2860,6 +2861,29 @@ class TotalHunterApp(ctk.CTk):
             }
             self._roy_update_list(pool)
         self.after(0, _refresh)
+
+    def _on_exchange_found(self) -> None:
+        """Биржа найдена — вызывается из фонового треда навигатора.
+        Останавливаем движок и планируем ОДИН чистый перезапуск через Tkinter mainloop."""
+        self.engine.stop()
+        # after() thread-safe: планирует вызов в главном цикле — гарантированно один раз
+        self.after(0, self._gui_set_stopped)
+        self.after(10000, self._programmatic_restart)
+
+    def _programmatic_restart(self) -> None:
+        """Перезапуск движка через Tkinter mainloop — вызывается ровно один раз через after(10000).
+        Эквивалент ручного нажатия кнопки СТАРТ после 10-секундной паузы."""
+        if self.is_running:
+            return  # пользователь уже запустил вручную — не вмешиваемся
+        if not self.engine._last_start_kwargs:
+            return
+        try:
+            self.engine._initial_yolo_block_sec = 30.0  # YOLO заблокирован на старте
+            self.engine.start(**self.engine._last_start_kwargs)
+            self._gui_set_running()
+            self.is_running = True
+        except Exception as e:
+            _roy_log(f"Programmatic restart failed: {e}")
 
     def _on_exchange_restart(self, state: str) -> None:
         """Callback из engine (фоновый поток) — планируем обновление GUI в главном потоке."""

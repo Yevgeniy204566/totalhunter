@@ -93,6 +93,7 @@ class HuntEngine:
         self.on_pool_refresh_callback   = None  # (pool: list) → обновляет список пула в GUI
         self._initial_yolo_block_sec: float = 0.0  # YOLO-блок, применяемый ДО pacman.start()
         self._bg_gen: int = 0  # инкрементируется на каждом start() — старые треды видят изменение
+        self.on_exchange_found_callback = None  # () → main.py.after(10000, _programmatic_restart)
 
     def start(
         self,
@@ -127,15 +128,6 @@ class HuntEngine:
         )
         self._mm_cx = center_x
         self._mm_cy = center_y
-
-        # Ждём завершения СТАРОГО треда ДО создания нового PacmanEngine.
-        # Без этого join() в PacmanEngine.start() — NO-OP (_thread=None у нового объекта).
-        if self._pacman and self._pacman._thread and self._pacman._thread.is_alive():
-            self._pacman._thread.join(timeout=5.0)
-            if self._pacman._thread.is_alive():
-                _roy_log("WARN: старый _run() тред завис — принудительный стоп")
-                self._pacman.stop()
-                self._pacman._thread.join(timeout=2.0)
 
         if use_beacon:
             try:
@@ -205,7 +197,7 @@ class HuntEngine:
         else:
             self._pacman.on_found_callback = self.on_found_callback
 
-        self._pacman.restart_callback = self.restart_after_exchange
+        self._pacman.restart_callback = self.on_exchange_found_callback
         self.is_running = True
         self._bg_gen += 1
         # Применяем YOLO-блок ДО старта треда — нет гонки
@@ -223,31 +215,6 @@ class HuntEngine:
             self._pacman.stop()
         if self.roy_enabled and self._roy_client and self.roy_kingdom:
             self._roy_client.stop_session(self.roy_kingdom)
-
-    def restart_after_exchange(self, delay: int = 10) -> None:
-        """Биржа обработана → честный стоп + автозапуск через delay секунд."""
-        self.stop()
-        _roy_log(f"Змейка остановлена. Автозапуск через {delay}с...")
-        if self.on_engine_restart_callback:
-            try:
-                self.on_engine_restart_callback('stopped')
-            except Exception:
-                pass
-
-        def _delayed_start():
-            _roy_log("Автозапуск после биржи — старт")
-            if self.on_engine_restart_callback:
-                try:
-                    self.on_engine_restart_callback('starting')
-                except Exception:
-                    pass
-            if self._last_start_kwargs:
-                _roy_log(f"Авто-рестарт с параметрами: {self._last_start_kwargs}")
-                # Блокируем YOLO на 30с — устанавливается ДО pacman.start() через _initial_yolo_block_sec
-                self._initial_yolo_block_sec = 30.0
-                self.start(**self._last_start_kwargs)
-
-        threading.Timer(delay, _delayed_start).start()
 
     def _build_roy_wrapper(self, original_cb):
         """Возвращает wrapper: вызывает original_cb в try/except, затем _roy_on_found."""
