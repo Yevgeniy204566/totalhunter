@@ -1081,8 +1081,8 @@ class PacmanEngine:
         except Exception:
             winsound.Beep(1000, 500)
 
-        # Шаг 7: ждём открытия диалога
-        time.sleep(0.5)
+        # Шаг 7: ждём открытия диалога (1.0с — запас для медленных ПК)
+        time.sleep(1.0)
 
         # Шаг 8: DIALOG скрин — что реально открылось
         try:
