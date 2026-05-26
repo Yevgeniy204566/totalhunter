@@ -36,17 +36,20 @@ class RoyClient:
                 pass
         threading.Thread(target=_send, daemon=True).start()
 
-    def scan(self, kingdom: int | None = None) -> None:
+    def scan(self, kingdom: int | None = None) -> bool:
         """Фиксирует 30 сек активного сканирования (+45 сек баланса).
         Если передан kingdom — обновляет live-счётчик ГОСа на сервере.
+        Возвращает True если сервер принял запрос.
         """
         payload: dict = {"hwid": self.hwid}
         if kingdom is not None:
             payload["kingdom"] = kingdom
         try:
-            requests.post(f"{SERVER_URL}/roy/scan", json=payload, timeout=_TIMEOUT)
-        except Exception:
-            pass
+            r = requests.post(f"{SERVER_URL}/roy/scan", json=payload, timeout=_TIMEOUT)
+            return r.json().get("success", False)
+        except Exception as e:
+            print(f"[ROY] scan() ERROR: {e!r}")
+            return False
 
     def stop_session(self, kingdom: int) -> None:
         """Сигнал серверу об остановке поиска в ГОСе. Fire-and-forget."""

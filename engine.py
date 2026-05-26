@@ -267,7 +267,8 @@ class HuntEngine:
                     _roy_log(f"Карта статична ({diff_frac:.1%}). Пропущено (AFK защита).")
                     continue
 
-                self._roy_client.scan(kingdom=self.roy_kingdom or None)
+                ok = self._roy_client.scan(kingdom=self.roy_kingdom or None)
+                _roy_log(f"scan() → {'OK +45с' if ok else 'FAIL (rate_limited или ошибка)'} | diff={diff_frac:.1%}")
 
         threading.Thread(target=_loop, daemon=True).start()
 
