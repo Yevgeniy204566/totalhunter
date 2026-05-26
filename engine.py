@@ -13,6 +13,18 @@ from auth import heartbeat as _heartbeat, get_hwid
 import nav_logger
 nav_logger.install()
 
+_ROY_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'roy_debug.log')
+
+def _roy_log(msg: str):
+    import datetime as _dtt
+    line = f"{_dtt.datetime.now().strftime('%H:%M:%S.%f')[:-3]} [ROY] {msg}"
+    print(line)
+    try:
+        with open(_ROY_LOG, 'a', encoding='utf-8') as f:
+            f.write(line + '\n')
+    except Exception:
+        pass
+
 
 def _is_trade_routes_active() -> bool:
     """Вычисляет активность ивента Торговые Пути напрямую, без зависимости от GUI-флага."""
@@ -24,13 +36,14 @@ def _is_trade_routes_active() -> bool:
     now   = _dt.datetime.now(_KYIV)
     delta = now - _ANCHOR
     if delta.total_seconds() < 0:
+        _roy_log(f"Ивент: now={now.strftime('%d.%m %H:%M')} — до старта якоря")
         return False
     cycles = int(delta.total_seconds() // _CYCLE.total_seconds())
     start  = _ANCHOR + cycles * _CYCLE
     end    = start + _DUR
-    if now > end:
-        return False
-    return now >= start
+    active = start <= now <= end
+    _roy_log(f"Ивент: now={now.strftime('%d.%m %H:%M')} | окно {start.strftime('%d.%m %H:%M')}→{end.strftime('%d.%m %H:%M')} | active={active}")
+    return active
 
 # Убираем глобальную задержку PyAutoGUI — антидетект обеспечивается move_wait в навигаторе
 pyautogui.PAUSE = 0.0
@@ -182,33 +195,43 @@ class HuntEngine:
     def _build_roy_wrapper(self, original_cb):
         """Возвращает wrapper: вызывает original_cb в try/except, затем _roy_on_found."""
         def _wrapper(*args, **kwargs):
+            _roy_log(">>> on_found_callback сработал — запускаю ROY OCR")
             if original_cb:
                 try:
                     original_cb(*args, **kwargs)
                 except Exception as e:
-                    print(f"[ROY] original_cb ERROR: {e!r}")
+                    _roy_log(f"original_cb ERROR: {e!r}")
             self._roy_on_found()
         return _wrapper
 
     def _roy_on_found(self):
         """OCR диалога биржи → GUI-карточка владельца + отправка в Рой (если % < 90)."""
+        _roy_log("_roy_on_found: старт OCR (timeout=4.0с)")
         try:
             from roy.exchange_reader import wait_and_read
             result = wait_and_read(timeout=4.0)
+            _roy_log(f"_roy_on_found: результат OCR = {result}")
             if result:
-                # Показываем координаты владельцу всегда (любой %)
                 if self.on_last_exchange_callback:
-                    self.on_last_exchange_callback(result)
-                # В общий РОЙ — только если биржа ещё не выкуплена
+                    try:
+                        self.on_last_exchange_callback(result)
+                    except Exception as e:
+                        _roy_log(f"on_last_exchange_callback ERROR: {e!r}")
                 if result['percent'] < 90:
+                    _roy_log(f"Отправляю в пул → K={result['kingdom']} X={result['x']} Y={result['y']} {result['percent']}%")
                     self._roy_client.report(
                         kingdom=result['kingdom'],
                         x=result['x'],
                         y=result['y'],
                         percent=result['percent'],
                     )
+                    _roy_log("report() отправлен")
+                else:
+                    _roy_log(f"Биржа выкуплена ({result['percent']}%) — в пул не отправляем")
+            else:
+                _roy_log("_roy_on_found: OCR вернул None — диалог не найден или текст не распознан")
         except Exception as e:
-            print(f"[ROY] _roy_on_found ERROR: {e!r}")
+            _roy_log(f"_roy_on_found ERROR: {e!r}")
 
     def _start_roy_scan(self):
         """Proof of Scan: каждые 30 сек фиксирует активность (+45 сек баланса).
@@ -240,12 +263,8 @@ class HuntEngine:
                 ).mean()
                 frame_prev = frame_curr
 
-                if not _is_trade_routes_active():
-                    print("[ROY] Ивент не активен — скан не засчитан.")
-                    continue
-
                 if diff_frac < _DIFF_THR:
-                    print(f"[ROY] Карта статична ({diff_frac:.1%}). Пропущено (AFK защита).")
+                    _roy_log(f"Карта статична ({diff_frac:.1%}). Пропущено (AFK защита).")
                     continue
 
                 self._roy_client.scan(kingdom=self.roy_kingdom or None)
