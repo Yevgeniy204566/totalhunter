@@ -251,6 +251,7 @@ class TestYoloBlock30sBeforeStart:
         eng._bg_gen = 0
         eng.sound_path = None
         eng.model = MagicMock()
+        eng._pacman = None
 
         yolo_block_at_thread_start = []
 

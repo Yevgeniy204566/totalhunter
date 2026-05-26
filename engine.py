@@ -127,6 +127,16 @@ class HuntEngine:
         )
         self._mm_cx = center_x
         self._mm_cy = center_y
+
+        # Ждём завершения СТАРОГО треда ДО создания нового PacmanEngine.
+        # Без этого join() в PacmanEngine.start() — NO-OP (_thread=None у нового объекта).
+        if self._pacman and self._pacman._thread and self._pacman._thread.is_alive():
+            self._pacman._thread.join(timeout=5.0)
+            if self._pacman._thread.is_alive():
+                _roy_log("WARN: старый _run() тред завис — принудительный стоп")
+                self._pacman.stop()
+                self._pacman._thread.join(timeout=2.0)
+
         if use_beacon:
             try:
                 from navigator_beacon import CoastalSnakeNavigatorBeacon
@@ -232,6 +242,7 @@ class HuntEngine:
                 except Exception:
                     pass
             if self._last_start_kwargs:
+                _roy_log(f"Авто-рестарт с параметрами: {self._last_start_kwargs}")
                 # Блокируем YOLO на 30с — устанавливается ДО pacman.start() через _initial_yolo_block_sec
                 self._initial_yolo_block_sec = 30.0
                 self.start(**self._last_start_kwargs)
