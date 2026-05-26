@@ -3,22 +3,37 @@ exchange_reader.py — OCR диалога биржи наёмников.
 
 Извлекает:
   - Координаты: K (гос), X, Y из красной строки в верхней части диалога
-  - Процент выкупа: из зелёной полосы «Прогресс сделок» внизу диалога
+  - Процент выкупа: из текста «Прогресс сделок: XX%»
 
 Алгоритм:
-  1. Скриншот + поиск диалога по характерному заголовку (HSV-маска бежевого фона)
-  2. Crop верхней зоны → цветовая маска красного текста → pytesseract
-  3. Crop нижней зоны → измерение длины зелёной полосы → % заполнения
-  4. Проверка что окно открылось (контрольная точка — заголовок)
+  1. Захват фиксированного ROI через coord_manager (масштабирование по профилю)
+  2. Запуск pytesseract на захваченном регионе
+  3. Парсинг результата регулярным выражением
 
-Вызывается из engine.py после клика YOLO по бирже.
+Координаты ROI захардкожены в reference-системе (1920×1080),
+верифицированы по скриншотам Биржа_15.04.png (диалог: x=656,y=335,w=611,h=393).
+Масштабируются через coord_manager.to_region() по профилю пользователя.
+Никакого динамического поиска окна — только жёсткие координаты.
 """
 
 import re
 import time
+import os as _os
+import datetime as _datetime
 
 import cv2
 import numpy as np
+
+_LOG_PATH = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..', 'roy_debug.log')
+
+def _log(msg: str):
+    line = f"{_datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]} [OCR] {msg}"
+    print(line)
+    try:
+        with open(_LOG_PATH, 'a', encoding='utf-8') as f:
+            f.write(line + '\n')
+    except Exception:
+        pass
 
 try:
     import pytesseract
@@ -34,34 +49,22 @@ except ImportError:
 from coord_manager import coord_manager
 
 
-# ── Цветовые диапазоны (HSV) ──────────────────────────────────────────────────
+# ── Hardcoded ROI в reference-системе (1920×1080) ────────────────────────────
+# Диалог биржи (Биржа_15.04.png, 3 скриншота): x=656, y=335, w=611, h=393
+# Строка K:X:Y — +20px запас с каждой стороны от точного положения текста
+_COORD_X_REF    = 636
+_COORD_Y_REF    = 330
+_COORD_W_REF    = 651
+_COORD_H_REF    = 115
 
-# Текст координат: тёмно-оранжевый/коричневый (H≈5-15, S высокое, V низкое)
-_RED_LOW1  = np.array([0,  150, 40])
-_RED_HIGH1 = np.array([18, 255, 160])
-# Второй диапазон на случай более светлого варианта
-_RED_LOW2  = np.array([160, 100, 40])
-_RED_HIGH2 = np.array([180, 255, 160])
-
-# Зелёная полоса прогресса (в игре жёлто-зелёный, H≈13-30 в OpenCV HSV)
-_GREEN_LOW  = np.array([13,  60, 60])
-_GREEN_HIGH = np.array([32, 255, 255])
-
-# Бежевый/светлый фон заголовка диалога (для поиска окна)
-_DIALOG_BG_LOW  = np.array([15,  20, 180])
-_DIALOG_BG_HIGH = np.array([35, 100, 255])
-
-# ── Относительные зоны внутри диалога (от верхнего левого угла) ──────────────
-# Координаты — строка в ~15% высоты диалога
-_COORD_ROI_REL    = (0.0, 0.03, 1.0, 0.20)     # строка K/X/Y под заголовком (с запасом)
-_PROGRESS_ROI_REL = (0.02, 0.57, 0.98, 0.72)   # текст «Прогресс сделок: XX%» + бар
-
-# Минимальный размер диалога в пикселях (защита от ложных срабатываний)
-_MIN_DIALOG_W = 200
-_MIN_DIALOG_H = 150
+# Прогресс сделок (текст + зелёный бар, ~57-75% высоты диалога) + 20px запас
+_PROGRESS_X_REF = 636
+_PROGRESS_Y_REF = 540
+_PROGRESS_W_REF = 651
+_PROGRESS_H_REF = 120
 
 # Таймаут ожидания появления диалога (сек)
-_DIALOG_TIMEOUT = 3.0
+_DIALOG_TIMEOUT = 4.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -72,14 +75,25 @@ def wait_and_read(timeout: float = _DIALOG_TIMEOUT) -> dict | None:
     """
     Ждёт появления диалога биржи и читает данные.
     Возвращает {'kingdom': int, 'x': int, 'y': int, 'percent': int}
-    или None если диалог не появился / не удалось распознать.
+    или None если диалог не открылся / координаты не распознаны.
     """
+    _log(f"wait_and_read: старт, timeout={timeout}с")
+    if mss is None:
+        _log("wait_and_read: ОШИБКА — mss не установлен!")
+        return None
+    if pytesseract is None:
+        _log("wait_and_read: ОШИБКА — pytesseract не установлен!")
+        return None
     deadline = time.time() + timeout
+    attempt = 0
     while time.time() < deadline:
+        attempt += 1
         result = _try_read()
         if result:
+            _log(f"wait_and_read: успех на попытке #{attempt} → {result}")
             return result
         time.sleep(0.3)
+    _log(f"wait_and_read: таймаут после {attempt} попыток — координаты не распознаны")
     return None
 
 
@@ -92,72 +106,38 @@ def read_once() -> dict | None:
 # Внутренняя логика
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _grab_screen() -> np.ndarray:
-    """Захватывает полный экран в BGR."""
-    if mss is None:
-        raise RuntimeError("mss not installed")
+def _grab_region(x_ref: int, y_ref: int, w_ref: int, h_ref: int) -> np.ndarray:
+    """Захватывает регион экрана по reference-координатам через coord_manager."""
+    sx, sy, sw, sh = coord_manager.to_region(x_ref, y_ref, w_ref, h_ref)
+    _log(f"_grab_region: ref=({x_ref},{y_ref},{w_ref},{h_ref}) → screen=({sx},{sy},{sw},{sh})")
     with mss.mss() as sct:
-        mon = sct.monitors[1]
-        raw = sct.grab(mon)
+        region = {'left': sx, 'top': sy, 'width': max(sw, 1), 'height': max(sh, 1)}
+        raw = sct.grab(region)
         return cv2.cvtColor(np.array(raw), cv2.COLOR_BGRA2BGR)
-
-
-def _find_dialog(frame: np.ndarray) -> tuple | None:
-    """
-    Ищет диалог биржи на экране.
-    Возвращает (x, y, w, h) прямоугольника диалога или None.
-
-    Метод: ищем крупный прямоугольник с бежевым/кремовым фоном,
-    характерным для диалоговых окон в Total Battle.
-    """
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, _DIALOG_BG_LOW, _DIALOG_BG_HIGH)
-
-    # Морфология для заполнения пробелов
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        return None
-
-    # Берём самый большой контур
-    c = max(contours, key=cv2.contourArea)
-    x, y, w, h = cv2.boundingRect(c)
-
-    if w < _MIN_DIALOG_W or h < _MIN_DIALOG_H:
-        return None
-
-    return (x, y, w, h)
-
-
-def _crop_roi(frame: np.ndarray, dialog: tuple, rel: tuple) -> np.ndarray:
-    """Вырезает относительный регион из диалога."""
-    dx, dy, dw, dh = dialog
-    x1 = int(dx + rel[0] * dw)
-    y1 = int(dy + rel[1] * dh)
-    x2 = int(dx + rel[2] * dw)
-    y2 = int(dy + rel[3] * dh)
-    return frame[y1:y2, x1:x2]
 
 
 def _ocr_coords(roi: np.ndarray) -> tuple | None:
     """
-    Читает координаты K/X/Y из зоны диалога.
-    Ищет паттерн вида: K:471 X:383 Y:812 или (K:471 X:383 Y:812)
+    Читает координаты K/X/Y из захваченного региона.
     Возвращает (kingdom, x, y) или None.
     """
     if pytesseract is None:
         return None
 
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    gray = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+    # Threshold 180 isolates dark text on the light dialog background
+    _, gray = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
 
     try:
         text = pytesseract.image_to_string(gray, config='--psm 11', timeout=3).strip()
-    except Exception:
+    except Exception as e:
+        _log(f"_ocr_coords: pytesseract ERROR: {e!r}")
         return None
-    return _parse_coords(text)
+    _log(f"_ocr_coords: сырой текст = {repr(text)}")
+    result = _parse_coords(text)
+    _log(f"_ocr_coords: парсинг → {result}")
+    return result
 
 
 def _parse_coords(text: str) -> tuple | None:
@@ -168,7 +148,6 @@ def _parse_coords(text: str) -> tuple | None:
       К:471 X:383 Y:812   (кириллица)
       K:471X:383Y:812     (без пробелов)
     """
-    # Нормализуем кириллицу
     text = text.upper().replace('К', 'K').replace('Х', 'X').replace('У', 'Y')
     text = text.replace(' ', '').replace('\n', '')
 
@@ -185,16 +164,13 @@ def _parse_coords(text: str) -> tuple | None:
 def _measure_progress(roi: np.ndarray) -> int:
     """
     Читает процент из текста «Прогресс сделок: XX%» через pytesseract.
-    Fallback: измерение ширины зелёной полосы.
+    Fallback: ширина зелёной полосы.
     Возвращает 0-100.
     """
-    # Метод 1: OCR текста (надёжнее)
     if pytesseract is not None:
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        # Темный текст на светлом фоне — бинаризуем
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        scale = 3
-        thresh = cv2.resize(thresh, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+        thresh = cv2.resize(thresh, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
         config = '--psm 6 -c tessedit_char_whitelist=0123456789%: '
         try:
             text = pytesseract.image_to_string(thresh, config=config, timeout=3)
@@ -204,12 +180,12 @@ def _measure_progress(roi: np.ndarray) -> int:
         if m:
             return min(int(m.group(1)), 100)
 
-    # Fallback: поиск строки с макс кол-вом пикселей зелёного бара
+    # Fallback: поиск строки с наибольшим числом жёлто-зелёных пикселей бара
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
     best = 0
     for ri in range(roi.shape[0]):
         row = hsv[ri, :, :]
-        px = row[(row[:, 0] >= 10) & (row[:, 0] <= 24) &
+        px = row[(row[:, 0] >= 13) & (row[:, 0] <= 32) &
                  (row[:, 1] > 60) & (row[:, 2] > 150)]
         if len(px) > best:
             best = len(px)
@@ -217,17 +193,20 @@ def _measure_progress(roi: np.ndarray) -> int:
 
 
 def _try_read() -> dict | None:
-    """Один цикл: скриншот → поиск диалога → OCR."""
-    frame = _grab_screen()
-    dialog = _find_dialog(frame)
-    if dialog is None:
-        return None
+    """Один цикл: захват фиксированных ROI → OCR координат и прогресса."""
+    coord_roi    = _grab_region(_COORD_X_REF,    _COORD_Y_REF,    _COORD_W_REF,    _COORD_H_REF)
+    progress_roi = _grab_region(_PROGRESS_X_REF, _PROGRESS_Y_REF, _PROGRESS_W_REF, _PROGRESS_H_REF)
 
-    coord_roi    = _crop_roi(frame, dialog, _COORD_ROI_REL)
-    progress_roi = _crop_roi(frame, dialog, _PROGRESS_ROI_REL)
+    _dbg = _os.path.dirname(_LOG_PATH)
+    try:
+        cv2.imwrite(_os.path.join(_dbg, 'roy_dbg_coord_roi.png'),    coord_roi)
+        cv2.imwrite(_os.path.join(_dbg, 'roy_dbg_progress_roi.png'), progress_roi)
+    except Exception:
+        pass
 
     coords  = _ocr_coords(coord_roi)
     percent = _measure_progress(progress_roi)
+    _log(f"_try_read: coords={coords} percent={percent}%")
 
     if coords is None:
         return None
@@ -242,39 +221,36 @@ def _try_read() -> dict | None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Debug-утилита (запускать вручную: python exchange_reader.py)
+# Debug-утилита (запускать из C:\BattleBot: python roy/exchange_reader.py Биржа_15.04.png)
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
     import sys
 
     if len(sys.argv) > 1:
-        # Тест на конкретном файле: python exchange_reader.py Биржа_15.04.png
         img_path = sys.argv[1]
-        frame = cv2.imread(img_path)
-        if frame is None:
+        img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if img is None:
             print(f"Не удалось загрузить: {img_path}")
             sys.exit(1)
 
-        dialog = _find_dialog(frame)
-        print(f"Диалог: {dialog}")
+        print(f"Изображение: {img.shape[1]}x{img.shape[0]}")
+        print(f"ROI координат: x={_COORD_X_REF}, y={_COORD_Y_REF}, w={_COORD_W_REF}, h={_COORD_H_REF}")
 
-        if dialog:
-            coord_roi    = _crop_roi(frame, dialog, _COORD_ROI_REL)
-            progress_roi = _crop_roi(frame, dialog, _PROGRESS_ROI_REL)
+        coord_roi    = img[_COORD_Y_REF:_COORD_Y_REF+_COORD_H_REF,
+                           _COORD_X_REF:_COORD_X_REF+_COORD_W_REF]
+        progress_roi = img[_PROGRESS_Y_REF:_PROGRESS_Y_REF+_PROGRESS_H_REF,
+                           _PROGRESS_X_REF:_PROGRESS_X_REF+_PROGRESS_W_REF]
 
-            cv2.imwrite('debug_coord_roi.png',    coord_roi)
-            cv2.imwrite('debug_progress_roi.png', progress_roi)
-            print("Сохранено: debug_coord_roi.png, debug_progress_roi.png")
+        cv2.imwrite('debug_coord_roi.png',    coord_roi)
+        cv2.imwrite('debug_progress_roi.png', progress_roi)
+        print("Сохранено: debug_coord_roi.png, debug_progress_roi.png")
 
-            coords  = _ocr_coords(coord_roi)
-            percent = _measure_progress(progress_roi)
-            print(f"Координаты: {coords}")
-            print(f"Прогресс:   {percent}%")
-        else:
-            print("Диалог не найден")
+        coords  = _ocr_coords(coord_roi)
+        percent = _measure_progress(progress_roi)
+        print(f"Координаты: {coords}")
+        print(f"Прогресс:   {percent}%")
     else:
-        # Живой захват с экрана
         print("Ждём диалог биржи (Ctrl+C для выхода)...")
         while True:
             result = read_once()
