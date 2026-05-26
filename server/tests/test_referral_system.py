@@ -334,3 +334,30 @@ async def test_hwid_reset_first_time_no_cooldown():
         resp = await _reset(c, jwt)
         assert resp.status_code == 200
         assert (await _me(c, jwt))["hwid"] is None
+
+
+@pytest.mark.asyncio
+async def test_hwid_reset_allowed_after_7_days(db_session):
+    """hwid_reset_at = 8 days ago → second reset is allowed (no 429)."""
+    from datetime import datetime, timedelta
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        jwt = await _register(c, "reset7d@ref.test")
+        await _link_hwid(c, jwt, "HWID0000RST7D001")
+
+        r1 = await _reset(c, jwt)
+        assert r1.status_code == 200
+
+        # Backdate hwid_reset_at to 8 days ago
+        await db_session.execute(
+            sa_update(User)
+            .where(User.email == "reset7d@ref.test")
+            .values(hwid_reset_at=datetime.utcnow() - timedelta(days=8))
+        )
+        await db_session.commit()
+
+        # Re-link so there's something to reset
+        await _link_hwid(c, jwt, "HWID0000RST7D002")
+
+        r2 = await _reset(c, jwt)
+        assert r2.status_code == 200
+        assert (await _me(c, jwt))["hwid"] is None
