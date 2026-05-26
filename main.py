@@ -1280,6 +1280,7 @@ class TotalHunterApp(ctk.CTk):
         self.engine.on_found_callback = self.on_target_found
         self.engine.on_last_exchange_callback = self._on_last_exchange_found
         self.engine.on_engine_restart_callback = self._on_exchange_restart
+        self.engine.on_pool_refresh_callback   = self._on_pool_auto_refresh
         self.crypt_engine = CryptHunter()
         self.is_crypt_running = False
         self._crypt_found_count = 0
@@ -2848,6 +2849,10 @@ class TotalHunterApp(ctk.CTk):
                                         text_color=MD3["on_surface2"])
             self.is_running = False
 
+
+    def _on_pool_auto_refresh(self, pool: list) -> None:
+        """Авто-обновление пула сразу после успешного report() — из фонового треда."""
+        self.after(0, lambda: self._roy_update_list(pool))
 
     def _on_exchange_restart(self, state: str) -> None:
         """Callback из engine (фоновый поток) — планируем обновление GUI в главном потоке."""

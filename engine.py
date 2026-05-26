@@ -90,6 +90,7 @@ class HuntEngine:
         self._mm_cy        = 925
         self._last_start_kwargs: dict = {}
         self.on_engine_restart_callback = None  # (state: 'stopped'|'starting') → обновляет GUI
+        self.on_pool_refresh_callback   = None  # (pool: list) → обновляет список пула в GUI
 
     def start(
         self,
@@ -255,11 +256,13 @@ class HuntEngine:
                         _roy_log(f"on_last_exchange_callback ERROR: {e!r}")
                 if result['percent'] < 90:
                     _roy_log(f"Отправляю в пул → K={result['kingdom']} X={result['x']} Y={result['y']} {result['percent']}%")
+                    _cb = self._after_report_success if self.on_pool_refresh_callback else None
                     self._roy_client.report(
                         kingdom=result['kingdom'],
                         x=result['x'],
                         y=result['y'],
                         percent=result['percent'],
+                        on_success=_cb,
                     )
                     _roy_log("report() отправлен")
                 else:
@@ -268,6 +271,18 @@ class HuntEngine:
                 _roy_log("_roy_on_found: OCR вернул None — диалог не найден или текст не распознан")
         except Exception as e:
             _roy_log(f"_roy_on_found ERROR: {e!r}")
+
+    def _after_report_success(self) -> None:
+        """Вызывается из треда report() после успешного ответа сервера.
+        Запрашивает актуальный пул и передаёт в GUI-callback.
+        """
+        if not self.on_pool_refresh_callback:
+            return
+        try:
+            pool = self._roy_client.get_pool(consume=False)
+            self.on_pool_refresh_callback(pool)
+        except Exception as e:
+            _roy_log(f"_after_report_success ERROR: {e!r}")
 
     def _start_roy_scan(self):
         """Proof of Scan: каждые 30 сек фиксирует активность (+45 сек баланса).

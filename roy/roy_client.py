@@ -24,16 +24,23 @@ class RoyClient:
                 pass
         threading.Thread(target=_send, daemon=True).start()
 
-    def report(self, kingdom: int, x: int, y: int, percent: int) -> None:
+    def report(self, kingdom: int, x: int, y: int, percent: int,
+               on_success=None) -> None:
         """Отправляет координаты биржи в пул Роя.
         НЕ daemon-поток — HTTP-запрос должен завершиться до выхода процесса.
+        on_success() вызывается в том же треде если сервер вернул success=True.
         """
         def _send():
             try:
-                requests.post(f"{SERVER_URL}/roy/report", json={
+                r = requests.post(f"{SERVER_URL}/roy/report", json={
                     "hwid": self.hwid, "kingdom": kingdom,
                     "x": x, "y": y, "percent": percent,
                 }, timeout=_TIMEOUT)
+                if on_success and r.json().get("success"):
+                    try:
+                        on_success()
+                    except Exception:
+                        pass
             except Exception:
                 pass
         t = threading.Thread(target=_send)
