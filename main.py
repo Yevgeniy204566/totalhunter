@@ -3134,47 +3134,14 @@ class TotalHunterApp(ctk.CTk):
             self.after(1500, self._roy_refresh_balance)
 
     def _update_trade_routes_labels(self):
-        """Вычисляет состояние Торговых Путей и обновляет лейблы (без reschedule)."""
-        _KYIV = _dt.timezone(_dt.timedelta(hours=3))
-        _ANCHOR = _dt.datetime(2026, 5, 20, 20, 0, 0, tzinfo=_KYIV)
-        _CYCLE = _dt.timedelta(days=5)
-        _DUR = _dt.timedelta(hours=24)
-
-        now = _dt.datetime.now(_KYIV)
-        delta = now - _ANCHOR
-        if delta.total_seconds() < 0:
-            start, end, is_active = _ANCHOR, _ANCHOR + _DUR, False
-        else:
-            cycles = int(delta.total_seconds() // _CYCLE.total_seconds())
-            start = _ANCHOR + cycles * _CYCLE
-            end = start + _DUR
-            if now > end:
-                start += _CYCLE
-                end = start + _DUR
-            is_active = now >= start
-
-        def _fmt(td):
-            s = int(td.total_seconds())
-            d, r = divmod(s, 86400)
-            h, r = divmod(r, 3600)
-            m = r // 60
-            parts = ([f"{d}д"] if d else []) + ([f"{h}ч"] if h else []) + [f"{m}м"]
-            return " ".join(parts)
-
-        L = LANGS[self.current_lang]
-        if is_active:
-            txt_hunt = f"{L['tr_active']} {_fmt(end - now)}"
-            txt_roy  = f"{L['tr_ends_in']} {_fmt(end - now)}"
-        else:
-            txt_hunt = txt_roy = f"{L['tr_starts_in']} {_fmt(start - now)}"
-
+        """РОЙ активен постоянно — никаких таймеров ивентов."""
+        txt = "🟢 Активно"
         if hasattr(self, '_tr_hunt_label'):
-            self._tr_hunt_label.configure(text=txt_hunt, text_color="#4ADE80")
+            self._tr_hunt_label.configure(text=txt, text_color="#4ADE80")
         if hasattr(self, '_tr_roy_label'):
-            self._tr_roy_label.configure(text=txt_roy, text_color="#4ADE80")
-
+            self._tr_roy_label.configure(text=txt, text_color="#4ADE80")
         if hasattr(self, 'engine') and self.engine:
-            self.engine.event_active = is_active
+            self.engine.event_active = True
 
     def _tick_trade_routes(self):
         """Повторяющийся тик каждую минуту."""

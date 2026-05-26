@@ -25,7 +25,9 @@ class RoyClient:
         threading.Thread(target=_send, daemon=True).start()
 
     def report(self, kingdom: int, x: int, y: int, percent: int) -> None:
-        """Отправляет координаты биржи в пул Роя. Fire-and-forget."""
+        """Отправляет координаты биржи в пул Роя.
+        НЕ daemon-поток — HTTP-запрос должен завершиться до выхода процесса.
+        """
         def _send():
             try:
                 requests.post(f"{SERVER_URL}/roy/report", json={
@@ -34,7 +36,9 @@ class RoyClient:
                 }, timeout=_TIMEOUT)
             except Exception:
                 pass
-        threading.Thread(target=_send, daemon=True).start()
+        t = threading.Thread(target=_send)
+        t.daemon = False  # ждём завершения HTTP-запроса перед выходом процесса
+        t.start()
 
     def scan(self, kingdom: int | None = None) -> bool:
         """Фиксирует 30 сек активного сканирования (+45 сек баланса).

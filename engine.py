@@ -263,12 +263,8 @@ class HuntEngine:
                 ).mean()
                 frame_prev = frame_curr
 
-                if diff_frac < _DIFF_THR:
-                    _roy_log(f"Карта статична ({diff_frac:.1%}). Пропущено (AFK защита).")
-                    continue
-
                 ok = self._roy_client.scan(kingdom=self.roy_kingdom or None)
-                _roy_log(f"scan() → {'OK +45с' if ok else 'FAIL (rate_limited или ошибка)'} | diff={diff_frac:.1%}")
+                _roy_log(f"scan() → {'OK +45с' if ok else 'FAIL'} | diff={diff_frac:.1%}")
 
         threading.Thread(target=_loop, daemon=True).start()
 
