@@ -1,14 +1,15 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-21 (хангоф #67: v1.5.5 — биржевый бот полностью исправлен и задокументирован)
+> Последнее обновление: 2026-05-25 (хангоф #69: SEO URL-локализация + hreflang + Vercel Analytics починены)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
 
-**Frontend Deploy:** forceNew API (НЕ hook — кешируется!) + alias
+**Frontend Deploy:** hook + alias (работает стабильно, без forceNew)
 - Token: в `.claude/settings.local.json` → env.VERCEL_TOKEN (не в репо!)
-- команда: `POST /v13/deployments?forceNew=1` с gitSource repoId=1215361801
+- hook: `POST /v1/integrations/deploy/prj_mWtcb6hJCkl40YLWheeIlxD5NmXj/D0wsErcYcw`
+- ⚠️ Vercel Analytics подхватывается ТОЛЬКО новым билдом. Включить сервис → сразу редеплой.
 
 ---
 
@@ -19,14 +20,14 @@
 | **Платежи** | server/payments.py | ✅ NOWPayments (крипто). IPN raw bytes HMAC-SHA512. Работает. | 2026-05-07 |
 | **Long-poll синхронизация** | server/vault.py | ✅ GET /vault/sync/{hwid} — мгновенный обмен баланса бот↔сайт | 2026-05-07 |
 | **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
-| **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. | 2026-05-18 |
+| **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. change_lang полностью обновляет все ROY-метки. | 2026-05-23 |
 | **Рекламные слоты** | web/AdSlot.jsx | ⛔ PopAds убран (pop-under — не подходит). Ждём сеть с баннерами (BitMedia и др. — высокий порог вывода). | 2026-05-15 |
-| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ event gate вычисляется inline в _is_trade_routes_active() — не зависит от GUI-флага. AFK защита ≥15% diff. OCR биржи синхронный (до 4с). После биржи: стоп 10с → YOLO-блок 20с → нормальное движение + loop_start сброс. | 2026-05-20 |
+| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ event gate inline. AFK ≥15% diff. OCR синхронный до 4с. YOLO-блок timestamp. Пул глобальный (без фильтра по королевству). GUI полностью переведён 19 языков × 12 ключей. GCP: roy_kingdom_members создана, GRANT hunter ✅, alembic_version зарегистрирован. | 2026-05-23 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.5**. Backtracking ✅. ROY пакет в EXE ✅. pytesseract timeout=3 ✅. YOLO timestamp (нет race condition) ✅. 13 тестов ✅. Эталон: docs/exchange_bot_spec.md | 2026-05-21 |
+| **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.7**. Backtracking ✅. ROY пакет в EXE ✅. pytesseract timeout=3 ✅. YOLO timestamp ✅. 13 тестов ✅. Эталон: docs/exchange_bot_spec.md | 2026-05-23 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
@@ -34,7 +35,7 @@
 | **Debug Reporter** | debug_reporter.py + server/debug_router.py | ✅ Fire-and-forget FIND+DIALOG скрины → GCP → Telegram @total_hunter_debug_bot. YOLO conf на bbox. Без сохранения на диск. python-multipart установлен на GCP. | 2026-05-19 |
 | **Гайд сайта — ROY секция** | web/src/guide_content.js + .en.js + GuidePage.jsx | ✅ Раздел «Система РОЙ 🐝» (RU+EN): механика баланса, event gate, AFK защита, инструкция 4 шага. | 2026-05-19 |
 | **Динамическое окно** | main.py | ✅ SPI_GETWORKAREA при старте — высота под экран, прижато вправо. Работает на любом разрешении. | 2026-05-12 |
-| **SEO** | web/ | ✅ useMeta hook (title+desc+OG per page), FAQ Schema JSON-LD (6 вопросов), sitemap обновлён | 2026-05-12 |
+| **SEO** | web/ | ✅ **Полный SEO-спринт (2026-05-25):** URL-локализация (EN=default, RU=/ru prefix), 12 prerender-маршрутов (6EN+6RU) с html[lang]/title/desc/og, hreflang x-default+en+ru (статика prerender + динамика useMeta), FAQ JSON-LD EN+RU, sitemap.xml 12 URL xhtml:link, Vercel Analytics ✅, track(Register_Started + Referral_Link_Copied). Dashboard сохраняет lang через localStorage. | 2026-05-25 |
 | **Статистика лендинга** | server/web_routes.py | ✅ Накопительная: base 300 бирж + 5000 склепов + реальные данные. Только растёт. | 2026-05-12 |
 | **Installer** | installer.iss | ✅ v1.1.2: Win10+ gate, 64-bit check, авто-язык RU/EN | 2026-05-09 |
 | **Silent Observer** | main.py + server/web_routes.py | ✅ crash reporter: crash_report.txt + POST /web/crash_report + вкладка Краши в админке | 2026-05-09 |
@@ -91,30 +92,36 @@
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
 
-## ⚠️ v1.5.0 — ВЫПУЩЕН НО ZIP СЛОМАН (2026-05-21)
+## ✅ v1.5.7 — ВЫПУЩЕН (2026-05-23)
+
+**Сервер /version/latest → 1.5.7** ✅
+**ZIP: ~338 МБ**
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.7
+
+### Что нового в v1.5.7:
+1. Фикс: смена языка (change_lang) теперь обновляет все 8 статических меток вкладки РОЙ
+2. `_roy_refresh_balance()` повторно вызывается при смене языка → единицы мин/сек переключаются
+3. GCP: таблица `roy_kingdom_members` подтверждена, GRANT → hunter ✅
+
+---
+
+## ✅ v1.5.6 — ВЫПУЩЕН (2026-05-23)
+
+**Сервер /version/latest → 1.5.6** ✅
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.6
+
+### Что нового в v1.5.6:
+1. Вкладка РОЙ переведена на все 19 языков (были пропущены JA, ZH, ZH_TW, KO, UK, ID)
+2. 12 новых ключей LANGS: roy_title, roy_subtitle, roy_balance_title, roy_join, roy_kingdom_label, roy_coords_title, roy_refresh, roy_no_data, roy_error, roy_empty_pool, roy_pool_empty, roy_pool_count
+3. GUI-функции _roy_refresh_pool/_roy_refresh_balance/_roy_update_list используют LANGS вместо хардкода
+
+---
+
+## ✅ v1.5.0 — ВЫПУЩЕН (2026-05-21)
 
 **Сервер /version/latest → 1.5.0** ✅
-**ZIP на GitHub: 338 МБ — НО НЕПЛОСКИЙ** ⚠️ (пути dist/TotalHunter/TotalHunter.exe внутри)
+**ZIP плоский** ✅
 - GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.0
-- Клиенты в петле автообновлений (Groundhog Day)
-
-### 🔴 ПЕРВОЕ ДЕЙСТВИЕ СЛЕДУЮЩЕЙ СЕССИИ — ФИКС ZIP
-
-```powershell
-# Шаг 1: Пересобрать ZIP плоским (build_release.py теперь делает это сам):
-python build_release.py
-# Шаг 6 скрипта сам создаст правильный ZIP из dist/TotalHunter/ и проверит структуру
-
-# Шаг 2: Проверить:
-# 7z l TotalHunter.zip → TotalHunter.exe должен быть БЕЗ dist/ префикса
-
-# Шаг 3: Загрузить в GitHub Release v1.5.0:
-# https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.0
-# Edit release → удалить старый TotalHunter.zip → перетащить новый → Update release
-# (gh release upload зависает на 300+ MB — только через браузер!)
-
-# Шаг 4: Версию на сервере НЕ менять — уже 1.5.0
-```
 
 ### Что нового в v1.5.0:
 1. Backtracking в _exchange_detected: шаг назад если биржа улетела за край экрана

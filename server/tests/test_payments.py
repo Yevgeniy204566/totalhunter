@@ -179,8 +179,8 @@ async def test_webhook_happy_path_credits_buyer(np_env):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
             "/web/payment/webhook",
-            json=body,
-            headers={"x-nowpayments-sig": sig},
+            content=json.dumps(body, sort_keys=True).encode(),
+            headers={"x-nowpayments-sig": sig, "content-type": "application/json"},
         )
 
     assert resp.status_code == 200
@@ -216,8 +216,8 @@ async def test_webhook_non_finished_status_ignored(np_env):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(
                 "/web/payment/webhook",
-                json=body,
-                headers={"x-nowpayments-sig": sig},
+                content=json.dumps(body, sort_keys=True).encode(),
+                headers={"x-nowpayments-sig": sig, "content-type": "application/json"},
             )
         assert resp.status_code == 200
 
@@ -248,10 +248,10 @@ async def test_webhook_duplicate_is_idempotent(np_env):
     sig  = _make_np_sig(body)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        await client.post("/web/payment/webhook", json=body,
-                          headers={"x-nowpayments-sig": sig})
-        resp2 = await client.post("/web/payment/webhook", json=body,
-                                  headers={"x-nowpayments-sig": sig})
+        _sb = json.dumps(body, sort_keys=True).encode()
+        _wh = {"x-nowpayments-sig": sig, "content-type": "application/json"}
+        await client.post("/web/payment/webhook", content=_sb, headers=_wh)
+        resp2 = await client.post("/web/payment/webhook", content=_sb, headers=_wh)
 
     assert resp2.status_code == 200
 
@@ -299,8 +299,9 @@ async def test_webhook_triggers_referral_l1(np_env):
     sig  = _make_np_sig(body)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        await client.post("/web/payment/webhook", json=body,
-                          headers={"x-nowpayments-sig": sig})
+        await client.post("/web/payment/webhook",
+                          content=json.dumps(body, sort_keys=True).encode(),
+                          headers={"x-nowpayments-sig": sig, "content-type": "application/json"})
 
     async for db in app.dependency_overrides[get_db]():
         from sqlalchemy import select as _sel

@@ -36,3 +36,10 @@ async def setup_test_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def db_session(setup_test_db):
+    """Direct DB session for manipulating test state (e.g., banning a user)."""
+    async for session in app.dependency_overrides[get_db]():
+        yield session

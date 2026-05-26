@@ -430,17 +430,19 @@ async def link_verify(
                     select(User).where(User.id == web_user.invited_by_id)
                 )
                 referrer = referrer_result.scalar_one_or_none()
-                if referrer and not referrer.is_banned:
+                if referrer:
+                    # +50 to invited — unconditional (their bonus, not inviter's)
                     web_user.ref_credits += 50
                     db.add(Transaction(
                         user_id=web_user.id, type="ref_welcome", amount=50,
                         meta={"role": "invited", "hwid": hwid},
                     ))
-                    referrer.ref_credits += 100
-                    db.add(Transaction(
-                        user_id=referrer.id, type="ref_welcome", amount=100,
-                        meta={"role": "inviter", "ref_from_user_id": web_user.id, "hwid": hwid},
-                    ))
+                    if not referrer.is_banned:
+                        referrer.ref_credits += 100
+                        db.add(Transaction(
+                            user_id=referrer.id, type="ref_welcome", amount=100,
+                            meta={"role": "inviter", "ref_from_user_id": web_user.id, "hwid": hwid},
+                        ))
             web_user.ref_bonus_claimed = True
         elif not hwid_is_new:
             # Duplicate HWID — link without bonuses, log the attempt
@@ -469,7 +471,10 @@ async def hwid_reset(
 
     now = datetime.now(timezone.utc)
     if web_user.hwid_reset_at:
-        next_allowed = web_user.hwid_reset_at + timedelta(days=7)
+        reset_at = web_user.hwid_reset_at
+        if reset_at.tzinfo is None:
+            reset_at = reset_at.replace(tzinfo=timezone.utc)
+        next_allowed = reset_at + timedelta(days=7)
         if now < next_allowed:
             raise HTTPException(
                 status_code=429,
@@ -573,7 +578,7 @@ async def web_referral_activate(
     if web_user.invited_by_id is not None:
         return BasicResponse(success=False, message="Referral code already activated.")
 
-    async with db.begin():
+    async with db.begin_nested():
         ref_result = await db.execute(select(User).where(User.ref_code == ref_code.upper()))
         inviter = ref_result.scalar_one_or_none()
 
@@ -582,10 +587,21 @@ async def web_referral_activate(
         if inviter.id == web_user.id:
             return BasicResponse(success=False, message="Cannot use your own code.")
 
+        # Cycle detection: walk up inviter's chain (≤3 hops) to ensure web_user is not an ancestor
+        ancestor_id = inviter.invited_by_id
+        for _ in range(3):
+            if not ancestor_id:
+                break
+            if ancestor_id == web_user.id:
+                return BasicResponse(success=False, message="Referral cycle detected.")
+            ancestor_row = await db.execute(select(User.invited_by_id).where(User.id == ancestor_id))
+            ancestor_id = ancestor_row.scalar_one_or_none()
+
         web_user.invited_by_id = inviter.id
 
-        # Pay bonus immediately only if HWID already verified (user linked bot before entering code)
+        # Pay bonus immediately only if HWID already verified
         # Otherwise bonus will be paid at /link/verify when bot is linked
+        paid_now = False
         if web_user.hwid and not web_user.ref_bonus_claimed:
             web_user.ref_credits += 50
             db.add(Transaction(user_id=web_user.id, type="ref_welcome", amount=50,
@@ -595,9 +611,16 @@ async def web_referral_activate(
                 db.add(Transaction(user_id=inviter.id, type="ref_welcome", amount=100,
                                    meta={"role": "inviter", "related_user_id": web_user.id}))
             web_user.ref_bonus_claimed = True
+            paid_now = True
             msg = "Code activated! +50 added to referral balance."
         else:
             msg = "Code saved! Bonus will be credited after your first device link."
+
+    await db.commit()
+
+    if paid_now:
+        from vault import notify_balance_changed
+        notify_balance_changed(web_user.hwid)
 
     return BasicResponse(success=True, message=msg)
 
