@@ -946,8 +946,9 @@ class PacmanEngine:
         self.navigation_enabled = navigation_enabled
         self.is_running         = False
         self.on_found_callback  = None
-        self._yolo_unblock_time = 0.0   # timestamp: YOLO разблокирован когда time.time() >= этого значения
-        self._suppressing_esc   = False  # True пока бот сам нажимает ESC (шаг 11) — хук не останавливает бот
+        self._yolo_unblock_time       = 0.0  # timestamp: YOLO разблокирован когда time.time() >= этого значения
+        self._last_yolo_inference_time = 1.0  # последнее замеренное время YOLO inference (Призрак YOLO)
+        self._suppressing_esc          = False  # True пока бот сам нажимает ESC (шаг 11) — хук не останавливает бот
         self.restart_callback   = None   # (delay: int) → engine.restart_after_exchange()
         self._thread: threading.Thread | None = None
 
@@ -983,15 +984,21 @@ class PacmanEngine:
                 # Check current position before moving
                 is_water = is_water_center_screen(frame, radius=120)
 
-                # YOLO scan — пропускаем пока активен блок после детекции
-                if self.yolo_model is not None and time.time() >= self._yolo_unblock_time:
-                    results = self.yolo_model.predict(
-                        frame, conf=self.conf, imgsz=1280, verbose=False)
-                    for r in results:
-                        if len(r.boxes) > 0:
-                            self._exchange_detected(r.boxes[0], frame=frame)
-                            loop_start = time.time()  # сброс dt после паузы — первый шаг нормальной скорости
-                            break
+                # YOLO scan (Призрак YOLO): когда заблокирован — спим ровно столько же
+                # сколько занял бы реальный YOLO → тайминг шагов одинаков до/после рестарта
+                if self.yolo_model is not None:
+                    if time.time() >= self._yolo_unblock_time:
+                        _t0 = time.time()
+                        results = self.yolo_model.predict(
+                            frame, conf=self.conf, imgsz=1280, verbose=False)
+                        self._last_yolo_inference_time = time.time() - _t0
+                        for r in results:
+                            if len(r.boxes) > 0:
+                                self._exchange_detected(r.boxes[0], frame=frame)
+                                loop_start = time.time()
+                                break
+                    else:
+                        time.sleep(self._last_yolo_inference_time)  # Призрак: имитируем YOLO-нагрузку
 
                 # Navigate — pass frame to avoid second screenshot for minimap
                 if not self.is_running:

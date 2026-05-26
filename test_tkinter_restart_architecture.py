@@ -369,33 +369,35 @@ class TestOnExchangeFoundCallback:
 class TestProgrammaticRestartYoloBlock:
     """_programmatic_restart должен устанавливать _initial_yolo_block_sec = 15.0."""
 
-    def test_programmatic_restart_sets_yolo_block_15s(self):
-        """_programmatic_restart устанавливает блок 15с — не 30с (иначе 15с быстрого хода)."""
-        from engine import HuntEngine
-        eng = HuntEngine.__new__(HuntEngine)
-        eng.is_running = False
-        eng._initial_yolo_block_sec = 0.0
-
-        recorded_block = []
-
-        def fake_start(**kwargs):
-            recorded_block.append(eng._initial_yolo_block_sec)
-
-        eng._last_start_kwargs = {'conf': 0.5}
-
-        with patch.object(eng, 'start', side_effect=fake_start):
-            eng._initial_yolo_block_sec = 15.0
-            eng.start(**eng._last_start_kwargs)
-
-        assert recorded_block == [15.0], \
-            f"_initial_yolo_block_sec должен быть 15.0, получили: {recorded_block}"
-
-    def test_yolo_block_not_30s(self):
-        """Значение 30.0 запрещено — вызывает 30с быстрого движения (YOLO inference убирается)."""
+    def test_programmatic_restart_yolo_block_5s(self):
+        """_programmatic_restart устанавливает блок 5с — достаточно уйти от биржи."""
         import inspect
         import main as _main_module
         source = inspect.getsource(_main_module.TotalHunterApp._programmatic_restart)
-        assert '30.0' not in source, \
-            "30.0 запрещено в _programmatic_restart — бот будет двигаться 2x быстро 30 секунд!"
-        assert '15.0' in source, \
-            "_initial_yolo_block_sec должен быть 15.0 в _programmatic_restart"
+        assert '30.0' not in source, "30.0 запрещено — 30с быстрого движения!"
+        assert '15.0' not in source, "15.0 запрещено — 15с быстрого движения!"
+        assert '5.0' in source, "_initial_yolo_block_sec должен быть 5.0 в _programmatic_restart"
+
+    def test_ghost_yolo_inference_time_initialized(self):
+        """PacmanEngine.__init__ инициализирует _last_yolo_inference_time = 1.0."""
+        import inspect
+        from navigator import PacmanEngine
+        source = inspect.getsource(PacmanEngine.__init__)
+        assert '_last_yolo_inference_time' in source, \
+            "_last_yolo_inference_time должен быть в __init__"
+
+    def test_ghost_yolo_sleeps_when_blocked(self):
+        """Когда YOLO заблокирован — sleep(_last_yolo_inference_time) → скорость как с YOLO."""
+        import inspect
+        from navigator import PacmanEngine
+        source = inspect.getsource(PacmanEngine._run)
+        assert 'time.sleep(self._last_yolo_inference_time)' in source, \
+            "Призрак YOLO: при блоке должен sleep(_last_yolo_inference_time)"
+
+    def test_ghost_yolo_measures_real_inference(self):
+        """Когда YOLO реально работает — замеряем и сохраняем время."""
+        import inspect
+        from navigator import PacmanEngine
+        source = inspect.getsource(PacmanEngine._run)
+        assert '_last_yolo_inference_time' in source, \
+            "_last_yolo_inference_time должен обновляться в _run() при реальном YOLO"

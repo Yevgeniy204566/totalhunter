@@ -2878,7 +2878,7 @@ class TotalHunterApp(ctk.CTk):
         if not self.engine._last_start_kwargs:
             return
         try:
-            self.engine._initial_yolo_block_sec = 15.0  # YOLO заблокирован на старте
+            self.engine._initial_yolo_block_sec = 5.0  # Призрак YOLO: 5с слепоты + ghost sleep
             self.engine.start(**self.engine._last_start_kwargs)
             self._gui_set_running()
             self.is_running = True
