@@ -1487,6 +1487,10 @@ class TotalHunterApp(ctk.CTk):
         # Глобальный перехват ESC — стоп в любом окне
         def _esc_handler(event):
             if event.name == 'esc' and event.event_type == 'down':
+                # Игнорируем ESC если бот сам нажимает его на шаге 11 (закрытие диалога биржи)
+                pacman = getattr(self.engine, '_pacman', None) if self.is_running else None
+                if pacman and getattr(pacman, '_suppressing_esc', False):
+                    return
                 self.after(0, self._emergency_stop)
         keyboard.hook(_esc_handler)
 

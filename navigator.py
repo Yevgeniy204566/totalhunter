@@ -947,6 +947,7 @@ class PacmanEngine:
         self.is_running         = False
         self.on_found_callback  = None
         self._yolo_unblock_time = 0.0   # timestamp: YOLO разблокирован когда time.time() >= этого значения
+        self._suppressing_esc   = False  # True пока бот сам нажимает ESC (шаг 11) — хук не останавливает бот
         self._thread: threading.Thread | None = None
 
     def start(self):
@@ -1084,9 +1085,11 @@ class PacmanEngine:
         # Шаг 10: стоп 10 сек
         time.sleep(10)
 
-        # Шаг 11: закрыть любой открытый диалог перед возобновлением навигации
+        # Шаг 11: закрыть диалог биржи; подавляем ESC-хук чтобы бот не остановил сам себя
+        self._suppressing_esc = True
         pyautogui.press('escape')
         time.sleep(0.3)
+        self._suppressing_esc = False
 
         # Шаг 12: YOLO-блок 20с — бот уходит от биржи под защитой
         self._trigger_yolo_block(20)
