@@ -994,6 +994,8 @@ class PacmanEngine:
                             break
 
                 # Navigate — pass frame to avoid second screenshot for minimap
+                if not self.is_running:
+                    break
                 if self.navigation_enabled:
                     self.joystick.step(is_water=is_water, frame=frame)
                 else:

@@ -360,3 +360,42 @@ class TestOnExchangeFoundCallback:
         assert restart_kwargs.get('move_wait') == 1.5, \
             f"move_wait=1.5 должен быть в restart kwargs, получили: {restart_kwargs}"
         assert restart_kwargs.get('conf') == 0.8
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. _programmatic_restart устанавливает YOLO-блок 15с (не 30с)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestProgrammaticRestartYoloBlock:
+    """_programmatic_restart должен устанавливать _initial_yolo_block_sec = 15.0."""
+
+    def test_programmatic_restart_sets_yolo_block_15s(self):
+        """_programmatic_restart устанавливает блок 15с — не 30с (иначе 15с быстрого хода)."""
+        from engine import HuntEngine
+        eng = HuntEngine.__new__(HuntEngine)
+        eng.is_running = False
+        eng._initial_yolo_block_sec = 0.0
+
+        recorded_block = []
+
+        def fake_start(**kwargs):
+            recorded_block.append(eng._initial_yolo_block_sec)
+
+        eng._last_start_kwargs = {'conf': 0.5}
+
+        with patch.object(eng, 'start', side_effect=fake_start):
+            eng._initial_yolo_block_sec = 15.0
+            eng.start(**eng._last_start_kwargs)
+
+        assert recorded_block == [15.0], \
+            f"_initial_yolo_block_sec должен быть 15.0, получили: {recorded_block}"
+
+    def test_yolo_block_not_30s(self):
+        """Значение 30.0 запрещено — вызывает 30с быстрого движения (YOLO inference убирается)."""
+        import inspect
+        import main as _main_module
+        source = inspect.getsource(_main_module.TotalHunterApp._programmatic_restart)
+        assert '30.0' not in source, \
+            "30.0 запрещено в _programmatic_restart — бот будет двигаться 2x быстро 30 секунд!"
+        assert '15.0' in source, \
+            "_initial_yolo_block_sec должен быть 15.0 в _programmatic_restart"

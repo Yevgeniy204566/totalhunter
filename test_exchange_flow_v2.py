@@ -200,3 +200,27 @@ class TestNoDuplicateBackgroundThreads:
 
         assert gen_after > gen_before, \
             f"_bg_gen должен увеличиваться при _start_heartbeat(), было {gen_before}, стало {gen_after}"
+
+
+# ---------------------------------------------------------------------------
+# 4. joystick.step() не вызывается после _exchange_detected (guard)
+# ---------------------------------------------------------------------------
+
+class TestNoNavStepAfterExchange:
+    """joystick.step() НЕ должен вызываться когда is_running=False после _exchange_detected."""
+
+    def test_no_step_after_exchange_detected(self):
+        """После _exchange_detected (is_running=False) joystick.step() не вызывается."""
+        import inspect
+        from navigator import PacmanEngine
+        source = inspect.getsource(PacmanEngine._run)
+
+        # Проверяем что в коде есть guard перед joystick.step
+        # Ожидаем паттерн: "if not self.is_running" до "joystick.step"
+        step_pos = source.find('joystick.step(')
+        assert step_pos != -1, "joystick.step() должен быть в _run()"
+
+        guard_pos = source.rfind('if not self.is_running', 0, step_pos)
+        assert guard_pos != -1, \
+            "Перед joystick.step() должен быть guard 'if not self.is_running: break' — " \
+            "иначе бот делает лишний шаг после находки биржи"
