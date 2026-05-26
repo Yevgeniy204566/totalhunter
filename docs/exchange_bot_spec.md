@@ -1,7 +1,7 @@
 # ЭТАЛОН: Механика Биржевого Бота
 
 > **Статус:** Канонический документ. Любое изменение механики биржевого бота ОБЯЗАНО быть сверено с этим файлом.
-> **Последнее обновление:** 2026-05-21 (v1.5.5)
+> **Последнее обновление:** 2026-05-26 (v1.5.8 — hardcoded ROI, remove _find_dialog)
 > **Связанные файлы:** `navigator.py`, `engine.py`, `roy/exchange_reader.py`, `CLAUDE.md`
 
 ---
@@ -135,20 +135,31 @@ _exchange_detected (шаг 9)
                  try:
                    wait_and_read(timeout=4.0)
                      loop(0.3с между попытками):
-                       grab_screen() → BGR
-                       _find_dialog() → HSV [15-35, 20-100, 180-255] → bbox
-                       _crop_roi(0.0-1.0 x, 0.03-0.20 y диалога)
+                       _grab_region(636, 330, 651, 115)
+                         → coord_manager.to_region() → screen px
+                         → mss.grab(screen_region) → BGR
+                       gray → resize 4x → threshold(180) → THRESH_BINARY
                        pytesseract.image_to_string(psm=11, timeout=3)
                        _parse_coords() → (kingdom, x, y)
-                       _measure_progress() → percent 0-100
+                       _grab_region(636, 540, 651, 120) → _measure_progress()
                    return {'kingdom':K, 'x':X, 'y':Y, 'percent':P}
                  if result:
                    on_last_exchange_callback(result)   → GUI карточка
                    if percent < 90:
                      _roy_client.report(K, X, Y, P)   → пул координат
                  except Exception as e:
-                   print(f"[ROY] _roy_on_found ERROR: {e!r}")
+                   _roy_log(f"_roy_on_found ERROR: {e!r}")
 ```
+
+**Hardcoded ROI (reference 1920×1080, верифицировано по Биржа_15.04.png):**
+- Диалог биржи: x=656, y=335, w=611, h=393 (центр ~x=961, y=531)
+- K:X:Y ROI: x=636, y=330, w=651, h=115 (+20px запас по всем сторонам)
+- Прогресс ROI: x=636, y=540, w=651, h=120
+- OCR preprocessing: 4x upscale + threshold=180 (dark text on light dialog bg)
+- `coord_manager.to_region()` масштабирует reference→screen по профилю пользователя
+
+**ЗАПРЕЩЕНО:** динамический поиск диалога через HSV/contours (`_find_dialog`).
+Причина: игровой фон совпадает по цвету с диалогом → захватывается весь экран.
 
 **Условия попадания в пул:** `percent < 90` (биржа не выкуплена) + `roy_enabled=True`.
 
