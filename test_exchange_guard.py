@@ -82,13 +82,15 @@ class TestHuntEngineCallback:
         eng = HuntEngine.__new__(HuntEngine)
         eng._roy_client = MagicMock()
         eng.on_last_exchange_callback = None
+        eng.on_pool_refresh_callback = None
 
         ocr = {'kingdom': 3, 'x': 145, 'y': 72, 'percent': 50}
         with patch('roy.exchange_reader.wait_and_read', return_value=ocr):
             eng._roy_on_found()
 
         eng._roy_client.report.assert_called_once_with(
-            kingdom=3, x=145, y=72, percent=50
+            kingdom=3, x=145, y=72, percent=50,
+            on_success=None
         )
 
     def test_roy_report_not_called_on_false_detection(self):

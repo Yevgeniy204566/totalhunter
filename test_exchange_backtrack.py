@@ -46,6 +46,9 @@ def _make_engine(yolo):
     eng.sound_path = ''
     eng.on_found_callback = None
     eng._yolo_unblock_time = 0.0
+    eng._suppressing_esc = False
+    eng.restart_callback = None
+    eng._thread = None
     eng.conf = 0.7
     eng.yolo_model = yolo
 

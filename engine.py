@@ -91,6 +91,8 @@ class HuntEngine:
         self._last_start_kwargs: dict = {}
         self.on_engine_restart_callback = None  # (state: 'stopped'|'starting') → обновляет GUI
         self.on_pool_refresh_callback   = None  # (pool: list) → обновляет список пула в GUI
+        self._initial_yolo_block_sec: float = 0.0  # YOLO-блок, применяемый ДО pacman.start()
+        self._bg_gen: int = 0  # инкрементируется на каждом start() — старые треды видят изменение
 
     def start(
         self,
@@ -195,6 +197,11 @@ class HuntEngine:
 
         self._pacman.restart_callback = self.restart_after_exchange
         self.is_running = True
+        self._bg_gen += 1
+        # Применяем YOLO-блок ДО старта треда — нет гонки
+        if self._initial_yolo_block_sec > 0:
+            self._pacman._yolo_unblock_time = time.time() + self._initial_yolo_block_sec
+            self._initial_yolo_block_sec = 0.0
         self._pacman.start()
         self._start_heartbeat()
         if self.roy_enabled:
@@ -225,10 +232,9 @@ class HuntEngine:
                 except Exception:
                     pass
             if self._last_start_kwargs:
+                # Блокируем YOLO на 30с — устанавливается ДО pacman.start() через _initial_yolo_block_sec
+                self._initial_yolo_block_sec = 30.0
                 self.start(**self._last_start_kwargs)
-                # Блокируем YOLO на 20с после старта — бот уходит от биржи без повторного срабатывания
-                if self._pacman:
-                    self._pacman._yolo_unblock_time = time.time() + 20
 
         threading.Timer(delay, _delayed_start).start()
 
@@ -303,11 +309,13 @@ class HuntEngine:
             with _mss() as sct:
                 return np.array(sct.grab(region), dtype=np.int16)
 
+        gen = self._bg_gen
+
         def _loop():
             frame_prev = _grab()
-            while self.is_running:
+            while self.is_running and self._bg_gen == gen:
                 for _ in range(30):
-                    if not self.is_running:
+                    if not self.is_running or self._bg_gen != gen:
                         return
                     time.sleep(1)
 
@@ -324,13 +332,14 @@ class HuntEngine:
 
     def _start_heartbeat(self):
         """Фоновый поток: пингует сервер каждые 2 минуты пока бот запущен."""
+        self._bg_gen += 1
+        gen = self._bg_gen
         def _loop():
-            while self.is_running:
+            while self.is_running and self._bg_gen == gen:
                 _heartbeat()
-                # Спим по 10 сек кусками — чтобы быстро реагировать на stop()
                 for _ in range(12):  # 12 × 10 сек = 2 мин
-                    if not self.is_running:
-                        break
+                    if not self.is_running or self._bg_gen != gen:
+                        return
                     time.sleep(10)
         t = threading.Thread(target=_loop, daemon=True)
         t.start()

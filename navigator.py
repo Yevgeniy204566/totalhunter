@@ -952,7 +952,11 @@ class PacmanEngine:
         self._thread: threading.Thread | None = None
 
     def start(self):
-        self._yolo_unblock_time = 0.0   # сброс при старте — нет гонки с daemon-тредами
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=3.0)
+        # Preserve pre-set future block (e.g. set by engine before calling start())
+        if self._yolo_unblock_time <= time.time():
+            self._yolo_unblock_time = 0.0
         self.joystick.reset()
         self.is_running = True
         self._thread = threading.Thread(target=self._run, daemon=True)
@@ -1083,7 +1087,8 @@ class PacmanEngine:
         if self.on_found_callback:
             self.on_found_callback()
 
-        # Шаг 10: (пауза убрана — честный стоп через restart_callback)
+        # Шаг 10: держим диалог открытым 10с — пользователь видит координаты
+        time.sleep(10)
 
         # Шаг 11: закрыть диалог биржи ПЕРЕД остановкой — экран чистый
         self._suppressing_esc = True
@@ -1091,9 +1096,9 @@ class PacmanEngine:
         time.sleep(0.3)
         self._suppressing_esc = False
 
-        # Шаг 12: остановить движок и перезапустить через 10с
+        # Шаг 12: немедленный рестарт (пауза уже выдержана в шаге 10)
         if self.restart_callback:
-            self.restart_callback(10)
+            self.restart_callback(0)
             return  # навигатор завершает итерацию — движок остановит поток
         # Fallback: если restart_callback не задан — YOLO-блок
         self._trigger_yolo_block(20)

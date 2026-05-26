@@ -2851,8 +2851,15 @@ class TotalHunterApp(ctk.CTk):
 
 
     def _on_pool_auto_refresh(self, pool: list) -> None:
-        """Авто-обновление пула сразу после успешного report() — из фонового треда."""
-        self.after(0, lambda: self._roy_update_list(pool))
+        """Авто-обновление пула сразу после успешного report() — из фонового треда.
+        Pre-populate known IDs before update — собственные координаты не вызывают звук.
+        """
+        def _refresh():
+            self._roy_pool_known_ids |= {
+                (e.get('kingdom'), e.get('x'), e.get('y')) for e in pool
+            }
+            self._roy_update_list(pool)
+        self.after(0, _refresh)
 
     def _on_exchange_restart(self, state: str) -> None:
         """Callback из engine (фоновый поток) — планируем обновление GUI в главном потоке."""

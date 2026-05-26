@@ -99,32 +99,26 @@ class TestRestartAfterExchange:
         assert not started.is_set(), "start() не должен вызываться с пустыми kwargs"
 
     def test_yolo_block_applied_after_restart(self):
-        """После restart _pacman._yolo_unblock_time установлен в будущее (≥20с)."""
-        import time
+        """restart_after_exchange устанавливает _initial_yolo_block_sec=30.0 перед вызовом start()."""
         eng = self._make_engine()
         eng._last_start_kwargs = {'conf': 0.5}
+        eng._initial_yolo_block_sec = 0.0
 
-        mock_pacman = MagicMock()
-        mock_pacman._yolo_unblock_time = 0.0
-
-        def fake_start(**_):
-            eng._pacman = mock_pacman
-
+        captured_block = []
         started = threading.Event()
-        original_fake = fake_start
 
-        def fake_start_and_signal(**kwargs):
-            original_fake(**kwargs)
+        def fake_start(**kwargs):
+            captured_block.append(eng._initial_yolo_block_sec)
             started.set()
 
         with patch.object(eng, 'stop'), \
-             patch.object(eng, 'start', side_effect=fake_start_and_signal):
+             patch.object(eng, 'start', side_effect=fake_start):
             eng.restart_after_exchange(delay=0)
             started.wait(timeout=2.0)
 
         assert started.is_set(), "start() не был вызван"
-        assert mock_pacman._yolo_unblock_time > time.time() + 15, \
-            f"YOLO блок после рестарта должен быть ≥15с в будущем, got {mock_pacman._yolo_unblock_time - time.time():.1f}с"
+        assert captured_block[0] == 30.0, \
+            f"_initial_yolo_block_sec должен быть 30.0 перед start(), получили: {captured_block[0]}"
 
 
 # ---------------------------------------------------------------------------
@@ -247,8 +241,8 @@ class TestExchangeDetectedNoSleep10:
              patch('mss.mss', return_value=mss_mock):
             eng._exchange_detected(box, frame=fake_frame)
 
-    def test_restart_callback_called_instead_of_sleep10(self):
-        """restart_callback вызывается с delay=10; time.sleep(10) НЕ вызывается."""
+    def test_restart_callback_called_with_delay_zero_and_sleep10_present(self):
+        """restart_callback вызывается с delay=0; time.sleep(10) ДО этого вызывается."""
         eng = self._make_pacman()
         restart_called = threading.Event()
         restart_delay = []
@@ -262,14 +256,13 @@ class TestExchangeDetectedNoSleep10:
         sleep_calls = []
 
         def fake_sleep(s):
-            if s == 10:
-                sleep_calls.append(s)
+            sleep_calls.append(s)
 
         self._run_exchange_detected(eng, _make_box_mock(), fake_sleep=fake_sleep)
 
         assert restart_called.is_set(), "restart_callback не был вызван"
-        assert restart_delay == [10], f"restart_callback должен быть вызван с delay=10, получили {restart_delay}"
-        assert 10 not in sleep_calls, "time.sleep(10) всё ещё вызывается — нужно убрать!"
+        assert restart_delay == [0], f"restart_callback должен быть вызван с delay=0, получили {restart_delay}"
+        assert 10 in sleep_calls, "time.sleep(10) не вызывается — должна быть 10с пауза для просмотра координат"
 
     def test_esc_pressed_before_restart(self):
         """ESC нажимается ДО вызова restart_callback."""
