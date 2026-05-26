@@ -1,5 +1,5 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-05-26 (Kyiv) — Перекрёстный аудит реферальной системы
+> Последнее обновление: 2026-05-26 23:00 (Kyiv) — Хангоф #70: Реф-система закрыта, BitMedia, деплой
 
 ---
 
@@ -215,7 +215,31 @@ if not referrer.is_banned:
 
 ---
 
+## ЧТО СДЕЛАНО (Хангоф #70 — 2026-05-26)
+
+### Реферальная система — TDD-аудит + патчи ✅
+- Перекрёстный аудит 2 агентами: бизнес-логика + security/abuse
+- **BUG-1** исправлен: `web_user.ref_credits += 50` вынесен за пределы `if not referrer.is_banned` в `/link/verify`
+- **BUG-2** исправлен: `db.begin()` → `db.begin_nested()` в `/referral/activate` (было 500 при каждой активации)
+- **BUG-3** исправлен: cycle detection в `/referral/activate` — walk ≤3 хопов по `invited_by_id`
+- **BUG-4** исправлен: naive/aware datetime в `/hwid/reset` — нормализация tzinfo для SQLite
+- `notify_balance_changed(hwid)` добавлен в `/referral/activate` после commit
+- `tests/conftest.py`: добавлен fixture `db_session` для прямого доступа к БД в тестах
+- `tests/test_referral_system.py`: 16 TDD-тестов (все HIGH + MEDIUM из аудита)
+- `tests/test_payments.py`: исправлены 4 webhook-теста — `content=json.dumps(sort_keys=True).encode()` вместо `json=body`
+- `tests/test_version_bump.py`: обновлена версия `1.4.2 → 1.5.7`
+- **Итог: 57/57 тестов зелёных**
+- Задеплоено на GCP ✅
+
+### BitMedia ✅
+- Мета-тег `bitmedia-site-verification` добавлен в `web/index.html`
+- Vercel задеплоен (hook + alias), тег на продакшене
+- Заявка подана в BitMedia, ждём модерации
+
+---
+
 ## ЧТО ОСТАЛОСЬ
 
-- **Живое тестирование Системы РОЙ** (ближайший ивент «Торговые Пути»): серый→зелёный кружок на сайте, координаты у других участников
-- Telegram посты для v1.5.6 и v1.5.7 готовы выше — опубликовать вручную
+- **Живое тестирование Системы РОЙ** (ивент «Торговые Пути», цикл 5 дней от 20.05): серый→зелёный кружок, координаты у других участников
+- **BitMedia модерация** — ждём одобрения (заявка подана 2026-05-26)
+- **Telegram посты** v1.5.6 и v1.5.7 — готовы в буфере выше, опубликовать вручную

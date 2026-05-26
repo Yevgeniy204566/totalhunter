@@ -2,7 +2,34 @@
 
 > Не тратить время повторно на эти решения.
 > Обновляется командой **«Хангоф»**.
-> Последнее обновление: 2026-05-25 (Хангоф #69 — SEO + Analytics)
+> Последнее обновление: 2026-05-26 (Хангоф #70 — Реферальная система TDD)
+
+---
+
+## ⛔ `db.begin()` ВНУТРИ ЭНДПОИНТА С `get_web_user` — 500 ДЛЯ ВСЕХ (Хангоф #70)
+
+**Что было:** `async with db.begin():` в `/referral/activate`. Dependency `get_web_user` делает SELECT → SQLAlchemy autobegin срабатывает. Затем `db.begin()` → `InvalidRequestError: A transaction is already begun` → 500 для каждого первого вызова.
+**Симптом:** Эндпоинт возвращает 500, хотя логика правильная. В тестах падает с `sqlalchemy.exc.InvalidRequestError`.
+**Решение:** Использовать `async with db.begin_nested():` (savepoint) + `await db.commit()` снаружи.
+**Правило:** В эндпоинтах с `get_web_user` (или любой dependency с SELECT) НИКОГДА не использовать `db.begin()`. Только `db.begin_nested()` или прямой `await db.commit()`.
+
+---
+
+## ⛔ HMAC В ТЕСТАХ — ПОДПИСЫВАТЬ И ОТПРАВЛЯТЬ ОДНИМИ БАЙТАМИ (Хангоф #70)
+
+**Что было:** `_make_np_sig(body)` считал HMAC от `json.dumps(body, sort_keys=True).encode()`. Тест отправлял `json=body` через httpx — тот сериализует без `sort_keys` → другие байты → сервер получал неподписанные байты → 400.
+**Симптом:** Webhook-тесты падали с 400 несмотря на правильный секрет и формат.
+**Решение:** Всегда отправлять `content=json.dumps(body, sort_keys=True).encode()` + `"content-type": "application/json"` — те же байты, что были подписаны.
+**Правило:** Байты, которые подписываешь, и байты, которые отправляешь — должны быть идентичны.
+
+---
+
+## ⛔ NAIVE/AWARE DATETIME В ТЕСТАХ (SQLite) vs ПРОДЕ (PostgreSQL) (Хангоф #70)
+
+**Что было:** `datetime.now(timezone.utc)` (aware) сравнивался с `web_user.hwid_reset_at` из SQLite (naive). `TypeError: can't compare offset-naive and offset-aware datetimes`.
+**Симптом:** Тест `test_hwid_reset_cooldown_enforced` падал с TypeError, на PostgreSQL работало нормально.
+**Решение:** Нормализовать перед сравнением: `if reset_at.tzinfo is None: reset_at = reset_at.replace(tzinfo=timezone.utc)`.
+**Правило:** При работе с datetime из БД всегда нормализовать tzinfo перед сравнением — SQLite хранит naive, PostgreSQL может хранить aware.
 
 ---
 
