@@ -88,6 +88,8 @@ class HuntEngine:
         self.event_active  = False  # True только пока идёт ивент Торговые Пути
         self._mm_cx        = 90    # координаты центра миникарты (джойстик)
         self._mm_cy        = 925
+        self._last_start_kwargs: dict = {}
+        self.on_engine_restart_callback = None  # (state: 'stopped'|'starting') → обновляет GUI
 
     def start(
         self,
@@ -109,6 +111,17 @@ class HuntEngine:
         use_beacon:      bool  = False,
         pixels_per_step: int   = 20,
     ):
+        self._last_start_kwargs = dict(
+            conf=conf, center_x=center_x, center_y=center_y,
+            joystick_step=joystick_step, scan_interval=scan_interval,
+            move_wait=move_wait, navigation_enabled=navigation_enabled,
+            max_inland_steps=max_inland_steps, ocean_land_ratio=ocean_land_ratio,
+            min_water_px=min_water_px, footprint_ttl=footprint_ttl,
+            diagonal_blind_coeff=diagonal_blind_coeff,
+            coast_detect_radius=coast_detect_radius,
+            return_delta_px=return_delta_px, smooth_alpha=smooth_alpha,
+            use_beacon=use_beacon, pixels_per_step=pixels_per_step,
+        )
         self._mm_cx = center_x
         self._mm_cy = center_y
         if use_beacon:
@@ -179,6 +192,7 @@ class HuntEngine:
         else:
             self._pacman.on_found_callback = self.on_found_callback
 
+        self._pacman.restart_callback = self.restart_after_exchange
         self.is_running = True
         self._pacman.start()
         self._start_heartbeat()
@@ -191,6 +205,28 @@ class HuntEngine:
             self._pacman.stop()
         if self.roy_enabled and self._roy_client and self.roy_kingdom:
             self._roy_client.stop_session(self.roy_kingdom)
+
+    def restart_after_exchange(self, delay: int = 10) -> None:
+        """Биржа обработана → честный стоп + автозапуск через delay секунд."""
+        self.stop()
+        _roy_log(f"Змейка остановлена. Автозапуск через {delay}с...")
+        if self.on_engine_restart_callback:
+            try:
+                self.on_engine_restart_callback('stopped')
+            except Exception:
+                pass
+
+        def _delayed_start():
+            _roy_log("Автозапуск после биржи — старт")
+            if self.on_engine_restart_callback:
+                try:
+                    self.on_engine_restart_callback('starting')
+                except Exception:
+                    pass
+            if self._last_start_kwargs:
+                self.start(**self._last_start_kwargs)
+
+        threading.Timer(delay, _delayed_start).start()
 
     def _build_roy_wrapper(self, original_cb):
         """Возвращает wrapper: вызывает original_cb в try/except, затем _roy_on_found."""

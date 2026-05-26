@@ -1279,6 +1279,7 @@ class TotalHunterApp(ctk.CTk):
         self.engine = HuntEngine()
         self.engine.on_found_callback = self.on_target_found
         self.engine.on_last_exchange_callback = self._on_last_exchange_found
+        self.engine.on_engine_restart_callback = self._on_exchange_restart
         self.crypt_engine = CryptHunter()
         self.is_crypt_running = False
         self._crypt_found_count = 0
@@ -2847,6 +2848,47 @@ class TotalHunterApp(ctk.CTk):
                                         text_color=MD3["on_surface2"])
             self.is_running = False
 
+
+    def _on_exchange_restart(self, state: str) -> None:
+        """Callback из engine (фоновый поток) — планируем обновление GUI в главном потоке."""
+        if state == 'stopped':
+            self.after(0, self._gui_set_stopped)
+        elif state == 'starting':
+            self.after(0, self._gui_set_running)
+
+    def _gui_set_stopped(self) -> None:
+        """Обновляем GUI в состояние СТОП (thread-safe через after)."""
+        self.is_running = False
+        try:
+            self.start_button.configure(
+                text=LANGS[self.current_lang]["start"],
+                fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
+            if hasattr(self, '_roy_hunt_btn'):
+                self._roy_hunt_btn.configure(
+                    text=LANGS[self.current_lang]["start"],
+                    fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
+            self.status_label.configure(
+                text=LANGS[self.current_lang]["status_ready"],
+                text_color=MD3["on_surface2"])
+        except Exception:
+            pass
+
+    def _gui_set_running(self) -> None:
+        """Обновляем GUI в состояние РАБОТАЕТ (thread-safe через after)."""
+        self.is_running = True
+        try:
+            self.start_button.configure(
+                text=LANGS[self.current_lang]["stop"],
+                fg_color=MD3["error"], hover_color=MD3["error_hover"])
+            if hasattr(self, '_roy_hunt_btn'):
+                self._roy_hunt_btn.configure(
+                    text=LANGS[self.current_lang]["stop"],
+                    fg_color=MD3["error"], hover_color=MD3["error_hover"])
+            self.status_label.configure(
+                text=LANGS[self.current_lang]["status_running"],
+                text_color="#FFD740")
+        except Exception:
+            pass
 
     def _emergency_stop(self):
         """ESC — мгновенная остановка бота."""
