@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-26 (хангоф #70: Реферальная система — TDD-аудит, 4 бага, 57 тестов, BitMedia)
+> Последнее обновление: 2026-05-27 (v1.5.9 — ROI браузер, ивент цикл, backtrack тайминг, countdown пул)
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -22,12 +22,12 @@
 | **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
 | **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. change_lang полностью обновляет все ROY-метки. | 2026-05-23 |
 | **Рекламные слоты** | web/AdSlot.jsx | 🟡 BitMedia — мета-тег верификации добавлен в index.html (2026-05-26), заявка подана, ждём модерации. Порог вывода $20 BTC/USDT. | 2026-05-26 |
-| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ event gate inline. AFK ≥15% diff. OCR синхронный до 4с. YOLO-блок timestamp. Пул глобальный (без фильтра по королевству). GUI полностью переведён 19 языков × 12 ключей. GCP: roy_kingdom_members создана, GRANT hunter ✅, alembic_version зарегистрирован. | 2026-05-23 |
+| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ Event gate: is_trade_routes_active() на сервере (144ч цикл, anchor 2026-06-01 17:00 UTC). /scan начисляет только во время ивента. OCR smart-column ROI (600×200) для браузерных игроков. Пул: MM:SS countdown в реальном времени. | 2026-05-27 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.7**. Backtracking ✅. ROY пакет в EXE ✅. pytesseract timeout=3 ✅. YOLO timestamp ✅. 13 тестов ✅. Эталон: docs/exchange_bot_spec.md | 2026-05-23 |
+| **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.9**. Ghost YOLO ✅. Backtrack wait: 0.3s→move_wait ✅. Smart-column ROI браузер (600×200) ✅. Ивент gate (144ч цикл) ✅. Пул MM:SS countdown ✅. 28+ тестов ✅. | 2026-05-27 |
 | **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
