@@ -59,6 +59,7 @@ def _make_engine(yolo):
     j.center_y = 925
     j.p_range_x = 23
     j.p_range_y = 13
+    eng.move_wait = 2.0   # нужен для time.sleep(self.move_wait) в _exchange_detected
     eng.joystick = j
     return eng
 
