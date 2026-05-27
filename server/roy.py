@@ -46,6 +46,32 @@ _sse_queues:   list[asyncio.Queue]          = []
 # ссылка на фоновую задачу очистки
 _cleanup_task: asyncio.Task | None          = None
 
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  ⚙️  ИВЕНТ «ТОРГОВЫЕ ПУТИ» — МЕНЯЙ ЗДЕСЬ ПРИ СДВИГЕ РАСПИСАНИЯ       ║
+# ║  Подтверждённый старт: 2026-06-01 20:00 Киев (UTC+3) = 17:00 UTC       ║
+# ║  Цикл:           120 ч  (5 дней)                                        ║
+# ║  Длительность:    24 ч  (1 день)                                        ║
+# ║  Как пересчитать ANCHOR:                                                 ║
+# ║    python -c "from datetime import datetime,timezone as z;               ║
+# ║    print(int(datetime(2026,6,1,17,0,0,tzinfo=z.utc).timestamp()))"       ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+_EVENT_ANCHOR_TS  = 1780333200   # ← МЕНЯЙ: unix-timestamp старта (UTC)
+_EVENT_CYCLE_H    = 120          # ← МЕНЯЙ: цикл в часах  (5 дней = 120 ч)
+_EVENT_DURATION_H = 24           # ← МЕНЯЙ: длительность в часах
+
+
+def is_trade_routes_active() -> bool:
+    """
+    Возвращает True если ивент «Торговые Пути» сейчас активен.
+    Алгоритм: timestamp-modulo, без привязки к дням недели.
+    Меняй константы _EVENT_* выше — не трогай формулу.
+    """
+    cycle_sec    = _EVENT_CYCLE_H    * 3600
+    duration_sec = _EVENT_DURATION_H * 3600
+    now_ts       = datetime.now(timezone.utc).timestamp()
+    offset       = (now_ts - _EVENT_ANCHOR_TS) % cycle_sec
+    return offset < duration_sec
+
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -227,27 +253,32 @@ async def report_exchange(req: ReportRequest, db: AsyncSession = Depends(get_db)
 async def report_scan(req: ScanRequest, db: AsyncSession = Depends(get_db)):
     """
     Вызывается ботом каждые 30 сек во время активного сканирования.
-    Начисляет 45 сек баланса (1.5x).
-    Если передан kingdom — обновляет статус ГОСа и уведомляет SSE.
+    Начисляет 45 сек баланса (1.5x) — ТОЛЬКО если ивент «Торговые Пути» активен.
+    Трекинг королевства и SSE работают всегда, независимо от ивента.
     """
     now_ts = time.time()
+    event_active = is_trade_routes_active()
+
     if now_ts - _scan_rate.get(req.hwid, 0) < SCAN_RATE_SEC:
-        return {"success": True, "note": "rate_limited"}
+        return {"success": True, "note": "rate_limited", "event_active": event_active}
     _scan_rate[req.hwid] = now_ts
 
     _ensure_cleanup()
     now = datetime.now(timezone.utc)
 
     async with db.begin():
-        row = (await db.execute(
-            select(RoyBalance).where(RoyBalance.hwid == req.hwid)
-        )).scalar_one_or_none()
-        if row:
-            row.balance_sec += SCAN_REWARD_SEC
-            row.updated_at   = now
-        else:
-            db.add(RoyBalance(hwid=req.hwid, balance_sec=SCAN_REWARD_SEC))
+        # Баланс начисляется только во время ивента
+        if event_active:
+            row = (await db.execute(
+                select(RoyBalance).where(RoyBalance.hwid == req.hwid)
+            )).scalar_one_or_none()
+            if row:
+                row.balance_sec += SCAN_REWARD_SEC
+                row.updated_at   = now
+            else:
+                db.add(RoyBalance(hwid=req.hwid, balance_sec=SCAN_REWARD_SEC))
 
+        # Трекинг ГОСа — всегда
         if req.kingdom is not None:
             _hwid_kingdom[(req.hwid, req.kingdom)] = time.time()
             await _upsert_kingdom(db, req.kingdom)
@@ -255,7 +286,7 @@ async def report_scan(req: ScanRequest, db: AsyncSession = Depends(get_db)):
     if req.kingdom is not None:
         await _broadcast(db)
 
-    return {"success": True}
+    return {"success": True, "event_active": event_active}
 
 
 # ── POST /roy/stop ────────────────────────────────────────────────────────────

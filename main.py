@@ -3053,6 +3053,8 @@ class TotalHunterApp(ctk.CTk):
     def setup_roy_tab(self):
         self._roy_enabled_var = ctk.BooleanVar(value=self._load_gui_config().get("roy_enabled", False))
         self._roy_pool_known_ids: set = set()  # (kingdom, x, y) — уже виденные координаты
+        self._pool_countdown_labels: list = []  # [(CTkLabel, expires_ts), ...] — для тикера
+        self._pool_countdown_running: bool = False
         L = LANGS[self.current_lang]
 
         self._roy_title_lb = ctk.CTkLabel(
@@ -3211,15 +3213,52 @@ class TotalHunterApp(ctk.CTk):
         if self._roy_enabled_var.get():
             self.after(1500, self._roy_refresh_balance)
 
+    # ╔══════════════════════════════════════════════════════════════════════╗
+    # ║  ⚙️  ИВЕНТ «ТОРГОВЫЕ ПУТИ» — МЕНЯЙ ЗДЕСЬ (клиент, совпадает с    ║
+    # ║      server/roy.py: _EVENT_ANCHOR_TS / _EVENT_CYCLE_H)             ║
+    # ║  Старт: 2026-06-01 20:00 Киев = 17:00 UTC                         ║
+    # ║  Цикл: 120 ч (5 дней)  │  Длительность: 24 ч                      ║
+    # ╚══════════════════════════════════════════════════════════════════════╝
+    _TR_ANCHOR_TS  = 1780333200   # ← МЕНЯЙ: unix-timestamp старта (UTC)
+    _TR_CYCLE_H    = 120          # ← МЕНЯЙ: цикл в часах
+    _TR_DURATION_H = 24           # ← МЕНЯЙ: длительность в часах
+
+    @staticmethod
+    def _is_event_active() -> tuple:
+        """
+        Возвращает (active: bool, secs_left: int).
+        secs_left = секунд до конца ивента (если active=True)
+                  = секунд до начала следующего (если active=False).
+        """
+        import time as _t
+        cycle_sec    = TotalHunterApp._TR_CYCLE_H    * 3600
+        duration_sec = TotalHunterApp._TR_DURATION_H * 3600
+        offset       = (_t.time() - TotalHunterApp._TR_ANCHOR_TS) % cycle_sec
+        if offset < duration_sec:
+            return True,  int(duration_sec - offset)
+        else:
+            return False, int(cycle_sec - offset)
+
     def _update_trade_routes_labels(self):
-        """РОЙ активен постоянно — никаких таймеров ивентов."""
-        txt = "🟢 Активно"
+        """Таймер ивента «Торговые Пути» — 5-дневный цикл, расчёт на клиенте."""
+        active, secs = self._is_event_active()
+        L  = LANGS[self.current_lang]
+        h  = secs // 3600
+        m  = (secs % 3600) // 60
+
+        if active:
+            txt   = f"{L.get('tr_ends_in', '🟢 ИДЁТ — до конца:')} {h}ч {m:02d}мин"
+            color = "#4ADE80"
+        else:
+            txt   = f"{L.get('tr_starts_in', 'до начала:')} {h}ч {m:02d}мин"
+            color = MD3["on_surface2"]
+
         if hasattr(self, '_tr_hunt_label'):
-            self._tr_hunt_label.configure(text=txt, text_color="#4ADE80")
+            self._tr_hunt_label.configure(text=txt, text_color=color)
         if hasattr(self, '_tr_roy_label'):
-            self._tr_roy_label.configure(text=txt, text_color="#4ADE80")
+            self._tr_roy_label.configure(text=txt, text_color=color)
         if hasattr(self, 'engine') and self.engine:
-            self.engine.event_active = True
+            self.engine.event_active = active
 
     def _tick_trade_routes(self):
         """Повторяющийся тик каждую минуту."""
@@ -3327,20 +3366,31 @@ class TotalHunterApp(ctk.CTk):
                 return 9999
         pool = sorted(pool, key=_elapsed_sec)
 
+        import time as _t
+        _now_ts = _t.time()
+        # POOL_TTL_MIN=20 мин (совпадает с server/roy.py)
+        _POOL_TTL_SEC = 20 * 60
+
+        # Сбрасываем список меток (тикер подхватит новые виджеты)
+        self._pool_countdown_labels.clear()
+
         for entry in pool:
             row = ctk.CTkFrame(self._roy_list_frame, fg_color=MD3["card"], corner_radius=6)
             row.pack(fill="x", padx=4, pady=2)
             pct = entry.get('percent', 0)
             pct_color = "#4ADE80" if pct < 50 else ("#FACC15" if pct < 80 else "#F87171")
 
-            # Таймер = прошедшее время. Зелёный = свежая, красный = старая
+            # Обратный отсчёт: сколько ОСТАЛОСЬ до TTL (20 мин с момента обновления)
             updated_raw = entry.get('updated_at')
+            expires_ts  = None
             if updated_raw:
                 try:
                     upd = datetime.fromisoformat(updated_raw)
-                    elapsed = max(0, (datetime.now(timezone.utc) - upd).total_seconds())
-                    timer_text = f"⏱ {int(elapsed//60):02d}:{int(elapsed%60):02d}"
-                    timer_color = "#4ADE80" if elapsed < 300 else ("#FACC15" if elapsed < 720 else "#F87171")
+                    expires_ts = upd.timestamp() + _POOL_TTL_SEC
+                    rem = max(0, int(expires_ts - _now_ts))
+                    mm, ss = rem // 60, rem % 60
+                    timer_text  = f"⏱ {mm:02d}:{ss:02d}"
+                    timer_color = "#4ADE80" if rem > 600 else ("#FACC15" if rem > 300 else ("#F87171" if rem > 0 else MD3["on_surface2"]))
                 except Exception:
                     timer_text, timer_color = "⏱ --:--", MD3["on_surface2"]
             else:
@@ -3360,18 +3410,47 @@ class TotalHunterApp(ctk.CTk):
                 font=ctk.CTkFont(size=12),
                 text_color=MD3["on_surface"],
             ).pack(side="left", padx=(0, 4), pady=5)
-            # Таймер (прошедшее время)
-            ctk.CTkLabel(
+            # Таймер — обратный отсчёт MM:SS (живёт через _tick_pool_countdown)
+            timer_lb = ctk.CTkLabel(
                 row, text=timer_text,
                 font=ctk.CTkFont(size=11),
                 text_color=timer_color,
-            ).pack(side="right", padx=6)
+            )
+            timer_lb.pack(side="right", padx=6)
+            if expires_ts is not None:
+                self._pool_countdown_labels.append((timer_lb, expires_ts))
             # Процент
             ctk.CTkLabel(
                 row, text=f"{pct}%",
                 font=ctk.CTkFont(size=12, weight="bold"),
                 text_color=pct_color,
             ).pack(side="right", padx=(6, 2))
+
+        # Запустить тикер, если ещё не запущен
+        if self._pool_countdown_labels and not self._pool_countdown_running:
+            self._pool_countdown_running = True
+            self.after(1000, self._tick_pool_countdown)
+
+    def _tick_pool_countdown(self):
+        """Секундный тикер: обновляет MM:SS в строках пула без перезагрузки сервера."""
+        import time as _t
+        now = _t.time()
+        for (label, expires_ts) in self._pool_countdown_labels:
+            try:
+                rem   = max(0, int(expires_ts - now))
+                mm, ss = rem // 60, rem % 60
+                color = ("#4ADE80" if rem > 600 else
+                         "#FACC15" if rem > 300 else
+                         "#F87171" if rem > 0   else
+                         MD3["on_surface2"])
+                label.configure(text=f"⏱ {mm:02d}:{ss:02d}", text_color=color)
+            except Exception:
+                pass  # виджет уничтожен при refresh — пропускаем
+
+        if self._pool_countdown_labels:
+            self.after(1000, self._tick_pool_countdown)
+        else:
+            self._pool_countdown_running = False
 
     def change_lang(self, val):
         old_val = self.current_lang
