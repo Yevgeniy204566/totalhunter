@@ -31,7 +31,7 @@ from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBasic, HTTPBasicCredentials, HTTPBearer
 from sqlalchemy import Integer, func, select, update, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -460,13 +460,27 @@ async def version_latest(db: AsyncSession = Depends(get_db)):
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 if not ADMIN_TOKEN:
     raise ValueError("ADMIN_TOKEN is not set in environment variables — server refuses to start without it")
+ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 _bearer = HTTPBearer()
+_basic = HTTPBasic()
 
 
 def require_admin(credentials: HTTPAuthorizationCredentials = Depends(_bearer)):
-    """FastAPI dependency — проверяет Bearer токен для всех /admin/* роутов."""
+    """FastAPI dependency — проверяет Bearer токен для всех /admin/* API роутов."""
     if credentials.credentials != ADMIN_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid admin token")
+
+
+def require_basic_auth(credentials: HTTPBasicCredentials = Depends(_basic)):
+    """HTTP Basic Auth для GET /admin — браузер показывает системное окно логина."""
+    user_ok = secrets.compare_digest(credentials.username.encode(), ADMIN_USER.encode())
+    pass_ok = secrets.compare_digest(credentials.password.encode(), ADMIN_TOKEN.encode())
+    if not (user_ok and pass_ok):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": 'Basic realm="Total Hunter Admin"'},
+        )
 
 
 # ── POST /admin/version/update ───────────────────────────────────────────────
@@ -854,9 +868,9 @@ async def admin_crashes(db: AsyncSession = Depends(get_db), limit: int = 50):
 
 # ── GET /admin ─────────────────────────────────────────────────────────────────
 
-@app.get("/admin", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
+@app.get("/admin", response_class=HTMLResponse, dependencies=[Depends(require_basic_auth)])
 async def admin_panel():
-    """Отдаёт HTML-страницу Admin Panel. Защищена токеном — как и все /admin/* эндпоинты."""
+    """Отдаёт HTML-страницу Admin Panel. Защищена HTTP Basic Auth — браузер показывает системное окно."""
     html_path = os.path.join(os.path.dirname(__file__), "admin", "index.html")
     with open(html_path, encoding="utf-8") as f:
         return f.read()
