@@ -95,7 +95,7 @@ def spend_credit(hunt_type: str = "crypt"):
         if response.status_code == 402:
             return {"success": False, "low_credits": True, "message": response.json().get("detail", {}).get("message", "")}
         return response.json()
-    except:
+    except Exception:
         return {"success": False}
 
 
@@ -125,7 +125,7 @@ def heartbeat():
     hwid = get_hwid()
     try:
         requests.post(f"{SERVER_URL}/heartbeat", json={"hwid": hwid}, timeout=3)
-    except:
+    except Exception:
         pass  # heartbeat не критичен — падение не останавливает бота
 
 def log_error_to_server(error_msg):
@@ -133,7 +133,7 @@ def log_error_to_server(error_msg):
     hwid = get_hwid()
     try:
         # Не ставим большой таймаут, чтобы не вешать программу
-        requests.post(f"{SERVER_URL}/log_error", 
+        requests.post(f"{SERVER_URL}/log_error",
                       json={"hwid": hwid, "error": error_msg}, timeout=2)
-    except:
+    except Exception:
         pass

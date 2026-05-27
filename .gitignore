@@ -27,3 +27,8 @@ token.json
 dist/
 build/
 TotalHunter.zip
+
+# Скомпилированные Nuitka-модули (не коммитить — перекрывают .py при разработке!)
+*.pyd
+*.so
+*.exe

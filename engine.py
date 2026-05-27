@@ -27,22 +27,25 @@ def _roy_log(msg: str):
 
 
 def _is_trade_routes_active() -> bool:
-    """Вычисляет активность ивента Торговые Пути напрямую, без зависимости от GUI-флага."""
-    _KYIV   = _dt.timezone(_dt.timedelta(hours=3))
-    _ANCHOR = _dt.datetime(2026, 5, 20, 20, 0, 0, tzinfo=_KYIV)
-    _CYCLE  = _dt.timedelta(days=5)
-    _DUR    = _dt.timedelta(hours=24)
+    """Вычисляет активность ивента Торговые Пути напрямую, без зависимости от GUI-флага.
+    Синхронизировано с сервером (server/roy.py) и GUI (main.py):
+      _TR_ANCHOR_TS  = 1780333200  # 2026-06-01 17:00:00 UTC
+      _TR_CYCLE_H    = 144         # 24ч ивент + 120ч пауза = 144ч полный цикл
+      _TR_DURATION_H = 24          # длительность ивента
+    Чтобы сдвинуть расписание — менять _TR_ANCHOR_TS здесь, в main.py и в server/roy.py.
+    """
+    _TR_ANCHOR_TS  = 1780333200   # 2026-06-01 17:00:00 UTC
+    _TR_CYCLE_SEC  = 144 * 3600   # 144 часа = 24ч ивент + 120ч пауза
+    _TR_DUR_SEC    = 24  * 3600   # 24 часа — длительность ивента
 
-    now   = _dt.datetime.now(_KYIV)
-    delta = now - _ANCHOR
-    if delta.total_seconds() < 0:
-        _roy_log(f"Ивент: now={now.strftime('%d.%m %H:%M')} — до старта якоря")
-        return False
-    cycles = int(delta.total_seconds() // _CYCLE.total_seconds())
-    start  = _ANCHOR + cycles * _CYCLE
-    end    = start + _DUR
-    active = start <= now <= end
-    _roy_log(f"Ивент: now={now.strftime('%d.%m %H:%M')} | окно {start.strftime('%d.%m %H:%M')}→{end.strftime('%d.%m %H:%M')} | active={active}")
+    now_ts = time.time()
+    offset = (now_ts - _TR_ANCHOR_TS) % _TR_CYCLE_SEC
+    active = offset < _TR_DUR_SEC
+
+    secs_left = int(_TR_DUR_SEC - offset) if active else int(_TR_CYCLE_SEC - offset)
+    h, m = secs_left // 3600, (secs_left % 3600) // 60
+    status = f"ИДЁТ, осталось {h}ч {m:02d}мин" if active else f"пауза, до старта {h}ч {m:02d}мин"
+    _roy_log(f"Ивент Торговые Пути: {status}")
     return active
 
 # Убираем глобальную задержку PyAutoGUI — антидетект обеспечивается move_wait в навигаторе

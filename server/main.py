@@ -854,9 +854,9 @@ async def admin_crashes(db: AsyncSession = Depends(get_db), limit: int = 50):
 
 # ── GET /admin ─────────────────────────────────────────────────────────────────
 
-@app.get("/admin", response_class=HTMLResponse)
+@app.get("/admin", response_class=HTMLResponse, dependencies=[Depends(require_admin)])
 async def admin_panel():
-    """Отдаёт HTML-страницу Admin Panel."""
+    """Отдаёт HTML-страницу Admin Panel. Защищена токеном — как и все /admin/* эндпоинты."""
     html_path = os.path.join(os.path.dirname(__file__), "admin", "index.html")
     with open(html_path, encoding="utf-8") as f:
         return f.read()
