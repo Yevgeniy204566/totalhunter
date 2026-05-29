@@ -1,0 +1,8 @@
+node_modules
+.git
+.vercel
+.env.local
+.env.development
+.env.production
+dist
+src
