@@ -21,7 +21,7 @@
 | **Long-poll синхронизация** | server/vault.py | ✅ GET /vault/sync/{hwid} — мгновенный обмен баланса бот↔сайт | 2026-05-07 |
 | **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
 | **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. change_lang полностью обновляет все ROY-метки. | 2026-05-23 |
-| **Рекламные слоты** | web/AdSlot.jsx | 🟡 BitMedia — мета-тег верификации добавлен в index.html (2026-05-26), заявка подана, ждём модерации. Порог вывода $20 BTC/USDT. | 2026-05-26 |
+| **Рекламные слоты** | web/AdSlot.jsx | ⏸ **ОТЛОЖЕНО до 500+ DAU (2026-05-29).** AdSlot.jsx удалён, мета-теги Coinzilla/BitMedia убраны из index.html. Два пути на будущее: 1) Баннеры (BitMedia/A-Ads) 2) Rewarded Video в рулетке (Lootably S2S callback). Подробности → MEMORY/project_ads_strategy.md | 2026-05-29 |
 | **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ Event gate: is_trade_routes_active() на сервере (144ч цикл, anchor 2026-06-01 17:00 UTC). /scan начисляет только во время ивента. OCR smart-column ROI (600×200) для браузерных игроков. Пул: MM:SS **возраст** (0:00→20:00) в реальном времени — зелёный <10мин, жёлтый 10-15мин, красный >15мин. | 2026-05-29 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
@@ -35,7 +35,7 @@
 | **Debug Reporter** | debug_reporter.py + server/debug_router.py | ✅ Fire-and-forget FIND+DIALOG скрины → GCP → Telegram @total_hunter_debug_bot. YOLO conf на bbox. Без сохранения на диск. python-multipart установлен на GCP. | 2026-05-19 |
 | **Гайд сайта — ROY секция** | web/src/guide_content.js + .en.js + GuidePage.jsx | ✅ Раздел «Система РОЙ 🐝» (RU+EN): механика баланса, event gate, AFK защита, инструкция 4 шага. | 2026-05-19 |
 | **Динамическое окно** | main.py | ✅ SPI_GETWORKAREA при старте — высота под экран, прижато вправо. Работает на любом разрешении. | 2026-05-12 |
-| **SEO** | web/ | ✅ **Полный SEO-спринт (2026-05-25):** URL-локализация (EN=default, RU=/ru prefix), 12 prerender-маршрутов (6EN+6RU) с html[lang]/title/desc/og, hreflang x-default+en+ru (статика prerender + динамика useMeta), FAQ JSON-LD EN+RU, sitemap.xml 12 URL xhtml:link, Vercel Analytics ✅, track(Register_Started + Referral_Link_Copied). Dashboard сохраняет lang через localStorage. **2026-05-29:** откат поломок Gemini — vite base, .vercelignore, sitemap 4 несуществующих URL удалены. | 2026-05-29 |
+| **SEO** | web/ | ✅ **Полный SEO-спринт (2026-05-25):** URL-локализация (EN=default, RU=/ru prefix), 12 prerender-маршрутов (6EN+6RU) с html[lang]/title/desc/og, hreflang x-default+en+ru (статика prerender + динамика useMeta), FAQ JSON-LD EN+RU, sitemap.xml 12 URL xhtml:link, Vercel Analytics ✅, track(Register_Started + Referral_Link_Copied). Dashboard сохраняет lang через localStorage. **2026-05-29:** откат поломок Gemini — vite base, .vercelignore, sitemap 4 несуществующих URL удалены. **Фикс GSC «Вариант страницы с тегом canonical»:** `useMeta.js` теперь динамически обновляет `<link rel="canonical">` на текущий URL каждой страницы (ранее все страницы отдавали статичный `https://total-hunter.com` из index.html → Google считал их дублями главной). | 2026-05-29 |
 | **Статистика лендинга** | server/web_routes.py | ✅ Накопительная: base 300 бирж + 5000 склепов + реальные данные. Только растёт. | 2026-05-12 |
 | **Installer** | installer.iss | ✅ v1.1.2: Win10+ gate, 64-bit check, авто-язык RU/EN | 2026-05-09 |
 | **Silent Observer** | main.py + server/web_routes.py | ✅ crash reporter: crash_report.txt + POST /web/crash_report + вкладка Краши в админке | 2026-05-09 |
@@ -300,6 +300,14 @@
   - v6 исправил тёмные цвета секторов и тяжёлый лаковый overlay
 - **GCP deploy команда** исправлена в CLAUDE.md: `cd /opt/totalhunter && sudo git clean -fd server/alembic/versions/ && sudo git pull origin main`
 - **Кнопка бота**: "+5" зелёная оставлена как была (изменение откатано)
+
+## ✅ Сделано 29.05.2026
+
+- **Фикс Google Search Console «Вариант страницы с тегом canonical»:** `useMeta.js` теперь динамически обновляет `<link rel="canonical">` при каждом переходе. Раньше все страницы отдавали статичный canonical главной из index.html → Google считал их дублями.
+- **Удалена вся реклама с сайта:** AdSlot.jsx удалён, мета-теги Coinzilla/BitMedia убраны. Монетизация реклмой отложена до 500+ DAU.
+- **Стратегия рекламы записана в MEMORY** (project_ads_strategy.md): два пути — баннеры и rewarded video рулетка (Lootably S2S).
+
+---
 
 ## 🔴 Задачи (приоритет по порядку)
 
