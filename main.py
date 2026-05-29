@@ -3380,17 +3380,17 @@ class TotalHunterApp(ctk.CTk):
             pct = entry.get('percent', 0)
             pct_color = "#4ADE80" if pct < 50 else ("#FACC15" if pct < 80 else "#F87171")
 
-            # Обратный отсчёт: сколько ОСТАЛОСЬ до TTL (20 мин с момента обновления)
+            # Возраст: сколько ПРОШЛО с момента нахождения биржи (0:00 → 20:00)
             updated_raw = entry.get('updated_at')
-            expires_ts  = None
+            updated_ts  = None
             if updated_raw:
                 try:
                     upd = datetime.fromisoformat(updated_raw)
-                    expires_ts = upd.timestamp() + _POOL_TTL_SEC
-                    rem = max(0, int(expires_ts - _now_ts))
-                    mm, ss = rem // 60, rem % 60
+                    updated_ts = upd.timestamp()
+                    elapsed = min(_POOL_TTL_SEC, int(_now_ts - updated_ts))
+                    mm, ss = elapsed // 60, elapsed % 60
                     timer_text  = f"⏱ {mm:02d}:{ss:02d}"
-                    timer_color = "#4ADE80" if rem > 600 else ("#FACC15" if rem > 300 else ("#F87171" if rem > 0 else MD3["on_surface2"]))
+                    timer_color = "#4ADE80" if elapsed < 600 else ("#FACC15" if elapsed < 900 else "#F87171")
                 except Exception:
                     timer_text, timer_color = "⏱ --:--", MD3["on_surface2"]
             else:
@@ -3417,8 +3417,8 @@ class TotalHunterApp(ctk.CTk):
                 text_color=timer_color,
             )
             timer_lb.pack(side="right", padx=6)
-            if expires_ts is not None:
-                self._pool_countdown_labels.append((timer_lb, expires_ts))
+            if updated_ts is not None:
+                self._pool_countdown_labels.append((timer_lb, updated_ts))
             # Процент
             ctk.CTkLabel(
                 row, text=f"{pct}%",
@@ -3435,14 +3435,14 @@ class TotalHunterApp(ctk.CTk):
         """Секундный тикер: обновляет MM:SS в строках пула без перезагрузки сервера."""
         import time as _t
         now = _t.time()
-        for (label, expires_ts) in self._pool_countdown_labels:
+        _POOL_TTL_SEC = 20 * 60
+        for (label, updated_ts) in self._pool_countdown_labels:
             try:
-                rem   = max(0, int(expires_ts - now))
-                mm, ss = rem // 60, rem % 60
-                color = ("#4ADE80" if rem > 600 else
-                         "#FACC15" if rem > 300 else
-                         "#F87171" if rem > 0   else
-                         MD3["on_surface2"])
+                elapsed = min(_POOL_TTL_SEC, int(now - updated_ts))
+                mm, ss = elapsed // 60, elapsed % 60
+                color = ("#4ADE80" if elapsed < 600 else
+                         "#FACC15" if elapsed < 900 else
+                         "#F87171")
                 label.configure(text=f"⏱ {mm:02d}:{ss:02d}", text_color=color)
             except Exception:
                 pass  # виджет уничтожен при refresh — пропускаем

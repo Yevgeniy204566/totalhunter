@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-27 (v1.5.9 — ROI браузер, ивент цикл, backtrack тайминг, countdown пул)
+> Последнее обновление: 2026-05-27 **v1.5.9 + ФИНАЛЬНЫЙ АУДИТ** — 5 агентов, 4 фикса задеплоены на GCP. **БОТ ФУНКЦИОНАЛЬНО ЗАВЕРШЁН И ПРОШЁЛ АУДИТ.**
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -22,7 +22,7 @@
 | **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
 | **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. change_lang полностью обновляет все ROY-метки. | 2026-05-23 |
 | **Рекламные слоты** | web/AdSlot.jsx | 🟡 BitMedia — мета-тег верификации добавлен в index.html (2026-05-26), заявка подана, ждём модерации. Порог вывода $20 BTC/USDT. | 2026-05-26 |
-| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ Event gate: is_trade_routes_active() на сервере (144ч цикл, anchor 2026-06-01 17:00 UTC). /scan начисляет только во время ивента. OCR smart-column ROI (600×200) для браузерных игроков. Пул: MM:SS countdown в реальном времени. | 2026-05-27 |
+| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ Event gate: is_trade_routes_active() на сервере (144ч цикл, anchor 2026-06-01 17:00 UTC). /scan начисляет только во время ивента. OCR smart-column ROI (600×200) для браузерных игроков. Пул: MM:SS **возраст** (0:00→20:00) в реальном времени — зелёный <10мин, жёлтый 10-15мин, красный >15мин. | 2026-05-29 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
@@ -35,7 +35,7 @@
 | **Debug Reporter** | debug_reporter.py + server/debug_router.py | ✅ Fire-and-forget FIND+DIALOG скрины → GCP → Telegram @total_hunter_debug_bot. YOLO conf на bbox. Без сохранения на диск. python-multipart установлен на GCP. | 2026-05-19 |
 | **Гайд сайта — ROY секция** | web/src/guide_content.js + .en.js + GuidePage.jsx | ✅ Раздел «Система РОЙ 🐝» (RU+EN): механика баланса, event gate, AFK защита, инструкция 4 шага. | 2026-05-19 |
 | **Динамическое окно** | main.py | ✅ SPI_GETWORKAREA при старте — высота под экран, прижато вправо. Работает на любом разрешении. | 2026-05-12 |
-| **SEO** | web/ | ✅ **Полный SEO-спринт (2026-05-25):** URL-локализация (EN=default, RU=/ru prefix), 12 prerender-маршрутов (6EN+6RU) с html[lang]/title/desc/og, hreflang x-default+en+ru (статика prerender + динамика useMeta), FAQ JSON-LD EN+RU, sitemap.xml 12 URL xhtml:link, Vercel Analytics ✅, track(Register_Started + Referral_Link_Copied). Dashboard сохраняет lang через localStorage. | 2026-05-25 |
+| **SEO** | web/ | ✅ **Полный SEO-спринт (2026-05-25):** URL-локализация (EN=default, RU=/ru prefix), 12 prerender-маршрутов (6EN+6RU) с html[lang]/title/desc/og, hreflang x-default+en+ru (статика prerender + динамика useMeta), FAQ JSON-LD EN+RU, sitemap.xml 12 URL xhtml:link, Vercel Analytics ✅, track(Register_Started + Referral_Link_Copied). Dashboard сохраняет lang через localStorage. **2026-05-29:** откат поломок Gemini — vite base, .vercelignore, sitemap 4 несуществующих URL удалены. | 2026-05-29 |
 | **Статистика лендинга** | server/web_routes.py | ✅ Накопительная: base 300 бирж + 5000 склепов + реальные данные. Только растёт. | 2026-05-12 |
 | **Installer** | installer.iss | ✅ v1.1.2: Win10+ gate, 64-bit check, авто-язык RU/EN | 2026-05-09 |
 | **Silent Observer** | main.py + server/web_routes.py | ✅ crash reporter: crash_report.txt + POST /web/crash_report + вкладка Краши в админке | 2026-05-09 |
@@ -43,7 +43,7 @@
 | **Mobile OAuth** | web_routes.py + LoginPage.jsx | ✅ /auth/google/start + /callback, детект мобилки, JWT в URL | 2026-05-10 |
 | **Guide — точность детекции** | guide_content.js/en.js + GuidePage.jsx | ✅ Биржи 80%, Склепы 30%, предупреждение про скорость нейросети | 2026-05-10 |
 | **Скачать в хедере** | Layout.jsx | ✅ кнопка ↓ Скачать бота рядом с балансом, видна на всех страницах | 2026-05-10 |
-| **Admin Panel** | server/admin/index.html | ✅ adjust_credits по user_id + вкладка Краши (crash reports) | 2026-05-09 |
+| **Admin Panel** | server/admin/index.html | ✅ adjust_credits по user_id + вкладка Краши (crash reports). **HTTP Basic Auth на GET /admin** (браузер-диалог) + Bearer на все /admin/* API. | 2026-05-27 |
 | **Реферальная система** | server/web_routes.py | ✅ **Полный TDD-аудит (2026-05-26):** BUG-1 (+50 invited безусловно даже если inviter забанен), BUG-2 (db.begin→begin_nested в /activate), BUG-3 (cycle detection ≤3 хопов), BUG-4 (naive/aware datetime в hwid/reset). 57 тестов зелёных. notify_balance_changed в /activate. | 2026-05-26 |
 | **Лендинг** | web/LandingPage.jsx | ✅ 3D скриншоты, кнопка ZIP v1.2.2, мобильный хедер (Гайд/RU/Войти) | 2026-05-12 |
 | **Мобильный сайт** | web/src/styles/mobile.css | ✅ Единая ширина всех страниц. Гайд: TOC dropdown + Windows-баннер. Рефералы: кнопка под инпутом. | 2026-05-12 |
@@ -91,6 +91,44 @@
 - API: `coords: null` в публичном ответе — координаты только за кредиты
 - Их слабость: нет автонавигации, координаты платные, данные устаревают быстро
 - Строить свой пул смысла нет — биржи живут 2-5 мин, не накопишь
+
+## ✅ ФИНАЛЬНЫЙ АУДИТ — ПРОЙДЕН (2026-05-27)
+
+**5 независимых агентов проверили весь проект. Все критические баги исправлены.**
+Коммит: `1e37687` | GCP задеплоен ✅
+
+### Что исправлено по аудиту:
+1. **engine.py** — якорь ивента синхронизирован с сервером: `1780333200` (2026-06-01 17:00 UTC), цикл 144ч. Старый якорь (2026-05-20) давал расхождение ~12 дней между ботом и сервером.
+2. **server/main.py** — GET `/admin` теперь требует `require_admin`. Ранее HTML-страница админки была доступна без токена.
+3. **auth.py** — голые `except:` заменены на `except Exception:` в 3 местах (spend_credit, heartbeat, log_error_to_server). Голый except глотает KeyboardInterrupt → бот не закрывался по Ctrl+C.
+4. **.gitignore** — добавлены `*.pyd`, `*.so`, `*.exe`. Nuitka-модули больше не попадут в git случайно.
+
+### Пост-аудит фикс (2026-05-27):
+5. **server/main.py** — Аудит повесил Bearer на GET `/admin`, но браузер не умеет отправлять Bearer при прямом переходе по URL → 403 навсегда. Исправлено: GET `/admin` → **HTTP Basic Auth** (браузер показывает системное окно логина: `admin` / `ADMIN_TOKEN`). Все `/admin/*` API-эндпоинты по-прежнему защищены Bearer. Коммит: `5efb4db`.
+
+### Что НЕ является проблемой (решено или legacy):
+- Масло в crypt_hunter.py — механика масла не используется, код legacy, игнорируем
+- Rate limits — желательно, не критично для текущего объёма
+- Пустые server-тесты — технический долг, не баг
+- CompassNavigator — legacy, не используется активно
+
+---
+
+## ✅ v1.5.9 — ВЫПУЩЕН (2026-05-27) ← ТЕКУЩИЙ
+
+**БОТ ФУНКЦИОНАЛЬНО ЗАВЕРШЁН** — весь запланированный функционал реализован.
+- GitHub Release: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.9
+- Сервер /version/latest → 1.5.9 ✅
+- ZIP: 354 МБ, 10 Nuitka .pyd модулей (MSVC 14.3, SSE2 baseline) ✅
+
+### Что нового в v1.5.9:
+1. **ROY браузер-совместимость:** OCR ROI увеличен до 600×200px — координаты биржи читаются у Chrome/Firefox игроков (~85px смещение поглощается)
+2. **Trade Routes — реальный цикл:** is_trade_routes_active() на сервере (anchor 2026-06-01 17:00 UTC, 144ч цикл = 24ч ивент + 120ч пауза). Убрана заглушка «ивент всегда активен»
+3. **Таймер пула MM:SS:** countdown до истечения каждого лота (TTL 20 мин). Зелёный >10мин → жёлтый → красный → серый
+4. **Backtrack тайминг:** после шага назад ожидание = move_wait (2.0с) вместо 0.3с → карта успевает остановиться до повторного YOLO-скана
+5. **Client-side ивент таймер:** GUI показывает «🟢 ИДЁТ — до конца: Xч MMмин» или «до начала: Xч MMмин» с live обновлением
+
+---
 
 ## ✅ v1.5.8 — ВЫПУЩЕН (2026-05-27)
 
