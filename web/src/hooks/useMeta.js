@@ -9,6 +9,16 @@ function setMeta(selector, attr, value) {
   if (el) el.setAttribute(attr, value)
 }
 
+function syncCanonical(pathname) {
+  let el = document.querySelector('link[rel="canonical"]')
+  if (!el) {
+    el = document.createElement('link')
+    el.rel = 'canonical'
+    document.head.appendChild(el)
+  }
+  el.href = BASE + pathname
+}
+
 function syncHreflang(pathname) {
   document.querySelectorAll('link[rel="alternate"][hreflang]').forEach(el => el.remove())
   if (pathname.startsWith('/dashboard')) return
@@ -40,6 +50,7 @@ export function useMeta({ title, description }) {
     setMeta('meta[property="og:url"]',          'content', window.location.href)
     setMeta('meta[name="twitter:title"]',       'content', title)
     setMeta('meta[name="twitter:description"]', 'content', description)
+    syncCanonical(path)
     syncHreflang(path)
 
     return () => {
