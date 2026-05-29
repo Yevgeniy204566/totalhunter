@@ -110,32 +110,4 @@
     <priority>0.3</priority>
   </url>
 
-  <url>
-    <loc>https://total-hunter.com/legal/privacy</loc>
-    <lastmod>2026-05-29</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://total-hunter.com/legal/terms</loc>
-    <lastmod>2026-05-29</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://total-hunter.com/ru/legal/privacy</loc>
-    <lastmod>2026-05-29</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
-  <url>
-    <loc>https://total-hunter.com/ru/legal/terms</loc>
-    <lastmod>2026-05-29</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-
 </urlset>
