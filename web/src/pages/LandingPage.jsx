@@ -5,7 +5,6 @@ import { isLoggedIn } from '../auth.js'
 import { LANDING as LANDING_RU } from '../constants.js'
 import { LANDING as LANDING_EN } from '../constants.en.js'
 import { useLang } from '../lang.js'
-import AdSlot from '../components/AdSlot.jsx'
 import { useMeta } from '../hooks/useMeta.js'
 import { track } from '@vercel/analytics'
 
@@ -346,15 +345,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* ── Ad Banner — between Live Stats and Features ────────── */}
-      <div style={{
-        display: 'flex', justifyContent: 'center', alignItems: 'center',
-        padding: '28px 16px',
-        background: 'var(--card)',
-      }}>
-        <AdSlot size="leaderboard" />
-      </div>
 
       {/* ── Features ───────────────────────────────────────────── */}
       <section id="features" style={{ padding: '88px 24px', background: 'var(--card)' }}>
