@@ -3789,6 +3789,12 @@ class TotalHunterApp(ctk.CTk):
             justify="center",
         ).pack(pady=(20, 0))
 
+        # ── Создаём дефолтные профили если их нет (первый запуск / после ZIP без profiles/) ──
+        for _prof_path in PROFILES.values():
+            if not os.path.exists(_prof_path):
+                os.makedirs(os.path.dirname(os.path.abspath(_prof_path)), exist_ok=True)
+                coord_manager.save(_prof_path)
+
         # ── Auto-load on startup ──────────────────────────────────────────
         last = self._load_gui_config().get("last_calibration_profile", "Client")
         self._cal_profile_var.set(last)
