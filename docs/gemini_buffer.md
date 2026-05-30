@@ -1,5 +1,40 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-05-29 (Kyiv) — Хангоф #74: откат Gemini + ROY таймер
+> Последнее обновление: 2026-05-30 (Kyiv) — Хангоф #75: фикс Склепов v1.5.10
+
+---
+
+## 🔧 ХАНГОФ #75 — Фикс координат Склепов + защита калибровки
+> Дата: 2026-05-30 | Версия: **1.5.10** (задеплоено ✅) | Повод: клиент 1768×992
+
+### Что сделано
+
+**Диагностика (3 независимых агента + перекрёстная проверка):**
+- Подтверждено: КАЛИБРОВАТЬ и АВТОКАЛИБРОВАТЬ функционально идентичны — оба вызывают `coord_manager.calibrate(point_a, point_b)`
+- Найдены 2 реальных бага через аудит кода + Gemini cross-review
+
+**Фикс 1 — crypt_hunter.py (3 координаты без масштабирования):**
+- `WT_SCROLL_AREA` в `_pre_skip()` и `_scroll_and_find()` → `scale_coord(*WT_SCROLL_AREA)`
+- `MENU_SCAN_REGION` в `_scroll_and_find()` → `scale_region(*MENU_SCAN_REGION)`
+- `OIL_DIALOG_REGION` в `_check_oil_dialog()` → `scale_region(*OIL_DIALOG_REGION)`
+- Все через `if _VISUAL_NAV_AVAILABLE else` — безопасный fallback
+
+**Фикс 2 — build.spec:**
+- Убрано `('profiles', 'profiles')` из datas — ZIP больше не перезаписывает калибровку клиента при обновлении
+
+**Фикс 3 — main.py:**
+- Автогенерация дефолтных профилей при старте: `if not os.path.exists(path): coord_manager.save(path)`
+- Первый запуск → профили создаются. Обновление → существующие не трогаются.
+
+**Сборка и релиз v1.5.10:**
+- Nuitka + PyInstaller, 338 MB, TotalHunter.exe в корне ZIP ✅
+- `profiles/` в ZIP отсутствует ✅
+- version/latest API → 1.5.10 ✅
+- ZIP на GitHub Release загружен, auto-update работает ✅
+
+### Что осталось
+- **Клиенту 1768×992:** обновиться → откалибровать один раз → сохранить профиль
+- **Живой тест ROY** — ивент Trade Routes 2026-06-01 17:00 UTC
+- Остальные задачи из #74 без изменений
 
 ---
 

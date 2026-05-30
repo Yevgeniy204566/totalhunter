@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-27 **v1.5.9 + ФИНАЛЬНЫЙ АУДИТ** — 5 агентов, 4 фикса задеплоены на GCP. **БОТ ФУНКЦИОНАЛЬНО ЗАВЕРШЁН И ПРОШЁЛ АУДИТ.**
+> Последнее обновление: 2026-05-30 **v1.5.10** — фикс координат Склепов (coord_manager), ZIP не перезаписывает калибровку.
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -28,7 +28,7 @@
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.9**. Ghost YOLO ✅. Backtrack wait: 0.3s→move_wait ✅. Smart-column ROI браузер (600×200) ✅. Ивент gate (144ч цикл) ✅. Пул MM:SS countdown ✅. 28+ тестов ✅. | 2026-05-27 |
-| **CryptHunter** | crypt_hunter.py | ✅ Anti-groundhog, конец списка cv2.absdiff, статусы. Swing1 применяется к кнопке «Открыть» редких склепов (как у «Исследовать»). | 2026-05-19 |
+| **CryptHunter** | crypt_hunter.py | ✅ **v1.5.10:** WT_SCROLL_AREA, MENU_SCAN_REGION, OIL_DIALOG_REGION теперь через coord_manager — работает на любом разрешении. Anti-groundhog, конец списка cv2.absdiff, статусы. | 2026-05-30 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
 | **Auto-update** | updater.py | ✅ v1.4.1. ZIP плоский (exe в корне). xcopy `extract_dir\*`. Петля устранена. | 2026-05-20 |
