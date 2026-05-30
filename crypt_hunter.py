@@ -480,7 +480,8 @@ class CryptHunter:
     def _pre_skip(self):
         """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций)."""
         self._status("Пропускаю склеп (3 скролла вниз)...")
-        pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
+        _sx, _sy = scale_coord(*WT_SCROLL_AREA) if _VISUAL_NAV_AVAILABLE else WT_SCROLL_AREA
+        pyautogui.moveTo(_sx, _sy,
                          duration=random.uniform(0.3, 0.5))
         self._interruptible_sleep(0.3)
         for _ in range(3):
@@ -505,12 +506,13 @@ class CryptHunter:
         """
         # self._status("Ищу склеп в меню...")
         # Переводим мышь в зону списка — туда куда будет идти скролл
-        pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
+        _sx, _sy = scale_coord(*WT_SCROLL_AREA) if _VISUAL_NAV_AVAILABLE else WT_SCROLL_AREA
+        pyautogui.moveTo(_sx, _sy,
                          duration=random.uniform(0.3, 0.5))
         self._random_pause(0.3, 0.5)
 
         # Зона меню в экранных координатах (для фильтрации YOLO).
-        ms_x, ms_y, ms_w, ms_h = MENU_SCAN_REGION
+        ms_x, ms_y, ms_w, ms_h = scale_region(*MENU_SCAN_REGION) if _VISUAL_NAV_AVAILABLE else MENU_SCAN_REGION
 
         scroll_idx = 0
         prev_menu_crop: 'np.ndarray | None' = None
@@ -792,7 +794,7 @@ class CryptHunter:
         Вызывается из _send_captain() через 1.5с после клика «Исследовать».
         Не зависит от языка игры — ищет цвет кнопок, не текст.
         """
-        img = self._screenshot(OIL_DIALOG_REGION)
+        img = self._screenshot(scale_region(*OIL_DIALOG_REGION) if _VISUAL_NAV_AVAILABLE else OIL_DIALOG_REGION)
         detected = self._detect_oil_buttons(img)
         if detected:
             self._save_debug_screenshot(img, "oil_region")
