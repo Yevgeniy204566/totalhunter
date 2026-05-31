@@ -3649,12 +3649,21 @@ class TotalHunterApp(ctk.CTk):
         self._cal_status_label.pack(pady=8)
 
         def _update_status():
+            try:
+                import mss as _mss_diag
+                with _mss_diag.mss() as _s:
+                    _mw = _s.monitors[0]['width']
+                    _mh = _s.monitors[0]['height']
+                _diag = f"\nэкран: tk={self.winfo_screenwidth()}×{self.winfo_screenheight()} / mss={_mw}×{_mh}"
+            except Exception:
+                _diag = ""
             self._cal_status_label.configure(
                 text=(
                     f"scale_x={coord_manager.scale_x:.4f}  "
                     f"scale_y={coord_manager.scale_y:.4f}\n"
                     f"anchor=({coord_manager.anchor_x}, {coord_manager.anchor_y})  "
                     f"dialog_offset_y={coord_manager.dialog_offset_y}"
+                    f"{_diag}"
                 ),
                 text_color="#4ADE80",
             )
@@ -3710,6 +3719,7 @@ class TotalHunterApp(ctk.CTk):
                 return
 
             coord_manager.calibrate(point_a, point_b)
+            _save_profile()
             _update_status()
 
         def _calibrate():
@@ -3721,6 +3731,7 @@ class TotalHunterApp(ctk.CTk):
                 self.deiconify()
             if point_a and point_b:
                 coord_manager.calibrate(point_a, point_b)
+                _save_profile()
                 _update_status()
 
         def _save_profile():
@@ -3805,8 +3816,11 @@ class TotalHunterApp(ctk.CTk):
                 self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
                 self._load_crypt_from_profile(default_path)
                 _update_status()
-            except Exception:
-                pass
+            except Exception as _e:
+                self._cal_status_label.configure(
+                    text=f"⚠ Профиль не загружен: {_e}\nИспользуются координаты 1920×1080",
+                    text_color="#FFB300",
+                )
 
 
 def _crash_handler(exc: BaseException) -> None:

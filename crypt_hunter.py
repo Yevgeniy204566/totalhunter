@@ -37,6 +37,14 @@ except ImportError:
     _VISUAL_NAV_AVAILABLE = False
 
 
+def scale_ui_coord(ref_x: int, ref_y: int, ref_w: int = 1920, ref_h: int = 1080):
+    """Пропорциональное масштабирование статичных UI-кнопок (не карта).
+    Используется для WT_ICON, вкладок меню и т.п. — элементов которые
+    не зависят от калибровки карты, а просто пропорциональны разрешению."""
+    sw, sh = pyautogui.size()
+    return int(ref_x * sw / ref_w), int(ref_y * sh / ref_h)
+
+
 
 
 # ══════════════════════════════════════════════════════════════
@@ -458,12 +466,12 @@ class CryptHunter:
 
     def _open_watchtower(self):
         """Открыть меню Дозорной башни."""
-        self._click(*WT_ICON, jitter=5)
+        self._click(*scale_ui_coord(*WT_ICON), jitter=5, raw=True)
         self._random_pause()
 
     def _select_crypts_tab(self):
         """Кликнуть «Склепы и арены» в боковом меню башни."""
-        self._click(*WT_CRYPTS_TAB, jitter=5)
+        self._click(*scale_ui_coord(*WT_CRYPTS_TAB), jitter=5, raw=True)
         self._random_pause()
 
     def _reset_search(self):
@@ -472,15 +480,15 @@ class CryptHunter:
         Два клика по «Арена» с паузой 1 сек между ними.
         """
         # self._status("Конец списка — кликаю Арену для сброса...")
-        self._click(*WT_ARENA_TAB, jitter=3)
+        self._click(*scale_ui_coord(*WT_ARENA_TAB), jitter=3, raw=True)
         self._interruptible_sleep(random.uniform(0.9, 1.1))
-        self._click(*WT_ARENA_TAB, jitter=3)
+        self._click(*scale_ui_coord(*WT_ARENA_TAB), jitter=3, raw=True)
         self._random_pause(0.5, 0.8)
 
     def _pre_skip(self):
         """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций)."""
         self._status("Пропускаю склеп (3 скролла вниз)...")
-        _sx, _sy = scale_coord(*WT_SCROLL_AREA) if _VISUAL_NAV_AVAILABLE else WT_SCROLL_AREA
+        _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
         pyautogui.moveTo(_sx, _sy,
                          duration=random.uniform(0.3, 0.5))
         self._interruptible_sleep(0.3)
@@ -506,7 +514,7 @@ class CryptHunter:
         """
         # self._status("Ищу склеп в меню...")
         # Переводим мышь в зону списка — туда куда будет идти скролл
-        _sx, _sy = scale_coord(*WT_SCROLL_AREA) if _VISUAL_NAV_AVAILABLE else WT_SCROLL_AREA
+        _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
         pyautogui.moveTo(_sx, _sy,
                          duration=random.uniform(0.3, 0.5))
         self._random_pause(0.3, 0.5)
@@ -593,7 +601,7 @@ class CryptHunter:
                                 continue
                             break
 
-                    sc_x = scale_coord(WT_GOTO_BTN_X, 0)[0] if _VISUAL_NAV_AVAILABLE else WT_GOTO_BTN_X
+                    sc_x = scale_ui_coord(WT_GOTO_BTN_X, 0)[0]
                     goto_pos = (sc_x, cy + 17)
 
                     # self._status(f"Найден: {gui_name} — кнопка «Перейти» → {goto_pos}")
@@ -615,7 +623,9 @@ class CryptHunter:
         Берёт бокс ближайший к центру экрана (игра телепортирует туда).
         """
         import mss as _mss
-        screen_cx, screen_cy = 960, 540  # центр 1920×1080
+        import pyautogui as _pag
+        _sw, _sh = _pag.size()
+        screen_cx, screen_cy = _sw // 2, _sh // 2
         yolo_target = GUI_TO_YOLO.get(crypt_type)  # например "crypt_7"
 
         # self._status(f"Ищу {crypt_type} на карте...")
@@ -692,7 +702,7 @@ class CryptHunter:
         pos = self._find_button(
                 ref_region=(900, 85, 500, 60),
                 color='purple', pick='largest',
-                fallback=CARTER_EVENT_BAR,
+                fallback=scale_ui_coord(*CARTER_EVENT_BAR),
             )
         cx = pos[0] + random.randint(-6, 6)  # jitter только по X (полоса узкая)
         self._click(cx, pos[1], jitter=0, raw=True)
@@ -703,7 +713,7 @@ class CryptHunter:
         """Нажимает «Использовать» applied раз."""
         if applied == 0:
             return
-        sc_use = scale_dialog(*ACCEL_USE_BTN) if _VISUAL_NAV_AVAILABLE else ACCEL_USE_BTN
+        sc_use = scale_ui_coord(*ACCEL_USE_BTN)
         use_x, use_y = sc_use[0], sc_use[1] + self._swing2
         for i in range(applied):
             if not self.is_running:

@@ -121,11 +121,16 @@ def calibrate_one_point(
                 red_dot[0].destroy()
             except tk.TclError:
                 pass
-        red_dot[0] = _show_red_dot(root, cur_x.get(), cur_y.get())
+        # cur_x/cur_y are physical screen pixels (for mss).
+        # Tk geometry() uses logical pixels — divide by dpi_scale.
+        lx = int(cur_x.get() / dpi_scale)
+        ly = int(cur_y.get() / dpi_scale)
+        red_dot[0] = _show_red_dot(root, lx, ly)
 
     def on_canvas_click(event):
-        dx = (event.x - CANVAS_W // 2) / ZOOM_FACTOR
-        dy = (event.y - CANVAS_H // 2) / ZOOM_FACTOR
+        # event.x/y are Tk logical pixels; convert to physical screen pixels.
+        dx = (event.x - CANVAS_W // 2) * dpi_scale / ZOOM_FACTOR
+        dy = (event.y - CANVAS_H // 2) * dpi_scale / ZOOM_FACTOR
         cur_x.set(int(cur_x.get() + dx))
         cur_y.set(int(cur_y.get() + dy))
         _update_dot()

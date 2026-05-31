@@ -990,7 +990,7 @@ class PacmanEngine:
                     if time.time() >= self._yolo_unblock_time:
                         _t0 = time.time()
                         results = self.yolo_model.predict(
-                            frame, conf=self.conf, imgsz=1280, verbose=False)
+                            frame, conf=self.conf, imgsz=640, verbose=False)
                         self._last_yolo_inference_time = time.time() - _t0
                         for r in results:
                             if len(r.boxes) > 0:
@@ -998,7 +998,9 @@ class PacmanEngine:
                                 loop_start = time.time()
                                 break
                     else:
-                        time.sleep(self._last_yolo_inference_time)  # Призрак: имитируем YOLO-нагрузку
+                        # Призрак: имитируем YOLO-нагрузку, но не дольше периода шага
+                        time.sleep(min(self._last_yolo_inference_time,
+                                       max(0.01, self.move_wait * 0.8)))
 
                 # Navigate — pass frame to avoid second screenshot for minimap
                 if not self.is_running:
@@ -1045,7 +1047,7 @@ class PacmanEngine:
                     _screen = np.array(_sct.grab(_sct.monitors[1]))
                 _frame = cv2.cvtColor(_screen, cv2.COLOR_BGRA2BGR)
                 _results = self.yolo_model.predict(
-                    _frame, conf=self.conf, imgsz=1280, verbose=False)
+                    _frame, conf=self.conf, imgsz=640, verbose=False)
                 for _r in _results:
                     if len(_r.boxes) > 0:
                         return _r.boxes[0]
