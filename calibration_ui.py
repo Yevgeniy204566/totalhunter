@@ -96,7 +96,12 @@ def calibrate_one_point(
     def _refresh():
         if not running[0]:
             return
-        x, y = cur_x.get(), cur_y.get()
+        # Schedule next refresh FIRST — loop survives any exception below
+        win.after(REFRESH_MS, _refresh)
+        try:
+            x, y = cur_x.get(), cur_y.get()
+        except Exception:
+            return
         canvas.delete("all")
         try:
             img   = _grab_region_live(x, y)
@@ -107,13 +112,17 @@ def calibrate_one_point(
             canvas.create_text(CANVAS_W // 2, CANVAS_H // 2,
                                text=f"Ошибка захвата:\n{e}",
                                fill="red", font=("Arial", 10), justify="center")
-        # Overlay current coordinates for visibility
-        canvas.create_text(4, 4, anchor="nw",
-                           text=f"X={x}  Y={y}",
-                           fill="yellow", font=("Arial", 9, "bold"))
+        try:
+            canvas.create_text(4, 4, anchor="nw",
+                               text=f"X={x}  Y={y}",
+                               fill="yellow", font=("Arial", 9, "bold"))
+        except Exception:
+            pass
         # Move red dot on real screen
-        _update_dot()
-        win.after(REFRESH_MS, _refresh)
+        try:
+            _update_dot()
+        except Exception:
+            pass
 
     def _update_dot():
         if red_dot[0]:
@@ -182,6 +191,9 @@ def calibrate_one_point(
     tk.Button(btn_frame, text="Отмена", font=("Arial", 11),
               command=on_cancel).pack(side="left", padx=8)
 
+    # Ensure window has focus so canvas receives click events
+    win.lift()
+    win.focus_force()
     # Start live refresh
     win.after(50, _refresh)
     win.wait_window()

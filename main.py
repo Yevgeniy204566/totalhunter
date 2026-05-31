@@ -3723,7 +3723,7 @@ class TotalHunterApp(ctk.CTk):
 
         def _calibrate():
             from calibration_ui import run_calibration
-            self.withdraw()
+            self.iconify()  # minimize (not withdraw) — withdraw breaks child Toplevels
             try:
                 point_a, point_b = run_calibration(parent=self)
             finally:
