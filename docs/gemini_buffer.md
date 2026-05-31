@@ -1,5 +1,31 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-05-31 (Kyiv) — Хангоф #76: scale_ui_coord + фикс калибровки v1.5.11
+> Последнее обновление: 2026-05-31 22:30 (Kyiv) — Хангоф #77: фикс калибровки v1.5.12
+
+---
+
+## 🔧 ХАНГОФ #77 — Фикс калибровки v1.5.12
+> Дата: 2026-05-31 22:30 Kyiv | Версия: **1.5.12** (задеплоено ✅)
+
+### Что сделано
+
+**calibration_ui.py + main.py — фикс окна калибровки:**
+- Root cause: `_update_dot()` стоял до `win.after()` без try/except → при withdrawn-родителе падал → цикл `_refresh` прерывался → лупа замирала → клик ничего не делал
+- `win.after(REFRESH_MS, _refresh)` перенесён В НАЧАЛО функции
+- `_update_dot()` и canvas-операции обёрнуты в try/except
+- `win.lift()` + `win.focus_force()` перед `win.wait_window()`
+- `_calibrate()` в main.py: `self.withdraw()` → `self.iconify()` (withdraw ломает дочерние Toplevel)
+
+### Релиз
+- GitHub Release v1.5.12: https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.5.12
+- ZIP: 354 MB, плоский ✅, TotalHunter.exe в корне
+- Сервер `/version/latest` → `1.5.12` ✅
+
+### Антипаттерн добавлен
+- ANTI-PATTERNS.md: `⛔ self.withdraw() В _calibrate() — ЛОМАЕТ ДОЧЕРНИЕ TOPLEVEL`
+
+### Следующие задачи
+- Проверить что калибровка работает у клиента (ждём обратную связь)
+- Живой тест Системы РОЙ (ивент Торговые Пути, следующий цикл)
 
 ---
 

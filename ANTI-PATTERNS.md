@@ -2,7 +2,7 @@
 
 > Не тратить время повторно на эти решения.
 > Обновляется командой **«Хангоф»**.
-> Последнее обновление: 2026-05-31 (Хангоф #76 — scale_ui_coord, YOLO full-screen golden rule)
+> Последнее обновление: 2026-05-31 (Хангоф #77 — calibration window fix)
 
 ---
 
@@ -24,6 +24,19 @@ screen  = np.array(sct.grab(monitor))
 frame   = cv2.cvtColor(screen, cv2.COLOR_BGRA2BGR)
 results = self.yolo_model.predict(frame, conf=self.conf, imgsz=1280, verbose=False)
 ```
+
+---
+
+## ⛔ `self.withdraw()` В `_calibrate()` — ЛОМАЕТ ДОЧЕРНИЕ TOPLEVEL (Хангоф #77)
+
+**Что было:** `_calibrate()` вызывал `self.withdraw()` перед открытием calibration_ui. Внутри calibration_ui создаётся `tk.Toplevel(root)` (красная точка через `_show_red_dot`). С withdrawn-родителем этот Toplevel мог падать → `_update_dot()` кидал исключение → `_refresh()` не успевал вызвать `win.after(REFRESH_MS, _refresh)` → цикл обновлений обрывался → лупа замирала → клик "ничего не делал".
+**Симптом:** В окне калибровки кликаешь по лупе — точка не двигается, ничего не происходит.
+**Решение:**
+1. `self.iconify()` вместо `self.withdraw()` — минимизирует, но не убивает WM-иерархию
+2. В `_refresh()`: `win.after(REFRESH_MS, _refresh)` ПЕРВЫМ ДЕЛОМ, до любой работы
+3. `_update_dot()` и canvas-операции — в try/except
+4. `win.focus_force()` + `win.lift()` перед `win.wait_window()`
+**Правило:** Никогда не вызывать `parent.withdraw()` перед созданием дочерних Toplevel. Использовать `iconify()`. В refresh-циклах через `after()` — следующий `after()` всегда первым.
 
 ---
 

@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-31 **v1.5.11** — scale_ui_coord для UI-кнопок, Ghost YOLO cap, DPI-диагностика, фикс центра экрана в crypt_hunter. Выпущен ✅
+> Последнее обновление: 2026-05-31 **v1.5.12** — фикс калибровки: клик в лупе теперь работает. Выпущен ✅
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -28,7 +28,8 @@
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.9**. Ghost YOLO ✅. Backtrack wait: 0.3s→move_wait ✅. Smart-column ROI браузер (600×200) ✅. Ивент gate (144ч цикл) ✅. Пул MM:SS countdown ✅. 28+ тестов ✅. | 2026-05-27 |
-| **CryptHunter** | crypt_hunter.py | ✅ **v1.5.11:** `scale_ui_coord()` — 8 UI-кнопок отвязаны от coord_manager. `960,540` → `pyautogui.size()//2`. Работает на любом разрешении при fullscreen. | 2026-05-31 |
+| **CryptHunter** | crypt_hunter.py | ✅ **v1.5.12:** `scale_ui_coord()` — 8 UI-кнопок отвязаны от coord_manager. `960,540` → `pyautogui.size()//2`. Работает на любом разрешении при fullscreen. | 2026-05-31 |
+| **Калибровка** | calibration_ui.py + main.py | ✅ **v1.5.12:** клик в лупе работает. `win.after` перенесён в начало `_refresh`, `_update_dot` в try/except, `win.focus_force()`, `iconify()` вместо `withdraw()`. | 2026-05-31 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
 | **Auto-update** | updater.py | ✅ v1.4.1. ZIP плоский (exe в корне). xcopy `extract_dir\*`. Петля устранена. | 2026-05-20 |
@@ -306,6 +307,18 @@
 - **Фикс Google Search Console «Вариант страницы с тегом canonical»:** `useMeta.js` теперь динамически обновляет `<link rel="canonical">` при каждом переходе. Раньше все страницы отдавали статичный canonical главной из index.html → Google считал их дублями.
 - **Удалена вся реклама с сайта:** AdSlot.jsx удалён, мета-теги Coinzilla/BitMedia убраны. Монетизация реклмой отложена до 500+ DAU.
 - **Стратегия рекламы записана в MEMORY** (project_ads_strategy.md): два пути — баннеры и rewarded video рулетка (Lootably S2S).
+
+---
+
+## ✅ v1.5.12 — ВЫПУЩЕН (2026-05-31) ← ТЕКУЩИЙ
+
+### Что нового в v1.5.12:
+1. **Фикс калибровки** — клик в лупе теперь двигает точку. Root cause: `_update_dot()` в `_refresh()` стоял ДО `win.after(...)` без try/except → при withdrawn-родителе падал → цикл обновлений обрывался навсегда
+2. **`win.after(REFRESH_MS, _refresh)` теперь первый** — цикл переживает любое исключение внутри
+3. **`win.focus_force()` + `win.lift()`** — окно гарантированно получает фокус
+4. **`iconify()` вместо `withdraw()`** в `_calibrate()` — minimiz не ломает дочерние Toplevel
+
+**Инструкция клиенту:** Скачайте v1.5.12. Нажмите КАЛИБРОВАТЬ → кликайте в лупе → Зафиксировать → СОХРАНИТЬ.
 
 ---
 
