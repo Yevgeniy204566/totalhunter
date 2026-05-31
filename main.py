@@ -3719,7 +3719,6 @@ class TotalHunterApp(ctk.CTk):
                 return
 
             coord_manager.calibrate(point_a, point_b)
-            _save_profile()
             _update_status()
 
         def _calibrate():
@@ -3731,7 +3730,6 @@ class TotalHunterApp(ctk.CTk):
                 self.deiconify()
             if point_a and point_b:
                 coord_manager.calibrate(point_a, point_b)
-                _save_profile()
                 _update_status()
 
         def _save_profile():
