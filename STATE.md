@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-31 **v1.5.11** — авто-сохранение калибровки, DPI-диагностика, фикс хардкода центра экрана в crypt_hunter.
+> Последнее обновление: 2026-05-31 **v1.5.11** — scale_ui_coord для UI-кнопок, Ghost YOLO cap, DPI-диагностика, фикс центра экрана в crypt_hunter. Выпущен ✅
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -28,7 +28,7 @@
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.9**. Ghost YOLO ✅. Backtrack wait: 0.3s→move_wait ✅. Smart-column ROI браузер (600×200) ✅. Ивент gate (144ч цикл) ✅. Пул MM:SS countdown ✅. 28+ тестов ✅. | 2026-05-27 |
-| **CryptHunter** | crypt_hunter.py | ✅ **v1.5.11:** хардкод `960,540` (центр экрана) заменён на `pyautogui.size()//2`. Теперь правильно выбирает ближайший склеп на любом разрешении. | 2026-05-31 |
+| **CryptHunter** | crypt_hunter.py | ✅ **v1.5.11:** `scale_ui_coord()` — 8 UI-кнопок отвязаны от coord_manager. `960,540` → `pyautogui.size()//2`. Работает на любом разрешении при fullscreen. | 2026-05-31 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
 | **Auto-update** | updater.py | ✅ v1.4.1. ZIP плоский (exe в корне). xcopy `extract_dir\*`. Петля устранена. | 2026-05-20 |
@@ -309,7 +309,7 @@
 
 ---
 
-## ✅ v1.5.11 — В СБОРКЕ (2026-05-31)
+## ✅ v1.5.11 — ВЫПУЩЕН (2026-05-31)
 
 ### Что нового в v1.5.11:
 1. **scale_ui_coord()** — новая функция пропорционального масштабирования UI (не карта). Все статичные кнопки меню (WT_ICON, WT_CRYPTS_TAB, WT_ARENA_TAB, WT_SCROLL_AREA, WT_GOTO_BTN_X, CARTER_EVENT_BAR, ACCEL_USE_BTN) отвязаны от coord_manager и масштабируются пропорционально разрешению экрана.
