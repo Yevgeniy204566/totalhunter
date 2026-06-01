@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-05-31 **v1.5.12** — фикс калибровки: клик в лупе теперь работает. Выпущен ✅
+> Последнее обновление: 2026-06-01 **v1.6.0** — scroll_clicks (1–200) для Chrome/Client, D-Pad тюнинг, дальность марша от 1 мин, кнопка Автокалибровка убрана
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -28,7 +28,8 @@
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.9**. Ghost YOLO ✅. Backtrack wait: 0.3s→move_wait ✅. Smart-column ROI браузер (600×200) ✅. Ивент gate (144ч цикл) ✅. Пул MM:SS countdown ✅. 28+ тестов ✅. | 2026-05-27 |
-| **CryptHunter** | crypt_hunter.py | ✅ **v1.5.12:** `scale_ui_coord()` — 8 UI-кнопок отвязаны от coord_manager. `960,540` → `pyautogui.size()//2`. Работает на любом разрешении при fullscreen. | 2026-05-31 |
+| **CryptHunter** | crypt_hunter.py | ✅ **v1.6.0:** `scroll_clicks` — настраиваемые тики скролла (1–200). Chrome=100+, Client=3. GUI слайдер в СКЛЕПЫ, сохранение в профиль. Дальность марша от 1 мин. | 2026-06-01 |
+| **Тюнинг кликов (D-Pad)** | coord_manager.py + main.py + crypt_hunter.py | ✅ Новая система: `ui_offsets` (wt_icon/carter/top_accel/march_accel), D-Pad в КАЛИБРОВКА, шаг 1/5px, сохранение в профиль, 17 тестов. Автокалибровка кнопка убрана. | 2026-06-01 |
 | **Калибровка** | calibration_ui.py + main.py | ✅ **v1.5.12:** клик в лупе работает. `win.after` перенесён в начало `_refresh`, `_update_dot` в try/except, `win.focus_force()`, `iconify()` вместо `withdraw()`. | 2026-05-31 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |

@@ -466,7 +466,9 @@ class CryptHunter:
 
     def _open_watchtower(self):
         """Открыть меню Дозорной башни."""
-        self._click(*scale_ui_coord(*WT_ICON), jitter=5, raw=True)
+        bx, by = scale_ui_coord(*WT_ICON)
+        ox, oy = _cm.get_ui_offset("wt_icon") if _VISUAL_NAV_AVAILABLE else (0, 0)
+        self._click(bx + ox, by + oy, jitter=5, raw=True)
         self._random_pause()
 
     def _select_crypts_tab(self):
@@ -488,14 +490,14 @@ class CryptHunter:
     def _pre_skip(self):
         """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций)."""
         self._status("Пропускаю склеп (3 скролла вниз)...")
-        _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
-        pyautogui.moveTo(_sx, _sy,
+        pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
                          duration=random.uniform(0.3, 0.5))
         self._interruptible_sleep(0.3)
+        _sc = _cm.scroll_clicks if _VISUAL_NAV_AVAILABLE else 3
         for _ in range(3):
-            pyautogui.scroll(-3); time.sleep(0.05)
-            pyautogui.scroll(-3); time.sleep(0.05)
-            pyautogui.scroll(-3)
+            pyautogui.scroll(-_sc); time.sleep(0.05)
+            pyautogui.scroll(-_sc); time.sleep(0.05)
+            pyautogui.scroll(-_sc)
             self._interruptible_sleep(0.25)
         self._detect_fail_streak = 0
 
@@ -514,8 +516,7 @@ class CryptHunter:
         """
         # self._status("Ищу склеп в меню...")
         # Переводим мышь в зону списка — туда куда будет идти скролл
-        _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
-        pyautogui.moveTo(_sx, _sy,
+        pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
                          duration=random.uniform(0.3, 0.5))
         self._random_pause(0.3, 0.5)
 
@@ -609,7 +610,8 @@ class CryptHunter:
                     self._random_pause(0.8, 1.5)
                     return gui_name
 
-            pyautogui.scroll(-3); time.sleep(0.05); pyautogui.scroll(-3); time.sleep(0.05); pyautogui.scroll(-3)
+            _sc = _cm.scroll_clicks if _VISUAL_NAV_AVAILABLE else 3
+            pyautogui.scroll(-_sc); time.sleep(0.05); pyautogui.scroll(-_sc); time.sleep(0.05); pyautogui.scroll(-_sc)
             if max_scrolls > 0 and scroll_idx >= max_scrolls:
                 return None
 
@@ -681,7 +683,8 @@ class CryptHunter:
             return False
 
         sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
-        self._click(sc[0], sc[1] + self._swing1, jitter=2, raw=True)
+        ox, oy = _cm.get_ui_offset("carter") if _VISUAL_NAV_AVAILABLE else (0, 0)
+        self._click(sc[0] + ox, sc[1] + oy, jitter=2, raw=True)
         self._interruptible_sleep(1.5)
         if self.oil_check_enabled and self._check_oil_dialog():
             self._emergency_stop("OIL_LOW: масло закончилось")
@@ -699,13 +702,14 @@ class CryptHunter:
         """
         # self._status("Кликаю по полосе Картера...")
         self._random_pause(1.5, 2.0)
+        ox, oy = _cm.get_ui_offset("top_accel") if _VISUAL_NAV_AVAILABLE else (0, 0)
         pos = self._find_button(
                 ref_region=(900, 85, 500, 60),
                 color='purple', pick='largest',
                 fallback=scale_ui_coord(*CARTER_EVENT_BAR),
             )
-        cx = pos[0] + random.randint(-6, 6)  # jitter только по X (полоса узкая)
-        self._click(cx, pos[1], jitter=0, raw=True)
+        cx = pos[0] + ox + random.randint(-6, 6)  # jitter только по X (полоса узкая)
+        self._click(cx, pos[1] + oy, jitter=0, raw=True)
         self._interruptible_sleep(1.1)
         return True
 
@@ -714,7 +718,8 @@ class CryptHunter:
         if applied == 0:
             return
         sc_use = scale_ui_coord(*ACCEL_USE_BTN)
-        use_x, use_y = sc_use[0], sc_use[1] + self._swing2
+        ox, oy = _cm.get_ui_offset("march_accel") if _VISUAL_NAV_AVAILABLE else (0, 0)
+        use_x, use_y = sc_use[0] + ox, sc_use[1] + oy
         for i in range(applied):
             if not self.is_running:
                 return
@@ -852,7 +857,8 @@ class CryptHunter:
             pass
             # self._status("Редкий склеп — нажимаю «Открыть»")
             sc_open = scale_dialog(*CRYPT_OPEN_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_OPEN_BTN
-            self._click(sc_open[0], sc_open[1] + self._swing1, jitter=2, raw=True)
+            ox, oy = _cm.get_ui_offset("carter") if _VISUAL_NAV_AVAILABLE else (0, 0)
+            self._click(sc_open[0] + ox, sc_open[1] + oy, jitter=2, raw=True)
             time.sleep(0.4)
             pyautogui.moveTo(sc_open[0], sc_open[1] - random.randint(450, 550))
 

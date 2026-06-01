@@ -153,7 +153,7 @@ LANGS = {
         "crypt_icons_title": "Выберите типы склепов:",
         "crypt_conf_lb": "Точность поиска", "crypt_accel_lb": "Ускорение марша (0–5)",
         "crypt_break_lb": "Перерыв между склепами", "crypt_march_lb": "Дальность марша Картера",
-        "crypt_scroll_lb": "Частота YOLO-детекции", "crypt_profile_lb": "Профиль:",
+        "crypt_scroll_lb": "Частота YOLO-детекции", "scroll_clicks_lb": "Тики скролла", "crypt_profile_lb": "Профиль:",
         "crypt_swing1_lb": "Swing 1 — Исследовать ↑↓:", "crypt_swing2_lb": "Swing 2 — Ускорение ↑↓:",
         "crypt_speed_lb": "Скорость кликов",
         "crypt_save_btn": "💾  Сохранить настройки",
@@ -214,7 +214,7 @@ LANGS = {
         "crypt_icons_title": "Select crypt types:",
         "crypt_conf_lb": "Detection accuracy", "crypt_accel_lb": "March acceleration (0–5)",
         "crypt_break_lb": "Break between crypts", "crypt_march_lb": "Carter march distance",
-        "crypt_scroll_lb": "YOLO detection rate", "crypt_profile_lb": "Profile:",
+        "crypt_scroll_lb": "YOLO detection rate", "scroll_clicks_lb": "Scroll ticks", "crypt_profile_lb": "Profile:",
         "crypt_swing1_lb": "Swing 1 — Study ↑↓:", "crypt_swing2_lb": "Swing 2 — Speed up ↑↓:",
         "crypt_speed_lb": "Click speed",
         "crypt_save_btn": "💾  Save settings",
@@ -269,7 +269,7 @@ LANGS = {
         "crypt_icons_title": "Krypttypen auswählen:",
         "crypt_conf_lb": "Erkennungsgenauigkeit", "crypt_accel_lb": "Marchbeschl. (0–5)",
         "crypt_break_lb": "Pause zwischen Krypten", "crypt_march_lb": "Carter-Marchdistanz",
-        "crypt_scroll_lb": "YOLO-Erkennungsrate", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO-Erkennungsrate", "scroll_clicks_lb": "Scroll-Ticks", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Erkunden ↑↓:", "crypt_swing2_lb": "Swing 2 — Beschl. ↑↓:",
         "crypt_speed_lb": "Klickgeschwindigkeit", "crypt_save_btn": "💾  Einstellungen speichern",
         "crypt_start": "KRYPTJAGD STARTEN", "crypt_stop_btn": "STOPP",
@@ -316,7 +316,7 @@ LANGS = {
         "crypt_icons_title": "Seleccionar tipos de cripta:",
         "crypt_conf_lb": "Precisión de detección", "crypt_accel_lb": "Aceleración de marcha (0–5)",
         "crypt_break_lb": "Pausa entre criptas", "crypt_march_lb": "Distancia de marcha Carter",
-        "crypt_scroll_lb": "Tasa de detección YOLO", "crypt_profile_lb": "Perfil:",
+        "crypt_scroll_lb": "Tasa de detección YOLO", "scroll_clicks_lb": "Ticks desplazamiento", "crypt_profile_lb": "Perfil:",
         "crypt_swing1_lb": "Swing 1 — Explorar ↑↓:", "crypt_swing2_lb": "Swing 2 — Acelerar ↑↓:",
         "crypt_speed_lb": "Velocidad de clic", "crypt_save_btn": "💾  Guardar ajustes",
         "crypt_start": "INICIAR CAZA DE CRIPTAS", "crypt_stop_btn": "DETENER",
@@ -363,7 +363,7 @@ LANGS = {
         "crypt_icons_title": "Sélectionner types de crypte :",
         "crypt_conf_lb": "Précision de détection", "crypt_accel_lb": "Accél. de marche (0–5)",
         "crypt_break_lb": "Pause entre cryptes", "crypt_march_lb": "Distance de marche Carter",
-        "crypt_scroll_lb": "Taux détection YOLO", "crypt_profile_lb": "Profil :",
+        "crypt_scroll_lb": "Taux détection YOLO", "scroll_clicks_lb": "Ticks défilement", "crypt_profile_lb": "Profil :",
         "crypt_swing1_lb": "Swing 1 — Explorer ↑↓ :", "crypt_swing2_lb": "Swing 2 — Accél. ↑↓ :",
         "crypt_speed_lb": "Vitesse de clic", "crypt_save_btn": "💾  Sauvegarder",
         "crypt_start": "DÉMARRER LA CHASSE AUX CRYPTES", "crypt_stop_btn": "ARRÊTER",
@@ -410,7 +410,7 @@ LANGS = {
         "crypt_icons_title": "Seleziona tipi di cripta:",
         "crypt_conf_lb": "Precisione rilevamento", "crypt_accel_lb": "Accelerazione marcia (0–5)",
         "crypt_break_lb": "Pausa tra cripte", "crypt_march_lb": "Distanza marcia Carter",
-        "crypt_scroll_lb": "Frequenza rilevamento YOLO", "crypt_profile_lb": "Profilo:",
+        "crypt_scroll_lb": "Frequenza rilevamento YOLO", "scroll_clicks_lb": "Tick scorrimento", "crypt_profile_lb": "Profilo:",
         "crypt_swing1_lb": "Swing 1 — Esplora ↑↓:", "crypt_swing2_lb": "Swing 2 — Accel. ↑↓:",
         "crypt_speed_lb": "Velocità clic", "crypt_save_btn": "💾  Salva impostazioni",
         "crypt_start": "AVVIA CACCIA CRIPTE", "crypt_stop_btn": "FERMA",
@@ -457,7 +457,7 @@ LANGS = {
         "crypt_icons_title": "Selecteer crypttypen:",
         "crypt_conf_lb": "Detectienauwkeurigheid", "crypt_accel_lb": "Marsbescherming (0–5)",
         "crypt_break_lb": "Pauze tussen crypten", "crypt_march_lb": "Carter-marsafstand",
-        "crypt_scroll_lb": "YOLO-detectiesnelheid", "crypt_profile_lb": "Profiel:",
+        "crypt_scroll_lb": "YOLO-detectiesnelheid", "scroll_clicks_lb": "Scroll-ticks", "crypt_profile_lb": "Profiel:",
         "crypt_swing1_lb": "Swing 1 — Verkennen ↑↓:", "crypt_swing2_lb": "Swing 2 — Versnellen ↑↓:",
         "crypt_speed_lb": "Kliksnelheid", "crypt_save_btn": "💾  Instellingen opslaan",
         "crypt_start": "CRYPTJACHT STARTEN", "crypt_stop_btn": "STOPPEN",
@@ -504,7 +504,7 @@ LANGS = {
         "crypt_icons_title": "Velg krypttyper:",
         "crypt_conf_lb": "Deteksjonsnøyaktighet", "crypt_accel_lb": "Marsjacc. (0–5)",
         "crypt_break_lb": "Pause mellom krypter", "crypt_march_lb": "Carter marsjavstand",
-        "crypt_scroll_lb": "YOLO-deteksjonsrate", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO-deteksjonsrate", "scroll_clicks_lb": "Rulletaster", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Utforsk ↑↓:", "crypt_swing2_lb": "Swing 2 — Accel. ↑↓:",
         "crypt_speed_lb": "Klikkhastighet", "crypt_save_btn": "💾  Lagre innstillinger",
         "crypt_start": "START KRYPTJAKT", "crypt_stop_btn": "STOPP",
@@ -551,7 +551,7 @@ LANGS = {
         "crypt_icons_title": "Wybierz typy krypt:",
         "crypt_conf_lb": "Dokładność wykrywania", "crypt_accel_lb": "Przyspieszenie marszu (0–5)",
         "crypt_break_lb": "Przerwa między kryptami", "crypt_march_lb": "Dystans marszu Carter",
-        "crypt_scroll_lb": "Częstotliwość YOLO", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "Częstotliwość YOLO", "scroll_clicks_lb": "Tiki przewijania", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Eksploruj ↑↓:", "crypt_swing2_lb": "Swing 2 — Przyspiesz ↑↓:",
         "crypt_speed_lb": "Prędkość klikania", "crypt_save_btn": "💾  Zapisz ustawienia",
         "crypt_start": "ROZPOCZNIJ POLOWANIE NA KRYPTY", "crypt_stop_btn": "ZATRZYMAJ",
@@ -598,7 +598,7 @@ LANGS = {
         "crypt_icons_title": "Selecionar tipos de cripta:",
         "crypt_conf_lb": "Precisão de detecção", "crypt_accel_lb": "Aceleração de marcha (0–5)",
         "crypt_break_lb": "Pausa entre criptas", "crypt_march_lb": "Distância de marcha Carter",
-        "crypt_scroll_lb": "Taxa de detecção YOLO", "crypt_profile_lb": "Perfil:",
+        "crypt_scroll_lb": "Taxa de detecção YOLO", "scroll_clicks_lb": "Ticks de rolagem", "crypt_profile_lb": "Perfil:",
         "crypt_swing1_lb": "Swing 1 — Explorar ↑↓:", "crypt_swing2_lb": "Swing 2 — Acelerar ↑↓:",
         "crypt_speed_lb": "Velocidade de clique", "crypt_save_btn": "💾  Salvar configurações",
         "crypt_start": "INICIAR CAÇA DE CRIPTAS", "crypt_stop_btn": "PARAR",
@@ -645,7 +645,7 @@ LANGS = {
         "crypt_icons_title": "Välj krypttyper:",
         "crypt_conf_lb": "Detektionsnoggrannhet", "crypt_accel_lb": "Marschaccel. (0–5)",
         "crypt_break_lb": "Paus mellan kryptor", "crypt_march_lb": "Carter marsjavstånd",
-        "crypt_scroll_lb": "YOLO-detektionsfrekvens", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO-detektionsfrekvens", "scroll_clicks_lb": "Bläddra ticks", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Utforska ↑↓:", "crypt_swing2_lb": "Swing 2 — Accel. ↑↓:",
         "crypt_speed_lb": "Klickhastighet", "crypt_save_btn": "💾  Spara inställningar",
         "crypt_start": "STARTA KRYPTJAKT", "crypt_stop_btn": "STOPP",
@@ -692,7 +692,7 @@ LANGS = {
         "crypt_icons_title": "Kripta türlerini seçin:",
         "crypt_conf_lb": "Algılama hassasiyeti", "crypt_accel_lb": "Yürüyüş ivmesi (0–5)",
         "crypt_break_lb": "Kriptalar arası mola", "crypt_march_lb": "Carter yürüyüş mesafesi",
-        "crypt_scroll_lb": "YOLO algılama hızı", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO algılama hızı", "scroll_clicks_lb": "Kaydırma adımları", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Keşfet ↑↓:", "crypt_swing2_lb": "Swing 2 — Hızlan ↑↓:",
         "crypt_speed_lb": "Tıklama hızı", "crypt_save_btn": "💾  Ayarları kaydet",
         "crypt_start": "KRİPTA AVINI BAŞLAT", "crypt_stop_btn": "DURDUR",
@@ -739,7 +739,7 @@ LANGS = {
         "crypt_icons_title": "اختر أنواع المقابر:",
         "crypt_conf_lb": "دقة الكشف", "crypt_accel_lb": "تسارع المسير (0–5)",
         "crypt_break_lb": "استراحة بين المقابر", "crypt_march_lb": "مسافة مسير كارتر",
-        "crypt_scroll_lb": "معدل كشف YOLO", "crypt_profile_lb": "الملف الشخصي:",
+        "crypt_scroll_lb": "معدل كشف YOLO", "scroll_clicks_lb": "نقرات التمرير", "crypt_profile_lb": "الملف الشخصي:",
         "crypt_swing1_lb": "Swing 1 — استكشاف ↑↓:", "crypt_swing2_lb": "Swing 2 — تسريع ↑↓:",
         "crypt_speed_lb": "سرعة النقر", "crypt_save_btn": "💾  حفظ الإعدادات",
         "crypt_start": "ابدأ صيد المقابر", "crypt_stop_btn": "إيقاف",
@@ -786,7 +786,7 @@ LANGS = {
         "crypt_icons_title": "クリプトタイプを選択:",
         "crypt_conf_lb": "検出精度", "crypt_accel_lb": "進軍加速 (0–5)",
         "crypt_break_lb": "クリプト間の休憩", "crypt_march_lb": "カーター進軍距離",
-        "crypt_scroll_lb": "YOLO検出レート", "crypt_profile_lb": "プロファイル:",
+        "crypt_scroll_lb": "YOLO検出レート", "scroll_clicks_lb": "スクロールティック", "crypt_profile_lb": "プロファイル:",
         "crypt_swing1_lb": "Swing 1 — 探索 ↑↓:", "crypt_swing2_lb": "Swing 2 — 加速 ↑↓:",
         "crypt_speed_lb": "クリック速度", "crypt_save_btn": "💾  設定を保存",
         "crypt_start": "クリプトハントを開始", "crypt_stop_btn": "停止",
@@ -833,7 +833,7 @@ LANGS = {
         "crypt_icons_title": "选择地下墓穴类型:",
         "crypt_conf_lb": "检测精度", "crypt_accel_lb": "行军加速 (0–5)",
         "crypt_break_lb": "墓穴间休息", "crypt_march_lb": "卡特行军距离",
-        "crypt_scroll_lb": "YOLO检测率", "crypt_profile_lb": "配置文件:",
+        "crypt_scroll_lb": "YOLO检测率", "scroll_clicks_lb": "滚动点击数", "crypt_profile_lb": "配置文件:",
         "crypt_swing1_lb": "Swing 1 — 探索 ↑↓:", "crypt_swing2_lb": "Swing 2 — 加速 ↑↓:",
         "crypt_speed_lb": "点击速度", "crypt_save_btn": "💾  保存设置",
         "crypt_start": "开始墓穴狩猎", "crypt_stop_btn": "停止",
@@ -880,7 +880,7 @@ LANGS = {
         "crypt_icons_title": "選擇地下墓穴類型:",
         "crypt_conf_lb": "偵測精度", "crypt_accel_lb": "行軍加速 (0–5)",
         "crypt_break_lb": "墓穴間休息", "crypt_march_lb": "卡特行軍距離",
-        "crypt_scroll_lb": "YOLO偵測率", "crypt_profile_lb": "設定檔:",
+        "crypt_scroll_lb": "YOLO偵測率", "scroll_clicks_lb": "捲動點擊數", "crypt_profile_lb": "設定檔:",
         "crypt_swing1_lb": "Swing 1 — 探索 ↑↓:", "crypt_swing2_lb": "Swing 2 — 加速 ↑↓:",
         "crypt_speed_lb": "點擊速度", "crypt_save_btn": "💾  儲存設定",
         "crypt_start": "開始墓穴狩獵", "crypt_stop_btn": "停止",
@@ -927,7 +927,7 @@ LANGS = {
         "crypt_icons_title": "크립트 유형 선택:",
         "crypt_conf_lb": "감지 정확도", "crypt_accel_lb": "행군 가속 (0–5)",
         "crypt_break_lb": "크립트 사이 휴식", "crypt_march_lb": "카터 행군 거리",
-        "crypt_scroll_lb": "YOLO 감지 속도", "crypt_profile_lb": "프로파일:",
+        "crypt_scroll_lb": "YOLO 감지 속도", "scroll_clicks_lb": "스크롤 틱", "crypt_profile_lb": "프로파일:",
         "crypt_swing1_lb": "Swing 1 — 탐색 ↑↓:", "crypt_swing2_lb": "Swing 2 — 가속 ↑↓:",
         "crypt_speed_lb": "클릭 속도", "crypt_save_btn": "💾  설정 저장",
         "crypt_start": "크립트 사냥 시작", "crypt_stop_btn": "정지",
@@ -974,7 +974,7 @@ LANGS = {
         "crypt_icons_title": "Виберіть типи склепів:",
         "crypt_conf_lb": "Точність пошуку", "crypt_accel_lb": "Прискорення маршу (0–5)",
         "crypt_break_lb": "Перерва між склепами", "crypt_march_lb": "Дальність маршу Картера",
-        "crypt_scroll_lb": "Частота YOLO-детекції", "crypt_profile_lb": "Профіль:",
+        "crypt_scroll_lb": "Частота YOLO-детекції", "scroll_clicks_lb": "Тіки прокрутки", "crypt_profile_lb": "Профіль:",
         "crypt_swing1_lb": "Swing 1 — Дослідити ↑↓:", "crypt_swing2_lb": "Swing 2 — Прискорення ↑↓:",
         "crypt_speed_lb": "Швидкість кліків", "crypt_save_btn": "💾  Зберегти налаштування",
         "crypt_start": "ЗАПУСТИТИ ЗБІР СКЛЕПІВ", "crypt_stop_btn": "ЗУПИНИТИ",
@@ -1021,7 +1021,7 @@ LANGS = {
         "crypt_icons_title": "Pilih jenis kripta:",
         "crypt_conf_lb": "Akurasi deteksi", "crypt_accel_lb": "Percepatan mars (0–5)",
         "crypt_break_lb": "Jeda antar kripta", "crypt_march_lb": "Jarak mars Carter",
-        "crypt_scroll_lb": "Laju deteksi YOLO", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "Laju deteksi YOLO", "scroll_clicks_lb": "Tik gulir", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Jelajahi ↑↓:", "crypt_swing2_lb": "Swing 2 — Percepat ↑↓:",
         "crypt_speed_lb": "Kecepatan klik", "crypt_save_btn": "💾  Simpan pengaturan",
         "crypt_start": "MULAI PERBURUAN KRIPTA", "crypt_stop_btn": "BERHENTI",
@@ -1935,7 +1935,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ─── Настройки ───────────────────────────────────────
         settings_frame = ctk.CTkScrollableFrame(self.tab_crypt, fg_color=MD3["elevated"],
-                                                 corner_radius=12, height=220,
+                                                 corner_radius=12, height=165,
                                                  border_width=1,
                                                  border_color=MD3["outline"],
                                                  scrollbar_fg_color="transparent",
@@ -1991,7 +1991,7 @@ class TotalHunterApp(ctk.CTk):
 
         # Дальность марша Картера
         self.crypt_march_val = _slider_row("crypt_march_lb", "15 мин", highlight=True)
-        self.crypt_march_slider = ctk.CTkSlider(settings_frame, from_=5, to=30,
+        self.crypt_march_slider = ctk.CTkSlider(settings_frame, from_=1, to=30,
                                                 command=self._update_crypt_labels,
                                                 button_color=MD3["primary"],
                                                 button_hover_color=MD3["primary_dim"],
@@ -2008,6 +2008,17 @@ class TotalHunterApp(ctk.CTk):
                                                  progress_color=MD3["primary"])
         self.crypt_scroll_slider.set(1.0)
         self.crypt_scroll_slider.pack(padx=10, pady=(2, 4), fill="x")
+
+        # Тики скролла (1–100, для Chrome ~50, для Клиента ~3)
+        self.scroll_clicks_val = _slider_row("scroll_clicks_lb", "3")
+        self.scroll_clicks_slider = ctk.CTkSlider(settings_frame, from_=1, to=200,
+                                                  number_of_steps=199,
+                                                  command=self._update_crypt_labels,
+                                                  button_color=MD3["primary"],
+                                                  button_hover_color=MD3["primary_dim"],
+                                                  progress_color=MD3["primary"])
+        self.scroll_clicks_slider.set(3)
+        self.scroll_clicks_slider.pack(padx=10, pady=(2, 4), fill="x")
 
         # Скорость кликов (−0.5 медленнее ←→ быстрее +0.5)
         self.crypt_speed_val = _slider_row("crypt_speed_lb", "0.0 с", highlight=True)
@@ -2036,50 +2047,6 @@ class TotalHunterApp(ctk.CTk):
                           button_hover_color=MD3["primary_dim"],
                           text_color=MD3["on_surface"],
                           corner_radius=6).pack(side="left", padx=(4, 6))
-        # ── Swing 1 — Исследовать ────────────────────────────────
-        swing1_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
-        swing1_row.pack(fill="x", padx=10, pady=(2, 0))
-        _swing1_lb = ctk.CTkLabel(swing1_row, text=LANGS[self.current_lang]["crypt_swing1_lb"],
-                                  font=ctk.CTkFont(size=13), text_color=MD3["on_surface2"])
-        _swing1_lb.pack(side="left")
-        self._i18n_labels.append((_swing1_lb, "crypt_swing1_lb"))
-        ctk.CTkButton(swing1_row, text="−", width=28, height=24,
-                      fg_color=MD3["card"], hover_color=MD3["elevated"],
-                      text_color=MD3["on_surface"], corner_radius=6,
-                      command=lambda: self._swing1_var.set(
-                          self._swing1_var.get() - 5)).pack(side="left", padx=(6, 0))
-        ctk.CTkEntry(swing1_row, textvariable=self._swing1_var,
-                     width=48, height=24, justify="center",
-                     fg_color=MD3["card"], border_color=MD3["outline"],
-                     text_color=MD3["on_surface"], corner_radius=6).pack(side="left", padx=2)
-        ctk.CTkButton(swing1_row, text="+", width=28, height=24,
-                      fg_color=MD3["card"], hover_color=MD3["elevated"],
-                      text_color=MD3["on_surface"], corner_radius=6,
-                      command=lambda: self._swing1_var.set(
-                          self._swing1_var.get() + 5)).pack(side="left")
-
-        # ── Swing 2 — Ускорение ──────────────────────────────────
-        swing2_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
-        swing2_row.pack(fill="x", padx=10, pady=(2, 0))
-        _swing2_lb = ctk.CTkLabel(swing2_row, text=LANGS[self.current_lang]["crypt_swing2_lb"],
-                                  font=ctk.CTkFont(size=13), text_color=MD3["on_surface2"])
-        _swing2_lb.pack(side="left")
-        self._i18n_labels.append((_swing2_lb, "crypt_swing2_lb"))
-        ctk.CTkButton(swing2_row, text="−", width=28, height=24,
-                      fg_color=MD3["card"], hover_color=MD3["elevated"],
-                      text_color=MD3["on_surface"], corner_radius=6,
-                      command=lambda: self._swing2_var.set(
-                          self._swing2_var.get() - 5)).pack(side="left", padx=(6, 0))
-        ctk.CTkEntry(swing2_row, textvariable=self._swing2_var,
-                     width=48, height=24, justify="center",
-                     fg_color=MD3["card"], border_color=MD3["outline"],
-                     text_color=MD3["on_surface"], corner_radius=6).pack(side="left", padx=2)
-        ctk.CTkButton(swing2_row, text="+", width=28, height=24,
-                      fg_color=MD3["card"], hover_color=MD3["elevated"],
-                      text_color=MD3["on_surface"], corner_radius=6,
-                      command=lambda: self._swing2_var.set(
-                          self._swing2_var.get() + 5)).pack(side="left")
-
         # Единая кнопка сохранения
         self.crypt_save_settings_btn = ctk.CTkButton(
                       settings_frame, text=LANGS[self.current_lang]["crypt_save_btn"],
@@ -2138,6 +2105,8 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_break_val.configure(text=f"{brk} {sec}")
         sc = round(self.crypt_scroll_slider.get(), 1)
         self.crypt_scroll_val.configure(text=f"{scan} {sc + 0.2:.1f} {sec}")
+        clicks = int(self.scroll_clicks_slider.get())
+        self.scroll_clicks_val.configure(text=str(clicks))
         spd = round(self.crypt_speed_slider.get(), 1)
         spd_text = f"+{spd} {sec}" if spd > 0 else f"{spd} {sec}"
         self.crypt_speed_val.configure(text=spd_text)
@@ -2330,6 +2299,9 @@ class TotalHunterApp(ctk.CTk):
             cfg['crypt_swing1']        = self._swing1_var.get()
             cfg['crypt_swing2']        = self._swing2_var.get()
             cfg['crypt_speed_delta']   = round(self.crypt_speed_slider.get(), 1)
+            sc_clicks = int(self.scroll_clicks_slider.get())
+            cfg['scroll_clicks']       = sc_clicks
+            coord_manager.scroll_clicks = sc_clicks
             # Настройки Бирж
             cfg['step']                = int(self.nav_step_slider.get())
             cfg['conf']                = round(self.conf_slider.get(), 2)
@@ -2371,10 +2343,18 @@ class TotalHunterApp(ctk.CTk):
                 self.crypt_march_slider.set(cfg['crypt_max_march_min'])
             if 'crypt_swing1' in cfg:
                 self._swing1_var.set(cfg['crypt_swing1'])
+                if coord_manager.get_ui_offset("carter") == (0, 0) and cfg['crypt_swing1'] != 0:
+                    coord_manager.set_ui_offset("carter", 0, cfg['crypt_swing1'])
             if 'crypt_swing2' in cfg:
                 self._swing2_var.set(cfg['crypt_swing2'])
+                if coord_manager.get_ui_offset("march_accel") == (0, 0) and cfg['crypt_swing2'] != 0:
+                    coord_manager.set_ui_offset("march_accel", 0, cfg['crypt_swing2'])
             if 'crypt_speed_delta' in cfg:
                 self.crypt_speed_slider.set(cfg['crypt_speed_delta'])
+            if 'scroll_clicks' in cfg:
+                sc_clicks = int(cfg['scroll_clicks'])
+                self.scroll_clicks_slider.set(sc_clicks)
+                coord_manager.scroll_clicks = sc_clicks
             self._update_crypt_labels()
             # Настройки Бирж
             if 'step' in cfg:
@@ -2440,8 +2420,12 @@ class TotalHunterApp(ctk.CTk):
                 self.crypt_march_slider.set(cfg['crypt_max_march_min'])
             if 'crypt_swing1' in cfg:
                 self._swing1_var.set(cfg['crypt_swing1'])
+                if coord_manager.get_ui_offset("carter") == (0, 0) and cfg['crypt_swing1'] != 0:
+                    coord_manager.set_ui_offset("carter", 0, cfg['crypt_swing1'])
             if 'crypt_swing2' in cfg:
                 self._swing2_var.set(cfg['crypt_swing2'])
+                if coord_manager.get_ui_offset("march_accel") == (0, 0) and cfg['crypt_swing2'] != 0:
+                    coord_manager.set_ui_offset("march_accel", 0, cfg['crypt_swing2'])
             self._update_crypt_labels()
         except Exception:
             pass
@@ -3677,6 +3661,7 @@ class TotalHunterApp(ctk.CTk):
             self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
             self._load_crypt_from_profile(path)
             _update_status()
+            _tune_refresh_display()
             self._save_gui_config_key("last_calibration_profile",
                                       self._cal_profile_var.get())
 
@@ -3742,19 +3727,6 @@ class TotalHunterApp(ctk.CTk):
                                       self._cal_profile_var.get())
             messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
 
-        self._cal_auto_btn = ctk.CTkButton(
-            self._cal_frame,
-            text=LANGS[self.current_lang]["cal_auto_btn"],
-            command=_auto_calibrate,
-            fg_color=MD3["blue_btn"],
-            hover_color=MD3["blue_hover"],
-            text_color=MD3["on_surface"],
-            height=40,
-            corner_radius=12,
-            font=ctk.CTkFont(size=14, weight="bold"),
-        )
-        self._cal_auto_btn.pack(fill="x", padx=40, pady=(8, 2))
-        self._i18n_labels.append((self._cal_auto_btn, "cal_auto_btn"))
 
         # ── Кнопка Калибровать — главная (error tonal) ───────────────────
         self._cal_manual_btn = ctk.CTkButton(
@@ -3789,6 +3761,101 @@ class TotalHunterApp(ctk.CTk):
         self._cal_load_btn.pack(side="left", expand=True, fill="x", padx=(4, 0))
         self._i18n_labels.append((self._cal_load_btn, "cal_load_btn"))
 
+        # ── Тюнинг кликов (D-Pad) ────────────────────────────────────────
+        _TUNE_NAMES = {
+            "wt_icon":     "Дозорная башня",
+            "carter":      "Отправка Картера",
+            "top_accel":   "Ускорить (Картер)",
+            "march_accel": "Использовать ускорение",
+        }
+        _TUNE_KEYS = {v: k for k, v in _TUNE_NAMES.items()}
+
+        tune_card = ctk.CTkFrame(self._cal_frame, fg_color=MD3["card"],
+                                  corner_radius=10, border_width=1,
+                                  border_color=MD3["outline"])
+        tune_card.pack(fill="x", padx=16, pady=(10, 4))
+
+        ctk.CTkLabel(tune_card, text="Тюнинг кликов",
+                     font=ctk.CTkFont(size=13, weight="bold"),
+                     text_color=MD3["primary"]).pack(pady=(8, 4))
+
+        self._ui_tune_btn_var = ctk.StringVar(value=_TUNE_NAMES["carter"])
+        ctk.CTkOptionMenu(
+            tune_card, values=list(_TUNE_NAMES.values()),
+            variable=self._ui_tune_btn_var,
+            fg_color=MD3["elevated"], button_color=MD3["primary"],
+            button_hover_color=MD3["primary_dim"],
+            text_color=MD3["on_surface"], corner_radius=8,
+            command=lambda _: _tune_refresh_display(),
+        ).pack(fill="x", padx=12, pady=(0, 4))
+
+        self._tune_display_lb = ctk.CTkLabel(
+            tune_card, text="X: +0px   Y: +0px",
+            font=ctk.CTkFont(size=13), text_color=MD3["on_surface"])
+        self._tune_display_lb.pack(pady=(0, 2))
+
+        def _tune_get_key():
+            return _TUNE_KEYS.get(self._ui_tune_btn_var.get(), "carter")
+
+        def _tune_refresh_display():
+            ox, oy = coord_manager.get_ui_offset(_tune_get_key())
+            self._tune_display_lb.configure(text=f"X: {ox:+d}px   Y: {oy:+d}px")
+
+        def _tune_apply(dx, dy):
+            key = _tune_get_key()
+            ox, oy = coord_manager.get_ui_offset(key)
+            coord_manager.set_ui_offset(key, ox + dx, oy + dy)
+            _tune_refresh_display()
+
+        # Step size toggle
+        _tune_step = ctk.CTkSegmentedButton(
+            tune_card, values=["1px", "5px"],
+            fg_color=MD3["elevated"],
+            selected_color=MD3["primary"],
+            selected_hover_color=MD3["primary_dim"],
+            unselected_color=MD3["card"],
+            unselected_hover_color=MD3["elevated"],
+            text_color=MD3["on_surface"],
+            font=ctk.CTkFont(size=12),
+        )
+        _tune_step.set("5px")
+        _tune_step.pack(pady=(0, 4))
+
+        def _step():
+            return 1 if _tune_step.get() == "1px" else 5
+
+        # D-Pad cross
+        dpad_frame = ctk.CTkFrame(tune_card, fg_color="transparent")
+        dpad_frame.pack(pady=(0, 6))
+        _btn = dict(width=44, height=34, corner_radius=8,
+                    fg_color=MD3["elevated"], hover_color=MD3["outline"],
+                    text_color=MD3["on_surface"],
+                    font=ctk.CTkFont(size=18))
+        ctk.CTkButton(dpad_frame, text="▲",
+                      command=lambda: _tune_apply(0, -_step()),
+                      **_btn).grid(row=0, column=1, padx=4, pady=3)
+        ctk.CTkButton(dpad_frame, text="◄",
+                      command=lambda: _tune_apply(-_step(), 0),
+                      **_btn).grid(row=1, column=0, padx=4, pady=3)
+        ctk.CTkButton(dpad_frame, text="►",
+                      command=lambda: _tune_apply(_step(), 0),
+                      **_btn).grid(row=1, column=2, padx=4, pady=3)
+        ctk.CTkButton(dpad_frame, text="▼",
+                      command=lambda: _tune_apply(0, _step()),
+                      **_btn).grid(row=2, column=1, padx=4, pady=3)
+
+        # Reset button
+        ctk.CTkButton(tune_card, text="Сброс",
+                      command=lambda: (
+                          coord_manager.set_ui_offset(_tune_get_key(), 0, 0),
+                          _tune_refresh_display(),
+                      ),
+                      fg_color=MD3["card"], hover_color=MD3["elevated"],
+                      text_color=MD3["on_surface2"], height=26, corner_radius=8,
+                      font=ctk.CTkFont(size=12)).pack(pady=(0, 10))
+
+        _tune_refresh_display()
+
         # ── REF info ──────────────────────────────────────────────────────
         ctk.CTkLabel(
             self._cal_frame,
@@ -3814,6 +3881,7 @@ class TotalHunterApp(ctk.CTk):
                 self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
                 self._load_crypt_from_profile(default_path)
                 _update_status()
+                _tune_refresh_display()
             except Exception as _e:
                 self._cal_status_label.configure(
                     text=f"⚠ Профиль не загружен: {_e}\nИспользуются координаты 1920×1080",

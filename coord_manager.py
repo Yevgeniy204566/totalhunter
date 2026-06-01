@@ -37,6 +37,9 @@ class CoordinateManager:
         sx, sy = coord_manager.to_screen_dialog(1137, 785)  # with dialog offset
     """
 
+    # Names of the four UI buttons that support manual click tuning.
+    _UI_BUTTON_NAMES = ("wt_icon", "carter", "top_accel", "march_accel")
+
     def __init__(self):
         self.scale_x: float = 1.0
         self.scale_y: float = 1.0
@@ -46,6 +49,10 @@ class CoordinateManager:
         self._point_b: tuple[int, int] = REF_B
         self.dialog_offset_x: int = 0
         self.dialog_offset_y: int = 0
+        self.scroll_clicks: int = 3
+        self.ui_offsets: dict[str, list[int]] = {
+            name: [0, 0] for name in self._UI_BUTTON_NAMES
+        }
 
     def calibrate(self, a_user: tuple[int, int], b_user: tuple[int, int]) -> None:
         """
@@ -72,6 +79,16 @@ class CoordinateManager:
         sx, sy = self.to_screen(x, y)
         return (sx, sy, int(w * self.scale_x), int(h * abs(self.scale_y)))
 
+    def get_ui_offset(self, name: str) -> tuple[int, int]:
+        """Return (dx, dy) tuning offset for a named UI button."""
+        ox, oy = self.ui_offsets.get(name, [0, 0])
+        return int(ox), int(oy)
+
+    def set_ui_offset(self, name: str, dx: int, dy: int) -> None:
+        """Store (dx, dy) tuning offset for a named UI button. Unknown names ignored."""
+        if name in self.ui_offsets:
+            self.ui_offsets[name] = [int(dx), int(dy)]
+
     def to_screen_dialog(self, x: int, y: int) -> tuple[int, int]:
         """Like to_screen but adds dialog_offset for in-game dialog windows."""
         sx, sy = self.to_screen(x, y)
@@ -91,6 +108,8 @@ class CoordinateManager:
             "scale_y": self.scale_y,
             "dialog_offset_x": self.dialog_offset_x,
             "dialog_offset_y": self.dialog_offset_y,
+            "scroll_clicks": self.scroll_clicks,
+            "ui_offsets": {k: list(v) for k, v in self.ui_offsets.items()},
         }
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
@@ -105,6 +124,12 @@ class CoordinateManager:
             self.calibrate(tuple(data["point_a"]), tuple(data["point_b"]))
             self.dialog_offset_x = int(data.get("dialog_offset_x", 0))
             self.dialog_offset_y = int(data.get("dialog_offset_y", 0))
+            self.scroll_clicks = int(data.get("scroll_clicks", 3))
+            saved = data.get("ui_offsets", {})
+            for name in self._UI_BUTTON_NAMES:
+                if name in saved:
+                    pair = saved[name]
+                    self.ui_offsets[name] = [int(pair[0]), int(pair[1])]
         except Exception:
             pass  # Keep default REF_A/REF_B if profile is corrupted
 
