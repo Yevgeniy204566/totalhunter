@@ -984,8 +984,8 @@ class PacmanEngine:
                 # Check current position before moving
                 is_water = is_water_center_screen(frame, radius=120)
 
-                # YOLO scan (Призрак YOLO): когда заблокирован — спим ровно столько же
-                # сколько занял бы реальный YOLO → тайминг шагов одинаков до/после рестарта
+                # YOLO scan: если заблокирован — спим ровно столько же сколько занял бы YOLO,
+                # чтобы скорость бота была одинакова до и после включения нейронки.
                 if self.yolo_model is not None:
                     if time.time() >= self._yolo_unblock_time:
                         _t0 = time.time()
@@ -997,6 +997,8 @@ class PacmanEngine:
                                 self._exchange_detected(r.boxes[0], frame=frame)
                                 loop_start = time.time()
                                 break
+                    else:
+                        time.sleep(self._last_yolo_inference_time)
 
                 # Navigate — pass frame to avoid second screenshot for minimap
                 if not self.is_running:
@@ -1008,7 +1010,19 @@ class PacmanEngine:
 
                 # Динамический sleep: bot_speed = TOTAL цикл, не просто пауза
                 elapsed = time.time() - loop_start
-                time.sleep(max(0.01, self.move_wait - elapsed))
+                _sleep = max(0.01, self.move_wait - elapsed)
+                _yolo_on = time.time() >= self._yolo_unblock_time
+                _yolo_left = max(0.0, self._yolo_unblock_time - time.time())
+                import nav_logger as _nl
+                _nl._write(
+                    f"{_nl._ts()}  [CYCLE]  "
+                    f"yolo={'ON ' if _yolo_on else 'OFF'}"
+                    + (f"  unblock_in={_yolo_left:.1f}s" if not _yolo_on else "")
+                    + f"  elapsed={elapsed:.3f}s  sleep={_sleep:.3f}s"
+                    f"  cycle={elapsed+_sleep:.3f}s"
+                    f"  move_wait={self.move_wait}"
+                )
+                time.sleep(_sleep)
 
                 # Grab next frame (один захват на итерацию)
                 screen = np.array(sct.grab(monitor))

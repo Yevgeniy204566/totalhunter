@@ -190,6 +190,13 @@ def main():
                     os.remove(py_in_dist)
                     print(f"  Удалён из dist: {mod} (заменён .pyd)")
 
+        # Копируем README.txt в корень dist/TotalHunter (попадёт в ZIP)
+        readme_src = os.path.join(ROOT, "README.txt")
+        readme_dst = os.path.join(ROOT, "dist", "TotalHunter", "README.txt")
+        if os.path.exists(readme_src):
+            shutil.copy2(readme_src, readme_dst)
+            print(f"  OK README.txt скопирован в dist/TotalHunter/")
+
         # Шаг 6: Создание плоского ZIP (ОБЯЗАТЕЛЬНО из dist/TotalHunter/)
         print("\n[6/6] Создание плоского ZIP...")
         zip_path = os.path.join(ROOT, "TotalHunter.zip")

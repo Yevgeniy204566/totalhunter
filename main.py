@@ -1276,6 +1276,7 @@ class LangPopupButton(ctk.CTkFrame):
 class TotalHunterApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self._roy_self_reported: set = set()  # координаты только что найденные нами — не звучать в ROY
         self.engine = HuntEngine()
         self.engine.on_found_callback = self.on_target_found
         self.engine.on_last_exchange_callback = self._on_last_exchange_found
@@ -2862,7 +2863,7 @@ class TotalHunterApp(ctk.CTk):
         if not self.engine._last_start_kwargs:
             return
         try:
-            self.engine._initial_yolo_block_sec = 5.0  # Призрак YOLO: 5с слепоты + ghost sleep
+            self.engine._initial_yolo_block_sec = 60.0
             self.engine.start(**self.engine._last_start_kwargs)
             self._gui_set_running()
             self.is_running = True
@@ -2958,6 +2959,9 @@ class TotalHunterApp(ctk.CTk):
         ts   = _t.strftime("%H:%M:%S")
         text = f"K:{result['kingdom']}  X:{result['x']}  Y:{result['y']}  ·  {ts}"
         self.after(0, lambda t=text: self._last_exchange_lb.configure(text=t))
+        # Запомнить координаты — ROY не должен играть звук на нашу же находку
+        key = (result.get('kingdom'), result.get('x'), result.get('y'))
+        self._roy_self_reported.add(key)
 
 
     def handle_login(self):
@@ -3335,9 +3339,10 @@ class TotalHunterApp(ctk.CTk):
     def _roy_update_list(self, pool: list):
         """Перерисовывает список координат в ScrollableFrame."""
         L = LANGS[self.current_lang]
-        # Звук если появились новые координаты которых раньше не было
+        # Звук если появились новые координаты которых раньше не было — но не наши собственные
         new_ids = {(e.get('kingdom'), e.get('x'), e.get('y')) for e in pool}
-        if new_ids - self._roy_pool_known_ids:
+        truly_new = (new_ids - self._roy_pool_known_ids) - getattr(self, '_roy_self_reported', set())
+        if truly_new:
             _sound = getattr(self.engine, 'sound_path', None) if hasattr(self, 'engine') and self.engine else None
             try:
                 import winsound

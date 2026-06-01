@@ -94,9 +94,10 @@ class HuntEngine:
         self._last_start_kwargs: dict = {}
         self.on_engine_restart_callback = None  # (state: 'stopped'|'starting') → обновляет GUI
         self.on_pool_refresh_callback   = None  # (pool: list) → обновляет список пула в GUI
-        self._initial_yolo_block_sec: float = 0.0  # YOLO-блок, применяемый ДО pacman.start()
         self._bg_gen: int = 0  # инкрементируется на каждом start() — старые треды видят изменение
         self.on_exchange_found_callback = None  # () → main.py.after(10000, _programmatic_restart)
+        self._initial_yolo_block_sec: float = 0.0  # >0 → блокирует YOLO на N сек после start()
+        self._bg_threads: list = []  # все фоновые треды — для явного join при stop()
 
     def start(
         self,
@@ -203,21 +204,33 @@ class HuntEngine:
         self._pacman.restart_callback = self.on_exchange_found_callback
         self.is_running = True
         self._bg_gen += 1
-        # Применяем YOLO-блок ДО старта треда — нет гонки
         if self._initial_yolo_block_sec > 0:
             self._pacman._yolo_unblock_time = time.time() + self._initial_yolo_block_sec
+            _roy_log(f"[ENGINE] start() — YOLO включится через {self._initial_yolo_block_sec:.0f}с")
             self._initial_yolo_block_sec = 0.0
+        else:
+            _roy_log("[ENGINE] start() — YOLO активен сразу")
         self._pacman.start()
+        _roy_log(f"[ENGINE] PacmanEngine запущен | bg_gen={self._bg_gen} | move_wait={self._last_start_kwargs.get('move_wait')}")
         self._start_heartbeat()
         if self.roy_enabled:
             self._start_roy_scan()
 
     def stop(self):
+        _roy_log(f"[ENGINE] stop() — is_running=False, bg_gen={self._bg_gen}, активных тредов={len(getattr(self,'_bg_threads',[]))}")
         self.is_running = False
         if self._pacman:
             self._pacman.stop()
+        # Ждём завершения всех фоновых тредов (max 2с каждый)
+        for t in getattr(self, '_bg_threads', []):
+            if t.is_alive():
+                t.join(timeout=2.0)
+                _roy_log(f"[ENGINE] тред {t.name} {'завершён' if not t.is_alive() else 'ещё жив (зомби)'}")
+        if hasattr(self, '_bg_threads'):
+            self._bg_threads.clear()
         if self.roy_enabled and self._roy_client and self.roy_kingdom:
             self._roy_client.stop_session(self.roy_kingdom)
+        _roy_log("[ENGINE] stop() завершён")
 
     def _build_roy_wrapper(self, original_cb):
         """Возвращает wrapper: вызывает original_cb в try/except, затем _roy_on_found."""
@@ -311,7 +324,10 @@ class HuntEngine:
                 ok = self._roy_client.scan(kingdom=self.roy_kingdom or None)
                 _roy_log(f"scan() → {'OK +45с' if ok else 'FAIL'} | diff={diff_frac:.1%}")
 
-        threading.Thread(target=_loop, daemon=True).start()
+        t_roy = threading.Thread(target=_loop, daemon=True, name="RoyScan")
+        self._bg_threads.append(t_roy)
+        t_roy.start()
+        _roy_log(f"[ENGINE] RoyScan тред запущен | gen={gen}")
 
     def _start_heartbeat(self):
         """Фоновый поток: пингует сервер каждые 2 минуты пока бот запущен."""
@@ -324,5 +340,7 @@ class HuntEngine:
                     if not self.is_running or self._bg_gen != gen:
                         return
                     time.sleep(10)
-        t = threading.Thread(target=_loop, daemon=True)
+        t = threading.Thread(target=_loop, daemon=True, name="Heartbeat")
+        self._bg_threads.append(t)
         t.start()
+        _roy_log(f"[ENGINE] Heartbeat тред запущен | gen={gen}")
