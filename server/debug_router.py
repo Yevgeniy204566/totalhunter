@@ -47,3 +47,25 @@ async def upload_shot(
         ok = False
 
     return {"ok": True, "forwarded": ok}
+
+
+@router.post("/send-text")
+async def send_text(
+    hwid:    str = Form(...),
+    message: str = Form(...),
+):
+    """Отправить текстовое сообщение в Telegram (OCR результат и т.п.)."""
+    if not _TG_TOKEN or not _TG_CHAT_ID:
+        return {"ok": True, "forwarded": False}
+    now_kyiv = datetime.now(_KYIV).strftime("%d.%m.%Y %H:%M:%S")
+    text = f"{message}\n🔍 HWID: {hwid}\n⏰ {now_kyiv} (Киев)"
+    try:
+        resp = _requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            data={"chat_id": _TG_CHAT_ID, "text": text},
+            timeout=10,
+        )
+        ok = resp.status_code == 200
+    except Exception:
+        ok = False
+    return {"ok": True, "forwarded": ok}

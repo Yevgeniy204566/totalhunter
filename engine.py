@@ -236,8 +236,10 @@ class HuntEngine:
         _roy_log("_roy_on_found: старт OCR (timeout=4.0с)")
         try:
             from roy.exchange_reader import wait_and_read
+            from debug_reporter import report_ocr_result
             result = wait_and_read(timeout=4.0)
             _roy_log(f"_roy_on_found: результат OCR = {result}")
+            report_ocr_result(get_hwid(), result)
             if result:
                 if self.on_last_exchange_callback:
                     try:

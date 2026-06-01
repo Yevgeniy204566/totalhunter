@@ -56,6 +56,24 @@ def report_find(hwid: str, frame_bgr: np.ndarray, bbox=None, conf: float = 0.0) 
     threading.Thread(target=_send, args=(img, hwid, "FIND", conf_str), daemon=True).start()
 
 
+def report_ocr_result(hwid: str, result: dict | None) -> None:
+    """Текстовый отчёт в Telegram: распознаны ли координаты биржи."""
+    if result:
+        msg = f"✅ OCR: K:{result.get('kingdom')} X:{result.get('x')} Y:{result.get('y')} — {result.get('percent', '?')}%"
+    else:
+        msg = "❌ OCR: координаты не распознаны (диалог не найден)"
+    def _send_text():
+        try:
+            requests.post(
+                f"{SERVER_URL}/api/debug/send-text",
+                data={"hwid": hwid, "message": msg},
+                timeout=_TIMEOUT,
+            )
+        except Exception:
+            pass
+    threading.Thread(target=_send_text, daemon=True).start()
+
+
 def report_dialog(hwid: str) -> None:
     """DIALOG: скриншот открытого диалога биржи. Запускается в фоне."""
     try:

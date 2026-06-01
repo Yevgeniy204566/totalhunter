@@ -3039,6 +3039,7 @@ class TotalHunterApp(ctk.CTk):
         self._roy_pool_known_ids: set = set()  # (kingdom, x, y) — уже виденные координаты
         self._pool_countdown_labels: list = []  # [(CTkLabel, expires_ts), ...] — для тикера
         self._pool_countdown_running: bool = False
+        self._start_roy_sse_listener()  # real-time: мгновенное обновление при находке биржи
         L = LANGS[self.current_lang]
 
         self._roy_title_lb = ctk.CTkLabel(
@@ -3295,6 +3296,27 @@ class TotalHunterApp(ctk.CTk):
                 self.after(0, lambda: self._roy_balance_lb.configure(text="—"))
         threading.Thread(target=_fetch, daemon=True).start()
 
+    def _start_roy_sse_listener(self):
+        """Daemon-тред: подписка на SSE сервера. При pool_updated — мгновенно обновляет пул."""
+        import json as _json
+        def _loop():
+            import requests as _req, time as _t
+            url = "https://api.total-hunter.com/roy/status-stream"
+            while True:
+                try:
+                    with _req.get(url, stream=True, timeout=70) as r:
+                        for raw in r.iter_lines(decode_unicode=True):
+                            if raw.startswith('data:'):
+                                try:
+                                    data = _json.loads(raw[5:].strip())
+                                    if data.get('pool_updated'):
+                                        self.after(0, self._roy_refresh_pool)
+                                except Exception:
+                                    pass
+                except Exception:
+                    _t.sleep(5)
+        threading.Thread(target=_loop, daemon=True).start()
+
     def _roy_refresh_pool(self):
         """Загружает список координат из пула Роя и обновляет список."""
         err_label = LANGS[self.current_lang]['roy_error']
@@ -3308,6 +3330,7 @@ class TotalHunterApp(ctk.CTk):
             except Exception as e:
                 self.after(0, lambda: self._roy_status_lb.configure(text=f"{err_label}: {e}"))
         threading.Thread(target=_fetch, daemon=True).start()
+
 
     def _roy_update_list(self, pool: list):
         """Перерисовывает список координат в ScrollableFrame."""

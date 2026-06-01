@@ -107,11 +107,14 @@ async def _kingdoms_payload(db: AsyncSession) -> str:
     return json.dumps(sorted(result, key=lambda x: (-x["active_count"], -x["registered_count"])))
 
 
-async def _broadcast(db: AsyncSession) -> None:
+async def _broadcast(db: AsyncSession, pool_updated: bool = False) -> None:
     """Разослать актуальное состояние всем SSE-подписчикам."""
     if not _sse_queues:
         return
     payload = await _kingdoms_payload(db)
+    if pool_updated:
+        data = json.loads(payload)
+        payload = json.dumps({"kingdoms": data, "pool_updated": True})
     for q in list(_sse_queues):
         await q.put(payload)
 
@@ -247,6 +250,7 @@ async def report_exchange(req: ReportRequest, db: AsyncSession = Depends(get_db)
     except IntegrityError:
         pass  # конкурентный INSERT той же координаты — уже есть в БД
 
+    await _broadcast(db, pool_updated=True)
     return {"success": True}
 
 

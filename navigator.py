@@ -997,10 +997,6 @@ class PacmanEngine:
                                 self._exchange_detected(r.boxes[0], frame=frame)
                                 loop_start = time.time()
                                 break
-                    else:
-                        # Призрак: имитируем YOLO-нагрузку, но не дольше периода шага
-                        time.sleep(min(self._last_yolo_inference_time,
-                                       max(0.01, self.move_wait * 0.8)))
 
                 # Navigate — pass frame to avoid second screenshot for minimap
                 if not self.is_running:
