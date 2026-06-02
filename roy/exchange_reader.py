@@ -6,15 +6,12 @@ exchange_reader.py — OCR диалога биржи наёмников.
   - Процент выкупа: из текста «Прогресс сделок: XX%»
 
 Алгоритм:
-  1. Захват фиксированного ROI через coord_manager (масштабирование по профилю)
-  2. Запуск pytesseract на захваченном регионе
-  3. Парсинг результата регулярным выражением
+  1. Захват центральных 60% экрана (monitors[1]) — диалог всегда центрирован
+  2. Верхняя половина захвата → OCR координат K/X/Y
+  3. Нижняя половина захвата → OCR прогресса
+  4. Парсинг результата регулярным выражением
 
-ROI захардкожены в reference-системе (1920×1080), масштабируются через
-coord_manager.to_region() по профилю пользователя.
-«Умные колонки»: оба ROI — 600×200 px по центру экрана, перекрывают смещение
-диалога при работе в браузере (~85 px от вкладок/адресной строки).
-Строгие регулярки сами вычленяют нужные числа, игнорируя фоновый мусор.
+Не зависит от калибровки coord_manager — работает на любом разрешении.
 """
 
 import re
@@ -26,6 +23,7 @@ import cv2
 import numpy as np
 
 _LOG_PATH = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..', 'roy_debug.log')
+_DBG_DIR   = _os.path.dirname(_LOG_PATH)
 
 def _log(msg: str):
     line = f"{_datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]} [OCR] {msg}"
@@ -37,8 +35,47 @@ def _log(msg: str):
         pass
 
 try:
+    import sys
+    import shutil
     import pytesseract
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+    def _find_tesseract() -> str | None:
+        # Релиз (PyInstaller): tesseract_bin лежит рядом с TotalHunter.exe
+        if getattr(sys, 'frozen', False):
+            bundled = _os.path.join(_os.path.dirname(sys.executable),
+                                    "tesseract_bin", "tesseract.exe")
+            if _os.path.isfile(bundled):
+                return bundled
+            # В релизе нет системного поиска — только сборка
+            return None
+
+        # Dev-режим: автопоиск в системе (PATH → стандартные пути)
+        found = shutil.which("tesseract")
+        if found:
+            return found
+        for path in [
+            r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+            r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+            r'D:\Program Files\Tesseract-OCR\tesseract.exe',
+            r'D:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+        ]:
+            if _os.path.isfile(path):
+                return path
+        return None
+
+    _tess_path = _find_tesseract()
+    if _tess_path:
+        pytesseract.pytesseract.tesseract_cmd = _tess_path
+    else:
+        if getattr(sys, 'frozen', False):
+            _log("КРИТИЧЕСКАЯ ОШИБКА: tesseract_bin не найден рядом с TotalHunter.exe. "
+                 "Проверьте целостность сборки — папка tesseract_bin должна быть рядом с EXE.")
+        else:
+            _log("КРИТИЧЕСКАЯ ОШИБКА: Tesseract OCR не найден на ПК. "
+                 "Установите Tesseract для работы модуля РОЙ. "
+                 "Скачайте: https://github.com/UB-Mannheim/tesseract/wiki")
+        pytesseract = None
+
 except ImportError:
     pytesseract = None
 
@@ -46,26 +83,6 @@ try:
     import mss
 except ImportError:
     mss = None
-
-from coord_manager import coord_manager
-
-
-# ── Hardcoded ROI в reference-системе (1920×1080) ────────────────────────────
-# «Умные колонки» — расширенные вертикальные области по центру экрана.
-# Диалог биржи «плавает» по Y при работе в браузере (вкладки/адресная строка
-# добавляют ~85 px). Широкие ROI (600×200) позволяют регулярке самой вытащить
-# нужные цифры, игнорируя фон — без динамического поиска окна.
-# Строка K:X:Y — верхняя часть диалога, с запасом вверх для браузерных сдвигов
-_COORD_X_REF    = 660
-_COORD_Y_REF    = 250
-_COORD_W_REF    = 600
-_COORD_H_REF    = 200
-
-# Прогресс сделок — нижняя часть диалога, с запасом для браузерных сдвигов
-_PROGRESS_X_REF = 660
-_PROGRESS_Y_REF = 450
-_PROGRESS_W_REF = 600
-_PROGRESS_H_REF = 200
 
 # Таймаут ожидания появления диалога (сек)
 _DIALOG_TIMEOUT = 4.0
@@ -110,14 +127,28 @@ def read_once() -> dict | None:
 # Внутренняя логика
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _grab_region(x_ref: int, y_ref: int, w_ref: int, h_ref: int) -> np.ndarray:
-    """Захватывает регион экрана по reference-координатам через coord_manager."""
-    sx, sy, sw, sh = coord_manager.to_region(x_ref, y_ref, w_ref, h_ref)
-    _log(f"_grab_region: ref=({x_ref},{y_ref},{w_ref},{h_ref}) → screen=({sx},{sy},{sw},{sh})")
+def _grab_center_roi() -> tuple[np.ndarray, np.ndarray]:
+    """
+    Захватывает центральные 60% первичного монитора (monitors[1]).
+    Диалог биржи всегда центрирован → попадает в кадр на любом разрешении,
+    без зависимости от калибровки coord_manager.
+    Возвращает (coord_roi, progress_roi): верхняя и нижняя половины захвата.
+    """
     with mss.mss() as sct:
-        region = {'left': sx, 'top': sy, 'width': max(sw, 1), 'height': max(sh, 1)}
-        raw = sct.grab(region)
-        return cv2.cvtColor(np.array(raw), cv2.COLOR_BGRA2BGR)
+        mon    = sct.monitors[1]
+        left   = mon["left"] + int(mon["width"]  * 0.20)
+        top    = mon["top"]  + int(mon["height"] * 0.20)
+        width  = int(mon["width"]  * 0.60)
+        height = int(mon["height"] * 0.60)
+        region = {"left": left, "top": top, "width": max(width, 1), "height": max(height, 1)}
+        _log(f"_grab_center_roi: mon={mon['width']}x{mon['height']} → {region}")
+        raw  = sct.grab(region)
+        full = cv2.cvtColor(np.array(raw), cv2.COLOR_BGRA2BGR)
+
+    mid          = full.shape[0] // 2
+    coord_roi    = full[:mid, :]   # верхняя половина — K:X:Y
+    progress_roi = full[mid:, :]   # нижняя половина — прогресс сделок
+    return coord_roi, progress_roi
 
 
 def _ocr_coords(roi: np.ndarray) -> tuple | None:
@@ -197,14 +228,12 @@ def _measure_progress(roi: np.ndarray) -> int:
 
 
 def _try_read() -> dict | None:
-    """Один цикл: захват фиксированных ROI → OCR координат и прогресса."""
-    coord_roi    = _grab_region(_COORD_X_REF,    _COORD_Y_REF,    _COORD_W_REF,    _COORD_H_REF)
-    progress_roi = _grab_region(_PROGRESS_X_REF, _PROGRESS_Y_REF, _PROGRESS_W_REF, _PROGRESS_H_REF)
+    """Один цикл: захват центра экрана → OCR координат и прогресса."""
+    coord_roi, progress_roi = _grab_center_roi()
 
-    _dbg = _os.path.dirname(_LOG_PATH)
     try:
-        cv2.imwrite(_os.path.join(_dbg, 'roy_dbg_coord_roi.png'),    coord_roi)
-        cv2.imwrite(_os.path.join(_dbg, 'roy_dbg_progress_roi.png'), progress_roi)
+        cv2.imwrite(_os.path.join(_DBG_DIR, 'roy_dbg_coord_roi.png'),    coord_roi)
+        cv2.imwrite(_os.path.join(_DBG_DIR, 'roy_dbg_progress_roi.png'), progress_roi)
     except Exception:
         pass
 
@@ -238,13 +267,15 @@ if __name__ == '__main__':
             print(f"Не удалось загрузить: {img_path}")
             sys.exit(1)
 
-        print(f"Изображение: {img.shape[1]}x{img.shape[0]}")
-        print(f"ROI координат: x={_COORD_X_REF}, y={_COORD_Y_REF}, w={_COORD_W_REF}, h={_COORD_H_REF}")
+        h, w = img.shape[:2]
+        x0 = int(w * 0.20); y0 = int(h * 0.20)
+        x1 = int(w * 0.80); y1 = int(h * 0.80)
+        print(f"Изображение: {w}x{h}, центр 60%: x={x0}-{x1}, y={y0}-{y1}")
 
-        coord_roi    = img[_COORD_Y_REF:_COORD_Y_REF+_COORD_H_REF,
-                           _COORD_X_REF:_COORD_X_REF+_COORD_W_REF]
-        progress_roi = img[_PROGRESS_Y_REF:_PROGRESS_Y_REF+_PROGRESS_H_REF,
-                           _PROGRESS_X_REF:_PROGRESS_X_REF+_PROGRESS_W_REF]
+        center       = img[y0:y1, x0:x1]
+        mid          = center.shape[0] // 2
+        coord_roi    = center[:mid, :]
+        progress_roi = center[mid:, :]
 
         cv2.imwrite('debug_coord_roi.png',    coord_roi)
         cv2.imwrite('debug_progress_roi.png', progress_roi)

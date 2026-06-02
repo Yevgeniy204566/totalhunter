@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-06-01 **v1.6.0** — scroll_clicks (1–200) для Chrome/Client, D-Pad тюнинг, дальность марша от 1 мин, кнопка Автокалибровка убрана
+> Последнее обновление: 2026-06-02 **v1.6.4** — ROY OCR fix: динамический ROI (центр 60% экрана), автопоиск Tesseract, portable tesseract_bin в сборке.
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -22,14 +22,16 @@
 | **Колесо Фортуны** | server/earn.py + web/EarnPage.jsx | ✅ **Fortuna Royale v7** — SVG-колесо (20 секторов), фото-текстуры (бархат×4 + красное дерево), неоновое кольцо, заклёпки CSS-градиент, LED-chase, указатель с physics, easeOutSmooth 7-8s. Звук: только победный аккорд (тики убраны). Лимит 5/день, безлимит для owner (ievgeniy2011@gmail.com). Кнопка +5 ведёт на /dashboard/earn. Призы: 5◆(78%) 7◆(12%) 15◆(6%) 30◆(3%) 50◆(1%). | 2026-05-18 |
 | **GUI main.py — навигация** | main.py | ✅ Порядок вкладок: СКЛЕПЫ→БИРЖИ→РОЙ→РЕФЕРАЛЫ. Таймер «Торговые Пути» в БИРЖИ и РОЙ (якорь 20.05.2026 20:00 Киев, цикл 5 дней, 24ч). Кнопки СТАРТ/СТОП в вкладке РОЙ (дублируют БИРЖИ). Переводы на 19 языков. change_lang полностью обновляет все ROY-метки. | 2026-05-23 |
 | **Рекламные слоты** | web/AdSlot.jsx | ⏸ **ОТЛОЖЕНО до 500+ DAU (2026-05-29).** AdSlot.jsx удалён, мета-теги Coinzilla/BitMedia убраны из index.html. Два пути на будущее: 1) Баннеры (BitMedia/A-Ads) 2) Rewarded Video в рулетке (Lootably S2S callback). Подробности → MEMORY/project_ads_strategy.md | 2026-05-29 |
-| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ Event gate: is_trade_routes_active() на сервере (144ч цикл, anchor 2026-06-01 17:00 UTC). /scan начисляет только во время ивента. OCR smart-column ROI (600×200) для браузерных игроков. Пул: MM:SS **возраст** (0:00→20:00) в реальном времени — зелёный <10мин, жёлтый 10-15мин, красный >15мин. | 2026-05-29 |
+| **Система РОЙ** | roy/ + server/roy.py + engine.py | ✅ **v1.6.4:** OCR fix — динамический ROI (центр 60% monitors[1]), автопоиск Tesseract (PATH→C:→D:), portable tesseract_bin/ в сборке (65МБ, eng only). Не зависит от калибровки. Event gate 144ч. Пул: MM:SS возраст. | 2026-06-02 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
-| **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.5.9**. Ghost YOLO ✅. Backtrack wait: 0.3s→move_wait ✅. Smart-column ROI браузер (600×200) ✅. Ивент gate (144ч цикл) ✅. Пул MM:SS countdown ✅. 28+ тестов ✅. | 2026-05-27 |
+| **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.6.3 (собрано).** Фикс клика по бирже: `pyautogui.moveTo(cx,cy,duration=0.15)` + `sleep(0.05)` + `click()` вместо мгновенного телепорта. Устранён «клик через раз» из-за инерции карты. | 2026-06-02 |
+| **ROY real-time** | main.py `_start_roy_sse_listener` + server/roy.py | ✅ SSE подписка в боте. При находке биржи любым участником → мгновенное обновление пула. **v1.6.2:** собственные находки не дают двойной звук (`_roy_self_reported`). GCP задеплоен. | 2026-06-01 |
+| **Telegram OCR отчёт** | engine.py + debug_reporter.py + server/debug_router.py | ✅ После каждой биржи: `✅ OCR: K:X X:Y Y:Z — P%` или `❌ OCR: не распознаны`. Эндпоинт `/api/debug/send-text` на GCP. | 2026-06-01 |
 | **CryptHunter** | crypt_hunter.py | ✅ **v1.6.0:** `scroll_clicks` — настраиваемые тики скролла (1–200). Chrome=100+, Client=3. GUI слайдер в СКЛЕПЫ, сохранение в профиль. Дальность марша от 1 мин. | 2026-06-01 |
-| **Тюнинг кликов (D-Pad)** | coord_manager.py + main.py + crypt_hunter.py | ✅ Новая система: `ui_offsets` (wt_icon/carter/top_accel/march_accel), D-Pad в КАЛИБРОВКА, шаг 1/5px, сохранение в профиль, 17 тестов. Автокалибровка кнопка убрана. | 2026-06-01 |
+| **Тюнинг кликов (D-Pad)** | coord_manager.py + main.py + crypt_hunter.py | ✅ **v1.6.3:** Секция «Тюнинг кликов» в КАЛИБРОВКА переведена на все 19 языков (`cal_tune_title/wt_icon/carter/top_accel/march_accel/reset`). Выбор хранится по индексу (0–3) — не сбрасывается при смене языка. | 2026-06-02 |
 | **Калибровка** | calibration_ui.py + main.py | ✅ **v1.5.12:** клик в лупе работает. `win.after` перенесён в начало `_refresh`, `_update_dot` в try/except, `win.focus_force()`, `iconify()` вместо `withdraw()`. | 2026-05-31 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |

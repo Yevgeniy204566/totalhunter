@@ -97,6 +97,15 @@ def check_assets():
         print(f"\nWARN  Отсутствуют файлы: {missing}")
         print("    Запусти python model_crypto.py если нет .pte файлов")
         return False
+
+    # Проверяем tesseract_bin отдельно (WARNING, не FATAL — чтобы не блокировать сборку без ROY)
+    tess_exe = os.path.join(ROOT, "tesseract_bin", "tesseract.exe")
+    if not os.path.exists(tess_exe):
+        print(f"\n⚠️  WARN  tesseract_bin/tesseract.exe не найден!")
+        print("    Модуль РОЙ в сборке будет без OCR.")
+        print("    Скопируй минимальный Tesseract в C:\\BattleBot\\tesseract_bin\\")
+        print("    (tesseract.exe + DLL-и + tessdata/eng.traineddata)")
+
     return True
 
 
@@ -196,6 +205,22 @@ def main():
         if os.path.exists(readme_src):
             shutil.copy2(readme_src, readme_dst)
             print(f"  OK README.txt скопирован в dist/TotalHunter/")
+
+        # Копируем tesseract_bin/ в корень dist/TotalHunter/ (рядом с exe — НЕ в _internal)
+        tess_src = os.path.join(ROOT, "tesseract_bin")
+        tess_dst = os.path.join(ROOT, "dist", "TotalHunter", "tesseract_bin")
+        if os.path.exists(tess_src):
+            if os.path.exists(tess_dst):
+                shutil.rmtree(tess_dst)
+            shutil.copytree(tess_src, tess_dst)
+            tess_mb = sum(
+                os.path.getsize(os.path.join(dp, f))
+                for dp, _, files in os.walk(tess_dst)
+                for f in files
+            ) // (1024 * 1024)
+            print(f"  OK tesseract_bin/ скопирован в dist/TotalHunter/ ({tess_mb} MB)")
+        else:
+            print(f"  --  tesseract_bin/ не найден — РОЙ OCR в сборке отсутствует")
 
         # Шаг 6: Создание плоского ZIP (ОБЯЗАТЕЛЬНО из dist/TotalHunter/)
         print("\n[6/6] Создание плоского ZIP...")

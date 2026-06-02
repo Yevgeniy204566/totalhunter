@@ -28,7 +28,12 @@ dist/
 build/
 TotalHunter.zip
 
+# Portable Tesseract (65 МБ DLL — не коммитить, хранить локально)
+tesseract_bin/
+
 # Скомпилированные Nuitka-модули (не коммитить — перекрывают .py при разработке!)
 *.pyd
 *.so
 *.exe
+.vercel
+.env*
