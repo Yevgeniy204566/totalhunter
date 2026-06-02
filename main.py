@@ -171,6 +171,7 @@ LANGS = {
         "cal_profile_lb": "Профиль:", "cal_not_calibrated": "Не откалиброван",
         "cal_auto_btn": "АВТОКАЛИБРОВАТЬ", "cal_manual_btn": "КАЛИБРОВАТЬ",
         "cal_save_btn": "💾  Сохранить", "cal_load_btn": "📂  Загрузить",
+        "cal_tune_title": "Тюнинг кликов", "cal_tune_wt_icon": "Дозорная башня", "cal_tune_carter": "Отправка Картера", "cal_tune_top_accel": "Ускорить (Картер)", "cal_tune_march_accel": "Использовать ускорение", "cal_tune_reset": "Сброс",
         # --- ref tab additions ---
         "ref_bal_title": "Реферальный баланс", "ref_transfer_btn": "💸  Перевести на баланс  →",
         "ref_link_title": "Ваша реферальная ссылка:", "ref_code_prefix": "Код: ",
@@ -232,6 +233,7 @@ LANGS = {
         "cal_profile_lb": "Profile:", "cal_not_calibrated": "Not calibrated",
         "cal_auto_btn": "AUTO CALIBRATE", "cal_manual_btn": "CALIBRATE",
         "cal_save_btn": "💾  Save", "cal_load_btn": "📂  Load",
+        "cal_tune_title": "Click Tuning", "cal_tune_wt_icon": "Watchtower", "cal_tune_carter": "Send Carter", "cal_tune_top_accel": "Speed Up (Carter)", "cal_tune_march_accel": "Use Acceleration", "cal_tune_reset": "Reset",
         # --- ref tab additions ---
         "ref_bal_title": "Referral Balance", "ref_transfer_btn": "💸  Transfer to balance  →",
         "ref_link_title": "Your referral link:", "ref_code_prefix": "Code: ",
@@ -282,6 +284,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nicht kalibriert",
         "cal_auto_btn": "AUTO KALIBRIEREN", "cal_manual_btn": "KALIBRIEREN",
         "cal_save_btn": "💾  Speichern", "cal_load_btn": "📂  Laden",
+        "cal_tune_title": "Klick-Tuning", "cal_tune_wt_icon": "Wachturm", "cal_tune_carter": "Carter senden", "cal_tune_top_accel": "Beschleunigen (Carter)", "cal_tune_march_accel": "Beschleunigung verwenden", "cal_tune_reset": "Zurücksetzen",
         "ref_bal_title": "Partner-Guthaben", "ref_transfer_btn": "💸  Auf Guthaben übertragen  →",
         "ref_link_title": "Dein Empfehlungslink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Partner",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -329,6 +332,7 @@ LANGS = {
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "No calibrado",
         "cal_auto_btn": "AUTO CALIBRAR", "cal_manual_btn": "CALIBRAR",
         "cal_save_btn": "💾  Guardar", "cal_load_btn": "📂  Cargar",
+        "cal_tune_title": "Ajuste de clics", "cal_tune_wt_icon": "Torre de guardia", "cal_tune_carter": "Enviar Carter", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleración", "cal_tune_reset": "Restablecer",
         "ref_bal_title": "Saldo de referidos", "ref_transfer_btn": "💸  Transferir al saldo  →",
         "ref_link_title": "Tu enlace de referido:", "ref_code_prefix": "Código: ", "ref_stats_title": "Referidos",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -376,6 +380,7 @@ LANGS = {
         "cal_profile_lb": "Profil :", "cal_not_calibrated": "Non calibré",
         "cal_auto_btn": "AUTO CALIBRER", "cal_manual_btn": "CALIBRER",
         "cal_save_btn": "💾  Sauvegarder", "cal_load_btn": "📂  Charger",
+        "cal_tune_title": "Réglage des clics", "cal_tune_wt_icon": "Tour de guet", "cal_tune_carter": "Envoyer Carter", "cal_tune_top_accel": "Accélérer (Carter)", "cal_tune_march_accel": "Utiliser l'accélération", "cal_tune_reset": "Réinitialiser",
         "ref_bal_title": "Solde parrainage", "ref_transfer_btn": "💸  Transférer au solde  →",
         "ref_link_title": "Votre lien de parrainage :", "ref_code_prefix": "Code : ", "ref_stats_title": "Parrainages",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -423,6 +428,7 @@ LANGS = {
         "cal_profile_lb": "Profilo:", "cal_not_calibrated": "Non calibrato",
         "cal_auto_btn": "AUTO CALIBRA", "cal_manual_btn": "CALIBRA",
         "cal_save_btn": "💾  Salva", "cal_load_btn": "📂  Carica",
+        "cal_tune_title": "Regolazione clic", "cal_tune_wt_icon": "Torre di guardia", "cal_tune_carter": "Invia Carter", "cal_tune_top_accel": "Accelera (Carter)", "cal_tune_march_accel": "Usa accelerazione", "cal_tune_reset": "Ripristina",
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Trasferisci al saldo  →",
         "ref_link_title": "Il tuo link referral:", "ref_code_prefix": "Codice: ", "ref_stats_title": "Referral",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -470,6 +476,7 @@ LANGS = {
         "cal_profile_lb": "Profiel:", "cal_not_calibrated": "Niet gekalibreerd",
         "cal_auto_btn": "AUTO KALIBREREN", "cal_manual_btn": "KALIBREREN",
         "cal_save_btn": "💾  Opslaan", "cal_load_btn": "📂  Laden",
+        "cal_tune_title": "Klik-tuning", "cal_tune_wt_icon": "Wachttoren", "cal_tune_carter": "Carter sturen", "cal_tune_top_accel": "Versnellen (Carter)", "cal_tune_march_accel": "Versnelling gebruiken", "cal_tune_reset": "Herstellen",
         "ref_bal_title": "Referralsaldo", "ref_transfer_btn": "💸  Overzetten naar saldo  →",
         "ref_link_title": "Jouw referrallink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Referrals",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -517,6 +524,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Ikke kalibrert",
         "cal_auto_btn": "AUTO KALIBRER", "cal_manual_btn": "KALIBRER",
         "cal_save_btn": "💾  Lagre", "cal_load_btn": "📂  Last",
+        "cal_tune_title": "Klikk-tuning", "cal_tune_wt_icon": "Vakttårn", "cal_tune_carter": "Send Carter", "cal_tune_top_accel": "Accel. (Carter)", "cal_tune_march_accel": "Bruk akselerasjon", "cal_tune_reset": "Tilbakestill",
         "ref_bal_title": "Referansesaldo", "ref_transfer_btn": "💸  Overfør til saldo  →",
         "ref_link_title": "Din referanselink:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referanser",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -564,6 +572,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nieskalibrowany",
         "cal_auto_btn": "AUTO KALIBRUJ", "cal_manual_btn": "KALIBRUJ",
         "cal_save_btn": "💾  Zapisz", "cal_load_btn": "📂  Wczytaj",
+        "cal_tune_title": "Strojenie kliknięć", "cal_tune_wt_icon": "Wieża strażnicza", "cal_tune_carter": "Wyślij Cartera", "cal_tune_top_accel": "Przyspiesz (Carter)", "cal_tune_march_accel": "Użyj przyspieszenia", "cal_tune_reset": "Resetuj",
         "ref_bal_title": "Saldo polecień", "ref_transfer_btn": "💸  Przenieś na saldo  →",
         "ref_link_title": "Twój link polecający:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Polecenia",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "skan",
@@ -611,6 +620,7 @@ LANGS = {
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "Não calibrado",
         "cal_auto_btn": "AUTO CALIBRAR", "cal_manual_btn": "CALIBRAR",
         "cal_save_btn": "💾  Salvar", "cal_load_btn": "📂  Carregar",
+        "cal_tune_title": "Ajuste de cliques", "cal_tune_wt_icon": "Torre de vigia", "cal_tune_carter": "Enviar Carter", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleração", "cal_tune_reset": "Redefinir",
         "ref_bal_title": "Saldo de indicações", "ref_transfer_btn": "💸  Transferir para saldo  →",
         "ref_link_title": "Seu link de indicação:", "ref_code_prefix": "Código: ", "ref_stats_title": "Indicações",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -658,6 +668,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Inte kalibrerad",
         "cal_auto_btn": "AUTO KALIBRERA", "cal_manual_btn": "KALIBRERA",
         "cal_save_btn": "💾  Spara", "cal_load_btn": "📂  Ladda",
+        "cal_tune_title": "Klick-justering", "cal_tune_wt_icon": "Vakttorn", "cal_tune_carter": "Skicka Carter", "cal_tune_top_accel": "Accelerera (Carter)", "cal_tune_march_accel": "Använd acceleration", "cal_tune_reset": "Återställ",
         "ref_bal_title": "Hänvisningssaldo", "ref_transfer_btn": "💸  Överför till saldo  →",
         "ref_link_title": "Din hänvisningslänk:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Hänvisningar",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -705,6 +716,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Kalibre edilmedi",
         "cal_auto_btn": "OTOMATİK KALİBRE", "cal_manual_btn": "KALİBRE ET",
         "cal_save_btn": "💾  Kaydet", "cal_load_btn": "📂  Yükle",
+        "cal_tune_title": "Tıklama ayarı", "cal_tune_wt_icon": "Gözetleme kulesi", "cal_tune_carter": "Carter gönder", "cal_tune_top_accel": "Hızlan (Carter)", "cal_tune_march_accel": "İvmelenmeyi kullan", "cal_tune_reset": "Sıfırla",
         "ref_bal_title": "Referans bakiyesi", "ref_transfer_btn": "💸  Bakiyeye aktar  →",
         "ref_link_title": "Referans linkiniz:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Referanslar",
         "unit_sec": "s", "unit_min": "dk", "unit_scan": "scan",
@@ -752,6 +764,7 @@ LANGS = {
         "cal_profile_lb": "الملف:", "cal_not_calibrated": "غير معاير",
         "cal_auto_btn": "معايرة تلقائية", "cal_manual_btn": "معايرة",
         "cal_save_btn": "💾  حفظ", "cal_load_btn": "📂  تحميل",
+        "cal_tune_title": "ضبط النقرات", "cal_tune_wt_icon": "برج المراقبة", "cal_tune_carter": "إرسال كارتر", "cal_tune_top_accel": "تسريع (كارتر)", "cal_tune_march_accel": "استخدام التسريع", "cal_tune_reset": "إعادة تعيين",
         "ref_bal_title": "رصيد الإحالات", "ref_transfer_btn": "💸  تحويل إلى الرصيد  →",
         "ref_link_title": "رابط إحالتك:", "ref_code_prefix": "الرمز: ", "ref_stats_title": "الإحالات",
         "unit_sec": "ث", "unit_min": "د", "unit_scan": "مسح",
@@ -799,6 +812,7 @@ LANGS = {
         "cal_profile_lb": "プロファイル:", "cal_not_calibrated": "未キャリブレーション",
         "cal_auto_btn": "自動キャリブレーション", "cal_manual_btn": "キャリブレーション",
         "cal_save_btn": "💾  保存", "cal_load_btn": "📂  読込",
+        "cal_tune_title": "クリック調整", "cal_tune_wt_icon": "見張り塔", "cal_tune_carter": "カーター派遣", "cal_tune_top_accel": "加速 (カーター)", "cal_tune_march_accel": "加速使用", "cal_tune_reset": "リセット",
         "ref_bal_title": "紹介残高", "ref_transfer_btn": "💸  残高に転送  →",
         "ref_link_title": "あなたの紹介リンク:", "ref_code_prefix": "コード: ", "ref_stats_title": "紹介",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "スキャン",
@@ -846,6 +860,7 @@ LANGS = {
         "cal_profile_lb": "配置文件:", "cal_not_calibrated": "未校准",
         "cal_auto_btn": "自动校准", "cal_manual_btn": "校准",
         "cal_save_btn": "💾  保存", "cal_load_btn": "📂  加载",
+        "cal_tune_title": "点击调整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_reset": "重置",
         "ref_bal_title": "推荐余额", "ref_transfer_btn": "💸  转入余额  →",
         "ref_link_title": "您的推荐链接:", "ref_code_prefix": "代码: ", "ref_stats_title": "推荐",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "扫描",
@@ -893,6 +908,7 @@ LANGS = {
         "cal_profile_lb": "設定檔:", "cal_not_calibrated": "未校準",
         "cal_auto_btn": "自動校準", "cal_manual_btn": "校準",
         "cal_save_btn": "💾  儲存", "cal_load_btn": "📂  載入",
+        "cal_tune_title": "點擊調整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_reset": "重置",
         "ref_bal_title": "推薦餘額", "ref_transfer_btn": "💸  轉入餘額  →",
         "ref_link_title": "您的推薦連結:", "ref_code_prefix": "代碼: ", "ref_stats_title": "推薦",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "掃描",
@@ -940,6 +956,7 @@ LANGS = {
         "cal_profile_lb": "프로파일:", "cal_not_calibrated": "보정 안 됨",
         "cal_auto_btn": "자동 보정", "cal_manual_btn": "보정",
         "cal_save_btn": "💾  저장", "cal_load_btn": "📂  불러오기",
+        "cal_tune_title": "클릭 조정", "cal_tune_wt_icon": "감시탑", "cal_tune_carter": "카터 파견", "cal_tune_top_accel": "가속 (카터)", "cal_tune_march_accel": "가속 사용", "cal_tune_reset": "초기화",
         "ref_bal_title": "추천 잔액", "ref_transfer_btn": "💸  잔액으로 이전  →",
         "ref_link_title": "추천 링크:", "ref_code_prefix": "코드: ", "ref_stats_title": "추천",
         "unit_sec": "초", "unit_min": "분", "unit_scan": "스캔",
@@ -987,6 +1004,7 @@ LANGS = {
         "cal_profile_lb": "Профіль:", "cal_not_calibrated": "Не відкалібровано",
         "cal_auto_btn": "АВТОКАЛІБРУВАТИ", "cal_manual_btn": "КАЛІБРУВАТИ",
         "cal_save_btn": "💾  Зберегти", "cal_load_btn": "📂  Завантажити",
+        "cal_tune_title": "Тюнінг кліків", "cal_tune_wt_icon": "Дозорна вежа", "cal_tune_carter": "Відправка Картера", "cal_tune_top_accel": "Прискорити (Картер)", "cal_tune_march_accel": "Використати прискорення", "cal_tune_reset": "Скинути",
         "ref_bal_title": "Реферальний баланс", "ref_transfer_btn": "💸  Перевести на баланс  →",
         "ref_link_title": "Ваше реферальне посилання:", "ref_code_prefix": "Код: ", "ref_stats_title": "Реферали",
         "unit_sec": "с", "unit_min": "хв", "unit_scan": "скан",
@@ -1034,6 +1052,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Belum dikalibrasi",
         "cal_auto_btn": "KALIBRASI OTOMATIS", "cal_manual_btn": "KALIBRASI",
         "cal_save_btn": "💾  Simpan", "cal_load_btn": "📂  Muat",
+        "cal_tune_title": "Penyetelan klik", "cal_tune_wt_icon": "Menara pengawas", "cal_tune_carter": "Kirim Carter", "cal_tune_top_accel": "Percepat (Carter)", "cal_tune_march_accel": "Gunakan percepatan", "cal_tune_reset": "Reset",
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Transfer ke saldo  →",
         "ref_link_title": "Tautan referral Anda:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referral",
         "unit_sec": "d", "unit_min": "mnt", "unit_scan": "scan",
@@ -3533,6 +3552,14 @@ class TotalHunterApp(ctk.CTk):
             pt_lb.configure(text=LANGS[val][lb_key])
             pt_desc_lb.configure(text=LANGS[val][desc_key])
 
+        # Tune option menu — перестроить labels, сохранить выбранный индекс
+        if hasattr(self, '_tune_option_menu'):
+            _tko = ("wt_icon", "carter", "top_accel", "march_accel")
+            _new_vals = [LANGS[val][f"cal_tune_{k}"] for k in _tko]
+            self._tune_option_menu.configure(values=_new_vals)
+            _idx = getattr(self, '_tune_idx', 1)
+            self._ui_tune_btn_var.set(_new_vals[_idx])
+
         self.update_slider_labels()
         self._update_nav_labels()
         self._update_crypt_labels()
@@ -3790,32 +3817,41 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels.append((self._cal_load_btn, "cal_load_btn"))
 
         # ── Тюнинг кликов (D-Pad) ────────────────────────────────────────
-        _TUNE_NAMES = {
-            "wt_icon":     "Дозорная башня",
-            "carter":      "Отправка Картера",
-            "top_accel":   "Ускорить (Картер)",
-            "march_accel": "Использовать ускорение",
-        }
-        _TUNE_KEYS = {v: k for k, v in _TUNE_NAMES.items()}
+        # Порядок фиксирован: 0=wt_icon, 1=carter, 2=top_accel, 3=march_accel
+        _TUNE_INTERNAL = ("wt_icon", "carter", "top_accel", "march_accel")
+
+        def _tune_labels():
+            return [LANGS[self.current_lang][f"cal_tune_{k}"] for k in _TUNE_INTERNAL]
 
         tune_card = ctk.CTkFrame(self._cal_frame, fg_color=MD3["card"],
                                   corner_radius=10, border_width=1,
                                   border_color=MD3["outline"])
         tune_card.pack(fill="x", padx=16, pady=(10, 4))
 
-        ctk.CTkLabel(tune_card, text="Тюнинг кликов",
+        _tune_title_lb = ctk.CTkLabel(tune_card, text=LANGS[self.current_lang]["cal_tune_title"],
                      font=ctk.CTkFont(size=13, weight="bold"),
-                     text_color=MD3["primary"]).pack(pady=(8, 4))
+                     text_color=MD3["primary"])
+        _tune_title_lb.pack(pady=(8, 4))
+        self._i18n_labels.append((_tune_title_lb, "cal_tune_title"))
 
-        self._ui_tune_btn_var = ctk.StringVar(value=_TUNE_NAMES["carter"])
-        ctk.CTkOptionMenu(
-            tune_card, values=list(_TUNE_NAMES.values()),
+        self._tune_idx = 1  # индекс текущего элемента, 1=carter по умолчанию
+        self._ui_tune_btn_var = ctk.StringVar(value=_tune_labels()[self._tune_idx])
+
+        def _tune_on_select(display_val):
+            labels = _tune_labels()
+            if display_val in labels:
+                self._tune_idx = labels.index(display_val)
+            _tune_refresh_display()
+
+        self._tune_option_menu = ctk.CTkOptionMenu(
+            tune_card, values=_tune_labels(),
             variable=self._ui_tune_btn_var,
             fg_color=MD3["elevated"], button_color=MD3["primary"],
             button_hover_color=MD3["primary_dim"],
             text_color=MD3["on_surface"], corner_radius=8,
-            command=lambda _: _tune_refresh_display(),
-        ).pack(fill="x", padx=12, pady=(0, 4))
+            command=_tune_on_select,
+        )
+        self._tune_option_menu.pack(fill="x", padx=12, pady=(0, 4))
 
         self._tune_display_lb = ctk.CTkLabel(
             tune_card, text="X: +0px   Y: +0px",
@@ -3823,7 +3859,7 @@ class TotalHunterApp(ctk.CTk):
         self._tune_display_lb.pack(pady=(0, 2))
 
         def _tune_get_key():
-            return _TUNE_KEYS.get(self._ui_tune_btn_var.get(), "carter")
+            return _TUNE_INTERNAL[self._tune_idx]
 
         def _tune_refresh_display():
             ox, oy = coord_manager.get_ui_offset(_tune_get_key())
@@ -3873,14 +3909,16 @@ class TotalHunterApp(ctk.CTk):
                       **_btn).grid(row=2, column=1, padx=4, pady=3)
 
         # Reset button
-        ctk.CTkButton(tune_card, text="Сброс",
+        _tune_reset_btn = ctk.CTkButton(tune_card, text=LANGS[self.current_lang]["cal_tune_reset"],
                       command=lambda: (
                           coord_manager.set_ui_offset(_tune_get_key(), 0, 0),
                           _tune_refresh_display(),
                       ),
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
                       text_color=MD3["on_surface2"], height=26, corner_radius=8,
-                      font=ctk.CTkFont(size=12)).pack(pady=(0, 10))
+                      font=ctk.CTkFont(size=12))
+        _tune_reset_btn.pack(pady=(0, 10))
+        self._i18n_labels.append((_tune_reset_btn, "cal_tune_reset"))
 
         _tune_refresh_display()
 

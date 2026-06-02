@@ -1078,13 +1078,15 @@ class PacmanEngine:
             if fresh_box is None:
                 return  # ложное срабатывание — возвращаемся на маршрут
 
-        # Шаг 5: один точный клик (верхняя треть башни = кликабельная зона)
+        # Шаг 5: плавный подвод курсора + клик (как пользователь)
         try:
             _coords = fresh_box.xyxy.cpu().tolist()[0]
             x1, y1, x2, y2 = _coords
             cx = int((x1 + x2) / 2)
             cy = int(y1 + (y2 - y1) * 0.35)
-            pyautogui.click(cx, cy)
+            pyautogui.moveTo(cx, cy, duration=0.15)
+            time.sleep(0.05)
+            pyautogui.click()
         except Exception:
             return
 
