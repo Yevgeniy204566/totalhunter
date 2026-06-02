@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-06-02 **v1.6.6** — OCR пауза 0.6с перед первым захватом (диалог успевает отрисоваться); регламент чеклиста сборки в CLAUDE.md.
+> Последнее обновление: 2026-06-02 **v1.6.6** — OCR пауза 0.6с (диалог успевает отрисоваться); чеклист сборки (README+tesseract) в CLAUDE.md.
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)

@@ -74,6 +74,25 @@
 
 ---
 
+## Хангоф #85 | 2026-06-02 | v1.6.6 — OCR пауза 0.6с + регламент сборки
+
+### Что сделано
+- `wait_and_read`: `time.sleep(0.6)` перед первым захватом — диалог успевает отрисоваться
+- Итого от клика до первого OCR: ~1.7с; повторы каждые 0.3с до 4с (было всегда)
+- CLAUDE.md: обязательный чеклист перед сборкой (README.txt + tesseract --version)
+- Запрет: выпускать ZIP без README.txt и без tesseract_bin/
+
+### Версия
+- v1.6.6 собрана, выпущена, сервер обновлён ✅
+
+### Регламент сборки (теперь в CLAUDE.md навсегда)
+```powershell
+Test-Path "C:\BattleBot\README.txt"                           # → True
+& "C:\BattleBot\tesseract_bin\tesseract.exe" --version        # → v5.x.x, exit 0
+```
+
+---
+
 ## Хангоф #83 | 2026-06-02 | v1.6.4 — ROY OCR portable Tesseract
 
 ### Что сделано
