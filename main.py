@@ -1320,6 +1320,8 @@ class TotalHunterApp(ctk.CTk):
         self.current_credits = 0
         self.my_ref_id = "---"
         self.is_running = False # ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННОЙ СОСТОЯНИЯ
+        self._esc_stopped = False      # True после ESC — блокирует авто-перезапуск
+        self._auto_restart_id = None   # ID таймера after(10000) — отменяется по ESC
         self._i18n_labels = []  # (widget, lang_key)
        
         self.title(f"Total Hunter v{VERSION}")
@@ -2839,6 +2841,7 @@ class TotalHunterApp(ctk.CTk):
                 self.status_label.configure(text=LANGS[self.current_lang]["status_running"],
                                             text_color="#FFD740")
                 self.is_running = True
+                self._esc_stopped = False  # ручной старт сбрасывает флаг ESC
             except Exception as e:
                 messagebox.showerror("Error", f"Engine failed: {e}")
         else:
@@ -2870,15 +2873,17 @@ class TotalHunterApp(ctk.CTk):
         """Биржа найдена — вызывается из фонового треда навигатора.
         Останавливаем движок и планируем ОДИН чистый перезапуск через Tkinter mainloop."""
         self.engine.stop()
-        # after() thread-safe: планирует вызов в главном цикле — гарантированно один раз
         self.after(0, self._gui_set_stopped)
-        self.after(10000, self._programmatic_restart)
+        self._auto_restart_id = self.after(10000, self._programmatic_restart)
 
     def _programmatic_restart(self) -> None:
         """Перезапуск движка через Tkinter mainloop — вызывается ровно один раз через after(10000).
         Эквивалент ручного нажатия кнопки СТАРТ после 10-секундной паузы."""
+        self._auto_restart_id = None
+        if self._esc_stopped:
+            return  # пользователь нажал ESC — перезапуск запрещён
         if self.is_running:
-            return  # пользователь уже запустил вручную — не вмешиваемся
+            return  # пользователь уже запустил вручную
         if not self.engine._last_start_kwargs:
             return
         try:
@@ -2931,7 +2936,14 @@ class TotalHunterApp(ctk.CTk):
             pass
 
     def _emergency_stop(self):
-        """ESC — мгновенная остановка бота."""
+        """ESC — наивысший приоритет: полная остановка, никаких авто-перезапусков."""
+        # Отменяем любой запланированный авто-перезапуск
+        if self._auto_restart_id is not None:
+            self.after_cancel(self._auto_restart_id)
+            self._auto_restart_id = None
+        # Флаг: ESC был нажат — _programmatic_restart не будет перезапускать
+        self._esc_stopped = True
+
         if self.is_running:
             self.engine.stop()
             self.start_button.configure(text=LANGS[self.current_lang]["start"],
