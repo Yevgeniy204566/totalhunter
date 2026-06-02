@@ -26,6 +26,21 @@
 - Добавлять зависимости без проверки что они установлены на GCP
 - Создавать или заливать `TotalHunter_Setup.exe` — дистрибутив ТОЛЬКО `TotalHunter.zip`
 - Запускать `7z` для создания ZIP из КОРНЯ проекта — ТОЛЬКО из `dist/TotalHunter/` (см. ниже)
+- Выпускать ZIP без `README.txt` — файл ОБЯЗАН быть в архиве (автоматически через `build_release.py`)
+- Выпускать ZIP без `tesseract_bin/` — папка ОБЯЗАНА быть в архиве (автоматически через `build_release.py`)
+- Изменять состав `tesseract_bin/` без проверки: `& "C:\BattleBot\tesseract_bin\tesseract.exe" --version` → exit code 0
+
+**🔒 ОБЯЗАТЕЛЬНЫЙ ЧЕКЛИСТ ПЕРЕД СБОРКОЙ:**
+```powershell
+# 1. README.txt существует?
+Test-Path "C:\BattleBot\README.txt"            # → True
+
+# 2. Tesseract полный и работает?
+& "C:\BattleBot\tesseract_bin\tesseract.exe" --version  # → "tesseract v5.x.x", exit 0
+
+# 3. Эталонный состав tesseract_bin: 56 DLL + tessdata/eng.traineddata = 72 МБ
+# Источник: C:\Program Files\Tesseract-OCR\ (все *.dll) + tessdata\eng.traineddata
+```
 
 **🔒 КРИТИЧЕСКОЕ ПРАВИЛО ZIP (АНТИ-ДЕНЬ СУРКА):**
 ZIP-архив для автообновления ОБЯЗАН быть плоским. Нарушение = петля обновлений у всех клиентов.

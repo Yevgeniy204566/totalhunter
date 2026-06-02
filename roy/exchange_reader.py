@@ -105,6 +105,8 @@ def wait_and_read(timeout: float = _DIALOG_TIMEOUT) -> dict | None:
     if pytesseract is None:
         _log("wait_and_read: ОШИБКА — pytesseract не установлен!")
         return None
+    # Пауза перед первым захватом — игра успевает полностью отрисовать диалог
+    time.sleep(0.6)
     deadline = time.time() + timeout
     attempt = 0
     while time.time() < deadline:
