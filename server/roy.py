@@ -16,7 +16,7 @@ import json
 import time
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import AsyncSessionLocal, get_db
 from models import RoyBalance, RoyKingdomMember, RoyKingdomStatus, RoyPool
+from tg_channel import send_telegram_alert
 
 router = APIRouter(prefix="/roy", tags=["roy"])
 
@@ -213,10 +214,15 @@ async def register_kingdom(req: RegisterRequest, db: AsyncSession = Depends(get_
 # ── POST /roy/report ──────────────────────────────────────────────────────────
 
 @router.post("/report")
-async def report_exchange(req: ReportRequest, db: AsyncSession = Depends(get_db)):
+async def report_exchange(
+    req: ReportRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     """
     Принимает координаты биржи от бота.
     Rate limit 10 сек / hwid. Дедупликация по K:X:Y с продлением TTL.
+    Новая биржа во время ивента → тизер в Telegram-канал (фоново).
     """
     now_ts = time.time()
     if now_ts - _report_rate.get(req.hwid, 0) < RATE_LIMIT_SEC:
@@ -225,6 +231,7 @@ async def report_exchange(req: ReportRequest, db: AsyncSession = Depends(get_db)
 
     now     = datetime.now(timezone.utc)
     expires = now + timedelta(minutes=POOL_TTL_MIN)
+    is_new  = False
 
     try:
         async with db.begin():
@@ -247,10 +254,15 @@ async def report_exchange(req: ReportRequest, db: AsyncSession = Depends(get_db)
                     percent=req.percent, reporter_hwid=req.hwid,
                     expires_at=expires,
                 ))
+                is_new = True
     except IntegrityError:
         pass  # конкурентный INSERT той же координаты — уже есть в БД
 
     await _broadcast(db, pool_updated=True)
+
+    if is_new and is_trade_routes_active():
+        background_tasks.add_task(send_telegram_alert, req.percent)
+
     return {"success": True}
 
 
