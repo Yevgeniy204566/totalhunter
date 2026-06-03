@@ -3191,15 +3191,6 @@ class TotalHunterApp(ctk.CTk):
         self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
 
 
-        self._roy_refresh_btn = ctk.CTkButton(
-            self.tab_roy, text=L['roy_refresh'],
-            height=34, corner_radius=8,
-            fg_color=MD3["elevated"], hover_color=MD3["card"],
-            text_color=MD3["on_surface"],
-            command=self._roy_refresh_pool,
-        )
-        self._roy_refresh_btn.pack(fill="x", padx=20, pady=(0, 8))
-
         self._roy_status_lb = ctk.CTkLabel(
             self.tab_roy, text="",
             font=ctk.CTkFont(size=10), text_color=MD3["on_surface2"],
@@ -3546,8 +3537,6 @@ class TotalHunterApp(ctk.CTk):
             self._roy_kingdom_lb.configure(text=LANGS[val]['roy_kingdom_label'])
         if hasattr(self, '_roy_coords_lb'):
             self._roy_coords_lb.configure(text=LANGS[val]['roy_coords_title'])
-        if hasattr(self, '_roy_refresh_btn'):
-            self._roy_refresh_btn.configure(text=LANGS[val]['roy_refresh'])
         if hasattr(self, '_roy_no_data_lb'):
             self._roy_no_data_lb.configure(text=LANGS[val]['roy_no_data'])
         # Перезапросить баланс чтобы единицы времени обновились
