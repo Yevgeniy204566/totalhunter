@@ -1,5 +1,26 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-06-04 (Kyiv) — Хангоф #87: Telegram-тизер + уборка мусора
+> Последнее обновление: 2026-06-04 (Kyiv) — Хангоф #88: TG-канал тизер — sendMessage ✅
+
+---
+
+## 🔧 ХАНГОФ #88 — TG-канал: sendMessage вместо sendPhoto
+> Дата: 2026-06-04 | Версия: **1.6.9** (только сервер, бот не менялся)
+
+### Что сделано
+
+**server/tg_channel.py — переписан:**
+- Убрана вся логика работы с файлом `tg_teaser.jpg`
+- Теперь `sendMessage` с текстом `🟢 ➕1️⃣`
+- Channel ID захардкожен: `-1003983747219` (@Total_Hunter)
+- `TG_CHANNEL_TOKEN` / `TG_CHANNEL_CHAT_ID` env vars остались для гибкости
+- Протестировано curl → `ok:true`, сообщение дошло в канал ✅
+
+**GCP:**
+- git pull + systemctl restart ✅ (Already up to date — push был раньше)
+
+### Статус
+- Бот-admin канала: ✅ (подтверждено getUpdates)
+- Живой тест: следующие Торговые Пути 07.06 20:00 Киев
 
 ---
 
