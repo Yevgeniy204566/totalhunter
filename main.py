@@ -2365,12 +2365,8 @@ class TotalHunterApp(ctk.CTk):
                 self.crypt_march_slider.set(cfg['crypt_max_march_min'])
             if 'crypt_swing1' in cfg:
                 self._swing1_var.set(cfg['crypt_swing1'])
-                if coord_manager.get_ui_offset("carter") == (0, 0) and cfg['crypt_swing1'] != 0:
-                    coord_manager.set_ui_offset("carter", 0, cfg['crypt_swing1'])
             if 'crypt_swing2' in cfg:
                 self._swing2_var.set(cfg['crypt_swing2'])
-                if coord_manager.get_ui_offset("march_accel") == (0, 0) and cfg['crypt_swing2'] != 0:
-                    coord_manager.set_ui_offset("march_accel", 0, cfg['crypt_swing2'])
             if 'crypt_speed_delta' in cfg:
                 self.crypt_speed_slider.set(cfg['crypt_speed_delta'])
             if 'scroll_clicks' in cfg:
@@ -2442,12 +2438,8 @@ class TotalHunterApp(ctk.CTk):
                 self.crypt_march_slider.set(cfg['crypt_max_march_min'])
             if 'crypt_swing1' in cfg:
                 self._swing1_var.set(cfg['crypt_swing1'])
-                if coord_manager.get_ui_offset("carter") == (0, 0) and cfg['crypt_swing1'] != 0:
-                    coord_manager.set_ui_offset("carter", 0, cfg['crypt_swing1'])
             if 'crypt_swing2' in cfg:
                 self._swing2_var.set(cfg['crypt_swing2'])
-                if coord_manager.get_ui_offset("march_accel") == (0, 0) and cfg['crypt_swing2'] != 0:
-                    coord_manager.set_ui_offset("march_accel", 0, cfg['crypt_swing2'])
             self._update_crypt_labels()
         except Exception:
             pass
@@ -3866,18 +3858,11 @@ class TotalHunterApp(ctk.CTk):
             ox, oy = coord_manager.get_ui_offset(_tune_get_key())
             self._tune_display_lb.configure(text=f"X: {ox:+d}px   Y: {oy:+d}px")
 
-        def _tune_autosave():
-            try:
-                coord_manager.save(PROFILES[self._cal_profile_var.get()])
-            except Exception:
-                pass
-
         def _tune_apply(dx, dy):
             key = _tune_get_key()
             ox, oy = coord_manager.get_ui_offset(key)
             coord_manager.set_ui_offset(key, ox + dx, oy + dy)
             _tune_refresh_display()
-            _tune_autosave()
 
         # Step size toggle
         _tune_step = ctk.CTkSegmentedButton(
@@ -3921,7 +3906,6 @@ class TotalHunterApp(ctk.CTk):
                       command=lambda: (
                           coord_manager.set_ui_offset(_tune_get_key(), 0, 0),
                           _tune_refresh_display(),
-                          _tune_autosave(),
                       ),
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
                       text_color=MD3["on_surface2"], height=26, corner_radius=8,
