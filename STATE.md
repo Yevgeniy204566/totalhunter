@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-06-02 **v1.6.6** — OCR пауза 0.6с (диалог успевает отрисоваться); чеклист сборки (README+tesseract) в CLAUDE.md.
+> Последнее обновление: 2026-06-03 **v1.6.7** — тюнинг кликов автосохраняется в профиль при каждом нажатии D-Pad и Reset.
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -31,7 +31,7 @@
 | **ROY real-time** | main.py `_start_roy_sse_listener` + server/roy.py | ✅ SSE подписка в боте. При находке биржи любым участником → мгновенное обновление пула. **v1.6.2:** собственные находки не дают двойной звук (`_roy_self_reported`). GCP задеплоен. | 2026-06-01 |
 | **Telegram OCR отчёт** | engine.py + debug_reporter.py + server/debug_router.py | ✅ После каждой биржи: `✅ OCR: K:X X:Y Y:Z — P%` или `❌ OCR: не распознаны`. Эндпоинт `/api/debug/send-text` на GCP. | 2026-06-01 |
 | **CryptHunter** | crypt_hunter.py | ✅ **v1.6.0:** `scroll_clicks` — настраиваемые тики скролла (1–200). Chrome=100+, Client=3. GUI слайдер в СКЛЕПЫ, сохранение в профиль. Дальность марша от 1 мин. | 2026-06-01 |
-| **Тюнинг кликов (D-Pad)** | coord_manager.py + main.py + crypt_hunter.py | ✅ **v1.6.3:** Секция «Тюнинг кликов» в КАЛИБРОВКА переведена на все 19 языков (`cal_tune_title/wt_icon/carter/top_accel/march_accel/reset`). Выбор хранится по индексу (0–3) — не сбрасывается при смене языка. | 2026-06-02 |
+| **Тюнинг кликов (D-Pad)** | coord_manager.py + main.py + crypt_hunter.py | ✅ **v1.6.7:** Автосохранение ui_offsets в профиль при каждом нажатии D-Pad и Reset — настройки переживают перезапуск и автообновление. Секция переведена на 19 языков. | 2026-06-03 |
 | **Калибровка** | calibration_ui.py + main.py | ✅ **v1.5.12:** клик в лупе работает. `win.after` перенесён в начало `_refresh`, `_update_dot` в try/except, `win.focus_force()`, `iconify()` вместо `withdraw()`. | 2026-05-31 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
 | **OG-превью** | web/public/img/og-v3.jpg | ✅ Night Blue фон, лого+свечение, градиент текст. Telegram кеш: менять имя файла → og-v4.jpg и т.д. | 2026-05-12 |
