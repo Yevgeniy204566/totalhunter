@@ -1,5 +1,52 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-06-03 21:00 (Kyiv) — Хангоф #86: ROY синхронизация + баг тюнинга v1.6.9
+> Последнее обновление: 2026-06-04 (Kyiv) — Хангоф #87: Telegram-тизер + уборка мусора
+
+---
+
+## 🔧 ХАНГОФ #87 — Telegram-канал тизер + уборка
+> Дата: 2026-06-04 | Версия: **1.6.9** (новый релиз бота не нужен — только сервер)
+
+### Что сделано
+
+**Уборка репозитория:**
+- Удалено 303 PNG/JPG (скриншоты, дебаг-аутпут) + логи из корня
+- Удалены артефакты: CLAUDE.md.bak, build_log.txt, ocr_log.txt, oil_test_result.txt
+
+**server/tg_channel.py — НОВЫЙ МОДУЛЬ:**
+- `send_telegram_alert(percent)` — async, fire-and-forget через `asyncio.to_thread`
+- Читает картинку с диска (`/opt/totalhunter/server/tg_teaser.jpg`), fallback на текст
+- Env vars: `TG_CHANNEL_TOKEN` (fallback → `TELEGRAM_DEBUG_TOKEN`), `TG_CHANNEL_CHAT_ID` (default `@Total_Hunter`)
+- Картинка: `Magic Биржа 3 июн. 2026.png` → закоммичена как `server/tg_teaser.jpg`, 1.9МБ
+
+**server/roy.py — минимальная правка:**
+- `BackgroundTasks` в `/roy/report`
+- Флаг `is_new = True` только при реальном INSERT (не дубль)
+- `if is_new and is_trade_routes_active(): background_tasks.add_task(send_telegram_alert, percent)`
+- Спам исключён: дубли не триггерят, вне ивента не триггерит
+
+**GCP деплой:**
+- `sudo git pull` → `systemctl is-active` → `active` ✅
+- Картинка на сервере: `-rw-r--r-- 1 root root 1.9M /opt/totalhunter/server/tg_teaser.jpg` ✅
+
+### ⚠️ НЕРЕШЕНО — curl-тест 404
+
+Тест `sendPhoto` и `sendMessage` к `@Total_Hunter` → `{"ok":false,"error_code":404,"description":"Not Found"}`.
+
+**Возможные причины:**
+1. Бот `@total_hunter_debug_bot` не добавлен как admin в канал (или без права публикации)
+2. Username канала не `@Total_Hunter` (нужно уточнить точное имя)
+3. Trailing `\r` в токене из override.conf при grep/cut
+
+**Что НЕ сломано:** код корректный, логика верная. При 404 `tg_channel.py` логирует `WARNING` и продолжает работу — бот не упадёт.
+
+**Следующий живой тест:** 07.06.2026 20:00 Киев — старт ивента Торговые Пути.
+
+### Следующие задачи
+- Перепроверить admin-права `@total_hunter_debug_bot` в канале
+- Уточнить точный username канала если не `@Total_Hunter`
+- Живой тест 07.06 — посмотреть придёт ли тизер в канал
+
+---
 
 ---
 
