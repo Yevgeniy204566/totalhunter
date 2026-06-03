@@ -3877,11 +3877,18 @@ class TotalHunterApp(ctk.CTk):
             ox, oy = coord_manager.get_ui_offset(_tune_get_key())
             self._tune_display_lb.configure(text=f"X: {ox:+d}px   Y: {oy:+d}px")
 
+        def _tune_autosave():
+            try:
+                coord_manager.save(PROFILES[self._cal_profile_var.get()])
+            except Exception:
+                pass
+
         def _tune_apply(dx, dy):
             key = _tune_get_key()
             ox, oy = coord_manager.get_ui_offset(key)
             coord_manager.set_ui_offset(key, ox + dx, oy + dy)
             _tune_refresh_display()
+            _tune_autosave()
 
         # Step size toggle
         _tune_step = ctk.CTkSegmentedButton(
@@ -3925,6 +3932,7 @@ class TotalHunterApp(ctk.CTk):
                       command=lambda: (
                           coord_manager.set_ui_offset(_tune_get_key(), 0, 0),
                           _tune_refresh_display(),
+                          _tune_autosave(),
                       ),
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
                       text_color=MD3["on_surface2"], height=26, corner_radius=8,
