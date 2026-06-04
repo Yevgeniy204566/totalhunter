@@ -23,8 +23,10 @@
   .header-logo-text { display: none !important; }
   .header-btn-group { gap: 6px !important; }
 
-  /* Скрыть кнопку +5 КР на маленьких экранах */
-  .header-earn-btn { display: none !important; }
+  /* Скрыть +5 КР, баланс алмазов и кнопку скачать из хедера на мобиле */
+  .header-earn-btn     { display: none !important; }
+  .header-download-btn { display: none !important; }
+  .credits-badge       { display: none !important; }
 
   /* ── Глобальные отступы страниц ─────────────────────────── */
   .page-content {
@@ -210,6 +212,21 @@
   /* Отступ снизу чтобы контент не залезал под баннер+nav */
   .main-content { padding-bottom: calc(50px + 64px) !important; }
 
+  /* ── Landing: Screenshots — колонка на мобиле ───────────── */
+  .landing-screenshots-row {
+    flex-direction: column !important;
+    gap: 16px !important;
+    overflow: visible !important;
+  }
+  .landing-screenshots-row img {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    transform: none !important;
+    transition: none !important;
+    width: min(90vw, 340px) !important;
+    max-width: 100% !important;
+  }
+
   /* ── Общие улучшения ────────────────────────────────────── */
   h2 { font-size: 18px !important; }
 
@@ -260,6 +277,17 @@
 .mobile-nav-item.active,
 .mobile-nav-item[aria-current="page"] {
   color: var(--accent);
+}
+
+/* ── Анимации: уважать настройки доступности ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .btn-pulse,
+  [class*="glow-pulse"],
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ── Скрыть bottom-nav на десктопе ───────────────────────── */

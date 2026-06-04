@@ -1,5 +1,152 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-06-04 (Kyiv) — Хангоф #88: TG-канал тизер — sendMessage ✅
+> Последнее обновление: 2026-06-04 (Kyiv) — SEO-аудит мобильной версии total-hunter.com
+
+---
+
+## 📱 SEO АУДИТ — МОБИЛЬНАЯ ВЕРСИЯ total-hunter.com
+> Дата: 2026-06-04 | Метод: аудит кода (index.html, useMeta.js, mobile.css, LandingPage.jsx, App.jsx, vite.config.js, vercel.json, sitemap.xml, robots.txt)
+
+---
+
+### ✅ ЧТО ХОРОШО
+
+| Пункт | Статус |
+|---|---|
+| `<meta name="viewport" content="width=device-width, initial-scale=1.0">` | ✅ |
+| `apple-touch-icon` (256px) | ✅ |
+| Favicons в 6 размерах (16–256px) | ✅ |
+| mobile.css — обширные стили для 768px и ниже | ✅ |
+| `clamp()` для h1/p (адаптивные шрифты) | ✅ |
+| CTA-кнопки `min-height: 44px` (touch target) | ✅ |
+| Canonical динамически обновляется через `useMeta.js` | ✅ |
+| hreflang x-default + en + ru (статика + SPA-навигация) | ✅ |
+| sitemap.xml 12 URL (6 EN + 6 RU) с xhtml:link | ✅ |
+| robots.txt (Allow: /, Disallow: /dashboard) | ✅ |
+| FAQ JSON-LD в EN + RU (динамически) | ✅ |
+| SoftwareApplication + Organization + WebSite JSON-LD | ✅ |
+| OG + Twitter Card мета-теги | ✅ |
+| Bottom-nav на мобиле | ✅ |
+| CTA flexDirection: column + width: 100% на мобиле | ✅ |
+| `<html lang="en">` в index.html | ✅ |
+
+---
+
+### 🔴 КРИТИЧЕСКИЕ ПРОБЛЕМЫ
+
+#### 1. SPA без SSR/prerender на живом билде
+
+**Симптом:** `vercel.json` → все маршруты уходят в `/index.html`. Googlebot (в т.ч. mobile crawler Googlebot-Mobile) получает **пустой HTML**, потом должен исполнить JavaScript.
+
+**Состояние:** `prerender.mjs` был написан в Хангофе #69, но в `vite.config.js` нет ни `vite-plugin-prerender`, ни вызова prerender.mjs в build-шаге. Нужно проверить `package.json → scripts.build` — включён ли `node prerender.mjs` в пайплайн.
+
+**Последствие:** Если prerender не запускается при каждом `vite build`, то на продакшене Googlebot видит скелет без контента. Это **главная причина** неполной индексации. На мобиле особенно критично — Google Mobile-First Indexing.
+
+**Что проверить:**
+```bash
+# В web/package.json → "build": "vite build && node prerender.mjs" ?
+# Или есть vercel.json → buildCommand ?
+```
+
+#### 2. Версия `v1.2.2` в CTA на лендинге
+
+**Файл:** `web/src/pages/LandingPage.jsx`, строка 323
+```jsx
+v1.2.2 · Windows 10/11 · 64-bit
+```
+**Текущая версия: v1.6.9.** Эта строка видна Google при индексации и пользователям. Создаёт недоверие.
+
+---
+
+### 🟡 СРЕДНИЕ ПРОБЛЕМЫ
+
+#### 3. `softwareVersion: "1.0"` в JSON-LD (index.html строка 56)
+
+```json
+"softwareVersion": "1.0"
+```
+Актуальная версия — 1.6.9. Google может использовать это поле в Rich Results.
+
+**Фикс:** обновить до `"1.6.9"`.
+
+#### 4. Нет `<link rel="manifest">` и `theme-color`
+
+- Без `manifest.json` нет PWA-сигналов для Google. "Add to Home Screen" не работает.
+- Без `<meta name="theme-color" content="#1a1d2e">` Chrome на Android не красит статус-бар в цвет сайта (мелочь, но заметно).
+
+**Фикс:** создать `web/public/manifest.json` (минимальный), добавить `<link rel="manifest" href="/manifest.json">` и `<meta name="theme-color" content="#1a1d2e">` в index.html.
+
+#### 5. LCP-изображение (logo.png) без оптимизации
+
+**Файл:** `LandingPage.jsx` строки 194–209 — `<img src="/img/logo.png" ...>`
+
+- Нет явных атрибутов `width` и `height` (только `style.width`) → **CLS (Cumulative Layout Shift)**
+- Нет `fetchpriority="high"` → LCP не приоритизирован
+- Нет `<link rel="preload" as="image" href="/img/logo.png">` в index.html
+
+**Последствие:** Плохой LCP на мобиле (медленнее загрузка) + ненулевой CLS.
+
+#### 6. Screenshots-секция без мобильного адаптива
+
+**Файл:** `LandingPage.jsx` строки 290–306
+
+Перекрывающиеся 3D-скрины с `marginRight: '-52px'` и `perspective(900px)` не переопределены в `mobile.css`. На экранах 375px они вероятно выходят за правый край страницы → горизонтальный скролл на мобиле → **CLS + плохой UX сигнал**.
+
+**Фикс:** добавить в mobile.css:
+```css
+/* Screenshots — убрать 3D и перекрытие на мобиле */
+.landing-screenshots-row {
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+.landing-screenshots-row img {
+  margin-right: 0 !important;
+  transform: none !important;
+  width: 90vw !important;
+  max-width: 360px !important;
+}
+```
+(Нужно добавить className="landing-screenshots-row" на div-обёртку в JSX.)
+
+---
+
+### 🟢 НИЗКИЕ / КОСМЕТИЧЕСКИЕ
+
+#### 7. `glow-pulse` анимация без `prefers-reduced-motion`
+
+Кнопки скачать анимированы. Не влияет на ранжирование, но снижает accessibility score (Lighthouse). Добавить в CSS:
+```css
+@media (prefers-reduced-motion: reduce) {
+  .btn-pulse, [style*="glow-pulse"] { animation: none !important; }
+}
+```
+
+#### 8. Inter шрифт не подгружается явно
+
+В index.html нет `<link rel="preconnect">` к Google Fonts. В коде `fontFamily: 'Inter, sans-serif'` через инлайн-стиль. Если Inter не установлен системно, браузер падает на sans-serif. На мобиле это часто.
+
+---
+
+### 📊 ИТОГ: ПРИОРИТЕТЫ
+
+| # | Проблема | Влияние | Сложность |
+|---|---|---|---|
+| 1 | Prerender в build-пайплайне (проверить package.json) | 🔴 Критично | Проверить, не менять |
+| 2 | Версия v1.2.2 → v1.6.9 в CTA | 🟡 Доверие | 1 строка |
+| 3 | softwareVersion "1.0" → "1.6.9" в JSON-LD | 🟡 Rich Results | 1 строка |
+| 4 | manifest.json + theme-color | 🟡 PWA/мобилка | 30 мин |
+| 5 | LCP: fetchpriority + width/height на logo.png | 🟡 Core Web Vitals | 3 строки |
+| 6 | Screenshots на мобиле — горизонтальный скролл | 🟡 UX/CLS | CSS |
+| 7 | prefers-reduced-motion | 🟢 Accessibility | CSS |
+| 8 | Inter preconnect | 🟢 FCP | 1 строка |
+
+---
+
+### ❓ ВОПРОС GEMINI
+
+**Критический:** В `package.json` (web/) — какой сейчас `scripts.build`? Запускается ли `node prerender.mjs` после `vite build`? Если нет — это главная проблема индексации.
+
+---
 
 ---
 

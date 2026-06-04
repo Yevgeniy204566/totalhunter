@@ -194,10 +194,13 @@ export default function LandingPage() {
             <img
               src="/img/logo.png"
               alt="Total Hunter"
+              fetchpriority="high"
+              loading="eager"
               style={{
                 width: '100%',
                 maxWidth: 920,
                 height: 'auto',
+                aspectRatio: '920 / 280',
                 borderRadius: 32,
                 objectFit: 'contain',
                 filter: 'drop-shadow(0 0 64px rgba(61,127,255,0.9)) drop-shadow(0 0 120px rgba(61,127,255,0.5))',
@@ -287,7 +290,7 @@ export default function LandingPage() {
           }}>
             {lang === 'en' ? 'Exchanges & Crypts — in one window' : 'Биржи и Склепы — в одном окне'}
           </h2>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="landing-screenshots-row" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <Screenshot3D
               src="/img/lending-exchange.png"
               alt={lang === 'en' ? 'Exchange hunter UI' : 'Интерфейс поиска бирж'}
@@ -321,7 +324,7 @@ export default function LandingPage() {
           {lang === 'en' ? 'Download TotalHunter (.zip)' : 'Скачать TotalHunter (.zip)'}
         </a>
         <p style={{ marginTop: 10, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-          v1.2.2 · Windows 10/11 · 64-bit
+          v1.6.9 · Windows 10/11 · 64-bit
         </p>
       </div>
 
