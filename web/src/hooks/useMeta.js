@@ -77,6 +77,10 @@ export function useFaqSchema(items) {
         acceptedAnswer: { '@type': 'Answer', text: a },
       })),
     }
+    // удаляем статичный prerender-вариант если есть — избегаем дубля
+    const existing = document.getElementById('faq-schema')
+    if (existing) existing.remove()
+
     const script = document.createElement('script')
     script.type = 'application/ld+json'
     script.id   = 'faq-schema'
