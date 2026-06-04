@@ -2,7 +2,36 @@
 
 > Не тратить время повторно на эти решения.
 > Обновляется командой **«Хангоф»**.
-> Последнее обновление: 2026-06-03 (v1.6.9 — баг swing→ui_offsets, auto-save на клик)
+> Последнее обновление: 2026-06-04 (v1.6.9 — React muted-баг, SEO дубль JSON-LD)
+
+---
+
+## ⛔ React `muted` атрибут — переключать только через ref, не state (Хангоф #89)
+
+**Проблема:** `<video muted={isMuted}>` — React не синхронизирует атрибут `muted` после initial render. Это известный баг React: `muted` устанавливается только один раз при маунте, дальнейшие изменения через state игнорируются.
+**Симптом:** Кнопка звука меняет иконку в UI, но видео не реагирует (остаётся muted или unmuted).
+**Решение:**
+```jsx
+const videoRef = useRef(null)
+const [isMuted, setIsMuted] = useState(true)  // только для кнопки UI
+
+function toggleSound() {
+  if (!videoRef.current) return
+  videoRef.current.muted = !videoRef.current.muted  // прямая мутация DOM
+  setIsMuted(videoRef.current.muted)
+}
+// <video ref={videoRef} muted ...>  ← initial state, потом только через ref
+```
+**Правило:** Для video/audio элементов React `muted`, `volume`, `currentTime` — всегда через `ref.current.property = value`. Никогда через state → prop.
+
+---
+
+## ⛔ Дубль JSON-LD после React-гидратации SPA с prerender (Хангоф #89)
+
+**Проблема:** prerender.mjs инжектирует `<script id="faq-schema">` в статический HTML. При гидратации `useFaqSchema()` добавляет ещё один `<script id="faq-schema">` через `document.head.appendChild`. Google получает два блока FAQ JSON-LD.
+**Симптом:** В Google Search Console — ошибка «Дублированные элементы structured data» или неожиданные FAQ в поиске.
+**Решение:** В `useFaqSchema()` перед appendChild: `const existing = document.getElementById('faq-schema'); if (existing) existing.remove()`.
+**Правило:** Любой useEffect который инжектирует элемент с id — сначала удалить существующий с этим id. prerender может уже иметь статичный вариант.
 
 ---
 

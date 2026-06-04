@@ -1,5 +1,61 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-06-04 (Kyiv) — SEO-аудит мобильной версии total-hunter.com
+> Последнее обновление: 2026-06-04 (Kyiv) — Хангоф #89: мобильный SEO + видео на лендинге
+
+---
+
+## 🔧 ХАНГОФ #89 — Мобильный SEO + Demo-видео + Desktop SEO аудит
+> Дата: 2026-06-04 | Версия: **v1.6.9** (бот не менялся, только frontend)
+
+### Что сделано
+
+**SEO мобильная оптимизация (web/):**
+- `index.html`: `<link rel="preload" as="image" fetchpriority="high" href="/img/logo.png">`, `<link rel="manifest">`, `<meta name="theme-color" content="#16171d">`, `softwareVersion "1.0"→"1.6.9"` в JSON-LD
+- `LandingPage.jsx`: версия `v1.2.2→v1.6.9` в CTA; `fetchpriority="high"` + `loading="eager"` + `aspectRatio:"920/280"` на logo-img (фикс CLS); className `landing-screenshots-row` на контейнер скриншотов
+- `mobile.css`: screenshots → flex-direction:column (убраны 3D-оверлап и горизонтальный скролл); `.credits-badge` + `.header-download-btn` скрыты на мобиле (хедер стал чистым); `prefers-reduced-motion` media query
+- `Layout.jsx`: добавлен `header-download-btn` class на кнопку скачать
+- `manifest.json`: создан (`web/public/manifest.json`) — PWA, иконки 64/128/256px, theme #16171d
+
+**Demo-видео на лендинге:**
+- Файл: `web/public/video/exchange-demo.mp4` (1.7MB, скопирован из корня)
+- Компонент `DemoVideo` (отдельная функция перед `LandingPage`):
+  - `autoPlay loop muted playsInline` — iOS-совместимый автоплей
+  - Кнопка 🔇/🔊 через `useRef` (обход React-бага с `muted` атрибутом)
+  - `transform: scale(1.13)` + `overflow:hidden` на контейнере → letterboxing обрезан
+  - `aspectRatio:"16/9"` на контейнере → CLS=0
+- Заголовок: "Bot finds an exchange" / "Бот находит биржу"
+- Расположение: между секцией скриншотов и Live Stats
+
+**Desktop SEO аудит:**
+- Подтверждено: `package.json → "build": "vite build && node prerender.mjs"` ✅ prerender в pipeline
+- Подтверждено: sitemap.xml 12 URL + xhtml:link hreflang пары ✅
+- Подтверждено: robots.txt, manifest.json, всё живо ✅
+- Исправлен дубль FAQ JSON-LD: `useMeta.js → useFaqSchema()` теперь удаляет существующий `#faq-schema` перед append
+- `sitemap.xml` lastmod: `2026-05-29→2026-06-04` для всех 12 URL
+
+**Ограничение (не баг):** prerender только заменяет мета-теги, `<body>` = `<div id="root">` без текста. Google рендерит JS — OK. Bing хуже. Для текущего масштаба норма.
+
+### Коммиты
+| Хэш | Что |
+|-----|-----|
+| `a818906` | feat: mobile SEO fixes + header UX (preload, manifest, theme-color, screenshots column, header cleanup) |
+| `339132a` | feat: add exchange demo video section (1.7MB, HTML5 autoplay) |
+| `73071dd` | feat: demo video — sound toggle, letterbox crop, clean title |
+| `33a1849` | fix: SEO — deduplicate FAQ JSON-LD, update sitemap lastmod |
+
+### Антипаттерны зафиксированы в ANTI-PATTERNS.md
+- `React muted атрибут` — переключать только через ref, не state
+- `Дубль JSON-LD после гидратации` — перед appendChild удалять существующий #id
+
+### Статус
+- Бот: v1.6.9, без изменений, активен
+- Сайт: https://total-hunter.com — обновлён ✅
+- Следующий ивент Торговые Пути: 07.06.2026 20:00 Киев (живой тест TG-тизера и ROY)
+
+### Открытые вопросы
+- Чёрные полосы в видео: `scale(1.13)` — проверить визуально, при необходимости увеличить до 1.18
+- Ответить Gemini: prerender в pipeline ✅, дубль JSON-LD устранён ✅
+
+---
 
 ---
 
