@@ -119,6 +119,88 @@ function StatCard({ label, color, rawValue }) {
   )
 }
 
+function DemoVideo({ lang }) {
+  const videoRef = useRef(null)
+  const [isMuted, setIsMuted] = useState(true)
+
+  function toggleSound() {
+    if (!videoRef.current) return
+    videoRef.current.muted = !videoRef.current.muted
+    setIsMuted(videoRef.current.muted)
+  }
+
+  return (
+    <section style={{
+      padding: '72px 24px 80px',
+      background: 'var(--card)',
+      borderTop: '1px solid var(--outline)',
+    }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
+        <p style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: '2.5px',
+          color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14,
+        }}>
+          {lang === 'en' ? 'Live Demo' : 'Как это работает'}
+        </p>
+        <h2 style={{
+          fontSize: 'clamp(24px, 3.5vw, 38px)',
+          fontWeight: 800, color: '#FFFFFF', marginBottom: 48,
+        }}>
+          {lang === 'en' ? 'Bot finds an exchange' : 'Бот находит биржу'}
+        </h2>
+
+        {/* Контейнер с overflow:hidden обрезает полосы */}
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: '16 / 9',
+          borderRadius: 16,
+          overflow: 'hidden',
+          border: '1px solid rgba(61,127,255,0.25)',
+          boxShadow: '0 0 60px rgba(61,127,255,0.18), 0 0 120px rgba(61,127,255,0.08), 0 24px 64px rgba(0,0,0,0.55)',
+        }}>
+          <video
+            ref={videoRef}
+            src="/video/exchange-demo.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              transform: 'scale(1.13)',
+            }}
+          />
+          {/* Кнопка звука — внизу справа */}
+          <button
+            onClick={toggleSound}
+            title={isMuted ? (lang === 'en' ? 'Enable sound' : 'Включить звук') : (lang === 'en' ? 'Mute' : 'Выключить звук')}
+            style={{
+              position: 'absolute', bottom: 12, right: 12, zIndex: 2,
+              background: 'rgba(0,0,0,0.65)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              borderRadius: 8, color: '#fff',
+              fontSize: 18, width: 40, height: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', backdropFilter: 'blur(6px)',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.85)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.65)'}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
 
 const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
@@ -329,53 +411,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── Demo Video ─────────────────────────────────────────── */}
-      <section style={{
-        padding: '72px 24px 80px',
-        background: 'var(--card)',
-        borderTop: '1px solid var(--outline)',
-      }}>
-        <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '2.5px',
-            color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14,
-          }}>
-            {lang === 'en' ? 'Live Demo' : 'Как это работает'}
-          </p>
-          <h2 style={{
-            fontSize: 'clamp(24px, 3.5vw, 38px)',
-            fontWeight: 800, color: '#FFFFFF', marginBottom: 48,
-          }}>
-            {lang === 'en'
-              ? 'Bot finds an exchange in seconds'
-              : 'Бот находит биржу за секунды'}
-          </h2>
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: '16 / 9',
-            borderRadius: 16,
-            overflow: 'hidden',
-            border: '1px solid rgba(61,127,255,0.25)',
-            boxShadow: '0 0 60px rgba(61,127,255,0.18), 0 0 120px rgba(61,127,255,0.08), 0 24px 64px rgba(0,0,0,0.55)',
-          }}>
-            <video
-              src="/video/exchange-demo.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-          </div>
-        </div>
-      </section>
+      <DemoVideo lang={lang} />
 
       {/* ── Live Stats ─────────────────────────────────────────── */}
       <section style={{
