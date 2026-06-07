@@ -2854,6 +2854,8 @@ class TotalHunterApp(ctk.CTk):
         """Авто-обновление пула сразу после успешного report() — из фонового треда.
         Pre-populate known IDs before update — собственные координаты не вызывают звук.
         """
+        if not self._roy_enabled_var.get():
+            return
         def _refresh():
             self._roy_pool_known_ids |= {
                 (e.get('kingdom'), e.get('x'), e.get('y')) for e in pool
@@ -3178,7 +3180,7 @@ class TotalHunterApp(ctk.CTk):
         self._roy_coords_lb.pack(anchor="w", padx=22)
 
         self._roy_list_frame = ctk.CTkScrollableFrame(
-            self.tab_roy, height=200, fg_color=MD3["elevated"], corner_radius=8,
+            self.tab_roy, height=400, fg_color=MD3["elevated"], corner_radius=8,
         )
         self._roy_list_frame.pack(fill="x", padx=20, pady=(4, 8))
 
@@ -3276,6 +3278,8 @@ class TotalHunterApp(ctk.CTk):
         if enabled:
             self._roy_refresh_balance()
             self._roy_refresh_pool()
+        else:
+            self._roy_update_list([])  # скрыть координаты при отключении
 
     def _on_roy_kingdom_change(self, event=None):
         try:
@@ -3327,7 +3331,7 @@ class TotalHunterApp(ctk.CTk):
                             if raw.startswith('data:'):
                                 try:
                                     data = _json.loads(raw[5:].strip())
-                                    if data.get('pool_updated'):
+                                    if data.get('pool_updated') and self._roy_enabled_var.get():
                                         self.after(0, self._roy_refresh_pool)
                                 except Exception:
                                     pass
@@ -3336,15 +3340,20 @@ class TotalHunterApp(ctk.CTk):
         threading.Thread(target=_loop, daemon=True).start()
 
     def _roy_refresh_pool(self):
-        """Загружает список координат из пула Роя и обновляет список."""
+        """Загружает координаты из пула. consume=True — списывает 60 сек баланса.
+        Если баланс 0, сервер вернёт success=False и пустой список.
+        """
+        if not self._roy_enabled_var.get():
+            return
         err_label = LANGS[self.current_lang]['roy_error']
         def _fetch():
             try:
                 from roy.roy_client import RoyClient
                 from auth import get_hwid
                 client = RoyClient(get_hwid())
-                pool = client.get_pool(consume=False)
+                pool = client.get_pool(consume=True)
                 self.after(0, lambda: self._roy_update_list(pool))
+                self.after(0, self._roy_refresh_balance)
             except Exception as e:
                 self.after(0, lambda: self._roy_status_lb.configure(text=f"{err_label}: {e}"))
         threading.Thread(target=_fetch, daemon=True).start()
@@ -3356,7 +3365,7 @@ class TotalHunterApp(ctk.CTk):
         # Звук если появились новые координаты которых раньше не было — но не наши собственные
         new_ids = {(e.get('kingdom'), e.get('x'), e.get('y')) for e in pool}
         truly_new = (new_ids - self._roy_pool_known_ids) - getattr(self, '_roy_self_reported', set())
-        if truly_new:
+        if truly_new and self._roy_enabled_var.get():
             _sound = getattr(self.engine, 'sound_path', None) if hasattr(self, 'engine') and self.engine else None
             try:
                 import winsound
@@ -3474,6 +3483,12 @@ class TotalHunterApp(ctk.CTk):
                 pass  # виджет уничтожен при refresh — пропускаем
 
         if self._pool_countdown_labels:
+            # Если хоть одна запись истекла — обновить список с сервера (он уже отфильтрован)
+            if any((now - ts) >= _POOL_TTL_SEC for (_, ts) in self._pool_countdown_labels):
+                self._pool_countdown_labels.clear()
+                self._pool_countdown_running = False
+                self._roy_refresh_pool()
+                return
             self.after(1000, self._tick_pool_countdown)
         else:
             self._pool_countdown_running = False
