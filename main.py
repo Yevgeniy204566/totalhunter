@@ -2963,6 +2963,9 @@ class TotalHunterApp(ctk.CTk):
         if self.is_combo_running and hasattr(self, 'combo_engine'):
             self.is_combo_running = False
             self.combo_engine.stop()
+        # Обновить пул — восстановить незаконченные записи после остановки
+        if hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get():
+            self.after(500, self._roy_refresh_pool)
 
     def on_target_found(self):
         """Вызывается из фонового потока движка"""
@@ -3217,6 +3220,7 @@ class TotalHunterApp(ctk.CTk):
 
         if self._roy_enabled_var.get():
             self.after(1500, self._roy_refresh_balance)
+            self.after(2000, self._roy_refresh_pool)  # загрузить пул при старте
 
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  ⚙️  ИВЕНТ «ТОРГОВЫЕ ПУТИ» — МЕНЯЙ ЗДЕСЬ (клиент)               ║
@@ -3340,9 +3344,7 @@ class TotalHunterApp(ctk.CTk):
         threading.Thread(target=_loop, daemon=True).start()
 
     def _roy_refresh_pool(self):
-        """Загружает координаты из пула. consume=True — списывает 60 сек баланса.
-        Если баланс 0, сервер вернёт success=False и пустой список.
-        """
+        """Загружает список координат из пула Роя и обновляет список."""
         if not self._roy_enabled_var.get():
             return
         err_label = LANGS[self.current_lang]['roy_error']
@@ -3351,9 +3353,8 @@ class TotalHunterApp(ctk.CTk):
                 from roy.roy_client import RoyClient
                 from auth import get_hwid
                 client = RoyClient(get_hwid())
-                pool = client.get_pool(consume=True)
+                pool = client.get_pool(consume=False)
                 self.after(0, lambda: self._roy_update_list(pool))
-                self.after(0, self._roy_refresh_balance)
             except Exception as e:
                 self.after(0, lambda: self._roy_status_lb.configure(text=f"{err_label}: {e}"))
         threading.Thread(target=_fetch, daemon=True).start()
