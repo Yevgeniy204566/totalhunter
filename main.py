@@ -1508,6 +1508,7 @@ class TotalHunterApp(ctk.CTk):
         self.update_license_info()
         self.after(1000, self._start_balance_sync)
         self.after(500, self._tick_trade_routes)
+        self.after(60_000, self._tick_roy_drain)
 
         # Глобальный перехват ESC — стоп в любом окне
         def _esc_handler(event):
@@ -3273,6 +3274,24 @@ class TotalHunterApp(ctk.CTk):
         """Повторяющийся тик каждую минуту."""
         self._update_trade_routes_labels()
         self.after(60_000, self._tick_trade_routes)
+
+    def _tick_roy_drain(self):
+        """Повторяющийся тик каждую минуту: списывает баланс за простой РОЙ.
+
+        Простой = тумблер РОЙ включён, но поиск бирж не идёт (is_running=False).
+        Списание выполняется на сервере (POST /roy/idle); здесь только условие запуска.
+        """
+        if hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get() and not self.is_running:
+            def _send():
+                try:
+                    from roy.roy_client import RoyClient
+                    from auth import get_hwid
+                    if RoyClient(get_hwid()).idle():
+                        self._roy_refresh_balance()
+                except Exception:
+                    pass
+            threading.Thread(target=_send, daemon=True).start()
+        self.after(60_000, self._tick_roy_drain)
 
     def _on_roy_toggle(self):
         enabled = self._roy_enabled_var.get()

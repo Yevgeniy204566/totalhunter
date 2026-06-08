@@ -21,10 +21,14 @@ def clear_roy_rate_limits():
     roy._report_rate.clear()
     if hasattr(roy, '_scan_rate'):
         roy._scan_rate.clear()
+    if hasattr(roy, '_idle_rate'):
+        roy._idle_rate.clear()
     yield
     roy._report_rate.clear()
     if hasattr(roy, '_scan_rate'):
         roy._scan_rate.clear()
+    if hasattr(roy, '_idle_rate'):
+        roy._idle_rate.clear()
 
 
 # ── B1: rate limit на POST /roy/scan ────────────────────────────────────────
@@ -71,6 +75,90 @@ async def test_scan_different_hwids_both_accrue():
         hashed = {r.hwid: r.balance_sec for r in rows}
         assert hashed.get("HWID_SCAN03") == 45
         assert hashed.get("HWID_SCAN04") == 45
+
+
+# ── Idle Drain: POST /roy/idle ───────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_idle_decrements_balance_by_drain_amount(db_session):
+    """Один /idle списывает IDLE_DRAIN_SEC (30 сек) с существующего баланса."""
+    db_session.add(RoyBalance(hwid="HWID_IDLE01", balance_sec=300))
+    await db_session.flush()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/roy/idle", json={"hwid": "HWID_IDLE01"})
+
+    assert r.json()["success"] is True
+    async for db in app.dependency_overrides[get_db]():
+        from sqlalchemy import select
+        row = (await db.execute(
+            select(RoyBalance).where(RoyBalance.hwid == "HWID_IDLE01")
+        )).scalar_one_or_none()
+        assert row.balance_sec == 270
+
+
+@pytest.mark.asyncio
+async def test_idle_consecutive_same_hwid_second_is_rate_limited():
+    """Два /idle подряд с одного HWID — второй возвращает note=rate_limited."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r1 = await c.post("/roy/idle", json={"hwid": "HWID_IDLE02"})
+        r2 = await c.post("/roy/idle", json={"hwid": "HWID_IDLE02"})
+
+    assert r1.json()["success"] is True
+    assert r1.json().get("note") != "rate_limited"
+    assert r2.json()["success"] is True
+    assert r2.json().get("note") == "rate_limited"
+
+
+@pytest.mark.asyncio
+async def test_idle_rate_limited_request_does_not_drain_twice(db_session):
+    """Rate-limited /idle не списывает повторно — баланс убывает только один раз."""
+    db_session.add(RoyBalance(hwid="HWID_IDLE03", balance_sec=300))
+    await db_session.flush()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        await c.post("/roy/idle", json={"hwid": "HWID_IDLE03"})   # списан
+        await c.post("/roy/idle", json={"hwid": "HWID_IDLE03"})   # rate_limited
+
+    async for db in app.dependency_overrides[get_db]():
+        from sqlalchemy import select
+        row = (await db.execute(
+            select(RoyBalance).where(RoyBalance.hwid == "HWID_IDLE03")
+        )).scalar_one_or_none()
+        assert row.balance_sec == 270  # не 240 — второй вызов не учтён
+
+
+@pytest.mark.asyncio
+async def test_idle_does_not_drop_balance_below_zero(db_session):
+    """Баланс не уходит в минус — останавливается на нуле."""
+    db_session.add(RoyBalance(hwid="HWID_IDLE04", balance_sec=10))
+    await db_session.flush()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/roy/idle", json={"hwid": "HWID_IDLE04"})
+
+    assert r.json()["success"] is True
+    async for db in app.dependency_overrides[get_db]():
+        from sqlalchemy import select
+        row = (await db.execute(
+            select(RoyBalance).where(RoyBalance.hwid == "HWID_IDLE04")
+        )).scalar_one_or_none()
+        assert row.balance_sec == 0
+
+
+@pytest.mark.asyncio
+async def test_idle_with_no_existing_balance_row_creates_nothing():
+    """/idle для HWID без записи баланса — ничего не создаёт и не падает."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/roy/idle", json={"hwid": "HWID_IDLE05"})
+
+    assert r.json()["success"] is True
+    async for db in app.dependency_overrides[get_db]():
+        from sqlalchemy import select
+        row = (await db.execute(
+            select(RoyBalance).where(RoyBalance.hwid == "HWID_IDLE05")
+        )).scalar_one_or_none()
+        assert row is None
 
 
 # ── B3+B4: дедупликация по (kingdom, x, y) в /report ────────────────────────

@@ -4,6 +4,7 @@ roy.py — Система РОЙ: Proof of Scan + пул координат би
 Эндпоинты:
     POST /roy/report          — репорт координат биржи (K, X, Y, %)
     POST /roy/scan            — фиксация активности (+45 сек баланса за 30 сек скана)
+    POST /roy/idle            — простой при включённом РОЙ (−30 сек баланса в минуту)
     POST /roy/stop            — сигнал остановки поиска в королевстве
     GET  /roy/pool            — получить актуальный пул координат
     GET  /roy/balance/{hwid}  — текущий баланс времени
@@ -31,6 +32,8 @@ router = APIRouter(prefix="/roy", tags=["roy"])
 
 POOL_TTL_MIN      = 20    # координата живёт 20 минут
 SCAN_REWARD_SEC   = 45    # 30 сек скана → 45 сек баланса (1.5x)
+IDLE_DRAIN_SEC    = 30    # простой (тумблер ON, поиск не идёт) → −30 сек баланса в минуту
+IDLE_RATE_SEC     = 58    # минимальный интервал /idle с одного hwid (клиент шлёт раз в 60с)
 POOL_COST_SEC     = 60    # стоимость одного запроса пула
 PERCENT_THRESHOLD = 90    # >= 90% — биржа выкуплена, не показываем
 RATE_LIMIT_SEC    = 10    # минимальный интервал репортов с одного hwid
@@ -40,6 +43,7 @@ SESSION_TTL_SEC   = 300   # 5 минут без пинга = сессия счи
 # in-memory rate limiters: hwid → unix timestamp последнего запроса
 _report_rate:  dict[str, float]             = {}
 _scan_rate:    dict[str, float]             = {}
+_idle_rate:    dict[str, float]             = {}
 # активные сессии: (hwid, kingdom) → timestamp последнего пинга
 _hwid_kingdom: dict[tuple[str, int], float] = {}
 # подписчики SSE
@@ -178,6 +182,10 @@ class ScanRequest(BaseModel):
     kingdom: int | None = None  # None = старый клиент (backward compat)
 
 
+class IdleRequest(BaseModel):
+    hwid: str
+
+
 class StopRequest(BaseModel):
     hwid:    str
     kingdom: int
@@ -306,6 +314,32 @@ async def report_scan(req: ScanRequest, db: AsyncSession = Depends(get_db)):
         await _broadcast(db)
 
     return {"success": True, "event_active": event_active}
+
+
+# ── POST /roy/idle ────────────────────────────────────────────────────────────
+
+@router.post("/idle")
+async def report_idle(req: IdleRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Вызывается ботом каждые 60 сек, пока тумблер РОЙ включён, а поиск бирж не идёт.
+    Списывает IDLE_DRAIN_SEC секунд баланса (плата за простаивающий доступ к пулу).
+    Баланс не уходит ниже нуля; если записи нет — списывать нечего.
+    """
+    now_ts = time.time()
+
+    if now_ts - _idle_rate.get(req.hwid, 0) < IDLE_RATE_SEC:
+        return {"success": True, "note": "rate_limited"}
+    _idle_rate[req.hwid] = now_ts
+
+    async with db.begin():
+        row = (await db.execute(
+            select(RoyBalance).where(RoyBalance.hwid == req.hwid)
+        )).scalar_one_or_none()
+        if row:
+            row.balance_sec = max(0, row.balance_sec - IDLE_DRAIN_SEC)
+            row.updated_at  = datetime.now(timezone.utc)
+
+    return {"success": True}
 
 
 # ── POST /roy/stop ────────────────────────────────────────────────────────────

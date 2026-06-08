@@ -62,6 +62,17 @@ class RoyClient:
             print(f"[ROY] scan() ERROR: {e!r}")
             return False
 
+    def idle(self) -> bool:
+        """Фиксирует 60 сек простоя при включённом тумблере РОЙ (−30 сек баланса).
+        Возвращает True если сервер принял запрос.
+        """
+        try:
+            r = requests.post(f"{SERVER_URL}/roy/idle", json={"hwid": self.hwid}, timeout=_TIMEOUT)
+            return r.json().get("success", False)
+        except Exception as e:
+            print(f"[ROY] idle() ERROR: {e!r}")
+            return False
+
     def stop_session(self, kingdom: int) -> None:
         """Сигнал серверу об остановке поиска в ГОСе. Fire-and-forget."""
         def _send():
