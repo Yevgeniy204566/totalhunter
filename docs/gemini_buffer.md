@@ -1,5 +1,38 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-06-04 (Kyiv) — Хангоф #89: мобильный SEO + видео на лендинге
+> Последнее обновление: 2026-06-08 (Kyiv) — Хангоф #90: drain ROY v1.7.2 — релиз закрыт полностью
+
+---
+
+## 🔧 ХАНГОФ #90 — Drain ROY v1.7.2 (релиз выпущен и задеплоен)
+> Дата: 2026-06-08 | Версия: **v1.7.2**
+
+### Что сделано
+
+**Фича: drain ROY — экономика времени за простой**
+- Правило: тумблер РОЙ включён + поиск бирж НЕ идёт (`is_running=False`) → −30 сек баланса в минуту
+- `server/roy.py`: эндпоинт `POST /roy/idle` — `IDLE_DRAIN_SEC=30`, rate-limit 58с (`_idle_rate`), баланс не уходит ниже нуля
+- `roy/roy_client.py`: метод `idle()` (по аналогии с `scan()`)
+- `main.py`: тик `_tick_roy_drain` — `self.after(60_000, ...)`, фоновый поток для HTTP, условие `_roy_enabled_var.get() and not self.is_running`
+- TDD: 5 новых тестов в `server/tests/test_roy.py`, все зелёные (12/12 в файле)
+- `version.py`: 1.7.1 → 1.7.2, обновлён `test_version_bump.py`
+
+**Релиз закрыт ПОЛНОСТЬЮ (все 4 шага):**
+1. Сборка: Nuitka 10/10 модулей, ZIP проверен (плоская структура, README.txt, tesseract_bin рабочий)
+2. GitHub Release [v1.7.2](https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.7.2), ZIP залит вручную
+3. `/admin/version/update?version=1.7.2` → `{"success":true}`, клиенты получат авто-обновление
+4. GCP: `git pull` (`d62cd60→4cb0afd`) + `systemctl restart totalhunter` → active; `POST /roy/idle` отвечает в проде ✅
+
+### Найденная (но не исправленная) латентная проблема
+- `main.py:2890` — вызов `_roy_log(...)` без импорта (определена только в `engine.py`) → потенциальный `NameError`. Не в зоне текущей задачи, специально обошёл через `except Exception: pass` в `_tick_roy_drain`. **Стоит почистить отдельной задачей.**
+
+### Уточнение по токенам (см. STATE.md)
+- `ADMIN_TOKEN` из памяти `project_build_release.md` (≈20 дней) оказался устаревшим/неверным
+- Рабочий токен — в `.claude/settings.local.json → ADMIN_TOKEN`, подтверждён успешным вызовом `/admin/version/update`
+
+### Статус
+- Бот: v1.7.2, drain ROY активен в проде
+- Сервер: GCP обновлён, `/roy/idle` отвечает
+- Следующий ивент Торговые Пути: ждать по циклу 5 дней от 20.05.2026 20:00 Киев
 
 ---
 

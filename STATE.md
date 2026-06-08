@@ -63,7 +63,7 @@
 
 ### Admin API
 - `ADMIN_SECRET_KEY`: `[в systemd override.conf на GCP]` ⚠️ НЕ хранить здесь
-- ⚠️ Нужно добавить `ADMIN_TOKEN=` в override.conf (сейчас работает дефолт `dev-admin-token` — небезопасно!)
+- ✅ `ADMIN_TOKEN` настроен и рабочий (проверено 2026-06-08 при релизе v1.7.2) — актуальное значение в `.claude/settings.local.json` → `ADMIN_TOKEN`. Старое значение из памяти `project_build_release.md` устарело (≈20 дней) и больше не подходит — сверять с settings.local.json.
 - Команда обновления версии: `curl -X POST "https://api.total-hunter.com/admin/version/update?version=X.X.X" -H "Authorization: Bearer <ADMIN_TOKEN>"`
 
 ### NOWPayments
@@ -344,9 +344,11 @@
 
 ## 🔴 Задачи (приоритет по порядку)
 
-### ✅ 0. 🐝 РОЙ — экономика времени (drain) — РЕАЛИЗОВАНО в v1.7.2
+### ✅ 0. 🐝 РОЙ — экономика времени (drain) — ВЫПУЩЕНО и ЗАДЕПЛОЕНО v1.7.2 (2026-06-08)
 
 Простой = тумблер ROY ON + `is_running=False` → −30 сек/мин (`POST /roy/idle`, `IDLE_DRAIN_SEC=30`, rate-limit 58с, floor на нуле). Тумблер OFF — без изменений. Тик `_tick_roy_drain` в main.py (по аналогии с `_tick_trade_routes`, раз в минуту), сервер: `server/roy.py`. 5 TDD-тестов зелёных.
+
+**Релиз закрыт полностью:** сборка (10/10 Nuitka) → ZIP → GitHub Release [v1.7.2](https://github.com/Yevgeniy204566/totalhunter/releases/tag/v1.7.2) → `/admin/version/update` → 1.7.2 ✅ → GCP `git pull` (`d62cd60→4cb0afd`) + `systemctl restart` → active ✅ → `/roy/idle` отвечает в проде ✅.
 
 ### 1. 🐝 Живой тест Системы РОЙ
 - Ждёт ивент «Торговые Пути» (цикл 5 дней от 20.05.2026 20:00 Киев)

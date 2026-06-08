@@ -2,7 +2,19 @@
 
 > Не тратить время повторно на эти решения.
 > Обновляется командой **«Хангоф»**.
-> Последнее обновление: 2026-06-04 (v1.6.9 — React muted-баг, SEO дубль JSON-LD)
+> Последнее обновление: 2026-06-08 (v1.7.2 — рекурсивный gcloud ssh)
+
+---
+
+## ⛔ `gcloud compute ssh` НЕ запускать находясь УЖЕ внутри сервера (Хангоф #90)
+
+**Симптом:** `ERROR: (gcloud.compute.ssh) Could not fetch resource: - Request had insufficient authentication scopes.`
+**Причина:** Команда выполнялась из приглашения `ievgeniy2011@total-hunter-backend:~$` — то есть пользователь уже залогинен на VM и пытался рекурсивно подключиться к самому себе через `gcloud compute ssh ...`.
+**Решение:** Если приглашение терминала уже показывает `@total-hunter-backend` — выполнять команды деплоя НАПРЯМУЮ (без обёртки `gcloud compute ssh ... --command="..."`), просто содержимое `--command` как есть:
+```bash
+cd /opt/totalhunter && sudo git clean -fd server/alembic/versions/ && sudo git pull origin main && sudo systemctl restart totalhunter && sleep 3 && sudo systemctl is-active totalhunter
+```
+**Правило:** Перед тем как давать пользователю команду `gcloud compute ssh ...`, проверить — не находится ли он уже в SSH-сессии на этой VM (по виду приглашения). Если да — давать только внутреннюю часть команды.
 
 ---
 
