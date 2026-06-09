@@ -21,6 +21,8 @@ const FAQ_ITEMS_RU = [
     a: 'Нет. Бот работает поверх уже запущенной игры через скриншоты экрана. Ваши учётные данные нам не нужны.' },
   { q: 'На каких системах работает Total Hunter?',
     a: 'Windows 10 и Windows 11 (64-bit). Установщик включает все необходимые компоненты (VC++ Runtime).' },
+  { q: 'Работает ли бот на телефоне (Android / iOS)?',
+    a: 'Сканер разработан для браузерной ПК-версии игры. Поскольку Total Battle — кроссплатформенная MMO-стратегия от Scorewarrior, доступная на Android и iOS, все найденные биржи и склепы вы сможете использовать с любого устройства.' },
 ]
 
 const FAQ_ITEMS_EN = [
@@ -36,6 +38,8 @@ const FAQ_ITEMS_EN = [
     a: 'No. The bot works on top of an already running game via screen screenshots. Your credentials are never required.' },
   { q: 'What systems does Total Hunter support?',
     a: 'Windows 10 and Windows 11 (64-bit). The installer includes all required components (VC++ Runtime).' },
+  { q: 'Does the bot work on mobile (Android / iOS)?',
+    a: 'The scanner is built for the browser-based PC version of the game. Since Total Battle is a cross-platform MMO RTS by Scorewarrior — available on Android and iOS — all exchanges and crypts found by the bot can be used from any device.' },
 ]
 
 function useCounter(target, duration = 1400) {
@@ -212,9 +216,9 @@ export default function LandingPage() {
 
   useMeta(lang === 'en'
     ? { title: 'Total Hunter — Bot for Total Battle | Exchange & Crypt Automation',
-        description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle. Neural network + player imitation. 100 free diamonds on registration.' }
+        description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle — MMO RTS by Scorewarrior. Neural network + player imitation. 100 free diamonds on registration.' }
     : { title: 'Total Hunter — автоматизация Total Battle | Биржи и склепы',
-        description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle. Нейросеть + имитация игрока. 100 алмазов бесплатно при регистрации.' }
+        description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle (Триумф: Рождение Империй) от Scorewarrior. Нейросеть + имитация игрока. 100 алмазов бесплатно.' }
   )
   useEffect(() => {
     api.globalStats().then(d => setStats(d)).catch(() => {})
@@ -614,6 +618,29 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── FAQ ────────────────────────────────────────────────── */}
+      <section style={{ padding: '88px 24px', background: 'var(--bg)', borderTop: '1px solid var(--outline)' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '2.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
+            FAQ
+          </p>
+          <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 48, textAlign: 'center' }}>
+            {lang === 'en' ? 'Frequently Asked Questions' : 'Часто задаваемые вопросы'}
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {(lang === 'en' ? FAQ_ITEMS_EN : FAQ_ITEMS_RU).map(({ q, a }) => (
+              <div key={q} style={{
+                background: 'var(--card)', border: '1px solid var(--outline)',
+                borderRadius: 14, padding: '24px 28px',
+              }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 10 }}>{q}</div>
+                <div style={{ fontSize: 14, color: '#C8D8F0', lineHeight: 1.75 }}>{a}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ────────────────────────────────────────────────── */}
       <section style={{
         padding: '88px 24px', textAlign: 'center',
@@ -643,7 +670,14 @@ export default function LandingPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: 12,
       }}>
-        <span style={{ color: 'var(--on-surface2)', fontSize: 13 }}>© 2026 Total Hunter</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ color: 'var(--on-surface2)', fontSize: 13 }}>© 2026 Total Hunter</span>
+          <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: 11, maxWidth: 560, lineHeight: 1.6 }}>
+            {lang === 'en'
+              ? 'Total Hunter is independent software and is not affiliated with, endorsed by, or sponsored by Scorewarrior, the developer of Total Battle (a cross-platform MMO RTS). All game trademarks and assets belong to their respective owners.'
+              : 'Total Hunter — независимое программное обеспечение, не связанное и не аффилированное со студией Scorewarrior, разработчиком кроссплатформенной MMO-стратегии Total Battle (Триумф: Рождение Империй). Все права на игру и её элементы принадлежат их законным владельцам.'}
+          </span>
+        </div>
         <div style={{ display: 'flex', gap: 20 }}>
           <Link to="/download" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
             {lang === 'en' ? 'Download' : 'Скачать'}
