@@ -1,4 +1,18 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "lang", "value": "en" }],
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "lang", "value": "ru" }],
+      "destination": "/ru",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -12,7 +26,6 @@
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://api.total-hunter.com/$1" },
-    { "source": "/img/(.*)", "destination": "/img/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/|img/|.*\\..*).*)", "destination": "/index.html" }
   ]
 }
