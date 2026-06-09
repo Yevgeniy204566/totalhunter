@@ -233,7 +233,7 @@ class CryptHunter:
         self._accelerations  = accelerations
         self._break_sec      = max(3, int(break_sec))
         self._scroll_speed   = max(0.0, float(scroll_speed))
-        self._max_march_sec  = max(300.0, float(max_march_min) * 60.0)
+        self._max_march_sec  = max(60.0, float(max_march_min) * 60.0)
         self._swing1         = int(swing1)
         self._swing2         = int(swing2)
         self._speed_delta    = float(speed_delta)
