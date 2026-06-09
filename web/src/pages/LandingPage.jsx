@@ -487,6 +487,30 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── About / Solo Dev ───────────────────────────────────── */}
+      <section style={{ padding: '88px 24px', background: 'var(--bg)', borderTop: '1px solid var(--outline)' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '2.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14 }}>
+            {lang === 'en' ? 'About the project' : 'О проекте'}
+          </p>
+          <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 40 }}>
+            {lang === 'en' ? 'Built by a player, for players' : 'Сделано игроком для игроков'}
+          </h2>
+          <div style={{
+            background: 'var(--card)', border: '1px solid var(--outline)',
+            borderRadius: 18, padding: '40px 48px', textAlign: 'left',
+            boxShadow: '0 0 40px rgba(61,127,255,0.06)',
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 20 }}>👨‍💻</div>
+            <p style={{ fontSize: 17, color: '#C8D8F0', lineHeight: 1.85, margin: 0 }}>
+              {lang === 'en'
+                ? "Hey, I'm the solo developer behind Total Hunter. Like you, I spent hours manually hunting exchanges in Total Battle — and constantly missed them while sleeping. So I decided to automate it. But instead of a basic clicker, I built a real algorithm: a coastal snake navigator, YOLO-based object detection, and the ROY swarm system so the whole community scans the map together. Total Hunter is my solution to a problem I faced myself as a player."
+                : 'Привет, я — соло-разработчик и создатель Total Hunter. Как и вы, я часами вручную охотился за биржами в Total Battle — и постоянно упускал их пока спал. Решил автоматизировать. Но вместо обычного кликера написал настоящий алгоритм: навигатор-змейка вдоль берега, YOLO-детекция объектов и система РОЙ — чтобы всё комьюнити майнило карту вместе. Total Hunter — это моё решение задачи, с которой я сам столкнулся как игрок.'}
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── Pricing ────────────────────────────────────────────── */}
       <section id="pricing" style={{ padding: '88px 24px', background: 'var(--bg)', borderTop: '1px solid var(--outline)' }}>
         <div style={{ maxWidth: 920, margin: '0 auto' }}>
@@ -555,6 +579,38 @@ export default function LandingPage() {
               ? 'Payments via NOWPayments (crypto). Diamonds credited instantly. No subscription, no expiry.'
               : 'Оплата через NOWPayments (крипта). Алмазы зачисляются мгновенно. Без подписки, без срока действия.'}
           </p>
+        </div>
+      </section>
+
+      {/* ── First Review CTA ───────────────────────────────────── */}
+      <section style={{ padding: '72px 24px', background: 'var(--card)', borderTop: '1px solid var(--outline)' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ fontSize: 38, marginBottom: 16 }}>⭐</div>
+          <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 38px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 20 }}>
+            {lang === 'en' ? 'We pay for honesty' : 'Мы платим за честность'}
+          </h2>
+          <p style={{ fontSize: 16, color: '#C8D8F0', lineHeight: 1.8, marginBottom: 36 }}>
+            {lang === 'en'
+              ? "Total Hunter recently launched its public release. We're collecting the first real reviews from real players. Download the bot, find your first exchange — then write us an honest review on Telegram. We'll credit 300 bonus diamonds to your balance."
+              : 'Total Hunter недавно вышел в публичный релиз. Мы собираем первые настоящие отзывы от реальных игроков. Скачайте бота, найдите первую биржу — и напишите нам честный отзыв в Telegram. Начислим 300 бонусных алмазов на ваш баланс.'}
+          </p>
+          <a
+            href="https://t.me/Total_Hunter"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              padding: '16px 40px', borderRadius: 12, fontSize: 17,
+              background: 'rgba(34,158,217,0.12)',
+              border: '1px solid rgba(34,158,217,0.4)',
+              color: '#229ED9', fontWeight: 700, textDecoration: 'none',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.96 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            </svg>
+            {lang === 'en' ? 'Write a Review → +300 ◆' : 'Написать отзыв → +300 ◆'}
+          </a>
         </div>
       </section>
 
