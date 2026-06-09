@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-06-08 **v1.7.2** — ROY: drain — списание баланса за простой (тумблер ON, поиск не идёт), −30 сек/мин.
+> Последнее обновление: 2026-06-09 **v1.7.3** — Фикс Склепов: время марша < 5 мин теперь применяется корректно (убран silent floor 300s → 60s).
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -31,7 +31,7 @@
 | **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.6.5:** ESC = абсолютная остановка (`after_cancel(_auto_restart_id)` + `_esc_stopped`). Фикс клика (moveTo+click). tesseract_bin портативный в сборке. | 2026-06-02 |
 | **ROY real-time** | main.py `_start_roy_sse_listener` + server/roy.py | ✅ SSE подписка в боте. При находке биржи любым участником → мгновенное обновление пула. **v1.6.2:** собственные находки не дают двойной звук (`_roy_self_reported`). GCP задеплоен. | 2026-06-01 |
 | **Telegram OCR отчёт** | engine.py + debug_reporter.py + server/debug_router.py | ✅ После каждой биржи: `✅ OCR: K:X X:Y Y:Z — P%` или `❌ OCR: не распознаны`. Эндпоинт `/api/debug/send-text` на GCP. | 2026-06-01 |
-| **CryptHunter** | crypt_hunter.py | ✅ **v1.6.0:** `scroll_clicks` — настраиваемые тики скролла (1–200). Chrome=100+, Client=3. GUI слайдер в СКЛЕПЫ, сохранение в профиль. Дальность марша от 1 мин. | 2026-06-01 |
+| **CryptHunter** | crypt_hunter.py | ✅ **v1.7.3:** Фикс silent floor — `max(300.0,…)` заменён на `max(60.0,…)`. Значения марша < 5 мин (2, 3, 4 мин) теперь реально применяются. Раньше любое значение ниже 5 мин молча зажималось до 300 сек. | 2026-06-09 |
 | **Тюнинг кликов (D-Pad)** | coord_manager.py + main.py | ✅ **v1.6.9:** Баг AP-SWING-OVERRIDE устранён — crypt_swing больше не перезаписывает ui_offsets при загрузке. Сохранение через «Сохранить профиль», ui_offsets авторитетны. | 2026-06-03 |
 | **Калибровка** | calibration_ui.py + main.py | ✅ **v1.5.12:** клик в лупе работает. `win.after` перенесён в начало `_refresh`, `_update_dot` в try/except, `win.focus_force()`, `iconify()` вместо `withdraw()`. | 2026-05-31 |
 | **GUI — 19 языков** | main.py | ✅ PIL-флаги (LangPopupButton), EN→UA→RU→..., Carter/EndOfList статусы→EN | 2026-05-12 |
