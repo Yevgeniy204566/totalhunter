@@ -53,3 +53,35 @@ def test_crop_dialog():
     bbox = tr.detect_dialog_bbox(frame)
     dialog = tr.crop_dialog(frame, bbox)
     assert dialog.shape[:2] == (546, 766)
+
+
+class _FakeShot:
+    def __init__(self, bgra):
+        self.bgra = bgra
+        self.size = (bgra.shape[1], bgra.shape[0])
+
+    def __array__(self):
+        return self.bgra
+
+
+class _FakeSct:
+    def __init__(self, bgra):
+        self._bgra = bgra
+        self.monitors = [None, {"left": 0, "top": 0, "width": bgra.shape[1], "height": bgra.shape[0]}]
+
+    def grab(self, monitor):
+        return _FakeShot(self._bgra)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+
+def test_grab_fullscreen(monkeypatch):
+    frame = _load_fixture()
+    bgra = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+    monkeypatch.setattr(tr.mss, "mss", lambda: _FakeSct(bgra))
+    result = tr.grab_fullscreen()
+    assert np.array_equal(result, frame)

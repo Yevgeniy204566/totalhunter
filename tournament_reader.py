@@ -74,3 +74,11 @@ def detect_dialog_bbox(frame):
 def crop_dialog(frame, bbox):
     x, y, w, h = bbox
     return frame[y:y + h, x:x + w]
+
+
+def grab_fullscreen():
+    with mss.mss() as sct:
+        monitor = sct.monitors[1]
+        shot = sct.grab(monitor)
+        frame = np.array(shot)
+        return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
