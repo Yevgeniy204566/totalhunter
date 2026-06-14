@@ -183,3 +183,21 @@ def ocr_own_row(place_roi, name_roi, pts_roi):
         'name': clean_name(name_text),
         'points': clean_points(pts_text),
     }
+
+
+def compute_places(rows, known_places):
+    if not known_places:
+        return {STARTING_RANK + i: rows[i] for i in range(len(rows))}
+
+    points_to_place = {data[1]: place for place, data in known_places.items()}
+
+    offset = None
+    for i, (_, points) in enumerate(rows):
+        if points in points_to_place:
+            offset = points_to_place[points] - i
+            break
+
+    if offset is None:
+        return None
+
+    return {offset + i: rows[i] for i in range(len(rows))}

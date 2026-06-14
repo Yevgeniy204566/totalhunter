@@ -165,3 +165,24 @@ def test_ocr_own_row():
     place_roi, name_roi, pts_roi = tr.get_own_row_crops(own_row)
     result = tr.ocr_own_row(place_roi, name_roi, pts_roi)
     assert result == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
+
+
+def test_compute_places_first_frame():
+    rows = [('Alice', 100), ('Bob', 90), ('Carl', 80)]
+    places = tr.compute_places(rows, known_places={})
+    assert places == {1: ('Alice', 100), 2: ('Bob', 90), 3: ('Carl', 80)}
+
+
+def test_compute_places_anchor_offset():
+    known = {1: ('Alice', 100), 2: ('Bob', 90), 3: ('Carl', 80)}
+    # New frame scrolled down by 1: Bob is now at index 0, Carl at index 1, Dave (new) at index 2
+    rows = [('Bob', 90), ('Carl', 80), ('Dave', 70)]
+    places = tr.compute_places(rows, known_places=known)
+    assert places == {2: ('Bob', 90), 3: ('Carl', 80), 4: ('Dave', 70)}
+
+
+def test_compute_places_no_anchor_returns_none():
+    known = {1: ('Alice', 100), 2: ('Bob', 90)}
+    rows = [('Zara', 999), ('Yara', 998)]
+    places = tr.compute_places(rows, known_places=known)
+    assert places is None
