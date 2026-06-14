@@ -157,3 +157,29 @@ def ocr_row(name_roi, pts_roi):
     name_text = ocr_text(name_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
     pts_text = ocr_text(pts_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
     return clean_name(name_text), clean_points(pts_text)
+
+
+def get_own_row(dialog):
+    h = dialog.shape[0]
+    top = int(h * OWN_ROW_Y_FRAC[0])
+    return dialog[top:h, :]
+
+
+def get_own_row_crops(own_row):
+    place_roi = _sub_roi(own_row, PLACE_X_FRAC, PLACE_Y_FRAC)
+    name_roi = _sub_roi(own_row, NAME_X_FRAC, NAME_Y_FRAC)
+    pts_roi = _sub_roi(own_row, PTS_X_FRAC, PTS_Y_FRAC)
+    return place_roi, name_roi, pts_roi
+
+
+def ocr_own_row(place_roi, name_roi, pts_roi):
+    place_text = ocr_text(place_roi, threshold=PLACE_OCR_THRESHOLD, psm=6, lang='rus+eng', whitelist='0123456789')
+    name_text = ocr_text(name_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
+    pts_text = ocr_text(pts_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
+
+    rank = int(place_text) if place_text.isdigit() else None
+    return {
+        'rank': rank,
+        'name': clean_name(name_text),
+        'points': clean_points(pts_text),
+    }

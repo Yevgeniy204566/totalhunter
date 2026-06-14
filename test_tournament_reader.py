@@ -155,3 +155,13 @@ def test_ocr_row_all_visible_rows():
         name, points = tr.ocr_row(name_roi, pts_roi)
         assert name == expected_names[i]
         assert points == expected_points[i]
+
+
+def test_ocr_own_row():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    own_row = tr.get_own_row(dialog)
+    place_roi, name_roi, pts_roi = tr.get_own_row_crops(own_row)
+    result = tr.ocr_own_row(place_roi, name_roi, pts_roi)
+    assert result == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
