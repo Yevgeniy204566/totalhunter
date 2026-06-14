@@ -85,3 +85,11 @@ def test_grab_fullscreen(monkeypatch):
     monkeypatch.setattr(tr.mss, "mss", lambda: _FakeSct(bgra))
     result = tr.grab_fullscreen()
     assert np.array_equal(result, frame)
+
+
+def test_detect_row_pitch():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    pitch, row_top = tr.detect_row_pitch(dialog)
+    assert (pitch, row_top) == (100, 12)

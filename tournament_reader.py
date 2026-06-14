@@ -82,3 +82,25 @@ def grab_fullscreen():
         shot = sct.grab(monitor)
         frame = np.array(shot)
         return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
+
+def detect_row_pitch(dialog):
+    gray = cv2.cvtColor(dialog, cv2.COLOR_BGR2GRAY)
+    row_means = gray.mean(axis=1)
+    diffs = np.abs(np.diff(row_means))
+    raw_peaks = np.where(diffs > PEAK_GRADIENT_THRESHOLD)[0]
+
+    merged = []
+    for p in raw_peaks:
+        if p < PEAK_EDGE_MARGIN:
+            continue
+        if merged and p - merged[-1] <= PEAK_MERGE_DIST:
+            continue
+        merged.append(int(p))
+
+    if len(merged) < 2:
+        return None, None
+
+    pitch = int(np.median(np.diff(merged)))
+    row_top = int(merged[0] - pitch)
+    return pitch, row_top
