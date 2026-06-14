@@ -37,3 +37,4 @@ tesseract_bin/
 *.exe
 .vercel
 .env*
+tournament_config.json
