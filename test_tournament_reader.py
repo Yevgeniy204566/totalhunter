@@ -232,6 +232,29 @@ def test_collect_tournament_data(monkeypatch):
     assert result['own_data'] == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
 
 
+def test_collect_tournament_data_handles_missing_pitch(monkeypatch):
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    real_pitch, real_row_top = tr.detect_row_pitch(dialog)
+
+    monkeypatch.setattr(tr, "grab_fullscreen", lambda: frame)
+    monkeypatch.setattr(tr.pyautogui, "scroll", lambda *a, **k: None)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+    monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
+
+    pitch_results = [(None, None), (real_pitch, real_row_top)]
+    monkeypatch.setattr(tr, "detect_row_pitch", lambda d: pitch_results.pop(0))
+
+    end_of_list_results = [False, True]
+    monkeypatch.setattr(tr, "is_end_of_list", lambda prev, curr: end_of_list_results.pop(0))
+
+    result = tr.collect_tournament_data()
+
+    assert 'leaderboard' in result
+    assert 'own_data' in result
+
+
 class _FakeResponse:
     def __init__(self, status_code):
         self.status_code = status_code

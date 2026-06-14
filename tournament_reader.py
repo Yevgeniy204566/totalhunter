@@ -228,15 +228,17 @@ def collect_tournament_data():
             break
 
         pitch, row_top = detect_row_pitch(dialog)
-        rows = get_row_crops(dialog, pitch, row_top)
-        ocr_rows = [ocr_row(name_roi, pts_roi) for name_roi, pts_roi in rows]
-        ocr_rows = [(name, points) for name, points in ocr_rows if points is not None]
+        if pitch is not None:
+            rows = get_row_crops(dialog, pitch, row_top)
+            ocr_rows = [ocr_row(name_roi, pts_roi) for name_roi, pts_roi in rows]
+            ocr_rows = [(name, points) for name, points in ocr_rows if points is not None]
 
-        places = compute_places(ocr_rows, known_places)
-        if places is not None:
-            known_places.update(places)
-            for place, (name, points) in places.items():
-                print(f"место {place}: {name} — {points}")
+            places = compute_places(ocr_rows, known_places)
+            if places is not None:
+                for place, (name, points) in places.items():
+                    if place not in known_places:
+                        print(f"место {place}: {name} — {points}")
+                known_places.update(places)
 
         prev_dialog = dialog
 
