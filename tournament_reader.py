@@ -104,3 +104,22 @@ def detect_row_pitch(dialog):
     pitch = int(np.median(np.diff(merged)))
     row_top = int(merged[0] - pitch)
     return pitch, row_top
+
+
+def _sub_roi(img, x_frac, y_frac):
+    h, w = img.shape[:2]
+    x0, x1 = int(w * x_frac[0]), int(w * x_frac[1])
+    y0, y1 = int(h * y_frac[0]), int(h * y_frac[1])
+    return img[y0:y1, x0:x1]
+
+
+def get_row_crops(dialog, pitch, row_top):
+    rows = []
+    for i in range(NUM_VISIBLE_ROWS):
+        top = row_top + i * pitch
+        bot = top + pitch
+        row = dialog[top:bot, :]
+        name_roi = _sub_roi(row, NAME_X_FRAC, NAME_Y_FRAC)
+        pts_roi = _sub_roi(row, PTS_X_FRAC, PTS_Y_FRAC)
+        rows.append((name_roi, pts_roi))
+    return rows

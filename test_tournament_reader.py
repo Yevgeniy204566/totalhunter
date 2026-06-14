@@ -93,3 +93,15 @@ def test_detect_row_pitch():
     dialog = tr.crop_dialog(frame, bbox)
     pitch, row_top = tr.detect_row_pitch(dialog)
     assert (pitch, row_top) == (100, 12)
+
+
+def test_get_row_crops():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    pitch, row_top = tr.detect_row_pitch(dialog)
+    rows = tr.get_row_crops(dialog, pitch, row_top)
+    assert len(rows) == tr.NUM_VISIBLE_ROWS
+    for name_roi, pts_roi in rows:
+        assert name_roi.shape[0] > 0 and name_roi.shape[1] > 0
+        assert pts_roi.shape[0] > 0 and pts_roi.shape[1] > 0
