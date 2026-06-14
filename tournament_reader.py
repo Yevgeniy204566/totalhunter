@@ -151,3 +151,9 @@ def clean_points(text):
     if not digits:
         return None
     return int(digits)
+
+
+def ocr_row(name_roi, pts_roi):
+    name_text = ocr_text(name_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
+    pts_text = ocr_text(pts_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
+    return clean_name(name_text), clean_points(pts_text)

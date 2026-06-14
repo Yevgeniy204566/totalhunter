@@ -139,3 +139,19 @@ def test_clean_points_strips_non_digits():
 def test_clean_points_empty_returns_none():
     assert tr.clean_points("очки") is None
     assert tr.clean_points("") is None
+
+
+def test_ocr_row_all_visible_rows():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    pitch, row_top = tr.detect_row_pitch(dialog)
+    rows = tr.get_row_crops(dialog, pitch, row_top)
+
+    expected_names = ['Scaramouche', 'МазаФака', 'Yuki', 'VikTor']
+    expected_points = [488644262, 315634592, 301084730, 300471402]
+
+    for i, (name_roi, pts_roi) in enumerate(rows):
+        name, points = tr.ocr_row(name_roi, pts_roi)
+        assert name == expected_names[i]
+        assert points == expected_points[i]
