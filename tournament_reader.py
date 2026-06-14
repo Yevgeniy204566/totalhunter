@@ -201,3 +201,15 @@ def compute_places(rows, known_places):
         return None
 
     return {offset + i: rows[i] for i in range(len(rows))}
+
+
+def is_end_of_list(prev_dialog, curr_dialog):
+    h, w = curr_dialog.shape[:2]
+    scrollbar_x0 = int(w * (1 - SCROLLBAR_FRAC))
+    own_y0 = int(h * OWN_ROW_Y_FRAC[0])
+
+    prev_crop = prev_dialog[:own_y0, :scrollbar_x0]
+    curr_crop = curr_dialog[:own_y0, :scrollbar_x0]
+
+    diff = cv2.absdiff(prev_crop, curr_crop)
+    return bool(diff.max() < END_DIFF_THRESHOLD)

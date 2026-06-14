@@ -186,3 +186,29 @@ def test_compute_places_no_anchor_returns_none():
     rows = [('Zara', 999), ('Yara', 998)]
     places = tr.compute_places(rows, known_places=known)
     assert places is None
+
+
+def test_is_end_of_list_identical_frames():
+    dialog = np.full((546, 766, 3), 200, dtype=np.uint8)
+    assert tr.is_end_of_list(dialog, dialog) is True
+
+
+def test_is_end_of_list_different_text_area():
+    prev = np.full((546, 766, 3), 200, dtype=np.uint8)
+    curr = prev.copy()
+    # change pixels in the text area (not scrollbar, not own row)
+    curr[100:110, 100:110] = 50
+    assert tr.is_end_of_list(prev, curr) is False
+
+
+def test_is_end_of_list_ignores_scrollbar_and_own_row():
+    prev = np.full((546, 766, 3), 200, dtype=np.uint8)
+    curr = prev.copy()
+    h, w = curr.shape[:2]
+    # change only the scrollbar strip (rightmost 5%)
+    scrollbar_x0 = int(w * (1 - tr.SCROLLBAR_FRAC))
+    curr[:, scrollbar_x0:] = 50
+    # change only the own-row strip (bottom from OWN_ROW_Y_FRAC[0])
+    own_y0 = int(h * tr.OWN_ROW_Y_FRAC[0])
+    curr[own_y0:, :] = 50
+    assert tr.is_end_of_list(prev, curr) is True
