@@ -138,3 +138,16 @@ def ocr_text(roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng', whitelist=None
     if whitelist:
         config += f' -c tessedit_char_whitelist={whitelist}'
     return pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
+
+
+def clean_name(text):
+    text = re.sub(r'^\[.*?\]\s*', '', text)
+    text = re.sub(r'\s+\S{1,3}$', '', text)
+    return text.strip()
+
+
+def clean_points(text):
+    digits = re.sub(r'[^\d]', '', text)
+    if not digits:
+        return None
+    return int(digits)

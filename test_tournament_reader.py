@@ -118,3 +118,24 @@ def test_ocr_text_row0_points_contains_digits():
     assert '488' in text
     assert '644' in text
     assert '262' in text
+
+
+def test_clean_name_strips_tag_and_badge():
+    assert tr.clean_name("[K229] Scaramouche 22") == "Scaramouche"
+    assert tr.clean_name("[k229] МазаФака ZY") == "МазаФака"
+    assert tr.clean_name("[K229] Yuki ay") == "Yuki"
+    assert tr.clean_name("[K229] VikTor 2") == "VikTor"
+
+
+def test_clean_name_no_tag():
+    assert tr.clean_name("ЗОЛОТОЙ") == "ЗОЛОТОЙ"
+
+
+def test_clean_points_strips_non_digits():
+    assert tr.clean_points("488 644 262 очки") == 488644262
+    assert tr.clean_points("71 896 730") == 71896730
+
+
+def test_clean_points_empty_returns_none():
+    assert tr.clean_points("очки") is None
+    assert tr.clean_points("") is None
