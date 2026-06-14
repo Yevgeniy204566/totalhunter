@@ -213,3 +213,43 @@ def is_end_of_list(prev_dialog, curr_dialog):
 
     diff = cv2.absdiff(prev_crop, curr_crop)
     return bool(diff.max() < END_DIFF_THRESHOLD)
+
+
+def collect_tournament_data():
+    known_places = {}
+    prev_dialog = None
+
+    while True:
+        frame = grab_fullscreen()
+        bbox = detect_dialog_bbox(frame)
+        dialog = crop_dialog(frame, bbox)
+
+        if prev_dialog is not None and is_end_of_list(prev_dialog, dialog):
+            break
+
+        pitch, row_top = detect_row_pitch(dialog)
+        rows = get_row_crops(dialog, pitch, row_top)
+        ocr_rows = [ocr_row(name_roi, pts_roi) for name_roi, pts_roi in rows]
+        ocr_rows = [(name, points) for name, points in ocr_rows if points is not None]
+
+        places = compute_places(ocr_rows, known_places)
+        if places is not None:
+            known_places.update(places)
+            for place, (name, points) in places.items():
+                print(f"место {place}: {name} — {points}")
+
+        prev_dialog = dialog
+
+        pyautogui.scroll(-2)
+        time.sleep(random.uniform(0.4, 0.9))
+
+    own_row = get_own_row(dialog)
+    place_roi, name_roi, pts_roi = get_own_row_crops(own_row)
+    own_data = ocr_own_row(place_roi, name_roi, pts_roi)
+
+    leaderboard = [
+        {'rank': place, 'name': name, 'points': points}
+        for place, (name, points) in sorted(known_places.items())
+    ]
+
+    return {'leaderboard': leaderboard, 'own_data': own_data}

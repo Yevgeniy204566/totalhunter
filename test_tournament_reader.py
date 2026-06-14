@@ -212,3 +212,21 @@ def test_is_end_of_list_ignores_scrollbar_and_own_row():
     own_y0 = int(h * tr.OWN_ROW_Y_FRAC[0])
     curr[own_y0:, :] = 50
     assert tr.is_end_of_list(prev, curr) is True
+
+
+def test_collect_tournament_data(monkeypatch):
+    frame = _load_fixture()
+
+    monkeypatch.setattr(tr, "grab_fullscreen", lambda: frame)
+    monkeypatch.setattr(tr.pyautogui, "scroll", lambda *a, **k: None)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+    monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
+
+    result = tr.collect_tournament_data()
+
+    leaderboard = result['leaderboard']
+    assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4]
+    assert [row['name'] for row in leaderboard] == ['Scaramouche', 'МазаФака', 'Yuki', 'VikTor']
+    assert [row['points'] for row in leaderboard] == [488644262, 315634592, 301084730, 300471402]
+
+    assert result['own_data'] == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
