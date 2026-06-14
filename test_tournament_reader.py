@@ -1,6 +1,8 @@
 import os
 import json
 import pytest
+import cv2
+import numpy as np
 import tournament_reader as tr
 
 
@@ -34,3 +36,20 @@ def test_load_config_valid(tmp_path, monkeypatch):
     monkeypatch.setattr(tr, "CONFIG_PATH", config_path)
     result = tr.load_config()
     assert result == data
+
+
+def _load_fixture():
+    return cv2.imdecode(np.fromfile("Турнир.png", dtype=np.uint8), cv2.IMREAD_COLOR)
+
+
+def test_detect_dialog_bbox():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    assert bbox == (578, 268, 766, 546)
+
+
+def test_crop_dialog():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    assert dialog.shape[:2] == (546, 766)

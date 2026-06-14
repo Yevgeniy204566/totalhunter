@@ -61,3 +61,16 @@ def load_config():
         if key not in config:
             raise ValueError(f"В конфигурации отсутствует обязательный ключ: {key}")
     return config
+
+
+def detect_dialog_bbox(frame):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, DIALOG_HSV_LOWER, DIALOG_HSV_UPPER)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    largest = max(contours, key=cv2.contourArea)
+    return cv2.boundingRect(largest)
+
+
+def crop_dialog(frame, bbox):
+    x, y, w, h = bbox
+    return frame[y:y + h, x:x + w]
