@@ -105,3 +105,16 @@ def test_get_row_crops():
     for name_roi, pts_roi in rows:
         assert name_roi.shape[0] > 0 and name_roi.shape[1] > 0
         assert pts_roi.shape[0] > 0 and pts_roi.shape[1] > 0
+
+
+def test_ocr_text_row0_points_contains_digits():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    pitch, row_top = tr.detect_row_pitch(dialog)
+    rows = tr.get_row_crops(dialog, pitch, row_top)
+    _, pts_roi = rows[0]
+    text = tr.ocr_text(pts_roi, threshold=tr.OCR_THRESHOLD)
+    assert '488' in text
+    assert '644' in text
+    assert '262' in text

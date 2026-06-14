@@ -123,3 +123,18 @@ def get_row_crops(dialog, pitch, row_top):
         pts_roi = _sub_roi(row, PTS_X_FRAC, PTS_Y_FRAC)
         rows.append((name_roi, pts_roi))
     return rows
+
+
+def preprocess_for_ocr(roi, threshold=OCR_THRESHOLD):
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    resized = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+    _, binary = cv2.threshold(resized, threshold, 255, cv2.THRESH_BINARY)
+    return binary
+
+
+def ocr_text(roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng', whitelist=None):
+    processed = preprocess_for_ocr(roi, threshold=threshold)
+    config = f'--psm {psm}'
+    if whitelist:
+        config += f' -c tessedit_char_whitelist={whitelist}'
+    return pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
