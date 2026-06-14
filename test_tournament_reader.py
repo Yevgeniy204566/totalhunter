@@ -289,3 +289,18 @@ def test_export_to_api_failure_writes_local_fallback(monkeypatch, tmp_path):
         saved = json.load(f)
     assert saved["leaderboard"] == data["leaderboard"]
     assert saved["own_data"] == data["own_data"]
+
+
+def test_main_smoke(monkeypatch):
+    config = {"api_url": "https://api.total-hunter.com", "api_token": "secret123", "alliance_tag": "K229"}
+    collected = {
+        "leaderboard": [{"rank": 1, "name": "Scaramouche", "points": 488644262}],
+        "own_data": {"rank": 79, "name": "ЗОЛОТОЙ", "points": 71896730},
+    }
+
+    monkeypatch.setattr(tr, "load_config", lambda: config)
+    monkeypatch.setattr(tr, "collect_tournament_data", lambda: collected)
+    monkeypatch.setattr(tr, "export_to_api", lambda cfg, data, event_timestamp: True)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+
+    tr.main()

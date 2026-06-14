@@ -277,3 +277,29 @@ def export_to_api(config, data, event_timestamp):
         json.dump(payload, f, ensure_ascii=False, indent=2)
     print(f"Не удалось отправить данные на сервер. Сохранено локально: {filename}")
     return False
+
+
+def main():
+    config = load_config()
+
+    print("Откройте диалог «Статистика» в игре. Сбор начнётся через 3 секунды...")
+    for i in (3, 2, 1):
+        print(i)
+        time.sleep(1)
+
+    data = collect_tournament_data()
+
+    print(f"Собрано строк: {len(data['leaderboard'])}")
+    print(f"Своё место: {data['own_data']}")
+
+    event_timestamp = datetime.datetime.now().isoformat(timespec='seconds')
+    success = export_to_api(config, data, event_timestamp)
+
+    if success:
+        print("Данные успешно отправлены на сервер.")
+    else:
+        print("Данные сохранены локально (см. сообщение выше).")
+
+
+if __name__ == '__main__':
+    main()
