@@ -1,7 +1,7 @@
 # STATE.md — Бортжурнал Total Hunter
 
 > Обновляется командой **«Хангоф»** перед `/compact` или `/clear`
-> Последнее обновление: 2026-06-09 **v1.7.3** — Фикс Склепов: время марша < 5 мин теперь применяется корректно (убран silent floor 300s → 60s).
+> Последнее обновление: 2026-06-15 **v1.7.3** (без изменений версии) — `tournament_reader.py` (Фаза 2) реализован полностью, 26/26 тестов ✅. Новая архитектура (Gemini): 4 фазы ERP для событий типа «Древний» — Фаза 0/2 = бот (сбор данных), Фаза 1/3 = сайт (таблицы, настройки, бизнес-логика, раздел «Старшие»/«Древний»).
 
 **Frontend URL:** https://total-hunter.com (Vercel + Cloudflare)
 **Backend URL:** https://api.total-hunter.com → GCP 34.68.86.57:8000 (Nginx + SSL)
@@ -26,6 +26,7 @@
 | **TG-канал тизер** | server/tg_channel.py | ✅ Работает. `send_telegram_alert()` — `sendMessage` с текстом `🟢 ➕1️⃣` в канал `-1003983747219` (@Total_Hunter). Без файлов, без file_id. Протестировано curl → `ok:true`. GCP задеплоен. Триггер: новая биржа в РОЙ во время Торговых Путей. | 2026-06-04 |
 | **Версия в заголовке** | main.py | ✅ `f"Total Hunter v{VERSION}"` — автоматически обновляется | 2026-05-07 |
 | **Версия в админке** | server/admin/index.html | ✅ Колонка "Версия бота" в таблице пользователей | 2026-05-07 |
+| **Tournament Reader** | tournament_reader.py | ✅ **Фаза 2 готова** (14/14 задач, 26/26 тестов). Standalone CLI: скролл диалога «Статистика», OCR строк (gradient-peak-merge row pitch, PITCH_PX=100), anchor-by-points dedup, закреплённая «своя» строка, `is_end_of_list` (absdiff, `.max()` вместо `.mean()` из спеки — см. ANTI-PATTERNS), экспорт `POST /api/v1/tournaments/import` + локальный JSON-fallback. ⚠️ Не интегрирован в GUI бота, не собран в релиз — отдельный CLI-скрипт. Рекомендован 1 живой прогон на реальном скролле перед боевым использованием. Backend-эндпоинт + Фаза 0 (клан-ростер, `ScrollableListScanner`) + сайт-раздел «Старшие»/«Древний» — вне скоупа, следующий трек. | 2026-06-15 |
 | **Combo** | combiner.py | ⛔ ЗАМОРОЖЕН | 2026-05-02 |
 | **Авто-калибровка** | auto_calibration.py | ✅ 2 этапа, 13 тестов | 2026-05-03 |
 | **Движок бирж** | engine.py + navigator.py + roy/ | ✅ **v1.6.5:** ESC = абсолютная остановка (`after_cancel(_auto_restart_id)` + `_esc_stopped`). Фикс клика (moveTo+click). tesseract_bin портативный в сборке. | 2026-06-02 |
