@@ -253,3 +253,27 @@ def collect_tournament_data():
     ]
 
     return {'leaderboard': leaderboard, 'own_data': own_data}
+
+
+def export_to_api(config, data, event_timestamp):
+    payload = {
+        "event_timestamp": event_timestamp,
+        "alliance_tag": config["alliance_tag"],
+        "own_data": data["own_data"],
+        "leaderboard": data["leaderboard"],
+    }
+    headers = {"Authorization": f"Bearer {config['api_token']}"}
+    url = config["api_url"] + API_IMPORT_PATH
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if 200 <= response.status_code < 300:
+            return True
+    except requests.RequestException:
+        pass
+
+    filename = f"tournament_export_{int(time.time())}.json"
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    print(f"Не удалось отправить данные на сервер. Сохранено локально: {filename}")
+    return False

@@ -230,3 +230,62 @@ def test_collect_tournament_data(monkeypatch):
     assert [row['points'] for row in leaderboard] == [488644262, 315634592, 301084730, 300471402]
 
     assert result['own_data'] == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
+
+
+class _FakeResponse:
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+
+def test_export_to_api_success(monkeypatch):
+    captured = {}
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        captured['url'] = url
+        captured['headers'] = headers
+        captured['json'] = json
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(tr.requests, "post", fake_post)
+
+    config = {"api_url": "https://api.total-hunter.com", "api_token": "secret123", "alliance_tag": "K229"}
+    data = {
+        "leaderboard": [{"rank": 1, "name": "Scaramouche", "points": 488644262}],
+        "own_data": {"rank": 79, "name": "ЗОЛОТОЙ", "points": 71896730},
+    }
+
+    result = tr.export_to_api(config, data, event_timestamp="2026-06-14T21:30:00")
+
+    assert result is True
+    assert captured['url'] == "https://api.total-hunter.com/api/v1/tournaments/import"
+    assert captured['headers'] == {"Authorization": "Bearer secret123"}
+    assert captured['json'] == {
+        "event_timestamp": "2026-06-14T21:30:00",
+        "alliance_tag": "K229",
+        "own_data": data["own_data"],
+        "leaderboard": data["leaderboard"],
+    }
+
+
+def test_export_to_api_failure_writes_local_fallback(monkeypatch, tmp_path):
+    def fake_post(url, headers=None, json=None, timeout=None):
+        return _FakeResponse(500)
+
+    monkeypatch.setattr(tr.requests, "post", fake_post)
+    monkeypatch.chdir(tmp_path)
+
+    config = {"api_url": "https://api.total-hunter.com", "api_token": "secret123", "alliance_tag": "K229"}
+    data = {
+        "leaderboard": [{"rank": 1, "name": "Scaramouche", "points": 488644262}],
+        "own_data": {"rank": 79, "name": "ЗОЛОТОЙ", "points": 71896730},
+    }
+
+    result = tr.export_to_api(config, data, event_timestamp="2026-06-14T21:30:00")
+
+    assert result is False
+    files = list(tmp_path.glob("tournament_export_*.json"))
+    assert len(files) == 1
+    with open(files[0], encoding="utf-8") as f:
+        saved = json.load(f)
+    assert saved["leaderboard"] == data["leaderboard"]
+    assert saved["own_data"] == data["own_data"]
