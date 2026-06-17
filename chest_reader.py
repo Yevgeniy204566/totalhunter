@@ -229,3 +229,18 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
         conn.close()
 
     return {'counts': dict(counts), 'items': items}
+
+
+def export_to_api(kingdom, clan, items):
+    payload = {
+        "hwid": get_hwid(),
+        "kingdom": kingdom,
+        "clan": clan,
+        "timestamp": datetime.datetime.now().isoformat(timespec='seconds'),
+        "items": items,
+    }
+    try:
+        response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=10)
+        return 200 <= response.status_code < 300
+    except requests.RequestException:
+        return False

@@ -167,3 +167,45 @@ def test_collect_chests_stops_immediately_when_flag_already_set(tmp_path, monkey
     db_path = str(tmp_path / "test_chest_buffer.db")
     result = cr.collect_chests(lambda: True, db_path=db_path)
     assert result == {"counts": {}, "items": []}
+
+
+class _FakeResponse:
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+
+def test_export_to_api_success(monkeypatch):
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured['url'] = url
+        captured['json'] = json
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(cr.requests, "post", fake_post)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+
+    items = [{"chest_type": "Сундук Эпического Монстра", "sender": "Alice",
+              "timestamp": "2026-06-17T10:00:00"}]
+    result = cr.export_to_api("K229", "Legion", items)
+
+    assert result is True
+    assert captured['url'].endswith("/api/v1/chests/import")
+    assert captured['json']["hwid"] == "ABCD1234"
+    assert captured['json']["kingdom"] == "K229"
+    assert captured['json']["clan"] == "Legion"
+    assert captured['json']["items"] == items
+
+
+def test_export_to_api_http_failure(monkeypatch):
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(404))
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) is False
+
+
+def test_export_to_api_network_exception(monkeypatch):
+    def raise_exc(url, json, timeout):
+        raise cr.requests.RequestException("no connection")
+    monkeypatch.setattr(cr.requests, "post", raise_exc)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) is False
