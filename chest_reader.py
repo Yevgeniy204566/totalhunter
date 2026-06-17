@@ -23,6 +23,7 @@ import requests
 
 from auth import SERVER_URL, get_hwid
 from button_finder import find_colored_button
+from coord_manager import coord_manager
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
@@ -37,8 +38,16 @@ ROW_PITCH = 100
 # --- Per-row crop fractions (relative to the 764x100 top-row band) --------
 TYPE_X_FRAC = (0.135, 0.58)
 TYPE_Y_FRAC = (0.03, 0.32)
-SENDER_X_FRAC = (0.135, 0.58)
-SENDER_Y_FRAC = (0.34, 0.60)
+
+# --- Sender name: fixed coordinates, not a relative crop. The dialog's
+# render/composition never changes (always the same UI, same position
+# relative to the game window), so the name always lands in the same spot —
+# calibrated 2026-06-18 via coord_picker.py against the live game. Reference
+# coords at the project's эталон 1920x1080; coord_manager scales/offsets them
+# to the real screen per calibration profile, same as every other coordinate
+# in this project. No "От:" label is in this crop, so no regex-stripping of
+# a prefix is needed — the OCR'd text is the name already.
+SENDER_REF_RECT = (816, 375, 361, 24)
 
 # --- «Открыть» button search box (relative to the top row) ----------------
 BUTTON_X_FRAC = (0.78, 1.0)
@@ -119,19 +128,17 @@ def parse_chest_type(raw_text):
     return re.sub(r'^[^А-Яа-яA-Za-z]+', '', first_line).strip()
 
 
-def parse_sender(raw_text):
-    first_line = raw_text.splitlines()[0] if raw_text else ''
-    match = re.search(r'[OО0]т\s*[:;]\s*(.+)', first_line)
-    name = match.group(1) if match else first_line
-    return clean_name(name)
+def read_sender_name(frame):
+    x, y, w, h = coord_manager.to_region_dialog(*SENDER_REF_RECT)
+    roi = frame[y:y + h, x:x + w]
+    return clean_name(ocr_text(roi))
 
 
-def read_top_row(dialog):
+def read_top_row(frame, dialog):
     row = get_top_row(dialog)
     type_roi = _sub_roi(row, TYPE_X_FRAC, TYPE_Y_FRAC)
-    sender_roi = _sub_roi(row, SENDER_X_FRAC, SENDER_Y_FRAC)
     chest_type = parse_chest_type(ocr_text(type_roi))
-    sender = parse_sender(ocr_text(sender_roi))
+    sender = read_sender_name(frame)
     return chest_type, sender
 
 
@@ -215,7 +222,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
             if pos is None:
                 break
 
-            chest_type, sender = read_top_row(dialog)
+            chest_type, sender = read_top_row(frame, dialog)
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
             insert_chest(conn, chest_type, sender, timestamp)
             counts[chest_type] += 1

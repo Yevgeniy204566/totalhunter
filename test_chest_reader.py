@@ -41,22 +41,41 @@ def test_parse_chest_type_empty_text():
     assert cr.parse_chest_type("") == ""
 
 
-def test_parse_sender_extracts_name_after_prefix():
-    assert cr.parse_sender("р От: Gray Cardinal") == "Gray Cardinal"
+def test_read_sender_name_uses_fixed_calibrated_region(monkeypatch):
+    captured = {}
+
+    def fake_to_region_dialog(x, y, w, h):
+        captured['ref_rect'] = (x, y, w, h)
+        return (10, 20, 30, 40)
+
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", fake_to_region_dialog)
+
+    def fake_ocr_text(roi, **kwargs):
+        captured['roi_shape'] = roi.shape
+        return "Conquest Georgio"
+
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr_text)
+
+    frame = np.zeros((100, 100, 3), dtype=np.uint8)
+    result = cr.read_sender_name(frame)
+
+    assert captured['ref_rect'] == cr.SENDER_REF_RECT
+    assert captured['roi_shape'] == (40, 30, 3)
+    assert result == "Conquest Georgio"
 
 
-def test_parse_sender_strips_trailing_ocr_artifact():
-    assert cr.parse_sender("От: Золотой|") == "Золотой"
+def test_read_sender_name_applies_clean_name_artifact_stripping(monkeypatch):
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (0, 0, 10, 10))
+    monkeypatch.setattr(cr, "ocr_text", lambda roi, **kwargs: "Tess'")
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    assert cr.read_sender_name(frame) == "Tess"
 
 
-def test_parse_sender_no_prefix_match_falls_back_to_raw_line():
-    assert cr.parse_sender("SomeGarbledText") == "SomeGarbledText"
-
-
-def test_read_top_row_on_fixture():
+def test_read_top_row_on_fixture(monkeypatch):
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
     frame = _load_fixture()
     dialog = cr.crop_dialog(frame, cr.detect_dialog_bbox(frame))
-    chest_type, sender = cr.read_top_row(dialog)
+    chest_type, sender = cr.read_top_row(frame, dialog)
     assert chest_type == "Сундук Эпического Монстра"
     assert sender == "Gray Cardinal"
 
@@ -135,7 +154,7 @@ def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     def fake_find_open_button(bbox):
         return sequence[state['n']][0]
 
-    def fake_read_top_row(dialog):
+    def fake_read_top_row(frame, dialog):
         _, chest_type, sender = sequence[state['n']]
         state['n'] += 1
         return chest_type, sender
