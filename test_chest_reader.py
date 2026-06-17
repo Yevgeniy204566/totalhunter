@@ -31,3 +31,31 @@ def test_get_top_row():
     dialog = cr.crop_dialog(frame, cr.detect_dialog_bbox(frame))
     row = cr.get_top_row(dialog)
     assert row.shape[:2] == (100, 764)
+
+
+def test_parse_chest_type_strips_leading_ocr_artifact():
+    assert cr.parse_chest_type("| Сундук Эпического Монстра") == "Сундук Эпического Монстра"
+
+
+def test_parse_chest_type_empty_text():
+    assert cr.parse_chest_type("") == ""
+
+
+def test_parse_sender_extracts_name_after_prefix():
+    assert cr.parse_sender("р От: Gray Cardinal") == "Gray Cardinal"
+
+
+def test_parse_sender_strips_trailing_ocr_artifact():
+    assert cr.parse_sender("От: Золотой|") == "Золотой"
+
+
+def test_parse_sender_no_prefix_match_falls_back_to_raw_line():
+    assert cr.parse_sender("SomeGarbledText") == "SomeGarbledText"
+
+
+def test_read_top_row_on_fixture():
+    frame = _load_fixture()
+    dialog = cr.crop_dialog(frame, cr.detect_dialog_bbox(frame))
+    chest_type, sender = cr.read_top_row(dialog)
+    assert chest_type == "Сундук Эпического Монстра"
+    assert sender == "Gray Cardinal"
