@@ -1,449 +1,345 @@
+"""
+clan_roster_reader.py — Фаза 0 ERP
+Сканирует «Мой клан → Участники», считывает имя/ранг/могущество.
+"""
 import os
 import re
-import sys
 import json
 import time
 import random
-import pathlib
-import datetime
 
 import cv2
 import numpy as np
 import mss
 import pyautogui
 import pytesseract
-import requests
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# --- Allowed capture area (MANDATORY: only this rectangle may be read) ---
-# Calibrated: top-left (688,346), bottom-right (1412,709)  → w=724, h=363
-_DEFAULT_PANEL = [688, 346, 724, 363]
+# ── Панель (из profiles/profile_client.json) ──────────────────────────────
+PANEL_LEFT   = 688
+PANEL_TOP    = 346
+PANEL_WIDTH  = 724
+PANEL_HEIGHT = 363
 
-# --- Card geometry (FIXED — cards never change size in this game) ---
-PITCH = 172          # physical height of one player card in pixels
+SCROLL_CX = 1050   # центр панели — курсор здесь при скролле
+SCROLL_CY = 527
 
-# --- OCR crop rectangles in absolute pixels FROM TOP-LEFT OF CARD ---
-# Derived from КАРТОЧКА ИГРОКА.png calibration screenshot (NAME=green, MIGHT=red)
-NAME_ROI_PX  = [166,  3, 485,  77]   # [x1, y1, x2, y2]
-MIGHT_ROI_PX = [449, 65, 709, 117]   # [x1, y1, x2, y2]
+# ── Вкладки рангов ─────────────────────────────────────────────────────────
+RANK_TABS = {
+    "ГЛАВА":   (869,  318),
+    "СТАРШИЙ": (990,  318),
+    "ОФИЦЕР":  (1119, 318),
+    "ВЕТЕРАН": (1237, 318),
+    "РЯДОВОЙ": (1359, 318),
+}
 
-# --- Known rank separator labels (uppercase) ---
-KNOWN_RANKS = {'ГЛАВА', 'СТАРШИЙ', 'ОФИЦЕР', 'ВЕТЕРАН', 'РЯДОВОЙ'}
+# ── Структура панели (хардкод, верифицировано по _dbg2_row_*.png) ──────────
+PITCH            = 86    # высота одной карточки участника, px
+HEADER_HEIGHT_PX = 35    # «СТАРШИЙ ⓘ» — сепаратор ранга вверху вкладки
+NUM_VISIBLE_ROWS = 3
+OWN_Y0           = HEADER_HEIGHT_PX + NUM_VISIBLE_ROWS * PITCH   # = 293
 
+# ── Кропы внутри карточки ─────────────────────────────────────────────────────
+# Имя: ШИРОКИЙ кроп — захватываем всё (статус предыдущего игрока + разделитель + имя)
+# OCR+regex отделит имя от статуса.  x=108 — после рамки аватара
+NAME_X1, NAME_X2 = 108, 560
+NAME_Y1,  NAME_Y2 = 0, 57   # 0..57px: весь верхний блок карточки
+
+# Могущество: y=35..55 для card_0 (нет сепаратора), y=57..77 для card_1+
+MIGHT_X1, MIGHT_X2 = 460, 710
+MIGHT_Y1_C0, MIGHT_Y2_C0 = 35, 55
+MIGHT_Y1_C1, MIGHT_Y2_C1 = 57, 77
+
+# ── Скролл / конец списка ──────────────────────────────────────────────────
+END_OF_LIST_ZERO_SHIFTS = 2
+SCROLLBAR_MARGIN = 0.05    # правый край (скроллбар) — исключаем из matchTemplate
+
+# ── OCR имени ──────────────────────────────────────────────────────────────
 NAME_MIN_LENGTH = 2
 
-# --- End-of-list detection ---
-END_OF_LIST_ZERO_SHIFTS = 2
+# ── Anti-AFK ───────────────────────────────────────────────────────────────
+ANTI_AFK_INTERVAL_SEC  = 180
+ANTI_AFK_HEADER_Y_FRAC = 0.05
 
-# --- Scrollbar strip excluded from matchTemplate ---
-SCROLLBAR_MARGIN = 0.05
-
-# --- Anti-AFK ---
-ANTI_AFK_INTERVAL_SEC = 240
-ANTI_AFK_X = 1157
-ANTI_AFK_Y = 416
-
-# --- Debug photos ---
-DEBUG_DIR = pathlib.Path(__file__).parent / '_clan_debug'
+# ── Выходной файл ─────────────────────────────────────────────────────────
+OUTPUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'clan_roster.json')
+API_PATH    = '/api/v1/clan/roster'
 
 
-def _dbg_save(img, name):
-    DEBUG_DIR.mkdir(exist_ok=True)
-    cv2.imwrite(str(DEBUG_DIR / name), img)
+# ─────────────────────────────────────────────────────────────────────────────
+# Захват панели
+# ─────────────────────────────────────────────────────────────────────────────
 
-
-# --- Config / API ---
-CONFIG_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'roster_config.json')
-API_ROSTER_PATH = '/api/v1/clan/roster'
-
-
-# ─── Screen capture ────────────────────────────────────────────────────────
-
-def grab_fullscreen():
+def grab_panel():
     with mss.mss() as sct:
-        shot = sct.grab(sct.monitors[1])
+        region = {"left": PANEL_LEFT, "top": PANEL_TOP,
+                  "width": PANEL_WIDTH, "height": PANEL_HEIGHT}
+        shot = sct.grab(region)
         frame = np.array(shot)
         return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
 
 
-def grab_panel(panel_bbox):
-    """Capture ONLY the allowed rectangle. Nothing outside."""
-    px, py, pw, ph = panel_bbox
-    frame = grab_fullscreen()
-    return frame[py:py + ph, px:px + pw]
+# ─────────────────────────────────────────────────────────────────────────────
+# Кропы карточек — абсолютные пиксели, без динамики
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_card_crops(panel_img, first_frame=True):
+    """
+    Возвращает список (name_roi, might_roi).
+    Имя: ШИРОКИЙ кроп y=0..57 для ВСЕХ карточек — regex в _clean_name уберёт статус.
+    Могущество: C0 для верхней карточки первого кадра, C1 для остальных.
+    """
+    cards = []
+    for i in range(NUM_VISIBLE_ROWS):
+        y0 = HEADER_HEIGHT_PX + i * PITCH
+        y1 = y0 + PITCH
+        if y1 > OWN_Y0:
+            break
+        card = panel_img[y0:y1, :]
+        if card.shape[0] < PITCH // 2:
+            break
+
+        name_roi = card[NAME_Y1:NAME_Y2, NAME_X1:NAME_X2]
+
+        use_c0 = first_frame and (i == 0)
+        my1, my2 = (MIGHT_Y1_C0, MIGHT_Y2_C0) if use_c0 else (MIGHT_Y1_C1, MIGHT_Y2_C1)
+        might_roi = card[my1:my2, MIGHT_X1:MIGHT_X2]
+
+        cards.append((name_roi, might_roi))
+    return cards
 
 
-# ─── Profile loading ────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Измерение сдвига скролла
+# ─────────────────────────────────────────────────────────────────────────────
 
-def _load_profile():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    gui_cfg  = os.path.join(base_dir, 'gui_config.json')
-    name     = 'client'
-    if os.path.exists(gui_cfg):
-        with open(gui_cfg, 'r', encoding='utf-8') as f:
-            name = json.load(f).get('last_calibration_profile', 'client').lower()
-    path = os.path.join(base_dir, 'profiles', f'profile_{name}.json')
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f), path
+def measure_scroll_shift(prev_panel, curr_panel):
+    w = prev_panel.shape[1]
+    content_x2 = int(w * (1 - SCROLLBAR_MARGIN))
 
+    # Шаблон — вторая карточка предыдущего кадра
+    tmpl_y0 = HEADER_HEIGHT_PX + PITCH
+    tmpl_y1 = tmpl_y0 + PITCH
+    template = prev_panel[tmpl_y0:tmpl_y1, 0:content_x2]
+    search   = curr_panel[HEADER_HEIGHT_PX:OWN_Y0, 0:content_x2]
 
-def _load_panel_bbox():
-    profile, _ = _load_profile()
-    coords = profile.get('clan_panel_screen', _DEFAULT_PANEL)
-    return tuple(int(c) for c in coords)   # (x, y, w, h)
+    if template.size == 0 or search.size == 0:
+        return 0
+    if template.shape[0] >= search.shape[0] or template.shape[1] > search.shape[1]:
+        return 0
 
-
-def _load_tab_coords():
-    profile, profile_path = _load_profile()
-    from coord_manager import coord_manager as _cm
-    _cm.load(profile_path)
-    raw_tabs = profile.get('clan_roster_tabs', {})
-    if not raw_tabs:
-        raise ValueError("clan_roster_tabs не найдены в профиле.")
-    return {rank: tuple(_cm.to_screen(int(rx), int(ry))) for rank, (rx, ry) in raw_tabs.items()}
+    result = cv2.matchTemplate(search, template, cv2.TM_CCOEFF_NORMED)
+    _, _, _, max_loc = cv2.minMaxLoc(result)
+    return tmpl_y0 - (HEADER_HEIGHT_PX + max_loc[1])
 
 
-# ─── OCR helpers ───────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# OCR
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _preprocess_otsu(roi, invert=False):
-    gray    = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
-    flag    = cv2.THRESH_BINARY_INV if invert else cv2.THRESH_BINARY
-    _, out  = cv2.threshold(resized, 0, 255, flag + cv2.THRESH_OTSU)
-    return out
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    scaled = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+    method = cv2.THRESH_BINARY_INV if invert else cv2.THRESH_BINARY
+    _, binary = cv2.threshold(scaled, 0, 255, method + cv2.THRESH_OTSU)
+    return binary
 
 
-def _ocr_otsu(roi, invert=False, psm=7, lang='rus+eng'):
+def _ocr_otsu(roi, invert=False, psm=7):
+    processed = _preprocess_otsu(roi, invert=invert)
     return pytesseract.image_to_string(
-        _preprocess_otsu(roi, invert), config=f'--psm {psm}', lang=lang, timeout=5
+        processed, config=f'--psm {psm}', lang='rus+eng', timeout=5
     ).strip()
 
 
-# ─── Member name OCR ───────────────────────────────────────────────────────
+_STATUS_LINE = re.compile(
+    r'(?i)^\s*(был[аои]?\b|в\s+сет[иь]|не\s+в\s+сет[иь]|в\s+игре)',
+)
 
-def _clean_member_name(text):
-    # Remove activity timers ("Был 24:59 м назад", "Был 11ч: 21м назад", etc.)
-    text = re.sub(r'(?i)был[а-яёА-ЯЁa-z0-9\s:.,©\-]*назад', '', text)
-    text = re.sub(r'(?i)в\s*сети',                           '', text)
-    text = re.sub(r'\d+[чмh:]+\s*\d*\s*назад',              '', text, flags=re.IGNORECASE)
-    # Standard cleanup
-    text = re.sub(r'^\[.*?\]\s*',                    '', text)
-    text = re.sub(r'\s*\(.*',                        '', text, flags=re.DOTALL)
-    text = re.sub(r'\s*[KКXХYУkxy]:\d+.*',          '', text, flags=re.DOTALL | re.IGNORECASE)
-    text = re.sub(r'^[^Ѐ-ӿa-zA-Z_-]+',             '', text)
-    # Strip 1-2 char OCR artifact from rank-badge icon at left edge
-    text = re.sub(r'^[а-яёА-ЯЁ]{1,2}\s+(?=\S{2,})', '', text)
-    text = re.sub(r'^[a-z]{1,2}\s+(?=\S{2,})',       '', text)
-    text = re.sub(r'\s+\S{1,3}$',                    '', text)
-    while True:
-        s = re.sub(r'\s+(?:\d{1,3}|\S{1})$', '', text)
-        if s == text:
+def _clean_name(text):
+    # Широкий кроп даёт несколько строк: статус пред. игрока + разделитель + имя.
+    # Берём первую строку, которая НЕ является статусной.
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    name_line = ''
+    for line in lines:
+        if not _STATUS_LINE.match(line):
+            name_line = line
             break
-        text = s
-    text = re.sub(r'[^\w]+$', '', text, flags=re.UNICODE)
-    return text.strip()
+    if not name_line:
+        name_line = lines[-1] if lines else ''
+    text = name_line
+
+    # 1. Ведущие артефакты от рамки карточки (|, }, ‚, ', `)
+    text = re.sub(r'^[|}\'\`"‚\s\[\]!i]+', '', text)
+    # 2. Координаты "(K:229 X:478 Y:516)" — OCR часто читает ( как |, {, i, [
+    text = re.sub(r'\s*[\(\{\|\[iI]\s*[KkКкRr]:?\s*\d+.*', '', text)
+    # 3. Фолбэк: K:229 без открывающей скобки
+    text = re.sub(r'\s+[KkКкRr]:?\s*\d{1,3}[\s:].*', '', text)
+    # 4. Тег королевства [K229]
+    text = re.sub(r'^\[.*?\]\s*', '', text)
+    # 5. Хвостовые артефакты
+    text = re.sub(r'\s+\S{1,3}$', '', text)
+    while True:
+        stripped = re.sub(r'\s+(?:\d{1,3}|\S{1})$', '', text)
+        if stripped == text:
+            break
+        text = stripped
+    return re.sub(r'[^\w]+$', '', text, flags=re.UNICODE).strip()
 
 
-def ocr_member_name(card_img):
-    x1, y1, x2, y2 = NAME_ROI_PX
-    name_roi = card_img[y1:y2, x1:x2]
+def ocr_name(name_roi):
+    if name_roi.size == 0:
+        return ''
     candidates = []
-    for psm, inv in ((7, False), (7, True), (6, True), (6, False)):
-        raw  = _ocr_otsu(name_roi, invert=inv, psm=psm, lang='rus+eng')
-        line = raw.splitlines()[0] if raw else ''
-        name = _clean_member_name(line)
+    # psm=6 (блок текста) идёт первым — он видит статус+имя в широком кропе
+    for psm, inv in ((6, False), (6, True), (7, False), (7, True)):
+        raw = _ocr_otsu(name_roi, invert=inv, psm=psm)
+        name = _clean_name(raw)   # _clean_name сам выбирает нужную строку
         if len(name) >= NAME_MIN_LENGTH:
             candidates.append(name)
-    return max(candidates, key=len) if candidates else ''
+    if not candidates:
+        return ''
+    return max(candidates, key=len)
 
 
-# ─── Might OCR ─────────────────────────────────────────────────────────────
-
-def _clean_might(text):
-    digits = re.sub(r'[^\d]', '', text)
+def ocr_might(might_roi):
+    if might_roi.size == 0:
+        return None
+    gray = cv2.cvtColor(might_roi, cv2.COLOR_BGR2GRAY)
+    scaled = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+    _, binary = cv2.threshold(scaled, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    raw = pytesseract.image_to_string(
+        binary, config='--psm 7 -c tessedit_char_whitelist=0123456789,', timeout=5
+    ).strip()
+    digits = re.sub(r'[^\d]', '', raw)
     return int(digits) if digits else None
 
 
-def ocr_member_might(card_img):
-    x1, y1, x2, y2 = MIGHT_ROI_PX
-    might_roi = card_img[y1:y2, x1:x2]
-    for inv in (True, False):
-        text   = pytesseract.image_to_string(
-            _preprocess_otsu(might_roi, inv), config='--psm 7', lang='eng', timeout=5
-        ).strip()
-        result = _clean_might(text)
-        if result is not None:
-            return result
-    return None
+# ─────────────────────────────────────────────────────────────────────────────
+# Anti-AFK
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _anti_afk_click():
+    click_x = PANEL_LEFT + PANEL_WIDTH // 2 + random.randint(-8, 8)
+    click_y = PANEL_TOP + int(PANEL_HEIGHT * ANTI_AFK_HEADER_Y_FRAC) + random.randint(-3, 3)
+    pyautogui.click(click_x, click_y)
+    time.sleep(0.3)
 
 
-# ─── Fuzzy dedup ───────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Основной сбор данных
+# ─────────────────────────────────────────────────────────────────────────────
 
-FUZZY_DEDUP_MAX_DIST = 2
+def collect_roster():
+    all_members = []
+    global_seen = set()
+    last_afk = time.time()
 
+    for rank_name, (tx, ty) in RANK_TABS.items():
+        print(f"\n── {rank_name} ──")
 
-def _levenshtein(a, b):
-    if len(a) < len(b):
-        return _levenshtein(b, a)
-    if not b:
-        return len(a)
-    prev = list(range(len(b) + 1))
-    for ca in a:
-        curr = [prev[0] + 1]
-        for j, cb in enumerate(b):
-            curr.append(min(prev[j] + (ca != cb), curr[-1] + 1, prev[j + 1] + 1))
-        prev = curr
-    return prev[-1]
+        pyautogui.moveTo(tx, ty)
+        time.sleep(0.1 + random.random() * 0.1)
+        pyautogui.click()
+        time.sleep(0.5)
 
+        panel = grab_panel()
+        tab_data = {}   # name → might
+        zero_streak = 0
+        first_frame = True   # первый кадр: i=0 без сепаратора
 
-def _fuzzy_find(name, existing):
-    nl = name.lower()
-    for e in existing:
-        if e.lower() == nl:
-            return e
-    if len(name) < 5:
-        return None
-    for e in existing:
-        if _levenshtein(nl, e.lower()) <= FUZZY_DEDUP_MAX_DIST:
-            return e
-    return None
+        while True:
+            if time.time() - last_afk > ANTI_AFK_INTERVAL_SEC:
+                _anti_afk_click()
+                last_afk = time.time()
 
+            for name_roi, might_roi in get_card_crops(panel, first_frame=first_frame):
+                name = ocr_name(name_roi)
+                if name and name not in tab_data:
+                    might = ocr_might(might_roi)
+                    tab_data[name] = might
+                    print(f"  {name} — {might}")
 
-# ─── Scroll-shift measurement ──────────────────────────────────────────────
+            prev_panel = panel
+            pyautogui.moveTo(SCROLL_CX, SCROLL_CY)
+            pyautogui.scroll(-2)
+            time.sleep(0.28 + random.random() * 0.1)
+            panel = grab_panel()
+            first_frame = False   # после скролла все карточки имеют сепаратор
 
-def _measure_scroll_shift(prev_panel, curr_panel):
-    """Match second card of prev_panel inside curr_panel → returns shift in px."""
-    h, w    = prev_panel.shape[:2]
-    x_right = int(w * (1 - SCROLLBAR_MARGIN))
-    t0      = PITCH
-    t1      = 2 * PITCH
-    if t1 > h:
-        return 0
-    template = prev_panel[t0:t1, 0:x_right]
-    search   = curr_panel[0:h,   0:x_right]
-    if template.shape[0] < 2 or template.shape[1] < 2:
-        return 0
-    if search.shape[0] < template.shape[0] or search.shape[1] < template.shape[1]:
-        return 0
-    _, _, _, max_loc = cv2.minMaxLoc(
-        cv2.matchTemplate(search, template, cv2.TM_CCOEFF_NORMED)
-    )
-    return t0 - max_loc[1]
+            shift_px = measure_scroll_shift(prev_panel, panel)
 
-
-# ─── Main collection loop ──────────────────────────────────────────────────
-
-def anti_afk_click():
-    pyautogui.click(ANTI_AFK_X + random.randint(-5, 5),
-                    ANTI_AFK_Y + random.randint(-3, 3))
-
-
-def _collect_rank_tab(rank, tab_x, tab_y, panel_bbox, max_rows=0):
-    px, py, pw, ph = panel_bbox
-    num_rows  = ph // PITCH          # how many full cards fit: 363 // 172 = 2
-    panel_cx  = px + pw // 2
-    panel_cy  = py + ph // 2
-
-    print(f"\n[{rank}] Клик ({tab_x},{tab_y})", flush=True)
-    pyautogui.moveTo(tab_x + random.randint(-3, 3),
-                     tab_y + random.randint(-2, 2),
-                     duration=random.uniform(0.3, 0.5))
-    time.sleep(random.uniform(0.1, 0.3))
-    pyautogui.click()
-    time.sleep(random.uniform(0.9, 1.2))
-
-    # Cursor stays at FIXED panel center — never moves elsewhere
-    pyautogui.moveTo(panel_cx, panel_cy, duration=0.2)
-    print(f"[{rank}] Курсор ({panel_cx},{panel_cy}) PITCH={PITCH}px видимых строк={num_rows}", flush=True)
-
-    members           = {}
-    prev_panel_img    = None
-    remainder_px      = 0
-    zero_shift_streak = 0
-    last_afk_time     = time.time()
-    frame_num         = 0
-
-    while True:
-        curr_panel_img = grab_panel(panel_bbox)
-
-        if prev_panel_img is None:
-            new_rows = num_rows
-            print(f"[{rank}] Первый кадр: {pw}×{ph}", flush=True)
-            _dbg_save(curr_panel_img, f"{rank}_frame0.png")
-        else:
-            shift = _measure_scroll_shift(prev_panel_img, curr_panel_img)
-            if shift <= 0:
-                zero_shift_streak += 1
-                print(f"[{rank}] shift={shift}px zero_streak={zero_shift_streak}/{END_OF_LIST_ZERO_SHIFTS}", flush=True)
-                if zero_shift_streak >= END_OF_LIST_ZERO_SHIFTS:
-                    print(f"[{rank}] КОНЕЦ СПИСКА — финальный скан", flush=True)
-                    for i in range(num_rows):
-                        top     = i * PITCH
-                        card_img = curr_panel_img[top:top + PITCH, :]
-                        name    = ocr_member_name(card_img)
-                        might   = ocr_member_might(card_img)
-                        if not name or name.upper() in KNOWN_RANKS:
-                            continue
-                        _dbg_save(card_img, f"{rank}_FINAL_r{i:02d}_{name[:20]}.png")
-                        if _fuzzy_find(name, list(members.keys())) is None:
-                            members[name] = {'name': name, 'rank': rank, 'might': might}
-                            might_str = f"{might:,}" if might else "—"
-                            print(f"[{rank}]   [ADD-FINAL] '{name}' | {might_str}", flush=True)
+            if shift_px <= 0:
+                zero_streak += 1
+                if zero_streak >= END_OF_LIST_ZERO_SHIFTS:
+                    for name_roi, might_roi in get_card_crops(panel, first_frame=False):
+                        name = ocr_name(name_roi)
+                        if name and name not in tab_data:
+                            might = ocr_might(might_roi)
+                            tab_data[name] = might
+                            print(f"  {name} — {might}")
                     break
-                new_rows = 0
             else:
-                zero_shift_streak = 0
-                remainder_px += shift
-                new_rows      = min(remainder_px // PITCH, num_rows)
-                remainder_px -= new_rows * PITCH
-                print(f"[{rank}] shift={shift}px remainder={remainder_px}px новых={new_rows}", flush=True)
+                zero_streak = 0
 
-        # Process only newly revealed cards (bottom ones)
-        start_row = num_rows - new_rows
-        for i in range(start_row, num_rows):
-            top      = i * PITCH
-            card_img = curr_panel_img[top:top + PITCH, :]
-            name     = ocr_member_name(card_img)
-            might    = ocr_member_might(card_img)
+        for name, might in tab_data.items():
+            if name not in global_seen:
+                global_seen.add(name)
+                all_members.append({"name": name, "rank": rank_name, "might": might})
 
-            if not name or name.upper() in KNOWN_RANKS:
-                print(f"[{rank}]   [SKIP] row={i} кадр={frame_num}", flush=True)
-                _dbg_save(card_img, f"{rank}_f{frame_num:02d}_r{i:02d}_SKIP.png")
-                continue
-
-            _dbg_save(card_img, f"{rank}_f{frame_num:02d}_r{i:02d}_{name[:20]}.png")
-            canonical = _fuzzy_find(name, list(members.keys()))
-            if canonical is not None:
-                print(f"[{rank}]   [DEDUP] '{name}' -> '{canonical}'", flush=True)
-            else:
-                members[name] = {'name': name, 'rank': rank, 'might': might}
-                might_str = f"{might:,}" if might else "—"
-                print(f"[{rank}]   [ADD] '{name}' | {might_str}", flush=True)
-                if max_rows and len(members) >= max_rows:
-                    print(f"[{rank}] ЛИМИТ {max_rows} — стоп", flush=True)
-                    return list(members.values())
-
-        prev_panel_img = curr_panel_img.copy()
-        frame_num += 1
-
-        if time.time() - last_afk_time >= ANTI_AFK_INTERVAL_SEC:
-            anti_afk_click()
-            last_afk_time = time.time()
-
-        pyautogui.scroll(-2)
-        time.sleep(random.uniform(0.4, 0.9))
-
-    result = list(members.values())
-    print(f"[{rank}] ИТОГ: {len(result)} чел.", flush=True)
-    return result
+    return all_members
 
 
-def collect_roster(max_rows=0):
-    panel_bbox = _load_panel_bbox()
-    tab_coords = _load_tab_coords()
+# ─────────────────────────────────────────────────────────────────────────────
+# Экспорт
+# ─────────────────────────────────────────────────────────────────────────────
 
-    px, py, pw, ph = panel_bbox
-    print(f"Панель: ({px},{py}) {pw}×{ph}  PITCH={PITCH}px  строк={ph//PITCH}", flush=True)
-
-    all_members = {}
-    for rank, (tx, ty) in tab_coords.items():
-        if max_rows and len(all_members) >= max_rows:
-            break
-        remaining   = max(0, max_rows - len(all_members)) if max_rows else 0
-        tab_members = _collect_rank_tab(rank, tx, ty, panel_bbox, max_rows=remaining)
-        if rank == 'ГЛАВА':
-            tab_members = tab_members[:1]
-        for m in tab_members:
-            n = m['name']
-            if n and n not in all_members:
-                all_members[n] = m
-        print(f"  [{rank}] -> {len(tab_members)} чел.", flush=True)
-
-    return list(all_members.values())
-
-
-# ─── Config & export ───────────────────────────────────────────────────────
-
-def load_config():
-    if not os.path.exists(CONFIG_PATH):
-        raise FileNotFoundError(
-            f"Конфигурация не найдена: {CONFIG_PATH}\n"
-            "Скопируйте roster_config.example.json и заполните значения."
-        )
-    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-        cfg = json.load(f)
-    for key in ('api_url', 'api_token'):
-        if key not in cfg:
-            raise ValueError(f"В конфигурации отсутствует обязательный ключ: {key}")
-    return cfg
-
-
-def export_to_api(roster, config):
-    payload = {
-        'collected_at': datetime.datetime.now().isoformat(timespec='seconds'),
-        'roster': roster,
-    }
-    headers = {'Authorization': f"Bearer {config['api_token']}"}
-    try:
-        r = requests.post(config['api_url'] + API_ROSTER_PATH,
-                          headers=headers, json=payload, timeout=10)
-        if 200 <= r.status_code < 300:
-            return True
-    except requests.RequestException:
-        pass
-    fname = f"roster_export_{int(time.time())}.json"
-    with open(fname, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-    print(f"Не удалось отправить данные. Сохранено локально: {fname}")
-    return False
-
-
-class _Tee:
-    def __init__(self, *files):
-        self._files = files
-
-    def write(self, data):
-        for f in self._files:
+def export_roster(roster):
+    cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'clan_roster_config.json')
+    if os.path.exists(cfg_path):
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            cfg = json.load(f)
+        api_url   = cfg.get('api_url', '')
+        api_token = cfg.get('api_token', '')
+        if api_url:
             try:
-                f.write(data)
-            except UnicodeEncodeError:
-                enc = getattr(f, 'encoding', 'utf-8') or 'utf-8'
-                f.write(data.encode(enc, errors='replace').decode(enc))
+                import requests
+                resp = requests.post(
+                    f"{api_url}{API_PATH}",
+                    json={"members": roster},
+                    headers={"Authorization": f"Bearer {api_token}"},
+                    timeout=15,
+                )
+                if resp.status_code == 200:
+                    print(f"Отправлено на сервер: {len(roster)} участников")
+                    return
+                print(f"[WARN] API {resp.status_code}: {resp.text[:200]}")
+            except Exception as e:
+                print(f"[WARN] API недоступен: {e}")
 
-    def flush(self):
-        for f in self._files:
-            f.flush()
+    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+        json.dump({"members": roster}, f, ensure_ascii=False, indent=2)
+    print(f"Сохранено: {OUTPUT_PATH} ({len(roster)} участников)")
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Точка входа
+# ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--max-rows', type=int, default=0,
-                        help='Стоп после N участников (0=без лимита)')
-    args = parser.parse_args()
-
-    config = load_config()
-
-    log_path = pathlib.Path(__file__).parent / f"roster_log_{int(time.time())}.txt"
-    _log = open(log_path, 'w', encoding='utf-8')
-    sys.stdout = _Tee(sys.__stdout__, _log)
-    print(f"Лог: {log_path}", flush=True)
-
-    print("Откройте «Мой клан → Участники» в игре. Сбор начнётся через 10 секунд...")
-    for i in range(10, 0, -1):
-        print(i, flush=True)
+    print("Открыта вкладка «Мой клан → Участники»? Старт через 3 сек...")
+    for i in (3, 2, 1):
+        print(i)
         time.sleep(1)
 
-    roster = collect_roster(max_rows=args.max_rows)
+    roster = collect_roster()
 
-    print(f"\nСобрано участников: {len(roster)}")
-    for m in sorted(roster, key=lambda r: (r['rank'], r['name'])):
-        might_str = f"{m['might']:,}" if m['might'] else '—'
-        print(f"  [{m['rank']}] {m['name']} — {might_str}")
+    print(f"\n===RESULT=== ({len(roster)} участников)")
+    for m in roster:
+        print(f"  [{m['rank']}] {m['name']} — {m['might']}")
 
-    success = export_to_api(roster, config)
-    print("Данные отправлены на сервер." if success else "Данные сохранены локально.")
+    export_roster(roster)
 
 
 if __name__ == '__main__':

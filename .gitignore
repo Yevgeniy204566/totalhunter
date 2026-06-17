@@ -38,3 +38,5 @@ tesseract_bin/
 .vercel
 .env*
 tournament_config.json
+roster_config.json
+_clan_debug/
