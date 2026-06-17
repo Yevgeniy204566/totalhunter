@@ -1,6 +1,7 @@
 ﻿__pycache__/
 *.pyc
 *.pyo
+chest_buffer.db
 .env
 .env.local
 *.local.json
