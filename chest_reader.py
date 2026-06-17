@@ -48,7 +48,7 @@ SENDER_REF_RECT = (816, 375, 361, 24)
 # отряд нежити"). Used as chest_type instead of the generic title line
 # ("Сундук Эпического Монстра"), since the title alone doesn't distinguish
 # between different drop sources.
-SOURCE_REF_RECT = (865, 398, 309, 24)
+SOURCE_REF_RECT = (865, 398, 371, 24)
 
 # --- «Открыть» button search box (relative to the top row) ----------------
 BUTTON_X_FRAC = (0.78, 1.0)
