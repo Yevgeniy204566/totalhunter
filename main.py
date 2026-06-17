@@ -2424,6 +2424,7 @@ class TotalHunterApp(ctk.CTk):
                                        fg_color=MD3["error"], hover_color=MD3["error_hover"])
         self.chest_status_label.configure(text=L["chest_status_running"],
                                           text_color=MD3["secondary"])
+        self.chest_send_btn.configure(state="disabled")
 
         stop_event = self._chest_stop_event
 
@@ -2443,6 +2444,7 @@ class TotalHunterApp(ctk.CTk):
                                        fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
         self.chest_status_label.configure(text=L["chest_status_stopped"],
                                           text_color=MD3["on_surface2"])
+        self.chest_send_btn.configure(state="normal")
         self._update_chest_counts_display(result.get("counts", {}))
 
     def send_chests_to_server(self):
@@ -2460,6 +2462,8 @@ class TotalHunterApp(ctk.CTk):
             rows = chest_reader.get_unsynced(conn)
             if not rows:
                 conn.close()
+                self.after(0, lambda: self.chest_status_label.configure(
+                    text=L["chest_status_stopped"], text_color=MD3["on_surface2"]))
                 return
 
             from auth import spend_credit
