@@ -3797,6 +3797,100 @@ class TotalHunterApp(ctk.CTk):
         coord_manager.save(path)
         self._save_gui_config_key("last_calibration_profile", profile_name)
 
+    def setup_chest_tab(self):
+        L = LANGS[self.current_lang]
+
+        title_lb = ctk.CTkLabel(self.tab_chest, text=L["tab_chest"],
+                                font=ctk.CTkFont(size=20, weight="bold"),
+                                text_color=MD3["primary"])
+        title_lb.pack(pady=(14, 8))
+        self._i18n_labels.append((title_lb, "tab_chest"))
+
+        # ── Королевство / Клан ────────────────────────────────────────────
+        id_card = ctk.CTkFrame(self.tab_chest, fg_color=MD3["elevated"],
+                               corner_radius=12, border_width=1,
+                               border_color=MD3["outline"])
+        id_card.pack(padx=20, pady=(0, 8), fill="x")
+
+        kingdom_row = ctk.CTkFrame(id_card, fg_color="transparent")
+        kingdom_row.pack(padx=10, pady=(10, 4), fill="x")
+        self.chest_kingdom_lb = ctk.CTkLabel(kingdom_row, text=L["chest_kingdom_lb"],
+                                             font=ctk.CTkFont(size=12),
+                                             text_color=MD3["on_surface2"])
+        self.chest_kingdom_lb.pack(side="left", padx=(0, 8))
+        self.chest_kingdom_entry = ctk.CTkEntry(kingdom_row, width=120)
+        self.chest_kingdom_entry.pack(side="left")
+        saved_kingdom = self._load_gui_config().get("chest_kingdom", "")
+        if saved_kingdom:
+            self.chest_kingdom_entry.insert(0, saved_kingdom)
+        self.chest_kingdom_entry.bind("<FocusOut>", self._on_chest_kingdom_change)
+
+        clan_row = ctk.CTkFrame(id_card, fg_color="transparent")
+        clan_row.pack(padx=10, pady=(4, 10), fill="x")
+        self.chest_clan_lb = ctk.CTkLabel(clan_row, text=L["chest_clan_lb"],
+                                          font=ctk.CTkFont(size=12),
+                                          text_color=MD3["on_surface2"])
+        self.chest_clan_lb.pack(side="left", padx=(0, 8))
+        self.chest_clan_entry = ctk.CTkEntry(clan_row, width=160)
+        self.chest_clan_entry.pack(side="left")
+        saved_clan = self._load_gui_config().get("chest_clan", "")
+        if saved_clan:
+            self.chest_clan_entry.insert(0, saved_clan)
+        self.chest_clan_entry.bind("<FocusOut>", self._on_chest_clan_change)
+
+        # ── Старт/Стоп + статус ──────────────────────────────────────────
+        self.chest_start_btn = ctk.CTkButton(
+            self.tab_chest, text=L["chest_start_btn"],
+            height=42, corner_radius=10,
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
+            command=self.toggle_chest_bot)
+        self.chest_start_btn.pack(padx=20, pady=(4, 4), fill="x")
+
+        self.chest_status_label = ctk.CTkLabel(self.tab_chest, text=L["chest_status_ready"],
+                                               font=ctk.CTkFont(size=12),
+                                               text_color=MD3["on_surface2"])
+        self.chest_status_label.pack(pady=(0, 8))
+
+        # ── Live-счётчик по типам ────────────────────────────────────────
+        counts_card = ctk.CTkFrame(self.tab_chest, fg_color=MD3["elevated"],
+                                   corner_radius=12, border_width=1,
+                                   border_color=MD3["outline"])
+        counts_card.pack(padx=20, pady=(0, 8), fill="both", expand=True)
+        self.chest_counts_frame = ctk.CTkFrame(counts_card, fg_color="transparent")
+        self.chest_counts_frame.pack(padx=10, pady=10, fill="both", expand=True)
+        self.chest_total_label = ctk.CTkLabel(counts_card, text=f"{L['chest_total_lb']} 0",
+                                              font=ctk.CTkFont(size=13, weight="bold"),
+                                              text_color=MD3["value_text"])
+        self.chest_total_label.pack(pady=(0, 10))
+
+        # ── Отправить на сервер ──────────────────────────────────────────
+        self.chest_send_btn = ctk.CTkButton(
+            self.tab_chest, text=L["chest_send_btn"],
+            height=38, corner_radius=10,
+            fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
+            text_color=MD3["on_surface"], font=ctk.CTkFont(size=13, weight="bold"),
+            command=self.send_chests_to_server)
+        self.chest_send_btn.pack(padx=20, pady=(0, 14), fill="x")
+
+    def _on_chest_kingdom_change(self, event=None):
+        self._save_gui_config_key("chest_kingdom", self.chest_kingdom_entry.get().strip())
+
+    def _on_chest_clan_change(self, event=None):
+        self._save_gui_config_key("chest_clan", self.chest_clan_entry.get().strip())
+
+    def _update_chest_counts_display(self, counts):
+        for child in self.chest_counts_frame.winfo_children():
+            child.destroy()
+        total = 0
+        for chest_type, n in counts.items():
+            total += n
+            row_lb = ctk.CTkLabel(self.chest_counts_frame, text=f"{chest_type}: {n}",
+                                  font=ctk.CTkFont(size=12), text_color=MD3["on_surface"])
+            row_lb.pack(anchor="w", pady=1)
+        L = LANGS[self.current_lang]
+        self.chest_total_label.configure(text=f"{L['chest_total_lb']} {total}")
+
     # ── calibration tab ─────────────────────────────────────────────────────
 
     def setup_calibration_tab(self):
