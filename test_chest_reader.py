@@ -91,3 +91,79 @@ def test_mark_synced_excludes_from_unsynced(tmp_path):
     cr.mark_synced(conn, ids)
     assert cr.get_unsynced(conn) == []
     conn.close()
+
+
+def test_find_open_button_region_is_top_row_right_side():
+    """find_open_button must restrict the color search to the top-row band,
+    not the whole dialog (avoids matching unrelated green UI elsewhere)."""
+    captured = {}
+
+    def fake_find_colored_button(region, color, pick):
+        captured['region'] = region
+        captured['color'] = color
+        return (region[0] + 10, region[1] + 10)
+
+    import chest_reader as cr_mod
+    monkey_target = cr_mod.find_colored_button
+    cr_mod.find_colored_button = fake_find_colored_button
+    try:
+        bbox = (671, 340, 764, 475)
+        pos = cr.find_open_button(bbox)
+        # region[0] = 671 + int(764*0.78) = 1266; region[1] = 340 + int(100*0.45) = 385
+        # fake_find_colored_button returns (region[0]+10, region[1]+10)
+        assert pos == (1276, 395)
+        x, y, w, h = captured['region']
+        assert x == 671 + int(764 * 0.78)
+        assert y == 340 + int(100 * 0.45)
+        assert captured['color'] == 'green'
+    finally:
+        cr_mod.find_colored_button = monkey_target
+
+
+def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
+    sequence = [
+        ((100, 100), "Сундук Эпического Монстра", "Alice"),
+        ((100, 100), "Сундук Эпического Монстра", "Bob"),
+        (None, None, None),
+    ]
+    state = {'n': 0}
+
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
+
+    def fake_find_open_button(bbox):
+        return sequence[state['n']][0]
+
+    def fake_read_top_row(dialog):
+        _, chest_type, sender = sequence[state['n']]
+        state['n'] += 1
+        return chest_type, sender
+
+    clicked = []
+    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
+    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
+    monkeypatch.setattr(cr, "click_open_button", lambda pos: clicked.append(pos))
+
+    db_path = str(tmp_path / "test_chest_buffer.db")
+    result = cr.collect_chests(lambda: False, db_path=db_path)
+
+    assert result["counts"] == {"Сундук Эпического Монстра": 2}
+    assert len(clicked) == 2
+
+    conn = cr.init_db(db_path)
+    rows = cr.get_unsynced(conn)
+    assert len(rows) == 2
+    assert rows[0][1] == "Alice"
+    assert rows[1][1] == "Bob"
+    conn.close()
+
+
+def test_collect_chests_stops_immediately_when_flag_already_set(tmp_path, monkeypatch):
+    def boom():
+        raise AssertionError("grab_fullscreen must not be called when stop_flag is already True")
+    monkeypatch.setattr(cr, "grab_fullscreen", boom)
+
+    db_path = str(tmp_path / "test_chest_buffer.db")
+    result = cr.collect_chests(lambda: True, db_path=db_path)
+    assert result == {"counts": {}, "items": []}

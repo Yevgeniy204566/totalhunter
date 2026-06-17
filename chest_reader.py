@@ -169,3 +169,63 @@ def get_unsynced(conn):
 def mark_synced(conn, ids):
     conn.executemany('UPDATE local_chests SET is_synced = 1 WHERE id = ?', [(i,) for i in ids])
     conn.commit()
+
+
+def find_open_button(bbox):
+    x, y, w, h = bbox
+    region = (
+        x + int(w * BUTTON_X_FRAC[0]),
+        y + int(ROW_PITCH * BUTTON_Y_FRAC[0]),
+        int(w * (BUTTON_X_FRAC[1] - BUTTON_X_FRAC[0])),
+        int(ROW_PITCH * (BUTTON_Y_FRAC[1] - BUTTON_Y_FRAC[0])),
+    )
+    return find_colored_button(region, color='green', pick='largest')
+
+
+def click_open_button(pos):
+    cx, cy = pos
+    click_x = cx + random.randint(-ANTI_DETECT_OFFSET_PX, ANTI_DETECT_OFFSET_PX)
+    click_y = cy + random.randint(-5, 5)
+    pyautogui.click(click_x, click_y)
+    time.sleep(random.uniform(*ANTI_DETECT_PAUSE_RANGE))
+
+
+def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
+    """Reads and opens chests from the top of the «Мой клан → Подарки» list
+    until the list is empty (no «Открыть» button found) or stop_flag()
+    returns True. Every chest is persisted to SQLite as it's read.
+    Returns {'counts': {chest_type: n}, 'items': [{'chest_type', 'sender',
+    'timestamp'}, ...]} for this session."""
+    conn = init_db(db_path)
+    counts = collections.Counter()
+    items = []
+    try:
+        while not stop_flag():
+            frame = grab_fullscreen()
+            bbox = detect_dialog_bbox(frame)
+            if bbox is None:
+                time.sleep(0.2)
+                continue
+            dialog = crop_dialog(frame, bbox)
+            if dialog.shape[0] < MIN_DIALOG_DIM or dialog.shape[1] < MIN_DIALOG_DIM:
+                time.sleep(0.2)
+                continue
+
+            pos = find_open_button(bbox)
+            if pos is None:
+                break
+
+            chest_type, sender = read_top_row(dialog)
+            timestamp = datetime.datetime.now().isoformat(timespec='seconds')
+            insert_chest(conn, chest_type, sender, timestamp)
+            counts[chest_type] += 1
+            items.append({'chest_type': chest_type, 'sender': sender, 'timestamp': timestamp})
+
+            if on_update:
+                on_update(dict(counts))
+
+            click_open_button(pos)
+    finally:
+        conn.close()
+
+    return {'counts': dict(counts), 'items': items}
