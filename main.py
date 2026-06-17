@@ -3818,6 +3818,7 @@ class TotalHunterApp(ctk.CTk):
                                              font=ctk.CTkFont(size=12),
                                              text_color=MD3["on_surface2"])
         self.chest_kingdom_lb.pack(side="left", padx=(0, 8))
+        self._i18n_labels.append((self.chest_kingdom_lb, "chest_kingdom_lb"))
         self.chest_kingdom_entry = ctk.CTkEntry(kingdom_row, width=120)
         self.chest_kingdom_entry.pack(side="left")
         saved_kingdom = self._load_gui_config().get("chest_kingdom", "")
@@ -3831,6 +3832,7 @@ class TotalHunterApp(ctk.CTk):
                                           font=ctk.CTkFont(size=12),
                                           text_color=MD3["on_surface2"])
         self.chest_clan_lb.pack(side="left", padx=(0, 8))
+        self._i18n_labels.append((self.chest_clan_lb, "chest_clan_lb"))
         self.chest_clan_entry = ctk.CTkEntry(clan_row, width=160)
         self.chest_clan_entry.pack(side="left")
         saved_clan = self._load_gui_config().get("chest_clan", "")
@@ -3846,11 +3848,13 @@ class TotalHunterApp(ctk.CTk):
             text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
             command=self.toggle_chest_bot)
         self.chest_start_btn.pack(padx=20, pady=(4, 4), fill="x")
+        self._i18n_labels.append((self.chest_start_btn, "chest_start_btn"))
 
         self.chest_status_label = ctk.CTkLabel(self.tab_chest, text=L["chest_status_ready"],
                                                font=ctk.CTkFont(size=12),
                                                text_color=MD3["on_surface2"])
         self.chest_status_label.pack(pady=(0, 8))
+        self._i18n_labels.append((self.chest_status_label, "chest_status_ready"))
 
         # ── Live-счётчик по типам ────────────────────────────────────────
         counts_card = ctk.CTkFrame(self.tab_chest, fg_color=MD3["elevated"],
@@ -3872,6 +3876,7 @@ class TotalHunterApp(ctk.CTk):
             text_color=MD3["on_surface"], font=ctk.CTkFont(size=13, weight="bold"),
             command=self.send_chests_to_server)
         self.chest_send_btn.pack(padx=20, pady=(0, 14), fill="x")
+        self._i18n_labels.append((self.chest_send_btn, "chest_send_btn"))
 
     def _on_chest_kingdom_change(self, event=None):
         self._save_gui_config_key("chest_kingdom", self.chest_kingdom_entry.get().strip())
@@ -3880,14 +3885,22 @@ class TotalHunterApp(ctk.CTk):
         self._save_gui_config_key("chest_clan", self.chest_clan_entry.get().strip())
 
     def _update_chest_counts_display(self, counts):
-        for child in self.chest_counts_frame.winfo_children():
-            child.destroy()
+        if not hasattr(self, "_chest_count_labels"):
+            self._chest_count_labels = {}
         total = 0
         for chest_type, n in counts.items():
             total += n
-            row_lb = ctk.CTkLabel(self.chest_counts_frame, text=f"{chest_type}: {n}",
-                                  font=ctk.CTkFont(size=12), text_color=MD3["on_surface"])
-            row_lb.pack(anchor="w", pady=1)
+            if chest_type in self._chest_count_labels:
+                self._chest_count_labels[chest_type].configure(text=f"{chest_type}: {n}")
+            else:
+                row_lb = ctk.CTkLabel(self.chest_counts_frame, text=f"{chest_type}: {n}",
+                                      font=ctk.CTkFont(size=12), text_color=MD3["on_surface"])
+                row_lb.pack(anchor="w", pady=1)
+                self._chest_count_labels[chest_type] = row_lb
+        for chest_type in list(self._chest_count_labels):
+            if chest_type not in counts:
+                self._chest_count_labels[chest_type].destroy()
+                del self._chest_count_labels[chest_type]
         L = LANGS[self.current_lang]
         self.chest_total_label.configure(text=f"{L['chest_total_lb']} {total}")
 
