@@ -1478,6 +1478,8 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_found_count = 0
         # self.combo_engine = CombinerEngine()  # Combo временно отключён
         self.is_combo_running = False
+        self._chest_running = False
+        self._chest_stop_event = threading.Event()
         saved_lang = {}
         if os.path.exists(GUI_CONFIG_PATH):
             try:
@@ -1609,7 +1611,7 @@ class TotalHunterApp(ctk.CTk):
 
         # Ряд 0 — 4 основные вкладки
         self._tab_init_names = {k: LANGS[self.current_lang][k]
-                                for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
+                                for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest")}
         self._main_seg = ctk.CTkSegmentedButton(
             self._nav_frame,
             values=list(self._tab_init_names.values()),
@@ -1652,6 +1654,7 @@ class TotalHunterApp(ctk.CTk):
         # self.tab_combo = ...  # временно отключён
         self.tab_ref   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self.tab_roy   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
+        self.tab_chest = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self._cal_frame = ctk.CTkScrollableFrame(self._content_frame, fg_color="transparent")
 
         self._active_tab_key = "tab_crypt"
@@ -1674,6 +1677,7 @@ class TotalHunterApp(ctk.CTk):
         self.setup_crypt_tab()
         # self.setup_combo_tab()  # временно отключён
         self.setup_ref_tab()
+        self.setup_chest_tab()
         self.setup_calibration_tab()
         self.setup_roy_tab()
         self.update_license_info()
@@ -2831,7 +2835,7 @@ class TotalHunterApp(ctk.CTk):
 
     def _show_tab(self, key):
         """Показать фрейм вкладки по ключу, скрыть остальные."""
-        _all = (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self._cal_frame)
+        _all = (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest, self._cal_frame)
         for f in _all:
             f.pack_forget()
         self._cal_btn.configure(fg_color=MD3["elevated"], hover_color=MD3["card"])
@@ -2841,6 +2845,7 @@ class TotalHunterApp(ctk.CTk):
             "tab_hunt":  self.tab_hunt,
             "tab_ref":   self.tab_ref,
             "tab_roy":   self.tab_roy,
+            "tab_chest": self.tab_chest,
         }
         frame = tab_map.get(key)
         if frame:
@@ -3702,7 +3707,7 @@ class TotalHunterApp(ctk.CTk):
             widget.configure(text=LANGS[val][key])
 
         # Навигация — обновляем segmented button и кнопку калибровки
-        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
+        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest")}
         self._tab_init_names = new_names
         self._main_seg.configure(values=list(new_names.values()))
         self._main_seg.set(new_names.get(self._active_tab_key, list(new_names.values())[0]))
