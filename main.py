@@ -2403,6 +2403,90 @@ class TotalHunterApp(ctk.CTk):
                 on_countdown_callback=self.on_crypt_countdown,
             )
 
+    def toggle_chest_bot(self):
+        L = LANGS[self.current_lang]
+        if self._chest_running:
+            self._chest_stop_event.set()
+            return
+
+        import chest_reader
+        frame = chest_reader.grab_fullscreen()
+        bbox = chest_reader.detect_dialog_bbox(frame)
+        if bbox is None:
+            self.chest_status_label.configure(text=L["chest_status_no_dialog"],
+                                              text_color=MD3["error_text"])
+            return
+
+        self._chest_running = True
+        self._chest_stop_event = threading.Event()
+        self._update_chest_counts_display({})
+        self.chest_start_btn.configure(text=L["chest_stop_btn"],
+                                       fg_color=MD3["error"], hover_color=MD3["error_hover"])
+        self.chest_status_label.configure(text=L["chest_status_running"],
+                                          text_color=MD3["secondary"])
+
+        stop_event = self._chest_stop_event
+
+        def _on_update(counts):
+            self.after(0, lambda c=dict(counts): self._update_chest_counts_display(c))
+
+        def _worker():
+            result = chest_reader.collect_chests(stop_event.is_set, on_update=_on_update)
+            self.after(0, lambda: self._on_chest_collection_done(result))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_chest_collection_done(self, result):
+        L = LANGS[self.current_lang]
+        self._chest_running = False
+        self.chest_start_btn.configure(text=L["chest_start_btn"],
+                                       fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
+        self.chest_status_label.configure(text=L["chest_status_stopped"],
+                                          text_color=MD3["on_surface2"])
+        self._update_chest_counts_display(result.get("counts", {}))
+
+    def send_chests_to_server(self):
+        L = LANGS[self.current_lang]
+        kingdom = self.chest_kingdom_entry.get().strip()
+        clan = self.chest_clan_entry.get().strip()
+        if not kingdom or not clan:
+            self.chest_status_label.configure(text=L["chest_missing_fields"],
+                                              text_color=MD3["error_text"])
+            return
+
+        def _worker():
+            import chest_reader
+            conn = chest_reader.init_db()
+            rows = chest_reader.get_unsynced(conn)
+            if not rows:
+                conn.close()
+                return
+
+            from auth import spend_credit
+            res = spend_credit(hunt_type="chest")
+            if not (res and res.get("success")):
+                conn.close()
+                self.after(0, lambda: messagebox.showwarning("Hunter", L["no_credits"]))
+                return
+
+            items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
+            ids = [r[0] for r in rows]
+            success = chest_reader.export_to_api(kingdom, clan, items)
+            if success:
+                chest_reader.mark_synced(conn, ids)
+            conn.close()
+
+            def _update():
+                if success:
+                    self.chest_status_label.configure(text=L["chest_send_success"],
+                                                       text_color=MD3["secondary"])
+                else:
+                    self.chest_status_label.configure(text=L["chest_send_failed"],
+                                                       text_color=MD3["error_text"])
+            self.after(0, _update)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
     def toggle_combo_bot(self):
         if not hasattr(self, 'combo_engine'):
             return  # Combo заморожен
@@ -3136,6 +3220,9 @@ class TotalHunterApp(ctk.CTk):
                                            hover_color=MD3["green_hover"])
             self.crypt_status_label.configure(text=f"{LANGS[self.current_lang]['crypt_stopped']} (ESC)",
                                               text_color=MD3["on_surface2"])
+        # Сундуки
+        if self._chest_running:
+            self._chest_stop_event.set()
         # Combo (заморожен — guard на случай если engine не инициализирован)
         if self.is_combo_running and hasattr(self, 'combo_engine'):
             self.is_combo_running = False
