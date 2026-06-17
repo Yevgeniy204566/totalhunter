@@ -35,19 +35,20 @@ MIN_DIALOG_DIM = 200  # guard against a 1-2px degenerate bbox on a glitched fram
 # --- Row geometry — no scroll, only the top row is ever read --------------
 ROW_PITCH = 100
 
-# --- Per-row crop fractions (relative to the 764x100 top-row band) --------
-TYPE_X_FRAC = (0.135, 0.58)
-TYPE_Y_FRAC = (0.03, 0.32)
-
-# --- Sender name: fixed coordinates, not a relative crop. The dialog's
-# render/composition never changes (always the same UI, same position
-# relative to the game window), so the name always lands in the same spot —
-# calibrated 2026-06-18 via coord_picker.py against the live game. Reference
-# coords at the project's эталон 1920x1080; coord_manager scales/offsets them
-# to the real screen per calibration profile, same as every other coordinate
-# in this project. No "От:" label is in this crop, so no regex-stripping of
-# a prefix is needed — the OCR'd text is the name already.
+# --- Sender name and chest source: fixed coordinates, not a relative crop.
+# The dialog's render/composition never changes (always the same UI, same
+# position relative to the game window), so both fields always land in the
+# same spot — calibrated 2026-06-18 via coord_picker.py against the live
+# game. Reference coords at the project's эталон 1920x1080; coord_manager
+# scales/offsets them to the real screen per calibration profile, same as
+# every other coordinate in this project. Neither crop includes its label
+# ("От:" / "Источник:"), so no regex-stripping of a prefix is needed.
 SENDER_REF_RECT = (816, 375, 361, 24)
+# "Источник:" line — identifies what dropped the chest (e.g. "Эпический
+# отряд нежити"). Used as chest_type instead of the generic title line
+# ("Сундук Эпического Монстра"), since the title alone doesn't distinguish
+# between different drop sources.
+SOURCE_REF_RECT = (865, 398, 309, 24)
 
 # --- «Открыть» button search box (relative to the top row) ----------------
 BUTTON_X_FRAC = (0.78, 1.0)
@@ -84,17 +85,6 @@ def grab_fullscreen():
         return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
 
 
-def get_top_row(dialog):
-    return dialog[0:ROW_PITCH, :]
-
-
-def _sub_roi(img, x_frac, y_frac):
-    h, w = img.shape[:2]
-    x0, x1 = int(w * x_frac[0]), int(w * x_frac[1])
-    y0, y1 = int(h * y_frac[0]), int(h * y_frac[1])
-    return img[y0:y1, x0:x1]
-
-
 def preprocess_for_ocr(roi):
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     resized = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
@@ -123,21 +113,22 @@ def clean_name(text):
     return text.strip()
 
 
-def parse_chest_type(raw_text):
-    first_line = raw_text.splitlines()[0] if raw_text else ''
-    return re.sub(r'^[^А-Яа-яA-Za-z]+', '', first_line).strip()
-
-
-def read_sender_name(frame):
-    x, y, w, h = coord_manager.to_region_dialog(*SENDER_REF_RECT)
+def read_fixed_field(frame, ref_rect):
+    x, y, w, h = coord_manager.to_region_dialog(*ref_rect)
     roi = frame[y:y + h, x:x + w]
     return clean_name(ocr_text(roi))
 
 
-def read_top_row(frame, dialog):
-    row = get_top_row(dialog)
-    type_roi = _sub_roi(row, TYPE_X_FRAC, TYPE_Y_FRAC)
-    chest_type = parse_chest_type(ocr_text(type_roi))
+def read_sender_name(frame):
+    return read_fixed_field(frame, SENDER_REF_RECT)
+
+
+def read_chest_type(frame):
+    return read_fixed_field(frame, SOURCE_REF_RECT)
+
+
+def read_top_row(frame):
+    chest_type = read_chest_type(frame)
     sender = read_sender_name(frame)
     return chest_type, sender
 
@@ -222,7 +213,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
             if pos is None:
                 break
 
-            chest_type, sender = read_top_row(frame, dialog)
+            chest_type, sender = read_top_row(frame)
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
             insert_chest(conn, chest_type, sender, timestamp)
             counts[chest_type] += 1

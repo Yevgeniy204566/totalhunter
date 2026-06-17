@@ -26,19 +26,27 @@ def test_crop_dialog():
     assert dialog.shape[:2] == (475, 764)
 
 
-def test_get_top_row():
-    frame = _load_fixture()
-    dialog = cr.crop_dialog(frame, cr.detect_dialog_bbox(frame))
-    row = cr.get_top_row(dialog)
-    assert row.shape[:2] == (100, 764)
+def test_read_chest_type_uses_fixed_calibrated_region(monkeypatch):
+    captured = {}
 
+    def fake_to_region_dialog(x, y, w, h):
+        captured['ref_rect'] = (x, y, w, h)
+        return (50, 60, 70, 80)
 
-def test_parse_chest_type_strips_leading_ocr_artifact():
-    assert cr.parse_chest_type("| Сундук Эпического Монстра") == "Сундук Эпического Монстра"
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", fake_to_region_dialog)
 
+    def fake_ocr_text(roi, **kwargs):
+        captured['roi_shape'] = roi.shape
+        return "Эпический отряд нежити"
 
-def test_parse_chest_type_empty_text():
-    assert cr.parse_chest_type("") == ""
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr_text)
+
+    frame = np.zeros((200, 200, 3), dtype=np.uint8)
+    result = cr.read_chest_type(frame)
+
+    assert captured['ref_rect'] == cr.SOURCE_REF_RECT
+    assert captured['roi_shape'] == (80, 70, 3)
+    assert result == "Эпический отряд нежити"
 
 
 def test_read_sender_name_uses_fixed_calibrated_region(monkeypatch):
@@ -74,9 +82,8 @@ def test_read_sender_name_applies_clean_name_artifact_stripping(monkeypatch):
 def test_read_top_row_on_fixture(monkeypatch):
     monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
     frame = _load_fixture()
-    dialog = cr.crop_dialog(frame, cr.detect_dialog_bbox(frame))
-    chest_type, sender = cr.read_top_row(frame, dialog)
-    assert chest_type == "Сундук Эпического Монстра"
+    chest_type, sender = cr.read_top_row(frame)
+    assert chest_type == "Эпический отряд нежити"
     assert sender == "Gray Cardinal"
 
 
@@ -154,7 +161,7 @@ def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     def fake_find_open_button(bbox):
         return sequence[state['n']][0]
 
-    def fake_read_top_row(frame, dialog):
+    def fake_read_top_row(frame):
         _, chest_type, sender = sequence[state['n']]
         state['n'] += 1
         return chest_type, sender
