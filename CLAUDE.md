@@ -235,3 +235,4 @@ curl -s -X POST "https://api.vercel.com/v2/deployments/$DEP_ID/aliases?teamId=$T
 - **ANTI-PATTERNS.md** — запреты и тупиковые решения
 - **MEMORY/** — персистентная память между сессиями Claude
 - **docs/INFRA_HEALTH.md** — профилактика инфраструктуры (для владельца, не часть хангофа)
+- **Смежный проект ASTRO** (`C:\ASTRO`, создан 2026-06-12) — отдельная конституция (CLAUDE.md/ANTI-PATTERNS.md/STATE.md), методология перенесена из BattleBot. Gemini-буфер (`docs/Исходящие_Claude.md`, `docs/Входящие_Gemini.md`) — ОБЩИЙ для обоих проектов; записи из Astro помечаются `[ASTRO]`

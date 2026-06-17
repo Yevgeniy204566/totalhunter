@@ -40,3 +40,47 @@ tesseract_bin/
 tournament_config.json
 roster_config.json
 _clan_debug/
+
+# Дебаг-картинки (генеруються скриптами, не коммітити)
+_dbg*.png
+_dbg*.jpg
+_probe*.png
+_row_*.png
+_card*.png
+_around_*.png
+_live_panel_now.png
+_tmp_frame*.png
+debug_*.png
+debug_*.jpg
+debug_live_run/
+debug_name_crops/
+debug_name_*.png
+
+# Вивід ростера / турніру (локальні артефакти)
+roster_export_*.json
+roster_log_*.txt
+roster_live_*.json
+roster_live_log.txt
+roster_log*.txt
+live_test_*.txt
+live_test_*.json
+tournament_live_test_*.json
+clan_roster_raw.json
+photo_log.txt
+photo_result.json
+
+# Технічне сміття
+build_release_log.txt
+crash_report.txt
+mouseInfoLog.txt
+mouseInfoScreenshot.png
+nuitka-crash-report.xml
+name_crop_*.png
+pts0_wide.png
+ocr_log.txt
+
+# Зашифровані YOLO-моделі (локальні, великі бінарники)
+*.pte
+
+# Папка логів
+logs/

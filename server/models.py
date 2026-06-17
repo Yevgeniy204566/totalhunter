@@ -8,7 +8,7 @@ Naming convention: предсказуемые имена для индексов
 """
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
+    BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
     JSON, MetaData, Numeric, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -351,3 +351,22 @@ class Order(Base):
                                     server_default=func.now())
 
     user = relationship("User", backref="orders")
+
+
+# ─────────────────────────────────────────────
+# ClanMember — клан-ростер (Фаза 0 ERP)
+# ─────────────────────────────────────────────
+
+class ClanMember(Base):
+    """
+    Актуальный состав клана, собранный ботом из «Мой клан → Участники».
+    PK = name (уникальное имя игрока). UPSERT при каждом сканировании.
+    might — BigInteger: значения могут превышать 4 млрд (Integer max ~2.1B).
+    """
+    __tablename__ = "clan_members"
+
+    name       = Column(String(100), primary_key=True)
+    rank       = Column(String(20),  nullable=False)
+    might      = Column(BigInteger,  nullable=True)
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                        server_default=func.now())

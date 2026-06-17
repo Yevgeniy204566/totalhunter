@@ -37,12 +37,37 @@ PLACE_X_FRAC = (0.0, 0.07)
 PLACE_Y_FRAC = (0.15, 0.70)
 
 # --- End-of-list detection ---
-SCROLLBAR_FRAC = 0.05
-END_DIFF_THRESHOLD = 2.0
+# A scroll(-2) that produces zero measured pixel shift (see
+# measure_scroll_shift) means the scrollbar is maxed out. Require 2 in a row
+# to rule out a single noisy/glitched matchTemplate measurement.
+END_OF_LIST_ZERO_SHIFTS = 2
+
+# --- Scroll-shift measurement: exclude the scrollbar strip on the right
+# edge of the dialog from the matchTemplate template/search area.
+SCROLLBAR_MARGIN = 0.05
+
+# --- Anti-AFK: the game shows an ad popup after ~5 min without a click,
+# which covers the dialog and breaks measure_scroll_shift. A periodic click
+# on the dialog header (no buttons there) resets the game's AFK timer.
+ANTI_AFK_INTERVAL_SEC = 180
+ANTI_AFK_HEADER_Y_FRAC = 0.03
+
+# --- Capture sanity check ---
+# detect_dialog_bbox occasionally returns a near-degenerate bbox on a glitched
+# frame (1-2px tall). Such a frame must never reach row/own-row extraction -
+# it can produce empty crops and crash cv2. 200px ~= 2 rows.
+MIN_DIALOG_DIM = 200
 
 # --- OCR ---
 OCR_THRESHOLD = 150
 PLACE_OCR_THRESHOLD = 130
+
+# --- Name OCR: a fixed threshold binarizes some row backgrounds to a
+# uniformly black/white image, losing the text entirely (confirmed via
+# debug_name_crops/ - visually readable text, empty OCR at every fixed
+# threshold). Otsu picks a threshold per-ROI; the INV variant covers rows
+# where Otsu inverts text vs background.
+NAME_MIN_LENGTH = 2
 
 # --- Config / API ---
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tournament_config.json')
@@ -103,6 +128,8 @@ def detect_row_pitch(dialog):
 
     pitch = int(np.median(np.diff(merged)))
     row_top = int(merged[0] - pitch)
+    if row_top < 0:
+        row_top = merged[0]
     return pitch, row_top
 
 
@@ -140,9 +167,29 @@ def ocr_text(roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng', whitelist=None
     return pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
 
 
+def preprocess_for_ocr_otsu(roi, invert=False):
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    resized = cv2.resize(gray, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+    method = cv2.THRESH_BINARY_INV if invert else cv2.THRESH_BINARY
+    _, binary = cv2.threshold(resized, 0, 255, method + cv2.THRESH_OTSU)
+    return binary
+
+
+def ocr_text_otsu(roi, invert=False, psm=7, lang='rus+eng'):
+    processed = preprocess_for_ocr_otsu(roi, invert=invert)
+    config = f'--psm {psm}'
+    return pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
+
+
 def clean_name(text):
     text = re.sub(r'^\[.*?\]\s*', '', text)
     text = re.sub(r'\s+\S{1,3}$', '', text)
+    while True:
+        stripped = re.sub(r'\s+(?:\d{1,3}|\S{1})$', '', text)
+        if stripped == text:
+            break
+        text = stripped
+    text = re.sub(r'[^\w]+$', '', text, flags=re.UNICODE)
     return text.strip()
 
 
@@ -153,10 +200,24 @@ def clean_points(text):
     return int(digits)
 
 
+def ocr_name(roi, lang='rus+eng'):
+    candidates = []
+    for psm, invert in ((7, False), (7, True), (6, True), (6, False)):
+        text = ocr_text_otsu(roi, invert=invert, psm=psm, lang=lang)
+        first_line = text.splitlines()[0] if text else ''
+        name = clean_name(first_line)
+        if len(name) >= NAME_MIN_LENGTH:
+            candidates.append(name)
+
+    if not candidates:
+        return ''
+    return max(candidates, key=len)
+
+
 def ocr_row(name_roi, pts_roi):
-    name_text = ocr_text(name_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
+    name = ocr_name(name_roi)
     pts_text = ocr_text(pts_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
-    return clean_name(name_text), clean_points(pts_text)
+    return name, clean_points(pts_text)
 
 
 def get_own_row(dialog):
@@ -174,73 +235,90 @@ def get_own_row_crops(own_row):
 
 def ocr_own_row(place_roi, name_roi, pts_roi):
     place_text = ocr_text(place_roi, threshold=PLACE_OCR_THRESHOLD, psm=6, lang='rus+eng', whitelist='0123456789')
-    name_text = ocr_text(name_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
+    name = ocr_name(name_roi)
     pts_text = ocr_text(pts_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
 
     rank = int(place_text) if place_text.isdigit() else None
     return {
         'rank': rank,
-        'name': clean_name(name_text),
+        'name': name,
         'points': clean_points(pts_text),
     }
 
 
-def compute_places(rows, known_places):
-    if not known_places:
-        return {STARTING_RANK + i: rows[i] for i in range(len(rows))}
-
-    points_to_place = {data[1]: place for place, data in known_places.items()}
-
-    offset = None
-    for i, (_, points) in enumerate(rows):
-        if points in points_to_place:
-            offset = points_to_place[points] - i
-            break
-
-    if offset is None:
-        return None
-
-    return {offset + i: rows[i] for i in range(len(rows))}
-
-
-def is_end_of_list(prev_dialog, curr_dialog):
-    h, w = curr_dialog.shape[:2]
-    scrollbar_x0 = int(w * (1 - SCROLLBAR_FRAC))
+def measure_scroll_shift(prev_dialog, curr_dialog, pitch, row_top):
+    h, w = prev_dialog.shape[:2]
     own_y0 = int(h * OWN_ROW_Y_FRAC[0])
+    content_x1 = int(w * (1 - SCROLLBAR_MARGIN))
 
-    prev_crop = prev_dialog[:own_y0, :scrollbar_x0]
-    curr_crop = curr_dialog[:own_y0, :scrollbar_x0]
+    template_y0 = row_top + pitch
+    template_y1 = row_top + 2 * pitch
+    template = prev_dialog[template_y0:template_y1, 0:content_x1]
 
-    diff = cv2.absdiff(prev_crop, curr_crop)
-    return bool(diff.max() < END_DIFF_THRESHOLD)
+    search = curr_dialog[0:own_y0, 0:content_x1]
+
+    result = cv2.matchTemplate(search, template, cv2.TM_CCOEFF_NORMED)
+    _, _, _, max_loc = cv2.minMaxLoc(result)
+    return template_y0 - max_loc[1]
+
+
+def anti_afk_click(bbox):
+    x, y, w, h = bbox
+    click_x = x + w // 2 + random.randint(-8, 8)
+    click_y = y + int(h * ANTI_AFK_HEADER_Y_FRAC) + random.randint(-5, 5)
+    pyautogui.click(click_x, click_y)
 
 
 def collect_tournament_data():
-    known_places = {}
+    next_place = STARTING_RANK
+    remainder_px = 0
+    zero_shift_streak = 0
     prev_dialog = None
+    leaderboard = []
+    last_click_time = time.time()
 
     while True:
         frame = grab_fullscreen()
         bbox = detect_dialog_bbox(frame)
         dialog = crop_dialog(frame, bbox)
 
-        if prev_dialog is not None and is_end_of_list(prev_dialog, dialog):
-            break
+        if dialog.shape[0] < MIN_DIALOG_DIM or dialog.shape[1] < MIN_DIALOG_DIM:
+            time.sleep(0.2)
+            continue
 
         pitch, row_top = detect_row_pitch(dialog)
-        if pitch is not None:
-            rows = get_row_crops(dialog, pitch, row_top)
-            ocr_rows = [ocr_row(name_roi, pts_roi) for name_roi, pts_roi in rows]
-            ocr_rows = [(name, points) for name, points in ocr_rows if points is not None]
+        if pitch is None:
+            time.sleep(0.2)
+            continue
 
-            places = compute_places(ocr_rows, known_places)
-            if places is not None:
-                for place, (name, points) in places.items():
-                    if place not in known_places:
-                        print(f"место {place}: {name} — {points}")
-                known_places.update(places)
+        rows = get_row_crops(dialog, pitch, row_top)
+
+        if prev_dialog is None:
+            new_rows = NUM_VISIBLE_ROWS
+        else:
+            shift_px = measure_scroll_shift(prev_dialog, dialog, pitch, row_top)
+            if shift_px <= 0:
+                zero_shift_streak += 1
+                if zero_shift_streak >= END_OF_LIST_ZERO_SHIFTS:
+                    break
+                new_rows = 0
+            else:
+                zero_shift_streak = 0
+                remainder_px += shift_px
+                new_rows = min(remainder_px // pitch, NUM_VISIBLE_ROWS)
+                remainder_px -= new_rows * pitch
+
+        for name_roi, pts_roi in rows[NUM_VISIBLE_ROWS - new_rows:]:
+            name, points = ocr_row(name_roi, pts_roi)
+            print(f"место {next_place}: {name} — {points}")
+            leaderboard.append({'rank': next_place, 'name': name, 'points': points})
+            next_place += 1
 
         prev_dialog = dialog
+
+        if time.time() - last_click_time >= ANTI_AFK_INTERVAL_SEC:
+            anti_afk_click(bbox)
+            last_click_time = time.time()
 
         pyautogui.scroll(-2)
         time.sleep(random.uniform(0.4, 0.9))
@@ -248,11 +326,6 @@ def collect_tournament_data():
     own_row = get_own_row(dialog)
     place_roi, name_roi, pts_roi = get_own_row_crops(own_row)
     own_data = ocr_own_row(place_roi, name_roi, pts_roi)
-
-    leaderboard = [
-        {'rank': place, 'name': name, 'points': points}
-        for place, (name, points) in sorted(known_places.items())
-    ]
 
     return {'leaderboard': leaderboard, 'own_data': own_data}
 

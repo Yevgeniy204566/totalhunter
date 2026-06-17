@@ -131,6 +131,16 @@ def test_clean_name_no_tag():
     assert tr.clean_name("ЗОЛОТОЙ") == "ЗОЛОТОЙ"
 
 
+def test_clean_name_strips_trailing_artifact_char():
+    # background-noise artifacts (',  `, ?) glued to the name without a
+    # space - seen in live test 4 (Evgeniuss', Jack', Berserk', Моралас`)
+    assert tr.clean_name("Evgeniuss’") == "Evgeniuss"
+    assert tr.clean_name("Jack’") == "Jack"
+    assert tr.clean_name("Berserk’") == "Berserk"
+    assert tr.clean_name("Моралас`") == "Моралас"
+    assert tr.clean_name("ум?") == "ум"
+
+
 def test_clean_points_strips_non_digits():
     assert tr.clean_points("488 644 262 очки") == 488644262
     assert tr.clean_points("71 896 730") == 71896730
@@ -167,51 +177,68 @@ def test_ocr_own_row():
     assert result == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
 
 
-def test_compute_places_first_frame():
-    rows = [('Alice', 100), ('Bob', 90), ('Carl', 80)]
-    places = tr.compute_places(rows, known_places={})
-    assert places == {1: ('Alice', 100), 2: ('Bob', 90), 3: ('Carl', 80)}
+def test_ocr_name_otsu_aeon():
+    img = cv2.imdecode(np.fromfile("name_crop_aeon.png", dtype=np.uint8), cv2.IMREAD_COLOR)
+    # Otsu picks a per-ROI threshold; tesseract still misreads AEON as AEGON
+    assert tr.ocr_name(img) == "AEGON"
 
 
-def test_compute_places_anchor_offset():
-    known = {1: ('Alice', 100), 2: ('Bob', 90), 3: ('Carl', 80)}
-    # New frame scrolled down by 1: Bob is now at index 0, Carl at index 1, Dave (new) at index 2
-    rows = [('Bob', 90), ('Carl', 80), ('Dave', 70)]
-    places = tr.compute_places(rows, known_places=known)
-    assert places == {2: ('Bob', 90), 3: ('Carl', 80), 4: ('Dave', 70)}
+def test_ocr_name_otsu_gigabyte():
+    img = cv2.imdecode(np.fromfile("name_crop_gigabyte.png", dtype=np.uint8), cv2.IMREAD_COLOR)
+    assert tr.ocr_name(img) == "Gigabyte"
 
 
-def test_compute_places_no_anchor_returns_none():
-    known = {1: ('Alice', 100), 2: ('Bob', 90)}
-    rows = [('Zara', 999), ('Yara', 998)]
-    places = tr.compute_places(rows, known_places=known)
-    assert places is None
+def _load_debug_crop(rank):
+    return cv2.imdecode(np.fromfile(f"debug_name_crops/rank_{rank:02d}.png", dtype=np.uint8), cv2.IMREAD_COLOR)
 
 
-def test_is_end_of_list_identical_frames():
-    dialog = np.full((546, 766, 3), 200, dtype=np.uint8)
-    assert tr.is_end_of_list(dialog, dialog) is True
+def test_ocr_name_otsu_pattern_b_dark_shadow():
+    # rank 4: all 4 fixed thresholds returned '' despite readable "Dark Shadow"
+    img = _load_debug_crop(4)
+    assert tr.ocr_name(img) == "Dark Shadow"
 
 
-def test_is_end_of_list_different_text_area():
-    prev = np.full((546, 766, 3), 200, dtype=np.uint8)
-    curr = prev.copy()
-    # change pixels in the text area (not scrollbar, not own row)
-    curr[100:110, 100:110] = 50
-    assert tr.is_end_of_list(prev, curr) is False
+def test_ocr_name_otsu_pattern_b_ayar_md():
+    # rank 11: all 4 fixed thresholds returned '' despite readable "AYAR MD"
+    img = _load_debug_crop(11)
+    assert tr.ocr_name(img) == "AYAR MD"
 
 
-def test_is_end_of_list_ignores_scrollbar_and_own_row():
-    prev = np.full((546, 766, 3), 200, dtype=np.uint8)
-    curr = prev.copy()
-    h, w = curr.shape[:2]
-    # change only the scrollbar strip (rightmost 5%)
-    scrollbar_x0 = int(w * (1 - tr.SCROLLBAR_FRAC))
-    curr[:, scrollbar_x0:] = 50
-    # change only the own-row strip (bottom from OWN_ROW_Y_FRAC[0])
-    own_y0 = int(h * tr.OWN_ROW_Y_FRAC[0])
-    curr[own_y0:, :] = 50
-    assert tr.is_end_of_list(prev, curr) is True
+def test_ocr_name_otsu_pattern_b_lord():
+    # rank 31: all 4 fixed thresholds returned '' despite readable "Lord"
+    img = _load_debug_crop(31)
+    assert tr.ocr_name(img) == "Lord"
+
+
+def test_ocr_name_otsu_pattern_b_mikajar():
+    # rank 35: all 4 fixed thresholds returned '' despite readable "Mikajar"
+    img = _load_debug_crop(35)
+    assert tr.ocr_name(img) == "Mikajar"
+
+
+def test_measure_scroll_shift_identical_frames_returns_zero():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    pitch, row_top = tr.detect_row_pitch(dialog)
+
+    shift = tr.measure_scroll_shift(dialog, dialog, pitch, row_top)
+    assert shift == 0
+
+
+def test_measure_scroll_shift_detects_pixel_shift():
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    pitch, row_top = tr.detect_row_pitch(dialog)
+
+    shift_amount = 20
+    shifted = np.zeros_like(dialog)
+    shifted[:-shift_amount, :] = dialog[shift_amount:, :]
+    shifted[-shift_amount:, :] = dialog[-1, :]
+
+    shift = tr.measure_scroll_shift(dialog, shifted, pitch, row_top)
+    assert shift == shift_amount
 
 
 def test_collect_tournament_data(monkeypatch):
@@ -243,16 +270,105 @@ def test_collect_tournament_data_handles_missing_pitch(monkeypatch):
     monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
     monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
 
-    pitch_results = [(None, None), (real_pitch, real_row_top)]
-    monkeypatch.setattr(tr, "detect_row_pitch", lambda d: pitch_results.pop(0))
-
-    end_of_list_results = [False, True]
-    monkeypatch.setattr(tr, "is_end_of_list", lambda prev, curr: end_of_list_results.pop(0))
+    # first call returns no pitch (must not crash, just counts as stagnation);
+    # subsequent calls return the real pitch
+    pitch_results = [(None, None)]
+    monkeypatch.setattr(
+        tr, "detect_row_pitch",
+        lambda d: pitch_results.pop(0) if pitch_results else (real_pitch, real_row_top),
+    )
 
     result = tr.collect_tournament_data()
 
     assert 'leaderboard' in result
     assert 'own_data' in result
+
+
+def test_collect_tournament_data_stops_after_zero_shifts(monkeypatch):
+    frame = _load_fixture()
+
+    monkeypatch.setattr(tr, "grab_fullscreen", lambda: frame)
+    monkeypatch.setattr(tr.pyautogui, "scroll", lambda *a, **k: None)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+    monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
+    monkeypatch.setattr(tr, "measure_scroll_shift", lambda *a, **k: 0)
+
+    result = tr.collect_tournament_data()
+
+    leaderboard = result['leaderboard']
+    assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4]
+    assert [row['name'] for row in leaderboard] == ['Scaramouche', 'МазаФака', 'Yuki', 'VikTor']
+
+
+def test_collect_tournament_data_accumulates_partial_row_shifts(monkeypatch):
+    frame = _load_fixture()
+
+    monkeypatch.setattr(tr, "grab_fullscreen", lambda: frame)
+    monkeypatch.setattr(tr.pyautogui, "scroll", lambda *a, **k: None)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+    monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
+
+    # pitch == 100 for this fixture (see test_detect_row_pitch). Two 50px
+    # shifts accumulate to one full row before the 2 zero-shifts end the loop.
+    shifts = iter([50, 50, 0, 0])
+    monkeypatch.setattr(tr, "measure_scroll_shift", lambda *a, **k: next(shifts))
+
+    result = tr.collect_tournament_data()
+
+    leaderboard = result['leaderboard']
+    assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4, 5]
+    assert leaderboard[4]['name'] == 'VikTor'
+    assert leaderboard[4]['points'] == 300471402
+
+
+def test_anti_afk_click_targets_dialog_header(monkeypatch):
+    clicks = []
+    monkeypatch.setattr(tr.pyautogui, "click", lambda x, y: clicks.append((x, y)))
+    monkeypatch.setattr(tr.random, "randint", lambda a, b: 0)
+
+    tr.anti_afk_click((100, 200, 800, 600))
+
+    assert clicks == [(100 + 800 // 2, 200 + int(600 * tr.ANTI_AFK_HEADER_Y_FRAC))]
+
+
+def test_collect_tournament_data_anti_afk_triggers_after_interval(monkeypatch):
+    frame = _load_fixture()
+
+    monkeypatch.setattr(tr, "grab_fullscreen", lambda: frame)
+    monkeypatch.setattr(tr.pyautogui, "scroll", lambda *a, **k: None)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+    monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
+    monkeypatch.setattr(tr, "measure_scroll_shift", lambda *a, **k: 0)
+
+    afk_calls = []
+    monkeypatch.setattr(tr, "anti_afk_click", lambda bbox: afk_calls.append(bbox))
+
+    # 2 iterations run before END_OF_LIST_ZERO_SHIFTS stops the loop; make
+    # ANTI_AFK_INTERVAL_SEC appear to have elapsed before each one.
+    times = iter([0, 1000, 2000, 3000, 4000, 5000])
+    monkeypatch.setattr(tr.time, "time", lambda: next(times, 5000))
+
+    tr.collect_tournament_data()
+
+    assert len(afk_calls) >= 1
+
+
+def test_collect_tournament_data_no_anti_afk_when_recent(monkeypatch):
+    frame = _load_fixture()
+
+    monkeypatch.setattr(tr, "grab_fullscreen", lambda: frame)
+    monkeypatch.setattr(tr.pyautogui, "scroll", lambda *a, **k: None)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+    monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
+    monkeypatch.setattr(tr, "measure_scroll_shift", lambda *a, **k: 0)
+
+    afk_calls = []
+    monkeypatch.setattr(tr, "anti_afk_click", lambda bbox: afk_calls.append(bbox))
+    monkeypatch.setattr(tr.time, "time", lambda: 0)
+
+    tr.collect_tournament_data()
+
+    assert afk_calls == []
 
 
 class _FakeResponse:
