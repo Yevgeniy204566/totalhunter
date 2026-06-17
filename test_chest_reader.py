@@ -59,3 +59,35 @@ def test_read_top_row_on_fixture():
     chest_type, sender = cr.read_top_row(dialog)
     assert chest_type == "Сундук Эпического Монстра"
     assert sender == "Gray Cardinal"
+
+
+def test_init_db_creates_table(tmp_path):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='local_chests'")
+    assert cur.fetchone() is not None
+    conn.close()
+
+
+def test_insert_and_get_unsynced(tmp_path):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Сундук Эпического Монстра", "Alice", "2026-06-17T10:00:00")
+    cr.insert_chest(conn, "Сундук Легендарного Монстра", "Bob", "2026-06-17T10:01:00")
+    rows = cr.get_unsynced(conn)
+    assert len(rows) == 2
+    assert rows[0][1] == "Alice"
+    assert rows[0][2] == "Сундук Эпического Монстра"
+    conn.close()
+
+
+def test_mark_synced_excludes_from_unsynced(tmp_path):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Сундук Эпического Монстра", "Alice", "2026-06-17T10:00:00")
+    cr.insert_chest(conn, "Сундук Легендарного Монстра", "Bob", "2026-06-17T10:01:00")
+    rows = cr.get_unsynced(conn)
+    ids = [r[0] for r in rows]
+    cr.mark_synced(conn, ids)
+    assert cr.get_unsynced(conn) == []
+    conn.close()

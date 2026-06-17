@@ -133,3 +133,39 @@ def read_top_row(dialog):
     chest_type = parse_chest_type(ocr_text(type_roi))
     sender = parse_sender(ocr_text(sender_roi))
     return chest_type, sender
+
+
+def init_db(path=DB_PATH):
+    conn = sqlite3.connect(path)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS local_chests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            raw_player_name TEXT,
+            chest_type TEXT,
+            timestamp TEXT,
+            is_synced INTEGER DEFAULT 0
+        )
+    ''')
+    conn.commit()
+    return conn
+
+
+def insert_chest(conn, chest_type, raw_player_name, timestamp):
+    conn.execute(
+        'INSERT INTO local_chests (raw_player_name, chest_type, timestamp, is_synced) '
+        'VALUES (?, ?, ?, 0)',
+        (raw_player_name, chest_type, timestamp),
+    )
+    conn.commit()
+
+
+def get_unsynced(conn):
+    cur = conn.execute(
+        'SELECT id, raw_player_name, chest_type, timestamp FROM local_chests WHERE is_synced = 0'
+    )
+    return cur.fetchall()
+
+
+def mark_synced(conn, ids):
+    conn.executemany('UPDATE local_chests SET is_synced = 1 WHERE id = ?', [(i,) for i in ids])
+    conn.commit()
