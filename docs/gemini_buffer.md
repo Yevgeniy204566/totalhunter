@@ -1,5 +1,29 @@
 # Gemini Buffer — Total Hunter
-> Последнее обновление: 2026-06-18 (Kyiv) — Хангоф #98: Модуль «Сундуки» (chest_reader.py) реализован, живо-протестирован
+> Последнее обновление: 2026-06-18 (Kyiv) — Хангоф #99: Backend-фундамент «Сундуки» реализован
+
+---
+
+## 2026-06-18 — Хангоф #99 — Сундуки: backend-фундамент готов, не задеплоен
+
+По мастер-плану Gemini (tenant isolation + alias dictionary + ownership transfer) реализован
+**только фундамент** (подсистема 1 из 4): `POST /api/v1/chests/import`, таблицы
+`chest_collectors/chests/player_aliases/chest_type_aliases`, серверный биллинг (10 кредитов
+флэт за батч, атомарно, только за новые данные), идемпотентность + race-fix.
+
+5 задач через subagent-driven TDD, 2 whole-branch review (опус), все Approved.
+80/83 серверных тестов + 17/17 клиентских (3 падения — известные, не наши).
+
+**Закоммичено в `main` локально (f11f352..287b09e), НЕ задеплоено на GCP, клиентский релиз
+НЕ собран.** main.py/chest_reader.py изменились (биллинг переехал на сервер, export_to_api
+теперь возвращает dict) — следующий релиз бота должен включать эти файлы.
+
+**Что осталось из мастер-плана Gemini (отдельные будущие сессии):**
+- Веб-редактор `player_aliases`/`chest_type_aliases`
+- Публичный дашборд клана по `collector_slug`
+- Ownership Transfer (PIN-код передачи прав сборщика другому user_id)
+
+Спека: `docs/superpowers/specs/2026-06-18-chests-backend-foundation-design.md`
+План: `docs/superpowers/plans/2026-06-18-chests-backend-foundation.md`
 
 ---
 
