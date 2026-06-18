@@ -93,6 +93,7 @@ app.mount("/static", _SF(directory=_static_dir, html=False), name="static")
 CREDIT_COST = {
     "exchange": 10,
     "crypt": 1,
+    "chest": 10,
 }
 
 
