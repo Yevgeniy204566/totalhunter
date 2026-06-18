@@ -370,3 +370,77 @@ class ClanMember(Base):
     might      = Column(BigInteger,  nullable=True)
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=func.now())
+
+
+# ─────────────────────────────────────────────
+# Сундуки — tenant isolation + alias dictionary
+# ─────────────────────────────────────────────
+
+class ChestCollector(Base):
+    """
+    Один сборщик внутри одного клана/королевства — единица тенант-изоляции.
+    slug — непредсказуемый публичный идентификатор для будущего дашборда (не в этой работе).
+    """
+    __tablename__ = "chest_collectors"
+    __table_args__ = (
+        UniqueConstraint("kingdom", "clan", "user_id", name="uq_chest_collectors_tenant"),
+    )
+
+    id         = Column(Integer, primary_key=True)
+    kingdom    = Column(String(50),  nullable=False)
+    clan       = Column(String(100), nullable=False)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    slug       = Column(String(32), nullable=False, unique=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False,
+                        server_default=func.now())
+
+
+class Chest(Base):
+    """
+    Одна открытая сундук-запись. Уникальность по содержимому+времени защищает от
+    дублей при повторной отправке одного батча после обрыва сети.
+    """
+    __tablename__ = "chests"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "sender_raw", "chest_type_raw", "collected_at",
+                         name="uq_chests_idempotent"),
+    )
+
+    id                    = Column(Integer, primary_key=True)
+    collector_id          = Column(Integer, ForeignKey("chest_collectors.id"),
+                                   nullable=False, index=True)
+    chest_type_raw        = Column(String(200), nullable=False)
+    chest_type_canonical  = Column(String(200), nullable=False)
+    sender_raw            = Column(String(100), nullable=False)
+    sender_canonical       = Column(String(100), nullable=False)
+    collected_at          = Column(TIMESTAMP(timezone=True), nullable=False)
+    created_at            = Column(TIMESTAMP(timezone=True), nullable=False,
+                                   server_default=func.now())
+
+
+class PlayerAlias(Base):
+    """Словарь исправлений OCR для имён игроков, отдельно на каждого сборщика."""
+    __tablename__ = "player_aliases"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "raw_name", name="uq_player_aliases_raw_name"),
+    )
+
+    id             = Column(Integer, primary_key=True)
+    collector_id   = Column(Integer, ForeignKey("chest_collectors.id"),
+                            nullable=False, index=True)
+    raw_name       = Column(String(100), nullable=False)
+    canonical_name = Column(String(100), nullable=False)
+
+
+class ChestTypeAlias(Base):
+    """Словарь исправлений OCR для названий типов сундуков, отдельно на каждого сборщика."""
+    __tablename__ = "chest_type_aliases"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "raw_type", name="uq_chest_type_aliases_raw_type"),
+    )
+
+    id             = Column(Integer, primary_key=True)
+    collector_id   = Column(Integer, ForeignKey("chest_collectors.id"),
+                            nullable=False, index=True)
+    raw_type       = Column(String(200), nullable=False)
+    canonical_type = Column(String(200), nullable=False)
