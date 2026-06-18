@@ -698,6 +698,565 @@ git commit -m "test(server): cover chest alias dictionary and tenant isolation"
 
 ---
 
+### Task 5: Серверный биллинг внутри `/import` + фикс race condition при идемпотентной вставке
+
+**Контекст:** финальный whole-branch review нашёл, что `/api/v1/chests/import` не проверяет
+оплату на сервере (списание происходило только клиентским вызовом `/use_credit`, который
+модифицированный клиент может не сделать), и что параллельная повторная отправка одного и
+того же батча (два конкурентных запроса из-за плохой сети) ловит необработанный
+`IntegrityError` → HTTP 500 вместо чистого ответа. Пользователь подтвердил: переносим
+списание на сервер атомарно с импортом, убираем отдельный `spend_credit("chest")` на клиенте
+(иначе двойное списание), добавляем recovery для конкурентной гонки.
+
+**Files:**
+- Modify: `server/chests.py` (вся бизнес-логика)
+- Modify: `server/tests/test_chests.py` (новые тесты + правка `_create_user`, чтобы у юзера
+  по умолчанию было достаточно кредитов)
+- Modify: `chest_reader.py` (`export_to_api` возвращает dict вместо bool, чтобы различать
+  `low_credits`)
+- Modify: `test_chest_reader.py` (обновить 3 существующих теста под новый контракт + 1 новый)
+- Modify: `main.py` (`send_chests_to_server` — убрать клиентский `spend_credit`, обработать
+  `low_credits` из ответа сервера)
+
+**Interfaces:**
+- Consumes: `User, Transaction, Hunt` из `models.py` (уже существуют, использовались в
+  `/use_credit`); `_get_or_create_collector` из Task 3 (без изменения сигнатуры).
+- Produces: `chests.export_to_api(kingdom, clan, items) -> {"success": bool, "low_credits"?: bool}`
+  — потребляется `main.py`.
+
+- [ ] **Step 1: Написать падающие тесты в `server/tests/test_chests.py`**
+
+Сначала обновить хелпер `_create_user` (добавить параметр `credits`, не ломая существующие
+вызовы):
+
+```python
+async def _create_user(db, hwid, is_banned=False, credits=100):
+    u = User(hwid=hwid, ref_code=secrets.token_urlsafe(6), is_banned=is_banned, credits=credits)
+    db.add(u)
+    await db.flush()
+    return u
+```
+
+Добавить в конец файла:
+
+```python
+from models import Hunt, Transaction
+
+
+@pytest.mark.asyncio
+async def test_import_charges_10_credits_on_new_data(db_session):
+    user = await _create_user(db_session, "chargeuser000a", credits=100)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, items=[
+                {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T05:00:00"},
+                {"chest_type": "B", "sender": "S2", "timestamp": "2026-06-18T05:01:00"},
+            ]))
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 2
+
+    await db_session.refresh(user)
+    assert user.credits == 90  # списано один раз за батч, не за штуку
+
+    txns = (await db_session.execute(
+        select(Transaction).where(Transaction.user_id == user.id)
+    )).scalars().all()
+    assert len(txns) == 1
+    assert txns[0].amount == -10
+
+    hunts = (await db_session.execute(
+        select(Hunt).where(Hunt.user_id == user.id, Hunt.hunt_type == "chest")
+    )).scalars().all()
+    assert len(hunts) == 1
+
+
+@pytest.mark.asyncio
+async def test_import_insufficient_credits_returns_402(db_session):
+    user = await _create_user(db_session, "poorerguy0000", credits=5)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/import", json=_payload(user.hwid))
+    assert resp.status_code == 402
+    assert resp.json()["detail"]["required"] == 10
+    assert resp.json()["detail"]["credits"] == 5
+
+    await db_session.refresh(user)
+    assert user.credits == 5  # не списано
+
+    chests = (await db_session.execute(select(Chest))).scalars().all()
+    assert len(chests) == 0  # ничего не записано
+
+
+@pytest.mark.asyncio
+async def test_resend_full_duplicate_does_not_charge_again(db_session):
+    user = await _create_user(db_session, "noreuser00000", credits=100)
+    await db_session.commit()
+    payload = _payload(user.hwid, items=[
+        {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T04:00:00"},
+    ])
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post("/api/v1/chests/import", json=payload)
+        second = await client.post("/api/v1/chests/import", json=payload)
+
+    assert first.json()["count"] == 1
+    assert second.json()["count"] == 0
+
+    await db_session.refresh(user)
+    assert user.credits == 90  # списано один раз, повторная отправка бесплатна
+
+
+@pytest.mark.asyncio
+async def test_partial_duplicate_charges_once_not_per_item(db_session):
+    user = await _create_user(db_session, "partialuser00", credits=100)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, items=[{"chest_type": "A", "sender": "S1",
+                               "timestamp": "2026-06-18T03:00:00"}]))
+        second = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, items=[
+                {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T03:00:00"},  # дубль
+                {"chest_type": "B", "sender": "S2", "timestamp": "2026-06-18T03:05:00"},  # новый
+            ]))
+
+    assert second.json()["count"] == 1
+    await db_session.refresh(user)
+    assert user.credits == 80  # 10 за первый запрос + 10 за второй (флэт за батч, не за штуку)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_duplicate_recovers_without_500(db_session, monkeypatch):
+    import chests as chests_module
+
+    user = await _create_user(db_session, "raceuser00000", credits=100)
+    await db_session.commit()
+    payload = _payload(user.hwid, items=[
+        {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T02:00:00"},
+    ])
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post("/api/v1/chests/import", json=payload)
+    assert first.json()["count"] == 1
+
+    # Simulate the race window: the in-memory existing-keys snapshot is stale on its
+    # first read (as if another concurrent request had just committed the same row),
+    # forcing our commit() to hit the DB unique constraint instead of catching it
+    # via the pre-check.
+    real_load = chests_module._load_existing_keys
+    calls = {"n": 0}
+
+    async def flaky_load(collector_id, db):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return set()
+        return await real_load(collector_id, db)
+
+    monkeypatch.setattr(chests_module, "_load_existing_keys", flaky_load)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        second = await client.post("/api/v1/chests/import", json=payload)
+
+    assert second.status_code == 200
+    assert second.json()["count"] == 0
+
+    await db_session.refresh(user)
+    assert user.credits == 90  # заряжен один раз за первый (настоящий) импорт, не за гонку
+```
+
+- [ ] **Step 2: Запустить тесты, убедиться что падают**
+
+Run: `cd server && JWT_SECRET_KEY=test_secret_key_for_pytest python -m pytest tests/test_chests.py -v`
+Expected: FAIL — новые тесты падают на `assert user.credits == 90` (сейчас остаётся 100,
+эндпоинт не списывает кредиты), 402-тест падает с `assert resp.status_code == 402`
+(сейчас 200, эндпоинт не проверяет баланс).
+
+- [ ] **Step 3: Переписать `server/chests.py`**
+
+Заменить файл целиком:
+
+```python
+"""
+chests.py — Сундуки (Chests) import endpoint.
+
+POST /api/v1/chests/import — принимает батч сундуков от бота, изолирует данные по
+тенанту [kingdom, clan, user_id] (ChestCollector), применяет alias-словари сборщика
+к имени игрока и типу сундука перед записью, и атомарно списывает кредиты за батч
+(только если в батче есть хотя бы одна новая запись — повторная отправка уже
+сохранённого батча бесплатна, это и есть смысл идемпотентности).
+
+Auth: hwid в payload → User (как /use_credit), НЕ Bearer ADMIN_TOKEN — вызывается
+рядовыми платящими пользователями бота, а не админ-скриптами.
+"""
+import secrets
+from datetime import datetime
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import get_db
+from models import Chest, ChestCollector, ChestTypeAlias, Hunt, PlayerAlias, Transaction, User
+
+router = APIRouter(prefix="/api/v1/chests", tags=["chests"])
+
+# Стоимость одной отправки батча (флэт, не за штуку) — отдельная константа от
+# CREDIT_COST в main.py, чтобы не создавать циклический импорт main<->chests.
+CHEST_IMPORT_COST = 10
+
+
+class ChestItemIn(BaseModel):
+    chest_type: str
+    sender: str
+    timestamp: str
+
+
+class ChestImportPayload(BaseModel):
+    hwid: str
+    kingdom: str
+    clan: str
+    timestamp: str
+    items: List[ChestItemIn]
+
+
+async def _get_or_create_collector(kingdom: str, clan: str, user_id: int,
+                                   db: AsyncSession) -> ChestCollector:
+    existing = (await db.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == kingdom,
+            ChestCollector.clan == clan,
+            ChestCollector.user_id == user_id,
+        )
+    )).scalar_one_or_none()
+    if existing:
+        return existing
+
+    collector = ChestCollector(
+        kingdom=kingdom, clan=clan, user_id=user_id,
+        slug=secrets.token_urlsafe(16),
+    )
+    db.add(collector)
+    await db.flush()
+    return collector
+
+
+async def _load_aliases(collector_id: int, db: AsyncSession):
+    player_aliases = {
+        row.raw_name: row.canonical_name
+        for row in (await db.execute(
+            select(PlayerAlias).where(PlayerAlias.collector_id == collector_id)
+        )).scalars().all()
+    }
+    type_aliases = {
+        row.raw_type: row.canonical_type
+        for row in (await db.execute(
+            select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector_id)
+        )).scalars().all()
+    }
+    return player_aliases, type_aliases
+
+
+async def _load_existing_keys(collector_id: int, db: AsyncSession):
+    return {
+        (row.sender_raw, row.chest_type_raw, row.collected_at.isoformat())
+        for row in (await db.execute(
+            select(Chest).where(Chest.collector_id == collector_id)
+        )).scalars().all()
+    }
+
+
+def _dedupe(items, existing_keys):
+    """Возвращает только те items, ключ которых ещё не встречался — ни в existing_keys,
+    ни среди уже отобранных в этом же вызове (защита от дублей внутри одного батча)."""
+    new_items = []
+    seen = set(existing_keys)
+    for item in items:
+        key = (item.sender, item.chest_type, item.timestamp)
+        if key in seen:
+            continue
+        seen.add(key)
+        new_items.append(item)
+    return new_items
+
+
+def _build_chest_rows(collector_id: int, items, player_aliases, type_aliases):
+    return [
+        Chest(
+            collector_id=collector_id,
+            chest_type_raw=item.chest_type,
+            chest_type_canonical=type_aliases.get(item.chest_type, item.chest_type),
+            sender_raw=item.sender,
+            sender_canonical=player_aliases.get(item.sender, item.sender),
+            collected_at=datetime.fromisoformat(item.timestamp),
+        )
+        for item in items
+    ]
+
+
+async def _charge_chest_import(user_id: int, db: AsyncSession):
+    """Атомарно списывает CHEST_IMPORT_COST. Поднимает 402, если кредитов не хватает."""
+    row = (await db.execute(
+        update(User)
+        .where(User.id == user_id, User.credits >= CHEST_IMPORT_COST)
+        .values(credits=User.credits - CHEST_IMPORT_COST)
+        .returning(User.id, User.credits)
+    )).first()
+    if not row:
+        current = (await db.execute(
+            select(User.credits).where(User.id == user_id)
+        )).scalar_one()
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "message": "Недостаточно кредитов. Пополни баланс.",
+                "credits": current,
+                "required": CHEST_IMPORT_COST,
+            },
+        )
+    db.add(Transaction(user_id=user_id, type="credit_use", amount=-CHEST_IMPORT_COST,
+                       meta={"hunt_type": "chest"}))
+    db.add(Hunt(user_id=user_id, hunt_type="chest"))
+
+
+@router.post("/import")
+async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(get_db)):
+    if not payload.items:
+        raise HTTPException(status_code=400, detail="items is empty")
+
+    user = (await db.execute(
+        select(User).where(User.hwid == payload.hwid)
+    )).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.is_banned:
+        raise HTTPException(status_code=403, detail="Banned")
+    user_id = user.id
+
+    collector = await _get_or_create_collector(payload.kingdom, payload.clan, user_id, db)
+    collector_id = collector.id
+    collector_slug = collector.slug
+
+    player_aliases, type_aliases = await _load_aliases(collector_id, db)
+    existing_keys = await _load_existing_keys(collector_id, db)
+    new_items = _dedupe(payload.items, existing_keys)
+
+    if not new_items:
+        return {"ok": True, "count": 0, "collector_slug": collector_slug}
+
+    await _charge_chest_import(user_id, db)
+    for row in _build_chest_rows(collector_id, new_items, player_aliases, type_aliases):
+        db.add(row)
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Конкурентная повторная отправка того же батча успела закоммититься между
+        # нашим pre-check и нашим commit(). Откатываем (отменяет и списание), пересчитываем
+        # коллектора (на случай если это был его первый импорт — INSERT коллектора тоже
+        # откатился) и существующие ключи по-настоящему, и пробуем один раз заново.
+        await db.rollback()
+        collector = await _get_or_create_collector(payload.kingdom, payload.clan, user_id, db)
+        collector_id = collector.id
+        collector_slug = collector.slug
+        existing_keys = await _load_existing_keys(collector_id, db)
+        new_items = _dedupe(new_items, existing_keys)
+        if not new_items:
+            return {"ok": True, "count": 0, "collector_slug": collector_slug}
+        await _charge_chest_import(user_id, db)
+        for row in _build_chest_rows(collector_id, new_items, player_aliases, type_aliases):
+            db.add(row)
+        await db.commit()
+
+    return {"ok": True, "count": len(new_items), "collector_slug": collector_slug}
+```
+
+- [ ] **Step 4: Запустить серверные тесты, убедиться что проходят**
+
+Run: `cd server && JWT_SECRET_KEY=test_secret_key_for_pytest python -m pytest tests/test_chests.py -v`
+Expected: PASS — все тесты файла (14 тестов)
+
+- [ ] **Step 5: Обновить `chest_reader.export_to_api` — различать `low_credits`**
+
+В `chest_reader.py` найти:
+```python
+def export_to_api(kingdom, clan, items):
+    payload = {
+        "hwid": get_hwid(),
+        "kingdom": kingdom,
+        "clan": clan,
+        "timestamp": datetime.datetime.now().isoformat(timespec='seconds'),
+        "items": items,
+    }
+    try:
+        response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=10)
+        return 200 <= response.status_code < 300
+    except requests.RequestException:
+        return False
+```
+
+Заменить на:
+```python
+def export_to_api(kingdom, clan, items):
+    payload = {
+        "hwid": get_hwid(),
+        "kingdom": kingdom,
+        "clan": clan,
+        "timestamp": datetime.datetime.now().isoformat(timespec='seconds'),
+        "items": items,
+    }
+    try:
+        response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=10)
+        if response.status_code == 402:
+            return {"success": False, "low_credits": True}
+        if 200 <= response.status_code < 300:
+            return {"success": True}
+        return {"success": False}
+    except requests.RequestException:
+        return {"success": False}
+```
+
+- [ ] **Step 6: Обновить `test_chest_reader.py` под новый контракт**
+
+Заменить:
+```python
+def test_export_to_api_success(monkeypatch):
+    ...
+    result = cr.export_to_api("K229", "Legion", items)
+
+    assert result is True
+    ...
+```
+на (только строка assert меняется):
+```python
+    assert result == {"success": True}
+```
+
+Заменить:
+```python
+def test_export_to_api_http_failure(monkeypatch):
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(404))
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) is False
+```
+на:
+```python
+def test_export_to_api_http_failure(monkeypatch):
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(404))
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) == {"success": False}
+```
+
+Заменить:
+```python
+def test_export_to_api_network_exception(monkeypatch):
+    def raise_exc(url, json, timeout):
+        raise cr.requests.RequestException("no connection")
+    monkeypatch.setattr(cr.requests, "post", raise_exc)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) is False
+```
+на:
+```python
+def test_export_to_api_network_exception(monkeypatch):
+    def raise_exc(url, json, timeout):
+        raise cr.requests.RequestException("no connection")
+    monkeypatch.setattr(cr.requests, "post", raise_exc)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) == {"success": False}
+```
+
+Добавить новый тест после `test_export_to_api_network_exception`:
+```python
+def test_export_to_api_low_credits(monkeypatch):
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(402))
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) == {"success": False, "low_credits": True}
+```
+
+- [ ] **Step 7: Запустить `test_chest_reader.py`, убедиться что проходит**
+
+Run: `cd "C:\BattleBot" && python -m pytest test_chest_reader.py -v -k export_to_api`
+Expected: PASS — все 4 теста `export_to_api`
+
+- [ ] **Step 8: Обновить `main.py` — убрать клиентский `spend_credit`, обработать `low_credits`**
+
+В `main.py`, метод `send_chests_to_server`, найти блок (внутри `_worker`):
+```python
+            from auth import spend_credit
+            res = spend_credit(hunt_type="chest")
+            if not (res and res.get("success")):
+                conn.close()
+                self.after(0, lambda: messagebox.showwarning("Hunter", L["no_credits"]))
+                return
+
+            items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
+            ids = [r[0] for r in rows]
+            success = chest_reader.export_to_api(kingdom, clan, items)
+            if success:
+                chest_reader.mark_synced(conn, ids)
+            conn.close()
+
+            def _update():
+                if success:
+                    self.chest_status_label.configure(text=L["chest_send_success"],
+                                                       text_color=MD3["secondary"])
+                else:
+                    self.chest_status_label.configure(text=L["chest_send_failed"],
+                                                       text_color=MD3["error_text"])
+            self.after(0, _update)
+```
+
+Заменить на:
+```python
+            items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
+            ids = [r[0] for r in rows]
+            result = chest_reader.export_to_api(kingdom, clan, items)
+            if result.get("success"):
+                chest_reader.mark_synced(conn, ids)
+            conn.close()
+
+            def _update():
+                if result.get("success"):
+                    self.chest_status_label.configure(text=L["chest_send_success"],
+                                                       text_color=MD3["secondary"])
+                elif result.get("low_credits"):
+                    messagebox.showwarning("Hunter", L["no_credits"])
+                    self.chest_status_label.configure(text=L["chest_status_stopped"],
+                                                       text_color=MD3["on_surface2"])
+                else:
+                    self.chest_status_label.configure(text=L["chest_send_failed"],
+                                                       text_color=MD3["error_text"])
+            self.after(0, _update)
+```
+
+Списание теперь происходит на сервере атомарно с записью данных — отдельный клиентский
+`spend_credit("chest")` удалён, чтобы не списывать дважды.
+
+- [ ] **Step 9: Финальный прогон — оба тестовых набора**
+
+Run: `cd server && JWT_SECRET_KEY=test_secret_key_for_pytest python -m pytest -v`
+Expected: PASS — все тесты `test_chests.py` (14), те же 3 ранее известных нерелевантных
+падения (`test_roy.py` x2, `test_version_bump.py` x1), не больше.
+
+Run: `cd "C:\BattleBot" && python -m pytest test_chest_reader.py -v`
+Expected: PASS — все тесты файла, включая 4 теста `export_to_api`.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add server/chests.py server/tests/test_chests.py chest_reader.py test_chest_reader.py main.py
+git commit -m "feat(server): atomic server-side billing for chest import + race-condition recovery"
+```
+
+---
+
 ## Что не входит в этот план (будущие подсистемы)
 
 - Веб-редактор `player_aliases` / `chest_type_aliases`.
