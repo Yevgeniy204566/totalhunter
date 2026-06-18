@@ -20,8 +20,8 @@ from sqlalchemy import select
 from models import User, ChestCollector, Chest
 
 
-async def _create_user(db, hwid, is_banned=False):
-    u = User(hwid=hwid, ref_code=secrets.token_urlsafe(6), is_banned=is_banned)
+async def _create_user(db, hwid, is_banned=False, credits=100):
+    u = User(hwid=hwid, ref_code=secrets.token_urlsafe(6), is_banned=is_banned, credits=credits)
     db.add(u)
     await db.flush()
     return u
@@ -193,3 +193,131 @@ async def test_resending_same_batch_does_not_duplicate(db_session):
 
     chests = (await db_session.execute(select(Chest))).scalars().all()
     assert len(chests) == 2
+
+
+from models import Hunt, Transaction
+
+
+@pytest.mark.asyncio
+async def test_import_charges_10_credits_on_new_data(db_session):
+    user = await _create_user(db_session, "chargeuser000a", credits=100)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, items=[
+                {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T05:00:00"},
+                {"chest_type": "B", "sender": "S2", "timestamp": "2026-06-18T05:01:00"},
+            ]))
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 2
+
+    await db_session.refresh(user)
+    assert user.credits == 90  # списано один раз за батч, не за штуку
+
+    txns = (await db_session.execute(
+        select(Transaction).where(Transaction.user_id == user.id)
+    )).scalars().all()
+    assert len(txns) == 1
+    assert txns[0].amount == -10
+
+    hunts = (await db_session.execute(
+        select(Hunt).where(Hunt.user_id == user.id, Hunt.hunt_type == "chest")
+    )).scalars().all()
+    assert len(hunts) == 1
+
+
+@pytest.mark.asyncio
+async def test_import_insufficient_credits_returns_402(db_session):
+    user = await _create_user(db_session, "poorerguy0000", credits=5)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/import", json=_payload(user.hwid))
+    assert resp.status_code == 402
+    assert resp.json()["detail"]["required"] == 10
+    assert resp.json()["detail"]["credits"] == 5
+
+    await db_session.refresh(user)
+    assert user.credits == 5  # не списано
+
+    chests = (await db_session.execute(select(Chest))).scalars().all()
+    assert len(chests) == 0  # ничего не записано
+
+
+@pytest.mark.asyncio
+async def test_resend_full_duplicate_does_not_charge_again(db_session):
+    user = await _create_user(db_session, "noreuser00000", credits=100)
+    await db_session.commit()
+    payload = _payload(user.hwid, items=[
+        {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T04:00:00"},
+    ])
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post("/api/v1/chests/import", json=payload)
+        second = await client.post("/api/v1/chests/import", json=payload)
+
+    assert first.json()["count"] == 1
+    assert second.json()["count"] == 0
+
+    await db_session.refresh(user)
+    assert user.credits == 90  # списано один раз, повторная отправка бесплатна
+
+
+@pytest.mark.asyncio
+async def test_partial_duplicate_charges_once_not_per_item(db_session):
+    user = await _create_user(db_session, "partialuser00", credits=100)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, items=[{"chest_type": "A", "sender": "S1",
+                               "timestamp": "2026-06-18T03:00:00"}]))
+        second = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, items=[
+                {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T03:00:00"},  # дубль
+                {"chest_type": "B", "sender": "S2", "timestamp": "2026-06-18T03:05:00"},  # новый
+            ]))
+
+    assert second.json()["count"] == 1
+    await db_session.refresh(user)
+    assert user.credits == 80  # 10 за первый запрос + 10 за второй (флэт за батч, не за штуку)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_duplicate_recovers_without_500(db_session, monkeypatch):
+    import chests as chests_module
+
+    user = await _create_user(db_session, "raceuser00000", credits=100)
+    await db_session.commit()
+    payload = _payload(user.hwid, items=[
+        {"chest_type": "A", "sender": "S1", "timestamp": "2026-06-18T02:00:00"},
+    ])
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post("/api/v1/chests/import", json=payload)
+    assert first.json()["count"] == 1
+
+    # Simulate the race window: the in-memory existing-keys snapshot is stale on its
+    # first read (as if another concurrent request had just committed the same row),
+    # forcing our commit() to hit the DB unique constraint instead of catching it
+    # via the pre-check.
+    real_load = chests_module._load_existing_keys
+    calls = {"n": 0}
+
+    async def flaky_load(collector_id, db):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return set()
+        return await real_load(collector_id, db)
+
+    monkeypatch.setattr(chests_module, "_load_existing_keys", flaky_load)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        second = await client.post("/api/v1/chests/import", json=payload)
+
+    assert second.status_code == 200
+    assert second.json()["count"] == 0
+
+    await db_session.refresh(user)
+    assert user.credits == 90  # заряжен один раз за первый (настоящий) импорт, не за гонку

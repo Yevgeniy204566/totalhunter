@@ -2466,24 +2466,21 @@ class TotalHunterApp(ctk.CTk):
                     text=L["chest_status_stopped"], text_color=MD3["on_surface2"]))
                 return
 
-            from auth import spend_credit
-            res = spend_credit(hunt_type="chest")
-            if not (res and res.get("success")):
-                conn.close()
-                self.after(0, lambda: messagebox.showwarning("Hunter", L["no_credits"]))
-                return
-
             items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
             ids = [r[0] for r in rows]
-            success = chest_reader.export_to_api(kingdom, clan, items)
-            if success:
+            result = chest_reader.export_to_api(kingdom, clan, items)
+            if result.get("success"):
                 chest_reader.mark_synced(conn, ids)
             conn.close()
 
             def _update():
-                if success:
+                if result.get("success"):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                        text_color=MD3["secondary"])
+                elif result.get("low_credits"):
+                    messagebox.showwarning("Hunter", L["no_credits"])
+                    self.chest_status_label.configure(text=L["chest_status_stopped"],
+                                                       text_color=MD3["on_surface2"])
                 else:
                     self.chest_status_label.configure(text=L["chest_send_failed"],
                                                        text_color=MD3["error_text"])

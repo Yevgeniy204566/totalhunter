@@ -215,7 +215,7 @@ def test_export_to_api_success(monkeypatch):
               "timestamp": "2026-06-17T10:00:00"}]
     result = cr.export_to_api("K229", "Legion", items)
 
-    assert result is True
+    assert result == {"success": True}
     assert captured['url'].endswith("/api/v1/chests/import")
     assert captured['json']["hwid"] == "ABCD1234"
     assert captured['json']["kingdom"] == "K229"
@@ -226,7 +226,7 @@ def test_export_to_api_success(monkeypatch):
 def test_export_to_api_http_failure(monkeypatch):
     monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(404))
     monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
-    assert cr.export_to_api("K229", "Legion", []) is False
+    assert cr.export_to_api("K229", "Legion", []) == {"success": False}
 
 
 def test_export_to_api_network_exception(monkeypatch):
@@ -234,4 +234,10 @@ def test_export_to_api_network_exception(monkeypatch):
         raise cr.requests.RequestException("no connection")
     monkeypatch.setattr(cr.requests, "post", raise_exc)
     monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
-    assert cr.export_to_api("K229", "Legion", []) is False
+    assert cr.export_to_api("K229", "Legion", []) == {"success": False}
+
+
+def test_export_to_api_low_credits(monkeypatch):
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(402))
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    assert cr.export_to_api("K229", "Legion", []) == {"success": False, "low_credits": True}

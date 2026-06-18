@@ -239,6 +239,10 @@ def export_to_api(kingdom, clan, items):
     }
     try:
         response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=10)
-        return 200 <= response.status_code < 300
+        if response.status_code == 402:
+            return {"success": False, "low_credits": True}
+        if 200 <= response.status_code < 300:
+            return {"success": True}
+        return {"success": False}
     except requests.RequestException:
-        return False
+        return {"success": False}
