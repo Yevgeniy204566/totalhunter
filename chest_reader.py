@@ -112,18 +112,21 @@ def clean_name(text):
     return text.strip()
 
 
-def read_fixed_field(frame, ref_rect):
+def read_fixed_field(frame, ref_rect, offset_name=None):
     x, y, w, h = coord_manager.to_region_dialog(*ref_rect)
+    if offset_name is not None:
+        dx, dy = coord_manager.get_ui_offset(offset_name)
+        x, y = x + dx, y + dy
     roi = frame[y:y + h, x:x + w]
     return clean_name(ocr_text(roi))
 
 
 def read_sender_name(frame):
-    return read_fixed_field(frame, SENDER_REF_RECT)
+    return read_fixed_field(frame, SENDER_REF_RECT, "chest_sender")
 
 
 def read_chest_type(frame):
-    return read_fixed_field(frame, SOURCE_REF_RECT)
+    return read_fixed_field(frame, SOURCE_REF_RECT, "chest_type")
 
 
 def read_top_row(frame):

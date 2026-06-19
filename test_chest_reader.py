@@ -79,6 +79,69 @@ def test_read_sender_name_applies_clean_name_artifact_stripping(monkeypatch):
     assert cr.read_sender_name(frame) == "Tess"
 
 
+def test_read_fixed_field_applies_named_offset(monkeypatch):
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (10, 10, 3, 3))
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: (2, -1))
+
+    frame = np.arange(1200).reshape(20, 20, 3).astype(np.uint8)
+    captured = {}
+    def fake_ocr(roi, **kwargs):
+        if "roi" not in captured:
+            captured["roi"] = roi.copy()
+        return ""
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr)
+
+    cr.read_fixed_field(frame, (1, 2, 3, 4), offset_name="chest_type")
+
+    expected = frame[9:12, 12:15]
+    assert np.array_equal(captured["roi"], expected)
+
+
+def test_read_fixed_field_without_offset_name_uses_zero_offset(monkeypatch):
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (10, 10, 3, 3))
+
+    def fail_if_called(name):
+        raise AssertionError("get_ui_offset should not be called when offset_name is None")
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", fail_if_called)
+
+    captured = {}
+    def fake_ocr(roi, **kwargs):
+        if "roi" not in captured:
+            captured["roi"] = roi.copy()
+        return ""
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr)
+
+    frame = np.arange(1200).reshape(20, 20, 3).astype(np.uint8)
+    cr.read_fixed_field(frame, (1, 2, 3, 4))
+
+    expected = frame[10:13, 10:13]
+    assert np.array_equal(captured["roi"], expected)
+
+
+def test_read_chest_type_passes_chest_type_offset_name(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (0, 0, 5, 5))
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: captured.setdefault("name", name) and (0, 0))
+    monkeypatch.setattr(cr, "ocr_text", lambda roi, **kwargs: "")
+
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.read_chest_type(frame)
+
+    assert captured["name"] == "chest_type"
+
+
+def test_read_sender_name_passes_chest_sender_offset_name(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (0, 0, 5, 5))
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: captured.setdefault("name", name) and (0, 0))
+    monkeypatch.setattr(cr, "ocr_text", lambda roi, **kwargs: "")
+
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.read_sender_name(frame)
+
+    assert captured["name"] == "chest_sender"
+
+
 def test_read_top_row_on_fixture(monkeypatch):
     monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
     frame = _load_fixture()
