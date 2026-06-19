@@ -2419,7 +2419,10 @@ class TotalHunterApp(ctk.CTk):
 
         self._chest_running = True
         self._chest_stop_event = threading.Event()
-        self._update_chest_counts_display({})
+        import chest_reader
+        _conn = chest_reader.init_db()
+        self._update_chest_counts_display(chest_reader.get_unsynced_counts(_conn))
+        _conn.close()
         self.chest_start_btn.configure(text=L["chest_stop_btn"],
                                        fg_color=MD3["error"], hover_color=MD3["error_hover"])
         self.chest_status_label.configure(text=L["chest_status_running"],
@@ -2477,6 +2480,7 @@ class TotalHunterApp(ctk.CTk):
                 if result.get("success"):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                        text_color=MD3["secondary"])
+                    self._update_chest_counts_display({})
                 elif result.get("low_credits"):
                     messagebox.showwarning("Hunter", L["no_credits"])
                     self.chest_status_label.configure(text=L["chest_status_stopped"],
@@ -3928,34 +3932,6 @@ class TotalHunterApp(ctk.CTk):
             self.chest_clan_entry.insert(0, saved_clan)
         self.chest_clan_entry.bind("<FocusOut>", self._on_chest_clan_change)
 
-        # ── Старт/Стоп + статус ──────────────────────────────────────────
-        self.chest_start_btn = ctk.CTkButton(
-            self.tab_chest, text=L["chest_start_btn"],
-            height=42, corner_radius=10,
-            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
-            text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
-            command=self.toggle_chest_bot)
-        self.chest_start_btn.pack(padx=20, pady=(4, 4), fill="x")
-        self._i18n_labels.append((self.chest_start_btn, "chest_start_btn"))
-
-        self.chest_status_label = ctk.CTkLabel(self.tab_chest, text=L["chest_status_ready"],
-                                               font=ctk.CTkFont(size=12),
-                                               text_color=MD3["on_surface2"])
-        self.chest_status_label.pack(pady=(0, 8))
-        self._i18n_labels.append((self.chest_status_label, "chest_status_ready"))
-
-        # ── Live-счётчик по типам ────────────────────────────────────────
-        counts_card = ctk.CTkFrame(self.tab_chest, fg_color=MD3["elevated"],
-                                   corner_radius=12, border_width=1,
-                                   border_color=MD3["outline"])
-        counts_card.pack(padx=20, pady=(0, 8), fill="both", expand=True)
-        self.chest_counts_frame = ctk.CTkFrame(counts_card, fg_color="transparent")
-        self.chest_counts_frame.pack(padx=10, pady=10, fill="both", expand=True)
-        self.chest_total_label = ctk.CTkLabel(counts_card, text=f"{L['chest_total_lb']} 0",
-                                              font=ctk.CTkFont(size=13, weight="bold"),
-                                              text_color=MD3["value_text"])
-        self.chest_total_label.pack(pady=(0, 10))
-
         # ── Отправить на сервер ──────────────────────────────────────────
         self.chest_send_btn = ctk.CTkButton(
             self.tab_chest, text=L["chest_send_btn"],
@@ -3963,8 +3939,48 @@ class TotalHunterApp(ctk.CTk):
             fg_color=MD3["blue_btn"], hover_color=MD3["blue_hover"],
             text_color=MD3["on_surface"], font=ctk.CTkFont(size=13, weight="bold"),
             command=self.send_chests_to_server)
-        self.chest_send_btn.pack(padx=20, pady=(0, 14), fill="x")
+        self.chest_send_btn.pack(padx=20, pady=(4, 4), fill="x")
         self._i18n_labels.append((self.chest_send_btn, "chest_send_btn"))
+
+        self.chest_status_label = ctk.CTkLabel(self.tab_chest, text=L["chest_status_ready"],
+                                               font=ctk.CTkFont(size=12),
+                                               text_color=MD3["on_surface2"])
+        self.chest_status_label.pack(pady=(0, 8))
+        self._i18n_labels.append((self.chest_status_label, "chest_status_ready"))
+
+        # ── Live-счётчик по типам — фиксированная высота, список скроллится
+        # внутри своих границ и не выталкивает СТАРТ ниже ──────────────────
+        counts_card = ctk.CTkFrame(self.tab_chest, fg_color=MD3["elevated"],
+                                   corner_radius=12, border_width=1,
+                                   border_color=MD3["outline"])
+        counts_card.pack(padx=20, pady=(0, 8), fill="both", expand=True)
+        self.chest_counts_frame = ctk.CTkScrollableFrame(
+            counts_card, fg_color="transparent", height=260)
+        self.chest_counts_frame.pack(padx=10, pady=10, fill="both", expand=True)
+        self.chest_total_label = ctk.CTkLabel(counts_card, text=f"{L['chest_total_lb']} 0",
+                                              font=ctk.CTkFont(size=13, weight="bold"),
+                                              text_color=MD3["value_text"])
+        self.chest_total_label.pack(pady=(0, 10))
+
+        # ── Старт/Стоп — внизу, всегда после счётчика ────────────────────
+        self.chest_start_btn = ctk.CTkButton(
+            self.tab_chest, text=L["chest_start_btn"],
+            height=42, corner_radius=10,
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
+            command=self.toggle_chest_bot)
+        self.chest_start_btn.pack(padx=20, pady=(4, 14), fill="x")
+        self._i18n_labels.append((self.chest_start_btn, "chest_start_btn"))
+
+        # ── Показать текущий невыгруженный остаток сразу при открытии вкладки,
+        # без этого счётчик после перезапуска бота врал бы нулём ───────────
+        try:
+            import chest_reader
+            conn = chest_reader.init_db()
+            self._update_chest_counts_display(chest_reader.get_unsynced_counts(conn))
+            conn.close()
+        except Exception:
+            pass
 
     def _on_chest_kingdom_change(self, event=None):
         self._save_gui_config_key("chest_kingdom", self.chest_kingdom_entry.get().strip())
