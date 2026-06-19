@@ -125,6 +125,9 @@ MD3_NAME = _read_saved_theme()
 MD3 = _load_theme(MD3_NAME)
 
 
+TUNE_TARGET_NAMES = ("wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type")
+
+
 LANGS = {
     "RU": {
         # --- существующие ---
@@ -3908,7 +3911,7 @@ class TotalHunterApp(ctk.CTk):
 
         # Tune option menu — перестроить labels, сохранить выбранный индекс
         if hasattr(self, '_tune_option_menu'):
-            _tko = ("wt_icon", "carter", "top_accel", "march_accel")
+            _tko = TUNE_TARGET_NAMES
             _new_vals = [LANGS[val][f"cal_tune_{k}"] for k in _tko]
             self._tune_option_menu.configure(values=_new_vals)
             _idx = getattr(self, '_tune_idx', 1)
@@ -4315,7 +4318,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ── Тюнинг кликов (D-Pad) ────────────────────────────────────────
         # Порядок фиксирован: 0=wt_icon, 1=carter, 2=top_accel, 3=march_accel
-        _TUNE_INTERNAL = ("wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type")
+        _TUNE_INTERNAL = TUNE_TARGET_NAMES
 
         def _tune_labels():
             return [LANGS[self.current_lang][f"cal_tune_{k}"] for k in _TUNE_INTERNAL]
