@@ -55,7 +55,7 @@ BUTTON_Y_FRAC = (0.45, 1.0)
 
 # --- Anti-detect click ------------------------------------------------------
 ANTI_DETECT_OFFSET_PX = 8
-ANTI_DETECT_PAUSE_RANGE = (0.4, 0.9)
+ANTI_DETECT_PAUSE_RANGE = (0.2, 0.45)  # halved 2026-06-19 by owner decision, chests-only
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_buffer.db')
 API_IMPORT_PATH = '/api/v1/chests/import'
