@@ -3486,6 +3486,7 @@ class TotalHunterApp(ctk.CTk):
             font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
         )
         self._roy_no_data_lb.pack(pady=20)
+        self._roy_placeholder_key = 'roy_no_data'
 
         if self._roy_enabled_var.get():
             self.after(1500, self._roy_refresh_balance)
@@ -3667,13 +3668,19 @@ class TotalHunterApp(ctk.CTk):
 
         for w in self._roy_list_frame.winfo_children():
             w.destroy()
+        # winfo_children().destroy() above also kills any placeholder label
+        # created here or in setup_roy_tab — drop the stale reference so
+        # change_lang() doesn't later try to .configure() a dead Tk widget.
+        self._roy_no_data_lb = None
 
         if not pool:
-            ctk.CTkLabel(
+            self._roy_no_data_lb = ctk.CTkLabel(
                 self._roy_list_frame,
                 text=L['roy_empty_pool'],
                 font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"],
-            ).pack(pady=20)
+            )
+            self._roy_no_data_lb.pack(pady=20)
+            self._roy_placeholder_key = 'roy_empty_pool'
             self._roy_status_lb.configure(text=L['roy_pool_empty'])
             return
 
@@ -3832,8 +3839,8 @@ class TotalHunterApp(ctk.CTk):
             self._roy_kingdom_lb.configure(text=LANGS[val]['roy_kingdom_label'])
         if hasattr(self, '_roy_coords_lb'):
             self._roy_coords_lb.configure(text=LANGS[val]['roy_coords_title'])
-        if hasattr(self, '_roy_no_data_lb'):
-            self._roy_no_data_lb.configure(text=LANGS[val]['roy_no_data'])
+        if getattr(self, '_roy_no_data_lb', None) is not None:
+            self._roy_no_data_lb.configure(text=LANGS[val][self._roy_placeholder_key])
         # Перезапросить баланс чтобы единицы времени обновились
         if hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get():
             self._roy_refresh_balance()
