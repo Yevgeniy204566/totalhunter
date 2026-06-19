@@ -189,22 +189,24 @@ def find_open_button(bbox):
     return find_colored_button(region, color='green', pick='largest')
 
 
-def click_open_button(pos):
+def click_open_button(pos, pause_range=ANTI_DETECT_PAUSE_RANGE):
     cx, cy = pos
     click_x = cx + random.randint(-ANTI_DETECT_OFFSET_PX, ANTI_DETECT_OFFSET_PX)
     click_y = cy + random.randint(-5, 5)
     pyautogui.click(click_x, click_y)
-    time.sleep(random.uniform(*ANTI_DETECT_PAUSE_RANGE))
+    time.sleep(random.uniform(*pause_range))
 
 
-def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
+def collect_chests(stop_flag, on_update=None, db_path=DB_PATH, pause_range=ANTI_DETECT_PAUSE_RANGE):
     """Reads and opens chests from the top of the «Мой клан → Подарки» list
     until the list is empty (no «Открыть» button found) or stop_flag()
     returns True. Every chest is persisted to SQLite as it's read.
     Returns {'counts': {chest_type: n}, 'items': [{'chest_type', 'sender',
     'timestamp'}, ...]} for this session. 'counts' is sourced from the DB
     (get_unsynced_counts), not a session-local tally, so it always reflects
-    the full unsynced backlog — not just what this call found."""
+    the full unsynced backlog — not just what this call found. pause_range
+    overrides the module's anti-detect click-pause default for this call,
+    so the GUI's speed slider can control it without mutating global state."""
     conn = init_db(db_path)
     items = []
     try:
@@ -231,7 +233,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
             if on_update:
                 on_update(get_unsynced_counts(conn))
 
-            click_open_button(pos)
+            click_open_button(pos, pause_range)
 
         final_counts = get_unsynced_counts(conn)
     finally:

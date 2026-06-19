@@ -216,7 +216,7 @@ def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     clicked = []
     monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
     monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
-    monkeypatch.setattr(cr, "click_open_button", lambda pos: clicked.append(pos))
+    monkeypatch.setattr(cr, "click_open_button", lambda pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE: clicked.append(pos))
 
     db_path = str(tmp_path / "test_chest_buffer.db")
     result = cr.collect_chests(lambda: False, db_path=db_path)
@@ -257,7 +257,7 @@ def test_collect_chests_counts_are_cumulative_from_db(tmp_path, monkeypatch):
     def fake_read_top_row(frame):
         return ("Сундук Эпического Монстра", "Новый")
 
-    def fake_click_open_button(pos):
+    def fake_click_open_button(pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
         pass
 
     monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
@@ -318,3 +318,72 @@ def test_export_to_api_low_credits(monkeypatch):
     monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(402))
     monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
     assert cr.export_to_api("K229", "Legion", []) == {"success": False, "low_credits": True}
+
+
+def test_click_open_button_uses_passed_pause_range(monkeypatch):
+    captured = {}
+
+    def fake_uniform(lo, hi):
+        captured["range"] = (lo, hi)
+        return 0.0
+
+    monkeypatch.setattr(cr.random, "uniform", fake_uniform)
+    monkeypatch.setattr(cr.pyautogui, "click", lambda *a, **k: None)
+    monkeypatch.setattr(cr.time, "sleep", lambda *a, **k: None)
+
+    cr.click_open_button((10, 10), pause_range=(0.5, 0.6))
+
+    assert captured["range"] == (0.5, 0.6)
+
+
+def test_click_open_button_defaults_to_module_constant(monkeypatch):
+    captured = {}
+
+    def fake_uniform(lo, hi):
+        captured["range"] = (lo, hi)
+        return 0.0
+
+    monkeypatch.setattr(cr.random, "uniform", fake_uniform)
+    monkeypatch.setattr(cr.pyautogui, "click", lambda *a, **k: None)
+    monkeypatch.setattr(cr.time, "sleep", lambda *a, **k: None)
+
+    cr.click_open_button((10, 10))
+
+    assert captured["range"] == cr.ANTI_DETECT_PAUSE_RANGE
+
+
+def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "chest_buffer.db")
+    captured_ranges = []
+
+    def fake_grab_fullscreen():
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+    def fake_detect_dialog_bbox(frame):
+        return (0, 0, 300, 300)
+
+    def fake_crop_dialog(frame, bbox):
+        return np.zeros((300, 300, 3), dtype=np.uint8)
+
+    calls = {"n": 0}
+
+    def fake_find_open_button(bbox):
+        calls["n"] += 1
+        return (10, 10) if calls["n"] <= 1 else None
+
+    def fake_read_top_row(frame):
+        return ("Сундук Эпического Монстра", "Игрок")
+
+    def fake_click_open_button(pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
+        captured_ranges.append(pause_range)
+
+    monkeypatch.setattr(cr, "grab_fullscreen", fake_grab_fullscreen)
+    monkeypatch.setattr(cr, "detect_dialog_bbox", fake_detect_dialog_bbox)
+    monkeypatch.setattr(cr, "crop_dialog", fake_crop_dialog)
+    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
+    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
+    monkeypatch.setattr(cr, "click_open_button", fake_click_open_button)
+
+    cr.collect_chests(lambda: False, db_path=db_path, pause_range=(0.5, 0.6))
+
+    assert captured_ranges == [(0.5, 0.6)]
