@@ -7,11 +7,11 @@ import json
 import pytest
 from coord_manager import CoordinateManager, REF_A, REF_B
 
-KNOWN_BUTTONS = {"wt_icon", "carter", "top_accel", "march_accel"}
+KNOWN_BUTTONS = {"wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type"}
 
 
 class TestUiOffsetsDefaults:
-    def test_all_four_buttons_present_after_init(self):
+    def test_all_known_buttons_present_after_init(self):
         cm = CoordinateManager()
         assert KNOWN_BUTTONS == set(cm.ui_offsets.keys())
 
