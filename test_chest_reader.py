@@ -119,6 +119,53 @@ def test_mark_synced_excludes_from_unsynced(tmp_path):
     conn.close()
 
 
+def test_get_unsynced_counts_groups_by_type(tmp_path):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Сундук Эпического Монстра", "Игрок1", "2026-06-19T10:00:00")
+    cr.insert_chest(conn, "Сундук Эпического Монстра", "Игрок2", "2026-06-19T10:00:05")
+    cr.insert_chest(conn, "Редкий склеп 25", "Игрок1", "2026-06-19T10:00:10")
+    conn.close()
+
+    conn = cr.init_db(db_path)
+    counts = cr.get_unsynced_counts(conn)
+    conn.close()
+
+    assert counts == {"Сундук Эпического Монстра": 2, "Редкий склеп 25": 1}
+
+
+def test_get_unsynced_counts_ignores_synced_rows(tmp_path):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Тип А", "Игрок1", "2026-06-19T10:00:00")
+    cr.insert_chest(conn, "Тип Б", "Игрок1", "2026-06-19T10:00:05")
+    rows = cr.get_unsynced(conn)
+    ids_type_a = [r[0] for r in rows if r[2] == "Тип А"]
+    cr.mark_synced(conn, ids_type_a)
+    conn.close()
+
+    conn = cr.init_db(db_path)
+    counts = cr.get_unsynced_counts(conn)
+    conn.close()
+
+    assert counts == {"Тип Б": 1}
+
+
+def test_get_unsynced_counts_empty_after_full_sync(tmp_path):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Тип А", "Игрок1", "2026-06-19T10:00:00")
+    rows = cr.get_unsynced(conn)
+    cr.mark_synced(conn, [r[0] for r in rows])
+    conn.close()
+
+    conn = cr.init_db(db_path)
+    counts = cr.get_unsynced_counts(conn)
+    conn.close()
+
+    assert counts == {}
+
+
 def test_find_open_button_region_is_top_row_right_side():
     """find_open_button must restrict the color search to the top-row band,
     not the whole dialog (avoids matching unrelated green UI elsewhere)."""

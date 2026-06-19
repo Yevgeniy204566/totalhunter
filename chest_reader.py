@@ -164,6 +164,16 @@ def get_unsynced(conn):
     return cur.fetchall()
 
 
+def get_unsynced_counts(conn):
+    """{chest_type: count} for is_synced=0 rows — single source of truth for the
+    displayed unsynced backlog (live ticker, post-stop display, tab-open display)."""
+    cur = conn.execute(
+        'SELECT chest_type, COUNT(*) FROM local_chests WHERE is_synced = 0 '
+        'GROUP BY chest_type'
+    )
+    return {chest_type: n for chest_type, n in cur.fetchall()}
+
+
 def mark_synced(conn, ids):
     conn.executemany('UPDATE local_chests SET is_synced = 1 WHERE id = ?', [(i,) for i in ids])
     conn.commit()
