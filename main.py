@@ -149,6 +149,7 @@ LANGS = {
         "chest_send_btn": "ОТПРАВИТЬ НА СЕРВЕР", "chest_send_success": "Отправлено на сервер",
         "chest_send_failed": "Сервер недоступен. Данные сохранены локально.",
         "chest_total_lb": "Всего открыто:",
+        "chest_speed_lb": "Скорость клика:",
         # --- hunt tab ---
         "nn_title": "Нейросеть", "nav_main_title": "Навигация",
         "nav_extra_title": "Дополнительно", "nav_auto": "Авто",
@@ -220,6 +221,7 @@ LANGS = {
         "chest_send_btn": "SEND TO SERVER", "chest_send_success": "Sent to server",
         "chest_send_failed": "Server unavailable. Data saved locally.",
         "chest_total_lb": "Total opened:",
+        "chest_speed_lb": "Click speed:",
         # --- hunt tab ---
         "nn_title": "Neural Net", "nav_main_title": "Navigation",
         "nav_extra_title": "Advanced", "nav_auto": "Auto",
@@ -288,6 +290,7 @@ LANGS = {
         "chest_send_btn": "AN SERVER SENDEN", "chest_send_success": "An Server gesendet",
         "chest_send_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "chest_total_lb": "Insgesamt geöffnet:",
+        "chest_speed_lb": "Klickgeschwindigkeit:",
         "nn_title": "Neuronales Netz", "nav_main_title": "Navigation",
         "nav_extra_title": "Erweitert", "nav_auto": "Auto", "save_settings": "Einstellungen speichern",
         "nav_step": "Schritt:", "nav_wait": "Geschw. (Sek/Schritt):",
@@ -345,6 +348,7 @@ LANGS = {
         "chest_send_btn": "ENVIAR AL SERVIDOR", "chest_send_success": "Enviado al servidor",
         "chest_send_failed": "Servidor no disponible. Datos guardados localmente.",
         "chest_total_lb": "Total abiertos:",
+        "chest_speed_lb": "Velocidad de clic:",
         "nn_title": "Red Neuronal", "nav_main_title": "Navegación",
         "nav_extra_title": "Avanzado", "nav_auto": "Auto", "save_settings": "Guardar ajustes",
         "nav_step": "Paso:", "nav_wait": "Velocidad (seg/paso):",
@@ -402,6 +406,7 @@ LANGS = {
         "chest_send_btn": "ENVOYER AU SERVEUR", "chest_send_success": "Envoyé au serveur",
         "chest_send_failed": "Serveur indisponible. Données enregistrées localement.",
         "chest_total_lb": "Total ouverts :",
+        "chest_speed_lb": "Vitesse de clic :",
         "nn_title": "Réseau de neurones", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancé", "nav_auto": "Auto", "save_settings": "Sauvegarder les paramètres",
         "nav_step": "Pas :", "nav_wait": "Vitesse (sec/pas) :",
@@ -459,6 +464,7 @@ LANGS = {
         "chest_send_btn": "INVIA AL SERVER", "chest_send_success": "Inviato al server",
         "chest_send_failed": "Server non disponibile. Dati salvati localmente.",
         "chest_total_lb": "Totale aperti:",
+        "chest_speed_lb": "Velocità di clic:",
         "nn_title": "Rete Neurale", "nav_main_title": "Navigazione",
         "nav_extra_title": "Avanzato", "nav_auto": "Auto", "save_settings": "Salva impostazioni",
         "nav_step": "Passo:", "nav_wait": "Velocità (sec/passo):",
@@ -516,6 +522,7 @@ LANGS = {
         "chest_send_btn": "VERZENDEN NAAR SERVER", "chest_send_success": "Verzonden naar server",
         "chest_send_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "chest_total_lb": "Totaal geopend:",
+        "chest_speed_lb": "Kliksnelheid:",
         "nn_title": "Neuraal Netwerk", "nav_main_title": "Navigatie",
         "nav_extra_title": "Geavanceerd", "nav_auto": "Auto", "save_settings": "Instellingen opslaan",
         "nav_step": "Stap:", "nav_wait": "Snelheid (sec/stap):",
@@ -573,6 +580,7 @@ LANGS = {
         "chest_send_btn": "SEND TIL SERVER", "chest_send_success": "Sendt til server",
         "chest_send_failed": "Server utilgjengelig. Data lagret lokalt.",
         "chest_total_lb": "Totalt åpnet:",
+        "chest_speed_lb": "Klikkhastighet:",
         "nn_title": "Nevralt Nettverk", "nav_main_title": "Navigasjon",
         "nav_extra_title": "Avansert", "nav_auto": "Auto", "save_settings": "Lagre innstillinger",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -630,6 +638,7 @@ LANGS = {
         "chest_send_btn": "WYŚLIJ NA SERWER", "chest_send_success": "Wysłano na serwer",
         "chest_send_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "chest_total_lb": "Łącznie otwarto:",
+        "chest_speed_lb": "Szybkość kliknięcia:",
         "nn_title": "Sieć Neuronowa", "nav_main_title": "Nawigacja",
         "nav_extra_title": "Zaawansowane", "nav_auto": "Auto", "save_settings": "Zapisz ustawienia",
         "nav_step": "Krok:", "nav_wait": "Prędkość (sek/krok):",
@@ -687,6 +696,7 @@ LANGS = {
         "chest_send_btn": "ENVIAR AO SERVIDOR", "chest_send_success": "Enviado ao servidor",
         "chest_send_failed": "Servidor indisponível. Dados salvos localmente.",
         "chest_total_lb": "Total aberto:",
+        "chest_speed_lb": "Velocidade de clique:",
         "nn_title": "Rede Neural", "nav_main_title": "Navegação",
         "nav_extra_title": "Avançado", "nav_auto": "Auto", "save_settings": "Salvar configurações",
         "nav_step": "Passo:", "nav_wait": "Velocidade (seg/passo):",
@@ -744,6 +754,7 @@ LANGS = {
         "chest_send_btn": "SKICKA TILL SERVER", "chest_send_success": "Skickat till server",
         "chest_send_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "chest_total_lb": "Totalt öppnade:",
+        "chest_speed_lb": "Klickhastighet:",
         "nn_title": "Neuralt Nätverk", "nav_main_title": "Navigation",
         "nav_extra_title": "Avancerat", "nav_auto": "Auto", "save_settings": "Spara inställningar",
         "nav_step": "Steg:", "nav_wait": "Hastighet (sek/steg):",
@@ -801,6 +812,7 @@ LANGS = {
         "chest_send_btn": "SUNUCUYA GÖNDER", "chest_send_success": "Sunucuya gönderildi",
         "chest_send_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "chest_total_lb": "Toplam açılan:",
+        "chest_speed_lb": "Tıklama hızı:",
         "nn_title": "Sinir Ağı", "nav_main_title": "Navigasyon",
         "nav_extra_title": "Gelişmiş", "nav_auto": "Otomatik", "save_settings": "Ayarları kaydet",
         "nav_step": "Adım:", "nav_wait": "Hız (sn/adım):",
@@ -858,6 +870,7 @@ LANGS = {
         "chest_send_btn": "إرسال إلى الخادم", "chest_send_success": "تم الإرسال إلى الخادم",
         "chest_send_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "chest_total_lb": "الإجمالي المفتوح:",
+        "chest_speed_lb": "سرعة النقر:",
         "nn_title": "الشبكة العصبية", "nav_main_title": "التنقل",
         "nav_extra_title": "متقدم", "nav_auto": "تلقائي", "save_settings": "حفظ الإعدادات",
         "nav_step": "خطوة:", "nav_wait": "السرعة (ث/خطوة):",
@@ -915,6 +928,7 @@ LANGS = {
         "chest_send_btn": "サーバーに送信", "chest_send_success": "サーバーに送信しました",
         "chest_send_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "chest_total_lb": "開封総数:",
+        "chest_speed_lb": "クリック速度:",
         "nn_title": "ニューラルネット", "nav_main_title": "ナビゲーション",
         "nav_extra_title": "詳細設定", "nav_auto": "自動", "save_settings": "設定を保存",
         "nav_step": "ステップ:", "nav_wait": "速度 (秒/ステップ):",
@@ -972,6 +986,7 @@ LANGS = {
         "chest_send_btn": "发送到服务器", "chest_send_success": "已发送到服务器",
         "chest_send_failed": "服务器不可用，数据已保存到本地。",
         "chest_total_lb": "已开启总数:",
+        "chest_speed_lb": "点击速度:",
         "nn_title": "神经网络", "nav_main_title": "导航",
         "nav_extra_title": "高级设置", "nav_auto": "自动", "save_settings": "保存设置",
         "nav_step": "步长:", "nav_wait": "速度 (秒/步):",
@@ -1029,6 +1044,7 @@ LANGS = {
         "chest_send_btn": "發送到伺服器", "chest_send_success": "已發送到伺服器",
         "chest_send_failed": "伺服器無法連線，資料已儲存在本機。",
         "chest_total_lb": "已開啟總數:",
+        "chest_speed_lb": "點擊速度:",
         "nn_title": "神經網路", "nav_main_title": "導航",
         "nav_extra_title": "進階設定", "nav_auto": "自動", "save_settings": "儲存設定",
         "nav_step": "步長:", "nav_wait": "速度 (秒/步):",
@@ -1086,6 +1102,7 @@ LANGS = {
         "chest_send_btn": "서버로 전송", "chest_send_success": "서버로 전송됨",
         "chest_send_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "chest_total_lb": "총 개봉:",
+        "chest_speed_lb": "클릭 속도:",
         "nn_title": "신경망", "nav_main_title": "네비게이션",
         "nav_extra_title": "고급 설정", "nav_auto": "자동", "save_settings": "설정 저장",
         "nav_step": "단계:", "nav_wait": "속도 (초/단계):",
@@ -1143,6 +1160,7 @@ LANGS = {
         "chest_send_btn": "ВІДПРАВИТИ НА СЕРВЕР", "chest_send_success": "Відправлено на сервер",
         "chest_send_failed": "Сервер недоступний. Дані збережено локально.",
         "chest_total_lb": "Всього відкрито:",
+        "chest_speed_lb": "Швидкість кліку:",
         "nn_title": "Нейромережа", "nav_main_title": "Навігація",
         "nav_extra_title": "Додатково", "nav_auto": "Авто", "save_settings": "Зберегти налаштування",
         "nav_step": "Крок:", "nav_wait": "Швидкість (сек/крок):",
@@ -1200,6 +1218,7 @@ LANGS = {
         "chest_send_btn": "KIRIM KE SERVER", "chest_send_success": "Terkirim ke server",
         "chest_send_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "chest_total_lb": "Total dibuka:",
+        "chest_speed_lb": "Kecepatan klik:",
         "nn_title": "Jaringan Saraf", "nav_main_title": "Navigasi",
         "nav_extra_title": "Lanjutan", "nav_auto": "Otomatis", "save_settings": "Simpan pengaturan",
         "nav_step": "Langkah:", "nav_wait": "Kecepatan (dtk/langkah):",
@@ -2423,6 +2442,7 @@ class TotalHunterApp(ctk.CTk):
         _conn = chest_reader.init_db()
         self._update_chest_counts_display(chest_reader.get_unsynced_counts(_conn))
         _conn.close()
+        pause_range = self._chest_pause_range(self.chest_speed_slider.get())
         self.chest_start_btn.configure(text=L["chest_stop_btn"],
                                        fg_color=MD3["error"], hover_color=MD3["error_hover"])
         self.chest_status_label.configure(text=L["chest_status_running"],
@@ -2435,7 +2455,8 @@ class TotalHunterApp(ctk.CTk):
             self.after(0, lambda c=dict(counts): self._update_chest_counts_display(c))
 
         def _worker():
-            result = chest_reader.collect_chests(stop_event.is_set, on_update=_on_update)
+            result = chest_reader.collect_chests(stop_event.is_set, on_update=_on_update,
+                                                  pause_range=pause_range)
             self.after(0, lambda: self._on_chest_collection_done(result))
 
         threading.Thread(target=_worker, daemon=True).start()
@@ -3896,6 +3917,13 @@ class TotalHunterApp(ctk.CTk):
         coord_manager.save(path)
         self._save_gui_config_key("last_calibration_profile", profile_name)
 
+    def _chest_pause_range(self, slider_value: float) -> tuple:
+        """Owner-confirmed formula (verified examples: 0.3 -> (0.2, 0.4),
+        0.1 -> (0.1, 0.3)) — the 0.1 floor on the lower bound is a hard
+        anti-bot minimum, not just a UX default; never remove it."""
+        lower = max(0.1, slider_value - 0.1)
+        return (lower, lower + 0.2)
+
     def setup_chest_tab(self):
         L = LANGS[self.current_lang]
 
@@ -3969,6 +3997,18 @@ class TotalHunterApp(ctk.CTk):
                                               text_color=MD3["value_text"])
         self.chest_total_label.pack(pady=(0, 10))
 
+        # ── Скорость клика — ползунок анти-детект паузы, над СТАРТ ───────
+        saved_pause = self._load_gui_config().get("chest_click_pause", 0.22)
+        self.chest_speed_label = ctk.CTkLabel(
+            self.tab_chest, text=f"{L['chest_speed_lb']} {saved_pause:.2f} {L['sec']}",
+            font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"])
+        self.chest_speed_label.pack(padx=20, pady=(0, 2))
+        self.chest_speed_slider = ctk.CTkSlider(
+            self.tab_chest, from_=0.1, to=1.0, number_of_steps=90,
+            command=self._on_chest_speed_change)
+        self.chest_speed_slider.set(saved_pause)
+        self.chest_speed_slider.pack(padx=20, pady=(0, 8), fill="x")
+
         # ── Старт/Стоп — внизу, всегда после счётчика ────────────────────
         self.chest_start_btn = ctk.CTkButton(
             self.tab_chest, text=L["chest_start_btn"],
@@ -3994,6 +4034,11 @@ class TotalHunterApp(ctk.CTk):
 
     def _on_chest_clan_change(self, event=None):
         self._save_gui_config_key("chest_clan", self.chest_clan_entry.get().strip())
+
+    def _on_chest_speed_change(self, value):
+        L = LANGS[self.current_lang]
+        self._save_gui_config_key("chest_click_pause", round(float(value), 2))
+        self.chest_speed_label.configure(text=f"{L['chest_speed_lb']} {float(value):.2f} {L['sec']}")
 
     def _update_chest_counts_display(self, counts):
         if not hasattr(self, "_chest_count_labels"):
