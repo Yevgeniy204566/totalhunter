@@ -242,6 +242,36 @@ def test_collect_chests_stops_immediately_when_flag_already_set(tmp_path, monkey
     assert result == {"counts": {}, "items": []}
 
 
+def test_collect_chests_counts_are_cumulative_from_db(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Сундук Эпического Монстра", "Старый", "2026-06-19T09:00:00")
+    conn.close()
+
+    calls = {"n": 0}
+
+    def fake_find_open_button(bbox):
+        calls["n"] += 1
+        return (10, 10) if calls["n"] <= 1 else None
+
+    def fake_read_top_row(frame):
+        return ("Сундук Эпического Монстра", "Новый")
+
+    def fake_click_open_button(pos):
+        pass
+
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
+    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
+    monkeypatch.setattr(cr, "click_open_button", fake_click_open_button)
+
+    result = cr.collect_chests(lambda: False, db_path=db_path)
+
+    assert result["counts"] == {"Сундук Эпического Монстра": 2}
+
+
 class _FakeResponse:
     def __init__(self, status_code):
         self.status_code = status_code

@@ -12,7 +12,6 @@ import time
 import random
 import sqlite3
 import datetime
-import collections
 
 import cv2
 import numpy as np
@@ -203,9 +202,10 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
     until the list is empty (no «Открыть» button found) or stop_flag()
     returns True. Every chest is persisted to SQLite as it's read.
     Returns {'counts': {chest_type: n}, 'items': [{'chest_type', 'sender',
-    'timestamp'}, ...]} for this session."""
+    'timestamp'}, ...]} for this session. 'counts' is sourced from the DB
+    (get_unsynced_counts), not a session-local tally, so it always reflects
+    the full unsynced backlog — not just what this call found."""
     conn = init_db(db_path)
-    counts = collections.Counter()
     items = []
     try:
         while not stop_flag():
@@ -226,17 +226,18 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH):
             chest_type, sender = read_top_row(frame)
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
             insert_chest(conn, chest_type, sender, timestamp)
-            counts[chest_type] += 1
             items.append({'chest_type': chest_type, 'sender': sender, 'timestamp': timestamp})
 
             if on_update:
-                on_update(dict(counts))
+                on_update(get_unsynced_counts(conn))
 
             click_open_button(pos)
+
+        final_counts = get_unsynced_counts(conn)
     finally:
         conn.close()
 
-    return {'counts': dict(counts), 'items': items}
+    return {'counts': final_counts, 'items': items}
 
 
 def export_to_api(kingdom, clan, items):
