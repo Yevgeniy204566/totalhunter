@@ -48,7 +48,7 @@ export const api = {
 }
 
 export async function fetchChestSummary(slug) {
-  const res = await fetch(`${BASE}/chests/summary/${slug}`)
+  const res = await fetch(`${BASE}/api/v1/chests/summary/${slug}`)
   if (!res.ok) throw new Error('Not found')
   return res.json()
 }

@@ -8,10 +8,10 @@ export default function ChestSummaryPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchChestSummary(slug).then(setData).catch(() => setError('not found'))
+    fetchChestSummary(slug).then(setData).catch(e => setError(e.message || 'not found'))
   }, [slug])
 
-  if (error) return <div className="page-content">404</div>
+  if (error) return <div className="page-content">{error}</div>
   if (!data) return <div className="page-content text-muted">...</div>
 
   return (
