@@ -29,10 +29,28 @@ def read_tab_rows(service, tab_name: str) -> list[list]:
     return result.get("values", [])
 
 
+def read_collector_settings(service) -> dict:
+    """Returns {"pattern": ..., "language": ...} for SLUG from the "Collector Settings"
+    tab, or {} if no row matches (payload then omits both — see chest_aliases.py:
+    omitting a field leaves the collector's existing value untouched)."""
+    result = service.spreadsheets().values().get(
+        spreadsheetId=SHEET_ID, range="Collector Settings!A2:C",
+    ).execute()
+    for row in result.get("values", []):
+        if len(row) >= 1 and row[0].strip() == SLUG:
+            settings = {}
+            if len(row) >= 2 and row[1].strip():
+                settings["pattern"] = row[1].strip()
+            if len(row) >= 3 and row[2].strip():
+                settings["language"] = row[2].strip()
+            return settings
+    return {}
+
+
 def build_payload(service) -> dict:
     player_rows = read_tab_rows(service, "Player Aliases")
     chest_rows = read_tab_rows(service, "Chest Aliases")
-    return {
+    payload = {
         "collector_slug": SLUG,
         "player_aliases": [
             {"raw_name": row[0].strip(), "canonical_name": row[1].strip()}
@@ -43,6 +61,8 @@ def build_payload(service) -> dict:
             for row in chest_rows if len(row) >= 2 and row[0].strip() and row[1].strip()
         ],
     }
+    payload.update(read_collector_settings(service))
+    return payload
 
 
 def push_to_server(payload: dict, admin_token: str) -> dict:
