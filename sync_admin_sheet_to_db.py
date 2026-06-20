@@ -35,12 +35,12 @@ def build_payload(service) -> dict:
     return {
         "collector_slug": SLUG,
         "player_aliases": [
-            {"raw_name": row[0], "canonical_name": row[1]}
-            for row in player_rows if len(row) >= 2 and row[0] and row[1]
+            {"raw_name": row[0].strip(), "canonical_name": row[1].strip()}
+            for row in player_rows if len(row) >= 2 and row[0].strip() and row[1].strip()
         ],
         "chest_aliases": [
-            {"raw_type": row[0], "canonical_type": row[1]}
-            for row in chest_rows if len(row) >= 2 and row[0] and row[1]
+            {"raw_type": row[0].strip(), "canonical_type": row[1].strip()}
+            for row in chest_rows if len(row) >= 2 and row[0].strip() and row[1].strip()
         ],
     }
 
