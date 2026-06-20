@@ -20,6 +20,7 @@ import ReferralTreePage from './pages/ReferralTreePage.jsx'
 import RoyPage from './pages/RoyPage.jsx'
 import FeaturesPage from './pages/FeaturesPage.jsx'
 import ChestsPage from './pages/ChestsPage.jsx'
+import ChestSummaryPage from './pages/ChestSummaryPage.jsx'
 
 function PrivateRoute({ element }) {
   return isLoggedIn() ? element : <Navigate to="/login" replace />
@@ -37,6 +38,7 @@ export default function App() {
       <Route path="/download"  element={<DownloadPage />} />
       <Route path="/login"     element={<LoginPage />} />
       <Route path="/ref/:code" element={<RefPage />} />
+      <Route path="/chests/:slug" element={<ChestSummaryPage />} />
 
       {/* ── RU public routes (/ru prefix) ───────────────── */}
       <Route path="/ru"              element={<LandingPage />} />

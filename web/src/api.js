@@ -46,3 +46,9 @@ export const api = {
   dashboardChestsClaim: (code)          => request('POST',  '/web/dashboard/chests/claim', { code }),
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
 }
+
+export async function fetchChestSummary(slug) {
+  const res = await fetch(`${BASE}/chests/summary/${slug}`)
+  if (!res.ok) throw new Error('Not found')
+  return res.json()
+}
