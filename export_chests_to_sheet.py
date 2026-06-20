@@ -25,15 +25,14 @@ def fetch_summary(slug: str) -> dict:
 
 def build_rows(summary: dict) -> list[list]:
     header = ["Игрок", "Очки", "Всего сундуков"] + summary["chest_types"]
-    rows = [header]
+    totals_row = ["ВСЕГО", summary["totals"].get("total_points", ""),
+                  summary["totals"].get("grand_total", 0)]
+    totals_row += [summary["totals"].get(t, 0) for t in summary["chest_types"]]
+    rows = [header, totals_row]
     for player in summary["players"]:
         row = [player["name"], player.get("points", ""), player["total"]]
         row += [player["counts"].get(t, 0) for t in summary["chest_types"]]
         rows.append(row)
-    totals_row = ["ВСЕГО", summary["totals"].get("total_points", ""),
-                  summary["totals"].get("grand_total", 0)]
-    totals_row += [summary["totals"].get(t, 0) for t in summary["chest_types"]]
-    rows.append(totals_row)
     return rows
 
 

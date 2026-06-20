@@ -14,8 +14,8 @@ def test_build_rows_with_points_puts_points_and_total_first():
     }
     rows = ets.build_rows(summary)
     assert rows[0] == ["Игрок", "Очки", "Всего сундуков", "Epic Fenrir", "Common Crypt 25"]
-    assert rows[1] == ["Иванов", 15, 3, 2, 1]
-    assert rows[2] == ["ВСЕГО", 15, 3, 2, 1]
+    assert rows[1] == ["ВСЕГО", 15, 3, 2, 1]
+    assert rows[2] == ["Иванов", 15, 3, 2, 1]
 
 
 def test_build_rows_without_points_leaves_points_column_blank():
@@ -27,5 +27,5 @@ def test_build_rows_without_points_leaves_points_column_blank():
     }
     rows = ets.build_rows(summary)
     assert rows[0] == ["Игрок", "Очки", "Всего сундуков", "Anything"]
-    assert rows[1] == ["P1", "", 1, 1]
-    assert rows[2] == ["ВСЕГО", "", 1, 1]
+    assert rows[1] == ["ВСЕГО", "", 1, 1]
+    assert rows[2] == ["P1", "", 1, 1]
