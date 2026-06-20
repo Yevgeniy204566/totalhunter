@@ -9,9 +9,9 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 API_BASE = "https://api.total-hunter.com"
-SLUG = "PUT_COLLECTOR_SLUG_HERE"
-SHEET_ID = "PUT_GOOGLE_SHEET_ID_HERE"
-SHEET_RANGE = "Sheet1"
+SLUG = "m00bqgjcl1xqUHRDvEa8bQ"
+SHEET_ID = "1EjUF5TIj3gAD4kv-XYYoQMKTHqOVn7OySYumAtNukug"
+SHEET_RANGE = "Лист1"  # имя вкладки по умолчанию в RU-локали Google Sheets, не "Sheet1"
 
 SA_PATH = r"C:\BattleBot\service_account.json"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
