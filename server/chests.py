@@ -16,7 +16,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -193,3 +193,52 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
         await db.commit()
 
     return {"ok": True, "count": len(new_items), "collector_slug": collector_slug}
+
+
+def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
+    """rows: iterable of (sender_canonical, chest_type_canonical, count)."""
+    chest_types: list[str] = []
+    seen_types = set()
+    per_player: dict[str, dict[str, int]] = {}
+    totals: dict[str, int] = {}
+    grand_total = 0
+
+    for sender, chest_type, count in rows:
+        if chest_type not in seen_types:
+            seen_types.add(chest_type)
+            chest_types.append(chest_type)
+        per_player.setdefault(sender, {})[chest_type] = count
+        totals[chest_type] = totals.get(chest_type, 0) + count
+        grand_total += count
+
+    players = [
+        {"name": name, "counts": counts, "total": sum(counts.values())}
+        for name, counts in per_player.items()
+    ]
+    players.sort(key=lambda p: p["total"], reverse=True)
+    totals["grand_total"] = grand_total
+
+    return {
+        "kingdom": kingdom,
+        "clan": clan,
+        "chest_types": chest_types,
+        "players": players,
+        "totals": totals,
+    }
+
+
+@router.get("/summary/{slug}")
+async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+
+    rows = (await db.execute(
+        select(Chest.sender_canonical, Chest.chest_type_canonical, func.count())
+        .where(Chest.collector_id == collector.id)
+        .group_by(Chest.sender_canonical, Chest.chest_type_canonical)
+    )).all()
+
+    return _pivot_summary(collector.kingdom, collector.clan, rows)

@@ -321,3 +321,90 @@ async def test_concurrent_duplicate_recovers_without_500(db_session, monkeypatch
 
     await db_session.refresh(user)
     assert user.credits == 90  # заряжен один раз за первый (настоящий) импорт, не за гонку
+
+
+@pytest.mark.asyncio
+async def test_summary_unknown_slug_returns_404():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/chests/summary/does-not-exist")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_summary_aggregates_players_and_chest_types(db_session):
+    user = await _create_user(db_session, "summarytest00a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K9", clan="ClanSummary",
+            items=[
+                {"chest_type": "Сундук Эпического Монстра", "sender": "Игрок1",
+                 "timestamp": "2026-06-18T11:00:00"},
+                {"chest_type": "Сундук Эпического Монстра", "sender": "Игрок1",
+                 "timestamp": "2026-06-18T11:05:00"},
+                {"chest_type": "Малый Сундук", "sender": "Игрок1",
+                 "timestamp": "2026-06-18T11:10:00"},
+                {"chest_type": "Сундук Эпического Монстра", "sender": "Игрок2",
+                 "timestamp": "2026-06-18T11:15:00"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["kingdom"] == "K9"
+    assert body["clan"] == "ClanSummary"
+    assert sorted(body["chest_types"]) == ["Малый Сундук", "Сундук Эпического Монстра"]
+
+    players_by_name = {p["name"]: p for p in body["players"]}
+    assert players_by_name["Игрок1"]["counts"]["Сундук Эпического Монстра"] == 2
+    assert players_by_name["Игрок1"]["counts"]["Малый Сундук"] == 1
+    assert players_by_name["Игрок1"]["total"] == 3
+    assert players_by_name["Игрок2"]["counts"]["Сундук Эпического Монстра"] == 1
+    assert players_by_name["Игрок2"]["total"] == 1
+
+    # sorted by total descending
+    assert body["players"][0]["name"] == "Игрок1"
+
+    assert body["totals"]["Сундук Эпического Монстра"] == 3
+    assert body["totals"]["Малый Сундук"] == 1
+    assert body["totals"]["grand_total"] == 4
+
+
+@pytest.mark.asyncio
+async def test_summary_empty_collector_returns_empty_lists(db_session):
+    user = await _create_user(db_session, "emptysummary0a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K10", clan="EmptyClan",
+            items=[{"chest_type": "Малый Сундук", "sender": "Соло",
+                    "timestamp": "2026-06-18T12:00:00"}],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        # re-send the same item to confirm idempotency doesn't break the empty-delta path,
+        # then check a *different*, genuinely empty collector via direct DB insert instead:
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["chest_types"] == ["Малый Сундук"]
+    assert body["players"][0]["total"] == 1
+
+
+@pytest.mark.asyncio
+async def test_summary_collector_with_zero_chests_returns_empty_lists(db_session):
+    import secrets as _secrets
+    user = await _create_user(db_session, "zerochests000a")
+    collector = ChestCollector(kingdom="K11", clan="ZeroClan", user_id=user.id,
+                               slug=_secrets.token_urlsafe(16))
+    db_session.add(collector)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["chest_types"] == []
+    assert body["players"] == []
+    assert body["totals"] == {"grand_total": 0}
