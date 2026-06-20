@@ -23,7 +23,7 @@ from models import (
 )
 from web_routes import get_web_user
 
-router = APIRouter(prefix="/api/v1/web/dashboard/chests", tags=["chest-dashboard"])
+router = APIRouter(prefix="/web/dashboard/chests", tags=["chest-dashboard"])
 
 
 async def _load_known_catalog_ids(db: AsyncSession) -> set:

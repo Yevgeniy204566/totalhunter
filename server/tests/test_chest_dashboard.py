@@ -38,7 +38,7 @@ async def _create_collector(db, user_id, slug=None, language=None):
 @pytest.mark.asyncio
 async def test_get_chests_no_token_returns_401():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.get("/api/v1/web/dashboard/chests")
+        resp = await client.get("/web/dashboard/chests")
     assert resp.status_code == 401
 
 
@@ -51,7 +51,7 @@ async def test_get_chests_returns_only_own_collectors(db_session):
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.get("/api/v1/web/dashboard/chests",
+        resp = await client.get("/web/dashboard/chests",
                                 headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
     slugs = [c["slug"] for c in resp.json()["collectors"]]
@@ -80,7 +80,7 @@ async def test_get_chests_combines_alias_config_and_unmapped_raw(db_session):
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.get("/api/v1/web/dashboard/chests",
+        resp = await client.get("/web/dashboard/chests",
                                 headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
     collector_data = resp.json()["collectors"][0]
@@ -101,7 +101,7 @@ async def test_post_rows_rejects_unknown_catalog_id(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
-            "/api/v1/web/dashboard/chests/rows",
+            "/web/dashboard/chests/rows",
             json={"collector_slug": "bad-catalog-slug",
                  "rows": [{"raw_type": "X", "catalog_id": "Not A Real Chest",
                            "custom_name": None, "points": 5, "is_in_pattern": True}]},
@@ -119,7 +119,7 @@ async def test_post_rows_rejects_other_users_collector(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
-            "/api/v1/web/dashboard/chests/rows",
+            "/web/dashboard/chests/rows",
             json={"collector_slug": "someone-elses-slug", "rows": []},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -135,7 +135,7 @@ async def test_post_rows_upserts_alias_and_configuration(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
-            "/api/v1/web/dashboard/chests/rows",
+            "/web/dashboard/chests/rows",
             json={"collector_slug": "upsert-slug",
                  "rows": [{"raw_type": "RawAB", "catalog_id": "Epic Arachne",
                            "custom_name": "Толстяк", "points": 99, "is_in_pattern": True}]},
@@ -165,7 +165,7 @@ async def test_post_rows_full_replace_removes_omitted_rows(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
-            "/api/v1/web/dashboard/chests/rows",
+            "/web/dashboard/chests/rows",
             json={"collector_slug": "full-replace-slug",
                  "rows": [{"raw_type": "RawA", "catalog_id": "Epic Arachne",
                            "custom_name": "Толстяк", "points": 40, "is_in_pattern": True},
@@ -186,7 +186,7 @@ async def test_post_rows_full_replace_removes_omitted_rows(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
-            "/api/v1/web/dashboard/chests/rows",
+            "/web/dashboard/chests/rows",
             json={"collector_slug": "full-replace-slug",
                  "rows": [{"raw_type": "RawA", "catalog_id": "Epic Arachne",
                            "custom_name": "Толстяк", "points": 40, "is_in_pattern": True}]},
@@ -227,7 +227,7 @@ async def test_management_token_then_claim_transfers_ownership(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         gen_resp = await client.post(
-            "/api/v1/web/dashboard/chests/management-token",
+            "/web/dashboard/chests/management-token",
             json={"collector_slug": "transferable-slug"},
             headers={"Authorization": f"Bearer {owner_token}"},
         )
@@ -235,7 +235,7 @@ async def test_management_token_then_claim_transfers_ownership(db_session):
         code = gen_resp.json()["code"]
 
         claim_resp = await client.post(
-            "/api/v1/web/dashboard/chests/claim",
+            "/web/dashboard/chests/claim",
             json={"code": code},
             headers={"Authorization": f"Bearer {claimant_token}"},
         )
@@ -251,7 +251,7 @@ async def test_claim_unknown_code_returns_404(db_session):
     _, token = await _create_user_with_token(db_session)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
-            "/api/v1/web/dashboard/chests/claim",
+            "/web/dashboard/chests/claim",
             json={"code": "does-not-exist"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -266,7 +266,7 @@ async def test_patch_language_updates_own_collector(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.patch(
-            "/api/v1/web/dashboard/chests/lang-slug/language",
+            "/web/dashboard/chests/lang-slug/language",
             json={"language": "en"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -284,7 +284,7 @@ async def test_patch_language_rejects_other_users_collector(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.patch(
-            "/api/v1/web/dashboard/chests/protected-slug/language",
+            "/web/dashboard/chests/protected-slug/language",
             json={"language": "en"},
             headers={"Authorization": f"Bearer {intruder_token}"},
         )

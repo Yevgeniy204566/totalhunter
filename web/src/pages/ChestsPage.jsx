@@ -9,6 +9,7 @@ export default function ChestsPage() {
   const [collectors, setCollectors] = useState(null)
   const [rowsByCollector, setRowsByCollector] = useState({})
   const [msg, setMsg] = useState('')
+  const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
@@ -19,11 +20,15 @@ export default function ChestsPage() {
   })
 
   async function refresh() {
-    const data = await api.dashboardChests()
-    setCollectors(data.collectors)
-    const next = {}
-    for (const c of data.collectors) next[c.slug] = c.rows
-    setRowsByCollector(next)
+    try {
+      const data = await api.dashboardChests()
+      setCollectors(data.collectors)
+      const next = {}
+      for (const c of data.collectors) next[c.slug] = c.rows
+      setRowsByCollector(next)
+    } catch (e) {
+      setLoadError(e.message || 'failed to load')
+    }
   }
   useEffect(() => { refresh() }, [])
 
@@ -67,6 +72,7 @@ export default function ChestsPage() {
     await refresh()
   }
 
+  if (loadError) return <div className="page-content text-muted">{loadError}</div>
   if (!collectors) return <div className="page-content text-muted">...</div>
 
   return (
