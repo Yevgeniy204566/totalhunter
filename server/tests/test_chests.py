@@ -491,3 +491,147 @@ async def test_summary_collapses_many_raw_senders_aliased_to_same_canonical(db_s
         f"expected exactly one collapsed 'Арахна' entry, got {arahna_entries}"
     )
     assert arahna_entries[0]["total"] == 3
+
+
+@pytest.mark.asyncio
+async def test_summary_no_pattern_has_no_points_key(db_session):
+    user = await _create_user(db_session, "nopattern0000a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K20", clan="NoPatternClan",
+            items=[{"chest_type": "Anything", "sender": "P1",
+                    "timestamp": "2026-06-18T14:00:00"}],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "points" not in body["players"][0]
+    assert "total_points" not in body["totals"]
+
+
+@pytest.mark.asyncio
+async def test_summary_with_pattern_excludes_offcatalog_chests_entirely(db_session):
+    from models import ChestTypeCatalog
+
+    user = await _create_user(db_session, "withpattern00a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K21", clan="PatternClan",
+            items=[
+                {"chest_type": "Epic Fenrir", "sender": "P1",
+                 "timestamp": "2026-06-18T14:00:00"},
+                {"chest_type": "Epic Fenrir", "sender": "P1",
+                 "timestamp": "2026-06-18T14:05:00"},
+                {"chest_type": "Off Catalog Chest", "sender": "P1",
+                 "timestamp": "2026-06-18T14:10:00"},
+            ],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        collector = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        collector.pattern = "T9"
+        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
+                                        points=5))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["chest_types"] == ["Epic Fenrir"]
+    assert body["players"][0]["name"] == "P1"
+    assert body["players"][0]["total"] == 2
+    assert body["players"][0]["points"] == 10
+    assert body["totals"]["grand_total"] == 2
+    assert body["totals"]["total_points"] == 10
+
+
+@pytest.mark.asyncio
+async def test_summary_player_with_only_offcatalog_chests_is_excluded(db_session):
+    from models import ChestTypeCatalog
+
+    user = await _create_user(db_session, "onlyoffcat000a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K22", clan="OffCatClan",
+            items=[
+                {"chest_type": "Epic Fenrir", "sender": "Scored",
+                 "timestamp": "2026-06-18T15:00:00"},
+                {"chest_type": "Off Catalog Chest", "sender": "Excluded",
+                 "timestamp": "2026-06-18T15:05:00"},
+            ],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        collector = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        collector.pattern = "T9"
+        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
+                                        points=5))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    body = resp.json()
+    names = {p["name"] for p in body["players"]}
+    assert names == {"Scored"}
+
+
+@pytest.mark.asyncio
+async def test_summary_uses_localization_when_present(db_session):
+    from models import ChestLocalization, ChestTypeCatalog
+
+    user = await _create_user(db_session, "withlocaliz00a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K23", clan="LocalizedClan",
+            items=[{"chest_type": "Epic Fenrir", "sender": "P1",
+                    "timestamp": "2026-06-18T16:00:00"}],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        collector = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        collector.pattern = "T9"
+        collector.language = "ru"
+        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
+                                        points=5))
+        db_session.add(ChestLocalization(canonical_type="Epic Fenrir", language="ru",
+                                         display_text="Эпический Фенрир"))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    body = resp.json()
+    assert body["chest_types"] == ["Эпический Фенрир"]
+    assert "Эпический Фенрир" in body["players"][0]["counts"]
+
+
+@pytest.mark.asyncio
+async def test_summary_falls_back_to_english_when_no_localization(db_session):
+    from models import ChestTypeCatalog
+
+    user = await _create_user(db_session, "nolocaliz0000a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K24", clan="NoLocalizationClan",
+            items=[{"chest_type": "Epic Fenrir", "sender": "P1",
+                    "timestamp": "2026-06-18T17:00:00"}],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        collector = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        collector.pattern = "T9"
+        collector.language = "ru"
+        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
+                                        points=5))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    body = resp.json()
+    assert body["chest_types"] == ["Epic Fenrir"]
