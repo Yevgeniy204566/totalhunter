@@ -156,6 +156,69 @@ async def test_post_rows_upserts_alias_and_configuration(db_session):
 
 
 @pytest.mark.asyncio
+async def test_post_rows_full_replace_removes_omitted_rows(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="full-replace-slug")
+    db_session.add(ChestTypeCatalog(canonical_type="Epic Arachne", pattern="T9", points=40))
+    db_session.add(ChestTypeCatalog(canonical_type="Common Crypt 5", pattern="T5", points=5))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/web/dashboard/chests/rows",
+            json={"collector_slug": "full-replace-slug",
+                 "rows": [{"raw_type": "RawA", "catalog_id": "Epic Arachne",
+                           "custom_name": "Толстяк", "points": 40, "is_in_pattern": True},
+                          {"raw_type": "RawB", "catalog_id": "Common Crypt 5",
+                           "custom_name": None, "points": 5, "is_in_pattern": False}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    aliases = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalars().all()
+    assert {a.catalog_id for a in aliases} == {"Epic Arachne", "Common Crypt 5"}
+    configs = (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
+    )).scalars().all()
+    assert {c.catalog_id for c in configs} == {"Epic Arachne", "Common Crypt 5"}
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/web/dashboard/chests/rows",
+            json={"collector_slug": "full-replace-slug",
+                 "rows": [{"raw_type": "RawA", "catalog_id": "Epic Arachne",
+                           "custom_name": "Толстяк", "points": 40, "is_in_pattern": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    alias_b = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id,
+                                     ChestTypeAlias.catalog_id == "Common Crypt 5")
+    )).scalar_one_or_none()
+    assert alias_b is None
+    config_b = (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id,
+                                          ChestConfiguration.catalog_id == "Common Crypt 5")
+    )).scalar_one_or_none()
+    assert config_b is None
+
+    alias_a = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id,
+                                     ChestTypeAlias.catalog_id == "Epic Arachne")
+    )).scalar_one()
+    assert alias_a.raw_type == "RawA"
+    config_a = (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id,
+                                          ChestConfiguration.catalog_id == "Epic Arachne")
+    )).scalar_one()
+    assert config_a.points == 40 and config_a.is_in_pattern is True
+    assert config_a.custom_name == "Толстяк"
+
+
+@pytest.mark.asyncio
 async def test_management_token_then_claim_transfers_ownership(db_session):
     owner, owner_token = await _create_user_with_token(db_session, email="a@example.com")
     claimant, claimant_token = await _create_user_with_token(db_session, email="b@example.com")

@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -143,35 +143,19 @@ async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web
             raise HTTPException(status_code=400,
                                 detail=f"Unknown catalog_id: {row.catalog_id!r}")
 
+    await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id))
+    await db.execute(delete(ChestConfiguration).where(
+        ChestConfiguration.collector_id == collector.id))
+
     for row in payload.rows:
         if row.raw_type is not None and row.catalog_id is not None:
-            existing_alias = (await db.execute(
-                select(ChestTypeAlias).where(
-                    ChestTypeAlias.collector_id == collector.id,
-                    ChestTypeAlias.raw_type == row.raw_type,
-                )
-            )).scalar_one_or_none()
-            if existing_alias:
-                existing_alias.catalog_id = row.catalog_id
-            else:
-                db.add(ChestTypeAlias(collector_id=collector.id, raw_type=row.raw_type,
-                                      catalog_id=row.catalog_id))
+            db.add(ChestTypeAlias(collector_id=collector.id, raw_type=row.raw_type,
+                                  catalog_id=row.catalog_id))
 
         if row.catalog_id is not None:
-            existing_config = (await db.execute(
-                select(ChestConfiguration).where(
-                    ChestConfiguration.collector_id == collector.id,
-                    ChestConfiguration.catalog_id == row.catalog_id,
-                )
-            )).scalar_one_or_none()
-            if existing_config:
-                existing_config.custom_name = row.custom_name
-                existing_config.points = row.points
-                existing_config.is_in_pattern = row.is_in_pattern
-            else:
-                db.add(ChestConfiguration(collector_id=collector.id, catalog_id=row.catalog_id,
-                                          custom_name=row.custom_name, points=row.points,
-                                          is_in_pattern=row.is_in_pattern))
+            db.add(ChestConfiguration(collector_id=collector.id, catalog_id=row.catalog_id,
+                                      custom_name=row.custom_name, points=row.points,
+                                      is_in_pattern=row.is_in_pattern))
 
     await db.commit()
     return {"ok": True}
