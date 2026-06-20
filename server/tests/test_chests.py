@@ -444,3 +444,50 @@ async def test_summary_applies_alias_added_after_import_without_reimport(db_sess
     assert body["chest_types"] == ["Эпический отряд"]
     assert body["players"][0]["name"] == "MACHETE"
     assert body["players"][0]["counts"]["Эпический отряд"] == 2
+
+
+@pytest.mark.asyncio
+async def test_summary_collapses_many_raw_senders_aliased_to_same_canonical(db_session):
+    """Two different raw sender names aliased to one canonical name must
+    collapse into a single player row in the summary, with combined total —
+    this is the entire reason GROUP BY runs on the coalesced expression
+    rather than on the raw sender column."""
+    from models import PlayerAlias
+
+    user = await _create_user(db_session, "manytoone0000a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K13", clan="ManyToOneClan",
+            items=[
+                {"chest_type": "Сундук Эпического Монстра", "sender": "Araiina",
+                 "timestamp": "2026-06-18T14:00:00"},
+                {"chest_type": "Сундук Эпического Монстра", "sender": "Araiina",
+                 "timestamp": "2026-06-18T14:05:00"},
+                {"chest_type": "Сундук Эпического Монстра", "sender": "Arahna_OCR_typo",
+                 "timestamp": "2026-06-18T14:10:00"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+
+        # Two different raw sender names, both aliased to the same canonical name.
+        db_session.add(PlayerAlias(collector_id=collector_id, raw_name="Araiina",
+                                    canonical_name="Арахна"))
+        db_session.add(PlayerAlias(collector_id=collector_id, raw_name="Arahna_OCR_typo",
+                                    canonical_name="Арахна"))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    arahna_entries = [p for p in body["players"] if p["name"] == "Арахна"]
+    assert len(arahna_entries) == 1, (
+        f"expected exactly one collapsed 'Арахна' entry, got {arahna_entries}"
+    )
+    assert arahna_entries[0]["total"] == 3
