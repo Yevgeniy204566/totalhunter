@@ -19,6 +19,7 @@ export const DASHBOARD = {
     transactions: 'Transactions',
     feedback:     'Feedback',
     roy:          'SWARM',
+    chests:       'Chests',
   },
 
   devices: {
@@ -36,6 +37,24 @@ export const DASHBOARD = {
     codeError:   'Code must be 6 digits',
     linkBtn:     'Link',
     placeholder: '000000',
+  },
+
+  chests: {
+    title: 'Chests',
+    rawCol: 'Raw OCR',
+    catalogCol: 'Official Chest',
+    customNameCol: 'Custom Name',
+    pointsCol: 'Points',
+    inPatternCol: 'In Pattern',
+    addRow: 'Add chest manually',
+    save: 'Save',
+    saved: 'Saved',
+    publicLink: 'Clan public page',
+    generateToken: 'Generate transfer code',
+    claimPlaceholder: 'Transfer code',
+    claimBtn: 'Claim management',
+    noCatalog: '— select —',
+    language: 'Clan language',
   },
 
   feedback: {

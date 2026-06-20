@@ -40,4 +40,9 @@ export const api = {
   paymentCreate:    (pkg)      => request('POST', '/web/payment/create', { package: pkg }),
   earnStatus:       ()         => request('GET',  '/web/earn/status'),
   earnReward:       ()         => request('POST', '/web/earn/reward'),
+  dashboardChests:      ()              => request('GET',   '/web/dashboard/chests'),
+  dashboardChestsSave:  (slug, rows)    => request('POST',  '/web/dashboard/chests/rows', { collector_slug: slug, rows }),
+  dashboardChestsToken: (slug)          => request('POST',  '/web/dashboard/chests/management-token', { collector_slug: slug }),
+  dashboardChestsClaim: (code)          => request('POST',  '/web/dashboard/chests/claim', { code }),
+  dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
 }

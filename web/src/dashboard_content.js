@@ -19,6 +19,7 @@ export const DASHBOARD = {
     transactions: 'Транзакции',
     feedback:     'Идеи',
     roy:          'РОЙ',
+    chests:       'Сундуки',
   },
 
   devices: {
@@ -36,6 +37,24 @@ export const DASHBOARD = {
     codeError:   'Код должен быть 6 цифр',
     linkBtn:     'Привязать',
     placeholder: '000000',
+  },
+
+  chests: {
+    title: 'Сундуки',
+    rawCol: 'Сырой OCR',
+    catalogCol: 'Официальный сундук',
+    customNameCol: 'Своё название',
+    pointsCol: 'Очки',
+    inPatternCol: 'В паттерне',
+    addRow: 'Добавить сундук вручную',
+    save: 'Сохранить',
+    saved: 'Сохранено',
+    publicLink: 'Публичная страница клана',
+    generateToken: 'Сгенерировать код передачи',
+    claimPlaceholder: 'Код передачи',
+    claimBtn: 'Принять управление',
+    noCatalog: '— выбрать —',
+    language: 'Язык клана',
   },
 
   feedback: {
