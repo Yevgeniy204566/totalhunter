@@ -66,6 +66,7 @@ async def test_import_aliases_full_replace(db_session):
                                canonical_name="OldCanon"))
     db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="OldRawType",
                                   canonical_type="OldCanonType"))
+    db_session.add(ChestTypeCatalog(canonical_type="Эпический отряд", pattern="T9", points=1))
     await db_session.commit()
     slug = collector.slug
 
@@ -144,6 +145,7 @@ async def test_import_aliases_sets_pattern_and_language(db_session):
 @pytest.mark.asyncio
 async def test_import_aliases_chest_alias_defaults_to_enabled(db_session):
     collector = await _create_collector(db_session)
+    db_session.add(ChestTypeCatalog(canonical_type="Epic X", pattern="T9", points=1))
     await db_session.commit()
     slug = collector.slug
 
@@ -165,6 +167,7 @@ async def test_import_aliases_chest_alias_defaults_to_enabled(db_session):
 @pytest.mark.asyncio
 async def test_import_aliases_chest_alias_can_be_disabled(db_session):
     collector = await _create_collector(db_session)
+    db_session.add(ChestTypeCatalog(canonical_type="Y", pattern="T9", points=1))
     await db_session.commit()
     slug = collector.slug
 
