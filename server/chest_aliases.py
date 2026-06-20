@@ -9,7 +9,7 @@ Each sync is a full replace for the named collector: existing rows are deleted, 
 the payload's rows are inserted. The Sheet is the source of truth.
 """
 import os
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -45,6 +45,8 @@ class AliasImportPayload(BaseModel):
     collector_slug: str
     player_aliases: List[PlayerAliasIn] = []
     chest_aliases: List[ChestAliasIn] = []
+    pattern: Optional[str] = None
+    language: Optional[str] = None
 
 
 @router.post("/aliases/import", dependencies=[Depends(_require_auth)])
@@ -55,6 +57,10 @@ async def import_aliases(payload: AliasImportPayload, db: AsyncSession = Depends
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
     collector_id = collector.id
+    if payload.pattern is not None:
+        collector.pattern = payload.pattern
+    if payload.language is not None:
+        collector.language = payload.language
 
     await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector_id))
     await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector_id))

@@ -119,3 +119,44 @@ async def test_import_aliases_empty_lists_clear_existing(db_session):
         select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
     )).scalars().all()
     assert remaining == []
+
+
+@pytest.mark.asyncio
+async def test_import_aliases_sets_pattern_and_language(db_session):
+    collector = await _create_collector(db_session)
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [], "chest_aliases": [],
+                  "pattern": "T9", "language": "ru"},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 200
+
+    await db_session.refresh(collector)
+    assert collector.pattern == "T9"
+    assert collector.language == "ru"
+
+
+@pytest.mark.asyncio
+async def test_import_aliases_omitted_pattern_leaves_existing_value(db_session):
+    collector = await _create_collector(db_session)
+    collector.pattern = "T9"
+    collector.language = "ru"
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [], "chest_aliases": []},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 200
+
+    await db_session.refresh(collector)
+    assert collector.pattern == "T9"
+    assert collector.language == "ru"
