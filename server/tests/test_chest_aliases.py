@@ -255,7 +255,7 @@ async def test_import_aliases_accepts_known_english_literal_without_language(db_
 
 
 @pytest.mark.asyncio
-async def test_import_aliases_unresolved_text_returns_400_naming_rows(db_session):
+async def test_import_aliases_unresolved_text_falls_back_to_submitted_text(db_session):
     collector = await _create_collector(db_session)
     collector.language = "ru"
     await db_session.commit()
@@ -271,19 +271,20 @@ async def test_import_aliases_unresolved_text_returns_400_naming_rows(db_session
                   ]},
             headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
         )
-    assert resp.status_code == 400
-    detail = resp.json()["detail"]
-    assert "Exon" in detail and "Ёкай" in detail
-    assert "Zzz" in detail and "Незнакомый сундук" in detail
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True, "player_aliases": 0, "chest_aliases": 2}
 
     rows = (await db_session.execute(
         select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+        .order_by(ChestTypeAlias.raw_type)
     )).scalars().all()
-    assert rows == []
+    assert [(r.raw_type, r.canonical_type) for r in rows] == [
+        ("Exon", "Ёкай"), ("Zzz", "Незнакомый сундук"),
+    ]
 
 
 @pytest.mark.asyncio
-async def test_import_aliases_unresolved_text_no_collector_language_returns_400(db_session):
+async def test_import_aliases_unresolved_text_falls_back_without_collector_language(db_session):
     collector = await _create_collector(db_session)
     await db_session.commit()
     slug = collector.slug
@@ -295,6 +296,9 @@ async def test_import_aliases_unresolved_text_no_collector_language_returns_400(
                   "chest_aliases": [{"raw_type": "Exon", "canonical_type": "Ёкай"}]},
             headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
         )
-    assert resp.status_code == 400
-    detail = resp.json()["detail"]
-    assert "не задан язык" in detail
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalar_one()
+    assert row.canonical_type == "Ёкай"

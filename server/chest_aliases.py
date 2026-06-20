@@ -10,9 +10,10 @@ the payload's rows are inserted. The Sheet is the source of truth.
 
 chest_aliases entries are submitted in the collector's own language (e.g. raw OCR text
 fixed to clean Russian), not English. _resolve_chest_aliases translates each row's
-canonical_type to the global English ID before it's stored, so chest_type_aliases.
-canonical_type always stays an English ID — nothing downstream (catalog join, summary)
-needs to know about this translation step.
+canonical_type to the global English ID when one is already known (literal match or via
+Localizations); otherwise it stores the submitted text as-is rather than blocking the
+sync — an unmatched chest type just isn't normalized across clans/languages until someone
+adds its translation to Localizations.
 """
 import os
 from typing import List, Optional
@@ -74,11 +75,15 @@ async def _load_localization_map(db: AsyncSession, language: str) -> dict:
     return {display_text: canonical_type for display_text, canonical_type in rows}
 
 
-def _resolve_one(submitted: str, known_ids: set, localization_map: dict) -> Optional[str]:
+def _resolve_one(submitted: str, known_ids: set, localization_map: dict) -> str:
+    """Resolves submitted text to the global English ID when one is known; otherwise
+    falls back to the submitted text itself so an unmatched chest type never blocks
+    the sync — it just isn't normalized across clans/languages until someone adds the
+    translation to Localizations."""
     submitted = submitted.strip()
     if submitted in known_ids:
         return submitted
-    return localization_map.get(submitted)
+    return localization_map.get(submitted, submitted)
 
 
 async def _resolve_chest_aliases(items: List[ChestAliasIn], language: Optional[str],
@@ -86,27 +91,10 @@ async def _resolve_chest_aliases(items: List[ChestAliasIn], language: Optional[s
     known_ids = await _load_known_english_ids(db)
     localization_map = await _load_localization_map(db, language) if language else {}
 
-    resolved = []
-    errors = []
-    for item in items:
-        canonical = _resolve_one(item.canonical_type, known_ids, localization_map)
-        if canonical is None:
-            errors.append((item.raw_type, item.canonical_type))
-        else:
-            resolved.append(ChestAliasIn(raw_type=item.raw_type, canonical_type=canonical,
-                                         enabled=item.enabled))
-
-    if errors:
-        rows = "; ".join(f"raw={r!r}, clean={c!r}" for r, c in errors)
-        detail = (f"Chest Aliases: не найден перевод для следующих строк — {rows}. "
-                  "Добавьте перевод в Localizations (язык клана) или впишите английское "
-                  "название напрямую.")
-        if not language:
-            detail += (" У коллектора не задан язык (Collector Settings), поэтому "
-                       "обратный перевод недоступен.")
-        raise HTTPException(status_code=400, detail=detail)
-
-    return resolved
+    return [ChestAliasIn(raw_type=item.raw_type,
+                         canonical_type=_resolve_one(item.canonical_type, known_ids, localization_map),
+                         enabled=item.enabled)
+            for item in items]
 
 
 @router.post("/aliases/import", dependencies=[Depends(_require_auth)])
