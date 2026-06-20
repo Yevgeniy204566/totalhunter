@@ -384,8 +384,6 @@ async def test_summary_empty_collector_returns_empty_lists(db_session):
                     "timestamp": "2026-06-18T12:00:00"}],
         ))
         slug = import_resp.json()["collector_slug"]
-        # re-send the same item to confirm idempotency doesn't break the empty-delta path,
-        # then check a *different*, genuinely empty collector via direct DB insert instead:
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
     assert resp.status_code == 200
     body = resp.json()

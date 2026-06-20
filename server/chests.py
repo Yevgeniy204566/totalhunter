@@ -215,7 +215,7 @@ def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
         {"name": name, "counts": counts, "total": sum(counts.values())}
         for name, counts in per_player.items()
     ]
-    players.sort(key=lambda p: p["total"], reverse=True)
+    players.sort(key=lambda p: (-p["total"], p["name"]))
     totals["grand_total"] = grand_total
 
     return {
