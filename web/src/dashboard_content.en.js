@@ -53,6 +53,7 @@ export const DASHBOARD = {
     generateToken: 'Generate transfer code',
     claimPlaceholder: 'Transfer code',
     claimBtn: 'Claim management',
+    noCollectors: "You don't have a clan yet. The bot creates a collector automatically on your first chest submission, or ask for a transfer code from whoever already set one up.",
     noCatalog: '— select —',
     language: 'Clan language',
   },

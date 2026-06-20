@@ -83,6 +83,8 @@ export default function ChestsPage() {
         <button className="btn-secondary" onClick={claim}>{cx.claimBtn}</button>
       </div>
 
+      {collectors.length === 0 && <div className="text-muted" style={{ marginTop: 12 }}>{cx.noCollectors}</div>}
+
       {collectors.map(collector => (
         <div className="card" key={collector.slug} style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
