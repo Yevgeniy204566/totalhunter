@@ -7,6 +7,12 @@ not something the bot calls on a user's behalf.
 
 Each sync is a full replace for the named collector: existing rows are deleted, then
 the payload's rows are inserted. The Sheet is the source of truth.
+
+chest_aliases entries are submitted in the collector's own language (e.g. raw OCR text
+fixed to clean Russian), not English. _resolve_chest_aliases translates each row's
+canonical_type to the global English ID before it's stored, so chest_type_aliases.
+canonical_type always stays an English ID — nothing downstream (catalog join, summary)
+needs to know about this translation step.
 """
 import os
 from typing import List, Optional
@@ -18,7 +24,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import ChestCollector, ChestTypeAlias, PlayerAlias
+from models import ChestCollector, ChestLocalization, ChestTypeAlias, ChestTypeCatalog, PlayerAlias
 
 router = APIRouter(prefix="/api/v1/chests", tags=["chests"])
 
@@ -50,6 +56,59 @@ class AliasImportPayload(BaseModel):
     language: Optional[str] = None
 
 
+async def _load_known_english_ids(db: AsyncSession) -> set:
+    """Every canonical_type already known to the system, from either global table —
+    used so admins who already type the literal English ID keep working unchanged."""
+    catalog_ids = (await db.execute(select(ChestTypeCatalog.canonical_type))).scalars().all()
+    localization_ids = (await db.execute(select(ChestLocalization.canonical_type))).scalars().all()
+    return set(catalog_ids) | set(localization_ids)
+
+
+async def _load_localization_map(db: AsyncSession, language: str) -> dict:
+    """display_text -> canonical_type for one language, loaded once per import instead
+    of one query per row."""
+    rows = (await db.execute(
+        select(ChestLocalization.display_text, ChestLocalization.canonical_type)
+        .where(ChestLocalization.language == language)
+    )).all()
+    return {display_text: canonical_type for display_text, canonical_type in rows}
+
+
+def _resolve_one(submitted: str, known_ids: set, localization_map: dict) -> Optional[str]:
+    submitted = submitted.strip()
+    if submitted in known_ids:
+        return submitted
+    return localization_map.get(submitted)
+
+
+async def _resolve_chest_aliases(items: List[ChestAliasIn], language: Optional[str],
+                                  db: AsyncSession) -> List[ChestAliasIn]:
+    known_ids = await _load_known_english_ids(db)
+    localization_map = await _load_localization_map(db, language) if language else {}
+
+    resolved = []
+    errors = []
+    for item in items:
+        canonical = _resolve_one(item.canonical_type, known_ids, localization_map)
+        if canonical is None:
+            errors.append((item.raw_type, item.canonical_type))
+        else:
+            resolved.append(ChestAliasIn(raw_type=item.raw_type, canonical_type=canonical,
+                                         enabled=item.enabled))
+
+    if errors:
+        rows = "; ".join(f"raw={r!r}, clean={c!r}" for r, c in errors)
+        detail = (f"Chest Aliases: не найден перевод для следующих строк — {rows}. "
+                  "Добавьте перевод в Localizations (язык клана) или впишите английское "
+                  "название напрямую.")
+        if not language:
+            detail += (" У коллектора не задан язык (Collector Settings), поэтому "
+                       "обратный перевод недоступен.")
+        raise HTTPException(status_code=400, detail=detail)
+
+    return resolved
+
+
 @router.post("/aliases/import", dependencies=[Depends(_require_auth)])
 async def import_aliases(payload: AliasImportPayload, db: AsyncSession = Depends(get_db)):
     collector = (await db.execute(
@@ -63,13 +122,16 @@ async def import_aliases(payload: AliasImportPayload, db: AsyncSession = Depends
     if payload.language is not None:
         collector.language = payload.language
 
+    resolved_chest_aliases = await _resolve_chest_aliases(
+        payload.chest_aliases, collector.language, db)
+
     await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector_id))
     await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector_id))
 
     for item in payload.player_aliases:
         db.add(PlayerAlias(collector_id=collector_id, raw_name=item.raw_name,
                            canonical_name=item.canonical_name))
-    for item in payload.chest_aliases:
+    for item in resolved_chest_aliases:
         db.add(ChestTypeAlias(collector_id=collector_id, raw_type=item.raw_type,
                               canonical_type=item.canonical_type, enabled=item.enabled))
 
@@ -77,5 +139,5 @@ async def import_aliases(payload: AliasImportPayload, db: AsyncSession = Depends
     return {
         "ok": True,
         "player_aliases": len(payload.player_aliases),
-        "chest_aliases": len(payload.chest_aliases),
+        "chest_aliases": len(resolved_chest_aliases),
     }

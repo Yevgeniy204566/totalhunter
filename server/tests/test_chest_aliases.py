@@ -10,7 +10,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 
 from main import app
-from models import ChestCollector, PlayerAlias, ChestTypeAlias, User
+from models import ChestCollector, PlayerAlias, ChestTypeAlias, ChestTypeCatalog, ChestLocalization, User
 
 ADMIN_TOKEN = os.environ["ADMIN_TOKEN"]
 
@@ -202,3 +202,96 @@ async def test_import_aliases_omitted_pattern_leaves_existing_value(db_session):
     await db_session.refresh(collector)
     assert collector.pattern == "T9"
     assert collector.language == "ru"
+
+
+@pytest.mark.asyncio
+async def test_import_aliases_resolves_native_text_via_localizations(db_session):
+    collector = await _create_collector(db_session)
+    collector.language = "ru"
+    db_session.add(ChestLocalization(canonical_type="Yogwai", language="ru",
+                                     display_text="Ёкай"))
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [],
+                  "chest_aliases": [{"raw_type": "Exon", "canonical_type": "Ёкай"}]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalar_one()
+    assert row.raw_type == "Exon"
+    assert row.canonical_type == "Yogwai"
+
+
+@pytest.mark.asyncio
+async def test_import_aliases_accepts_known_english_literal_without_language(db_session):
+    collector = await _create_collector(db_session)
+    db_session.add(ChestTypeCatalog(canonical_type="Epic Crypt 25", pattern="T9", points=45))
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [],
+                  "chest_aliases": [{"raw_type": "Crpt25", "canonical_type": "Epic Crypt 25"}]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalar_one()
+    assert row.canonical_type == "Epic Crypt 25"
+
+
+@pytest.mark.asyncio
+async def test_import_aliases_unresolved_text_returns_400_naming_rows(db_session):
+    collector = await _create_collector(db_session)
+    collector.language = "ru"
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [],
+                  "chest_aliases": [
+                      {"raw_type": "Exon", "canonical_type": "Ёкай"},
+                      {"raw_type": "Zzz", "canonical_type": "Незнакомый сундук"},
+                  ]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 400
+    detail = resp.json()["detail"]
+    assert "Exon" in detail and "Ёкай" in detail
+    assert "Zzz" in detail and "Незнакомый сундук" in detail
+
+    rows = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalars().all()
+    assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_import_aliases_unresolved_text_no_collector_language_returns_400(db_session):
+    collector = await _create_collector(db_session)
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [],
+                  "chest_aliases": [{"raw_type": "Exon", "canonical_type": "Ёкай"}]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 400
+    detail = resp.json()["detail"]
+    assert "не задан язык" in detail
