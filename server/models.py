@@ -391,6 +391,8 @@ class ChestCollector(Base):
     clan       = Column(String(100), nullable=False)
     user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     slug       = Column(String(32), nullable=False, unique=True)
+    pattern    = Column(String(8),  nullable=True)
+    language   = Column(String(8),  nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=func.now())
 
@@ -444,3 +446,31 @@ class ChestTypeAlias(Base):
                             nullable=False, index=True)
     raw_type       = Column(String(200), nullable=False)
     canonical_type = Column(String(200), nullable=False)
+
+
+class ChestTypeCatalog(Base):
+    """Глобальная таблица очков: один сундук стоит разное количество очков в разных
+    паттернах, общая для всех кланов (не per-collector)."""
+    __tablename__ = "chest_type_catalog"
+    __table_args__ = (
+        UniqueConstraint("canonical_type", "pattern", name="uq_chest_catalog_type_pattern"),
+    )
+
+    id             = Column(Integer, primary_key=True)
+    canonical_type = Column(String(200), nullable=False)
+    pattern        = Column(String(8),   nullable=False)
+    points         = Column(Integer,     nullable=False)
+
+
+class ChestLocalization(Base):
+    """Глобальная таблица переводов: одна запись на (сундук, язык), общая для всех
+    кланов на этом языке (не per-collector)."""
+    __tablename__ = "chest_localizations"
+    __table_args__ = (
+        UniqueConstraint("canonical_type", "language", name="uq_chest_localizations_type_lang"),
+    )
+
+    id             = Column(Integer, primary_key=True)
+    canonical_type = Column(String(200), nullable=False)
+    language       = Column(String(8),   nullable=False)
+    display_text   = Column(String(200), nullable=False)
