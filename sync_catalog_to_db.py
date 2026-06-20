@@ -14,10 +14,10 @@ from googleapiclient.discovery import build
 API_BASE = "https://api.total-hunter.com"
 SHEET_ID = "1CvfVs4cWUr4EXs7e8uKi2wbT-sQ_gYSIWDw3oJ0Xo64"
 
-# Какому паттерну/языку соответствуют текущие 2-колоночные вкладки — см. Global
-# Constraints плана: новый паттерн/язык = новая такая же простая вкладка, не широкая
-# таблица "впрок". Сейчас реален только T9 + ru.
-CATALOG_PATTERN = "T9"
+# "Chest Catalog" — wide layout: один блок из 4 колонок на паттерн (Type | Points |
+# пусто | пусто), блоки идут подряд слева направо. Первая строка блока = имя паттерна
+# (ячейка над колонкой Type), вторая строка — заголовки "Type (EN)"/"Points", дальше —
+# данные. Добавление нового паттерна = новый блок +4 колонки, без правки кода.
 LOCALIZATION_LANGUAGE = "ru"
 
 SA_PATH = r"C:\BattleBot\service_account.json"
@@ -29,25 +29,38 @@ def build_sheets_service():
     return build("sheets", "v4", credentials=creds)
 
 
-def read_tab_rows(service, tab_name: str) -> list[list]:
+def read_tab_rows(service, tab_name: str, last_column: str = "B") -> list[list]:
     result = service.spreadsheets().values().get(
-        spreadsheetId=SHEET_ID, range=f"{tab_name}!A2:B",
+        spreadsheetId=SHEET_ID, range=f"{tab_name}!A2:{last_column}",
     ).execute()
     return result.get("values", [])
 
 
 def build_catalog_payload(service) -> dict:
-    rows = read_tab_rows(service, "Chest Catalog")
+    result = service.spreadsheets().values().get(
+        spreadsheetId=SHEET_ID, range="Chest Catalog!A1:ZZ200",
+    ).execute()
+    grid = result.get("values", [])
+    header_row, data_rows = grid[0], grid[2:]
+
     entries = []
-    for row in rows:
-        if len(row) < 2 or not row[0].strip() or not row[1].strip():
+    for block_col in range(0, len(header_row), 4):
+        pattern = header_row[block_col].strip() if block_col < len(header_row) else ""
+        if not pattern:
             continue
-        try:
-            points = int(row[1].strip())
-        except ValueError:
-            raise ValueError(f"Chest Catalog: '{row[1]}' is not a number for {row[0]!r}")
-        entries.append({"canonical_type": row[0].strip(), "pattern": CATALOG_PATTERN,
-                        "points": points})
+        for row in data_rows:
+            if block_col + 1 >= len(row):
+                continue
+            chest_type, points_cell = row[block_col].strip(), row[block_col + 1].strip()
+            if not chest_type or not points_cell:
+                continue
+            try:
+                points = int(points_cell)
+            except ValueError:
+                raise ValueError(
+                    f"Chest Catalog ({pattern}): '{points_cell}' is not a number for {chest_type!r}"
+                )
+            entries.append({"canonical_type": chest_type, "pattern": pattern, "points": points})
     return {"entries": entries}
 
 
