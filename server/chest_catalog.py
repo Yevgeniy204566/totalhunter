@@ -51,8 +51,24 @@ class LocalizationImportPayload(BaseModel):
     entries: List[LocalizationEntryIn] = []
 
 
+def _find_duplicate_key(keys):
+    """Returns the first key seen twice, or None — surfaces a clear 400 instead of
+    letting a Sheet copy-paste mistake hit the DB's unique constraint as a raw 500."""
+    seen = set()
+    for key in keys:
+        if key in seen:
+            return key
+        seen.add(key)
+    return None
+
+
 @router.post("/catalog/import", dependencies=[Depends(_require_auth)])
 async def import_catalog(payload: CatalogImportPayload, db: AsyncSession = Depends(get_db)):
+    dup = _find_duplicate_key((item.canonical_type, item.pattern) for item in payload.entries)
+    if dup:
+        raise HTTPException(status_code=400,
+                            detail=f"Duplicate entry for canonical_type={dup[0]!r}, pattern={dup[1]!r}")
+
     await db.execute(delete(ChestTypeCatalog))
     for item in payload.entries:
         db.add(ChestTypeCatalog(canonical_type=item.canonical_type, pattern=item.pattern,
@@ -64,6 +80,11 @@ async def import_catalog(payload: CatalogImportPayload, db: AsyncSession = Depen
 @router.post("/localizations/import", dependencies=[Depends(_require_auth)])
 async def import_localizations(payload: LocalizationImportPayload,
                                 db: AsyncSession = Depends(get_db)):
+    dup = _find_duplicate_key((item.canonical_type, item.language) for item in payload.entries)
+    if dup:
+        raise HTTPException(status_code=400,
+                            detail=f"Duplicate entry for canonical_type={dup[0]!r}, language={dup[1]!r}")
+
     await db.execute(delete(ChestLocalization))
     for item in payload.entries:
         db.add(ChestLocalization(canonical_type=item.canonical_type, language=item.language,

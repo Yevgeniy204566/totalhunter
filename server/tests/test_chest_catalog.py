@@ -114,3 +114,31 @@ async def test_import_localizations_empty_clears_table(db_session):
     assert resp.status_code == 200
     rows = (await db_session.execute(select(ChestLocalization))).scalars().all()
     assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_import_catalog_duplicate_entry_returns_400():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/catalog/import",
+            json={"entries": [
+                {"canonical_type": "Epic Fenrir", "pattern": "T9", "points": 5},
+                {"canonical_type": "Epic Fenrir", "pattern": "T9", "points": 9},
+            ]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_import_localizations_duplicate_entry_returns_400():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/localizations/import",
+            json={"entries": [
+                {"canonical_type": "Epic Fenrir", "language": "ru", "display_text": "A"},
+                {"canonical_type": "Epic Fenrir", "language": "ru", "display_text": "B"},
+            ]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 400
