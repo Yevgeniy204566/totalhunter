@@ -22,11 +22,16 @@ def build_sheets_service():
     return build("sheets", "v4", credentials=creds)
 
 
-def read_tab_rows(service, tab_name: str) -> list[list]:
+def read_tab_rows(service, tab_name: str, last_column: str = "B") -> list[list]:
     result = service.spreadsheets().values().get(
-        spreadsheetId=SHEET_ID, range=f"{tab_name}!A2:B",
+        spreadsheetId=SHEET_ID, range=f"{tab_name}!A2:{last_column}",
     ).execute()
     return result.get("values", [])
+
+
+def _is_enabled(cell: str) -> bool:
+    """Column C of "Chest Aliases" — blank or anything except "Нет" means counted."""
+    return cell.strip().lower() not in ("нет", "no", "false", "0")
 
 
 def read_collector_settings(service) -> dict:
@@ -49,7 +54,7 @@ def read_collector_settings(service) -> dict:
 
 def build_payload(service) -> dict:
     player_rows = read_tab_rows(service, "Player Aliases")
-    chest_rows = read_tab_rows(service, "Chest Aliases")
+    chest_rows = read_tab_rows(service, "Chest Aliases", last_column="C")
     payload = {
         "collector_slug": SLUG,
         "player_aliases": [
@@ -57,8 +62,10 @@ def build_payload(service) -> dict:
             for row in player_rows if len(row) >= 2 and row[0].strip() and row[1].strip()
         ],
         "chest_aliases": [
-            {"raw_type": row[0].strip(), "canonical_type": row[1].strip()}
-            for row in chest_rows if len(row) >= 2 and row[0].strip() and row[1].strip()
+            {"raw_type": row[0].strip(),
+             "canonical_type": row[1].strip() if len(row) >= 2 and row[1].strip() else row[0].strip(),
+             "enabled": _is_enabled(row[2]) if len(row) >= 3 else True}
+            for row in chest_rows if row and row[0].strip()
         ],
     }
     payload.update(read_collector_settings(service))

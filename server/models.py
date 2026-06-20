@@ -446,6 +446,7 @@ class ChestTypeAlias(Base):
                             nullable=False, index=True)
     raw_type       = Column(String(200), nullable=False)
     canonical_type = Column(String(200), nullable=False)
+    enabled        = Column(Boolean, nullable=False, server_default=text("true"))
 
 
 class ChestTypeCatalog(Base):

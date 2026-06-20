@@ -16,7 +16,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -309,7 +309,10 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
                 and_(ChestTypeAlias.collector_id == Chest.collector_id,
                      ChestTypeAlias.raw_type == Chest.chest_type_raw),
             )
-            .where(Chest.collector_id == collector.id)
+            .where(
+                Chest.collector_id == collector.id,
+                or_(ChestTypeAlias.id.is_(None), ChestTypeAlias.enabled.is_(True)),
+            )
             .group_by(sender_expr, chest_type_expr)
         )).all()
         return _pivot_summary(collector.kingdom, collector.clan, rows)
@@ -340,7 +343,10 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
             and_(ChestLocalization.canonical_type == chest_type_expr,
                  ChestLocalization.language == collector.language),
         )
-        .where(Chest.collector_id == collector.id)
+        .where(
+            Chest.collector_id == collector.id,
+            or_(ChestTypeAlias.id.is_(None), ChestTypeAlias.enabled.is_(True)),
+        )
         .group_by(sender_expr, chest_type_expr, display_expr, ChestTypeCatalog.points)
     )).all()
 

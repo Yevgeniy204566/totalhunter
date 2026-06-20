@@ -39,6 +39,7 @@ class PlayerAliasIn(BaseModel):
 class ChestAliasIn(BaseModel):
     raw_type: str
     canonical_type: str
+    enabled: bool = True
 
 
 class AliasImportPayload(BaseModel):
@@ -70,7 +71,7 @@ async def import_aliases(payload: AliasImportPayload, db: AsyncSession = Depends
                            canonical_name=item.canonical_name))
     for item in payload.chest_aliases:
         db.add(ChestTypeAlias(collector_id=collector_id, raw_type=item.raw_type,
-                              canonical_type=item.canonical_type))
+                              canonical_type=item.canonical_type, enabled=item.enabled))
 
     await db.commit()
     return {

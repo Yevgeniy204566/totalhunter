@@ -142,6 +142,48 @@ async def test_import_aliases_sets_pattern_and_language(db_session):
 
 
 @pytest.mark.asyncio
+async def test_import_aliases_chest_alias_defaults_to_enabled(db_session):
+    collector = await _create_collector(db_session)
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [],
+                  "chest_aliases": [{"raw_type": "X", "canonical_type": "Epic X"}]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalar_one()
+    assert row.enabled is True
+
+
+@pytest.mark.asyncio
+async def test_import_aliases_chest_alias_can_be_disabled(db_session):
+    collector = await _create_collector(db_session)
+    await db_session.commit()
+    slug = collector.slug
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/chests/aliases/import",
+            json={"collector_slug": slug, "player_aliases": [],
+                  "chest_aliases": [{"raw_type": "Y", "canonical_type": "Y", "enabled": False}]},
+            headers={"Authorization": f"Bearer {ADMIN_TOKEN}"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalar_one()
+    assert row.enabled is False
+
+
+@pytest.mark.asyncio
 async def test_import_aliases_omitted_pattern_leaves_existing_value(db_session):
     collector = await _create_collector(db_session)
     collector.pattern = "T9"
