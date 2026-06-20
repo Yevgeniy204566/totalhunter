@@ -38,13 +38,17 @@ def read_tab_rows(service, tab_name: str) -> list[list]:
 
 def build_catalog_payload(service) -> dict:
     rows = read_tab_rows(service, "Chest Catalog")
-    return {
-        "entries": [
-            {"canonical_type": row[0].strip(), "pattern": CATALOG_PATTERN,
-             "points": int(row[1].strip())}
-            for row in rows if len(row) >= 2 and row[0].strip() and row[1].strip()
-        ]
-    }
+    entries = []
+    for row in rows:
+        if len(row) < 2 or not row[0].strip() or not row[1].strip():
+            continue
+        try:
+            points = int(row[1].strip())
+        except ValueError:
+            raise ValueError(f"Chest Catalog: '{row[1]}' is not a number for {row[0]!r}")
+        entries.append({"canonical_type": row[0].strip(), "pattern": CATALOG_PATTERN,
+                        "points": points})
+    return {"entries": entries}
 
 
 def build_localizations_payload(service) -> dict:

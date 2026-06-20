@@ -53,7 +53,9 @@ class LocalizationImportPayload(BaseModel):
 
 def _find_duplicate_key(keys):
     """Returns the first key seen twice, or None — surfaces a clear 400 instead of
-    letting a Sheet copy-paste mistake hit the DB's unique constraint as a raw 500."""
+    letting a Sheet copy-paste mistake hit the DB's unique constraint as a raw 500.
+    Per-payload only, not a concurrency guard — two overlapping admin syncs could still
+    race between delete and insert; acceptable for a single-admin manual sync script."""
     seen = set()
     for key in keys:
         if key in seen:
