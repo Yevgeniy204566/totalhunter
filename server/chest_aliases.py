@@ -8,12 +8,10 @@ not something the bot calls on a user's behalf.
 Each sync is a full replace for the named collector: existing rows are deleted, then
 the payload's rows are inserted. The Sheet is the source of truth.
 
-chest_aliases entries are submitted in the collector's own language (e.g. raw OCR text
-fixed to clean Russian), not English. _resolve_chest_aliases translates each row's
-canonical_type to the global English ID when one is already known (literal match or via
-Localizations); otherwise it stores the submitted text as-is rather than blocking the
-sync — an unmatched chest type just isn't normalized across clans/languages until someone
-adds its translation to Localizations.
+Phase 4: chest_type_aliases.catalog_id is just a literal mapping target now — no resolution
+of native-language text happens here (that was Phase 3a, removed). Per-clan self-service for
+chest aliases now happens through the Web Dashboard (chest_dashboard.py); this endpoint stays
+for Player Aliases sync and for the owner's own direct catalog_id entry if still useful.
 """
 import os
 from typing import List, Optional
@@ -25,7 +23,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import ChestCollector, ChestLocalization, ChestTypeAlias, ChestTypeCatalog, PlayerAlias
+from models import ChestCollector, ChestTypeAlias, PlayerAlias
 
 router = APIRouter(prefix="/api/v1/chests", tags=["chests"])
 
@@ -46,7 +44,6 @@ class PlayerAliasIn(BaseModel):
 class ChestAliasIn(BaseModel):
     raw_type: str
     canonical_type: str
-    enabled: bool = True
 
 
 class AliasImportPayload(BaseModel):
@@ -55,46 +52,6 @@ class AliasImportPayload(BaseModel):
     chest_aliases: List[ChestAliasIn] = []
     pattern: Optional[str] = None
     language: Optional[str] = None
-
-
-async def _load_known_english_ids(db: AsyncSession) -> set:
-    """Every canonical_type already known to the system, from either global table —
-    used so admins who already type the literal English ID keep working unchanged."""
-    catalog_ids = (await db.execute(select(ChestTypeCatalog.canonical_type))).scalars().all()
-    localization_ids = (await db.execute(select(ChestLocalization.canonical_type))).scalars().all()
-    return set(catalog_ids) | set(localization_ids)
-
-
-async def _load_localization_map(db: AsyncSession, language: str) -> dict:
-    """display_text -> canonical_type for one language, loaded once per import instead
-    of one query per row."""
-    rows = (await db.execute(
-        select(ChestLocalization.display_text, ChestLocalization.canonical_type)
-        .where(ChestLocalization.language == language)
-    )).all()
-    return {display_text: canonical_type for display_text, canonical_type in rows}
-
-
-def _resolve_one(submitted: str, known_ids: set, localization_map: dict) -> str:
-    """Resolves submitted text to the global English ID when one is known; otherwise
-    falls back to the submitted text itself so an unmatched chest type never blocks
-    the sync — it just isn't normalized across clans/languages until someone adds the
-    translation to Localizations."""
-    submitted = submitted.strip()
-    if submitted in known_ids:
-        return submitted
-    return localization_map.get(submitted, submitted)
-
-
-async def _resolve_chest_aliases(items: List[ChestAliasIn], language: Optional[str],
-                                  db: AsyncSession) -> List[ChestAliasIn]:
-    known_ids = await _load_known_english_ids(db)
-    localization_map = await _load_localization_map(db, language) if language else {}
-
-    return [ChestAliasIn(raw_type=item.raw_type,
-                         canonical_type=_resolve_one(item.canonical_type, known_ids, localization_map),
-                         enabled=item.enabled)
-            for item in items]
 
 
 @router.post("/aliases/import", dependencies=[Depends(_require_auth)])
@@ -110,22 +67,19 @@ async def import_aliases(payload: AliasImportPayload, db: AsyncSession = Depends
     if payload.language is not None:
         collector.language = payload.language
 
-    resolved_chest_aliases = await _resolve_chest_aliases(
-        payload.chest_aliases, collector.language, db)
-
     await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector_id))
     await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector_id))
 
     for item in payload.player_aliases:
         db.add(PlayerAlias(collector_id=collector_id, raw_name=item.raw_name,
                            canonical_name=item.canonical_name))
-    for item in resolved_chest_aliases:
+    for item in payload.chest_aliases:
         db.add(ChestTypeAlias(collector_id=collector_id, raw_type=item.raw_type,
-                              canonical_type=item.canonical_type, enabled=item.enabled))
+                              catalog_id=item.canonical_type))
 
     await db.commit()
     return {
         "ok": True,
         "player_aliases": len(payload.player_aliases),
-        "chest_aliases": len(resolved_chest_aliases),
+        "chest_aliases": len(payload.chest_aliases),
     }

@@ -379,22 +379,24 @@ class ClanMember(Base):
 class ChestCollector(Base):
     """
     Один сборщик внутри одного клана/королевства — единица тенант-изоляции.
-    slug — непредсказуемый публичный идентификатор для будущего дашборда (не в этой работе).
+    slug — непредсказуемый публичный идентификатор публичной страницы /chests/{slug}.
+    management_token — одноразовый код передачи владения коллектором другому user_id.
     """
     __tablename__ = "chest_collectors"
     __table_args__ = (
         UniqueConstraint("kingdom", "clan", "user_id", name="uq_chest_collectors_tenant"),
     )
 
-    id         = Column(Integer, primary_key=True)
-    kingdom    = Column(String(50),  nullable=False)
-    clan       = Column(String(100), nullable=False)
-    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    slug       = Column(String(32), nullable=False, unique=True)
-    pattern    = Column(String(8),  nullable=True)
-    language   = Column(String(8),  nullable=True)
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False,
-                        server_default=func.now())
+    id                = Column(Integer, primary_key=True)
+    kingdom           = Column(String(50),  nullable=False)
+    clan              = Column(String(100), nullable=False)
+    user_id           = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    slug              = Column(String(32), nullable=False, unique=True)
+    pattern           = Column(String(8),  nullable=True)
+    language          = Column(String(8),  nullable=True)
+    management_token  = Column(String(32), nullable=True, unique=True)
+    created_at        = Column(TIMESTAMP(timezone=True), nullable=False,
+                               server_default=func.now())
 
 
 class Chest(Base):
@@ -435,7 +437,8 @@ class PlayerAlias(Base):
 
 
 class ChestTypeAlias(Base):
-    """Словарь исправлений OCR для названий типов сундуков, отдельно на каждого сборщика."""
+    """Словарь маппинга сырого OCR-текста на официальный catalog_id, отдельно на каждого
+    сборщика. Очки/кастомное имя/включение в подсчёт — в ChestConfiguration, не здесь."""
     __tablename__ = "chest_type_aliases"
     __table_args__ = (
         UniqueConstraint("collector_id", "raw_type", name="uq_chest_type_aliases_raw_type"),
@@ -445,8 +448,24 @@ class ChestTypeAlias(Base):
     collector_id   = Column(Integer, ForeignKey("chest_collectors.id"),
                             nullable=False, index=True)
     raw_type       = Column(String(200), nullable=False)
-    canonical_type = Column(String(200), nullable=False)
-    enabled        = Column(Boolean, nullable=False, server_default=text("true"))
+    catalog_id     = Column(String(200), nullable=False)
+
+
+class ChestConfiguration(Base):
+    """Per-collector настройка одного официального сундука: свои очки, своё имя, входит ли
+    в подсчёт клана. Заменяет глобальный ChestTypeCatalog как источник очков в summary."""
+    __tablename__ = "chest_configurations"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "catalog_id", name="uq_chest_config_collector_catalog"),
+    )
+
+    id            = Column(Integer, primary_key=True)
+    collector_id  = Column(Integer, ForeignKey("chest_collectors.id"),
+                           nullable=False, index=True)
+    catalog_id    = Column(String(200), nullable=False)
+    custom_name   = Column(String(200), nullable=True)
+    points        = Column(Integer, nullable=False, server_default=text("0"))
+    is_in_pattern = Column(Boolean, nullable=False, server_default=text("false"))
 
 
 class ChestTypeCatalog(Base):

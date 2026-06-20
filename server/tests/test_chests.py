@@ -1,6 +1,7 @@
 """Tests for chests.py — tenant isolation, alias dictionary, idempotent import."""
 import os
 import sys
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -127,7 +128,7 @@ async def test_alias_lookup_corrects_sender_and_chest_type(db_session):
     db_session.add(PlayerAlias(collector_id=collector.id, raw_name="Араiiна",
                                canonical_name="Арахна"))
     db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="Эпическая Араiiна",
-                                  canonical_type="Эпическая Арахна"))
+                                  catalog_id="Эпическая Арахна"))
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -332,6 +333,8 @@ async def test_summary_unknown_slug_returns_404():
 
 @pytest.mark.asyncio
 async def test_summary_aggregates_players_and_chest_types(db_session):
+    from models import ChestConfiguration
+
     user = await _create_user(db_session, "summarytest00a")
     await db_session.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -350,6 +353,17 @@ async def test_summary_aggregates_players_and_chest_types(db_session):
         ))
         assert import_resp.status_code == 200
         slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+        db_session.add(ChestConfiguration(collector_id=collector_id,
+                                          catalog_id="Сундук Эпического Монстра",
+                                          points=0, is_in_pattern=True))
+        db_session.add(ChestConfiguration(collector_id=collector_id,
+                                          catalog_id="Малый Сундук",
+                                          points=0, is_in_pattern=True))
+        await db_session.commit()
 
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
     assert resp.status_code == 200
@@ -375,6 +389,8 @@ async def test_summary_aggregates_players_and_chest_types(db_session):
 
 @pytest.mark.asyncio
 async def test_summary_empty_collector_returns_empty_lists(db_session):
+    from models import ChestConfiguration
+
     user = await _create_user(db_session, "emptysummary0a")
     await db_session.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -384,6 +400,15 @@ async def test_summary_empty_collector_returns_empty_lists(db_session):
                     "timestamp": "2026-06-18T12:00:00"}],
         ))
         slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+        db_session.add(ChestConfiguration(collector_id=collector_id,
+                                          catalog_id="Малый Сундук",
+                                          points=0, is_in_pattern=True))
+        await db_session.commit()
+
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
     assert resp.status_code == 200
     body = resp.json()
@@ -405,12 +430,12 @@ async def test_summary_collector_with_zero_chests_returns_empty_lists(db_session
     body = resp.json()
     assert body["chest_types"] == []
     assert body["players"] == []
-    assert body["totals"] == {"grand_total": 0}
+    assert body["totals"] == {"grand_total": 0, "total_points": 0}
 
 
 @pytest.mark.asyncio
 async def test_summary_applies_alias_added_after_import_without_reimport(db_session):
-    from models import PlayerAlias, ChestTypeAlias
+    from models import PlayerAlias, ChestTypeAlias, ChestConfiguration
 
     user = await _create_user(db_session, "aliasafterimp0a")
     await db_session.commit()
@@ -435,7 +460,10 @@ async def test_summary_applies_alias_added_after_import_without_reimport(db_sess
         db_session.add(PlayerAlias(collector_id=collector_id, raw_name="Machet",
                                     canonical_name="MACHETE"))
         db_session.add(ChestTypeAlias(collector_id=collector_id, raw_type="Эпический отр",
-                                      canonical_type="Эпический отряд"))
+                                      catalog_id="Эпический отряд"))
+        db_session.add(ChestConfiguration(collector_id=collector_id,
+                                          catalog_id="Эпический отряд",
+                                          points=0, is_in_pattern=True))
         await db_session.commit()
 
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
@@ -452,7 +480,7 @@ async def test_summary_collapses_many_raw_senders_aliased_to_same_canonical(db_s
     collapse into a single player row in the summary, with combined total —
     this is the entire reason GROUP BY runs on the coalesced expression
     rather than on the raw sender column."""
-    from models import PlayerAlias
+    from models import PlayerAlias, ChestConfiguration
 
     user = await _create_user(db_session, "manytoone0000a")
     await db_session.commit()
@@ -480,6 +508,9 @@ async def test_summary_collapses_many_raw_senders_aliased_to_same_canonical(db_s
                                     canonical_name="Арахна"))
         db_session.add(PlayerAlias(collector_id=collector_id, raw_name="Arahna_OCR_typo",
                                     canonical_name="Арахна"))
+        db_session.add(ChestConfiguration(collector_id=collector_id,
+                                          catalog_id="Сундук Эпического Монстра",
+                                          points=0, is_in_pattern=True))
         await db_session.commit()
 
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
@@ -494,26 +525,8 @@ async def test_summary_collapses_many_raw_senders_aliased_to_same_canonical(db_s
 
 
 @pytest.mark.asyncio
-async def test_summary_no_pattern_has_no_points_key(db_session):
-    user = await _create_user(db_session, "nopattern0000a")
-    await db_session.commit()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        import_resp = await client.post("/api/v1/chests/import", json=_payload(
-            user.hwid, kingdom="K20", clan="NoPatternClan",
-            items=[{"chest_type": "Anything", "sender": "P1",
-                    "timestamp": "2026-06-18T14:00:00"}],
-        ))
-        slug = import_resp.json()["collector_slug"]
-        resp = await client.get(f"/api/v1/chests/summary/{slug}")
-    assert resp.status_code == 200
-    body = resp.json()
-    assert "points" not in body["players"][0]
-    assert "total_points" not in body["totals"]
-
-
-@pytest.mark.asyncio
 async def test_summary_with_pattern_excludes_offcatalog_chests_entirely(db_session):
-    from models import ChestTypeCatalog
+    from models import ChestConfiguration
 
     user = await _create_user(db_session, "withpattern00a")
     await db_session.commit()
@@ -533,9 +546,9 @@ async def test_summary_with_pattern_excludes_offcatalog_chests_entirely(db_sessi
         collector = (await db_session.execute(
             select(ChestCollector).where(ChestCollector.slug == slug)
         )).scalar_one()
-        collector.pattern = "T9"
-        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
-                                        points=5))
+        db_session.add(ChestConfiguration(collector_id=collector.id,
+                                          catalog_id="Epic Fenrir",
+                                          points=5, is_in_pattern=True))
         await db_session.commit()
 
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
@@ -551,7 +564,7 @@ async def test_summary_with_pattern_excludes_offcatalog_chests_entirely(db_sessi
 
 @pytest.mark.asyncio
 async def test_summary_player_with_only_offcatalog_chests_is_excluded(db_session):
-    from models import ChestTypeCatalog
+    from models import ChestConfiguration
 
     user = await _create_user(db_session, "onlyoffcat000a")
     await db_session.commit()
@@ -569,9 +582,9 @@ async def test_summary_player_with_only_offcatalog_chests_is_excluded(db_session
         collector = (await db_session.execute(
             select(ChestCollector).where(ChestCollector.slug == slug)
         )).scalar_one()
-        collector.pattern = "T9"
-        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
-                                        points=5))
+        db_session.add(ChestConfiguration(collector_id=collector.id,
+                                          catalog_id="Epic Fenrir",
+                                          points=5, is_in_pattern=True))
         await db_session.commit()
 
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
@@ -582,7 +595,7 @@ async def test_summary_player_with_only_offcatalog_chests_is_excluded(db_session
 
 @pytest.mark.asyncio
 async def test_summary_uses_localization_when_present(db_session):
-    from models import ChestLocalization, ChestTypeCatalog
+    from models import ChestLocalization, ChestConfiguration
 
     user = await _create_user(db_session, "withlocaliz00a")
     await db_session.commit()
@@ -596,10 +609,10 @@ async def test_summary_uses_localization_when_present(db_session):
         collector = (await db_session.execute(
             select(ChestCollector).where(ChestCollector.slug == slug)
         )).scalar_one()
-        collector.pattern = "T9"
         collector.language = "ru"
-        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
-                                        points=5))
+        db_session.add(ChestConfiguration(collector_id=collector.id,
+                                          catalog_id="Epic Fenrir",
+                                          points=5, is_in_pattern=True))
         db_session.add(ChestLocalization(canonical_type="Epic Fenrir", language="ru",
                                          display_text="Эпический Фенрир"))
         await db_session.commit()
@@ -612,7 +625,7 @@ async def test_summary_uses_localization_when_present(db_session):
 
 @pytest.mark.asyncio
 async def test_summary_falls_back_to_english_when_no_localization(db_session):
-    from models import ChestTypeCatalog
+    from models import ChestConfiguration
 
     user = await _create_user(db_session, "nolocaliz0000a")
     await db_session.commit()
@@ -626,10 +639,10 @@ async def test_summary_falls_back_to_english_when_no_localization(db_session):
         collector = (await db_session.execute(
             select(ChestCollector).where(ChestCollector.slug == slug)
         )).scalar_one()
-        collector.pattern = "T9"
         collector.language = "ru"
-        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9",
-                                        points=5))
+        db_session.add(ChestConfiguration(collector_id=collector.id,
+                                          catalog_id="Epic Fenrir",
+                                          points=5, is_in_pattern=True))
         await db_session.commit()
 
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
@@ -638,60 +651,77 @@ async def test_summary_falls_back_to_english_when_no_localization(db_session):
 
 
 @pytest.mark.asyncio
-async def test_summary_no_pattern_excludes_disabled_alias_type(db_session):
-    from models import ChestTypeAlias
+async def test_summary_uses_chest_configuration_points_and_custom_name(db_session):
+    from models import ChestConfiguration, ChestTypeAlias, Chest
 
-    user = await _create_user(db_session, "disablednop00a")
+    user = await _create_user(db_session, hwid="hwid-cfg")
+    collector = ChestCollector(kingdom="K1", clan="ClanCfg", user_id=user.id,
+                               slug=secrets.token_urlsafe(16), language="ru")
+    db_session.add(collector)
+    await db_session.flush()
+
+    db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="RawX",
+                                  catalog_id="Epic Arachne"))
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Arachne",
+                                      custom_name="Толстяк", points=40, is_in_pattern=True))
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                         chest_type_raw="RawX", chest_type_canonical="RawX",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
     await db_session.commit()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        import_resp = await client.post("/api/v1/chests/import", json=_payload(
-            user.hwid, kingdom="K25", clan="DisabledNoPatternClan",
-            items=[
-                {"chest_type": "Wanted", "sender": "P1", "timestamp": "2026-06-18T18:00:00"},
-                {"chest_type": "Unwanted", "sender": "P1", "timestamp": "2026-06-18T18:05:00"},
-            ],
-        ))
-        slug = import_resp.json()["collector_slug"]
-        collector = (await db_session.execute(
-            select(ChestCollector).where(ChestCollector.slug == slug)
-        )).scalar_one()
-        db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="Unwanted",
-                                      canonical_type="Unwanted", enabled=False))
-        await db_session.commit()
 
-        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
+    assert resp.status_code == 200
     body = resp.json()
-    assert body["chest_types"] == ["Wanted"]
-    assert body["totals"]["grand_total"] == 1
+    assert body["chest_types"] == ["Толстяк"]
+    assert body["totals"] == {"Толстяк": 1, "grand_total": 1, "total_points": 40}
+    assert body["players"][0] == {"name": "P1", "counts": {"Толстяк": 1}, "total": 1,
+                                  "points": 40}
 
 
 @pytest.mark.asyncio
-async def test_summary_with_pattern_excludes_disabled_alias_type(db_session):
-    from models import ChestTypeAlias, ChestTypeCatalog
+async def test_summary_excludes_chest_not_in_pattern(db_session):
+    from models import ChestConfiguration, ChestTypeAlias, Chest
 
-    user = await _create_user(db_session, "disabledwpat0a")
+    user = await _create_user(db_session, hwid="hwid-cfg2")
+    collector = ChestCollector(kingdom="K1", clan="ClanCfg2", user_id=user.id,
+                               slug=secrets.token_urlsafe(16))
+    db_session.add(collector)
+    await db_session.flush()
+
+    db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="RawY",
+                                  catalog_id="Common Crypt 5"))
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Common Crypt 5",
+                                      points=5, is_in_pattern=False))
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                         chest_type_raw="RawY", chest_type_canonical="RawY",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
     await db_session.commit()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        import_resp = await client.post("/api/v1/chests/import", json=_payload(
-            user.hwid, kingdom="K26", clan="DisabledWithPatternClan",
-            items=[
-                {"chest_type": "Epic Fenrir", "sender": "P1",
-                 "timestamp": "2026-06-18T19:00:00"},
-                {"chest_type": "Also Catalogued", "sender": "P1",
-                 "timestamp": "2026-06-18T19:05:00"},
-            ],
-        ))
-        slug = import_resp.json()["collector_slug"]
-        collector = (await db_session.execute(
-            select(ChestCollector).where(ChestCollector.slug == slug)
-        )).scalar_one()
-        collector.pattern = "T9"
-        db_session.add(ChestTypeCatalog(canonical_type="Epic Fenrir", pattern="T9", points=5))
-        db_session.add(ChestTypeCatalog(canonical_type="Also Catalogued", pattern="T9", points=5))
-        db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="Also Catalogued",
-                                      canonical_type="Also Catalogued", enabled=False))
-        await db_session.commit()
 
-        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
+    assert resp.status_code == 200
     body = resp.json()
-    assert body["chest_types"] == ["Epic Fenrir"]
+    assert body["chest_types"] == []
+    assert body["totals"] == {"grand_total": 0, "total_points": 0}
+    assert body["players"] == []
+
+
+@pytest.mark.asyncio
+async def test_summary_no_configuration_returns_empty(db_session):
+    from models import Chest
+
+    user = await _create_user(db_session, hwid="hwid-cfg3")
+    collector = ChestCollector(kingdom="K1", clan="ClanCfg3", user_id=user.id,
+                               slug=secrets.token_urlsafe(16))
+    db_session.add(collector)
+    await db_session.flush()
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                         chest_type_raw="Unconfigured", chest_type_canonical="Unconfigured",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
+    assert resp.status_code == 200
+    assert resp.json()["totals"] == {"grand_total": 0, "total_points": 0}

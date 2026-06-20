@@ -16,14 +16,14 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import (
-    Chest, ChestCollector, ChestLocalization, ChestTypeAlias, ChestTypeCatalog,
-    Hunt, PlayerAlias, Transaction, User,
+    Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias, Hunt,
+    PlayerAlias, Transaction, User,
 )
 
 router = APIRouter(prefix="/api/v1/chests", tags=["chests"])
@@ -76,7 +76,7 @@ async def _load_aliases(collector_id: int, db: AsyncSession):
         )).scalars().all()
     }
     type_aliases = {
-        row.raw_type: row.canonical_type
+        row.raw_type: row.catalog_id
         for row in (await db.execute(
             select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector_id)
         )).scalars().all()
@@ -199,38 +199,6 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
 
 
 def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
-    """rows: iterable of (sender_canonical, chest_type_canonical, count)."""
-    chest_types: list[str] = []
-    seen_types = set()
-    per_player: dict[str, dict[str, int]] = {}
-    totals: dict[str, int] = {}
-    grand_total = 0
-
-    for sender, chest_type, count in rows:
-        if chest_type not in seen_types:
-            seen_types.add(chest_type)
-            chest_types.append(chest_type)
-        per_player.setdefault(sender, {})[chest_type] = count
-        totals[chest_type] = totals.get(chest_type, 0) + count
-        grand_total += count
-
-    players = [
-        {"name": name, "counts": counts, "total": sum(counts.values())}
-        for name, counts in per_player.items()
-    ]
-    players.sort(key=lambda p: (-p["total"], p["name"]))
-    totals["grand_total"] = grand_total
-
-    return {
-        "kingdom": kingdom,
-        "clan": clan,
-        "chest_types": chest_types,
-        "players": players,
-        "totals": totals,
-    }
-
-
-def _pivot_summary_scored(kingdom: str, clan: str, rows) -> dict:
     """rows: iterable of (sender, chest_type_en, display_name, points_per_unit, count).
 
     chest_type_en is used as the internal dedup/grouping key (stable, language-
@@ -293,34 +261,12 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Collector not found")
 
     sender_expr = func.coalesce(PlayerAlias.canonical_name, Chest.sender_raw)
-    chest_type_expr = func.coalesce(ChestTypeAlias.canonical_type, Chest.chest_type_raw)
-
-    if not collector.pattern:
-        rows = (await db.execute(
-            select(sender_expr, chest_type_expr, func.count())
-            .select_from(Chest)
-            .outerjoin(
-                PlayerAlias,
-                and_(PlayerAlias.collector_id == Chest.collector_id,
-                     PlayerAlias.raw_name == Chest.sender_raw),
-            )
-            .outerjoin(
-                ChestTypeAlias,
-                and_(ChestTypeAlias.collector_id == Chest.collector_id,
-                     ChestTypeAlias.raw_type == Chest.chest_type_raw),
-            )
-            .where(
-                Chest.collector_id == collector.id,
-                or_(ChestTypeAlias.id.is_(None), ChestTypeAlias.enabled.is_(True)),
-            )
-            .group_by(sender_expr, chest_type_expr)
-        )).all()
-        return _pivot_summary(collector.kingdom, collector.clan, rows)
-
-    display_expr = func.coalesce(ChestLocalization.display_text, chest_type_expr)
+    chest_type_expr = func.coalesce(ChestTypeAlias.catalog_id, Chest.chest_type_raw)
+    display_expr = func.coalesce(ChestConfiguration.custom_name,
+                                 ChestLocalization.display_text, chest_type_expr)
 
     rows = (await db.execute(
-        select(sender_expr, chest_type_expr, display_expr, ChestTypeCatalog.points,
+        select(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points,
                func.count())
         .select_from(Chest)
         .outerjoin(
@@ -334,20 +280,18 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
                  ChestTypeAlias.raw_type == Chest.chest_type_raw),
         )
         .join(
-            ChestTypeCatalog,
-            and_(ChestTypeCatalog.canonical_type == chest_type_expr,
-                 ChestTypeCatalog.pattern == collector.pattern),
+            ChestConfiguration,
+            and_(ChestConfiguration.collector_id == Chest.collector_id,
+                 ChestConfiguration.catalog_id == chest_type_expr,
+                 ChestConfiguration.is_in_pattern.is_(True)),
         )
         .outerjoin(
             ChestLocalization,
             and_(ChestLocalization.canonical_type == chest_type_expr,
                  ChestLocalization.language == collector.language),
         )
-        .where(
-            Chest.collector_id == collector.id,
-            or_(ChestTypeAlias.id.is_(None), ChestTypeAlias.enabled.is_(True)),
-        )
-        .group_by(sender_expr, chest_type_expr, display_expr, ChestTypeCatalog.points)
+        .where(Chest.collector_id == collector.id)
+        .group_by(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points)
     )).all()
 
-    return _pivot_summary_scored(collector.kingdom, collector.clan, rows)
+    return _pivot_summary(collector.kingdom, collector.clan, rows)
