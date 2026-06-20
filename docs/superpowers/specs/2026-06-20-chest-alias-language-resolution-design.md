@@ -73,13 +73,14 @@ Aliases» так и осталась русской с момента созда
   элемента `payload.chest_aliases` до начала `delete`/`insert`.
 - Сбор всех `ValueError` в список, единый `HTTPException(400, ...)` с агрегированным
   сообщением, если список не пуст.
-- Запросы: один `SELECT canonical_type FROM chest_type_catalog WHERE canonical_type = :t`
-  + один `SELECT canonical_type FROM chest_localizations WHERE canonical_type = :t` для шага
-  1 (или `UNION`, по вкусу реализации); один `SELECT canonical_type FROM
-  chest_localizations WHERE language = :lang AND display_text = :t` для шага 2. Чтобы не
-  делать N+1 на большой Sheet — допустимо одним запросом подтянуть все строки
-  `chest_localizations` коллекторного языка в память (объём — десятки-сотни строк, не
-  тысячи) и резолвить по словарю на стороне Python.
+- Чтобы не делать N+1 запросов на большой Sheet, перед обработкой строк `chest_aliases`
+  один раз подтягиваются в память: (а) множество всех известных английских ID — `SELECT
+  DISTINCT canonical_type FROM chest_type_catalog` объединённое с `SELECT DISTINCT
+  canonical_type FROM chest_localizations` в один Python `set` (шаг 1 — проверка `in
+  valid_english_ids`, O(1) на строку); (б) словарь `{display_text: canonical_type}` из
+  `SELECT canonical_type, display_text FROM chest_localizations WHERE language = :lang`
+  (шаг 2 — `dict.get()`, O(1) на строку). Дальше резолв каждой строки — чистый Python без
+  обращений к БД.
 
 `sync_admin_sheet_to_db.py` — **без изменений**: скрипт уже просто передаёт текст из
 колонки B как `canonical_type` в payload; смысл текста меняется, но не код, который его
