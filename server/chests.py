@@ -16,7 +16,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -235,10 +235,24 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
 
+    sender_expr = func.coalesce(PlayerAlias.canonical_name, Chest.sender_raw)
+    chest_type_expr = func.coalesce(ChestTypeAlias.canonical_type, Chest.chest_type_raw)
+
     rows = (await db.execute(
-        select(Chest.sender_canonical, Chest.chest_type_canonical, func.count())
+        select(sender_expr, chest_type_expr, func.count())
+        .select_from(Chest)
+        .outerjoin(
+            PlayerAlias,
+            and_(PlayerAlias.collector_id == Chest.collector_id,
+                 PlayerAlias.raw_name == Chest.sender_raw),
+        )
+        .outerjoin(
+            ChestTypeAlias,
+            and_(ChestTypeAlias.collector_id == Chest.collector_id,
+                 ChestTypeAlias.raw_type == Chest.chest_type_raw),
+        )
         .where(Chest.collector_id == collector.id)
-        .group_by(Chest.sender_canonical, Chest.chest_type_canonical)
+        .group_by(sender_expr, chest_type_expr)
     )).all()
 
     return _pivot_summary(collector.kingdom, collector.clan, rows)

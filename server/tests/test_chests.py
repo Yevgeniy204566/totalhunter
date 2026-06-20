@@ -406,3 +406,41 @@ async def test_summary_collector_with_zero_chests_returns_empty_lists(db_session
     assert body["chest_types"] == []
     assert body["players"] == []
     assert body["totals"] == {"grand_total": 0}
+
+
+@pytest.mark.asyncio
+async def test_summary_applies_alias_added_after_import_without_reimport(db_session):
+    from models import PlayerAlias, ChestTypeAlias
+
+    user = await _create_user(db_session, "aliasafterimp0a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K12", clan="AliasClan",
+            items=[
+                {"chest_type": "Эпический отр", "sender": "Machet",
+                 "timestamp": "2026-06-18T13:00:00"},
+                {"chest_type": "Эпический отр", "sender": "Machet",
+                 "timestamp": "2026-06-18T13:05:00"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+
+        # Alias added AFTER the import already happened — no re-import follows.
+        db_session.add(PlayerAlias(collector_id=collector_id, raw_name="Machet",
+                                    canonical_name="MACHETE"))
+        db_session.add(ChestTypeAlias(collector_id=collector_id, raw_type="Эпический отр",
+                                      canonical_type="Эпический отряд"))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["chest_types"] == ["Эпический отряд"]
+    assert body["players"][0]["name"] == "MACHETE"
+    assert body["players"][0]["counts"]["Эпический отряд"] == 2
