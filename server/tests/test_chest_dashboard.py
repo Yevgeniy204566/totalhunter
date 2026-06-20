@@ -1,0 +1,228 @@
+"""Tests for chest_dashboard.py — self-service chest mapping for the logged-in user."""
+import os
+import secrets
+import sys
+from datetime import datetime
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+import pytest
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select
+
+from main import app
+from models import (
+    Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias,
+    ChestTypeCatalog, User,
+)
+from web_routes import create_jwt
+
+
+async def _create_user_with_token(db, email="owner@example.com"):
+    user = User(hwid=secrets.token_urlsafe(8)[:16], ref_code=secrets.token_urlsafe(6),
+               email=email)
+    db.add(user)
+    await db.flush()
+    token = create_jwt(user.id, email)
+    return user, token
+
+
+async def _create_collector(db, user_id, slug=None, language=None):
+    collector = ChestCollector(kingdom="K1", clan="ClanA", user_id=user_id,
+                               slug=slug or secrets.token_urlsafe(16), language=language)
+    db.add(collector)
+    await db.flush()
+    return collector
+
+
+@pytest.mark.asyncio
+async def test_get_chests_no_token_returns_401():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/web/dashboard/chests")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_chests_returns_only_own_collectors(db_session):
+    user, token = await _create_user_with_token(db_session)
+    other_user, _ = await _create_user_with_token(db_session, email="other@example.com")
+    mine = await _create_collector(db_session, user.id, slug="mine-slug")
+    await _create_collector(db_session, other_user.id, slug="not-mine-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    slugs = [c["slug"] for c in resp.json()["collectors"]]
+    assert slugs == ["mine-slug"]
+
+
+@pytest.mark.asyncio
+async def test_get_chests_combines_alias_config_and_unmapped_raw(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="combo-slug", language="ru")
+    # mapped + configured
+    db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="Raw1",
+                                  catalog_id="Epic Arachne"))
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Arachne",
+                                      custom_name="Толстяк", points=40, is_in_pattern=True))
+    # configured but never seen by the bot (manually added)
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Common Crypt 5",
+                                      points=5, is_in_pattern=True))
+    # seen by the bot, never mapped
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                         chest_type_raw="Raw2", chest_type_canonical="Raw2",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+    db_session.add(ChestTypeCatalog(canonical_type="Epic Arachne", pattern="T9", points=40))
+    db_session.add(ChestLocalization(canonical_type="Epic Arachne", language="ru",
+                                     display_text="Эпическая Арахна"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    collector_data = resp.json()["collectors"][0]
+    rows = {(r["raw_type"], r["catalog_id"]) for r in collector_data["rows"]}
+    assert ("Raw1", "Epic Arachne") in rows
+    assert (None, "Common Crypt 5") in rows
+    assert ("Raw2", None) in rows
+
+    options = {o["catalog_id"]: o["label"] for o in collector_data["catalog_options"]}
+    assert options["Epic Arachne"] == "Эпическая Арахна"
+
+
+@pytest.mark.asyncio
+async def test_post_rows_rejects_unknown_catalog_id(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="bad-catalog-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/web/dashboard/chests/rows",
+            json={"collector_slug": "bad-catalog-slug",
+                 "rows": [{"raw_type": "X", "catalog_id": "Not A Real Chest",
+                           "custom_name": None, "points": 5, "is_in_pattern": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_post_rows_rejects_other_users_collector(db_session):
+    user, token = await _create_user_with_token(db_session)
+    other_user, _ = await _create_user_with_token(db_session, email="other2@example.com")
+    await _create_collector(db_session, other_user.id, slug="someone-elses-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/web/dashboard/chests/rows",
+            json={"collector_slug": "someone-elses-slug", "rows": []},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_post_rows_upserts_alias_and_configuration(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="upsert-slug")
+    db_session.add(ChestTypeCatalog(canonical_type="Epic Arachne", pattern="T9", points=40))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/web/dashboard/chests/rows",
+            json={"collector_slug": "upsert-slug",
+                 "rows": [{"raw_type": "RawAB", "catalog_id": "Epic Arachne",
+                           "custom_name": "Толстяк", "points": 99, "is_in_pattern": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    alias = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalar_one()
+    assert alias.raw_type == "RawAB" and alias.catalog_id == "Epic Arachne"
+
+    config = (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
+    )).scalar_one()
+    assert config.points == 99 and config.is_in_pattern is True
+    assert config.custom_name == "Толстяк"
+
+
+@pytest.mark.asyncio
+async def test_management_token_then_claim_transfers_ownership(db_session):
+    owner, owner_token = await _create_user_with_token(db_session, email="a@example.com")
+    claimant, claimant_token = await _create_user_with_token(db_session, email="b@example.com")
+    collector = await _create_collector(db_session, owner.id, slug="transferable-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        gen_resp = await client.post(
+            "/api/v1/web/dashboard/chests/management-token",
+            json={"collector_slug": "transferable-slug"},
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        assert gen_resp.status_code == 200
+        code = gen_resp.json()["code"]
+
+        claim_resp = await client.post(
+            "/api/v1/web/dashboard/chests/claim",
+            json={"code": code},
+            headers={"Authorization": f"Bearer {claimant_token}"},
+        )
+        assert claim_resp.status_code == 200
+
+    await db_session.refresh(collector)
+    assert collector.user_id == claimant.id
+    assert collector.management_token is None
+
+
+@pytest.mark.asyncio
+async def test_claim_unknown_code_returns_404(db_session):
+    _, token = await _create_user_with_token(db_session)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/web/dashboard/chests/claim",
+            json={"code": "does-not-exist"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_patch_language_updates_own_collector(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="lang-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/api/v1/web/dashboard/chests/lang-slug/language",
+            json={"language": "en"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    await db_session.refresh(collector)
+    assert collector.language == "en"
+
+
+@pytest.mark.asyncio
+async def test_patch_language_rejects_other_users_collector(db_session):
+    owner, _ = await _create_user_with_token(db_session, email="c@example.com")
+    intruder, intruder_token = await _create_user_with_token(db_session, email="d@example.com")
+    await _create_collector(db_session, owner.id, slug="protected-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/api/v1/web/dashboard/chests/protected-slug/language",
+            json={"language": "en"},
+            headers={"Authorization": f"Bearer {intruder_token}"},
+        )
+    assert resp.status_code == 403

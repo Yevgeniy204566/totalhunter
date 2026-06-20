@@ -47,6 +47,7 @@ from clan import router as clan_router
 from chests import router as chests_router
 from chest_aliases import router as chest_aliases_router
 from chest_catalog import router as chest_catalog_router
+from chest_dashboard import router as chest_dashboard_router
 from schemas import (
     BasicResponse,
     CheckAuthResponse,
@@ -88,6 +89,7 @@ app.include_router(clan_router)
 app.include_router(chests_router)
 app.include_router(chest_aliases_router)
 app.include_router(chest_catalog_router)
+app.include_router(chest_dashboard_router)
 
 # Статика для админки (иконка)
 from fastapi.staticfiles import StaticFiles as _SF
