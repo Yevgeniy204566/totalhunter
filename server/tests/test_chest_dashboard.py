@@ -395,3 +395,59 @@ async def test_post_player_aliases_full_replace_removes_omitted_rows(db_session)
     )).scalars().all()
     assert len(aliases) == 1
     assert aliases[0].raw_name == "NewRaw"
+
+
+@pytest.mark.asyncio
+async def test_collector_and_configuration_persist_new_season_columns(db_session):
+    from datetime import datetime
+    from models import ChestConfiguration
+
+    user, _ = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="season-columns-slug")
+    collector.timezone_offset_minutes = 180
+    collector.period_start = datetime.fromisoformat("2026-06-21T00:00:00")
+    collector.period_end = datetime.fromisoformat("2026-07-05T00:00:00")
+    collector.target_points = 5000
+    collector.target_chests = 50
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Crypt 30",
+                                      points=80, is_in_pattern=True, counts_toward_quota=True))
+    await db_session.commit()
+
+    reloaded = (await db_session.execute(
+        select(ChestCollector).where(ChestCollector.slug == "season-columns-slug")
+    )).scalar_one()
+    assert reloaded.timezone_offset_minutes == 180
+    assert reloaded.period_start == datetime.fromisoformat("2026-06-21T00:00:00")
+    assert reloaded.period_end == datetime.fromisoformat("2026-07-05T00:00:00")
+    assert reloaded.target_points == 5000
+    assert reloaded.target_chests == 50
+
+    config = (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
+    )).scalar_one()
+    assert config.counts_toward_quota is True
+
+
+@pytest.mark.asyncio
+async def test_new_season_columns_default_to_none_and_quota_defaults_to_false(db_session):
+    from models import ChestConfiguration
+
+    user, _ = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="season-defaults-slug")
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Rare Crypt 25",
+                                      points=20, is_in_pattern=True))
+    await db_session.commit()
+
+    reloaded = (await db_session.execute(
+        select(ChestCollector).where(ChestCollector.slug == "season-defaults-slug")
+    )).scalar_one()
+    assert reloaded.timezone_offset_minutes is None
+    assert reloaded.period_start is None
+    assert reloaded.period_end is None
+    assert reloaded.target_points is None
+    assert reloaded.target_chests is None
+
+    config = (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
+    )).scalar_one()
+    assert config.counts_toward_quota is False

@@ -397,6 +397,11 @@ class ChestCollector(Base):
     management_token  = Column(String(32), nullable=True, unique=True)
     created_at        = Column(TIMESTAMP(timezone=True), nullable=False,
                                server_default=func.now())
+    timezone_offset_minutes = Column(Integer, nullable=True)
+    period_start            = Column(TIMESTAMP(timezone=True), nullable=True)
+    period_end              = Column(TIMESTAMP(timezone=True), nullable=True)
+    target_points           = Column(Integer, nullable=True)
+    target_chests           = Column(Integer, nullable=True)
 
 
 class Chest(Base):
@@ -466,6 +471,7 @@ class ChestConfiguration(Base):
     custom_name   = Column(String(200), nullable=True)
     points        = Column(Integer, nullable=False, server_default=text("0"))
     is_in_pattern = Column(Boolean, nullable=False, server_default=text("false"))
+    counts_toward_quota = Column(Boolean, nullable=False, server_default=text("false"))
 
 
 class ChestTypeCatalog(Base):
