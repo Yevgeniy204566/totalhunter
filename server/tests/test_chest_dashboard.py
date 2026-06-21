@@ -331,3 +331,67 @@ async def test_get_chests_includes_existing_player_alias_with_canonical_name(db_
     assert collector_data["player_alias_rows"] == [
         {"raw_name": "Araiina", "canonical_name": "Arahna"}
     ]
+
+
+@pytest.mark.asyncio
+async def test_post_player_aliases_rejects_other_users_collector(db_session):
+    user, token = await _create_user_with_token(db_session)
+    other_user, _ = await _create_user_with_token(db_session, email="other3@example.com")
+    await _create_collector(db_session, other_user.id, slug="not-mine-pa-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/chests/player-aliases",
+            json={"collector_slug": "not-mine-pa-slug", "rows": []},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_post_player_aliases_creates_and_skips_empty_canonical(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="pa-create-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/chests/player-aliases",
+            json={"collector_slug": "pa-create-slug",
+                 "rows": [{"raw_name": "Araiina", "canonical_name": "Arahna"},
+                          {"raw_name": "Unfixed", "canonical_name": None},
+                          {"raw_name": "AlsoUnfixed", "canonical_name": "  "}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    aliases = (await db_session.execute(
+        select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
+    )).scalars().all()
+    assert len(aliases) == 1
+    assert aliases[0].raw_name == "Araiina" and aliases[0].canonical_name == "Arahna"
+
+
+@pytest.mark.asyncio
+async def test_post_player_aliases_full_replace_removes_omitted_rows(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="pa-replace-slug")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="OldRaw",
+                               canonical_name="OldCanon"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/chests/player-aliases",
+            json={"collector_slug": "pa-replace-slug",
+                 "rows": [{"raw_name": "NewRaw", "canonical_name": "NewCanon"}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    aliases = (await db_session.execute(
+        select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
+    )).scalars().all()
+    assert len(aliases) == 1
+    assert aliases[0].raw_name == "NewRaw"

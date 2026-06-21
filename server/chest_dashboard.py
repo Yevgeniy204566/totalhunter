@@ -181,6 +181,34 @@ async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web
     return {"ok": True}
 
 
+class PlayerAliasRowIn(BaseModel):
+    raw_name: str
+    canonical_name: Optional[str] = None
+
+
+class PlayerAliasesPayload(BaseModel):
+    collector_slug: str
+    rows: List[PlayerAliasRowIn] = []
+
+
+@router.post("/player-aliases")
+async def post_player_aliases(payload: PlayerAliasesPayload, user: User = Depends(get_web_user),
+                              db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, payload.collector_slug, user)
+
+    await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector.id))
+
+    for row in payload.rows:
+        canonical = (row.canonical_name or "").strip()
+        if not canonical:
+            continue
+        db.add(PlayerAlias(collector_id=collector.id, raw_name=row.raw_name,
+                           canonical_name=canonical))
+
+    await db.commit()
+    return {"ok": True}
+
+
 class CollectorSlugPayload(BaseModel):
     collector_slug: str
 
