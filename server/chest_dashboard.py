@@ -9,6 +9,7 @@ chest_configurations with a UI any clan can use without owner involvement. Playe
 and the global Chest Catalog/Localizations Sheets are untouched (see design doc).
 """
 import secrets
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -257,5 +258,42 @@ async def update_language(slug: str, payload: LanguagePayload,
                           db: AsyncSession = Depends(get_db)):
     collector = await _get_own_collector(db, slug, user)
     collector.language = payload.language
+    await db.commit()
+    return {"ok": True}
+
+
+class SeasonSettingsPayload(BaseModel):
+    timezone_offset_minutes: Optional[int] = None
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
+    target_points: Optional[int] = None
+    target_chests: Optional[int] = None
+
+
+@router.patch("/{slug}/season")
+async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
+                                  user: User = Depends(get_web_user),
+                                  db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+
+    effective_start = (payload.period_start if payload.period_start is not None
+                       else collector.period_start)
+    effective_end = (payload.period_end if payload.period_end is not None
+                     else collector.period_end)
+    if (effective_start is not None and effective_end is not None
+            and effective_end <= effective_start):
+        raise HTTPException(status_code=400, detail="period_end must be after period_start")
+
+    if payload.timezone_offset_minutes is not None:
+        collector.timezone_offset_minutes = payload.timezone_offset_minutes
+    if payload.period_start is not None:
+        collector.period_start = payload.period_start
+    if payload.period_end is not None:
+        collector.period_end = payload.period_end
+    if payload.target_points is not None:
+        collector.target_points = payload.target_points
+    if payload.target_chests is not None:
+        collector.target_chests = payload.target_chests
+
     await db.commit()
     return {"ok": True}

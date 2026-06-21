@@ -494,3 +494,98 @@ async def test_get_chests_season_settings_are_null_when_unconfigured(db_session)
     assert collector_data["period_end"] is None
     assert collector_data["target_points"] is None
     assert collector_data["target_chests"] is None
+
+
+@pytest.mark.asyncio
+async def test_patch_season_updates_own_collector(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="season-patch-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/chests/season-patch-slug/season",
+            json={"timezone_offset_minutes": 180,
+                 "period_start": "2026-06-21T00:00:00",
+                 "period_end": "2026-07-05T00:00:00",
+                 "target_points": 5000, "target_chests": 50},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    await db_session.refresh(collector)
+    assert collector.timezone_offset_minutes == 180
+    assert collector.target_points == 5000
+    assert collector.target_chests == 50
+
+
+@pytest.mark.asyncio
+async def test_patch_season_partial_update_leaves_other_fields_untouched(db_session):
+    from datetime import datetime
+
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="season-partial-slug")
+    collector.timezone_offset_minutes = 180
+    collector.target_points = 5000
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/chests/season-partial-slug/season",
+            json={"target_chests": 50},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    await db_session.refresh(collector)
+    assert collector.timezone_offset_minutes == 180
+    assert collector.target_points == 5000
+    assert collector.target_chests == 50
+
+
+@pytest.mark.asyncio
+async def test_patch_season_rejects_end_before_start_same_request(db_session):
+    user, token = await _create_user_with_token(db_session)
+    await _create_collector(db_session, user.id, slug="season-badorder-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/chests/season-badorder-slug/season",
+            json={"period_start": "2026-07-05T00:00:00",
+                 "period_end": "2026-06-21T00:00:00"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_patch_season_rejects_new_end_conflicting_with_stored_start(db_session):
+    from datetime import datetime
+
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="season-conflict-slug")
+    collector.period_start = datetime.fromisoformat("2026-06-21T00:00:00")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/chests/season-conflict-slug/season",
+            json={"period_end": "2026-06-01T00:00:00"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_patch_season_rejects_other_users_collector(db_session):
+    owner, _ = await _create_user_with_token(db_session, email="seasonowner@example.com")
+    intruder, intruder_token = await _create_user_with_token(db_session, email="seasonintruder@example.com")
+    await _create_collector(db_session, owner.id, slug="season-protected-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/chests/season-protected-slug/season",
+            json={"target_points": 100},
+            headers={"Authorization": f"Bearer {intruder_token}"},
+        )
+    assert resp.status_code == 403
