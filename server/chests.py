@@ -227,7 +227,10 @@ def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
         grand_total += count
         total_points += count * points
 
-    chest_types = [display_names[t] for t in chest_type_order]
+    chest_type_order_sorted = sorted(
+        seen_types, key=lambda t: (-totals[t], display_names[t])
+    )
+    chest_types = [display_names[t] for t in chest_type_order_sorted]
     players = []
     for sender, counts_by_en in per_player.items():
         counts = {display_names[t]: c for t, c in counts_by_en.items()}

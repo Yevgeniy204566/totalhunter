@@ -406,6 +406,42 @@ async def test_summary_aggregates_players_and_chest_types(db_session):
 
 
 @pytest.mark.asyncio
+async def test_summary_chest_types_sorted_by_total_count_descending(db_session):
+    from models import ChestConfiguration
+
+    user = await _create_user(db_session, "sortbytotal0a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K12", clan="SortClan",
+            items=[
+                {"chest_type": "Beta", "sender": "P1", "timestamp": "2026-06-18T13:00:00"},
+                {"chest_type": "Zulu", "sender": "P1", "timestamp": "2026-06-18T13:01:00"},
+                {"chest_type": "Zulu", "sender": "P1", "timestamp": "2026-06-18T13:02:00"},
+                {"chest_type": "Zulu", "sender": "P1", "timestamp": "2026-06-18T13:03:00"},
+                {"chest_type": "Alpha", "sender": "P1", "timestamp": "2026-06-18T13:04:00"},
+                {"chest_type": "Alpha", "sender": "P1", "timestamp": "2026-06-18T13:05:00"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+        for catalog_id in ("Zulu", "Alpha", "Beta"):
+            db_session.add(ChestConfiguration(collector_id=collector_id, catalog_id=catalog_id,
+                                              points=0, is_in_pattern=True))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    # Zulu=3, Alpha=2, Beta=1 -> descending order, NOT alphabetical (Alpha, Beta, Zulu)
+    assert body["chest_types"] == ["Zulu", "Alpha", "Beta"]
+
+
+@pytest.mark.asyncio
 async def test_summary_empty_collector_returns_empty_lists(db_session):
     from models import ChestConfiguration
 
