@@ -10,6 +10,7 @@ export default function ChestsPage() {
   const [rowsByCollector, setRowsByCollector] = useState({})
   const [playerRowsByCollector, setPlayerRowsByCollector] = useState({})
   const [activeTabByCollector, setActiveTabByCollector] = useState({})
+  const [seasonByCollector, setSeasonByCollector] = useState({})
   const [msg, setMsg] = useState('')
   const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
@@ -27,12 +28,21 @@ export default function ChestsPage() {
       setCollectors(data.collectors)
       const nextRows = {}
       const nextPlayerRows = {}
+      const nextSeason = {}
       for (const c of data.collectors) {
         nextRows[c.slug] = c.rows
         nextPlayerRows[c.slug] = c.player_alias_rows
+        nextSeason[c.slug] = {
+          timezone_offset_minutes: c.timezone_offset_minutes,
+          period_start: c.period_start ? c.period_start.slice(0, 16) : '',
+          period_end: c.period_end ? c.period_end.slice(0, 16) : '',
+          target_points: c.target_points,
+          target_chests: c.target_chests,
+        }
       }
       setRowsByCollector(nextRows)
       setPlayerRowsByCollector(nextPlayerRows)
+      setSeasonByCollector(nextSeason)
     } catch (e) {
       setLoadError(e.message || 'failed to load')
     }
@@ -83,6 +93,28 @@ export default function ChestsPage() {
 
   async function savePlayerAliases(slug) {
     await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
+    setMsg(cx.saved)
+    await refresh()
+  }
+
+  function updateSeasonField(slug, field, value) {
+    setSeasonByCollector(prev => ({
+      ...prev,
+      [slug]: { ...prev[slug], [field]: value },
+    }))
+  }
+
+  async function saveSeason(slug) {
+    const s = seasonByCollector[slug]
+    const payload = {
+      timezone_offset_minutes: s.timezone_offset_minutes === '' || s.timezone_offset_minutes == null
+        ? null : Number(s.timezone_offset_minutes),
+      period_start: s.period_start ? s.period_start + ':00' : null,
+      period_end: s.period_end ? s.period_end + ':00' : null,
+      target_points: s.target_points === '' || s.target_points == null ? null : Number(s.target_points),
+      target_chests: s.target_chests === '' || s.target_chests == null ? null : Number(s.target_chests),
+    }
+    await api.dashboardChestsSeason(slug, payload)
     setMsg(cx.saved)
     await refresh()
   }
@@ -148,6 +180,52 @@ export default function ChestsPage() {
             </button>
           </div>
 
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.seasonTitle}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              <select
+                className="input-dark"
+                style={{ width: 'auto' }}
+                value={seasonByCollector[collector.slug]?.timezone_offset_minutes ?? ''}
+                onChange={e => updateSeasonField(collector.slug, 'timezone_offset_minutes', e.target.value)}
+              >
+                <option value="">{cx.timezoneLabel}</option>
+                {[-720, -660, -600, -540, -480, -420, -360, -300, -240, -210, -180, -120, -60, 0,
+                  60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420, 480, 540, 570, 600,
+                  630, 660, 720, 765, 780, 840].map(m => (
+                  <option key={m} value={m}>
+                    UTC{m >= 0 ? '+' : '-'}{String(Math.floor(Math.abs(m) / 60)).padStart(2, '0')}:{String(Math.abs(m) % 60).padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="input-dark" style={{ width: 'auto' }} type="datetime-local"
+                value={seasonByCollector[collector.slug]?.period_start || ''}
+                onChange={e => updateSeasonField(collector.slug, 'period_start', e.target.value)}
+              />
+              <input
+                className="input-dark" style={{ width: 'auto' }} type="datetime-local"
+                value={seasonByCollector[collector.slug]?.period_end || ''}
+                onChange={e => updateSeasonField(collector.slug, 'period_end', e.target.value)}
+              />
+              <input
+                className="input-dark" style={{ width: 120 }} type="number"
+                placeholder={cx.targetPointsLabel}
+                value={seasonByCollector[collector.slug]?.target_points ?? ''}
+                onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
+              />
+              <input
+                className="input-dark" style={{ width: 120 }} type="number"
+                placeholder={cx.targetChestsLabel}
+                value={seasonByCollector[collector.slug]?.target_chests ?? ''}
+                onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
+              />
+            </div>
+            <button className="btn-primary" onClick={() => saveSeason(collector.slug)}>
+              {cx.saveSeason}
+            </button>
+          </div>
+
           <div className="chest-tabs">
             <button
               className={`chest-tab ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
@@ -173,6 +251,7 @@ export default function ChestsPage() {
                     <th>{cx.customNameCol}</th>
                     <th>{cx.pointsCol}</th>
                     <th>{cx.inPatternCol}</th>
+                    <th>{cx.quotaCol}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,6 +291,16 @@ export default function ChestsPage() {
                             type="checkbox"
                             checked={row.is_in_pattern}
                             onChange={e => updateRow(collector.slug, i, 'is_in_pattern', e.target.checked)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </td>
+                      <td>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={row.counts_toward_quota}
+                            onChange={e => updateRow(collector.slug, i, 'counts_toward_quota', e.target.checked)}
                           />
                           <span className="slider"></span>
                         </label>
