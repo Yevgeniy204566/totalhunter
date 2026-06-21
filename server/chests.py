@@ -319,4 +319,11 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
 
     result = _pivot_summary(collector.kingdom, collector.clan, rows)
     result["updated_at"] = updated_at.isoformat() if updated_at else None
+    result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
+    result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
+    result["timezone_offset_minutes"] = collector.timezone_offset_minutes
+    result["targets"] = {
+        "points": collector.target_points,
+        "chests": collector.target_chests,
+    }
     return result

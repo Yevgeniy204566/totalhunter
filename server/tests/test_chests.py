@@ -930,3 +930,70 @@ async def test_summary_quota_chests_counts_only_quota_marked_types(db_session):
     assert player["quota_chests"] == 2
     assert player["total"] == 5
     assert player["points"] == 2 * 80 + 3 * 5
+
+
+@pytest.mark.asyncio
+async def test_summary_includes_season_metadata_when_configured(db_session):
+    from models import ChestConfiguration
+
+    user = await _create_user(db_session, "seasonmetauser")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K18", clan="SeasonMetaClan",
+            items=[{"chest_type": "Common", "sender": "P1",
+                    "timestamp": "2026-06-25T00:00:00"}],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        collector.period_start = datetime.fromisoformat("2026-06-21T00:00:00")
+        collector.period_end = datetime.fromisoformat("2026-07-05T00:00:00")
+        collector.timezone_offset_minutes = 180
+        collector.target_points = 5000
+        collector.target_chests = 50
+        db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Common",
+                                          points=0, is_in_pattern=True))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["period_start"] == "2026-06-21T00:00:00"
+    assert body["period_end"] == "2026-07-05T00:00:00"
+    assert body["timezone_offset_minutes"] == 180
+    assert body["targets"] == {"points": 5000, "chests": 50}
+
+
+@pytest.mark.asyncio
+async def test_summary_season_metadata_is_null_when_unconfigured(db_session):
+    from models import ChestConfiguration
+
+    user = await _create_user(db_session, "noseasonmeta0a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K19", clan="NoSeasonMetaClan",
+            items=[{"chest_type": "Common", "sender": "P1",
+                    "timestamp": "2026-06-25T00:00:00"}],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+        db_session.add(ChestConfiguration(collector_id=collector_id, catalog_id="Common",
+                                          points=0, is_in_pattern=True))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["period_start"] is None
+    assert body["period_end"] is None
+    assert body["timezone_offset_minutes"] is None
+    assert body["targets"] == {"points": None, "chests": None}
