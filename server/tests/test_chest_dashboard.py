@@ -13,7 +13,7 @@ from sqlalchemy import select
 from main import app
 from models import (
     Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias,
-    ChestTypeCatalog, User,
+    ChestTypeCatalog, PlayerAlias, User,
 )
 from web_routes import create_jwt
 
@@ -289,3 +289,45 @@ async def test_patch_language_rejects_other_users_collector(db_session):
             headers={"Authorization": f"Bearer {intruder_token}"},
         )
     assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_get_chests_includes_unmapped_sender_as_player_alias_row(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="player-rows-slug")
+    db_session.add(Chest(collector_id=collector.id, sender_raw="Araiina",
+                         sender_canonical="Araiina", chest_type_raw="X",
+                         chest_type_canonical="X",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    collector_data = resp.json()["collectors"][0]
+    assert collector_data["player_alias_rows"] == [
+        {"raw_name": "Araiina", "canonical_name": None}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_chests_includes_existing_player_alias_with_canonical_name(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="player-alias-slug")
+    db_session.add(Chest(collector_id=collector.id, sender_raw="Araiina",
+                         sender_canonical="Arahna", chest_type_raw="X",
+                         chest_type_canonical="X",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="Araiina",
+                               canonical_name="Arahna"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    collector_data = resp.json()["collectors"][0]
+    assert collector_data["player_alias_rows"] == [
+        {"raw_name": "Araiina", "canonical_name": "Arahna"}
+    ]

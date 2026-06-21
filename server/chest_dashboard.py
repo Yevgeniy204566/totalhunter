@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models import (
     Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias,
-    ChestTypeCatalog, User,
+    ChestTypeCatalog, PlayerAlias, User,
 )
 from web_routes import get_web_user
 
@@ -89,6 +89,25 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
     return rows
 
 
+async def _player_alias_rows(db: AsyncSession, collector: ChestCollector) -> list:
+    aliases = (await db.execute(
+        select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
+    )).scalars().all()
+    rows = [{"raw_name": a.raw_name, "canonical_name": a.canonical_name} for a in aliases]
+
+    mapped_raw_names = {a.raw_name for a in aliases}
+    unmapped = (await db.execute(
+        select(Chest.sender_raw).distinct()
+        .where(Chest.collector_id == collector.id)
+    )).scalars().all()
+    for raw_name in unmapped:
+        if raw_name in mapped_raw_names:
+            continue
+        rows.append({"raw_name": raw_name, "canonical_name": None})
+
+    return rows
+
+
 @router.get("")
 async def get_dashboard_chests(user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
@@ -103,6 +122,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "language": collector.language,
             "public_url": f"https://total-hunter.com/chests/{collector.slug}",
             "rows": await _collector_rows(db, collector),
+            "player_alias_rows": await _player_alias_rows(db, collector),
             "catalog_options": await _load_catalog_options(db, collector.language),
         })
     return {"collectors": result}
