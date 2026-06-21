@@ -384,9 +384,34 @@ a:hover { color: var(--on-surface); }
 .public-cell-zero { color: var(--on-surface2); }
 .public-points-cell { color: var(--credits-gold); font-weight: 700; }
 
-.public-table th:first-child, .public-table td:first-child {
-  position: sticky; left: 0; z-index: 2;
-  background: var(--card);
+/* ── Public chest summary — season info, timer, row coloring, two-col sticky ─ */
+.public-season-info { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.public-season-badge {
+  background: var(--elevated); border: 1px solid var(--outline); border-radius: 8px;
+  padding: 6px 12px; font-size: 13px; color: var(--on-surface2);
 }
-.public-table tbody tr:nth-child(even) td:first-child { background: #0D1326; }
-.public-table tbody tr:hover td:first-child { background: var(--accent-glow); }
+.public-season-timer { color: var(--accent); font-weight: 600; }
+
+.public-table-wrap::-webkit-scrollbar { height: 10px; }
+.public-table-wrap::-webkit-scrollbar-track { background: var(--elevated); border-radius: 4px; }
+.public-table-wrap::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+.public-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
+
+.row-top3 td { color: #50C878; font-weight: 600; }
+.row-lagging td { color: #FFB347; }
+.row-danger td { color: #FF6961; }
+
+.public-table th:nth-child(1), .public-table td:nth-child(1) {
+  position: sticky; left: 0; z-index: 2; width: 40px; background: var(--card);
+}
+.public-table th:nth-child(2), .public-table td:nth-child(2) {
+  position: sticky; left: 40px; z-index: 2; background: var(--card);
+}
+.public-table tbody tr:nth-child(even) td:nth-child(1),
+.public-table tbody tr:nth-child(even) td:nth-child(2) { background: #0D1326; }
+.public-table tbody tr:hover td:nth-child(1),
+.public-table tbody tr:hover td:nth-child(2) { background: var(--accent-glow); }
+.public-table tbody tr.row-top3 td:nth-child(1),
+.public-table tbody tr.row-top3 td:nth-child(2) { background: var(--card); }
+.public-table tbody tr.row-top3:nth-child(even) td:nth-child(1),
+.public-table tbody tr.row-top3:nth-child(even) td:nth-child(2) { background: #0D1326; }
