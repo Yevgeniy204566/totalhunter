@@ -42,6 +42,7 @@ export const api = {
   earnReward:       ()         => request('POST', '/web/earn/reward'),
   dashboardChests:      ()              => request('GET',   '/web/dashboard/chests'),
   dashboardChestsSave:  (slug, rows)    => request('POST',  '/web/dashboard/chests/rows', { collector_slug: slug, rows }),
+  dashboardChestsPlayerAliases: (slug, rows) => request('POST', '/web/dashboard/chests/player-aliases', { collector_slug: slug, rows }),
   dashboardChestsToken: (slug)          => request('POST',  '/web/dashboard/chests/management-token', { collector_slug: slug }),
   dashboardChestsClaim: (code)          => request('POST',  '/web/dashboard/chests/claim', { code }),
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
