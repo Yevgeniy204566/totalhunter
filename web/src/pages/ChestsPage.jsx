@@ -66,7 +66,7 @@ export default function ChestsPage() {
     setRowsByCollector(prev => ({
       ...prev,
       [slug]: [...prev[slug], { raw_type: null, catalog_id: null, custom_name: null,
-                                points: 0, is_in_pattern: false }],
+                                points: 0, is_in_pattern: false, counts_toward_quota: false }],
     }))
   }
 
