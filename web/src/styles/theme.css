@@ -357,3 +357,36 @@ a:hover { color: var(--on-surface); }
 }
 .toggle-switch input:checked + .slider { background: var(--accent); }
 .toggle-switch input:checked + .slider::before { transform: translateX(18px); }
+
+/* ── Public chest summary page — premium dark table ───────────── */
+.public-summary-title { font-size: 28px; margin-bottom: 4px; }
+.public-summary-updated { color: var(--on-surface2); font-size: 13px; margin-bottom: 12px; }
+.public-summary-divider {
+  height: 1px; background: linear-gradient(90deg, var(--accent) 0%, transparent 80%);
+  margin-bottom: 20px;
+}
+
+.public-table-wrap { overflow-x: auto; }
+.public-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+.public-table th {
+  text-align: right; padding: 10px 14px; color: var(--on-surface2);
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px;
+  background: var(--elevated); border-bottom: 1px solid var(--outline);
+}
+.public-table th:first-child, .public-table td:first-child { text-align: left; }
+.public-table td {
+  padding: 8px 14px; text-align: right;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--on-surface);
+}
+.public-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
+.public-table tbody tr:hover td { background: var(--accent-glow); }
+.public-cell-zero { color: var(--on-surface2); }
+.public-points-cell { color: var(--credits-gold); font-weight: 700; }
+
+.public-table th:first-child, .public-table td:first-child {
+  position: sticky; left: 0; z-index: 2;
+  background: var(--card);
+}
+.public-table tbody tr:nth-child(even) td:first-child { background: #0D1326; }
+.public-table tbody tr:hover td:first-child { background: var(--accent-glow); }
