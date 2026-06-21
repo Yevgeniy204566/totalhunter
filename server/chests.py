@@ -51,8 +51,8 @@ async def _get_or_create_collector(kingdom: str, clan: str, user_id: int,
                                    db: AsyncSession) -> ChestCollector:
     existing = (await db.execute(
         select(ChestCollector).where(
-            ChestCollector.kingdom == kingdom,
-            ChestCollector.clan == clan,
+            func.lower(ChestCollector.kingdom) == kingdom.lower(),
+            func.lower(ChestCollector.clan) == clan.lower(),
             ChestCollector.user_id == user_id,
         )
     )).scalar_one_or_none()

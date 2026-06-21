@@ -110,6 +110,24 @@ async def test_import_same_tenant_twice_reuses_collector(db_session):
     assert len(chests) == 2
 
 
+@pytest.mark.asyncio
+async def test_import_clan_name_case_difference_reuses_collector(db_session):
+    user = await _create_user(db_session, "casediffuser0a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, clan="BERS", items=[{"chest_type": "A", "sender": "S1",
+                                            "timestamp": "2026-06-18T10:00:00"}]))
+        await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, clan="Bers", items=[{"chest_type": "B", "sender": "S2",
+                                            "timestamp": "2026-06-18T10:05:00"}]))
+
+    collectors = (await db_session.execute(select(ChestCollector))).scalars().all()
+    assert len(collectors) == 1
+    chests = (await db_session.execute(select(Chest))).scalars().all()
+    assert len(chests) == 2
+
+
 from models import PlayerAlias, ChestTypeAlias
 
 
