@@ -822,3 +822,72 @@ async def test_summary_updated_at_is_none_for_collector_with_zero_chests(db_sess
         resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
     assert resp.status_code == 200
     assert resp.json()["updated_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_summary_filters_chests_by_period_inclusive_both_ends(db_session):
+    from models import ChestConfiguration
+
+    user = await _create_user(db_session, "perioduser000a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K15", clan="PeriodClan",
+            items=[
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-20T23:59:59"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-21T00:00:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-30T12:00:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-07-05T00:00:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-07-05T00:00:01"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        collector.period_start = datetime.fromisoformat("2026-06-21T00:00:00")
+        collector.period_end = datetime.fromisoformat("2026-07-05T00:00:00")
+        db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Common",
+                                          points=0, is_in_pattern=True))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    # In range (inclusive both ends): 06-21T00:00:00, 06-30T12:00:00, 07-05T00:00:00 = 3
+    # Excluded: 06-20T23:59:59 (before start), 07-05T00:00:01 (after end)
+    assert body["players"][0]["total"] == 3
+    assert body["updated_at"] == "2026-07-05T00:00:00"
+
+
+@pytest.mark.asyncio
+async def test_summary_unconfigured_period_applies_no_filter(db_session):
+    from models import ChestConfiguration
+
+    user = await _create_user(db_session, "noperioduser0a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K16", clan="NoPeriodClan",
+            items=[
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2020-01-01T00:00:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2030-12-31T23:59:59"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Common",
+                                          points=0, is_in_pattern=True))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["players"][0]["total"] == 2
+    assert body["updated_at"] == "2030-12-31T23:59:59"

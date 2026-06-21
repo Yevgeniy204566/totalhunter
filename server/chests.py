@@ -268,7 +268,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     display_expr = func.coalesce(ChestConfiguration.custom_name,
                                  ChestLocalization.display_text, chest_type_expr)
 
-    rows = (await db.execute(
+    rows_query = (
         select(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points,
                func.count())
         .select_from(Chest)
@@ -294,12 +294,22 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
                  ChestLocalization.language == collector.language),
         )
         .where(Chest.collector_id == collector.id)
-        .group_by(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points)
-    )).all()
+    )
+    updated_at_query = select(func.max(Chest.collected_at)).where(
+        Chest.collector_id == collector.id)
 
-    updated_at = (await db.execute(
-        select(func.max(Chest.collected_at)).where(Chest.collector_id == collector.id)
-    )).scalar_one_or_none()
+    if collector.period_start is not None:
+        rows_query = rows_query.where(Chest.collected_at >= collector.period_start)
+        updated_at_query = updated_at_query.where(Chest.collected_at >= collector.period_start)
+    if collector.period_end is not None:
+        rows_query = rows_query.where(Chest.collected_at <= collector.period_end)
+        updated_at_query = updated_at_query.where(Chest.collected_at <= collector.period_end)
+
+    rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr,
+                                     ChestConfiguration.points)
+
+    rows = (await db.execute(rows_query)).all()
+    updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
 
     result = _pivot_summary(collector.kingdom, collector.clan, rows)
     result["updated_at"] = updated_at.isoformat() if updated_at else None
