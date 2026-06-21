@@ -5,7 +5,7 @@ import { fetchChestSummary } from '../api.js'
 function formatRemaining(periodEndIso, offsetMinutes) {
   const [datePart, timePart] = periodEndIso.split('T')
   const [y, mo, d] = datePart.split('-').map(Number)
-  const [h, mi, s] = timePart.split(':').map(Number)
+  const [h, mi, s] = (timePart || '00:00:00').split(':').map(Number)
   const periodEndMillis = Date.UTC(y, mo - 1, d, h, mi, s || 0)
   const clanNowMillis = Date.now() + offsetMinutes * 60000
   const remaining = periodEndMillis - clanNowMillis
