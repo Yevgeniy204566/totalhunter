@@ -66,6 +66,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "custom_name": config.custom_name if config else None,
             "points": config.points if config else 0,
             "is_in_pattern": config.is_in_pattern if config else False,
+            "counts_toward_quota": config.counts_toward_quota if config else False,
         })
     for config in configs:
         if config.catalog_id in seen_catalog_ids:
@@ -74,6 +75,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "raw_type": None, "catalog_id": config.catalog_id,
             "custom_name": config.custom_name, "points": config.points,
             "is_in_pattern": config.is_in_pattern,
+            "counts_toward_quota": config.counts_toward_quota,
         })
 
     mapped_raw_types = {a.raw_type for a in aliases}
@@ -85,7 +87,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
         if raw_type in mapped_raw_types:
             continue
         rows.append({"raw_type": raw_type, "catalog_id": None, "custom_name": None,
-                     "points": 0, "is_in_pattern": False})
+                     "points": 0, "is_in_pattern": False, "counts_toward_quota": False})
 
     return rows
 
@@ -140,6 +142,7 @@ class RowIn(BaseModel):
     custom_name: Optional[str] = None
     points: int = 0
     is_in_pattern: bool = False
+    counts_toward_quota: bool = False
 
 
 class RowsPayload(BaseModel):
@@ -181,7 +184,8 @@ async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web
         if row.catalog_id is not None:
             db.add(ChestConfiguration(collector_id=collector.id, catalog_id=row.catalog_id,
                                       custom_name=row.custom_name, points=row.points,
-                                      is_in_pattern=row.is_in_pattern))
+                                      is_in_pattern=row.is_in_pattern,
+                                      counts_toward_quota=row.counts_toward_quota))
 
     await db.commit()
     return {"ok": True}
