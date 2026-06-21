@@ -199,7 +199,8 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
 
 
 def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
-    """rows: iterable of (sender, chest_type_en, display_name, points_per_unit, count).
+    """rows: iterable of (sender, chest_type_en, display_name, points_per_unit,
+    counts_toward_quota, count).
 
     chest_type_en is used as the internal dedup/grouping key (stable, language-
     independent) — display_name is only substituted in at the very end, so two
@@ -211,11 +212,12 @@ def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
     display_names: dict[str, str] = {}
     per_player: dict[str, dict[str, int]] = {}
     player_points: dict[str, int] = {}
+    player_quota: dict[str, int] = {}
     totals: dict[str, int] = {}
     grand_total = 0
     total_points = 0
 
-    for sender, chest_type_en, display_name, points, count in rows:
+    for sender, chest_type_en, display_name, points, counts_toward_quota, count in rows:
         if chest_type_en not in seen_types:
             seen_types.add(chest_type_en)
             chest_type_order.append(chest_type_en)
@@ -223,6 +225,8 @@ def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
         per_player.setdefault(sender, {})
         per_player[sender][chest_type_en] = per_player[sender].get(chest_type_en, 0) + count
         player_points[sender] = player_points.get(sender, 0) + count * points
+        if counts_toward_quota:
+            player_quota[sender] = player_quota.get(sender, 0) + count
         totals[chest_type_en] = totals.get(chest_type_en, 0) + count
         grand_total += count
         total_points += count * points
@@ -239,6 +243,7 @@ def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
             "counts": counts,
             "total": sum(counts_by_en.values()),
             "points": player_points[sender],
+            "quota_chests": player_quota.get(sender, 0),
         })
     players.sort(key=lambda p: (-p["points"], p["name"]))
 
@@ -270,7 +275,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
 
     rows_query = (
         select(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points,
-               func.count())
+               ChestConfiguration.counts_toward_quota, func.count())
         .select_from(Chest)
         .outerjoin(
             PlayerAlias,
@@ -306,7 +311,8 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         updated_at_query = updated_at_query.where(Chest.collected_at <= collector.period_end)
 
     rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr,
-                                     ChestConfiguration.points)
+                                     ChestConfiguration.points,
+                                     ChestConfiguration.counts_toward_quota)
 
     rows = (await db.execute(rows_query)).all()
     updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()

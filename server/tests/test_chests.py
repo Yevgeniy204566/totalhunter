@@ -730,7 +730,7 @@ async def test_summary_uses_chest_configuration_points_and_custom_name(db_sessio
     assert body["chest_types"] == ["Толстяк"]
     assert body["totals"] == {"Толстяк": 1, "grand_total": 1, "total_points": 40}
     assert body["players"][0] == {"name": "P1", "counts": {"Толстяк": 1}, "total": 1,
-                                  "points": 40}
+                                  "points": 40, "quota_chests": 0}
 
 
 @pytest.mark.asyncio
@@ -891,3 +891,42 @@ async def test_summary_unconfigured_period_applies_no_filter(db_session):
     body = resp.json()
     assert body["players"][0]["total"] == 2
     assert body["updated_at"] == "2030-12-31T23:59:59"
+
+
+@pytest.mark.asyncio
+async def test_summary_quota_chests_counts_only_quota_marked_types(db_session):
+    from models import ChestConfiguration
+
+    user = await _create_user(db_session, "quotauser0000a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K17", clan="QuotaClan",
+            items=[
+                {"chest_type": "EpicCrypt", "sender": "P1", "timestamp": "2026-06-18T10:00:00"},
+                {"chest_type": "EpicCrypt", "sender": "P1", "timestamp": "2026-06-18T10:01:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-18T10:02:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-18T10:03:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-18T10:04:00"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+        db_session.add(ChestConfiguration(collector_id=collector_id, catalog_id="EpicCrypt",
+                                          points=80, is_in_pattern=True,
+                                          counts_toward_quota=True))
+        db_session.add(ChestConfiguration(collector_id=collector_id, catalog_id="Common",
+                                          points=5, is_in_pattern=True,
+                                          counts_toward_quota=False))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    player = resp.json()["players"][0]
+    assert player["quota_chests"] == 2
+    assert player["total"] == 5
+    assert player["points"] == 2 * 80 + 3 * 5
