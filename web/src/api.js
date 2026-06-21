@@ -46,6 +46,7 @@ export const api = {
   dashboardChestsToken: (slug)          => request('POST',  '/web/dashboard/chests/management-token', { collector_slug: slug }),
   dashboardChestsClaim: (code)          => request('POST',  '/web/dashboard/chests/claim', { code }),
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
+  dashboardChestsSeason: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/season`, payload),
 }
 
 export async function fetchChestSummary(slug) {
