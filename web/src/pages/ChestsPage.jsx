@@ -71,9 +71,11 @@ export default function ChestsPage() {
   }
 
   async function save(slug) {
-    await api.dashboardChestsSave(slug, rowsByCollector[slug])
-    setMsg(cx.saved)
-    await refresh()
+    try {
+      await api.dashboardChestsSave(slug, rowsByCollector[slug])
+      setMsg(cx.saved)
+      await refresh()
+    } catch (e) { setMsg(e.message) }
   }
 
   function updatePlayerRow(slug, index, field, value) {
@@ -92,9 +94,11 @@ export default function ChestsPage() {
   }
 
   async function savePlayerAliases(slug) {
-    await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
-    setMsg(cx.saved)
-    await refresh()
+    try {
+      await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
+      setMsg(cx.saved)
+      await refresh()
+    } catch (e) { setMsg(e.message) }
   }
 
   function updateSeasonField(slug, field, value) {
@@ -114,9 +118,11 @@ export default function ChestsPage() {
       target_points: s.target_points === '' || s.target_points == null ? null : Number(s.target_points),
       target_chests: s.target_chests === '' || s.target_chests == null ? null : Number(s.target_chests),
     }
-    await api.dashboardChestsSeason(slug, payload)
-    setMsg(cx.saved)
-    await refresh()
+    try {
+      await api.dashboardChestsSeason(slug, payload)
+      setMsg(cx.saved)
+      await refresh()
+    } catch (e) { setMsg(e.message) }
   }
 
   async function genToken(slug) {
