@@ -2,6 +2,55 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fetchChestSummary } from '../api.js'
 
+function formatRemaining(periodEndIso, offsetMinutes) {
+  const [datePart, timePart] = periodEndIso.split('T')
+  const [y, mo, d] = datePart.split('-').map(Number)
+  const [h, mi, s] = timePart.split(':').map(Number)
+  const periodEndMillis = Date.UTC(y, mo - 1, d, h, mi, s || 0)
+  const clanNowMillis = Date.now() + offsetMinutes * 60000
+  const remaining = periodEndMillis - clanNowMillis
+  if (remaining <= 0) return 'Сбор завершён'
+  const totalMinutes = Math.floor(remaining / 60000)
+  const days = Math.floor(totalMinutes / (24 * 60))
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60)
+  const minutes = totalMinutes % 60
+  return `Осталось: ${days} дн. ${hours} ч. ${minutes} мин.`
+}
+
+function CountdownTimer({ periodEnd, offsetMinutes }) {
+  const [label, setLabel] = useState(() => formatRemaining(periodEnd, offsetMinutes))
+
+  useEffect(() => {
+    setLabel(formatRemaining(periodEnd, offsetMinutes))
+    const id = setInterval(() => {
+      setLabel(formatRemaining(periodEnd, offsetMinutes))
+    }, 60000)
+    return () => clearInterval(id)
+  }, [periodEnd, offsetMinutes])
+
+  return <span className="public-season-badge public-season-timer">{label}</span>
+}
+
+function rowColorClass(player, rank, targets) {
+  const ratios = []
+  if (targets.points) ratios.push(player.points / targets.points)
+  if (targets.chests) ratios.push(player.quota_chests / targets.chests)
+  if (ratios.length === 0) return ''
+  const ratio = Math.min(...ratios)
+  if (ratio >= 1 && rank < 3) return 'row-top3'
+  if (ratio >= 0.5) return ''
+  if (ratio > 0) return 'row-lagging'
+  return 'row-danger'
+}
+
+function formatOffsetLabel(offsetMinutes) {
+  const sign = offsetMinutes >= 0 ? '+' : '-'
+  const abs = Math.abs(offsetMinutes)
+  const h = String(Math.floor(abs / 60)).padStart(2, '0')
+  const m = String(abs % 60).padStart(2, '0')
+  return `${sign}${h}:${m}`
+}
+
 export default function ChestSummaryPage() {
   const { slug } = useParams()
   const [data, setData] = useState(null)
@@ -18,9 +67,29 @@ export default function ChestSummaryPage() {
     ? new Date(data.updated_at).toLocaleString()
     : '—'
 
+  const targets = data.targets || { points: null, chests: null }
+  const hasSeasonTargets = targets.points != null || targets.chests != null
+
   return (
     <div className="page-content">
       <h1 className="gradient-text public-summary-title">{data.kingdom} / {data.clan}</h1>
+
+      {hasSeasonTargets && (
+        <div className="public-season-info">
+          <span className="public-season-badge">
+            Цель сезона: {targets.points ?? '—'} очков / {targets.chests ?? '—'} Epic-склепов
+          </span>
+          {data.timezone_offset_minutes != null && (
+            <span className="public-season-badge">
+              Часовой пояс: UTC{formatOffsetLabel(data.timezone_offset_minutes)}
+            </span>
+          )}
+          {data.period_end && (
+            <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} />
+          )}
+        </div>
+      )}
+
       <div className="public-summary-updated">Последнее обновление: {updatedLabel}</div>
       <div className="public-summary-divider" />
 
@@ -28,18 +97,20 @@ export default function ChestSummaryPage() {
         <table className="public-table">
           <thead>
             <tr>
+              <th>#</th>
               <th>Player</th>
               <th>Очки</th>
-              <th>Всего сундуков</th>
+              <th>Epic склепов</th>
               {data.chest_types.map(t => <th key={t}>{t}</th>)}
             </tr>
           </thead>
           <tbody>
-            {data.players.map(p => (
-              <tr key={p.name}>
+            {data.players.map((p, i) => (
+              <tr key={p.name} className={rowColorClass(p, i, targets)}>
+                <td>{i + 1}</td>
                 <td>{p.name}</td>
                 <td className="public-points-cell">{p.points}</td>
-                <td className={p.total === 0 ? 'public-cell-zero' : ''}>{p.total}</td>
+                <td className={p.quota_chests === 0 ? 'public-cell-zero' : ''}>{p.quota_chests}</td>
                 {data.chest_types.map(t => {
                   const value = p.counts[t] || 0
                   return (
