@@ -8,6 +8,8 @@ import { useMeta } from '../hooks/useMeta.js'
 export default function ChestsPage() {
   const [collectors, setCollectors] = useState(null)
   const [rowsByCollector, setRowsByCollector] = useState({})
+  const [playerRowsByCollector, setPlayerRowsByCollector] = useState({})
+  const [activeTabByCollector, setActiveTabByCollector] = useState({})
   const [msg, setMsg] = useState('')
   const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
@@ -23,14 +25,24 @@ export default function ChestsPage() {
     try {
       const data = await api.dashboardChests()
       setCollectors(data.collectors)
-      const next = {}
-      for (const c of data.collectors) next[c.slug] = c.rows
-      setRowsByCollector(next)
+      const nextRows = {}
+      const nextPlayerRows = {}
+      for (const c of data.collectors) {
+        nextRows[c.slug] = c.rows
+        nextPlayerRows[c.slug] = c.player_alias_rows
+      }
+      setRowsByCollector(nextRows)
+      setPlayerRowsByCollector(nextPlayerRows)
     } catch (e) {
       setLoadError(e.message || 'failed to load')
     }
   }
   useEffect(() => { refresh() }, [])
+
+  function activeTab(slug) { return activeTabByCollector[slug] || 'chests' }
+  function setTab(slug, tab) {
+    setActiveTabByCollector(prev => ({ ...prev, [slug]: tab }))
+  }
 
   function updateRow(slug, index, field, value) {
     setRowsByCollector(prev => {
@@ -50,6 +62,27 @@ export default function ChestsPage() {
 
   async function save(slug) {
     await api.dashboardChestsSave(slug, rowsByCollector[slug])
+    setMsg(cx.saved)
+    await refresh()
+  }
+
+  function updatePlayerRow(slug, index, field, value) {
+    setPlayerRowsByCollector(prev => {
+      const rows = [...prev[slug]]
+      rows[index] = { ...rows[index], [field]: value }
+      return { ...prev, [slug]: rows }
+    })
+  }
+
+  function addPlayerRow(slug) {
+    setPlayerRowsByCollector(prev => ({
+      ...prev,
+      [slug]: [...prev[slug], { raw_name: '', canonical_name: '' }],
+    }))
+  }
+
+  async function savePlayerAliases(slug) {
+    await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
     setMsg(cx.saved)
     await refresh()
   }
@@ -81,10 +114,11 @@ export default function ChestsPage() {
 
       <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
         <input
+          className="input-dark"
           value={claimCode}
           onChange={e => setClaimCode(e.target.value)}
           placeholder={cx.claimPlaceholder}
-          style={{ marginRight: 8 }}
+          style={{ marginBottom: 8 }}
         />
         <button className="btn-secondary" onClick={claim}>{cx.claimBtn}</button>
       </div>
@@ -98,9 +132,11 @@ export default function ChestsPage() {
             <a href={collector.public_url} target="_blank" rel="noreferrer">{cx.publicLink}</a>
           </div>
 
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
             {cx.language}:
             <select
+              className="input-dark"
+              style={{ width: 'auto' }}
               value={collector.language || ''}
               onChange={e => changeLanguage(collector.slug, e.target.value)}
             >
@@ -112,62 +148,121 @@ export default function ChestsPage() {
             </button>
           </div>
 
-          <table style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>{cx.rawCol}</th>
-                <th>{cx.catalogCol}</th>
-                <th>{cx.customNameCol}</th>
-                <th>{cx.pointsCol}</th>
-                <th>{cx.inPatternCol}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rowsByCollector[collector.slug]?.map((row, i) => (
-                <tr key={i}>
-                  <td>{row.raw_type || '—'}</td>
-                  <td>
-                    <select
-                      value={row.catalog_id || ''}
-                      onChange={e => updateRow(collector.slug, i, 'catalog_id', e.target.value || null)}
-                    >
-                      <option value="">{cx.noCatalog}</option>
-                      {collector.catalog_options.map(o => (
-                        <option key={o.catalog_id} value={o.catalog_id}>{o.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      value={row.custom_name || ''}
-                      onChange={e => updateRow(collector.slug, i, 'custom_name', e.target.value || null)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={row.points}
-                      onChange={e => updateRow(collector.slug, i, 'points', parseInt(e.target.value, 10) || 0)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={row.is_in_pattern}
-                      onChange={e => updateRow(collector.slug, i, 'is_in_pattern', e.target.checked)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="chest-tabs">
+            <button
+              className={`chest-tab ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'chests')}
+            >
+              {cx.chestsTab}
+            </button>
+            <button
+              className={`chest-tab ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'players')}
+            >
+              {cx.playersTab}
+            </button>
+          </div>
 
-          <button className="btn-secondary" onClick={() => addRow(collector.slug)} style={{ marginTop: 12 }}>
-            {cx.addRow}
-          </button>
-          <button className="btn-primary" onClick={() => save(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
-            {cx.save}
-          </button>
+          {activeTab(collector.slug) === 'chests' && (
+            <>
+              <table className="chest-table">
+                <thead>
+                  <tr>
+                    <th>{cx.rawCol}</th>
+                    <th>{cx.catalogCol}</th>
+                    <th>{cx.customNameCol}</th>
+                    <th>{cx.pointsCol}</th>
+                    <th>{cx.inPatternCol}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rowsByCollector[collector.slug]?.map((row, i) => (
+                    <tr key={i}>
+                      <td>{row.raw_type || '—'}</td>
+                      <td>
+                        <select
+                          className="input-dark"
+                          value={row.catalog_id || ''}
+                          onChange={e => updateRow(collector.slug, i, 'catalog_id', e.target.value || null)}
+                        >
+                          <option value="">{cx.noCatalog}</option>
+                          {collector.catalog_options.map(o => (
+                            <option key={o.catalog_id} value={o.catalog_id}>{o.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          className="input-dark"
+                          value={row.custom_name || ''}
+                          onChange={e => updateRow(collector.slug, i, 'custom_name', e.target.value || null)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="input-dark"
+                          type="number"
+                          value={row.points === 0 ? '' : row.points}
+                          onChange={e => updateRow(collector.slug, i, 'points', parseInt(e.target.value, 10) || 0)}
+                        />
+                      </td>
+                      <td>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={row.is_in_pattern}
+                            onChange={e => updateRow(collector.slug, i, 'is_in_pattern', e.target.checked)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <button className="btn-secondary" onClick={() => addRow(collector.slug)} style={{ marginTop: 12 }}>
+                {cx.addRow}
+              </button>
+              <button className="btn-primary" onClick={() => save(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
+                {cx.save}
+              </button>
+            </>
+          )}
+
+          {activeTab(collector.slug) === 'players' && (
+            <>
+              <table className="chest-table">
+                <thead>
+                  <tr>
+                    <th>{cx.playerRawCol}</th>
+                    <th>{cx.playerCanonicalCol}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {playerRowsByCollector[collector.slug]?.map((row, i) => (
+                    <tr key={i}>
+                      <td>{row.raw_name || '—'}</td>
+                      <td>
+                        <input
+                          className="input-dark"
+                          value={row.canonical_name || ''}
+                          onChange={e => updatePlayerRow(collector.slug, i, 'canonical_name', e.target.value)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <button className="btn-secondary" onClick={() => addPlayerRow(collector.slug)} style={{ marginTop: 12 }}>
+                {cx.addPlayerRow}
+              </button>
+              <button className="btn-primary" onClick={() => savePlayerAliases(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
+                {cx.savePlayerAliases}
+              </button>
+            </>
+          )}
         </div>
       ))}
 
