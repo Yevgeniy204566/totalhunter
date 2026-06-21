@@ -124,6 +124,11 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "rows": await _collector_rows(db, collector),
             "player_alias_rows": await _player_alias_rows(db, collector),
             "catalog_options": await _load_catalog_options(db, collector.language),
+            "timezone_offset_minutes": collector.timezone_offset_minutes,
+            "period_start": collector.period_start,
+            "period_end": collector.period_end,
+            "target_points": collector.target_points,
+            "target_chests": collector.target_chests,
         })
     return {"collectors": result}
 

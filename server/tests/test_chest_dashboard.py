@@ -451,3 +451,46 @@ async def test_new_season_columns_default_to_none_and_quota_defaults_to_false(db
         select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
     )).scalar_one()
     assert config.counts_toward_quota is False
+
+
+@pytest.mark.asyncio
+async def test_get_chests_includes_season_settings_fields(db_session):
+    from datetime import datetime
+
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="season-get-slug")
+    collector.timezone_offset_minutes = 180
+    collector.period_start = datetime.fromisoformat("2026-06-21T00:00:00")
+    collector.period_end = datetime.fromisoformat("2026-07-05T00:00:00")
+    collector.target_points = 5000
+    collector.target_chests = 50
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    collector_data = resp.json()["collectors"][0]
+    assert collector_data["timezone_offset_minutes"] == 180
+    assert collector_data["period_start"] == "2026-06-21T00:00:00"
+    assert collector_data["period_end"] == "2026-07-05T00:00:00"
+    assert collector_data["target_points"] == 5000
+    assert collector_data["target_chests"] == 50
+
+
+@pytest.mark.asyncio
+async def test_get_chests_season_settings_are_null_when_unconfigured(db_session):
+    user, token = await _create_user_with_token(db_session)
+    await _create_collector(db_session, user.id, slug="season-null-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    collector_data = resp.json()["collectors"][0]
+    assert collector_data["timezone_offset_minutes"] is None
+    assert collector_data["period_start"] is None
+    assert collector_data["period_end"] is None
+    assert collector_data["target_points"] is None
+    assert collector_data["target_chests"] is None
