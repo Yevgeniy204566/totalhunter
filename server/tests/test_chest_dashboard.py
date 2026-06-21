@@ -156,6 +156,39 @@ async def test_post_rows_upserts_alias_and_configuration(db_session):
 
 
 @pytest.mark.asyncio
+async def test_post_rows_two_raw_types_sharing_one_catalog_id_does_not_duplicate_config(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="shared-catalog-slug")
+    db_session.add(ChestTypeCatalog(canonical_type="Yogwai", pattern="T9", points=40))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/chests/rows",
+            json={"collector_slug": "shared-catalog-slug",
+                 "rows": [{"raw_type": "Exan", "catalog_id": "Yogwai",
+                           "custom_name": None, "points": 40, "is_in_pattern": True,
+                           "counts_toward_quota": False},
+                          {"raw_type": "Ёкай", "catalog_id": "Yogwai",
+                           "custom_name": None, "points": 40, "is_in_pattern": True,
+                           "counts_toward_quota": False}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    aliases = (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
+    )).scalars().all()
+    assert {a.raw_type for a in aliases} == {"Exan", "Ёкай"}
+
+    configs = (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
+    )).scalars().all()
+    assert len(configs) == 1
+    assert configs[0].catalog_id == "Yogwai" and configs[0].points == 40
+
+
+@pytest.mark.asyncio
 async def test_post_rows_full_replace_removes_omitted_rows(db_session):
     user, token = await _create_user_with_token(db_session)
     collector = await _create_collector(db_session, user.id, slug="full-replace-slug")

@@ -176,12 +176,14 @@ async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web
     await db.execute(delete(ChestConfiguration).where(
         ChestConfiguration.collector_id == collector.id))
 
+    seen_catalog_ids = set()
     for row in payload.rows:
         if row.raw_type is not None and row.catalog_id is not None:
             db.add(ChestTypeAlias(collector_id=collector.id, raw_type=row.raw_type,
                                   catalog_id=row.catalog_id))
 
-        if row.catalog_id is not None:
+        if row.catalog_id is not None and row.catalog_id not in seen_catalog_ids:
+            seen_catalog_ids.add(row.catalog_id)
             db.add(ChestConfiguration(collector_id=collector.id, catalog_id=row.catalog_id,
                                       custom_name=row.custom_name, points=row.points,
                                       is_in_pattern=row.is_in_pattern,
