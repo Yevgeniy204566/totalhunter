@@ -297,4 +297,10 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         .group_by(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points)
     )).all()
 
-    return _pivot_summary(collector.kingdom, collector.clan, rows)
+    updated_at = (await db.execute(
+        select(func.max(Chest.collected_at)).where(Chest.collector_id == collector.id)
+    )).scalar_one_or_none()
+
+    result = _pivot_summary(collector.kingdom, collector.clan, rows)
+    result["updated_at"] = updated_at.isoformat() if updated_at else None
+    return result

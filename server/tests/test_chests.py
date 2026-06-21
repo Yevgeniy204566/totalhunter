@@ -779,3 +779,46 @@ async def test_summary_no_configuration_returns_empty(db_session):
         resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
     assert resp.status_code == 200
     assert resp.json()["totals"] == {"grand_total": 0, "total_points": 0}
+
+
+@pytest.mark.asyncio
+async def test_summary_includes_updated_at_as_latest_chest_timestamp(db_session):
+    from models import ChestConfiguration
+
+    user = await _create_user(db_session, "updatedattest")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K13", clan="UpdatedAtClan",
+            items=[
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-18T09:00:00"},
+                {"chest_type": "Common", "sender": "P1", "timestamp": "2026-06-18T14:30:00"},
+            ],
+        ))
+        assert import_resp.status_code == 200
+        slug = import_resp.json()["collector_slug"]
+
+        collector_id = (await db_session.execute(
+            select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one().id
+        db_session.add(ChestConfiguration(collector_id=collector_id, catalog_id="Common",
+                                          points=0, is_in_pattern=True))
+        await db_session.commit()
+
+        resp = await client.get(f"/api/v1/chests/summary/{slug}")
+    assert resp.status_code == 200
+    assert resp.json()["updated_at"] == "2026-06-18T14:30:00"
+
+
+@pytest.mark.asyncio
+async def test_summary_updated_at_is_none_for_collector_with_zero_chests(db_session):
+    import secrets as _secrets
+    user = await _create_user(db_session, "noupdatedat0a")
+    collector = ChestCollector(kingdom="K14", clan="NoChestsClan", user_id=user.id,
+                               slug=_secrets.token_urlsafe(16))
+    db_session.add(collector)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
+    assert resp.status_code == 200
+    assert resp.json()["updated_at"] is None
