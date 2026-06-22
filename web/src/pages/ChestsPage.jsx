@@ -260,7 +260,7 @@ export default function ChestsPage() {
                 onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
               />
             </div>
-            <button className="btn-primary" onClick={() => saveSeason(collector.slug)}>
+            <button className="btn-green" onClick={() => saveSeason(collector.slug)}>
               {cx.saveSeason}
             </button>
           </div>
@@ -300,6 +300,9 @@ export default function ChestsPage() {
                   </button>
                 </div>
               )}
+              <button className="btn-primary" onClick={() => save(collector.slug)} style={{ marginBottom: 12 }}>
+                {cx.save}
+              </button>
               <table className="chest-table">
                 <thead>
                   <tr>
