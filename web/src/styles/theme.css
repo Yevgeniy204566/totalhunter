@@ -386,7 +386,7 @@ a:hover { color: var(--on-surface); }
   margin-bottom: 20px;
 }
 
-.public-table-wrap { overflow-x: auto; overflow-y: auto; max-height: 70vh; }
+.public-table-wrap { overflow-x: auto; }
 .public-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
 .public-table th {
   text-align: right; padding: 10px 14px; color: var(--on-surface2);
@@ -455,16 +455,19 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr.row-top3:nth-child(even) td:nth-child(1),
 .public-table tbody tr.row-top3:nth-child(even) td:nth-child(2) { background: #0D1326; }
 
-.public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
-.public-table-top-scroll::-webkit-scrollbar { height: 10px; }
-.public-table-top-scroll::-webkit-scrollbar-track { background: var(--elevated); border-radius: 4px; }
-.public-table-top-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
-.public-table-top-scroll::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
-
-.public-table thead th {
-  position: sticky; top: 0; z-index: 3; background: var(--elevated);
+/* Header lives in its own non-scroll-trapped wrapper so it can stick to the
+   viewport while the page (not a capped inner box) scrolls — a table wrap with
+   overflow-x:auto is itself a scroll container and would trap position:sticky
+   for any descendant, which is why the header used to be confined to a max-height
+   box instead of pinning to the real viewport. Column widths are measured off the
+   body table after render and applied here via inline style so the two tables'
+   columns line up pixel-for-pixel despite being separate elements. */
+.public-table-head-wrap {
+  position: sticky; top: 0; z-index: 10; background: var(--bg);
 }
-/* Overrides z-index & background for sticky corner cells; left-position comes from earlier .public-table th:nth-child(1/2) rules */
-.public-table thead th:nth-child(1), .public-table thead th:nth-child(2) {
-  z-index: 4; background: var(--card);
+.public-table-head-scroll {
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
 }
+.public-table-head-scroll::-webkit-scrollbar { display: none; }
+.public-table-head-only { table-layout: fixed; }
