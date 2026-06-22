@@ -32,6 +32,11 @@
   /* Credits */
   --credits-gold:  #FFD166;
   --credits-glow:  rgba(255, 209, 102, 0.15);
+
+  /* Epic chest/monster neon accent */
+  --epic-purple: #B24BF3;
+  --epic-glow:   rgba(178, 75, 243, 0.55);
+  --epic-shadow: #5A1B82;
 }
 
 /* ── Рекламные слоты: десктопные умолчания ──────────────────── */
@@ -404,6 +409,11 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr:hover td { background: var(--accent-glow); }
 .public-cell-zero { color: var(--on-surface2); }
 .public-points-cell { color: var(--credits-gold); font-weight: 700; }
+.public-cell-hit-target { color: #50C878 !important; font-weight: 700; }
+.public-epic-cell {
+  color: var(--epic-purple); font-weight: 700;
+  text-shadow: 0 1px 0 var(--epic-shadow), 0 0 8px var(--epic-glow), 0 0 16px var(--epic-glow);
+}
 
 /* ── Public chest summary — season info, timer, row coloring, two-col sticky ─ */
 .public-season-info { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
