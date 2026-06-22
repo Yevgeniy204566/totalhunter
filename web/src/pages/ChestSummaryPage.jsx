@@ -74,29 +74,21 @@ export default function ChestSummaryPage() {
   const [error, setError] = useState('')
 
   const tableWrapRef = useRef(null)
-  const headScrollRef = useRef(null)
-  const bodyTableRef = useRef(null)
+  const topScrollRef = useRef(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
-  const [colWidths, setColWidths] = useState([])
 
   useEffect(() => {
     if (tableWrapRef.current) setTableScrollWidth(tableWrapRef.current.scrollWidth)
-    if (bodyTableRef.current) {
-      const firstRow = bodyTableRef.current.querySelector('tbody tr')
-      if (firstRow) {
-        setColWidths(Array.from(firstRow.children).map(td => td.getBoundingClientRect().width))
-      }
-    }
   }, [data])
 
-  function syncTableFromHeadScroll() {
-    if (tableWrapRef.current && headScrollRef.current) {
-      tableWrapRef.current.scrollLeft = headScrollRef.current.scrollLeft
+  function syncTableFromTopScroll() {
+    if (tableWrapRef.current && topScrollRef.current) {
+      tableWrapRef.current.scrollLeft = topScrollRef.current.scrollLeft
     }
   }
-  function syncHeadScrollFromTable() {
-    if (tableWrapRef.current && headScrollRef.current) {
-      headScrollRef.current.scrollLeft = tableWrapRef.current.scrollLeft
+  function syncTopScrollFromTable() {
+    if (tableWrapRef.current && topScrollRef.current) {
+      topScrollRef.current.scrollLeft = tableWrapRef.current.scrollLeft
     }
   }
 
@@ -145,26 +137,27 @@ export default function ChestSummaryPage() {
       <div className="public-summary-updated">Последнее обновление: {updatedLabel}</div>
       <div className="public-summary-divider" />
 
-      <div className="public-table-head-wrap">
-        <div className="public-table-head-scroll" ref={headScrollRef} onScroll={syncTableFromHeadScroll}>
-          <table className="public-table public-table-head-only" style={{ width: tableScrollWidth || 'auto' }}>
-            <thead>
-              <tr>
-                <th style={{ width: colWidths[0] }}>#</th>
-                <th style={{ width: colWidths[1] }}>Player</th>
-                <th style={{ width: colWidths[2] }}>Points</th>
-                <th className="public-epic-cell" style={{ width: colWidths[3] }}>Epic Crypts</th>
-                {data.chest_types.map((t, i) => (
-                  <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''} style={{ width: colWidths[4 + i] }}>{t}</th>
-                ))}
-              </tr>
-            </thead>
-          </table>
-        </div>
+      <div
+        className="public-table-top-scroll"
+        ref={topScrollRef}
+        onScroll={syncTableFromTopScroll}
+      >
+        <div style={{ width: tableScrollWidth, height: 1 }} />
       </div>
 
-      <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncHeadScrollFromTable}>
-        <table className="public-table" ref={bodyTableRef}>
+      <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncTopScrollFromTable}>
+        <table className="public-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>Points</th>
+              <th className="public-epic-cell">Epic Crypts</th>
+              {data.chest_types.map(t => (
+                <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''}>{t}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
             {data.players.map((p, i) => (
               <tr key={p.name} className={rowColorClass(p, i, targets)}>
