@@ -47,6 +47,7 @@ export const api = {
   dashboardChestsClaim: (code)          => request('POST',  '/web/dashboard/chests/claim', { code }),
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
   dashboardChestsSeason: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/season`, payload),
+  dashboardChestsPresets: ()            => request('GET',   '/web/dashboard/chests/presets'),
 }
 
 export async function fetchChestSummary(slug) {

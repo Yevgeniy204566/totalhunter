@@ -5,6 +5,16 @@ import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 
+function displayName(row, catalogOptions) {
+  if (row.raw_type) return row.raw_type
+  if (row.custom_name) return row.custom_name
+  if (row.catalog_id) {
+    const opt = catalogOptions.find(o => o.catalog_id === row.catalog_id)
+    if (opt) return opt.label
+  }
+  return '—'
+}
+
 export default function ChestsPage() {
   const [collectors, setCollectors] = useState(null)
   const [rowsByCollector, setRowsByCollector] = useState({})
@@ -14,6 +24,8 @@ export default function ChestsPage() {
   const [msg, setMsg] = useState('')
   const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
+  const [presets, setPresets] = useState(null)
+  const [presetChoiceByCollector, setPresetChoiceByCollector] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.chests
@@ -48,6 +60,7 @@ export default function ChestsPage() {
     }
   }
   useEffect(() => { refresh() }, [])
+  useEffect(() => { api.dashboardChestsPresets().then(setPresets).catch(() => {}) }, [])
 
   function activeTab(slug) { return activeTabByCollector[slug] || 'chests' }
   function setTab(slug, tab) {
@@ -68,6 +81,26 @@ export default function ChestsPage() {
       [slug]: [...prev[slug], { raw_type: null, catalog_id: null, custom_name: null,
                                 points: 0, is_in_pattern: false, counts_toward_quota: false }],
     }))
+  }
+
+  function loadPreset(slug, presetName) {
+    const preset = presets?.[presetName]
+    if (!preset) return
+    setRowsByCollector(prev => {
+      const rows = [...(prev[slug] || [])]
+      for (const item of preset) {
+        const idx = rows.findIndex(r => r.catalog_id === item.catalog_id)
+        if (idx >= 0) {
+          rows[idx] = { ...rows[idx], points: item.points, is_in_pattern: item.is_in_pattern }
+        } else {
+          rows.push({ raw_type: null, catalog_id: item.catalog_id, custom_name: null,
+                     points: item.points, is_in_pattern: item.is_in_pattern,
+                     counts_toward_quota: false })
+        }
+      }
+      return { ...prev, [slug]: rows }
+    })
+    setMsg(cx.presetLoaded)
   }
 
   async function save(slug) {
@@ -249,6 +282,24 @@ export default function ChestsPage() {
 
           {activeTab(collector.slug) === 'chests' && (
             <>
+              {presets && Object.keys(presets).length > 0 && (
+                <div style={{ marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="input-dark"
+                    style={{ width: 'auto' }}
+                    value={presetChoiceByCollector[collector.slug] || Object.keys(presets)[0]}
+                    onChange={e => setPresetChoiceByCollector(prev => ({ ...prev, [collector.slug]: e.target.value }))}
+                  >
+                    {Object.keys(presets).map(name => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => loadPreset(collector.slug, presetChoiceByCollector[collector.slug] || Object.keys(presets)[0])}
+                  >
+                    {cx.loadPresetBtn}
+                  </button>
+                </div>
+              )}
               <table className="chest-table">
                 <thead>
                   <tr>
@@ -258,12 +309,13 @@ export default function ChestsPage() {
                     <th>{cx.pointsCol}</th>
                     <th>{cx.inPatternCol}</th>
                     <th>{cx.quotaCol}</th>
+                    <th>{cx.totalEverCol}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rowsByCollector[collector.slug]?.map((row, i) => (
                     <tr key={i}>
-                      <td>{row.raw_type || '—'}</td>
+                      <td>{displayName(row, collector.catalog_options)}</td>
                       <td>
                         <select
                           className="input-dark"
@@ -310,6 +362,9 @@ export default function ChestsPage() {
                           />
                           <span className="slider"></span>
                         </label>
+                      </td>
+                      <td style={{ textAlign: 'right', color: 'var(--on-surface2)' }}>
+                        {row.total_ever ?? 0}
                       </td>
                     </tr>
                   ))}
