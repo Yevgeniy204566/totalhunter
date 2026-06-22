@@ -79,6 +79,26 @@ def test_read_sender_name_applies_clean_name_artifact_stripping(monkeypatch):
     assert cr.read_sender_name(frame) == "Tess"
 
 
+def test_clean_name_preserves_space_separated_stylized_name():
+    assert cr.clean_name("M A R I S H A") == "M A R I S H A"
+
+
+def test_clean_name_strips_trailing_digit_group():
+    assert cr.clean_name("PlayerName 123") == "PlayerName"
+
+
+def test_clean_name_strips_multiple_trailing_digit_groups():
+    assert cr.clean_name("PlayerName 12 3") == "PlayerName"
+
+
+def test_clean_name_strips_trailing_punctuation():
+    assert cr.clean_name("Tess'") == "Tess"
+
+
+def test_clean_name_strips_leading_clan_tag():
+    assert cr.clean_name("[ABC] Niduel") == "Niduel"
+
+
 def test_read_fixed_field_applies_named_offset(monkeypatch):
     monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (10, 10, 3, 3))
     monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: (2, -1))

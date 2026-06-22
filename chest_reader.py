@@ -99,16 +99,13 @@ def ocr_text(roi, psm=7, lang='rus+eng'):
 
 
 def clean_name(text):
-    """Strip OCR artifacts from a player name. Same 4-stage cleanup as
-    tournament_reader.clean_name — duplicated here to keep this module
-    self-contained, per the existing reader-module convention."""
+    """Strip OCR artifacts from a player name. Only strips a leading [clan tag]
+    prefix and trailing digit groups (power-level/tag noise) — never strips trailing
+    letters, since stylized space-separated names (e.g. "M A R I S H A") must survive
+    intact rather than being eaten down to a single character by an overly aggressive
+    trailing-token strip."""
     text = re.sub(r'^\[.*?\]\s*', '', text)
-    text = re.sub(r'\s+\S{1,3}$', '', text)
-    while True:
-        stripped = re.sub(r'\s+(?:\d{1,3}|\S{1})$', '', text)
-        if stripped == text:
-            break
-        text = stripped
+    text = re.sub(r'(?:\s+\d{1,3})+$', '', text)
     text = re.sub(r'[^\w]+$', '', text, flags=re.UNICODE)
     return text.strip()
 
