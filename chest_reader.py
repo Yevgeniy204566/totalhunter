@@ -122,7 +122,8 @@ def read_fixed_field(frame, ref_rect, offset_name=None, lang='rus+eng', extra_co
 # Player name: stylized/unpredictable — dictionaries only hurt here (they force
 # Tesseract to "correct" unfamiliar glyph shapes into known dictionary words, which is
 # exactly what splits a name like "Marisha" into single dictionary-shaped letters).
-# Disabling DAWG + the broad script/Latin coverage reads diacritics literally instead.
+# Disabling DAWG + full coverage of the bot's 19 supported languages (Latin diacritics,
+# Cyrillic, Arabic, Japanese, Chinese x2, Korean) reads any script literally instead.
 SENDER_OCR_LANG = 'eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor'
 SENDER_OCR_CONFIG = '-c load_system_dawg=0 -c load_freq_dawg=0'
 
