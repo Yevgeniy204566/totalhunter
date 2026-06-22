@@ -425,6 +425,7 @@ a:hover { color: var(--on-surface); }
 .public-table thead th {
   position: sticky; top: 0; z-index: 3; background: var(--elevated);
 }
+/* Overrides z-index & background for sticky corner cells; left-position comes from earlier .public-table th:nth-child(1/2) rules */
 .public-table thead th:nth-child(1), .public-table thead th:nth-child(2) {
   z-index: 4; background: var(--card);
 }
