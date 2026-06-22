@@ -430,8 +430,8 @@ a:hover { color: var(--on-surface); }
 
 .row-top3 td { color: #50C878; font-weight: 700; }
 .public-top3-name {
-  font-weight: 700;
-  background-image: linear-gradient(90deg, #FF8C42 0%, #3D1A78 50%, #3D7FFF 100%);
+  font-weight: 900;
+  background-image: linear-gradient(90deg, #FFA85C 0%, #9D5CF0 50%, #5C9FFF 100%);
   background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   animation: public-row-top3-shimmer 3s linear infinite;
