@@ -38,10 +38,11 @@ Test-Path "C:\BattleBot\README.txt"            # → True
 # 2. Tesseract полный и работает?
 & "C:\BattleBot\tesseract_bin\tesseract.exe" --version  # → "tesseract v5.x.x", exit 0
 
-# 3. Эталонный состав tesseract_bin: 56 DLL + tessdata/{eng,rus}.traineddata +
-#    tessdata/script/Latin.traineddata = ~165 МБ
+# 3. Эталонный состав tesseract_bin: 56 DLL + tessdata/{eng,rus,ara,jpn,chi_sim,chi_tra,kor}.traineddata
+#    + tessdata/script/{Latin,Cyrillic}.traineddata = ~205 МБ (полное покрытие 19 языков бота)
 # Источник: C:\Program Files\Tesseract-OCR\ (все *.dll + eng/rus.traineddata)
-#           + https://github.com/tesseract-ocr/tessdata_fast (script/Latin.traineddata)
+#           + https://github.com/tesseract-ocr/tessdata_fast (script/Latin, script/Cyrillic,
+#             ara, jpn, chi_sim, chi_tra, kor)
 ```
 
 **🔒 КРИТИЧЕСКОЕ ПРАВИЛО ZIP (АНТИ-ДЕНЬ СУРКА):**
