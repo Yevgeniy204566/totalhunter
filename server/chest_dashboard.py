@@ -26,6 +26,34 @@ from web_routes import get_web_user
 
 router = APIRouter(prefix="/web/dashboard/chests", tags=["chest-dashboard"])
 
+# Global ready-made point/preset templates. Maintained by hand (Claude, on request) —
+# not editable through the UI. T9 mirrors clan 229/BERS's live working configuration
+# as of 2026-06-22, used as the reference template. New tiers (T8, ...) are added here
+# as new dict keys, no API/schema changes required.
+CHEST_PRESETS = {
+    "T9": [
+        {"catalog_id": "Epic Crypt 35", "points": 135, "is_in_pattern": True},
+        {"catalog_id": "Epic Crypt 30", "points": 80, "is_in_pattern": True},
+        {"catalog_id": "Rare Crypt 30", "points": 65, "is_in_pattern": True},
+        {"catalog_id": "Epic Shadow City", "points": 55, "is_in_pattern": True},
+        {"catalog_id": "Epic Crypt 25", "points": 45, "is_in_pattern": True},
+        {"catalog_id": "Dark Omens Chest", "points": 45, "is_in_pattern": True},
+        {"catalog_id": "Epic Briareus", "points": 45, "is_in_pattern": True},
+        {"catalog_id": "Epic Arachne", "points": 40, "is_in_pattern": True},
+        {"catalog_id": "Elven Citadel 30", "points": 40, "is_in_pattern": True},
+        {"catalog_id": "Yogwai", "points": 40, "is_in_pattern": True},
+        {"catalog_id": "Epic Fire Hydra", "points": 30, "is_in_pattern": True},
+        {"catalog_id": "Epic Basilisk", "points": 30, "is_in_pattern": True},
+        {"catalog_id": "Epic Undead", "points": 25, "is_in_pattern": True},
+        {"catalog_id": "Epic Chimera", "points": 20, "is_in_pattern": True},
+        {"catalog_id": "Rare Crypt 25", "points": 20, "is_in_pattern": True},
+        {"catalog_id": "Epic Hellforge", "points": 20, "is_in_pattern": True},
+        {"catalog_id": "Common Crypt 25", "points": 5, "is_in_pattern": True},
+        {"catalog_id": "Epic Jormungander", "points": 5, "is_in_pattern": True},
+        {"catalog_id": "Epic Fenrir", "points": 5, "is_in_pattern": True},
+    ],
+}
+
 
 async def _load_known_catalog_ids(db: AsyncSession) -> set:
     catalog_ids = (await db.execute(select(ChestTypeCatalog.canonical_type))).scalars().all()
@@ -45,6 +73,11 @@ async def _load_catalog_options(db: AsyncSession, language: Optional[str]) -> li
     options = [{"catalog_id": cid, "label": labels.get(cid, cid)} for cid in known_ids]
     options.sort(key=lambda o: o["label"])
     return options
+
+
+@router.get("/presets")
+async def get_presets(user: User = Depends(get_web_user)):
+    return CHEST_PRESETS
 
 
 async def _raw_type_counts(db: AsyncSession, collector_id: int) -> dict:

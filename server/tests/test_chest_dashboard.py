@@ -708,3 +708,30 @@ async def test_get_chests_total_ever_sums_across_raw_aliases_sharing_catalog_id(
     assert by_raw["Yokai"]["total_ever"] == 5
     # Unmapped raw type reports just its own count
     assert by_raw["Mystery Box"]["total_ever"] == 1
+
+
+@pytest.mark.asyncio
+async def test_get_presets_requires_auth():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests/presets")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_presets_returns_t9_with_valid_entries(db_session):
+    _, token = await _create_user_with_token(db_session)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests/presets",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "T9" in data
+    t9 = data["T9"]
+    assert len(t9) > 0
+    by_catalog = {item["catalog_id"]: item for item in t9}
+    assert by_catalog["Epic Crypt 35"]["points"] == 135
+    assert by_catalog["Epic Crypt 35"]["is_in_pattern"] is True
+    for item in t9:
+        assert set(item.keys()) == {"catalog_id", "points", "is_in_pattern"}
