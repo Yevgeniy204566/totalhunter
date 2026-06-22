@@ -61,18 +61,9 @@ async def _load_known_catalog_ids(db: AsyncSession) -> set:
     return set(catalog_ids) | set(localization_ids)
 
 
-async def _load_catalog_options(db: AsyncSession, language: Optional[str]) -> list:
+async def _load_catalog_options(db: AsyncSession) -> list:
     known_ids = sorted(await _load_known_catalog_ids(db))
-    labels = {}
-    if language:
-        rows = (await db.execute(
-            select(ChestLocalization.canonical_type, ChestLocalization.display_text)
-            .where(ChestLocalization.language == language)
-        )).all()
-        labels = dict(rows)
-    options = [{"catalog_id": cid, "label": labels.get(cid, cid)} for cid in known_ids]
-    options.sort(key=lambda o: o["label"])
-    return options
+    return [{"catalog_id": cid, "label": cid} for cid in known_ids]
 
 
 @router.get("/presets")
@@ -178,7 +169,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "public_url": f"https://total-hunter.com/chests/{collector.slug}",
             "rows": await _collector_rows(db, collector),
             "player_alias_rows": await _player_alias_rows(db, collector),
-            "catalog_options": await _load_catalog_options(db, collector.language),
+            "catalog_options": await _load_catalog_options(db),
             "timezone_offset_minutes": collector.timezone_offset_minutes,
             "period_start": collector.period_start,
             "period_end": collector.period_end,

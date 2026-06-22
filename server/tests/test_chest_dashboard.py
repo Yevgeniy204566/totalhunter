@@ -90,7 +90,7 @@ async def test_get_chests_combines_alias_config_and_unmapped_raw(db_session):
     assert ("Raw2", None) in rows
 
     options = {o["catalog_id"]: o["label"] for o in collector_data["catalog_options"]}
-    assert options["Epic Arachne"] == "Эпическая Арахна"
+    assert options["Epic Arachne"] == "Epic Arachne"
 
 
 @pytest.mark.asyncio
