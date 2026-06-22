@@ -282,6 +282,9 @@ export default function ChestsPage() {
 
           {activeTab(collector.slug) === 'chests' && (
             <>
+              <div style={{ marginBottom: 12, fontWeight: 600 }}>
+                {cx.grandTotalLabel} {(rowsByCollector[collector.slug] || []).reduce((sum, row) => sum + (row.total_ever ?? 0), 0)}
+              </div>
               {presets && Object.keys(presets).length > 0 && (
                 <div style={{ marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
                   <select

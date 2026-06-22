@@ -47,6 +47,7 @@ export const DASHBOARD = {
     pointsCol: 'Points',
     inPatternCol: 'In Preset',
     totalEverCol: 'Total',
+    grandTotalLabel: 'Total chests of all time:',
     loadPresetBtn: 'Load Preset',
     presetLoaded: 'Preset applied — remember to save',
     chestsTab: 'Chests',

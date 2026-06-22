@@ -47,6 +47,7 @@ export const DASHBOARD = {
     pointsCol: 'Очки',
     inPatternCol: 'В пресете',
     totalEverCol: 'Итого',
+    grandTotalLabel: 'Итого всех сундуков:',
     loadPresetBtn: 'Загрузить пресет',
     presetLoaded: 'Пресет применён, не забудь сохранить',
     chestsTab: 'Сундуки',
