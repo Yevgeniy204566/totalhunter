@@ -162,7 +162,11 @@ export default function ChestSummaryPage() {
             {data.players.map((p, i) => (
               <tr key={p.name} className={rowColorClass(p, i, targets)}>
                 <td>{i + 1}</td>
-                <td title={p.name}>{p.name}</td>
+                <td title={p.name}>
+                  {rowColorClass(p, i, targets) === 'row-top3'
+                    ? <span className="public-top3-name">{p.name}</span>
+                    : p.name}
+                </td>
                 <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
                   {p.points}
                 </td>
