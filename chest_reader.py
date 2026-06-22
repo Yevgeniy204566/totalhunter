@@ -23,8 +23,9 @@ import requests
 from auth import SERVER_URL, get_hwid
 from button_finder import find_colored_button
 from coord_manager import coord_manager
+from tesseract_setup import configure_pytesseract
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+configure_pytesseract(pytesseract)
 
 # --- Dialog detection (same tan/gold frame as tournament_reader.py) -------
 DIALOG_HSV_LOWER = (10, 20, 150)

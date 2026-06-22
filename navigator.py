@@ -19,7 +19,8 @@ import cv2
 import pyautogui
 
 import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+from tesseract_setup import configure_pytesseract
+configure_pytesseract(pytesseract)
 
 
 # ─────────────────────────────────────────────
