@@ -470,3 +470,51 @@ def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
     cr.collect_chests(lambda: False, db_path=db_path, pause_range=(0.5, 0.6))
 
     assert captured_ranges == [(0.5, 0.6)]
+
+
+def test_read_sender_name_uses_literal_diacritic_config(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (0, 0, 5, 5))
+
+    def fake_ocr_text(roi, **kwargs):
+        captured.update(kwargs)
+        return ""
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr_text)
+
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.read_sender_name(frame)
+
+    assert captured["lang"] == "rus+eng+script/Latin"
+    assert captured["extra_config"] == "-c load_system_dawg=0 -c load_freq_dawg=0"
+
+
+def test_read_chest_type_keeps_default_ocr_config(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (0, 0, 5, 5))
+
+    def fake_ocr_text(roi, **kwargs):
+        captured.update(kwargs)
+        return ""
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr_text)
+
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.read_chest_type(frame)
+
+    assert captured["lang"] == "rus+eng"
+    assert captured["extra_config"] == ""
+
+
+def test_ocr_text_appends_extra_config_to_psm_flag(monkeypatch):
+    captured = {}
+
+    def fake_image_to_string(image, config, lang, timeout):
+        captured["config"] = config
+        captured["lang"] = lang
+        return ""
+    monkeypatch.setattr(cr.pytesseract, "image_to_string", fake_image_to_string)
+
+    roi = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.ocr_text(roi, lang="rus+eng+script/Latin", extra_config="-c load_system_dawg=0")
+
+    assert captured["config"] == "--psm 7 -c load_system_dawg=0"
+    assert captured["lang"] == "rus+eng+script/Latin"

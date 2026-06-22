@@ -92,9 +92,9 @@ def preprocess_for_ocr(roi):
     return binary
 
 
-def ocr_text(roi, psm=7, lang='rus+eng'):
+def ocr_text(roi, psm=7, lang='rus+eng', extra_config=''):
     processed = preprocess_for_ocr(roi)
-    config = f'--psm {psm}'
+    config = f'--psm {psm} {extra_config}'.strip()
     return pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
 
 
@@ -110,17 +110,26 @@ def clean_name(text):
     return text.strip()
 
 
-def read_fixed_field(frame, ref_rect, offset_name=None):
+def read_fixed_field(frame, ref_rect, offset_name=None, lang='rus+eng', extra_config=''):
     x, y, w, h = coord_manager.to_region_dialog(*ref_rect)
     if offset_name is not None:
         dx, dy = coord_manager.get_ui_offset(offset_name)
         x, y = x + dx, y + dy
     roi = frame[y:y + h, x:x + w]
-    return clean_name(ocr_text(roi))
+    return clean_name(ocr_text(roi, lang=lang, extra_config=extra_config))
+
+
+# Player name: stylized/unpredictable — dictionaries only hurt here (they force
+# Tesseract to "correct" unfamiliar glyph shapes into known dictionary words, which is
+# exactly what splits a name like "Marisha" into single dictionary-shaped letters).
+# Disabling DAWG + the broad script/Latin coverage reads diacritics literally instead.
+SENDER_OCR_LANG = 'rus+eng+script/Latin'
+SENDER_OCR_CONFIG = '-c load_system_dawg=0 -c load_freq_dawg=0'
 
 
 def read_sender_name(frame):
-    return read_fixed_field(frame, SENDER_REF_RECT, "chest_sender")
+    return read_fixed_field(frame, SENDER_REF_RECT, "chest_sender",
+                            lang=SENDER_OCR_LANG, extra_config=SENDER_OCR_CONFIG)
 
 
 def read_chest_type(frame):
