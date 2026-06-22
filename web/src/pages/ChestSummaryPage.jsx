@@ -98,7 +98,10 @@ export default function ChestSummaryPage() {
 
   return (
     <div className="page-content">
-      <h1 className="gradient-text public-summary-title">{data.kingdom} / {data.clan}</h1>
+      <h1 className="public-summary-title">
+        <span className="public-kingdom-label">{data.kingdom}/</span>
+        <span className="public-clan-label">{data.clan}</span>
+      </h1>
 
       {hasSeasonTargets && (
         <div className="public-season-info">
@@ -147,7 +150,7 @@ export default function ChestSummaryPage() {
             {data.players.map((p, i) => (
               <tr key={p.name} className={rowColorClass(p, i, targets)}>
                 <td>{i + 1}</td>
-                <td>{p.name}</td>
+                <td title={p.name}>{p.name}</td>
                 <td className="public-points-cell">{p.points}</td>
                 <td className={p.quota_chests === 0 ? 'public-cell-zero' : ''}>{p.quota_chests}</td>
                 {data.chest_types.map(t => {
