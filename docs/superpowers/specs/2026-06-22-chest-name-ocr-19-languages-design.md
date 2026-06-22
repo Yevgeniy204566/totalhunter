@@ -26,8 +26,11 @@
 Все размеры подтверждены живым скачиванием (не оценка). Итого новых данных: ~39 МБ. Архив вырастет
 с 406 МБ (v1.8.2) до ~445 МБ.
 
-**`rus.traineddata` удаляется** — `script/Cyrillic` покрывает русский как подмножество (плюс
-украинский, которого `rus` не покрывал вовсе), хранить оба избыточно.
+**`rus.traineddata` остаётся** — несмотря на то что `script/Cyrillic` покрывает русский как
+подмножество, `read_chest_type()` (и дефолт `ocr_text()`) по-прежнему используют `lang='rus+eng'`
+(решение прошлой спеки — словари там помогают распознавать игровые фразы, не трогаем). Удаление
+`rus.traineddata` сломало бы распознавание типа сундука для русскоязычных клиентов. `rus` и
+`script/Cyrillic` существуют параллельно, каждый для своего поля.
 
 ## Техническая проверка (живая, не предположение)
 
@@ -62,7 +65,7 @@ SENDER_OCR_LANG = 'eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor'
 
 ## Дистрибутив `tesseract_bin`
 
-- Удалить: `tesseract_bin/tessdata/rus.traineddata`
+- `tesseract_bin/tessdata/rus.traineddata` остаётся (нужен `read_chest_type()`/дефолту `ocr_text()`).
 - Добавить: `tesseract_bin/tessdata/script/Cyrillic.traineddata`,
   `tesseract_bin/tessdata/ara.traineddata`, `tesseract_bin/tessdata/jpn.traineddata`,
   `tesseract_bin/tessdata/chi_sim.traineddata`, `tesseract_bin/tessdata/chi_tra.traineddata`,
