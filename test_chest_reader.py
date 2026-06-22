@@ -484,7 +484,7 @@ def test_read_sender_name_uses_literal_diacritic_config(monkeypatch):
     frame = np.zeros((10, 10, 3), dtype=np.uint8)
     cr.read_sender_name(frame)
 
-    assert captured["lang"] == "rus+eng+script/Latin"
+    assert captured["lang"] == "eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor"
     assert captured["extra_config"] == "-c load_system_dawg=0 -c load_freq_dawg=0"
 
 
