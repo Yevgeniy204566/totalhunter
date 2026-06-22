@@ -37,7 +37,7 @@ function rowColorClass(player, rank, targets) {
   if (targets.chests) ratios.push(player.quota_chests / targets.chests)
   if (ratios.length === 0) return ''
   const ratio = Math.min(...ratios)
-  if (ratio >= 1 && rank < 3) return 'row-top3'
+  if (ratio >= 1) return rank < 3 ? 'row-top3' : 'row-success'
   if (ratio >= 0.5) return ''
   if (ratio > 0) return 'row-lagging'
   return 'row-danger'
