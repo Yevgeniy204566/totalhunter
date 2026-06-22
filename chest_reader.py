@@ -122,24 +122,29 @@ def read_fixed_field(frame, ref_rect, offset_name=None, lang='rus+eng', extra_co
 # Player name: stylized/unpredictable — dictionaries only hurt here (they force
 # Tesseract to "correct" unfamiliar glyph shapes into known dictionary words, which is
 # exactly what splits a name like "Marisha" into single dictionary-shaped letters).
-# Disabling DAWG + full coverage of the bot's 19 supported languages (Latin diacritics,
-# Cyrillic, Arabic, Japanese, Chinese x2, Korean) reads any script literally instead.
-SENDER_OCR_LANG = 'eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor'
+# Disabling DAWG reads any script literally instead. Two language sets: LIGHT (fast,
+# Latin+Cyrillic, ~0.39s/call) covers most clans; FULL (all 19 bot-supported languages,
+# ~1.0s/call — measured live on the real SENDER_REF_RECT crop size) adds Arabic/Japanese/
+# Chinese/Korean for clans that actually need it. GUI lets the owner pick — most clans
+# never need the 2.5x-slower FULL set.
+LIGHT_SENDER_OCR_LANG = 'rus+eng+script/Latin'
+FULL_SENDER_OCR_LANG = 'eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor'
 SENDER_OCR_CONFIG = '-c load_system_dawg=0 -c load_freq_dawg=0'
 
 
-def read_sender_name(frame):
+def read_sender_name(frame, full_lang=False):
+    lang = FULL_SENDER_OCR_LANG if full_lang else LIGHT_SENDER_OCR_LANG
     return read_fixed_field(frame, SENDER_REF_RECT, "chest_sender",
-                            lang=SENDER_OCR_LANG, extra_config=SENDER_OCR_CONFIG)
+                            lang=lang, extra_config=SENDER_OCR_CONFIG)
 
 
 def read_chest_type(frame):
     return read_fixed_field(frame, SOURCE_REF_RECT, "chest_type")
 
 
-def read_top_row(frame):
+def read_top_row(frame, full_lang=False):
     chest_type = read_chest_type(frame)
-    sender = read_sender_name(frame)
+    sender = read_sender_name(frame, full_lang=full_lang)
     return chest_type, sender
 
 
@@ -208,7 +213,8 @@ def click_open_button(pos, pause_range=ANTI_DETECT_PAUSE_RANGE):
     time.sleep(random.uniform(*pause_range))
 
 
-def collect_chests(stop_flag, on_update=None, db_path=DB_PATH, pause_range=ANTI_DETECT_PAUSE_RANGE):
+def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
+                   pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False):
     """Reads and opens chests from the top of the «Мой клан → Подарки» list
     until the list is empty (no «Открыть» button found) or stop_flag()
     returns True. Every chest is persisted to SQLite as it's read.
@@ -217,7 +223,9 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH, pause_range=ANTI_
     (get_unsynced_counts), not a session-local tally, so it always reflects
     the full unsynced backlog — not just what this call found. pause_range
     overrides the module's anti-detect click-pause default for this call,
-    so the GUI's speed slider can control it without mutating global state."""
+    so the GUI's speed slider can control it without mutating global state.
+    full_lang likewise overrides the OCR language set for read_top_row's
+    sender-name field — see LIGHT_SENDER_OCR_LANG/FULL_SENDER_OCR_LANG."""
     conn = init_db(db_path)
     items = []
     try:
@@ -236,7 +244,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH, pause_range=ANTI_
             if pos is None:
                 break
 
-            chest_type, sender = read_top_row(frame)
+            chest_type, sender = read_top_row(frame, full_lang=full_lang)
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
             insert_chest(conn, chest_type, sender, timestamp)
             items.append({'chest_type': chest_type, 'sender': sender, 'timestamp': timestamp})

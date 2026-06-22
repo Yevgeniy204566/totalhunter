@@ -291,7 +291,7 @@ def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     def fake_find_open_button(bbox):
         return sequence[state['n']][0]
 
-    def fake_read_top_row(frame):
+    def fake_read_top_row(frame, **kwargs):
         _, chest_type, sender = sequence[state['n']]
         state['n'] += 1
         return chest_type, sender
@@ -337,7 +337,7 @@ def test_collect_chests_counts_are_cumulative_from_db(tmp_path, monkeypatch):
         calls["n"] += 1
         return (10, 10) if calls["n"] <= 1 else None
 
-    def fake_read_top_row(frame):
+    def fake_read_top_row(frame, **kwargs):
         return ("Сундук Эпического Монстра", "Новый")
 
     def fake_click_open_button(pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
@@ -454,7 +454,7 @@ def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
         calls["n"] += 1
         return (10, 10) if calls["n"] <= 1 else None
 
-    def fake_read_top_row(frame):
+    def fake_read_top_row(frame, **kwargs):
         return ("Сундук Эпического Монстра", "Игрок")
 
     def fake_click_open_button(pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
@@ -484,7 +484,7 @@ def test_read_sender_name_uses_literal_diacritic_config(monkeypatch):
     frame = np.zeros((10, 10, 3), dtype=np.uint8)
     cr.read_sender_name(frame)
 
-    assert captured["lang"] == "eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor"
+    assert captured["lang"] == "rus+eng+script/Latin"
     assert captured["extra_config"] == "-c load_system_dawg=0 -c load_freq_dawg=0"
 
 
@@ -518,3 +518,74 @@ def test_ocr_text_appends_extra_config_to_psm_flag(monkeypatch):
 
     assert captured["config"] == "--psm 7 -c load_system_dawg=0"
     assert captured["lang"] == "rus+eng+script/Latin"
+
+
+def test_read_sender_name_light_lang_by_default(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (0, 0, 5, 5))
+
+    def fake_ocr_text(roi, **kwargs):
+        captured.update(kwargs)
+        return ""
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr_text)
+
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.read_sender_name(frame)
+
+    assert captured["lang"] == "rus+eng+script/Latin"
+
+
+def test_read_sender_name_full_lang_when_requested(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (0, 0, 5, 5))
+
+    def fake_ocr_text(roi, **kwargs):
+        captured.update(kwargs)
+        return ""
+    monkeypatch.setattr(cr, "ocr_text", fake_ocr_text)
+
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.read_sender_name(frame, full_lang=True)
+
+    assert captured["lang"] == "eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor"
+
+
+def test_read_top_row_forwards_full_lang_to_sender(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(cr, "read_chest_type", lambda frame: "Сундук")
+
+    def fake_read_sender_name(frame, full_lang=False):
+        captured["full_lang"] = full_lang
+        return "Player"
+    monkeypatch.setattr(cr, "read_sender_name", fake_read_sender_name)
+
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    cr.read_top_row(frame, full_lang=True)
+
+    assert captured["full_lang"] is True
+
+
+def test_collect_chests_forwards_full_lang_to_read_top_row(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "chest_buffer.db")
+    captured = {}
+
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+
+    calls = {"n": 0}
+
+    def fake_find_open_button(bbox):
+        calls["n"] += 1
+        return (10, 10) if calls["n"] <= 1 else None
+    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
+
+    def fake_read_top_row(frame, full_lang=False):
+        captured["full_lang"] = full_lang
+        return ("Сундук", "Player")
+    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
+    monkeypatch.setattr(cr, "click_open_button", lambda pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+
+    cr.collect_chests(lambda: False, db_path=db_path, full_lang=True)
+
+    assert captured["full_lang"] is True
