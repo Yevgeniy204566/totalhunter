@@ -667,3 +667,44 @@ async def test_post_rows_persists_counts_toward_quota(db_session):
         select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
     )).scalar_one()
     assert config.counts_toward_quota is True
+
+
+@pytest.mark.asyncio
+async def test_get_chests_total_ever_sums_across_raw_aliases_sharing_catalog_id(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="total-ever-slug")
+    # Two different raw OCR strings, both mapped to the same official chest
+    db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="Exan",
+                                  catalog_id="Yogwai"))
+    db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="Yokai",
+                                  catalog_id="Yogwai"))
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Yogwai",
+                                      points=40, is_in_pattern=False,
+                                      counts_toward_quota=False))
+    for i in range(3):
+        db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                             chest_type_raw="Exan", chest_type_canonical="Exan",
+                             collected_at=datetime.fromisoformat(f"2026-06-2{i}T10:00:00")))
+    for i in range(2):
+        db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                             chest_type_raw="Yokai", chest_type_canonical="Yokai",
+                             collected_at=datetime.fromisoformat(f"2026-06-1{i}T10:00:00")))
+    # An unrelated unmapped raw type, never aliased
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P2", sender_canonical="P2",
+                         chest_type_raw="Mystery Box", chest_type_canonical="Mystery Box",
+                         collected_at=datetime.fromisoformat("2026-06-01T10:00:00")))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    rows = resp.json()["collectors"][0]["rows"]
+
+    by_raw = {r["raw_type"]: r for r in rows}
+    # Both aliases pointing at "Yogwai" report the combined total (3 + 2 = 5),
+    # regardless of is_in_pattern/counts_toward_quota being False.
+    assert by_raw["Exan"]["total_ever"] == 5
+    assert by_raw["Yokai"]["total_ever"] == 5
+    # Unmapped raw type reports just its own count
+    assert by_raw["Mystery Box"]["total_ever"] == 1

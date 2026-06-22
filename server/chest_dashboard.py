@@ -14,7 +14,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -47,6 +47,21 @@ async def _load_catalog_options(db: AsyncSession, language: Optional[str]) -> li
     return options
 
 
+async def _raw_type_counts(db: AsyncSession, collector_id: int) -> dict:
+    rows = (await db.execute(
+        select(Chest.chest_type_raw, func.count())
+        .where(Chest.collector_id == collector_id)
+        .group_by(Chest.chest_type_raw)
+    )).all()
+    return {raw: count for raw, count in rows}
+
+
+def _total_ever_for_catalog(catalog_id: Optional[str], aliases: list, raw_counts: dict) -> int:
+    if catalog_id is None:
+        return 0
+    return sum(raw_counts.get(a.raw_type, 0) for a in aliases if a.catalog_id == catalog_id)
+
+
 async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
     aliases = (await db.execute(
         select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
@@ -55,6 +70,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
         select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
     )).scalars().all()
     config_by_catalog_id = {c.catalog_id: c for c in configs}
+    raw_counts = await _raw_type_counts(db, collector.id)
 
     rows = []
     seen_catalog_ids = set()
@@ -67,6 +83,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "points": config.points if config else 0,
             "is_in_pattern": config.is_in_pattern if config else False,
             "counts_toward_quota": config.counts_toward_quota if config else False,
+            "total_ever": _total_ever_for_catalog(alias.catalog_id, aliases, raw_counts),
         })
     for config in configs:
         if config.catalog_id in seen_catalog_ids:
@@ -76,6 +93,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "custom_name": config.custom_name, "points": config.points,
             "is_in_pattern": config.is_in_pattern,
             "counts_toward_quota": config.counts_toward_quota,
+            "total_ever": _total_ever_for_catalog(config.catalog_id, aliases, raw_counts),
         })
 
     mapped_raw_types = {a.raw_type for a in aliases}
@@ -87,7 +105,8 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
         if raw_type in mapped_raw_types:
             continue
         rows.append({"raw_type": raw_type, "catalog_id": None, "custom_name": None,
-                     "points": 0, "is_in_pattern": False, "counts_toward_quota": False})
+                     "points": 0, "is_in_pattern": False, "counts_toward_quota": False,
+                     "total_ever": raw_counts.get(raw_type, 0)})
 
     return rows
 
