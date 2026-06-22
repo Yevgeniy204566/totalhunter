@@ -415,3 +415,16 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr.row-top3 td:nth-child(2) { background: var(--card); }
 .public-table tbody tr.row-top3:nth-child(even) td:nth-child(1),
 .public-table tbody tr.row-top3:nth-child(even) td:nth-child(2) { background: #0D1326; }
+
+.public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
+.public-table-top-scroll::-webkit-scrollbar { height: 10px; }
+.public-table-top-scroll::-webkit-scrollbar-track { background: var(--elevated); border-radius: 4px; }
+.public-table-top-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+.public-table-top-scroll::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
+
+.public-table thead th {
+  position: sticky; top: 0; z-index: 3; background: var(--elevated);
+}
+.public-table thead th:nth-child(1), .public-table thead th:nth-child(2) {
+  z-index: 4; background: var(--card);
+}

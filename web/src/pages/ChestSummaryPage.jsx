@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fetchChestSummary } from '../api.js'
 
@@ -51,10 +51,36 @@ function formatOffsetLabel(offsetMinutes) {
   return `${sign}${h}:${m}`
 }
 
+function formatPeriodPoint(isoString) {
+  const [datePart, timePart] = isoString.split('T')
+  const [, mo, d] = datePart.split('-').map(Number)
+  const [h, mi] = (timePart || '00:00:00').split(':').map(Number)
+  return `${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
+}
+
 export default function ChestSummaryPage() {
   const { slug } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+
+  const tableWrapRef = useRef(null)
+  const topScrollRef = useRef(null)
+  const [tableScrollWidth, setTableScrollWidth] = useState(0)
+
+  useEffect(() => {
+    if (tableWrapRef.current) setTableScrollWidth(tableWrapRef.current.scrollWidth)
+  }, [data])
+
+  function syncTableFromTopScroll() {
+    if (tableWrapRef.current && topScrollRef.current) {
+      tableWrapRef.current.scrollLeft = topScrollRef.current.scrollLeft
+    }
+  }
+  function syncTopScrollFromTable() {
+    if (tableWrapRef.current && topScrollRef.current) {
+      topScrollRef.current.scrollLeft = tableWrapRef.current.scrollLeft
+    }
+  }
 
   useEffect(() => {
     fetchChestSummary(slug).then(setData).catch(e => setError(e.message || 'not found'))
@@ -84,6 +110,11 @@ export default function ChestSummaryPage() {
               Часовой пояс: UTC{formatOffsetLabel(data.timezone_offset_minutes)}
             </span>
           )}
+          {data.period_start && data.period_end && (
+            <span className="public-season-badge">
+              {formatPeriodPoint(data.period_start)} – {formatPeriodPoint(data.period_end)}
+            </span>
+          )}
           {data.period_end && (
             <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} />
           )}
@@ -93,7 +124,15 @@ export default function ChestSummaryPage() {
       <div className="public-summary-updated">Последнее обновление: {updatedLabel}</div>
       <div className="public-summary-divider" />
 
-      <div className="public-table-wrap">
+      <div
+        className="public-table-top-scroll"
+        ref={topScrollRef}
+        onScroll={syncTableFromTopScroll}
+      >
+        <div style={{ width: tableScrollWidth, height: 1 }} />
+      </div>
+
+      <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncTopScrollFromTable}>
         <table className="public-table">
           <thead>
             <tr>
