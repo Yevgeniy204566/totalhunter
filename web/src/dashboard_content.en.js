@@ -20,6 +20,7 @@ export const DASHBOARD = {
     feedback:     'Feedback',
     roy:          'SWARM',
     chests:       'Chests',
+    ancients:     'Ancient',
   },
 
   devices: {
@@ -77,6 +78,27 @@ export const DASHBOARD = {
     noCollectors: "You don't have a clan yet. The bot creates a collector automatically on your first chest submission, or ask for a transfer code from whoever already set one up.",
     noCatalog: '— select —',
     language: 'Clan language',
+  },
+
+  ancients: {
+    title: 'Ancient',
+    rosterTitle: 'Clan roster',
+    player: 'Player', place: 'Place', points: 'Points', troopLevel: 'Troop level',
+    noTroopLevel: 'not set',
+    calcTitle: 'Quota calculator',
+    summonsLabel: 'Number of summons',
+    levelLabel: level => `Summon level ${level}`,
+    presetLabel: 'Clan preset',
+    amplificationLabel: 'Amplification coefficient',
+    strategyLabel: 'Strategy',
+    strategyA: 'A — by rank', strategyB: 'B — by troop level',
+    officerCount: 'Officers', veteranCount: 'Veterans',
+    calculateButton: 'Calculate',
+    totalQuota: 'Total quota (millions)',
+    officerQuota: 'Officer quota', veteranQuota: 'Veteran quota',
+    excludedNote: 'Without a troop level set (excluded)',
+    historyTitle: 'Calculation history',
+    noRoster: 'Roster is empty — run tournament_reader.py on the leader\'s machine.',
   },
 
   feedback: {

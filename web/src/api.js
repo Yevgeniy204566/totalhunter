@@ -50,6 +50,12 @@ export const api = {
   dashboardChestsPresets: ()            => request('GET',   '/web/dashboard/chests/presets'),
   dashboardChestsHistory: (slug) => request('GET', `/web/dashboard/chests/${slug}/history`),
   dashboardChestsHistoryDetail: (slug, seasonId) => request('GET', `/web/dashboard/chests/${slug}/history/${seasonId}`),
+  dashboardAncients:      ()              => request('GET',   '/web/dashboard/ancients'),
+  dashboardAncientsTroopLevel: (slug, playerName, troopLevel) =>
+    request('PATCH', `/web/dashboard/ancients/${slug}/troop-level`,
+            { player_name: playerName, troop_level: troopLevel }),
+  dashboardAncientsCalculate: (slug, payload) =>
+    request('POST', `/web/dashboard/ancients/${slug}/calculate`, payload),
 }
 
 export async function fetchChestSummary(slug) {

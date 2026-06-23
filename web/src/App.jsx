@@ -21,6 +21,7 @@ import RoyPage from './pages/RoyPage.jsx'
 import FeaturesPage from './pages/FeaturesPage.jsx'
 import ChestsPage from './pages/ChestsPage.jsx'
 import ChestSummaryPage from './pages/ChestSummaryPage.jsx'
+import AncientsPage from './pages/AncientsPage.jsx'
 
 function PrivateRoute({ element }) {
   return isLoggedIn() ? element : <Navigate to="/login" replace />
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="referrals"    element={<ReferralsPage />} />
         <Route path="devices"      element={<DevicesPage />} />
         <Route path="chests"       element={<ChestsPage />} />
+        <Route path="ancients"     element={<AncientsPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="feedback"     element={<FeedbackPage />} />
         <Route path="earn"         element={<EarnPage />} />

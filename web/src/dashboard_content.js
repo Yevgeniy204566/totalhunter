@@ -20,6 +20,7 @@ export const DASHBOARD = {
     feedback:     'Идеи',
     roy:          'РОЙ',
     chests:       'Сундуки',
+    ancients:     'Древний',
   },
 
   devices: {
@@ -77,6 +78,27 @@ export const DASHBOARD = {
     noCollectors: 'У вас пока нет ни одного клана. Бот создаёт коллектор автоматически при первой отправке сундуков, или попроси код передачи у того, кто уже его настроил.',
     noCatalog: '— выбрать —',
     language: 'Язык клана',
+  },
+
+  ancients: {
+    title: 'Древний',
+    rosterTitle: 'Ростер клана',
+    player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Уровень войск',
+    noTroopLevel: 'не указан',
+    calcTitle: 'Калькулятор нормы',
+    summonsLabel: 'Количество вызовов',
+    levelLabel: level => `Уровень вызова ${level}`,
+    presetLabel: 'Прессет клана',
+    amplificationLabel: 'Коэффициент усиления',
+    strategyLabel: 'Стратегия',
+    strategyA: 'А — по рангу', strategyB: 'Б — по уровню войск',
+    officerCount: 'Офицеры', veteranCount: 'Ветераны',
+    calculateButton: 'Рассчитать',
+    totalQuota: 'Общая норма (млн)',
+    officerQuota: 'Норма на офицера', veteranQuota: 'Норма на ветерана',
+    excludedNote: 'Без указанного уровня войск (не учтены)',
+    historyTitle: 'История расчётов',
+    noRoster: 'Ростер пуст — запустите tournament_reader.py на машине лидера.',
   },
 
   feedback: {
