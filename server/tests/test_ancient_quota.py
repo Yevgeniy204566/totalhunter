@@ -20,8 +20,8 @@ def test_ancient_level_hp_monotonically_increasing():
 
 def test_troop_steps_has_13_entries():
     assert len(TROOP_STEPS) == 13
-    assert TROOP_STEPS[0] == "База 5"
-    assert TROOP_STEPS[-1] == "База 9"
+    assert TROOP_STEPS[0] == "G5 S5 M5"
+    assert TROOP_STEPS[-1] == "G9 S9 M9"
 
 
 def test_troop_quota_presets_shape():
@@ -31,12 +31,12 @@ def test_troop_quota_presets_shape():
 
 
 def test_troop_quota_presets_cap_at_own_tier():
-    # База 9 is always 1.0 regardless of preset (player's tier >= every preset).
+    # G9 S9 M9 is always 1.0 regardless of preset (player's tier >= every preset).
     for preset in TROOP_QUOTA_PRESETS:
-        assert TROOP_QUOTA_PRESETS[preset]["База 9"] == 1.0
+        assert TROOP_QUOTA_PRESETS[preset]["G9 S9 M9"] == 1.0
     # А player matching the clan's own preset tier is always 1.0.
-    assert TROOP_QUOTA_PRESETS["T8"]["База 8"] == 1.0
-    assert TROOP_QUOTA_PRESETS["T7"]["База 7"] == 1.0
+    assert TROOP_QUOTA_PRESETS["T8"]["G8 S8 M8"] == 1.0
+    assert TROOP_QUOTA_PRESETS["T7"]["G7 S7 M7"] == 1.0
 
 
 def test_total_quota_millions_sums_and_amplifies():
@@ -67,10 +67,10 @@ def test_split_strategy_a_zero_total_members_raises():
 
 
 def test_split_strategy_b_basic():
-    players = [("Иванов", "База 8"), ("Петров", "Шаг 7.1")]
+    players = [("Иванов", "G8 S8 M8"), ("Петров", "G7 S7 M8")]
     result = split_strategy_b(total=100.0, preset="T8", players=players)
-    w_ivanov = TROOP_QUOTA_PRESETS["T8"]["База 8"]
-    w_petrov = TROOP_QUOTA_PRESETS["T8"]["Шаг 7.1"]
+    w_ivanov = TROOP_QUOTA_PRESETS["T8"]["G8 S8 M8"]
+    w_petrov = TROOP_QUOTA_PRESETS["T8"]["G7 S7 M8"]
     denom = w_ivanov + w_petrov
     by_name = {p["name"]: p["quota"] for p in result["players"]}
     assert by_name["Иванов"] == pytest.approx(100.0 * w_ivanov / denom)
@@ -79,7 +79,7 @@ def test_split_strategy_b_basic():
 
 
 def test_split_strategy_b_excludes_missing_troop_level():
-    players = [("Иванов", "База 8"), ("Безуровневый", None)]
+    players = [("Иванов", "G8 S8 M8"), ("Безуровневый", None)]
     result = split_strategy_b(total=100.0, preset="T8", players=players)
     names_in_result = {p["name"] for p in result["players"]}
     assert "Безуровневый" not in names_in_result

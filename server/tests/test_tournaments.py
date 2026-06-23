@@ -75,7 +75,7 @@ async def test_reimport_preserves_troop_level_for_existing_player(db_session):
                 AncientRoster.collector_id == collector.id,
                 AncientRoster.player_name == "Иванов")
         )).scalar_one()
-        row.troop_level = "База 8"
+        row.troop_level = "G8 S8 M8"
         await db_session.commit()
 
         reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
@@ -85,7 +85,7 @@ async def test_reimport_preserves_troop_level_for_existing_player(db_session):
     await db_session.refresh(row)
     assert row.place == 3
     assert row.points == 50
-    assert row.troop_level == "База 8"
+    assert row.troop_level == "G8 S8 M8"
 
 
 @pytest.mark.asyncio

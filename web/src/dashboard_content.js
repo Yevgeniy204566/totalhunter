@@ -83,7 +83,7 @@ export const DASHBOARD = {
   ancients: {
     title: 'Древний',
     rosterTitle: 'Ростер клана',
-    player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Уровень войск',
+    player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Состав',
     noTroopLevel: 'не указан',
     calcTitle: 'Калькулятор нормы',
     summonsLabel: 'Количество вызовов',

@@ -39,7 +39,7 @@ async def test_get_roster_returns_players(db_session):
     user, token = await _create_user_with_token(db_session)
     collector = await _create_collector(db_session, user.id, slug="s1")
     db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
-                                 place=1, points=100, troop_level="База 8"))
+                                 place=1, points=100, troop_level="G8 S8 M8"))
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -48,7 +48,7 @@ async def test_get_roster_returns_players(db_session):
     assert resp.status_code == 200
     data = resp.json()
     assert data["collectors"][0]["roster"][0]["player_name"] == "Иванов"
-    assert data["collectors"][0]["roster"][0]["troop_level"] == "База 8"
+    assert data["collectors"][0]["roster"][0]["troop_level"] == "G8 S8 M8"
 
 
 @pytest.mark.asyncio
@@ -62,7 +62,7 @@ async def test_patch_troop_level(db_session):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.patch(
             "/web/dashboard/ancients/s2/troop-level",
-            json={"player_name": "Петров", "troop_level": "Шаг 7.1"},
+            json={"player_name": "Петров", "troop_level": "G7 S7 M8"},
             headers={"Authorization": f"Bearer {token}"},
         )
     assert resp.status_code == 200
@@ -70,7 +70,7 @@ async def test_patch_troop_level(db_session):
     row = (await db_session.execute(
         select(AncientRoster).where(AncientRoster.collector_id == collector.id)
     )).scalar_one()
-    assert row.troop_level == "Шаг 7.1"
+    assert row.troop_level == "G7 S7 M8"
 
 
 @pytest.mark.asyncio

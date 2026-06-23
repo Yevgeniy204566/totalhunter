@@ -83,7 +83,7 @@ export const DASHBOARD = {
   ancients: {
     title: 'Ancient',
     rosterTitle: 'Clan roster',
-    player: 'Player', place: 'Place', points: 'Points', troopLevel: 'Troop level',
+    player: 'Player', place: 'Place', points: 'Points', troopLevel: 'Composition',
     noTroopLevel: 'not set',
     calcTitle: 'Quota calculator',
     summonsLabel: 'Number of summons',
