@@ -28,7 +28,7 @@ from chest_summary import pivot_summary, query_summary_rows
 from database import AsyncSessionLocal
 from models import Chest, ChestCollector, ChestSeasonHistory
 
-ARCHIVE_TICK_SEC   = 300    # 5 минут — сезоны измеряются неделями, чаще не нужно
+ARCHIVE_TICK_SEC   = 86400  # раз в сутки — сезоны измеряются неделями, чаще не нужно
 RETENTION_DAYS     = 90     # 3 месяца хранения истории
 RETENTION_TICK_SEC = 86400  # раз в сутки
 
