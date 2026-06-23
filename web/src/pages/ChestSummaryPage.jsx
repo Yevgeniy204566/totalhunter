@@ -31,16 +31,31 @@ function CountdownTimer({ periodEnd, offsetMinutes }) {
   return <span className="public-season-badge public-season-timer">{label}</span>
 }
 
-function rowColorClass(player, rank, targets) {
+function rowColorClass(player, targets) {
   const ratios = []
   if (targets.points) ratios.push(player.points / targets.points)
   if (targets.chests) ratios.push(player.quota_chests / targets.chests)
   if (ratios.length === 0) return ''
   const ratio = Math.min(...ratios)
-  if (ratio >= 1) return rank < 3 ? 'row-top3' : 'row-success'
+  if (ratio >= 1) return 'row-success'
   if (ratio >= 0.5) return ''
   if (ratio > 0) return 'row-lagging'
   return 'row-danger'
+}
+
+const POINT_TIERS = [
+  { key: '500k', threshold: 500000 },
+  { key: '400k', threshold: 400000 },
+  { key: '300k', threshold: 300000 },
+  { key: '200k', threshold: 200000 },
+  { key: '100k', threshold: 100000 },
+  { key: '50k', threshold: 50000 },
+]
+
+function pointTier(player, targets) {
+  if (rowColorClass(player, targets) !== 'row-success') return null
+  const tier = POINT_TIERS.find(t => player.points >= t.threshold)
+  return tier ? tier.key : null
 }
 
 function formatOffsetLabel(offsetMinutes) {
@@ -159,12 +174,14 @@ export default function ChestSummaryPage() {
             </tr>
           </thead>
           <tbody>
-            {data.players.map((p, i) => (
-              <tr key={p.name} className={rowColorClass(p, i, targets)}>
+            {data.players.map((p, i) => {
+              const tier = pointTier(p, targets)
+              return (
+              <tr key={p.name} className={rowColorClass(p, targets)}>
                 <td>{i + 1}</td>
                 <td title={p.name}>
-                  {rowColorClass(p, i, targets) === 'row-top3'
-                    ? <span className="public-top3-name">{p.name}</span>
+                  {tier
+                    ? <span className={`public-tier-name public-tier-${tier}`}>{p.name}</span>
                     : p.name}
                 </td>
                 <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
@@ -189,7 +206,8 @@ export default function ChestSummaryPage() {
                   )
                 })}
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>

@@ -428,18 +428,6 @@ a:hover { color: var(--on-surface); }
 .row-lagging td { color: #FFB347; }
 .row-danger td { color: #FF6961; }
 
-.row-top3 td { color: #50C878; font-weight: 700; }
-.public-top3-name {
-  font-weight: 900;
-  background-image: linear-gradient(90deg, #FFA85C 0%, #9D5CF0 50%, #5C9FFF 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  animation: public-row-top3-shimmer 3s linear infinite;
-}
-@keyframes public-row-top3-shimmer {
-  to { background-position: -200% center; }
-}
-
 .public-table th:nth-child(1), .public-table td:nth-child(1) {
   position: sticky; left: 0; z-index: 2; width: 40px; background: var(--card);
 }
@@ -450,10 +438,53 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr:nth-child(even) td:nth-child(2) { background: #0D1326; }
 .public-table tbody tr:hover td:nth-child(1),
 .public-table tbody tr:hover td:nth-child(2) { background: var(--accent-glow); }
-.public-table tbody tr.row-top3 td:nth-child(1),
-.public-table tbody tr.row-top3 td:nth-child(2) { background: var(--card); }
-.public-table tbody tr.row-top3:nth-child(even) td:nth-child(1),
-.public-table tbody tr.row-top3:nth-child(even) td:nth-child(2) { background: #0D1326; }
+
+/* ── Point tiers (Путь Героя) — 6 уровней самоцветов выше квоты, shimmer-анимация ── */
+@keyframes public-tier-shimmer {
+  to { background-position: -200% center; }
+}
+.public-tier-name {
+  font-weight: 900;
+  background-size: 200% auto;
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: public-tier-shimmer 3s linear infinite;
+}
+.public-tier-50k {
+  font-size: 14.5px;
+  background-image: linear-gradient(90deg, #11998E 0%, #38EF7D 50%, #11998E 100%);
+  -webkit-text-stroke: 0.5px #0F5E55;
+  text-shadow: 0 0 10px rgba(56, 239, 125, 0.4);
+}
+.public-tier-100k {
+  font-size: 15px;
+  background-image: linear-gradient(90deg, #00C6FF 0%, #0072FF 50%, #00C6FF 100%);
+  -webkit-text-stroke: 0.5px #003D82;
+  text-shadow: 0 0 10px rgba(0, 198, 255, 0.4);
+}
+.public-tier-200k {
+  font-size: 15.5px;
+  background-image: linear-gradient(90deg, #F2994A 0%, #F2C94C 50%, #F2994A 100%);
+  -webkit-text-stroke: 0.5px #A65D14;
+  text-shadow: 0 0 11px rgba(242, 201, 76, 0.45);
+}
+.public-tier-300k {
+  font-size: 16px;
+  background-image: linear-gradient(90deg, #EE0979 0%, #FF6A00 50%, #EE0979 100%);
+  -webkit-text-stroke: 0.5px #8A0643;
+  text-shadow: 0 0 12px rgba(238, 9, 121, 0.45);
+}
+.public-tier-400k {
+  font-size: 16.5px;
+  background-image: linear-gradient(90deg, #8E2DE2 0%, #4A00E0 50%, #8E2DE2 100%);
+  -webkit-text-stroke: 0.5px #401070;
+  text-shadow: 0 0 13px rgba(142, 45, 226, 0.5);
+}
+.public-tier-500k {
+  font-size: 17px;
+  background-image: linear-gradient(90deg, #FF00CC 0%, #333399 50%, #FF00CC 100%);
+  -webkit-text-stroke: 0.5px #7A0054;
+  text-shadow: 0 0 14px rgba(255, 0, 204, 0.5);
+}
 
 .public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
 .public-table-top-scroll::-webkit-scrollbar { height: 10px; }
