@@ -427,6 +427,24 @@ class Chest(Base):
                                    server_default=func.now())
 
 
+class ChestSeasonHistory(Base):
+    """Архив закрытого сезона сборщика сундуков — готовый снимок итогов и целей на
+    момент закрытия. Не пересчитывается при будущих изменениях ChestConfiguration
+    или chest_collectors.target_points/target_chests — числа зафиксированы навсегда."""
+    __tablename__ = "chest_season_history"
+
+    id                      = Column(Integer, primary_key=True)
+    collector_id            = Column(Integer, ForeignKey("chest_collectors.id"),
+                                     nullable=False, index=True)
+    period_start            = Column(TIMESTAMP(timezone=True), nullable=False)
+    period_end              = Column(TIMESTAMP(timezone=True), nullable=False)
+    target_points_snapshot  = Column(Integer, nullable=True)
+    target_chests_snapshot  = Column(Integer, nullable=True)
+    summary_json            = Column(JSON, nullable=False)
+    closed_at               = Column(TIMESTAMP(timezone=True), nullable=False,
+                                     server_default=func.now())
+
+
 class PlayerAlias(Base):
     """Словарь исправлений OCR для имён игроков, отдельно на каждого сборщика."""
     __tablename__ = "player_aliases"
