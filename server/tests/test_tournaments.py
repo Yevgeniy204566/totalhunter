@@ -10,7 +10,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 
 from main import app
-from models import AncientRoster, ChestCollector, User
+from models import AncientRoster, ChestCollector, PlayerAlias, User
 
 
 async def _create_user(db, hwid, is_banned=False, credits=100):
@@ -116,6 +116,73 @@ async def test_reimport_drops_player_no_longer_present(db_session):
         select(AncientRoster).where(AncientRoster.collector_id == collector.id)
     )).scalars().all()
     assert {r.player_name for r in rows} == {"Иванов"}
+
+
+@pytest.mark.asyncio
+async def test_fuzzy_match_uses_close_alias_canonical_name(db_session):
+    user = await _create_user(db_session, "hwid5000000000a")
+    await db_session.commit()
+
+    # First import creates the collector and a baseline player.
+    base_payload = _payload(
+        user.hwid, clan="BERS5",
+        items=[{"name": "Бандеролька", "place": 5, "points": 1264203992}],
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=base_payload)
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == "K229", ChestCollector.clan == "BERS5")
+    )).scalar_one()
+    # Leader already corrected this player's name once via the Chests dashboard.
+    db_session.add(PlayerAlias(collector_id=collector.id,
+                               raw_name="ban_d3r0lka_raw_ocr", canonical_name="Бандеролька"))
+    await db_session.commit()
+
+    # Next tournament scan reads the name with leftover VIP-badge noise — close to,
+    # but not an exact match of, the confirmed canonical name.
+    reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
+                            items=[{"name": "Бандеролька __", "place": 5, "points": 1264203992}])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=reimport_payload)
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Бандеролька"}
+
+
+@pytest.mark.asyncio
+async def test_fuzzy_match_does_not_match_dissimilar_name(db_session):
+    user = await _create_user(db_session, "hwid6000000000a")
+    await db_session.commit()
+
+    base_payload = _payload(
+        user.hwid, clan="BERS6",
+        items=[{"name": "Иванов", "place": 1, "points": 100}],
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=base_payload)
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == "K229", ChestCollector.clan == "BERS6")
+    )).scalar_one()
+    db_session.add(PlayerAlias(collector_id=collector.id,
+                               raw_name="ivanov_raw_ocr", canonical_name="Иванов"))
+    await db_session.commit()
+
+    # Cross-script OCR garble — must NOT be confidently matched to an unrelated alias.
+    reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
+                            items=[{"name": "Marisha?", "place": 12, "points": 1155240852}])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=reimport_payload)
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Marisha?"}
 
 
 @pytest.mark.asyncio
