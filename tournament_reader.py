@@ -5,6 +5,12 @@ import time
 import random
 import datetime
 
+# OCR garbage on rare/exotic glyphs can land outside the console's active
+# codepage (e.g. cp1251) — without this, a single such character crashes the
+# whole scan via print() and loses every row collected so far.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 import cv2
 import numpy as np
 import mss
@@ -46,7 +52,7 @@ END_OF_LIST_ZERO_SHIFTS = 2
 # edge of the dialog from the matchTemplate template/search area.
 SCROLLBAR_MARGIN = 0.05
 
-# --- Anti-AFK: the game shows an ad popup after ~5 min without a click,
+# --- Anti-AFK: the game shows an ad popup after ~3 min without a click,
 # which covers the dialog and breaks measure_scroll_shift. A periodic click
 # on the dialog header (no buttons there) resets the game's AFK timer.
 ANTI_AFK_INTERVAL_SEC = 180
@@ -162,20 +168,42 @@ def preprocess_for_ocr_otsu(roi, invert=False):
     return binary
 
 
-def ocr_text_otsu(roi, invert=False, psm=7, lang='rus+eng'):
+# Player name: stylized/unpredictable — dictionaries only hurt here (they force
+# Tesseract to "correct" unfamiliar glyph shapes into known dictionary words, which is
+# exactly what splits a name like "Conquest" into "Со nquest"). Disabling DAWG reads
+# any script literally instead. Two language sets, same split and same rationale as
+# chest_reader.py's read_sender_name: LIGHT (fast, Latin+Cyrillic) covers most clans;
+# FULL (all 19 bot-supported languages) adds Arabic/Japanese/Chinese/Korean for clans
+# that actually need it, at the cost of more cross-script confusion on plain names —
+# confirmed live: FULL alone misreads "[K229] Scaramouche" as "1229] Scaramouche".
+#
+# Tried and reverted: a confidence-based candidate picker (image_to_data mean word
+# confidence) plus an adaptive-threshold+FULL-lang escalation pass on low confidence,
+# per an external review's recommendation. Live-tested worse than this simpler
+# version — Tesseract reads garbage from noisy/textured crops with high *and*
+# confident-looking per-word scores just as often as it reads real text, so the
+# escalation pass would confidently overwrite a correct first-pass name with garbage
+# (e.g. "VikTor Я" → "VikTor Я — р. » a m >= Aun ea Hoa"). Do not re-add without a much
+# stronger plausibility check than raw mean confidence.
+LIGHT_NAME_OCR_LANG = 'rus+eng+script/Latin'
+FULL_NAME_OCR_LANG = 'eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra+kor'
+NAME_OCR_CONFIG = '-c load_system_dawg=0 -c load_freq_dawg=0'
+
+
+def ocr_text_otsu(roi, invert=False, psm=7, lang='rus+eng', extra_config=''):
     processed = preprocess_for_ocr_otsu(roi, invert=invert)
-    config = f'--psm {psm}'
+    config = f'--psm {psm} {extra_config}'.strip()
     return pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
 
 
 def clean_name(text):
+    """Strip OCR artifacts from a player name. Only strips a leading [clan tag]
+    prefix and trailing digit groups (power-level/tag noise) — never strips trailing
+    letters, since stylized space-separated names (e.g. "M A R I S H A") must survive
+    intact rather than being eaten down to a single character by an overly aggressive
+    trailing-token strip."""
     text = re.sub(r'^\[.*?\]\s*', '', text)
-    text = re.sub(r'\s+\S{1,3}$', '', text)
-    while True:
-        stripped = re.sub(r'\s+(?:\d{1,3}|\S{1})$', '', text)
-        if stripped == text:
-            break
-        text = stripped
+    text = re.sub(r'(?:\s+\d{1,3})+$', '', text)
     text = re.sub(r'[^\w]+$', '', text, flags=re.UNICODE)
     return text.strip()
 
@@ -187,10 +215,11 @@ def clean_points(text):
     return int(digits)
 
 
-def ocr_name(roi, lang='rus+eng'):
+def ocr_name(roi, full_lang=False):
+    lang = FULL_NAME_OCR_LANG if full_lang else LIGHT_NAME_OCR_LANG
     candidates = []
     for psm, invert in ((7, False), (7, True), (6, True), (6, False)):
-        text = ocr_text_otsu(roi, invert=invert, psm=psm, lang=lang)
+        text = ocr_text_otsu(roi, invert=invert, psm=psm, lang=lang, extra_config=NAME_OCR_CONFIG)
         first_line = text.splitlines()[0] if text else ''
         name = clean_name(first_line)
         if len(name) >= NAME_MIN_LENGTH:
@@ -201,8 +230,8 @@ def ocr_name(roi, lang='rus+eng'):
     return max(candidates, key=len)
 
 
-def ocr_row(name_roi, pts_roi):
-    name = ocr_name(name_roi)
+def ocr_row(name_roi, pts_roi, full_lang=False):
+    name = ocr_name(name_roi, full_lang=full_lang)
     pts_text = ocr_text(pts_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
     return name, clean_points(pts_text)
 
@@ -220,9 +249,9 @@ def get_own_row_crops(own_row):
     return place_roi, name_roi, pts_roi
 
 
-def ocr_own_row(place_roi, name_roi, pts_roi):
+def ocr_own_row(place_roi, name_roi, pts_roi, full_lang=False):
     place_text = ocr_text(place_roi, threshold=PLACE_OCR_THRESHOLD, psm=6, lang='rus+eng', whitelist='0123456789')
-    name = ocr_name(name_roi)
+    name = ocr_name(name_roi, full_lang=full_lang)
     pts_text = ocr_text(pts_roi, threshold=OCR_THRESHOLD, psm=7, lang='rus+eng')
 
     rank = int(place_text) if place_text.isdigit() else None
@@ -234,15 +263,26 @@ def ocr_own_row(place_roi, name_roi, pts_roi):
 
 
 def measure_scroll_shift(prev_dialog, curr_dialog, pitch, row_top):
-    h, w = prev_dialog.shape[:2]
-    own_y0 = int(h * OWN_ROW_Y_FRAC[0])
-    content_x1 = int(w * (1 - SCROLLBAR_MARGIN))
+    """Returns the pixel shift between two consecutive dialog captures, or
+    None if the frames aren't comparable (e.g. a 1-2px detection-jitter
+    difference in dialog size between frames — not a real window resize,
+    this game's dialogs are fixed-size; just a transient capture glitch).
+    Callers must treat None as "retry this frame", never as a real
+    zero-shift (which means "end of list reached")."""
+    prev_h, prev_w = prev_dialog.shape[:2]
+    curr_h, curr_w = curr_dialog.shape[:2]
 
     template_y0 = row_top + pitch
     template_y1 = row_top + 2 * pitch
-    template = prev_dialog[template_y0:template_y1, 0:content_x1]
+    template_x1 = int(prev_w * (1 - SCROLLBAR_MARGIN))
+    template = prev_dialog[template_y0:template_y1, 0:template_x1]
 
-    search = curr_dialog[0:own_y0, 0:content_x1]
+    search_y0 = int(curr_h * OWN_ROW_Y_FRAC[0])
+    search_x1 = int(curr_w * (1 - SCROLLBAR_MARGIN))
+    search = curr_dialog[0:search_y0, 0:search_x1]
+
+    if search.shape[0] < template.shape[0] or search.shape[1] < template.shape[1]:
+        return None
 
     result = cv2.matchTemplate(search, template, cv2.TM_CCOEFF_NORMED)
     _, _, _, max_loc = cv2.minMaxLoc(result)
@@ -256,15 +296,24 @@ def anti_afk_click(bbox):
     pyautogui.click(click_x, click_y)
 
 
-def collect_tournament_data():
+def collect_tournament_data(stop_flag=None, full_lang=False):
+    """Scrolls and OCRs the tournament leaderboard dialog until the end of
+    the list is reached or stop_flag() returns True. On early stop, returns
+    whatever rows were collected so far (same partial-result convention as
+    chest_reader.collect_chests). full_lang switches name OCR to the slower
+    8-script set for clans with Arabic/Japanese/Chinese/Korean nicknames —
+    see LIGHT_NAME_OCR_LANG/FULL_NAME_OCR_LANG."""
+    if stop_flag is None:
+        stop_flag = lambda: False
     next_place = STARTING_RANK
     remainder_px = 0
     zero_shift_streak = 0
     prev_dialog = None
     leaderboard = []
     last_click_time = time.time()
+    dialog = None
 
-    while True:
+    while not stop_flag():
         frame = grab_fullscreen()
         bbox = detect_dialog_bbox(frame)
         dialog = crop_dialog(frame, bbox)
@@ -284,6 +333,11 @@ def collect_tournament_data():
             new_rows = NUM_VISIBLE_ROWS
         else:
             shift_px = measure_scroll_shift(prev_dialog, dialog, pitch, row_top)
+            if shift_px is None:
+                # transient capture glitch, not a real zero-shift — retry
+                # without advancing prev_dialog or touching zero_shift_streak
+                time.sleep(0.2)
+                continue
             if shift_px <= 0:
                 zero_shift_streak += 1
                 if zero_shift_streak >= END_OF_LIST_ZERO_SHIFTS:
@@ -296,7 +350,7 @@ def collect_tournament_data():
                 remainder_px -= new_rows * pitch
 
         for name_roi, pts_roi in rows[NUM_VISIBLE_ROWS - new_rows:]:
-            name, points = ocr_row(name_roi, pts_roi)
+            name, points = ocr_row(name_roi, pts_roi, full_lang=full_lang)
             print(f"место {next_place}: {name} — {points}")
             leaderboard.append({'rank': next_place, 'name': name, 'points': points})
             next_place += 1
@@ -310,9 +364,11 @@ def collect_tournament_data():
         pyautogui.scroll(-2)
         time.sleep(random.uniform(0.4, 0.9))
 
-    own_row = get_own_row(dialog)
-    place_roi, name_roi, pts_roi = get_own_row_crops(own_row)
-    own_data = ocr_own_row(place_roi, name_roi, pts_roi)
+    own_data = None
+    if dialog is not None:
+        own_row = get_own_row(dialog)
+        place_roi, name_roi, pts_roi = get_own_row_crops(own_row)
+        own_data = ocr_own_row(place_roi, name_roi, pts_roi, full_lang=full_lang)
 
     return {'leaderboard': leaderboard, 'own_data': own_data}
 
@@ -352,16 +408,19 @@ def export_to_api(kingdom, clan, data, event_timestamp):
 
 def main():
     if len(sys.argv) < 3:
-        print("Использование: python tournament_reader.py <kingdom> <clan>")
+        print("Использование: python tournament_reader.py <kingdom> <clan> [full]")
+        print("  full — необязательный флаг: распознавать имена с арабским/японским/"
+              "китайским/корейским алфавитом (медленнее, для клана с такими никами)")
         return
     kingdom, clan = sys.argv[1], sys.argv[2]
+    full_lang = len(sys.argv) >= 4 and sys.argv[3].lower() == 'full'
 
     print("Откройте диалог «Статистика» в игре. Сбор начнётся через 3 секунды...")
     for i in (3, 2, 1):
         print(i)
         time.sleep(1)
 
-    data = collect_tournament_data()
+    data = collect_tournament_data(full_lang=full_lang)
 
     print(f"Собрано строк: {len(data['leaderboard'])}")
     print(f"Своё место: {data['own_data']}")

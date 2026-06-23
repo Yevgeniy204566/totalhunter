@@ -86,10 +86,13 @@ def test_ocr_text_row0_points_contains_digits():
     assert '262' in text
 
 
-def test_clean_name_strips_tag_and_badge():
+def test_clean_name_strips_tag_and_trailing_digits():
+    # trailing letter badges (ZY, ay) are intentionally NOT stripped — same
+    # rule as chest_reader.clean_name: only digit groups and the leading
+    # [tag] are noise we can safely assume isn't part of the real name.
     assert tr.clean_name("[K229] Scaramouche 22") == "Scaramouche"
-    assert tr.clean_name("[k229] МазаФака ZY") == "МазаФака"
-    assert tr.clean_name("[K229] Yuki ay") == "Yuki"
+    assert tr.clean_name("[k229] МазаФака ZY") == "МазаФака ZY"
+    assert tr.clean_name("[K229] Yuki ay") == "Yuki ay"
     assert tr.clean_name("[K229] VikTor 2") == "VikTor"
 
 
@@ -124,7 +127,7 @@ def test_ocr_row_all_visible_rows():
     pitch, row_top = tr.detect_row_pitch(dialog)
     rows = tr.get_row_crops(dialog, pitch, row_top)
 
-    expected_names = ['Scaramouche', 'МазаФака', 'Yuki', 'VikTor']
+    expected_names = ['Scaramouche ZY', 'МазаФака` ay', 'Yuki ay', 'VikTor Я']
     expected_points = [488644262, 315634592, 301084730, 300471402]
 
     for i, (name_roi, pts_roi) in enumerate(rows):
@@ -140,7 +143,7 @@ def test_ocr_own_row():
     own_row = tr.get_own_row(dialog)
     place_roi, name_roi, pts_roi = tr.get_own_row_crops(own_row)
     result = tr.ocr_own_row(place_roi, name_roi, pts_roi)
-    assert result == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
+    assert result == {'rank': 79, 'name': 'ЗОЛОТОЙ By', 'points': 71896730}
 
 
 def test_ocr_name_otsu_aeon():
@@ -207,6 +210,41 @@ def test_measure_scroll_shift_detects_pixel_shift():
     assert shift == shift_amount
 
 
+def test_measure_scroll_shift_returns_none_on_frame_size_mismatch():
+    # Not a real window resize (this game's dialogs are fixed-size) — just a
+    # 1-2px detection-jitter difference between two consecutive captures.
+    # Must not crash cv2.matchTemplate and must not be mistaken for a real
+    # zero-shift (which the caller reads as "end of list reached").
+    frame = _load_fixture()
+    bbox = tr.detect_dialog_bbox(frame)
+    dialog = tr.crop_dialog(frame, bbox)
+    pitch, row_top = tr.detect_row_pitch(dialog)
+
+    shrunk = dialog[:, :-5]  # 5px narrower than prev_dialog
+    shift = tr.measure_scroll_shift(dialog, shrunk, pitch, row_top)
+    assert shift is None
+
+
+def test_collect_tournament_data_retries_on_frame_size_mismatch(monkeypatch):
+    frame = _load_fixture()
+
+    monkeypatch.setattr(tr, "grab_fullscreen", lambda: frame)
+    monkeypatch.setattr(tr.pyautogui, "scroll", lambda *a, **k: None)
+    monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
+    monkeypatch.setattr(tr.random, "uniform", lambda a, b: 0)
+
+    # One transient None (size-mismatch glitch) must be retried, not counted
+    # toward zero_shift_streak and not treated as end-of-list, before the
+    # real shifts resume normally.
+    shifts = iter([None, 50, 50, 0, 0])
+    monkeypatch.setattr(tr, "measure_scroll_shift", lambda *a, **k: next(shifts))
+
+    result = tr.collect_tournament_data()
+
+    leaderboard = result['leaderboard']
+    assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4, 5]
+
+
 def test_collect_tournament_data(monkeypatch):
     frame = _load_fixture()
 
@@ -219,10 +257,10 @@ def test_collect_tournament_data(monkeypatch):
 
     leaderboard = result['leaderboard']
     assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4]
-    assert [row['name'] for row in leaderboard] == ['Scaramouche', 'МазаФака', 'Yuki', 'VikTor']
+    assert [row['name'] for row in leaderboard] == ['Scaramouche ZY', 'МазаФака` ay', 'Yuki ay', 'VikTor Я']
     assert [row['points'] for row in leaderboard] == [488644262, 315634592, 301084730, 300471402]
 
-    assert result['own_data'] == {'rank': 79, 'name': 'ЗОЛОТОЙ', 'points': 71896730}
+    assert result['own_data'] == {'rank': 79, 'name': 'ЗОЛОТОЙ By', 'points': 71896730}
 
 
 def test_collect_tournament_data_handles_missing_pitch(monkeypatch):
@@ -263,7 +301,7 @@ def test_collect_tournament_data_stops_after_zero_shifts(monkeypatch):
 
     leaderboard = result['leaderboard']
     assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4]
-    assert [row['name'] for row in leaderboard] == ['Scaramouche', 'МазаФака', 'Yuki', 'VikTor']
+    assert [row['name'] for row in leaderboard] == ['Scaramouche ZY', 'МазаФака` ay', 'Yuki ay', 'VikTor Я']
 
 
 def test_collect_tournament_data_accumulates_partial_row_shifts(monkeypatch):
@@ -283,7 +321,7 @@ def test_collect_tournament_data_accumulates_partial_row_shifts(monkeypatch):
 
     leaderboard = result['leaderboard']
     assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4, 5]
-    assert leaderboard[4]['name'] == 'VikTor'
+    assert leaderboard[4]['name'] == 'VikTor Я'
     assert leaderboard[4]['points'] == 300471402
 
 
@@ -406,7 +444,7 @@ def test_main_smoke(monkeypatch):
     }
 
     monkeypatch.setattr(tr.sys, "argv", ["tournament_reader.py", "K229", "BERS"])
-    monkeypatch.setattr(tr, "collect_tournament_data", lambda: collected)
+    monkeypatch.setattr(tr, "collect_tournament_data", lambda **kwargs: collected)
     monkeypatch.setattr(tr, "export_to_api", lambda kingdom, clan, data, event_timestamp: True)
     monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
 
