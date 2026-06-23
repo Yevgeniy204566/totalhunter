@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ancient_quota import (
-    TROOP_QUOTA_PRESETS, TROOP_STEPS,
+    ANCIENT_LEVEL_HP, TROOP_QUOTA_PRESETS, TROOP_STEPS,
     split_strategy_a, split_strategy_b, total_quota_millions,
 )
 from database import get_db
@@ -54,6 +54,9 @@ async def _history_rows(db: AsyncSession, collector_id: int) -> list:
     )).scalars().all()
     return [
         {"id": r.id, "computed_at": r.computed_at.isoformat(), "strategy": r.strategy,
+         "summon_levels": r.summon_levels, "clan_preset": r.clan_preset,
+         "amplification_coef": r.amplification_coef,
+         "officer_count": r.officer_count, "veteran_count": r.veteran_count,
          "total_quota_millions": r.total_quota_millions, "result": r.result_json}
         for r in rows
     ]
@@ -75,7 +78,7 @@ async def get_dashboard_ancients(user: User = Depends(get_web_user),
             "troop_steps": TROOP_STEPS,
             "presets": sorted(TROOP_QUOTA_PRESETS.keys()),
         })
-    return {"collectors": result}
+    return {"collectors": result, "ancient_level_hp": ANCIENT_LEVEL_HP}
 
 
 class TroopLevelPayload(BaseModel):

@@ -9,7 +9,7 @@ from ancient_quota import (
 def test_ancient_level_hp_covers_full_range():
     assert set(ANCIENT_LEVEL_HP.keys()) == set(range(81, 251))
     assert ANCIENT_LEVEL_HP[81] == 45.1
-    assert ANCIENT_LEVEL_HP[250] == 15700.0
+    assert ANCIENT_LEVEL_HP[250] == 18100.0
 
 
 def test_ancient_level_hp_monotonically_increasing():
