@@ -148,6 +148,8 @@ class TestRoyOnFoundPassesCallback:
         eng._roy_client = MagicMock()
         eng.on_last_exchange_callback = None
         eng.on_pool_refresh_callback = MagicMock()  # задан → on_success должен прийти
+        eng.roy_enabled = True
+        eng.event_active = True
         return eng
 
     def test_report_called_with_on_success_when_callback_set(self):

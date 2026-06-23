@@ -259,7 +259,9 @@ class HuntEngine:
                         self.on_last_exchange_callback(result)
                     except Exception as e:
                         _roy_log(f"on_last_exchange_callback ERROR: {e!r}")
-                if result['percent'] < 90:
+                if result['percent'] < 90 and not (self.roy_enabled and self.event_active):
+                    _roy_log(f"Биржа {result['percent']}% — РОЙ выключен или ивент не активен, в пул не отправляем")
+                elif result['percent'] < 90:
                     _roy_log(f"Отправляю в пул → K={result['kingdom']} X={result['x']} Y={result['y']} {result['percent']}%")
                     _cb = self._after_report_success if self.on_pool_refresh_callback else None
                     self._roy_client.report(
@@ -320,6 +322,10 @@ class HuntEngine:
                     np.abs(frame_curr - frame_prev) > _PIX_THR, axis=-1
                 ).mean()
                 frame_prev = frame_curr
+
+                if not (self.roy_enabled and self.event_active):
+                    _roy_log(f"scan() SKIP — roy_enabled={self.roy_enabled} event_active={self.event_active}")
+                    continue
 
                 ok = self._roy_client.scan(kingdom=self.roy_kingdom or None)
                 _roy_log(f"scan() → {'OK +45с' if ok else 'FAIL'} | diff={diff_frac:.1%}")

@@ -77,12 +77,14 @@ class TestHuntEngineCallback:
         assert len(calls) == 0
 
     def test_roy_report_called_on_success(self):
-        """roy_client.report вызывается при успешном OCR."""
+        """roy_client.report вызывается при успешном OCR, РОЙ включён и ивент активен."""
         from engine import HuntEngine
         eng = HuntEngine.__new__(HuntEngine)
         eng._roy_client = MagicMock()
         eng.on_last_exchange_callback = None
         eng.on_pool_refresh_callback = None
+        eng.roy_enabled = True
+        eng.event_active = True
 
         ocr = {'kingdom': 3, 'x': 145, 'y': 72, 'percent': 50}
         with patch('roy.exchange_reader.wait_and_read', return_value=ocr):
@@ -99,8 +101,44 @@ class TestHuntEngineCallback:
         eng = HuntEngine.__new__(HuntEngine)
         eng._roy_client = MagicMock()
         eng.on_last_exchange_callback = None
+        eng.roy_enabled = True
+        eng.event_active = True
 
         with patch('roy.exchange_reader.wait_and_read', return_value=None):
+            eng._roy_on_found()
+
+        eng._roy_client.report.assert_not_called()
+
+    def test_roy_report_not_called_when_event_not_active(self):
+        """roy_client.report НЕ вызывается если ивент «Торговые Пути» не активен,
+        даже при успешном OCR и включённом тумблере РОЙ."""
+        from engine import HuntEngine
+        eng = HuntEngine.__new__(HuntEngine)
+        eng._roy_client = MagicMock()
+        eng.on_last_exchange_callback = None
+        eng.on_pool_refresh_callback = None
+        eng.roy_enabled = True
+        eng.event_active = False
+
+        ocr = {'kingdom': 3, 'x': 145, 'y': 72, 'percent': 50}
+        with patch('roy.exchange_reader.wait_and_read', return_value=ocr):
+            eng._roy_on_found()
+
+        eng._roy_client.report.assert_not_called()
+
+    def test_roy_report_not_called_when_roy_disabled(self):
+        """roy_client.report НЕ вызывается если тумблер РОЙ выключен,
+        даже при успешном OCR и активном ивенте."""
+        from engine import HuntEngine
+        eng = HuntEngine.__new__(HuntEngine)
+        eng._roy_client = MagicMock()
+        eng.on_last_exchange_callback = None
+        eng.on_pool_refresh_callback = None
+        eng.roy_enabled = False
+        eng.event_active = True
+
+        ocr = {'kingdom': 3, 'x': 145, 'y': 72, 'percent': 50}
+        with patch('roy.exchange_reader.wait_and_read', return_value=ocr):
             eng._roy_on_found()
 
         eng._roy_client.report.assert_not_called()

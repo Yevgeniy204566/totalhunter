@@ -3605,7 +3605,8 @@ class TotalHunterApp(ctk.CTk):
         Простой = тумблер РОЙ включён, но поиск бирж не идёт (is_running=False).
         Списание выполняется на сервере (POST /roy/idle); здесь только условие запуска.
         """
-        if hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get() and not self.is_running:
+        if (hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get()
+                and not self.is_running and self.engine.event_active):
             def _send():
                 try:
                     from roy.roy_client import RoyClient
