@@ -66,6 +66,13 @@ function formatOffsetLabel(offsetMinutes) {
   return `${sign}${h}:${m}`
 }
 
+function formatUpdatedAt(isoString, offsetMinutes) {
+  const clanMillis = new Date(isoString).getTime() + offsetMinutes * 60000
+  const d = new Date(clanMillis)
+  const pad = n => String(n).padStart(2, '0')
+  return `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)}.${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`
+}
+
 function formatPeriodPoint(isoString) {
   const [datePart, timePart] = isoString.split('T')
   const [, mo, d] = datePart.split('-').map(Number)
@@ -115,7 +122,7 @@ export default function ChestSummaryPage() {
   if (!data) return <div className="page-content text-muted">...</div>
 
   const updatedLabel = data.updated_at
-    ? new Date(data.updated_at).toLocaleString()
+    ? formatUpdatedAt(data.updated_at, data.timezone_offset_minutes ?? 0)
     : '—'
 
   const targets = data.targets || { points: null, chests: null }
