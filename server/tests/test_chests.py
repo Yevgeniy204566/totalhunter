@@ -997,3 +997,70 @@ async def test_summary_season_metadata_is_null_when_unconfigured(db_session):
     assert body["period_end"] is None
     assert body["timezone_offset_minutes"] is None
     assert body["targets"] == {"points": None, "chests": None}
+
+
+@pytest.mark.asyncio
+async def test_history_list_unknown_slug_returns_404():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/chests/history/does-not-exist")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_history_list_returns_archived_seasons(db_session):
+    from datetime import datetime, timedelta
+    from models import ChestCollector, ChestSeasonHistory
+    collector = ChestCollector(kingdom="K1", clan="ClanA", user_id=1, slug="hist-public-1")
+    db_session.add(collector)
+    await db_session.flush()
+    db_session.add(ChestSeasonHistory(
+        collector_id=collector.id,
+        period_start=datetime.utcnow() - timedelta(days=14),
+        period_end=datetime.utcnow(),
+        summary_json={"totals": {"total_points": 555}, "players": []},
+    ))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/history/{collector.slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["seasons"]) == 1
+    assert body["seasons"][0]["total_points"] == 555
+
+
+@pytest.mark.asyncio
+async def test_history_detail_unknown_season_returns_404(db_session):
+    from models import ChestCollector
+    collector = ChestCollector(kingdom="K1", clan="ClanA", user_id=1, slug="hist-public-2")
+    db_session.add(collector)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/history/{collector.slug}/99999")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_history_detail_returns_full_summary(db_session):
+    from datetime import datetime, timedelta
+    from models import ChestCollector, ChestSeasonHistory
+    collector = ChestCollector(kingdom="K1", clan="ClanA", user_id=1, slug="hist-public-3")
+    db_session.add(collector)
+    await db_session.flush()
+    row = ChestSeasonHistory(
+        collector_id=collector.id,
+        period_start=datetime.utcnow() - timedelta(days=14),
+        period_end=datetime.utcnow(),
+        target_points_snapshot=100,
+        summary_json={"totals": {"total_points": 555}, "players": [], "chest_types": []},
+    )
+    db_session.add(row)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/history/{collector.slug}/{row.id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["targets"]["points"] == 100
+    assert body["totals"]["total_points"] == 555

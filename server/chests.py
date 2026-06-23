@@ -20,6 +20,7 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chest_history import build_history_list, build_history_detail
 from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
@@ -227,3 +228,26 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         "chests": collector.target_chests,
     }
     return result
+
+
+@router.get("/history/{slug}")
+async def list_chest_history(slug: str, db: AsyncSession = Depends(get_db)):
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+    return {"seasons": await build_history_list(db, collector.id)}
+
+
+@router.get("/history/{slug}/{season_id}")
+async def get_chest_history_detail(slug: str, season_id: int, db: AsyncSession = Depends(get_db)):
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+    detail = await build_history_detail(db, collector.id, season_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Season not found")
+    return detail

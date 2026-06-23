@@ -735,3 +735,49 @@ async def test_get_presets_returns_t9_with_valid_entries(db_session):
     assert by_catalog["Epic Crypt 35"]["is_in_pattern"] is True
     for item in t9:
         assert set(item.keys()) == {"catalog_id", "points", "is_in_pattern"}
+
+
+@pytest.mark.asyncio
+async def test_dashboard_history_list_requires_ownership(db_session):
+    from datetime import datetime, timedelta
+    from models import ChestSeasonHistory
+
+    owner, owner_token = await _create_user_with_token(db_session, email="histowner0a@example.com")
+    other, other_token = await _create_user_with_token(db_session, email="histother0a@example.com")
+    collector = await _create_collector(db_session, owner.id, slug="hist-dash-1")
+    db_session.add(ChestSeasonHistory(
+        collector_id=collector.id,
+        period_start=datetime.utcnow() - timedelta(days=14),
+        period_end=datetime.utcnow(),
+        summary_json={"totals": {"total_points": 42}, "players": []},
+    ))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(
+            f"/web/dashboard/chests/{collector.slug}/history",
+            headers={"Authorization": f"Bearer {other_token}"},
+        )
+    assert resp.status_code == 403
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(
+            f"/web/dashboard/chests/{collector.slug}/history",
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["seasons"][0]["total_points"] == 42
+
+
+@pytest.mark.asyncio
+async def test_dashboard_history_detail_unknown_season_returns_404(db_session):
+    owner, owner_token = await _create_user_with_token(db_session, email="histowner1a@example.com")
+    collector = await _create_collector(db_session, owner.id, slug="hist-dash-2")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(
+            f"/web/dashboard/chests/{collector.slug}/history/99999",
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+    assert resp.status_code == 404

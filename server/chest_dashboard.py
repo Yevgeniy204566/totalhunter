@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chest_history import build_history_list, build_history_detail
 from database import get_db
 from models import (
     Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias,
@@ -346,3 +347,21 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
 
     await db.commit()
     return {"ok": True}
+
+
+@router.get("/{slug}/history")
+async def get_dashboard_history(slug: str, user: User = Depends(get_web_user),
+                                db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    return {"seasons": await build_history_list(db, collector.id)}
+
+
+@router.get("/{slug}/history/{season_id}")
+async def get_dashboard_history_detail(slug: str, season_id: int,
+                                       user: User = Depends(get_web_user),
+                                       db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    detail = await build_history_detail(db, collector.id, season_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Season not found")
+    return detail
