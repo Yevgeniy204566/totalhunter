@@ -1,41 +1,7 @@
-import os
 import json
-import pytest
 import cv2
 import numpy as np
 import tournament_reader as tr
-
-
-def test_load_config_missing_file_raises(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(tr, "CONFIG_PATH", os.path.join(str(tmp_path), "tournament_config.json"))
-    with pytest.raises(FileNotFoundError) as exc_info:
-        tr.load_config()
-    assert "tournament_config.example.json" in str(exc_info.value)
-
-
-def test_load_config_missing_keys_raises(tmp_path, monkeypatch):
-    config_path = os.path.join(str(tmp_path), "tournament_config.json")
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump({"api_url": "https://api.total-hunter.com"}, f)
-    monkeypatch.setattr(tr, "CONFIG_PATH", config_path)
-    with pytest.raises(ValueError) as exc_info:
-        tr.load_config()
-    assert "api_token" in str(exc_info.value)
-
-
-def test_load_config_valid(tmp_path, monkeypatch):
-    config_path = os.path.join(str(tmp_path), "tournament_config.json")
-    data = {
-        "api_url": "https://api.total-hunter.com",
-        "api_token": "secret123",
-        "alliance_tag": "K229",
-    }
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(data, f)
-    monkeypatch.setattr(tr, "CONFIG_PATH", config_path)
-    result = tr.load_config()
-    assert result == data
 
 
 def _load_fixture():
@@ -379,67 +345,69 @@ class _FakeResponse:
 def test_export_to_api_success(monkeypatch):
     captured = {}
 
-    def fake_post(url, headers=None, json=None, timeout=None):
+    def fake_post(url, json=None, timeout=None):
         captured['url'] = url
-        captured['headers'] = headers
         captured['json'] = json
         return _FakeResponse(200)
 
     monkeypatch.setattr(tr.requests, "post", fake_post)
+    monkeypatch.setattr(tr, "get_hwid", lambda: "abc123hwid")
 
-    config = {"api_url": "https://api.total-hunter.com", "api_token": "secret123", "alliance_tag": "K229"}
     data = {
         "leaderboard": [{"rank": 1, "name": "Scaramouche", "points": 488644262}],
         "own_data": {"rank": 79, "name": "ЗОЛОТОЙ", "points": 71896730},
     }
 
-    result = tr.export_to_api(config, data, event_timestamp="2026-06-14T21:30:00")
+    result = tr.export_to_api("K229", "BERS", data, event_timestamp="2026-06-14T21:30:00")
 
     assert result is True
-    assert captured['url'] == "https://api.total-hunter.com/api/v1/tournaments/import"
-    assert captured['headers'] == {"Authorization": "Bearer secret123"}
+    assert captured['url'] == tr.SERVER_URL + "/api/v1/tournaments/import"
     assert captured['json'] == {
-        "event_timestamp": "2026-06-14T21:30:00",
-        "alliance_tag": "K229",
-        "own_data": data["own_data"],
-        "leaderboard": data["leaderboard"],
+        "hwid": "abc123hwid",
+        "kingdom": "K229",
+        "clan": "BERS",
+        "timestamp": "2026-06-14T21:30:00",
+        "items": [
+            {"name": "Scaramouche", "place": 1, "points": 488644262},
+            {"name": "ЗОЛОТОЙ", "place": 79, "points": 71896730},
+        ],
     }
 
 
 def test_export_to_api_failure_writes_local_fallback(monkeypatch, tmp_path):
-    def fake_post(url, headers=None, json=None, timeout=None):
+    def fake_post(url, json=None, timeout=None):
         return _FakeResponse(500)
 
     monkeypatch.setattr(tr.requests, "post", fake_post)
+    monkeypatch.setattr(tr, "get_hwid", lambda: "abc123hwid")
     monkeypatch.chdir(tmp_path)
 
-    config = {"api_url": "https://api.total-hunter.com", "api_token": "secret123", "alliance_tag": "K229"}
     data = {
         "leaderboard": [{"rank": 1, "name": "Scaramouche", "points": 488644262}],
         "own_data": {"rank": 79, "name": "ЗОЛОТОЙ", "points": 71896730},
     }
 
-    result = tr.export_to_api(config, data, event_timestamp="2026-06-14T21:30:00")
+    result = tr.export_to_api("K229", "BERS", data, event_timestamp="2026-06-14T21:30:00")
 
     assert result is False
     files = list(tmp_path.glob("tournament_export_*.json"))
     assert len(files) == 1
     with open(files[0], encoding="utf-8") as f:
         saved = json.load(f)
-    assert saved["leaderboard"] == data["leaderboard"]
-    assert saved["own_data"] == data["own_data"]
+    assert saved["kingdom"] == "K229"
+    assert saved["clan"] == "BERS"
+    assert saved["items"][0] == {"name": "Scaramouche", "place": 1, "points": 488644262}
 
 
 def test_main_smoke(monkeypatch):
-    config = {"api_url": "https://api.total-hunter.com", "api_token": "secret123", "alliance_tag": "K229"}
     collected = {
         "leaderboard": [{"rank": 1, "name": "Scaramouche", "points": 488644262}],
         "own_data": {"rank": 79, "name": "ЗОЛОТОЙ", "points": 71896730},
     }
 
-    monkeypatch.setattr(tr, "load_config", lambda: config)
+    monkeypatch.setattr(tr.sys, "argv", ["tournament_reader.py", "K229", "BERS"])
     monkeypatch.setattr(tr, "collect_tournament_data", lambda: collected)
-    monkeypatch.setattr(tr, "export_to_api", lambda cfg, data, event_timestamp: True)
+    monkeypatch.setattr(tr, "export_to_api", lambda kingdom, clan, data, event_timestamp: True)
     monkeypatch.setattr(tr.time, "sleep", lambda *a, **k: None)
 
     tr.main()

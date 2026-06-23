@@ -1,5 +1,5 @@
-import os
 import re
+import sys
 import json
 import time
 import random
@@ -70,22 +70,9 @@ PLACE_OCR_THRESHOLD = 130
 NAME_MIN_LENGTH = 2
 
 # --- Config / API ---
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tournament_config.json')
+from auth import SERVER_URL, get_hwid
+
 API_IMPORT_PATH = '/api/v1/tournaments/import'
-
-
-def load_config():
-    if not os.path.exists(CONFIG_PATH):
-        raise FileNotFoundError(
-            f"Конфигурация не найдена: {CONFIG_PATH}\n"
-            f"Скопируйте tournament_config.example.json в tournament_config.json и заполните значения."
-        )
-    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-        config = json.load(f)
-    for key in ('api_url', 'api_token', 'alliance_tag'):
-        if key not in config:
-            raise ValueError(f"В конфигурации отсутствует обязательный ключ: {key}")
-    return config
 
 
 def detect_dialog_bbox(frame):
@@ -330,18 +317,27 @@ def collect_tournament_data():
     return {'leaderboard': leaderboard, 'own_data': own_data}
 
 
-def export_to_api(config, data, event_timestamp):
+def export_to_api(kingdom, clan, data, event_timestamp):
+    items = list(data["leaderboard"])
+    if data.get("own_data"):
+        own_name = data["own_data"].get("name")
+        if own_name and not any(row.get("name") == own_name for row in items):
+            items.append(data["own_data"])
+
     payload = {
-        "event_timestamp": event_timestamp,
-        "alliance_tag": config["alliance_tag"],
-        "own_data": data["own_data"],
-        "leaderboard": data["leaderboard"],
+        "hwid": get_hwid(),
+        "kingdom": kingdom,
+        "clan": clan,
+        "timestamp": event_timestamp,
+        "items": [
+            {"name": row["name"], "place": row.get("rank"), "points": row.get("points")}
+            for row in items if row.get("name")
+        ],
     }
-    headers = {"Authorization": f"Bearer {config['api_token']}"}
-    url = config["api_url"] + API_IMPORT_PATH
+    url = SERVER_URL + API_IMPORT_PATH
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=10)
         if 200 <= response.status_code < 300:
             return True
     except requests.RequestException:
@@ -355,7 +351,10 @@ def export_to_api(config, data, event_timestamp):
 
 
 def main():
-    config = load_config()
+    if len(sys.argv) < 3:
+        print("Использование: python tournament_reader.py <kingdom> <clan>")
+        return
+    kingdom, clan = sys.argv[1], sys.argv[2]
 
     print("Откройте диалог «Статистика» в игре. Сбор начнётся через 3 секунды...")
     for i in (3, 2, 1):
@@ -368,7 +367,7 @@ def main():
     print(f"Своё место: {data['own_data']}")
 
     event_timestamp = datetime.datetime.now().isoformat(timespec='seconds')
-    success = export_to_api(config, data, event_timestamp)
+    success = export_to_api(kingdom, clan, data, event_timestamp)
 
     if success:
         print("Данные успешно отправлены на сервер.")
