@@ -20,9 +20,10 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
-    Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias, Hunt,
+    Chest, ChestCollector, ChestTypeAlias, Hunt,
     PlayerAlias, Transaction, User,
 )
 
@@ -198,68 +199,6 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
     return {"ok": True, "count": len(new_items), "collector_slug": collector_slug}
 
 
-def _pivot_summary(kingdom: str, clan: str, rows) -> dict:
-    """rows: iterable of (sender, chest_type_en, display_name, points_per_unit,
-    counts_toward_quota, count).
-
-    chest_type_en is used as the internal dedup/grouping key (stable, language-
-    independent) — display_name is only substituted in at the very end, so two
-    different chest types that happen to share an identical translation can never be
-    merged into one row by mistake.
-    """
-    chest_type_order: list[str] = []
-    seen_types = set()
-    display_names: dict[str, str] = {}
-    per_player: dict[str, dict[str, int]] = {}
-    player_points: dict[str, int] = {}
-    player_quota: dict[str, int] = {}
-    totals: dict[str, int] = {}
-    grand_total = 0
-    total_points = 0
-
-    for sender, chest_type_en, display_name, points, counts_toward_quota, count in rows:
-        if chest_type_en not in seen_types:
-            seen_types.add(chest_type_en)
-            chest_type_order.append(chest_type_en)
-            display_names[chest_type_en] = display_name
-        per_player.setdefault(sender, {})
-        per_player[sender][chest_type_en] = per_player[sender].get(chest_type_en, 0) + count
-        player_points[sender] = player_points.get(sender, 0) + count * points
-        if counts_toward_quota:
-            player_quota[sender] = player_quota.get(sender, 0) + count
-        totals[chest_type_en] = totals.get(chest_type_en, 0) + count
-        grand_total += count
-        total_points += count * points
-
-    chest_type_order_sorted = sorted(
-        seen_types, key=lambda t: (-totals[t], display_names[t])
-    )
-    chest_types = [display_names[t] for t in chest_type_order_sorted]
-    players = []
-    for sender, counts_by_en in per_player.items():
-        counts = {display_names[t]: c for t, c in counts_by_en.items()}
-        players.append({
-            "name": sender,
-            "counts": counts,
-            "total": sum(counts_by_en.values()),
-            "points": player_points[sender],
-            "quota_chests": player_quota.get(sender, 0),
-        })
-    players.sort(key=lambda p: (-p["points"], p["name"]))
-
-    totals_out = {display_names[t]: c for t, c in totals.items()}
-    totals_out["grand_total"] = grand_total
-    totals_out["total_points"] = total_points
-
-    return {
-        "kingdom": kingdom,
-        "clan": clan,
-        "chest_types": chest_types,
-        "players": players,
-        "totals": totals_out,
-    }
-
-
 @router.get("/summary/{slug}")
 async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     collector = (await db.execute(
@@ -268,56 +207,17 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
 
-    sender_expr = func.coalesce(PlayerAlias.canonical_name, Chest.sender_raw)
-    chest_type_expr = func.coalesce(ChestTypeAlias.catalog_id, Chest.chest_type_raw)
-    display_expr = func.coalesce(ChestConfiguration.custom_name,
-                                 ChestLocalization.display_text, chest_type_expr)
+    rows = await query_summary_rows(db, collector, collector.period_start, collector.period_end)
 
-    rows_query = (
-        select(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points,
-               ChestConfiguration.counts_toward_quota, func.count())
-        .select_from(Chest)
-        .outerjoin(
-            PlayerAlias,
-            and_(PlayerAlias.collector_id == Chest.collector_id,
-                 PlayerAlias.raw_name == Chest.sender_raw),
-        )
-        .outerjoin(
-            ChestTypeAlias,
-            and_(ChestTypeAlias.collector_id == Chest.collector_id,
-                 ChestTypeAlias.raw_type == Chest.chest_type_raw),
-        )
-        .join(
-            ChestConfiguration,
-            and_(ChestConfiguration.collector_id == Chest.collector_id,
-                 ChestConfiguration.catalog_id == chest_type_expr,
-                 ChestConfiguration.is_in_pattern.is_(True)),
-        )
-        .outerjoin(
-            ChestLocalization,
-            and_(ChestLocalization.canonical_type == chest_type_expr,
-                 ChestLocalization.language == collector.language),
-        )
-        .where(Chest.collector_id == collector.id)
-    )
     updated_at_query = select(func.max(Chest.collected_at)).where(
         Chest.collector_id == collector.id)
-
     if collector.period_start is not None:
-        rows_query = rows_query.where(Chest.collected_at >= collector.period_start)
         updated_at_query = updated_at_query.where(Chest.collected_at >= collector.period_start)
     if collector.period_end is not None:
-        rows_query = rows_query.where(Chest.collected_at <= collector.period_end)
         updated_at_query = updated_at_query.where(Chest.collected_at <= collector.period_end)
-
-    rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr,
-                                     ChestConfiguration.points,
-                                     ChestConfiguration.counts_toward_quota)
-
-    rows = (await db.execute(rows_query)).all()
     updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
 
-    result = _pivot_summary(collector.kingdom, collector.clan, rows)
+    result = pivot_summary(collector.kingdom, collector.clan, rows)
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
