@@ -249,38 +249,30 @@ def test_get_unsynced_counts_empty_after_full_sync(tmp_path):
     assert counts == {}
 
 
-def test_find_open_button_region_is_top_row_right_side():
-    """find_open_button must restrict the color search to the top-row band,
-    not the whole dialog (avoids matching unrelated green UI elsewhere)."""
+def test_click_open_button_uses_fixed_point_plus_tuning_offset(monkeypatch):
+    """click_open_button must click coord_manager.to_screen_dialog(OPEN_BUTTON_REF_POS)
+    shifted by the "chest_collect" tuning offset — no color/contour search."""
     captured = {}
+    monkeypatch.setattr(cr.coord_manager, "to_screen_dialog", lambda x, y: (1000, 500))
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: (7, -3))
+    monkeypatch.setattr(cr.random, "randint", lambda lo, hi: 0)
+    monkeypatch.setattr(cr.random, "uniform", lambda lo, hi: 0.0)
+    monkeypatch.setattr(cr.time, "sleep", lambda *a, **k: None)
 
-    def fake_find_colored_button(region, color, pick):
-        captured['region'] = region
-        captured['color'] = color
-        return (region[0] + 10, region[1] + 10)
+    def fake_click(x, y):
+        captured['pos'] = (x, y)
+    monkeypatch.setattr(cr.pyautogui, "click", fake_click)
 
-    import chest_reader as cr_mod
-    monkey_target = cr_mod.find_colored_button
-    cr_mod.find_colored_button = fake_find_colored_button
-    try:
-        bbox = (671, 340, 764, 475)
-        pos = cr.find_open_button(bbox)
-        # region[0] = 671 + int(764*0.78) = 1266; region[1] = 340 + int(100*0.45) = 385
-        # fake_find_colored_button returns (region[0]+10, region[1]+10)
-        assert pos == (1276, 395)
-        x, y, w, h = captured['region']
-        assert x == 671 + int(764 * 0.78)
-        assert y == 340 + int(100 * 0.45)
-        assert captured['color'] == 'green'
-    finally:
-        cr_mod.find_colored_button = monkey_target
+    cr.click_open_button()
+
+    assert captured['pos'] == (1007, 497)
 
 
 def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     sequence = [
-        ((100, 100), "Сундук Эпического Монстра", "Alice"),
-        ((100, 100), "Сундук Эпического Монстра", "Bob"),
-        (None, None, None),
+        ("Сундук Эпического Монстра", "Alice"),
+        ("Сундук Эпического Монстра", "Bob"),
+        ("", ""),
     ]
     state = {'n': 0}
 
@@ -288,18 +280,14 @@ def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
 
-    def fake_find_open_button(bbox):
-        return sequence[state['n']][0]
-
     def fake_read_top_row(frame, **kwargs):
-        _, chest_type, sender = sequence[state['n']]
+        chest_type, sender = sequence[state['n']]
         state['n'] += 1
         return chest_type, sender
 
     clicked = []
-    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
     monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
-    monkeypatch.setattr(cr, "click_open_button", lambda pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE: clicked.append(pos))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: clicked.append(True))
 
     db_path = str(tmp_path / "test_chest_buffer.db")
     result = cr.collect_chests(lambda: False, db_path=db_path)
@@ -333,20 +321,16 @@ def test_collect_chests_counts_are_cumulative_from_db(tmp_path, monkeypatch):
 
     calls = {"n": 0}
 
-    def fake_find_open_button(bbox):
-        calls["n"] += 1
-        return (10, 10) if calls["n"] <= 1 else None
-
     def fake_read_top_row(frame, **kwargs):
-        return ("Сундук Эпического Монстра", "Новый")
+        calls["n"] += 1
+        return ("Сундук Эпического Монстра", "Новый") if calls["n"] <= 1 else ("", "")
 
-    def fake_click_open_button(pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
+    def fake_click_open_button(pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
         pass
 
     monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
     monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
-    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
     monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
     monkeypatch.setattr(cr, "click_open_button", fake_click_open_button)
 
@@ -410,11 +394,14 @@ def test_click_open_button_uses_passed_pause_range(monkeypatch):
         captured["range"] = (lo, hi)
         return 0.0
 
+    monkeypatch.setattr(cr.coord_manager, "to_screen_dialog", lambda x, y: (10, 10))
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: (0, 0))
+    monkeypatch.setattr(cr.random, "randint", lambda lo, hi: 0)
     monkeypatch.setattr(cr.random, "uniform", fake_uniform)
     monkeypatch.setattr(cr.pyautogui, "click", lambda *a, **k: None)
     monkeypatch.setattr(cr.time, "sleep", lambda *a, **k: None)
 
-    cr.click_open_button((10, 10), pause_range=(0.5, 0.6))
+    cr.click_open_button(pause_range=(0.5, 0.6))
 
     assert captured["range"] == (0.5, 0.6)
 
@@ -426,11 +413,14 @@ def test_click_open_button_defaults_to_module_constant(monkeypatch):
         captured["range"] = (lo, hi)
         return 0.0
 
+    monkeypatch.setattr(cr.coord_manager, "to_screen_dialog", lambda x, y: (10, 10))
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: (0, 0))
+    monkeypatch.setattr(cr.random, "randint", lambda lo, hi: 0)
     monkeypatch.setattr(cr.random, "uniform", fake_uniform)
     monkeypatch.setattr(cr.pyautogui, "click", lambda *a, **k: None)
     monkeypatch.setattr(cr.time, "sleep", lambda *a, **k: None)
 
-    cr.click_open_button((10, 10))
+    cr.click_open_button()
 
     assert captured["range"] == cr.ANTI_DETECT_PAUSE_RANGE
 
@@ -450,20 +440,16 @@ def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
 
     calls = {"n": 0}
 
-    def fake_find_open_button(bbox):
-        calls["n"] += 1
-        return (10, 10) if calls["n"] <= 1 else None
-
     def fake_read_top_row(frame, **kwargs):
-        return ("Сундук Эпического Монстра", "Игрок")
+        calls["n"] += 1
+        return ("Сундук Эпического Монстра", "Игрок") if calls["n"] <= 1 else ("", "")
 
-    def fake_click_open_button(pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
+    def fake_click_open_button(pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
         captured_ranges.append(pause_range)
 
     monkeypatch.setattr(cr, "grab_fullscreen", fake_grab_fullscreen)
     monkeypatch.setattr(cr, "detect_dialog_bbox", fake_detect_dialog_bbox)
     monkeypatch.setattr(cr, "crop_dialog", fake_crop_dialog)
-    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
     monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
     monkeypatch.setattr(cr, "click_open_button", fake_click_open_button)
 
@@ -575,16 +561,12 @@ def test_collect_chests_forwards_full_lang_to_read_top_row(tmp_path, monkeypatch
 
     calls = {"n": 0}
 
-    def fake_find_open_button(bbox):
-        calls["n"] += 1
-        return (10, 10) if calls["n"] <= 1 else None
-    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
-
     def fake_read_top_row(frame, full_lang=False):
+        calls["n"] += 1
         captured["full_lang"] = full_lang
-        return ("Сундук", "Player")
+        return ("Сундук", "Player") if calls["n"] <= 1 else ("", "")
     monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
-    monkeypatch.setattr(cr, "click_open_button", lambda pos, pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
 
     cr.collect_chests(lambda: False, db_path=db_path, full_lang=True)
 

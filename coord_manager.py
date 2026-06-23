@@ -37,8 +37,8 @@ class CoordinateManager:
         sx, sy = coord_manager.to_screen_dialog(1137, 785)  # with dialog offset
     """
 
-    # Names of the six UI buttons that support manual click tuning.
-    _UI_BUTTON_NAMES = ("wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type")
+    # Names of the UI buttons that support manual click tuning.
+    _UI_BUTTON_NAMES = ("wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type", "chest_collect")
 
     def __init__(self):
         self.scale_x: float = 1.0

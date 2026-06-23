@@ -7,7 +7,7 @@ import json
 import pytest
 from coord_manager import CoordinateManager, REF_A, REF_B
 
-KNOWN_BUTTONS = {"wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type"}
+KNOWN_BUTTONS = {"wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type", "chest_collect"}
 
 
 class TestUiOffsetsDefaults:

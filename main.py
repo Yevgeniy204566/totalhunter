@@ -125,7 +125,7 @@ MD3_NAME = _read_saved_theme()
 MD3 = _load_theme(MD3_NAME)
 
 
-TUNE_TARGET_NAMES = ("wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type")
+TUNE_TARGET_NAMES = ("wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type", "chest_collect")
 
 
 LANGS = {
@@ -185,7 +185,7 @@ LANGS = {
         "cal_profile_lb": "Профиль:", "cal_not_calibrated": "Не откалиброван",
         "cal_auto_btn": "АВТОКАЛИБРОВАТЬ", "cal_manual_btn": "КАЛИБРОВАТЬ",
         "cal_save_btn": "💾  Сохранить", "cal_load_btn": "📂  Загрузить",
-        "cal_tune_title": "Тюнинг кликов", "cal_tune_wt_icon": "Дозорная башня", "cal_tune_carter": "Отправка Картера", "cal_tune_top_accel": "Ускорить (Картер)", "cal_tune_march_accel": "Использовать ускорение", "cal_tune_reset": "Сброс", "cal_tune_chest_sender": "Имя игрока (сундуки)", "cal_tune_chest_type": "Источник (сундуки)",
+        "cal_tune_title": "Тюнинг кликов", "cal_tune_wt_icon": "Дозорная башня", "cal_tune_carter": "Отправка Картера", "cal_tune_top_accel": "Ускорить (Картер)", "cal_tune_march_accel": "Использовать ускорение", "cal_tune_reset": "Сброс", "cal_tune_chest_sender": "Имя игрока (сундуки)", "cal_tune_chest_type": "Источник (сундуки)", "cal_tune_chest_collect": "Открыть (сундуки)",
         # --- ref tab additions ---
         "ref_bal_title": "Реферальный баланс", "ref_transfer_btn": "💸  Перевести на баланс  →",
         "ref_link_title": "Ваша реферальная ссылка:", "ref_code_prefix": "Код: ",
@@ -257,7 +257,7 @@ LANGS = {
         "cal_profile_lb": "Profile:", "cal_not_calibrated": "Not calibrated",
         "cal_auto_btn": "AUTO CALIBRATE", "cal_manual_btn": "CALIBRATE",
         "cal_save_btn": "💾  Save", "cal_load_btn": "📂  Load",
-        "cal_tune_title": "Click Tuning", "cal_tune_wt_icon": "Watchtower", "cal_tune_carter": "Send Carter", "cal_tune_top_accel": "Speed Up (Carter)", "cal_tune_march_accel": "Use Acceleration", "cal_tune_reset": "Reset", "cal_tune_chest_sender": "Player Name (Chests)", "cal_tune_chest_type": "Source (Chests)",
+        "cal_tune_title": "Click Tuning", "cal_tune_wt_icon": "Watchtower", "cal_tune_carter": "Send Carter", "cal_tune_top_accel": "Speed Up (Carter)", "cal_tune_march_accel": "Use Acceleration", "cal_tune_reset": "Reset", "cal_tune_chest_sender": "Player Name (Chests)", "cal_tune_chest_type": "Source (Chests)", "cal_tune_chest_collect": "Open (Chests)",
         # --- ref tab additions ---
         "ref_bal_title": "Referral Balance", "ref_transfer_btn": "💸  Transfer to balance  →",
         "ref_link_title": "Your referral link:", "ref_code_prefix": "Code: ",
@@ -318,7 +318,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nicht kalibriert",
         "cal_auto_btn": "AUTO KALIBRIEREN", "cal_manual_btn": "KALIBRIEREN",
         "cal_save_btn": "💾  Speichern", "cal_load_btn": "📂  Laden",
-        "cal_tune_title": "Klick-Tuning", "cal_tune_wt_icon": "Wachturm", "cal_tune_carter": "Carter senden", "cal_tune_top_accel": "Beschleunigen (Carter)", "cal_tune_march_accel": "Beschleunigung verwenden", "cal_tune_reset": "Zurücksetzen", "cal_tune_chest_sender": "Spielername (Truhen)", "cal_tune_chest_type": "Quelle (Truhen)",
+        "cal_tune_title": "Klick-Tuning", "cal_tune_wt_icon": "Wachturm", "cal_tune_carter": "Carter senden", "cal_tune_top_accel": "Beschleunigen (Carter)", "cal_tune_march_accel": "Beschleunigung verwenden", "cal_tune_reset": "Zurücksetzen", "cal_tune_chest_sender": "Spielername (Truhen)", "cal_tune_chest_type": "Quelle (Truhen)", "cal_tune_chest_collect": "Öffnen (Truhen)",
         "ref_bal_title": "Partner-Guthaben", "ref_transfer_btn": "💸  Auf Guthaben übertragen  →",
         "ref_link_title": "Dein Empfehlungslink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Partner",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -376,7 +376,7 @@ LANGS = {
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "No calibrado",
         "cal_auto_btn": "AUTO CALIBRAR", "cal_manual_btn": "CALIBRAR",
         "cal_save_btn": "💾  Guardar", "cal_load_btn": "📂  Cargar",
-        "cal_tune_title": "Ajuste de clics", "cal_tune_wt_icon": "Torre de guardia", "cal_tune_carter": "Enviar Carter", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleración", "cal_tune_reset": "Restablecer", "cal_tune_chest_sender": "Nombre del jugador (Cofres)", "cal_tune_chest_type": "Fuente (Cofres)",
+        "cal_tune_title": "Ajuste de clics", "cal_tune_wt_icon": "Torre de guardia", "cal_tune_carter": "Enviar Carter", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleración", "cal_tune_reset": "Restablecer", "cal_tune_chest_sender": "Nombre del jugador (Cofres)", "cal_tune_chest_type": "Fuente (Cofres)", "cal_tune_chest_collect": "Abrir (Cofres)",
         "ref_bal_title": "Saldo de referidos", "ref_transfer_btn": "💸  Transferir al saldo  →",
         "ref_link_title": "Tu enlace de referido:", "ref_code_prefix": "Código: ", "ref_stats_title": "Referidos",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -434,7 +434,7 @@ LANGS = {
         "cal_profile_lb": "Profil :", "cal_not_calibrated": "Non calibré",
         "cal_auto_btn": "AUTO CALIBRER", "cal_manual_btn": "CALIBRER",
         "cal_save_btn": "💾  Sauvegarder", "cal_load_btn": "📂  Charger",
-        "cal_tune_title": "Réglage des clics", "cal_tune_wt_icon": "Tour de guet", "cal_tune_carter": "Envoyer Carter", "cal_tune_top_accel": "Accélérer (Carter)", "cal_tune_march_accel": "Utiliser l'accélération", "cal_tune_reset": "Réinitialiser", "cal_tune_chest_sender": "Nom du joueur (Coffres)", "cal_tune_chest_type": "Source (Coffres)",
+        "cal_tune_title": "Réglage des clics", "cal_tune_wt_icon": "Tour de guet", "cal_tune_carter": "Envoyer Carter", "cal_tune_top_accel": "Accélérer (Carter)", "cal_tune_march_accel": "Utiliser l'accélération", "cal_tune_reset": "Réinitialiser", "cal_tune_chest_sender": "Nom du joueur (Coffres)", "cal_tune_chest_type": "Source (Coffres)", "cal_tune_chest_collect": "Ouvrir (Coffres)",
         "ref_bal_title": "Solde parrainage", "ref_transfer_btn": "💸  Transférer au solde  →",
         "ref_link_title": "Votre lien de parrainage :", "ref_code_prefix": "Code : ", "ref_stats_title": "Parrainages",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -492,7 +492,7 @@ LANGS = {
         "cal_profile_lb": "Profilo:", "cal_not_calibrated": "Non calibrato",
         "cal_auto_btn": "AUTO CALIBRA", "cal_manual_btn": "CALIBRA",
         "cal_save_btn": "💾  Salva", "cal_load_btn": "📂  Carica",
-        "cal_tune_title": "Regolazione clic", "cal_tune_wt_icon": "Torre di guardia", "cal_tune_carter": "Invia Carter", "cal_tune_top_accel": "Accelera (Carter)", "cal_tune_march_accel": "Usa accelerazione", "cal_tune_reset": "Ripristina", "cal_tune_chest_sender": "Nome giocatore (Forzieri)", "cal_tune_chest_type": "Fonte (Forzieri)",
+        "cal_tune_title": "Regolazione clic", "cal_tune_wt_icon": "Torre di guardia", "cal_tune_carter": "Invia Carter", "cal_tune_top_accel": "Accelera (Carter)", "cal_tune_march_accel": "Usa accelerazione", "cal_tune_reset": "Ripristina", "cal_tune_chest_sender": "Nome giocatore (Forzieri)", "cal_tune_chest_type": "Fonte (Forzieri)", "cal_tune_chest_collect": "Apri (Forzieri)",
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Trasferisci al saldo  →",
         "ref_link_title": "Il tuo link referral:", "ref_code_prefix": "Codice: ", "ref_stats_title": "Referral",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -550,7 +550,7 @@ LANGS = {
         "cal_profile_lb": "Profiel:", "cal_not_calibrated": "Niet gekalibreerd",
         "cal_auto_btn": "AUTO KALIBREREN", "cal_manual_btn": "KALIBREREN",
         "cal_save_btn": "💾  Opslaan", "cal_load_btn": "📂  Laden",
-        "cal_tune_title": "Klik-tuning", "cal_tune_wt_icon": "Wachttoren", "cal_tune_carter": "Carter sturen", "cal_tune_top_accel": "Versnellen (Carter)", "cal_tune_march_accel": "Versnelling gebruiken", "cal_tune_reset": "Herstellen", "cal_tune_chest_sender": "Spelersnaam (Kisten)", "cal_tune_chest_type": "Bron (Kisten)",
+        "cal_tune_title": "Klik-tuning", "cal_tune_wt_icon": "Wachttoren", "cal_tune_carter": "Carter sturen", "cal_tune_top_accel": "Versnellen (Carter)", "cal_tune_march_accel": "Versnelling gebruiken", "cal_tune_reset": "Herstellen", "cal_tune_chest_sender": "Spelersnaam (Kisten)", "cal_tune_chest_type": "Bron (Kisten)", "cal_tune_chest_collect": "Openen (Kisten)",
         "ref_bal_title": "Referralsaldo", "ref_transfer_btn": "💸  Overzetten naar saldo  →",
         "ref_link_title": "Jouw referrallink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Referrals",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -608,7 +608,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Ikke kalibrert",
         "cal_auto_btn": "AUTO KALIBRER", "cal_manual_btn": "KALIBRER",
         "cal_save_btn": "💾  Lagre", "cal_load_btn": "📂  Last",
-        "cal_tune_title": "Klikk-tuning", "cal_tune_wt_icon": "Vakttårn", "cal_tune_carter": "Send Carter", "cal_tune_top_accel": "Accel. (Carter)", "cal_tune_march_accel": "Bruk akselerasjon", "cal_tune_reset": "Tilbakestill", "cal_tune_chest_sender": "Spillernavn (Kister)", "cal_tune_chest_type": "Kilde (Kister)",
+        "cal_tune_title": "Klikk-tuning", "cal_tune_wt_icon": "Vakttårn", "cal_tune_carter": "Send Carter", "cal_tune_top_accel": "Accel. (Carter)", "cal_tune_march_accel": "Bruk akselerasjon", "cal_tune_reset": "Tilbakestill", "cal_tune_chest_sender": "Spillernavn (Kister)", "cal_tune_chest_type": "Kilde (Kister)", "cal_tune_chest_collect": "Åpne (Kister)",
         "ref_bal_title": "Referansesaldo", "ref_transfer_btn": "💸  Overfør til saldo  →",
         "ref_link_title": "Din referanselink:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referanser",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -666,7 +666,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nieskalibrowany",
         "cal_auto_btn": "AUTO KALIBRUJ", "cal_manual_btn": "KALIBRUJ",
         "cal_save_btn": "💾  Zapisz", "cal_load_btn": "📂  Wczytaj",
-        "cal_tune_title": "Strojenie kliknięć", "cal_tune_wt_icon": "Wieża strażnicza", "cal_tune_carter": "Wyślij Cartera", "cal_tune_top_accel": "Przyspiesz (Carter)", "cal_tune_march_accel": "Użyj przyspieszenia", "cal_tune_reset": "Resetuj", "cal_tune_chest_sender": "Nazwa gracza (Skrzynie)", "cal_tune_chest_type": "Źródło (Skrzynie)",
+        "cal_tune_title": "Strojenie kliknięć", "cal_tune_wt_icon": "Wieża strażnicza", "cal_tune_carter": "Wyślij Cartera", "cal_tune_top_accel": "Przyspiesz (Carter)", "cal_tune_march_accel": "Użyj przyspieszenia", "cal_tune_reset": "Resetuj", "cal_tune_chest_sender": "Nazwa gracza (Skrzynie)", "cal_tune_chest_type": "Źródło (Skrzynie)", "cal_tune_chest_collect": "Otwórz (Skrzynie)",
         "ref_bal_title": "Saldo polecień", "ref_transfer_btn": "💸  Przenieś na saldo  →",
         "ref_link_title": "Twój link polecający:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Polecenia",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "skan",
@@ -724,7 +724,7 @@ LANGS = {
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "Não calibrado",
         "cal_auto_btn": "AUTO CALIBRAR", "cal_manual_btn": "CALIBRAR",
         "cal_save_btn": "💾  Salvar", "cal_load_btn": "📂  Carregar",
-        "cal_tune_title": "Ajuste de cliques", "cal_tune_wt_icon": "Torre de vigia", "cal_tune_carter": "Enviar Carter", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleração", "cal_tune_reset": "Redefinir", "cal_tune_chest_sender": "Nome do jogador (Baús)", "cal_tune_chest_type": "Fonte (Baús)",
+        "cal_tune_title": "Ajuste de cliques", "cal_tune_wt_icon": "Torre de vigia", "cal_tune_carter": "Enviar Carter", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleração", "cal_tune_reset": "Redefinir", "cal_tune_chest_sender": "Nome do jogador (Baús)", "cal_tune_chest_type": "Fonte (Baús)", "cal_tune_chest_collect": "Abrir (Baús)",
         "ref_bal_title": "Saldo de indicações", "ref_transfer_btn": "💸  Transferir para saldo  →",
         "ref_link_title": "Seu link de indicação:", "ref_code_prefix": "Código: ", "ref_stats_title": "Indicações",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -782,7 +782,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Inte kalibrerad",
         "cal_auto_btn": "AUTO KALIBRERA", "cal_manual_btn": "KALIBRERA",
         "cal_save_btn": "💾  Spara", "cal_load_btn": "📂  Ladda",
-        "cal_tune_title": "Klick-justering", "cal_tune_wt_icon": "Vakttorn", "cal_tune_carter": "Skicka Carter", "cal_tune_top_accel": "Accelerera (Carter)", "cal_tune_march_accel": "Använd acceleration", "cal_tune_reset": "Återställ", "cal_tune_chest_sender": "Spelarnamn (Kistor)", "cal_tune_chest_type": "Källa (Kistor)",
+        "cal_tune_title": "Klick-justering", "cal_tune_wt_icon": "Vakttorn", "cal_tune_carter": "Skicka Carter", "cal_tune_top_accel": "Accelerera (Carter)", "cal_tune_march_accel": "Använd acceleration", "cal_tune_reset": "Återställ", "cal_tune_chest_sender": "Spelarnamn (Kistor)", "cal_tune_chest_type": "Källa (Kistor)", "cal_tune_chest_collect": "Öppna (Kistor)",
         "ref_bal_title": "Hänvisningssaldo", "ref_transfer_btn": "💸  Överför till saldo  →",
         "ref_link_title": "Din hänvisningslänk:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Hänvisningar",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -840,7 +840,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Kalibre edilmedi",
         "cal_auto_btn": "OTOMATİK KALİBRE", "cal_manual_btn": "KALİBRE ET",
         "cal_save_btn": "💾  Kaydet", "cal_load_btn": "📂  Yükle",
-        "cal_tune_title": "Tıklama ayarı", "cal_tune_wt_icon": "Gözetleme kulesi", "cal_tune_carter": "Carter gönder", "cal_tune_top_accel": "Hızlan (Carter)", "cal_tune_march_accel": "İvmelenmeyi kullan", "cal_tune_reset": "Sıfırla", "cal_tune_chest_sender": "Oyuncu adı (Sandıklar)", "cal_tune_chest_type": "Kaynak (Sandıklar)",
+        "cal_tune_title": "Tıklama ayarı", "cal_tune_wt_icon": "Gözetleme kulesi", "cal_tune_carter": "Carter gönder", "cal_tune_top_accel": "Hızlan (Carter)", "cal_tune_march_accel": "İvmelenmeyi kullan", "cal_tune_reset": "Sıfırla", "cal_tune_chest_sender": "Oyuncu adı (Sandıklar)", "cal_tune_chest_type": "Kaynak (Sandıklar)", "cal_tune_chest_collect": "Aç (Sandıklar)",
         "ref_bal_title": "Referans bakiyesi", "ref_transfer_btn": "💸  Bakiyeye aktar  →",
         "ref_link_title": "Referans linkiniz:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Referanslar",
         "unit_sec": "s", "unit_min": "dk", "unit_scan": "scan",
@@ -898,7 +898,7 @@ LANGS = {
         "cal_profile_lb": "الملف:", "cal_not_calibrated": "غير معاير",
         "cal_auto_btn": "معايرة تلقائية", "cal_manual_btn": "معايرة",
         "cal_save_btn": "💾  حفظ", "cal_load_btn": "📂  تحميل",
-        "cal_tune_title": "ضبط النقرات", "cal_tune_wt_icon": "برج المراقبة", "cal_tune_carter": "إرسال كارتر", "cal_tune_top_accel": "تسريع (كارتر)", "cal_tune_march_accel": "استخدام التسريع", "cal_tune_reset": "إعادة تعيين", "cal_tune_chest_sender": "اسم اللاعب (الصناديق)", "cal_tune_chest_type": "المصدر (الصناديق)",
+        "cal_tune_title": "ضبط النقرات", "cal_tune_wt_icon": "برج المراقبة", "cal_tune_carter": "إرسال كارتر", "cal_tune_top_accel": "تسريع (كارتر)", "cal_tune_march_accel": "استخدام التسريع", "cal_tune_reset": "إعادة تعيين", "cal_tune_chest_sender": "اسم اللاعب (الصناديق)", "cal_tune_chest_type": "المصدر (الصناديق)", "cal_tune_chest_collect": "فتح (الصناديق)",
         "ref_bal_title": "رصيد الإحالات", "ref_transfer_btn": "💸  تحويل إلى الرصيد  →",
         "ref_link_title": "رابط إحالتك:", "ref_code_prefix": "الرمز: ", "ref_stats_title": "الإحالات",
         "unit_sec": "ث", "unit_min": "د", "unit_scan": "مسح",
@@ -956,7 +956,7 @@ LANGS = {
         "cal_profile_lb": "プロファイル:", "cal_not_calibrated": "未キャリブレーション",
         "cal_auto_btn": "自動キャリブレーション", "cal_manual_btn": "キャリブレーション",
         "cal_save_btn": "💾  保存", "cal_load_btn": "📂  読込",
-        "cal_tune_title": "クリック調整", "cal_tune_wt_icon": "見張り塔", "cal_tune_carter": "カーター派遣", "cal_tune_top_accel": "加速 (カーター)", "cal_tune_march_accel": "加速使用", "cal_tune_reset": "リセット", "cal_tune_chest_sender": "プレイヤー名（チェスト）", "cal_tune_chest_type": "ソース（チェスト）",
+        "cal_tune_title": "クリック調整", "cal_tune_wt_icon": "見張り塔", "cal_tune_carter": "カーター派遣", "cal_tune_top_accel": "加速 (カーター)", "cal_tune_march_accel": "加速使用", "cal_tune_reset": "リセット", "cal_tune_chest_sender": "プレイヤー名（チェスト）", "cal_tune_chest_type": "ソース（チェスト）", "cal_tune_chest_collect": "開く（チェスト）",
         "ref_bal_title": "紹介残高", "ref_transfer_btn": "💸  残高に転送  →",
         "ref_link_title": "あなたの紹介リンク:", "ref_code_prefix": "コード: ", "ref_stats_title": "紹介",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "スキャン",
@@ -1014,7 +1014,7 @@ LANGS = {
         "cal_profile_lb": "配置文件:", "cal_not_calibrated": "未校准",
         "cal_auto_btn": "自动校准", "cal_manual_btn": "校准",
         "cal_save_btn": "💾  保存", "cal_load_btn": "📂  加载",
-        "cal_tune_title": "点击调整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_reset": "重置", "cal_tune_chest_sender": "玩家名称（宝箱）", "cal_tune_chest_type": "来源（宝箱）",
+        "cal_tune_title": "点击调整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_reset": "重置", "cal_tune_chest_sender": "玩家名称（宝箱）", "cal_tune_chest_type": "来源（宝箱）", "cal_tune_chest_collect": "打开（宝箱）",
         "ref_bal_title": "推荐余额", "ref_transfer_btn": "💸  转入余额  →",
         "ref_link_title": "您的推荐链接:", "ref_code_prefix": "代码: ", "ref_stats_title": "推荐",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "扫描",
@@ -1072,7 +1072,7 @@ LANGS = {
         "cal_profile_lb": "設定檔:", "cal_not_calibrated": "未校準",
         "cal_auto_btn": "自動校準", "cal_manual_btn": "校準",
         "cal_save_btn": "💾  儲存", "cal_load_btn": "📂  載入",
-        "cal_tune_title": "點擊調整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_reset": "重置", "cal_tune_chest_sender": "玩家名稱（寶箱）", "cal_tune_chest_type": "來源（寶箱）",
+        "cal_tune_title": "點擊調整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_reset": "重置", "cal_tune_chest_sender": "玩家名稱（寶箱）", "cal_tune_chest_type": "來源（寶箱）", "cal_tune_chest_collect": "打開（寶箱）",
         "ref_bal_title": "推薦餘額", "ref_transfer_btn": "💸  轉入餘額  →",
         "ref_link_title": "您的推薦連結:", "ref_code_prefix": "代碼: ", "ref_stats_title": "推薦",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "掃描",
@@ -1130,7 +1130,7 @@ LANGS = {
         "cal_profile_lb": "프로파일:", "cal_not_calibrated": "보정 안 됨",
         "cal_auto_btn": "자동 보정", "cal_manual_btn": "보정",
         "cal_save_btn": "💾  저장", "cal_load_btn": "📂  불러오기",
-        "cal_tune_title": "클릭 조정", "cal_tune_wt_icon": "감시탑", "cal_tune_carter": "카터 파견", "cal_tune_top_accel": "가속 (카터)", "cal_tune_march_accel": "가속 사용", "cal_tune_reset": "초기화", "cal_tune_chest_sender": "플레이어 이름(상자)", "cal_tune_chest_type": "출처(상자)",
+        "cal_tune_title": "클릭 조정", "cal_tune_wt_icon": "감시탑", "cal_tune_carter": "카터 파견", "cal_tune_top_accel": "가속 (카터)", "cal_tune_march_accel": "가속 사용", "cal_tune_reset": "초기화", "cal_tune_chest_sender": "플레이어 이름(상자)", "cal_tune_chest_type": "출처(상자)", "cal_tune_chest_collect": "열기(상자)",
         "ref_bal_title": "추천 잔액", "ref_transfer_btn": "💸  잔액으로 이전  →",
         "ref_link_title": "추천 링크:", "ref_code_prefix": "코드: ", "ref_stats_title": "추천",
         "unit_sec": "초", "unit_min": "분", "unit_scan": "스캔",
@@ -1188,7 +1188,7 @@ LANGS = {
         "cal_profile_lb": "Профіль:", "cal_not_calibrated": "Не відкалібровано",
         "cal_auto_btn": "АВТОКАЛІБРУВАТИ", "cal_manual_btn": "КАЛІБРУВАТИ",
         "cal_save_btn": "💾  Зберегти", "cal_load_btn": "📂  Завантажити",
-        "cal_tune_title": "Тюнінг кліків", "cal_tune_wt_icon": "Дозорна вежа", "cal_tune_carter": "Відправка Картера", "cal_tune_top_accel": "Прискорити (Картер)", "cal_tune_march_accel": "Використати прискорення", "cal_tune_reset": "Скинути", "cal_tune_chest_sender": "Ім'я гравця (скрині)", "cal_tune_chest_type": "Джерело (скрині)",
+        "cal_tune_title": "Тюнінг кліків", "cal_tune_wt_icon": "Дозорна вежа", "cal_tune_carter": "Відправка Картера", "cal_tune_top_accel": "Прискорити (Картер)", "cal_tune_march_accel": "Використати прискорення", "cal_tune_reset": "Скинути", "cal_tune_chest_sender": "Ім'я гравця (скрині)", "cal_tune_chest_type": "Джерело (скрині)", "cal_tune_chest_collect": "Відкрити (скрині)",
         "ref_bal_title": "Реферальний баланс", "ref_transfer_btn": "💸  Перевести на баланс  →",
         "ref_link_title": "Ваше реферальне посилання:", "ref_code_prefix": "Код: ", "ref_stats_title": "Реферали",
         "unit_sec": "с", "unit_min": "хв", "unit_scan": "скан",
@@ -1246,7 +1246,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Belum dikalibrasi",
         "cal_auto_btn": "KALIBRASI OTOMATIS", "cal_manual_btn": "KALIBRASI",
         "cal_save_btn": "💾  Simpan", "cal_load_btn": "📂  Muat",
-        "cal_tune_title": "Penyetelan klik", "cal_tune_wt_icon": "Menara pengawas", "cal_tune_carter": "Kirim Carter", "cal_tune_top_accel": "Percepat (Carter)", "cal_tune_march_accel": "Gunakan percepatan", "cal_tune_reset": "Reset", "cal_tune_chest_sender": "Nama pemain (Peti)", "cal_tune_chest_type": "Sumber (Peti)",
+        "cal_tune_title": "Penyetelan klik", "cal_tune_wt_icon": "Menara pengawas", "cal_tune_carter": "Kirim Carter", "cal_tune_top_accel": "Percepat (Carter)", "cal_tune_march_accel": "Gunakan percepatan", "cal_tune_reset": "Reset", "cal_tune_chest_sender": "Nama pemain (Peti)", "cal_tune_chest_type": "Sumber (Peti)", "cal_tune_chest_collect": "Buka (Peti)",
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Transfer ke saldo  →",
         "ref_link_title": "Tautan referral Anda:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referral",
         "unit_sec": "d", "unit_min": "mnt", "unit_scan": "scan",
@@ -2981,7 +2981,7 @@ class TotalHunterApp(ctk.CTk):
             self._cal_visible = False
             self._show_tab(self._active_tab_key)
         else:
-            for f in (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy):
+            for f in (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest):
                 f.pack_forget()
             self._cal_frame.pack(fill="both", expand=True)
             self._cal_btn.configure(fg_color=MD3["tab_selected"], hover_color=MD3["tab_selected_hover"])

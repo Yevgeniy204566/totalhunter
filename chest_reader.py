@@ -21,7 +21,6 @@ import pytesseract
 import requests
 
 from auth import SERVER_URL, get_hwid
-from button_finder import find_colored_button
 from coord_manager import coord_manager
 from tesseract_setup import configure_pytesseract
 
@@ -31,9 +30,6 @@ configure_pytesseract(pytesseract)
 DIALOG_HSV_LOWER = (10, 20, 150)
 DIALOG_HSV_UPPER = (40, 120, 255)
 MIN_DIALOG_DIM = 200  # guard against a 1-2px degenerate bbox on a glitched frame
-
-# --- Row geometry — no scroll, only the top row is ever read --------------
-ROW_PITCH = 100
 
 # --- Sender name and chest source: fixed coordinates, not a relative crop.
 # The dialog's render/composition never changes (always the same UI, same
@@ -50,9 +46,13 @@ SENDER_REF_RECT = (816, 375, 361, 24)
 # between different drop sources.
 SOURCE_REF_RECT = (865, 398, 371, 24)
 
-# --- «Открыть» button search box (relative to the top row) ----------------
-BUTTON_X_FRAC = (0.78, 1.0)
-BUTTON_Y_FRAC = (0.45, 1.0)
+# «Открыть» button: same reasoning as SENDER_REF_RECT/SOURCE_REF_RECT above — the
+# button always lands in the same screen spot for the top row (calibrated via
+# coord_picker.py 2026-06-23), so a fixed point + the "chest_collect" tuning
+# offset replaces the old HSV/contour search. The list "scrolling" the owner
+# described is actually each row reappearing in the SAME slot once the row above
+# it is claimed — not the button moving — so no per-frame re-detection is needed.
+OPEN_BUTTON_REF_POS = (1352, 416)
 
 # --- Anti-detect click ------------------------------------------------------
 ANTI_DETECT_OFFSET_PX = 8
@@ -194,19 +194,10 @@ def mark_synced(conn, ids):
     conn.commit()
 
 
-def find_open_button(bbox):
-    x, y, w, h = bbox
-    region = (
-        x + int(w * BUTTON_X_FRAC[0]),
-        y + int(ROW_PITCH * BUTTON_Y_FRAC[0]),
-        int(w * (BUTTON_X_FRAC[1] - BUTTON_X_FRAC[0])),
-        int(ROW_PITCH * (BUTTON_Y_FRAC[1] - BUTTON_Y_FRAC[0])),
-    )
-    return find_colored_button(region, color='green', pick='largest')
-
-
-def click_open_button(pos, pause_range=ANTI_DETECT_PAUSE_RANGE):
-    cx, cy = pos
+def click_open_button(pause_range=ANTI_DETECT_PAUSE_RANGE):
+    cx, cy = coord_manager.to_screen_dialog(*OPEN_BUTTON_REF_POS)
+    dx, dy = coord_manager.get_ui_offset("chest_collect")
+    cx, cy = cx + dx, cy + dy
     click_x = cx + random.randint(-ANTI_DETECT_OFFSET_PX, ANTI_DETECT_OFFSET_PX)
     click_y = cy + random.randint(-5, 5)
     pyautogui.click(click_x, click_y)
@@ -216,8 +207,9 @@ def click_open_button(pos, pause_range=ANTI_DETECT_PAUSE_RANGE):
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                    pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False):
     """Reads and opens chests from the top of the «Мой клан → Подарки» list
-    until the list is empty (no «Открыть» button found) or stop_flag()
-    returns True. Every chest is persisted to SQLite as it's read.
+    until the list is empty (chest_type AND sender both read blank — the row's
+    own text fields, not a button-color search) or stop_flag() returns True.
+    Every chest is persisted to SQLite as it's read.
     Returns {'counts': {chest_type: n}, 'items': [{'chest_type', 'sender',
     'timestamp'}, ...]} for this session. 'counts' is sourced from the DB
     (get_unsynced_counts), not a session-local tally, so it always reflects
@@ -240,11 +232,10 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                 time.sleep(0.2)
                 continue
 
-            pos = find_open_button(bbox)
-            if pos is None:
+            chest_type, sender = read_top_row(frame, full_lang=full_lang)
+            if not chest_type and not sender:
                 break
 
-            chest_type, sender = read_top_row(frame, full_lang=full_lang)
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
             insert_chest(conn, chest_type, sender, timestamp)
             items.append({'chest_type': chest_type, 'sender': sender, 'timestamp': timestamp})
@@ -252,7 +243,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
             if on_update:
                 on_update(get_unsynced_counts(conn))
 
-            click_open_button(pos, pause_range)
+            click_open_button(pause_range)
 
         final_counts = get_unsynced_counts(conn)
     finally:
