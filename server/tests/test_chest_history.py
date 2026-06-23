@@ -261,3 +261,16 @@ async def test_build_history_detail_includes_target_snapshot(db_session):
 
     assert detail["targets"] == {"points": 777, "chests": 8}
     assert "period_start" in detail and "period_end" in detail
+
+
+def test_app_startup_schedules_archive_background_tasks(monkeypatch):
+    import chest_history
+    calls = []
+    monkeypatch.setattr(chest_history, "ensure_background_tasks", lambda: calls.append(True))
+
+    from starlette.testclient import TestClient
+    from main import app
+    with TestClient(app) as client:
+        client.get("/version/latest")
+
+    assert calls == [True]
