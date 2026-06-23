@@ -1,0 +1,136 @@
+"""Tests for tournaments.py — tournament roster import endpoint for «Древний»."""
+import os
+import secrets
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+import pytest
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select
+
+from main import app
+from models import AncientRoster, ChestCollector, User
+
+
+async def _create_user(db, hwid, is_banned=False, credits=100):
+    u = User(hwid=hwid, ref_code=secrets.token_urlsafe(6), is_banned=is_banned, credits=credits)
+    db.add(u)
+    await db.flush()
+    return u
+
+
+def _payload(hwid, kingdom="K229", clan="BERS", items=None, timestamp="2026-06-23T10:00:00"):
+    return {
+        "hwid": hwid,
+        "kingdom": kingdom,
+        "clan": clan,
+        "timestamp": timestamp,
+        "items": items if items is not None else [
+            {"name": "Иванов", "place": 1, "points": 26000},
+            {"name": "Петров", "place": 2, "points": 24000},
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_import_creates_roster(db_session):
+    user = await _create_user(db_session, "hwid1000000000a")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/tournaments/import", json=_payload(user.hwid))
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 2
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == "K229", ChestCollector.clan == "BERS")
+    )).scalar_one()
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Иванов", "Петров"}
+
+
+@pytest.mark.asyncio
+async def test_reimport_preserves_troop_level_for_existing_player(db_session):
+    user = await _create_user(db_session, "hwid2000000000a")
+    await db_session.commit()
+
+    base_payload = _payload(
+        user.hwid, clan="BERS2",
+        items=[{"name": "Иванов", "place": 1, "points": 100}],
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=base_payload)
+
+        collector = (await db_session.execute(
+            select(ChestCollector).where(
+                ChestCollector.kingdom == "K229", ChestCollector.clan == "BERS2")
+        )).scalar_one()
+        row = (await db_session.execute(
+            select(AncientRoster).where(
+                AncientRoster.collector_id == collector.id,
+                AncientRoster.player_name == "Иванов")
+        )).scalar_one()
+        row.troop_level = "База 8"
+        await db_session.commit()
+
+        reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
+                                items=[{"name": "Иванов", "place": 3, "points": 50}])
+        await client.post("/api/v1/tournaments/import", json=reimport_payload)
+
+    await db_session.refresh(row)
+    assert row.place == 3
+    assert row.points == 50
+    assert row.troop_level == "База 8"
+
+
+@pytest.mark.asyncio
+async def test_reimport_drops_player_no_longer_present(db_session):
+    user = await _create_user(db_session, "hwid3000000000a")
+    await db_session.commit()
+
+    base_payload = _payload(
+        user.hwid, clan="BERS3",
+        items=[
+            {"name": "Иванов", "place": 1, "points": 100},
+            {"name": "Уходящий", "place": 2, "points": 50},
+        ],
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=base_payload)
+
+        reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
+                                items=[{"name": "Иванов", "place": 1, "points": 100}])
+        await client.post("/api/v1/tournaments/import", json=reimport_payload)
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == "K229", ChestCollector.clan == "BERS3")
+    )).scalar_one()
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Иванов"}
+
+
+@pytest.mark.asyncio
+async def test_import_does_not_charge_credits(db_session):
+    user = await _create_user(db_session, "hwid4000000000a", credits=5)
+    await db_session.commit()
+
+    payload = _payload(
+        user.hwid, clan="BERS4",
+        items=[{"name": "Иванов", "place": 1, "points": 100}],
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/tournaments/import", json=payload)
+    assert resp.status_code == 200
+
+    await db_session.refresh(user)
+    assert user.credits == 5  # unchanged — free feature
