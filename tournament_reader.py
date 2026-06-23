@@ -75,6 +75,21 @@ PLACE_OCR_THRESHOLD = 130
 # where Otsu inverts text vs background.
 NAME_MIN_LENGTH = 2
 
+# VIP badge (bright gold icon + white digit, placed right after the name)
+# gets read by every Otsu candidate as garbage trailing letters — Tesseract
+# tries to read the badge glyphs since Otsu's per-ROI threshold doesn't
+# reliably wash it out. Name text is much darker than both the badge and
+# the row background, so a fixed threshold tuned below the badge's
+# brightness erases the badge before Tesseract ever sees it. Confirmed
+# live against a real VIP-badge crop: threshold 90 + psm 7 gave a clean
+# "DNIPRO" where every Otsu candidate produced "DNIPRO 'ay"-style noise —
+# and also fixed unrelated misreads on plain rows (e.g. "Conquest Georgio"
+# correctly, where Otsu read "Со nquest Georgio"). Tried first; falls back
+# to the Otsu sweep (which the badge problem doesn't fully explain away —
+# see comment above on backgrounds that lose all text at any fixed
+# threshold) only when this pass is empty.
+NAME_BADGE_THRESHOLD = 90
+
 # --- Config / API ---
 from auth import SERVER_URL, get_hwid
 
@@ -217,6 +232,19 @@ def clean_points(text):
 
 def ocr_name(roi, full_lang=False):
     lang = FULL_NAME_OCR_LANG if full_lang else LIGHT_NAME_OCR_LANG
+
+    # Badge-erasing fixed-threshold pass first (see NAME_BADGE_THRESHOLD).
+    # Trusted outright when non-empty — NOT pooled with the Otsu candidates
+    # below and picked by length, since badge garbage tends to make the
+    # Otsu candidates *longer*, which would make a naive max(len) pick the
+    # contaminated result over this clean one.
+    processed = preprocess_for_ocr(roi, threshold=NAME_BADGE_THRESHOLD)
+    config = f'--psm 7 {NAME_OCR_CONFIG}'.strip()
+    text = pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
+    name = clean_name(text.splitlines()[0] if text else '')
+    if len(name) >= NAME_MIN_LENGTH:
+        return name
+
     candidates = []
     for psm, invert in ((7, False), (7, True), (6, True), (6, False)):
         text = ocr_text_otsu(roi, invert=invert, psm=psm, lang=lang, extra_config=NAME_OCR_CONFIG)

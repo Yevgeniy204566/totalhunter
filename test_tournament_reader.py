@@ -127,7 +127,7 @@ def test_ocr_row_all_visible_rows():
     pitch, row_top = tr.detect_row_pitch(dialog)
     rows = tr.get_row_crops(dialog, pitch, row_top)
 
-    expected_names = ['Scaramouche ZY', 'МазаФака` ay', 'Yuki ay', 'VikTor Я']
+    expected_names = ['Scaramouche _', 'Мазафака _', 'Yuki _', 'VikTor']
     expected_points = [488644262, 315634592, 301084730, 300471402]
 
     for i, (name_roi, pts_roi) in enumerate(rows):
@@ -257,7 +257,7 @@ def test_collect_tournament_data(monkeypatch):
 
     leaderboard = result['leaderboard']
     assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4]
-    assert [row['name'] for row in leaderboard] == ['Scaramouche ZY', 'МазаФака` ay', 'Yuki ay', 'VikTor Я']
+    assert [row['name'] for row in leaderboard] == ['Scaramouche _', 'Мазафака _', 'Yuki _', 'VikTor']
     assert [row['points'] for row in leaderboard] == [488644262, 315634592, 301084730, 300471402]
 
     assert result['own_data'] == {'rank': 79, 'name': 'ЗОЛОТОЙ By', 'points': 71896730}
@@ -301,7 +301,7 @@ def test_collect_tournament_data_stops_after_zero_shifts(monkeypatch):
 
     leaderboard = result['leaderboard']
     assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4]
-    assert [row['name'] for row in leaderboard] == ['Scaramouche ZY', 'МазаФака` ay', 'Yuki ay', 'VikTor Я']
+    assert [row['name'] for row in leaderboard] == ['Scaramouche _', 'Мазафака _', 'Yuki _', 'VikTor']
 
 
 def test_collect_tournament_data_accumulates_partial_row_shifts(monkeypatch):
@@ -321,7 +321,7 @@ def test_collect_tournament_data_accumulates_partial_row_shifts(monkeypatch):
 
     leaderboard = result['leaderboard']
     assert [row['rank'] for row in leaderboard] == [1, 2, 3, 4, 5]
-    assert leaderboard[4]['name'] == 'VikTor Я'
+    assert leaderboard[4]['name'] == 'VikTor'
     assert leaderboard[4]['points'] == 300471402
 
 
