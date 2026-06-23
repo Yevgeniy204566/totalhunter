@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { fetchChestSummary } from '../api.js'
+import { fetchChestSummary, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
 function formatRemaining(periodEndIso, offsetMinutes) {
@@ -58,10 +58,26 @@ export default function ChestSummaryPage() {
   const { slug } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState('current')
+  const [history, setHistory] = useState(null)
+  const [historyError, setHistoryError] = useState('')
+  const [selectedSeasonId, setSelectedSeasonId] = useState(null)
+  const [seasonDetail, setSeasonDetail] = useState(null)
 
   useEffect(() => {
     fetchChestSummary(slug).then(setData).catch(e => setError(e.message || 'not found'))
   }, [slug])
+
+  useEffect(() => {
+    if (tab !== 'history' || history) return
+    fetchChestHistory(slug).then(setHistory).catch(e => setHistoryError(e.message || 'error'))
+  }, [tab, slug, history])
+
+  useEffect(() => {
+    if (selectedSeasonId == null) return
+    setSeasonDetail(null)
+    fetchChestHistorySeason(slug, selectedSeasonId).then(setSeasonDetail)
+  }, [selectedSeasonId, slug])
 
   if (error) return <div className="page-content">{error}</div>
   if (!data) return <div className="page-content text-muted">...</div>
@@ -104,7 +120,60 @@ export default function ChestSummaryPage() {
       <div className="public-summary-updated">Последнее обновление: {updatedLabel}</div>
       <div className="public-summary-divider" />
 
-      <ChestSummaryTable chestTypes={data.chest_types} players={data.players} targets={targets} />
+      <div className="chest-tabs">
+        <button
+          className={`chest-tab ${tab === 'current' ? 'chest-tab--active' : ''}`}
+          onClick={() => setTab('current')}
+        >
+          Текущий сезон
+        </button>
+        <button
+          className={`chest-tab ${tab === 'history' ? 'chest-tab--active' : ''}`}
+          onClick={() => setTab('history')}
+        >
+          История
+        </button>
+      </div>
+
+      {tab === 'current' && (
+        <ChestSummaryTable chestTypes={data.chest_types} players={data.players} targets={targets} />
+      )}
+
+      {tab === 'history' && !selectedSeasonId && (
+        <div className="chest-history-list">
+          {historyError && <div className="text-muted">{historyError}</div>}
+          {!historyError && !history && <div className="text-muted">...</div>}
+          {history && history.seasons.length === 0 && (
+            <div className="text-muted">Архив пока пуст — сезоны появятся здесь после первого автозакрытия.</div>
+          )}
+          {history && history.seasons.map(s => (
+            <button
+              key={s.id}
+              className="public-season-badge"
+              onClick={() => setSelectedSeasonId(s.id)}
+              style={{ display: 'block', marginBottom: 8, cursor: 'pointer' }}
+            >
+              {formatPeriodPoint(s.period_start)} – {formatPeriodPoint(s.period_end)} · {s.total_points} очков
+            </button>
+          ))}
+        </div>
+      )}
+
+      {tab === 'history' && selectedSeasonId && (
+        <div>
+          <button className="public-season-badge" onClick={() => { setSelectedSeasonId(null); setSeasonDetail(null) }} style={{ marginBottom: 12, cursor: 'pointer' }}>
+            ← Назад к списку сезонов
+          </button>
+          {!seasonDetail && <div className="text-muted">...</div>}
+          {seasonDetail && (
+            <ChestSummaryTable
+              chestTypes={seasonDetail.chest_types}
+              players={seasonDetail.players}
+              targets={seasonDetail.targets || { points: null, chests: null }}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

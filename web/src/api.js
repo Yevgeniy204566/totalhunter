@@ -55,3 +55,15 @@ export async function fetchChestSummary(slug) {
   if (!res.ok) throw new Error('Not found')
   return res.json()
 }
+
+export async function fetchChestHistory(slug) {
+  const res = await fetch(`${BASE}/api/v1/chests/history/${slug}`)
+  if (!res.ok) throw new Error('Not found')
+  return res.json()
+}
+
+export async function fetchChestHistorySeason(slug, seasonId) {
+  const res = await fetch(`${BASE}/api/v1/chests/history/${slug}/${seasonId}`)
+  if (!res.ok) throw new Error('Not found')
+  return res.json()
+}
