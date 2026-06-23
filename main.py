@@ -152,6 +152,8 @@ LANGS = {
         "chest_missing_fields": "Укажите Королевство и Клан",
         "chest_send_btn": "ОТПРАВИТЬ НА СЕРВЕР", "chest_send_success": "Отправлено на сервер",
         "chest_send_failed": "Сервер недоступен. Данные сохранены локально.",
+        "tab_ancient": "ДРЕВНИЙ", "ancient_status_running": "Сбор турнирной таблицы...", "ancient_status_sent": "Отправлено на сервер", "ancient_status_failed": "Сервер недоступен. Данные сохранены локально.",
+        "ancient_desc": "Откройте диалог «Статистика» в игре перед запуском.",
         "chest_total_lb": "Всего открыто:",
         "chest_speed_lb": "Скорость клика:",
         # --- hunt tab ---
@@ -224,6 +226,8 @@ LANGS = {
         "chest_missing_fields": "Enter Kingdom and Clan name",
         "chest_send_btn": "SEND TO SERVER", "chest_send_success": "Sent to server",
         "chest_send_failed": "Server unavailable. Data saved locally.",
+        "tab_ancient": "ANCIENT", "ancient_status_running": "Collecting tournament data...", "ancient_status_sent": "Sent to server", "ancient_status_failed": "Server unavailable. Data saved locally.",
+        "ancient_desc": "Open the in-game «Statistics» dialog before starting.",
         "chest_total_lb": "Total opened:",
         "chest_speed_lb": "Click speed:",
         # --- hunt tab ---
@@ -293,6 +297,8 @@ LANGS = {
         "chest_missing_fields": "Königreich und Clan angeben",
         "chest_send_btn": "AN SERVER SENDEN", "chest_send_success": "An Server gesendet",
         "chest_send_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
+        "tab_ancient": "URALTER", "ancient_status_running": "Turnierdaten werden gesammelt...", "ancient_status_sent": "An Server gesendet", "ancient_status_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
+        "ancient_desc": "Öffne den Dialog «Statistik» im Spiel, bevor du startest.",
         "chest_total_lb": "Insgesamt geöffnet:",
         "chest_speed_lb": "Klickgeschwindigkeit:",
         "nn_title": "Neuronales Netz", "nav_main_title": "Navigation",
@@ -351,6 +357,8 @@ LANGS = {
         "chest_missing_fields": "Indique Reino y Clan",
         "chest_send_btn": "ENVIAR AL SERVIDOR", "chest_send_success": "Enviado al servidor",
         "chest_send_failed": "Servidor no disponible. Datos guardados localmente.",
+        "tab_ancient": "ANTIGUO", "ancient_status_running": "Recolectando datos del torneo...", "ancient_status_sent": "Enviado al servidor", "ancient_status_failed": "Servidor no disponible. Datos guardados localmente.",
+        "ancient_desc": "Abre el diálogo «Estadísticas» en el juego antes de empezar.",
         "chest_total_lb": "Total abiertos:",
         "chest_speed_lb": "Velocidad de clic:",
         "nn_title": "Red Neuronal", "nav_main_title": "Navegación",
@@ -409,6 +417,8 @@ LANGS = {
         "chest_missing_fields": "Indiquez le Royaume et le Clan",
         "chest_send_btn": "ENVOYER AU SERVEUR", "chest_send_success": "Envoyé au serveur",
         "chest_send_failed": "Serveur indisponible. Données enregistrées localement.",
+        "tab_ancient": "ANCIEN", "ancient_status_running": "Collecte des données du tournoi...", "ancient_status_sent": "Envoyé au serveur", "ancient_status_failed": "Serveur indisponible. Données enregistrées localement.",
+        "ancient_desc": "Ouvrez la boîte de dialogue «Statistiques» dans le jeu avant de démarrer.",
         "chest_total_lb": "Total ouverts :",
         "chest_speed_lb": "Vitesse de clic :",
         "nn_title": "Réseau de neurones", "nav_main_title": "Navigation",
@@ -467,6 +477,8 @@ LANGS = {
         "chest_missing_fields": "Indica Regno e Clan",
         "chest_send_btn": "INVIA AL SERVER", "chest_send_success": "Inviato al server",
         "chest_send_failed": "Server non disponibile. Dati salvati localmente.",
+        "tab_ancient": "ANTICO", "ancient_status_running": "Raccolta dati del torneo...", "ancient_status_sent": "Inviato al server", "ancient_status_failed": "Server non disponibile. Dati salvati localmente.",
+        "ancient_desc": "Apri la finestra «Statistiche» nel gioco prima di avviare.",
         "chest_total_lb": "Totale aperti:",
         "chest_speed_lb": "Velocità di clic:",
         "nn_title": "Rete Neurale", "nav_main_title": "Navigazione",
@@ -525,6 +537,8 @@ LANGS = {
         "chest_missing_fields": "Vul Koninkrijk en Clan in",
         "chest_send_btn": "VERZENDEN NAAR SERVER", "chest_send_success": "Verzonden naar server",
         "chest_send_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
+        "tab_ancient": "ALOUDE", "ancient_status_running": "Toernooigegevens verzamelen...", "ancient_status_sent": "Verzonden naar server", "ancient_status_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
+        "ancient_desc": "Open het «Statistieken»-dialoogvenster in de game voordat je start.",
         "chest_total_lb": "Totaal geopend:",
         "chest_speed_lb": "Kliksnelheid:",
         "nn_title": "Neuraal Netwerk", "nav_main_title": "Navigatie",
@@ -583,6 +597,8 @@ LANGS = {
         "chest_missing_fields": "Angi kongerike og klan",
         "chest_send_btn": "SEND TIL SERVER", "chest_send_success": "Sendt til server",
         "chest_send_failed": "Server utilgjengelig. Data lagret lokalt.",
+        "tab_ancient": "URGAMMEL", "ancient_status_running": "Samler turneringsdata...", "ancient_status_sent": "Sendt til server", "ancient_status_failed": "Server utilgjengelig. Data lagret lokalt.",
+        "ancient_desc": "Åpne «Statistikk»-dialogen i spillet før du starter.",
         "chest_total_lb": "Totalt åpnet:",
         "chest_speed_lb": "Klikkhastighet:",
         "nn_title": "Nevralt Nettverk", "nav_main_title": "Navigasjon",
@@ -641,6 +657,8 @@ LANGS = {
         "chest_missing_fields": "Podaj Królestwo i Klan",
         "chest_send_btn": "WYŚLIJ NA SERWER", "chest_send_success": "Wysłano na serwer",
         "chest_send_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
+        "tab_ancient": "STARODAWNY", "ancient_status_running": "Zbieranie danych turniejowych...", "ancient_status_sent": "Wysłano na serwer", "ancient_status_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
+        "ancient_desc": "Otwórz okno «Statystyki» w grze przed uruchomieniem.",
         "chest_total_lb": "Łącznie otwarto:",
         "chest_speed_lb": "Szybkość kliknięcia:",
         "nn_title": "Sieć Neuronowa", "nav_main_title": "Nawigacja",
@@ -699,6 +717,8 @@ LANGS = {
         "chest_missing_fields": "Informe Reino e Clã",
         "chest_send_btn": "ENVIAR AO SERVIDOR", "chest_send_success": "Enviado ao servidor",
         "chest_send_failed": "Servidor indisponível. Dados salvos localmente.",
+        "tab_ancient": "ANCIÃO", "ancient_status_running": "Coletando dados do torneio...", "ancient_status_sent": "Enviado ao servidor", "ancient_status_failed": "Servidor indisponível. Dados salvos localmente.",
+        "ancient_desc": "Abra a caixa de diálogo «Estatísticas» no jogo antes de iniciar.",
         "chest_total_lb": "Total aberto:",
         "chest_speed_lb": "Velocidade de clique:",
         "nn_title": "Rede Neural", "nav_main_title": "Navegação",
@@ -757,6 +777,8 @@ LANGS = {
         "chest_missing_fields": "Ange kungarike och klan",
         "chest_send_btn": "SKICKA TILL SERVER", "chest_send_success": "Skickat till server",
         "chest_send_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
+        "tab_ancient": "FORNTIDA", "ancient_status_running": "Samlar turneringsdata...", "ancient_status_sent": "Skickat till server", "ancient_status_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
+        "ancient_desc": "Öppna dialogrutan «Statistik» i spelet innan du startar.",
         "chest_total_lb": "Totalt öppnade:",
         "chest_speed_lb": "Klickhastighet:",
         "nn_title": "Neuralt Nätverk", "nav_main_title": "Navigation",
@@ -815,6 +837,8 @@ LANGS = {
         "chest_missing_fields": "Krallık ve Klan girin",
         "chest_send_btn": "SUNUCUYA GÖNDER", "chest_send_success": "Sunucuya gönderildi",
         "chest_send_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
+        "tab_ancient": "KADİM", "ancient_status_running": "Turnuva verileri toplanıyor...", "ancient_status_sent": "Sunucuya gönderildi", "ancient_status_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
+        "ancient_desc": "Başlamadan önce oyundaki «İstatistik» penceresini açın.",
         "chest_total_lb": "Toplam açılan:",
         "chest_speed_lb": "Tıklama hızı:",
         "nn_title": "Sinir Ağı", "nav_main_title": "Navigasyon",
@@ -873,6 +897,8 @@ LANGS = {
         "chest_missing_fields": "أدخل المملكة والعشيرة",
         "chest_send_btn": "إرسال إلى الخادم", "chest_send_success": "تم الإرسال إلى الخادم",
         "chest_send_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
+        "tab_ancient": "القديم", "ancient_status_running": "جمع بيانات البطولة...", "ancient_status_sent": "تم الإرسال إلى الخادم", "ancient_status_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
+        "ancient_desc": "افتح نافذة «الإحصائيات» في اللعبة قبل البدء.",
         "chest_total_lb": "الإجمالي المفتوح:",
         "chest_speed_lb": "سرعة النقر:",
         "nn_title": "الشبكة العصبية", "nav_main_title": "التنقل",
@@ -931,6 +957,8 @@ LANGS = {
         "chest_missing_fields": "王国とクランを入力してください",
         "chest_send_btn": "サーバーに送信", "chest_send_success": "サーバーに送信しました",
         "chest_send_failed": "サーバーに接続できません。データはローカルに保存されました。",
+        "tab_ancient": "古代の者", "ancient_status_running": "トーナメントデータを収集中...", "ancient_status_sent": "サーバーに送信しました", "ancient_status_failed": "サーバーに接続できません。データはローカルに保存されました。",
+        "ancient_desc": "開始する前にゲーム内の「統計」ダイアログを開いてください。",
         "chest_total_lb": "開封総数:",
         "chest_speed_lb": "クリック速度:",
         "nn_title": "ニューラルネット", "nav_main_title": "ナビゲーション",
@@ -989,6 +1017,8 @@ LANGS = {
         "chest_missing_fields": "请输入王国和公会名称",
         "chest_send_btn": "发送到服务器", "chest_send_success": "已发送到服务器",
         "chest_send_failed": "服务器不可用，数据已保存到本地。",
+        "tab_ancient": "古代生物", "ancient_status_running": "正在收集锦标赛数据...", "ancient_status_sent": "已发送到服务器", "ancient_status_failed": "服务器不可用，数据已保存到本地。",
+        "ancient_desc": "开始前请打开游戏内的「统计」对话框。",
         "chest_total_lb": "已开启总数:",
         "chest_speed_lb": "点击速度:",
         "nn_title": "神经网络", "nav_main_title": "导航",
@@ -1047,6 +1077,8 @@ LANGS = {
         "chest_missing_fields": "請輸入王國和公會名稱",
         "chest_send_btn": "發送到伺服器", "chest_send_success": "已發送到伺服器",
         "chest_send_failed": "伺服器無法連線，資料已儲存在本機。",
+        "tab_ancient": "古代生物", "ancient_status_running": "正在收集錦標賽資料...", "ancient_status_sent": "已發送到伺服器", "ancient_status_failed": "伺服器無法連線，資料已儲存在本機。",
+        "ancient_desc": "開始前請打開遊戲內的「統計」對話框。",
         "chest_total_lb": "已開啟總數:",
         "chest_speed_lb": "點擊速度:",
         "nn_title": "神經網路", "nav_main_title": "導航",
@@ -1105,6 +1137,8 @@ LANGS = {
         "chest_missing_fields": "왕국과 클랜을 입력하세요",
         "chest_send_btn": "서버로 전송", "chest_send_success": "서버로 전송됨",
         "chest_send_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
+        "tab_ancient": "고대의 존재", "ancient_status_running": "토너먼트 데이터 수집 중...", "ancient_status_sent": "서버로 전송됨", "ancient_status_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
+        "ancient_desc": "시작하기 전에 게임 내 「통계」 대화상자를 여세요.",
         "chest_total_lb": "총 개봉:",
         "chest_speed_lb": "클릭 속도:",
         "nn_title": "신경망", "nav_main_title": "네비게이션",
@@ -1163,6 +1197,8 @@ LANGS = {
         "chest_missing_fields": "Вкажіть Королівство і Клан",
         "chest_send_btn": "ВІДПРАВИТИ НА СЕРВЕР", "chest_send_success": "Відправлено на сервер",
         "chest_send_failed": "Сервер недоступний. Дані збережено локально.",
+        "tab_ancient": "ДАВНІЙ", "ancient_status_running": "Збір турнірної таблиці...", "ancient_status_sent": "Відправлено на сервер", "ancient_status_failed": "Сервер недоступний. Дані збережено локально.",
+        "ancient_desc": "Відкрийте діалог «Статистика» в грі перед запуском.",
         "chest_total_lb": "Всього відкрито:",
         "chest_speed_lb": "Швидкість кліку:",
         "nn_title": "Нейромережа", "nav_main_title": "Навігація",
@@ -1221,6 +1257,8 @@ LANGS = {
         "chest_missing_fields": "Masukkan Kerajaan dan Klan",
         "chest_send_btn": "KIRIM KE SERVER", "chest_send_success": "Terkirim ke server",
         "chest_send_failed": "Server tidak tersedia. Data disimpan secara lokal.",
+        "tab_ancient": "KUNO", "ancient_status_running": "Mengumpulkan data turnamen...", "ancient_status_sent": "Terkirim ke server", "ancient_status_failed": "Server tidak tersedia. Data disimpan secara lokal.",
+        "ancient_desc": "Buka dialog «Statistik» dalam game sebelum memulai.",
         "chest_total_lb": "Total dibuka:",
         "chest_speed_lb": "Kecepatan klik:",
         "nn_title": "Jaringan Saraf", "nav_main_title": "Navigasi",
@@ -1548,7 +1586,7 @@ class TotalHunterApp(ctk.CTk):
         # Шапка: «Поверх окон» слева, выбор языка справа
         _header = ctk.CTkFrame(self._outer, fg_color="transparent")
         _header.pack(fill="x", padx=20, pady=(10, 4))
-        self.always_on_top_var = ctk.BooleanVar(value=False)
+        self.always_on_top_var = ctk.BooleanVar(value=True)
         ctk.CTkLabel(_header, text="On top:", font=ctk.CTkFont(size=14, weight="bold"),
                      text_color=MD3["on_surface"]).pack(side="left")
         ctk.CTkSwitch(_header, text="", variable=self.always_on_top_var,
@@ -1634,7 +1672,7 @@ class TotalHunterApp(ctk.CTk):
 
         # Ряд 0 — 4 основные вкладки
         self._tab_init_names = {k: LANGS[self.current_lang][k]
-                                for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest")}
+                                for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest", "tab_ancient")}
         self._main_seg = ctk.CTkSegmentedButton(
             self._nav_frame,
             values=list(self._tab_init_names.values()),
@@ -1678,6 +1716,7 @@ class TotalHunterApp(ctk.CTk):
         self.tab_ref   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self.tab_roy   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self.tab_chest = ctk.CTkFrame(self._content_frame, fg_color="transparent")
+        self.tab_ancient = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self._cal_frame = ctk.CTkScrollableFrame(self._content_frame, fg_color="transparent")
 
         self._active_tab_key = "tab_crypt"
@@ -1701,12 +1740,17 @@ class TotalHunterApp(ctk.CTk):
         # self.setup_combo_tab()  # временно отключён
         self.setup_ref_tab()
         self.setup_chest_tab()
+        self.setup_ancient_tab()
         self.setup_calibration_tab()
         self.setup_roy_tab()
         self.update_license_info()
         self.after(1000, self._start_balance_sync)
         self.after(500, self._tick_trade_routes)
         self.after(60_000, self._tick_roy_drain)
+        # On Top включён по умолчанию (см. CLAUDE.md: snap вправо, always-on-top) —
+        # отложенный вызов, чтобы winfo_width()/winfo_height() в _on_always_on_top
+        # вернули реальные размеры окна после отрисовки, а не 1x1 до неё.
+        self.after(200, self._on_always_on_top)
 
         # Глобальный перехват ESC — стоп в любом окне
         def _esc_handler(event):
@@ -2950,7 +2994,8 @@ class TotalHunterApp(ctk.CTk):
 
     def _show_tab(self, key):
         """Показать фрейм вкладки по ключу, скрыть остальные."""
-        _all = (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest, self._cal_frame)
+        _all = (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest,
+                self.tab_ancient, self._cal_frame)
         for f in _all:
             f.pack_forget()
         self._cal_btn.configure(fg_color=MD3["elevated"], hover_color=MD3["card"])
@@ -2961,6 +3006,7 @@ class TotalHunterApp(ctk.CTk):
             "tab_ref":   self.tab_ref,
             "tab_roy":   self.tab_roy,
             "tab_chest": self.tab_chest,
+            "tab_ancient": self.tab_ancient,
         }
         frame = tab_map.get(key)
         if frame:
@@ -2981,7 +3027,8 @@ class TotalHunterApp(ctk.CTk):
             self._cal_visible = False
             self._show_tab(self._active_tab_key)
         else:
-            for f in (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest):
+            for f in (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest,
+                     self.tab_ancient):
                 f.pack_forget()
             self._cal_frame.pack(fill="both", expand=True)
             self._cal_btn.configure(fg_color=MD3["tab_selected"], hover_color=MD3["tab_selected_hover"])
@@ -3862,7 +3909,7 @@ class TotalHunterApp(ctk.CTk):
             widget.configure(text=LANGS[val][key])
 
         # Навигация — обновляем segmented button и кнопку калибровки
-        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest")}
+        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest", "tab_ancient")}
         self._tab_init_names = new_names
         self._main_seg.configure(values=list(new_names.values()))
         self._main_seg.set(new_names.get(self._active_tab_key, list(new_names.values())[0]))
@@ -4091,6 +4138,101 @@ class TotalHunterApp(ctk.CTk):
 
     def _on_chest_full_lang_change(self):
         self._save_gui_config_key("chest_full_lang_ocr", bool(self.chest_full_lang_var.get()))
+
+    # ── ancient tab (tournament roster import) ──────────────────────────────
+
+    def setup_ancient_tab(self):
+        L = LANGS[self.current_lang]
+
+        title_lb = ctk.CTkLabel(self.tab_ancient, text=L["tab_ancient"],
+                                font=ctk.CTkFont(size=20, weight="bold"),
+                                text_color=MD3["primary"])
+        title_lb.pack(pady=(14, 8))
+        self._i18n_labels.append((title_lb, "tab_ancient"))
+
+        desc_lb = ctk.CTkLabel(
+            self.tab_ancient, text=L["ancient_desc"],
+            font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"], wraplength=380)
+        desc_lb.pack(pady=(0, 12), padx=20)
+        self._i18n_labels.append((desc_lb, "ancient_desc"))
+
+        saved_full_lang = self._load_gui_config().get("ancient_full_lang_ocr", False)
+        self.ancient_full_lang_var = ctk.BooleanVar(value=saved_full_lang)
+        ancient_lang_toggle_row = ctk.CTkFrame(self.tab_ancient, fg_color="transparent")
+        ancient_lang_toggle_row.pack(fill="x", padx=20, pady=(0, 8))
+        ctk.CTkLabel(ancient_lang_toggle_row, text="Light", font=ctk.CTkFont(size=12)).pack(side="left")
+        self.ancient_full_lang_switch = ctk.CTkSwitch(
+            ancient_lang_toggle_row, text="Full", variable=self.ancient_full_lang_var,
+            onvalue=True, offvalue=False,
+            command=self._on_ancient_full_lang_change,
+            fg_color=MD3["outline"], progress_color=MD3["primary"],
+        )
+        self.ancient_full_lang_switch.pack(side="right")
+
+        self.ancient_start_btn = ctk.CTkButton(
+            self.tab_ancient, text=L["chest_start_btn"],
+            height=42, corner_radius=10,
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
+            command=self.toggle_ancient_collection)
+        self.ancient_start_btn.pack(padx=20, pady=(4, 8), fill="x")
+        self._i18n_labels.append((self.ancient_start_btn, "chest_start_btn"))
+
+        self.ancient_status_label = ctk.CTkLabel(self.tab_ancient, text=L["chest_status_ready"],
+                                                 font=ctk.CTkFont(size=12),
+                                                 text_color=MD3["on_surface2"])
+        self.ancient_status_label.pack(pady=(0, 8))
+        self._i18n_labels.append((self.ancient_status_label, "chest_status_ready"))
+
+        self._ancient_running = False
+
+    def _on_ancient_full_lang_change(self):
+        self._save_gui_config_key("ancient_full_lang_ocr", bool(self.ancient_full_lang_var.get()))
+
+    def toggle_ancient_collection(self):
+        L = LANGS[self.current_lang]
+        if self._ancient_running:
+            self._ancient_stop_event.set()
+            return
+
+        kingdom = self.chest_kingdom_entry.get().strip()
+        clan = self.chest_clan_entry.get().strip()
+        if not kingdom or not clan:
+            self.ancient_status_label.configure(text=L["chest_missing_fields"],
+                                                text_color=MD3["error_text"])
+            return
+
+        self._ancient_running = True
+        self._ancient_stop_event = threading.Event()
+        full_lang = bool(self.ancient_full_lang_var.get())
+        self.ancient_start_btn.configure(text=L["chest_stop_btn"],
+                                         fg_color=MD3["error"], hover_color=MD3["error_hover"])
+        self.ancient_status_label.configure(text=L["ancient_status_running"],
+                                            text_color=MD3["secondary"])
+
+        stop_event = self._ancient_stop_event
+
+        def _worker():
+            import tournament_reader
+            data = tournament_reader.collect_tournament_data(
+                stop_flag=stop_event.is_set, full_lang=full_lang)
+            timestamp = _dt.datetime.now().isoformat(timespec='seconds')
+            success = tournament_reader.export_to_api(kingdom, clan, data, timestamp)
+            self.after(0, lambda: self._on_ancient_collection_done(success))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_ancient_collection_done(self, success):
+        L = LANGS[self.current_lang]
+        self._ancient_running = False
+        self.ancient_start_btn.configure(text=L["chest_start_btn"],
+                                         fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
+        if success:
+            self.ancient_status_label.configure(text=L["ancient_status_sent"],
+                                                text_color=MD3["secondary"])
+        else:
+            self.ancient_status_label.configure(text=L["ancient_status_failed"],
+                                                text_color=MD3["error_text"])
 
     def _update_chest_counts_display(self, counts):
         if not hasattr(self, "_chest_count_labels"):
