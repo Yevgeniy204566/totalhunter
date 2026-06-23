@@ -16,6 +16,16 @@ function displayName(row, catalogOptions) {
   return '—'
 }
 
+// Mirrors ChestSummaryPage.jsx's formatPeriodPoint — same data contract (ISO
+// datetime from chest_history.py), duplicated here since there's no shared
+// utils module for this small pure helper.
+function formatPeriodPoint(isoString) {
+  const [datePart, timePart] = isoString.split('T')
+  const [, mo, d] = datePart.split('-').map(Number)
+  const [h, mi] = (timePart || '00:00:00').split(':').map(Number)
+  return `${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
+}
+
 export default function ChestsPage() {
   const [collectors, setCollectors] = useState(null)
   const [rowsByCollector, setRowsByCollector] = useState({})
@@ -457,7 +467,7 @@ export default function ChestsPage() {
                   style={{ display: 'block', marginBottom: 8 }}
                   onClick={() => loadSeasonDetail(collector.slug, s.id)}
                 >
-                  {s.period_start} – {s.period_end} · {s.total_points} очков
+                  {formatPeriodPoint(s.period_start)} – {formatPeriodPoint(s.period_end)} · {s.total_points} очков
                 </button>
               ))}
               {seasonDetailByCollector[collector.slug] && (

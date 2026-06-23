@@ -18,6 +18,7 @@ RETENTION_DAYS (3 месяца), считая от closed_at (момент ар�
 period_end.
 """
 import asyncio
+import logging
 from datetime import datetime, timedelta
 
 from sqlalchemy import delete, select
@@ -30,6 +31,8 @@ from models import Chest, ChestCollector, ChestSeasonHistory
 ARCHIVE_TICK_SEC   = 300    # 5 минут — сезоны измеряются неделями, чаще не нужно
 RETENTION_DAYS     = 90     # 3 месяца хранения истории
 RETENTION_TICK_SEC = 86400  # раз в сутки
+
+logger = logging.getLogger(__name__)
 
 _archive_task:   asyncio.Task | None = None
 _retention_task: asyncio.Task | None = None
@@ -44,7 +47,7 @@ def _strip_tz(dt: datetime) -> datetime:
 
 
 def is_due(collector: ChestCollector) -> bool:
-    if collector.period_end is None:
+    if collector.period_end is None or collector.period_start is None:
         return False
     return _clan_now(collector.timezone_offset_minutes) >= _strip_tz(collector.period_end)
 
@@ -84,11 +87,18 @@ async def run_archive_tick(db: AsyncSession) -> int:
     )).scalars().all()
     archived = 0
     for collector in collectors:
-        if is_due(collector):
+        if not is_due(collector):
+            continue
+        try:
             await archive_one(db, collector)
+            await db.commit()
             archived += 1
-    if archived:
-        await db.commit()
+        except Exception:
+            await db.rollback()
+            logger.exception(
+                "chest_history: archive_one failed for collector_id=%s, skipping",
+                collector.id,
+            )
     return archived
 
 

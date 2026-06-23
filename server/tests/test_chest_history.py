@@ -45,6 +45,18 @@ async def test_is_due_false_when_period_end_is_none(db_session):
 
 
 @pytest.mark.asyncio
+async def test_is_due_false_when_period_start_is_none(db_session):
+    # period_end alone (no period_start) is how update_season_settings can leave
+    # a collector after a partial PATCH -- must not be treated as a valid season.
+    collector = await _make_collector(
+        db_session,
+        period_start=None,
+        period_end=datetime.utcnow() - timedelta(days=1),
+    )
+    assert is_due(collector) is False
+
+
+@pytest.mark.asyncio
 async def test_is_due_false_when_period_end_in_future(db_session):
     collector = await _make_collector(
         db_session,
@@ -168,6 +180,42 @@ async def test_run_archive_tick_archives_only_due_collectors(db_session):
     history = (await db_session.execute(select(ChestSeasonHistory))).scalars().all()
     assert len(history) == 1
     assert history[0].collector_id == due.id
+
+
+@pytest.mark.asyncio
+async def test_run_archive_tick_continues_after_one_collector_throws(db_session, monkeypatch):
+    # A broken collector (e.g. period_start somehow None despite is_due passing,
+    # or any other unexpected failure inside archive_one) must not poison the
+    # whole tick -- other due collectors still get archived and committed.
+    import chest_history
+
+    good = await _make_collector(
+        db_session, slug="good-collector", clan="ClanGood",
+        period_start=datetime.utcnow() - timedelta(days=14),
+        period_end=datetime.utcnow() - timedelta(hours=1),
+    )
+    bad = await _make_collector(
+        db_session, slug="bad-collector", clan="ClanBad",
+        period_start=datetime.utcnow() - timedelta(days=14),
+        period_end=datetime.utcnow() - timedelta(hours=1),
+    )
+    await db_session.commit()
+
+    real_archive_one = chest_history.archive_one
+
+    async def flaky_archive_one(db, collector):
+        if collector.id == bad.id:
+            raise RuntimeError("boom")
+        await real_archive_one(db, collector)
+
+    monkeypatch.setattr(chest_history, "archive_one", flaky_archive_one)
+
+    archived_count = await chest_history.run_archive_tick(db_session)
+
+    assert archived_count == 1
+    history = (await db_session.execute(select(ChestSeasonHistory))).scalars().all()
+    assert len(history) == 1
+    assert history[0].collector_id == good.id
 
 
 @pytest.mark.asyncio
