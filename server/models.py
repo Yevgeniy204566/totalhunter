@@ -8,7 +8,7 @@ Naming convention: предсказуемые имена для индексов
 """
 
 from sqlalchemy import (
-    BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
+    BigInteger, Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey, Integer,
     JSON, MetaData, Numeric, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -518,3 +518,43 @@ class ChestLocalization(Base):
     canonical_type = Column(String(200), nullable=False)
     language       = Column(String(8),   nullable=False)
     display_text   = Column(String(200), nullable=False)
+
+
+class AncientRoster(Base):
+    """Один игрок клана в текущем ростере «Древнего» — полностью перезаписывается
+    каждым импортом турнира, кроме troop_level (ручной ввод лидера, переживает
+    реимпорт для оставшихся игроков, удаляется вместе со строкой для выпавших)."""
+    __tablename__ = "ancient_roster"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "player_name", name="uq_ancient_roster_player"),
+    )
+
+    id            = Column(Integer, primary_key=True)
+    collector_id  = Column(Integer, ForeignKey("chest_collectors.id"),
+                           nullable=False, index=True)
+    player_name   = Column(String(100), nullable=False)
+    place         = Column(Integer, nullable=True)
+    points        = Column(BigInteger, nullable=True)
+    troop_level   = Column(String(20), nullable=True)
+    updated_at    = Column(TIMESTAMP(timezone=True), nullable=False,
+                           server_default=func.now())
+
+
+class AncientCalculation(Base):
+    """История расчётов калькулятора «Древний» — максимум 5 на collector_id, старая
+    запись удаляется при вставке 6-й. Пишется только по кнопке «Рассчитать»."""
+    __tablename__ = "ancient_calculations"
+
+    id                    = Column(Integer, primary_key=True)
+    collector_id          = Column(Integer, ForeignKey("chest_collectors.id"),
+                                   nullable=False, index=True)
+    computed_at           = Column(TIMESTAMP(timezone=True), nullable=False,
+                                   server_default=func.now())
+    strategy              = Column(String(1), nullable=False)
+    clan_preset           = Column(String(8), nullable=True)
+    summon_levels         = Column(JSON, nullable=False)
+    amplification_coef    = Column(Float, nullable=False)
+    officer_count         = Column(Integer, nullable=True)
+    veteran_count         = Column(Integer, nullable=True)
+    total_quota_millions  = Column(Float, nullable=False)
+    result_json           = Column(JSON, nullable=False)
