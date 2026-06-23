@@ -48,6 +48,8 @@ export const api = {
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
   dashboardChestsSeason: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/season`, payload),
   dashboardChestsPresets: ()            => request('GET',   '/web/dashboard/chests/presets'),
+  dashboardChestsHistory: (slug) => request('GET', `/web/dashboard/chests/${slug}/history`),
+  dashboardChestsHistoryDetail: (slug, seasonId) => request('GET', `/web/dashboard/chests/${slug}/history/${seasonId}`),
 }
 
 export async function fetchChestSummary(slug) {

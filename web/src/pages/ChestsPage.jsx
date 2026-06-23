@@ -4,6 +4,7 @@ import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
+import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
 function displayName(row, catalogOptions) {
   if (row.raw_type) return row.raw_type
@@ -26,6 +27,8 @@ export default function ChestsPage() {
   const [claimCode, setClaimCode] = useState('')
   const [presets, setPresets] = useState(null)
   const [presetChoiceByCollector, setPresetChoiceByCollector] = useState({})
+  const [historyByCollector, setHistoryByCollector] = useState({})
+  const [seasonDetailByCollector, setSeasonDetailByCollector] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.chests
@@ -176,6 +179,17 @@ export default function ChestsPage() {
     await refresh()
   }
 
+  async function loadHistory(slug) {
+    if (historyByCollector[slug]) return
+    const data = await api.dashboardChestsHistory(slug)
+    setHistoryByCollector(prev => ({ ...prev, [slug]: data.seasons }))
+  }
+
+  async function loadSeasonDetail(slug, seasonId) {
+    const data = await api.dashboardChestsHistoryDetail(slug, seasonId)
+    setSeasonDetailByCollector(prev => ({ ...prev, [slug]: { seasonId, data } }))
+  }
+
   if (loadError) return <div className="page-content text-muted">{loadError}</div>
   if (!collectors) return <div className="page-content text-muted">...</div>
 
@@ -277,6 +291,12 @@ export default function ChestsPage() {
               onClick={() => setTab(collector.slug, 'players')}
             >
               {cx.playersTab}
+            </button>
+            <button
+              className={`chest-tab ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'history')}
+            >
+              {cx.historyTab}
             </button>
           </div>
 
@@ -418,6 +438,36 @@ export default function ChestsPage() {
                 {cx.savePlayerAliases}
               </button>
             </>
+          )}
+
+          {activeTab(collector.slug) === 'history' && (
+            <div>
+              {!historyByCollector[collector.slug] && (
+                <button className="btn-secondary" onClick={() => loadHistory(collector.slug)}>
+                  {cx.loadHistoryBtn}
+                </button>
+              )}
+              {historyByCollector[collector.slug]?.length === 0 && (
+                <div className="text-muted">{cx.historyEmpty}</div>
+              )}
+              {historyByCollector[collector.slug]?.map(s => (
+                <button
+                  key={s.id}
+                  className="btn-secondary"
+                  style={{ display: 'block', marginBottom: 8 }}
+                  onClick={() => loadSeasonDetail(collector.slug, s.id)}
+                >
+                  {s.period_start} – {s.period_end} · {s.total_points} очков
+                </button>
+              ))}
+              {seasonDetailByCollector[collector.slug] && (
+                <ChestSummaryTable
+                  chestTypes={seasonDetailByCollector[collector.slug].data.chest_types}
+                  players={seasonDetailByCollector[collector.slug].data.players}
+                  targets={seasonDetailByCollector[collector.slug].data.targets || { points: null, chests: null }}
+                />
+              )}
+            </div>
           )}
         </div>
       ))}
