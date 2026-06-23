@@ -85,3 +85,4 @@ ocr_log.txt
 
 # Папка логів
 logs/
+.worktrees/
