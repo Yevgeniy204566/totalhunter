@@ -18,7 +18,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import ChestLocalization, ChestTypeCatalog
+from models import ChestCatalogReference, ChestLocalization, ChestTypeCatalog
 
 router = APIRouter(prefix="/api/v1/chests", tags=["chests"])
 
@@ -49,6 +49,14 @@ class LocalizationEntryIn(BaseModel):
 
 class LocalizationImportPayload(BaseModel):
     entries: List[LocalizationEntryIn] = []
+
+
+class CatalogReferenceEntryIn(BaseModel):
+    catalog_id: str
+
+
+class CatalogReferenceImportPayload(BaseModel):
+    entries: List[CatalogReferenceEntryIn] = []
 
 
 def _find_duplicate_key(keys):
@@ -91,5 +99,19 @@ async def import_localizations(payload: LocalizationImportPayload,
     for item in payload.entries:
         db.add(ChestLocalization(canonical_type=item.canonical_type, language=item.language,
                                  display_text=item.display_text))
+    await db.commit()
+    return {"ok": True, "count": len(payload.entries)}
+
+
+@router.post("/catalog-reference/import", dependencies=[Depends(_require_auth)])
+async def import_catalog_reference(payload: CatalogReferenceImportPayload,
+                                    db: AsyncSession = Depends(get_db)):
+    dup = _find_duplicate_key(item.catalog_id for item in payload.entries)
+    if dup:
+        raise HTTPException(status_code=400, detail=f"Duplicate entry for catalog_id={dup!r}")
+
+    await db.execute(delete(ChestCatalogReference))
+    for item in payload.entries:
+        db.add(ChestCatalogReference(catalog_id=item.catalog_id))
     await db.commit()
     return {"ok": True, "count": len(payload.entries)}

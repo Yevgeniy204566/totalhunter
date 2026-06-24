@@ -20,8 +20,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chest_history import build_history_list, build_history_detail
 from database import get_db
 from models import (
-    Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias,
-    ChestTypeCatalog, PlayerAlias, User,
+    Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
+    ChestTypeAlias, ChestTypeCatalog, PlayerAlias, User,
 )
 from web_routes import get_web_user
 
@@ -57,9 +57,10 @@ CHEST_PRESETS = {
 
 
 async def _load_known_catalog_ids(db: AsyncSession) -> set:
+    reference_ids = (await db.execute(select(ChestCatalogReference.catalog_id))).scalars().all()
     catalog_ids = (await db.execute(select(ChestTypeCatalog.canonical_type))).scalars().all()
     localization_ids = (await db.execute(select(ChestLocalization.canonical_type))).scalars().all()
-    return set(catalog_ids) | set(localization_ids)
+    return set(reference_ids) | set(catalog_ids) | set(localization_ids)
 
 
 async def _load_catalog_options(db: AsyncSession) -> list:

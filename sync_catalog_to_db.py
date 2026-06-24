@@ -75,6 +75,24 @@ def build_localizations_payload(service) -> dict:
     }
 
 
+def build_catalog_reference_payload(rows: list) -> dict:
+    """rows: numbered (№, Name) pairs from the "Сундуки" tab's master reference list
+    (columns O:P) — the single source of all known chest type IDs in the game."""
+    return {
+        "entries": [
+            {"catalog_id": row[1].strip()}
+            for row in rows if len(row) >= 2 and row[1].strip()
+        ]
+    }
+
+
+def fetch_catalog_reference_rows(service) -> list:
+    result = service.spreadsheets().values().get(
+        spreadsheetId=SHEET_ID, range="Сундуки!O2:P300",
+    ).execute()
+    return result.get("values", [])
+
+
 def push(path: str, payload: dict, admin_token: str) -> dict:
     resp = requests.post(
         f"{API_BASE}{path}", json=payload,
@@ -96,3 +114,8 @@ if __name__ == "__main__":
     loc_result = push("/api/v1/chests/localizations/import",
                       build_localizations_payload(service), admin_token)
     print(f"  Локализации: {loc_result['count']} записей")
+
+    reference_payload = build_catalog_reference_payload(fetch_catalog_reference_rows(service))
+    reference_result = push("/api/v1/chests/catalog-reference/import", reference_payload,
+                            admin_token)
+    print(f"  Эталонный список (дропдаун): {reference_result['count']} записей")

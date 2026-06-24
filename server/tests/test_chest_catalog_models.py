@@ -9,7 +9,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from models import ChestCollector, ChestLocalization, ChestTypeCatalog, User
+from models import (
+    ChestCatalogReference, ChestCollector, ChestLocalization, ChestTypeCatalog, User,
+)
 
 
 @pytest.mark.asyncio
@@ -62,6 +64,16 @@ async def test_chest_localization_unique_on_type_and_language(db_session):
     await db_session.commit()
     db_session.add(ChestLocalization(canonical_type="Epic Fenrir", language="ru",
                                      display_text="Другой перевод"))
+    with pytest.raises(IntegrityError):
+        await db_session.commit()
+    await db_session.rollback()
+
+
+@pytest.mark.asyncio
+async def test_chest_catalog_reference_unique_on_catalog_id(db_session):
+    db_session.add(ChestCatalogReference(catalog_id="Sakura of Abundance"))
+    await db_session.commit()
+    db_session.add(ChestCatalogReference(catalog_id="Sakura of Abundance"))
     with pytest.raises(IntegrityError):
         await db_session.commit()
     await db_session.rollback()

@@ -12,8 +12,8 @@ from sqlalchemy import select
 
 from main import app
 from models import (
-    Chest, ChestCollector, ChestConfiguration, ChestLocalization, ChestTypeAlias,
-    ChestTypeCatalog, PlayerAlias, User,
+    Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
+    ChestTypeAlias, ChestTypeCatalog, PlayerAlias, User,
 )
 from web_routes import create_jwt
 
@@ -91,6 +91,42 @@ async def test_get_chests_combines_alias_config_and_unmapped_raw(db_session):
 
     options = {o["catalog_id"]: o["label"] for o in collector_data["catalog_options"]}
     assert options["Epic Arachne"] == "Epic Arachne"
+
+
+@pytest.mark.asyncio
+async def test_catalog_options_include_reference_only_chest(db_session):
+    """Sakura of Abundance: a chest with no points/translation configured yet anywhere —
+    must still show up in the picker because it's in the master reference list."""
+    user, token = await _create_user_with_token(db_session)
+    await _create_collector(db_session, user.id, slug="reference-only-slug")
+    db_session.add(ChestCatalogReference(catalog_id="Sakura of Abundance"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    collector_data = resp.json()["collectors"][0]
+    options = {o["catalog_id"] for o in collector_data["catalog_options"]}
+    assert "Sakura of Abundance" in options
+
+
+@pytest.mark.asyncio
+async def test_post_rows_accepts_reference_only_catalog_id(db_session):
+    user, token = await _create_user_with_token(db_session)
+    await _create_collector(db_session, user.id, slug="accepts-reference-slug")
+    db_session.add(ChestCatalogReference(catalog_id="Sakura of Abundance"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/chests/rows",
+            json={"collector_slug": "accepts-reference-slug",
+                 "rows": [{"raw_type": "X", "catalog_id": "Sakura of Abundance",
+                           "custom_name": None, "points": 5, "is_in_pattern": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
 
 
 @pytest.mark.asyncio

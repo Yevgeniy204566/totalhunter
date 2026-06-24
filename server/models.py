@@ -520,6 +520,16 @@ class ChestLocalization(Base):
     display_text   = Column(String(200), nullable=False)
 
 
+class ChestCatalogReference(Base):
+    """Полный эталонный список всех известных в игре типов сундуков (canonical_id),
+    общий для всех кланов. Единственный источник для дропдауна выбора сундука в личном
+    кабинете — независимо от того, заведены ли для сундука очки/перевод."""
+    __tablename__ = "chest_catalog_reference"
+
+    id         = Column(Integer, primary_key=True)
+    catalog_id = Column(String(200), nullable=False, unique=True)
+
+
 class AncientRoster(Base):
     """Один игрок клана в текущем ростере «Древнего» — полностью перезаписывается
     каждым импортом турнира, кроме troop_level (ручной ввод лидера, переживает
