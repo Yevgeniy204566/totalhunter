@@ -4000,10 +4000,9 @@ class TotalHunterApp(ctk.CTk):
         self._save_gui_config_key("last_calibration_profile", profile_name)
 
     def _chest_pause_range(self, slider_value: float) -> tuple:
-        """Owner-confirmed formula (verified examples: 0.3 -> (0.2, 0.4),
-        0.1 -> (0.1, 0.3)) — the 0.1 floor on the lower bound is a hard
-        anti-bot minimum, not just a UX default; never remove it."""
-        lower = max(0.1, slider_value - 0.1)
+        """Owner-confirmed: floor removed (2026-06-25) — real pause is always
+        0.3+ s from OCR processing time, so additional 0 s slider is safe."""
+        lower = max(0.0, slider_value - 0.1)
         return (lower, lower + 0.2)
 
     def setup_chest_tab(self):
@@ -4086,7 +4085,7 @@ class TotalHunterApp(ctk.CTk):
             font=ctk.CTkFont(size=11), text_color=MD3["on_surface2"])
         self.chest_speed_label.pack(padx=20, pady=(0, 2))
         self.chest_speed_slider = ctk.CTkSlider(
-            self.tab_chest, from_=0.1, to=1.0, number_of_steps=90,
+            self.tab_chest, from_=0.0, to=1.0, number_of_steps=100,
             command=self._on_chest_speed_change)
         self.chest_speed_slider.set(saved_pause)
         self.chest_speed_slider.pack(padx=20, pady=(0, 8), fill="x")
@@ -4280,20 +4279,27 @@ class TotalHunterApp(ctk.CTk):
         _cal_desc_lb.pack(pady=(0, 6))
         self._i18n_labels.append((_cal_desc_lb, "cal_desc"))
 
-        # ── Фото + описание точек ─────────────────────────────────────────
-        points_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
-        points_frame.pack(fill="x", padx=16, pady=(0, 6))
+        # ── Область изображений — калибровка ↔ тюнинг ────────────────────
+        # _img_area — обёртка; внутри переключаются два фрейма пак/забытьпак
+        _img_area = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
+        _img_area.pack(fill="x", padx=16, pady=(0, 6))
 
+        # Фрейм с 2-мя скринами калибровки (показывается по умолчанию)
+        _cal_imgs_frame = ctk.CTkFrame(_img_area, fg_color="transparent")
+        _cal_imgs_frame.pack(fill="x")
+
+        if not hasattr(self, '_cal_images'):
+            self._cal_images = []
         self._cal_point_label_widgets = []
         for col, (fname, pt_label_key, pt_desc_key, color) in enumerate([
             ("calib_point_a.png", "cal_pt_a_lb", "cal_pt_a_desc", MD3["primary"]),
             ("calib_point_b.png", "cal_pt_b_lb", "cal_pt_b_desc", "#B060FF"),
         ]):
-            card = ctk.CTkFrame(points_frame, fg_color=MD3["elevated"],
+            card = ctk.CTkFrame(_cal_imgs_frame, fg_color=MD3["elevated"],
                                 corner_radius=10, border_width=1,
                                 border_color=MD3["outline"])
             card.grid(row=0, column=col, padx=(0, 6) if col == 0 else (6, 0), sticky="nsew")
-            points_frame.grid_columnconfigure(col, weight=1)
+            _cal_imgs_frame.grid_columnconfigure(col, weight=1)
 
             pt_lb = ctk.CTkLabel(card, text=LANGS[self.current_lang][pt_label_key],
                          font=ctk.CTkFont(size=12, weight="bold"),
@@ -4307,9 +4313,6 @@ class TotalHunterApp(ctk.CTk):
                 pil_img = pil_img.resize((new_w, new_h), Image.LANCZOS)
                 ctk_img = ctk.CTkImage(pil_img, size=(new_w, new_h))
                 ctk.CTkLabel(card, image=ctk_img, text="").pack(padx=4)
-                # держим ссылку
-                if not hasattr(self, '_cal_images'):
-                    self._cal_images = []
                 self._cal_images.append(ctk_img)
             except Exception:
                 ctk.CTkLabel(card, text="[фото]", height=80,
@@ -4320,6 +4323,34 @@ class TotalHunterApp(ctk.CTk):
                          justify="center")
             pt_desc_lb.pack(pady=(4, 8))
             self._cal_point_label_widgets.append((pt_lb, pt_desc_lb, pt_label_key, pt_desc_key))
+
+        # Лейбл для скриншота тюнинга (скрыт до выбора пункта)
+        _tune_img_label = ctk.CTkLabel(_img_area, text="", image=None)
+        self._tune_screen_images = {}
+
+        def _show_cal_images():
+            _tune_img_label.pack_forget()
+            _cal_imgs_frame.pack(fill="x")
+
+        def _show_tune_image(key):
+            _cal_imgs_frame.pack_forget()
+            if key not in self._tune_screen_images:
+                fname = _TUNE_SCREEN_MAP.get(key)
+                img = None
+                if fname:
+                    try:
+                        pil_img = Image.open(os.path.join(_assets, fname))
+                        w, h = pil_img.size
+                        new_w = 380
+                        new_h = int(h * new_w / w)
+                        pil_img = pil_img.resize((new_w, new_h), Image.LANCZOS)
+                        img = ctk.CTkImage(pil_img, size=(new_w, new_h))
+                    except Exception:
+                        pass
+                self._tune_screen_images[key] = img
+            ctk_img = self._tune_screen_images[key]
+            _tune_img_label.configure(image=ctk_img if ctk_img else None)
+            _tune_img_label.pack(padx=8, pady=4)
 
         # ── Profile dropdown ──────────────────────────────────────────────
         profile_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
@@ -4480,9 +4511,19 @@ class TotalHunterApp(ctk.CTk):
         # ── Тюнинг кликов (D-Pad) ────────────────────────────────────────
         # Порядок фиксирован: 0=wt_icon, 1=carter, 2=top_accel, 3=march_accel
         _TUNE_INTERNAL = TUNE_TARGET_NAMES
+        _TUNE_SCREEN_MAP = {
+            "wt_icon":       "tune_wt_icon.png",
+            "carter":        "tune_carter.png",
+            "top_accel":     "tune_top_accel.png",
+            "march_accel":   "tune_march_accel.png",
+            "chest_sender":  "tune_chest_sender.png",
+            "chest_type":    "tune_chest_type.png",
+            "chest_collect": "tune_chest_collect.png",
+        }
 
         def _tune_labels():
-            return [LANGS[self.current_lang][f"cal_tune_{k}"] for k in _TUNE_INTERNAL]
+            calib = LANGS[self.current_lang]["tab_cal"]
+            return [calib] + [LANGS[self.current_lang][f"cal_tune_{k}"] for k in _TUNE_INTERNAL]
 
         tune_card = ctk.CTkFrame(self._cal_frame, fg_color=MD3["card"],
                                   corner_radius=10, border_width=1,
@@ -4495,13 +4536,16 @@ class TotalHunterApp(ctk.CTk):
         _tune_title_lb.pack(pady=(8, 4))
         self._i18n_labels.append((_tune_title_lb, "cal_tune_title"))
 
-        self._tune_idx = 1  # индекс текущего элемента, 1=carter по умолчанию
-        self._ui_tune_btn_var = ctk.StringVar(value=_tune_labels()[self._tune_idx])
+        # idx = -1 означает режим «Калибровка» (показываем скрины точек А/Б)
+        self._tune_idx = -1
+        self._ui_tune_btn_var = ctk.StringVar(value=_tune_labels()[0])
 
         def _tune_on_select(display_val):
             labels = _tune_labels()
-            if display_val in labels:
-                self._tune_idx = labels.index(display_val)
+            if display_val == labels[0]:       # первый пункт — «Калибровка»
+                self._tune_idx = -1
+            elif display_val in labels[1:]:
+                self._tune_idx = labels[1:].index(display_val)
             _tune_refresh_display()
 
         self._tune_option_menu = ctk.CTkOptionMenu(
@@ -4515,7 +4559,7 @@ class TotalHunterApp(ctk.CTk):
         self._tune_option_menu.pack(fill="x", padx=12, pady=(0, 4))
 
         self._tune_display_lb = ctk.CTkLabel(
-            tune_card, text="X: +0px   Y: +0px",
+            tune_card, text="",
             font=ctk.CTkFont(size=13), text_color=MD3["on_surface"])
         self._tune_display_lb.pack(pady=(0, 2))
 
@@ -4525,20 +4569,30 @@ class TotalHunterApp(ctk.CTk):
         }
 
         def _tune_get_key():
+            if self._tune_idx < 0:
+                return None
             return _TUNE_INTERNAL[self._tune_idx]
 
         def _tune_show_chest_overlay_if_relevant():
             key = _tune_get_key()
-            if key in _CHEST_TUNE_RECTS:
+            if key and key in _CHEST_TUNE_RECTS:
                 self._show_chest_rect_overlay(_CHEST_TUNE_RECTS[key], key)
 
         def _tune_refresh_display():
-            ox, oy = coord_manager.get_ui_offset(_tune_get_key())
+            key = _tune_get_key()
+            if key is None:
+                _show_cal_images()
+                self._tune_display_lb.configure(text="")
+                return
+            ox, oy = coord_manager.get_ui_offset(key)
             self._tune_display_lb.configure(text=f"X: {ox:+d}px   Y: {oy:+d}px")
             _tune_show_chest_overlay_if_relevant()
+            _show_tune_image(key)
 
         def _tune_apply(dx, dy):
             key = _tune_get_key()
+            if key is None:
+                return
             ox, oy = coord_manager.get_ui_offset(key)
             coord_manager.set_ui_offset(key, ox + dx, oy + dy)
             _tune_refresh_display()
@@ -4583,7 +4637,7 @@ class TotalHunterApp(ctk.CTk):
         # Reset button
         _tune_reset_btn = ctk.CTkButton(tune_card, text=LANGS[self.current_lang]["cal_tune_reset"],
                       command=lambda: (
-                          coord_manager.set_ui_offset(_tune_get_key(), 0, 0),
+                          coord_manager.set_ui_offset(_tune_get_key(), 0, 0) if _tune_get_key() else None,
                           _tune_refresh_display(),
                       ),
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
