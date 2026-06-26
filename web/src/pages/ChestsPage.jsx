@@ -399,17 +399,11 @@ export default function ChestsPage() {
                         </select>
                       </td>
                       <td>
-                        <select
+                        <input
                           className="input-dark"
                           value={row.custom_name || ''}
                           onChange={e => updateRow(collector.slug, i, 'custom_name', e.target.value || null)}
-                        >
-                          <option value="">—</option>
-                          {myCustomNames.map(n => <option key={n} value={n}>{n}</option>)}
-                          {row.custom_name && !myCustomNames.includes(row.custom_name) && (
-                            <option value={row.custom_name}>{row.custom_name}</option>
-                          )}
-                        </select>
+                        />
                       </td>
                       <td>
                         <input
