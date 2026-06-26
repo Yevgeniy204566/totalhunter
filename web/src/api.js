@@ -66,6 +66,12 @@ export async function fetchChestSummary(slug) {
   return res.json()
 }
 
+export async function fetchChestByKingdomSlug(kingdom, slug) {
+  const res = await fetch(`${BASE}/api/v1/chests/by/${encodeURIComponent(kingdom)}/${encodeURIComponent(slug)}`)
+  if (!res.ok) throw new Error('Not found')
+  return res.json()
+}
+
 export async function fetchChestHistory(slug) {
   const res = await fetch(`${BASE}/api/v1/chests/history/${slug}`)
   if (!res.ok) throw new Error('Not found')

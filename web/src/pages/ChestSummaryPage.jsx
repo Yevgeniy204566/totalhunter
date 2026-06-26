@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { fetchChestSummary, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
+import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
 function formatRemaining(periodEndIso, offsetMinutes) {
@@ -55,7 +55,7 @@ function formatPeriodPoint(isoString) {
 }
 
 export default function ChestSummaryPage() {
-  const { slug } = useParams()
+  const { slug, kingdom } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [tab, setTab] = useState('current')
@@ -64,20 +64,26 @@ export default function ChestSummaryPage() {
   const [selectedSeasonId, setSelectedSeasonId] = useState(null)
   const [seasonDetail, setSeasonDetail] = useState(null)
 
-  useEffect(() => {
-    fetchChestSummary(slug).then(setData).catch(e => setError(e.message || 'not found'))
-  }, [slug])
+  // kingdom param is present on /c/:kingdom/:slug route, absent on /chests/:slug route
+  const internalSlug = data?.collector_slug || (!kingdom ? slug : null)
 
   useEffect(() => {
-    if (tab !== 'history' || history) return
-    fetchChestHistory(slug).then(setHistory).catch(e => setHistoryError(e.message || 'error'))
-  }, [tab, slug, history])
+    const loader = kingdom
+      ? fetchChestByKingdomSlug(kingdom, slug)
+      : fetchChestSummary(slug)
+    loader.then(setData).catch(e => setError(e.message || 'not found'))
+  }, [slug, kingdom])
 
   useEffect(() => {
-    if (selectedSeasonId == null) return
+    if (tab !== 'history' || history || !internalSlug) return
+    fetchChestHistory(internalSlug).then(setHistory).catch(e => setHistoryError(e.message || 'error'))
+  }, [tab, internalSlug, history])
+
+  useEffect(() => {
+    if (selectedSeasonId == null || !internalSlug) return
     setSeasonDetail(null)
-    fetchChestHistorySeason(slug, selectedSeasonId).then(setSeasonDetail)
-  }, [selectedSeasonId, slug])
+    fetchChestHistorySeason(internalSlug, selectedSeasonId).then(setSeasonDetail)
+  }, [selectedSeasonId, internalSlug])
 
   if (error) return <div className="page-content">{error}</div>
   if (!data) return <div className="page-content text-muted">...</div>

@@ -219,6 +219,43 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
 
     result = pivot_summary(collector.kingdom, collector.clan, rows)
+    result["collector_slug"] = collector.slug
+    result["updated_at"] = updated_at.isoformat() if updated_at else None
+    result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
+    result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
+    result["stopped_at"] = collector.stopped_at.isoformat() if collector.stopped_at else None
+    result["timezone_offset_minutes"] = collector.timezone_offset_minutes
+    result["targets"] = {
+        "points": collector.target_points,
+        "chests": collector.target_chests,
+    }
+    return result
+
+
+@router.get("/by/{kingdom}/{custom_slug}")
+async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
+                                    db: AsyncSession = Depends(get_db)):
+    collector = (await db.execute(
+        select(ChestCollector).where(
+            func.lower(ChestCollector.kingdom) == kingdom.lower(),
+            func.lower(ChestCollector.custom_slug) == custom_slug.lower(),
+        )
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+
+    rows = await query_summary_rows(db, collector, collector.period_start, collector.period_end)
+
+    updated_at_query = select(func.max(Chest.collected_at)).where(
+        Chest.collector_id == collector.id)
+    if collector.period_start is not None:
+        updated_at_query = updated_at_query.where(Chest.collected_at >= collector.period_start)
+    if collector.period_end is not None:
+        updated_at_query = updated_at_query.where(Chest.collected_at <= collector.period_end)
+    updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
+
+    result = pivot_summary(collector.kingdom, collector.clan, rows)
+    result["collector_slug"] = collector.slug
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None

@@ -64,6 +64,7 @@ export default function ChestsPage() {
           period_end: c.period_end ? c.period_end.slice(0, 16) : '',
           target_points: c.target_points,
           target_chests: c.target_chests,
+          custom_slug: c.custom_slug || '',
         }
       }
       setRowsByCollector(nextRows)
@@ -164,6 +165,7 @@ export default function ChestsPage() {
       period_end: s.period_end ? s.period_end + ':00' : null,
       target_points: s.target_points === '' || s.target_points == null ? null : Number(s.target_points),
       target_chests: s.target_chests === '' || s.target_chests == null ? null : Number(s.target_chests),
+      custom_slug: s.custom_slug || null,
     }
     try {
       await api.dashboardChestsSeason(slug, payload)
@@ -293,6 +295,22 @@ export default function ChestsPage() {
                 value={seasonByCollector[collector.slug]?.target_chests ?? ''}
                 onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
               />
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+              <input
+                className="input-dark" style={{ width: 160 }}
+                placeholder="Короткое имя (a-z, 0-9, -)"
+                value={seasonByCollector[collector.slug]?.custom_slug || ''}
+                onChange={e => updateSeasonField(collector.slug, 'custom_slug', e.target.value)}
+              />
+              {seasonByCollector[collector.slug]?.custom_slug ? (
+                <span style={{ fontSize: 12, color: '#A3A3A3' }}>
+                  total-hunter.com/c/{collector.kingdom}/{seasonByCollector[collector.slug].custom_slug}
+                </span>
+              ) : collector.short_url ? (
+                <a href={collector.short_url} target="_blank" rel="noreferrer"
+                   style={{ fontSize: 12, color: '#60A5FA' }}>{collector.short_url.replace('https://', '')}</a>
+              ) : null}
             </div>
             <button className="btn-green" onClick={() => saveSeason(collector.slug)}>
               {cx.saveSeason}

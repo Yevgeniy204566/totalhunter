@@ -385,6 +385,7 @@ class ChestCollector(Base):
     __tablename__ = "chest_collectors"
     __table_args__ = (
         UniqueConstraint("kingdom", "clan", "user_id", name="uq_chest_collectors_tenant"),
+        UniqueConstraint("kingdom", "custom_slug", name="uq_chest_collectors_kingdom_custom_slug"),
     )
 
     id                = Column(Integer, primary_key=True)
@@ -395,6 +396,7 @@ class ChestCollector(Base):
     pattern           = Column(String(8),  nullable=True)
     language          = Column(String(8),  nullable=True)
     management_token  = Column(String(32), nullable=True, unique=True)
+    custom_slug       = Column(String(100), nullable=True)
     created_at        = Column(TIMESTAMP(timezone=True), nullable=False,
                                server_default=func.now())
     timezone_offset_minutes = Column(Integer, nullable=True)

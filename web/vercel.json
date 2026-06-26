@@ -11,6 +11,21 @@
       "has": [{ "type": "query", "key": "lang", "value": "ru" }],
       "destination": "/ru",
       "permanent": true
+    },
+    {
+      "source": "/dl",
+      "destination": "https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip",
+      "permanent": false
+    },
+    {
+      "source": "/tg",
+      "destination": "https://t.me/Total_Hunter",
+      "permanent": false
+    },
+    {
+      "source": "/r/:code",
+      "destination": "/ref/:code",
+      "permanent": false
     }
   ],
   "headers": [

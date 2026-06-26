@@ -35,6 +35,7 @@ export default function App() {
       <Route path="/login"     element={<LoginPage />} />
       <Route path="/ref/:code" element={<RefPage />} />
       <Route path="/chests/:slug" element={<ChestSummaryPage />} />
+      <Route path="/c/:kingdom/:slug" element={<ChestSummaryPage />} />
 
       {/* ── RU public routes (/ru prefix) ───────────────── */}
       <Route path="/ru"              element={<LandingPage />} />
