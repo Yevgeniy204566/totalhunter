@@ -217,7 +217,7 @@ export default function ChestsPage() {
     <div className="page-content">
 <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
-      <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
+      <div className="card" style={{ marginBottom: 16, maxWidth: 600 }}>
         <input
           className="input-dark"
           value={claimCode}
@@ -232,16 +232,22 @@ export default function ChestsPage() {
 
       {collectors.map(collector => (
         <div className="card" key={collector.slug} style={{ marginBottom: 24 }}>
-          {/* Header: kingdom/clan left, links right */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>{collector.kingdom} / {collector.clan}</div>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <a href={collector.public_url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>{cx.publicLink}</a>
+          {/* Header: kingdom/clan left | links stacked right */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>{collector.kingdom} / {collector.clan}</div>
+            <div style={{ textAlign: 'right' }}>
               {collector.short_url && (
-                <a href={collector.short_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#60A5FA' }}>
-                  {collector.short_url.replace('https://', '')}
-                </a>
+                <div>
+                  <a href={collector.short_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#60A5FA' }}>
+                    {collector.short_url.replace('https://', '')}
+                  </a>
+                </div>
               )}
+              <div>
+                <a href={collector.public_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
+                  {cx.publicLink}
+                </a>
+              </div>
             </div>
           </div>
 
@@ -265,7 +271,6 @@ export default function ChestsPage() {
           {/* Season settings */}
           <div className="card" style={{ marginBottom: 16 }}>
             <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.seasonTitle}</div>
-            {/* Single scrollable row — all fields stay on one line on PC */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 8, overflowX: 'auto', paddingBottom: 2 }}>
               <select
                 className="input-dark"
@@ -282,51 +287,45 @@ export default function ChestsPage() {
                   </option>
                 ))}
               </select>
-              <input
-                className="input-dark" style={{ width: 170, flexShrink: 0 }} type="datetime-local"
+              <input className="input-dark" style={{ width: 170, flexShrink: 0 }} type="datetime-local"
                 value={seasonByCollector[collector.slug]?.period_start || ''}
                 onChange={e => updateSeasonField(collector.slug, 'period_start', e.target.value)}
               />
-              <input
-                className="input-dark" style={{ width: 170, flexShrink: 0 }} type="datetime-local"
+              <input className="input-dark" style={{ width: 170, flexShrink: 0 }} type="datetime-local"
                 value={seasonByCollector[collector.slug]?.period_end || ''}
                 onChange={e => updateSeasonField(collector.slug, 'period_end', e.target.value)}
               />
-              <input
-                className="input-dark" style={{ width: 100, flexShrink: 0 }} type="number"
+              <input className="input-dark" style={{ width: 100, flexShrink: 0 }} type="number"
                 placeholder={cx.targetPointsLabel}
                 value={seasonByCollector[collector.slug]?.target_points ?? ''}
                 onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
               />
-              <input
-                className="input-dark" style={{ width: 100, flexShrink: 0 }} type="number"
+              <input className="input-dark" style={{ width: 100, flexShrink: 0 }} type="number"
                 placeholder={cx.targetChestsLabel}
                 value={seasonByCollector[collector.slug]?.target_chests ?? ''}
                 onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
               />
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Buttons: Save left, Close season far right */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button className="btn-green" onClick={() => saveSeason(collector.slug)}>
                 {cx.saveSeason}
               </button>
               {collector.period_end && (
                 confirmCloseByCollector[collector.slug] ? (
                   <>
-                    <span style={{ fontSize: 13, color: '#F87171' }}>{cx.closeSeasonConfirmText}</span>
-                    <button
-                      className="btn-primary"
-                      style={{ background: '#DC2626', boxShadow: 'none' }}
+                    <span style={{ fontSize: 13, color: '#F87171', marginLeft: 'auto' }}>{cx.closeSeasonConfirmText}</span>
+                    <button className="btn-primary" style={{ background: '#DC2626', boxShadow: 'none' }}
                       onClick={() => closeSeason(collector.slug)}
                     >{cx.closeSeasonYes}</button>
-                    <button
-                      className="btn-secondary"
+                    <button className="btn-secondary"
                       onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: false }))}
                     >{cx.closeSeasonNo}</button>
                   </>
                 ) : (
                   <button
                     className="btn-secondary"
-                    style={{ color: '#F87171', borderColor: '#F8717144' }}
+                    style={{ marginLeft: 'auto', color: '#F87171', borderColor: '#F8717144' }}
                     onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: true }))}
                   >{cx.closeSeasonBtn}</button>
                 )
@@ -335,29 +334,17 @@ export default function ChestsPage() {
           </div>
 
           <div className="chest-tabs">
-            <button
-              className={`chest-tab ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
-              onClick={() => setTab(collector.slug, 'chests')}
-            >
-              {cx.chestsTab}
-            </button>
-            <button
-              className={`chest-tab ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
-              onClick={() => setTab(collector.slug, 'players')}
-            >
-              {cx.playersTab}
-            </button>
-            <button
-              className={`chest-tab ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
-              onClick={() => setTab(collector.slug, 'history')}
-            >
-              {cx.historyTab}
-            </button>
+            <button className={`chest-tab ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'chests')}>{cx.chestsTab}</button>
+            <button className={`chest-tab ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'players')}>{cx.playersTab}</button>
+            <button className={`chest-tab ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'history')}>{cx.historyTab}</button>
           </div>
 
           {activeTab(collector.slug) === 'chests' && (
             <>
-              {/* Presets row + chest count in one line */}
+              {/* Presets + Save + Итого in one row */}
               <div style={{ marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 {presets && Object.keys(presets).length > 0 && (
                   <>
@@ -369,28 +356,23 @@ export default function ChestsPage() {
                     >
                       {Object.keys(presets).map(name => <option key={name} value={name}>{name}</option>)}
                     </select>
-                    <button
-                      className="btn-secondary"
+                    <button className="btn-secondary"
                       onClick={() => loadPreset(collector.slug, presetChoiceByCollector[collector.slug] || Object.keys(presets)[0])}
-                    >
-                      {cx.loadPresetBtn}
-                    </button>
+                    >{cx.loadPresetBtn}</button>
                   </>
                 )}
-                <span style={{ fontWeight: 600, marginLeft: 8 }}>
+                <button className="btn-primary" onClick={() => save(collector.slug)}>{cx.save}</button>
+                <span style={{ fontWeight: 600, marginLeft: 8, color: 'var(--on-surface2)' }}>
                   {cx.grandTotalLabel} {(rowsByCollector[collector.slug] || []).reduce((sum, row) => sum + (row.total_ever ?? 0), 0)}
                 </span>
               </div>
-              <button className="btn-primary" onClick={() => save(collector.slug)} style={{ marginBottom: 12 }}>
-                {cx.save}
-              </button>
               <div style={{ overflowX: 'auto' }}>
               <table className="chest-table">
                 <thead>
                   <tr>
-                    <th style={{ minWidth: 150 }}>{cx.rawCol}</th>
-                    <th style={{ minWidth: 220 }}>{cx.catalogCol}</th>
-                    <th style={{ minWidth: 140 }}>{cx.customNameCol}</th>
+                    <th style={{ minWidth: 220 }}>{cx.rawCol}</th>
+                    <th style={{ minWidth: 240 }}>{cx.catalogCol}</th>
+                    <th style={{ minWidth: 150 }}>{cx.customNameCol}</th>
                     <th style={{ minWidth: 70 }}>{cx.pointsCol}</th>
                     <th style={{ minWidth: 90 }}>{cx.inPatternCol}</th>
                     <th style={{ minWidth: 90 }}>{cx.quotaCol}</th>
@@ -400,7 +382,7 @@ export default function ChestsPage() {
                 <tbody>
                   {rowsByCollector[collector.slug]?.map((row, i) => (
                     <tr key={i}>
-                      <td>{row.raw_type || '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{row.raw_type || '—'}</td>
                       <td>
                         <select
                           className="input-dark"
