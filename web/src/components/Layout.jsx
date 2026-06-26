@@ -7,16 +7,13 @@ import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
 const NAV_KEYS = [
-  { to: '/dashboard',              icon: '◈', key: 'profile' },
-  { to: '/dashboard/balance',      icon: '◆', key: 'balance' },
-  { to: '/dashboard/hunts',        icon: '⚔', key: 'hunts' },
-  { to: '/dashboard/referrals',    icon: '⬡', key: 'referrals' },
-  { to: '/dashboard/devices',      icon: '▣', key: 'devices' },
-  { to: '/dashboard/chests',       icon: '⛁', key: 'chests' },
-  { to: '/dashboard/ancients',     icon: '🐲', key: 'ancients' },
-  { to: '/dashboard/roy',          icon: '⬡', key: 'roy' },
-  { to: '/dashboard/transactions', icon: '≡', key: 'transactions' },
-  { to: '/dashboard/feedback',     icon: '✦', key: 'feedback' },
+  { to: '/dashboard',           icon: '◈', key: 'profile'   },
+  { to: '/dashboard/balance',   icon: '◆', key: 'balance'   },
+  { to: '/dashboard/referrals', icon: '⬡', key: 'referrals' },
+  { to: '/dashboard/chests',    icon: '⛁', key: 'chests'    },
+  { to: '/dashboard/ancients',  icon: '🐲', key: 'ancients'  },
+  { to: '/dashboard/roy',       icon: '⬡', key: 'roy'       },
+  { to: '/dashboard/feedback',  icon: '✦', key: 'feedback'  },
 ]
 
 

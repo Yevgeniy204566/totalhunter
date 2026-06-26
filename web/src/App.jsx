@@ -5,10 +5,7 @@ import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import BalancePage from './pages/BalancePage.jsx'
-import HuntsPage from './pages/HuntsPage.jsx'
 import ReferralsPage from './pages/ReferralsPage.jsx'
-import DevicesPage from './pages/DevicesPage.jsx'
-import TransactionsPage from './pages/TransactionsPage.jsx'
 import FeedbackPage from './pages/FeedbackPage.jsx'
 import GuidePage from './pages/GuidePage.jsx'
 import LegalPage from './pages/LegalPage.jsx'
@@ -50,16 +47,13 @@ export default function App() {
       {/* ── Dashboard (no lang prefix, auth-protected) ──── */}
       <Route path="/dashboard" element={<PrivateRoute element={<Layout />} />}>
         <Route index               element={<DashboardPage />} />
-        <Route path="balance"      element={<BalancePage />} />
-        <Route path="hunts"        element={<HuntsPage />} />
-        <Route path="referrals"    element={<ReferralsPage />} />
-        <Route path="devices"      element={<DevicesPage />} />
-        <Route path="chests"       element={<ChestsPage />} />
-        <Route path="ancients"     element={<AncientsPage />} />
-        <Route path="transactions" element={<TransactionsPage />} />
-        <Route path="feedback"     element={<FeedbackPage />} />
-        <Route path="earn"         element={<EarnPage />} />
-        <Route path="roy"          element={<RoyPage />} />
+        <Route path="balance"   element={<BalancePage />} />
+        <Route path="referrals" element={<ReferralsPage />} />
+        <Route path="chests"    element={<ChestsPage />} />
+        <Route path="ancients"  element={<AncientsPage />} />
+        <Route path="feedback" element={<FeedbackPage />} />
+        <Route path="earn"    element={<EarnPage />} />
+        <Route path="roy"     element={<RoyPage />} />
       </Route>
       <Route path="/dashboard/tree" element={<PrivateRoute element={<ReferralTreePage />} />} />
 
