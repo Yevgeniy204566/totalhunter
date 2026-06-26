@@ -232,15 +232,20 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     return result
 
 
+def _clan_to_slug(clan: str) -> str:
+    import re
+    return re.sub(r'[^a-z0-9]+', '-', clan.lower()).strip('-')
+
+
 @router.get("/by/{kingdom}/{custom_slug}")
 async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
                                     db: AsyncSession = Depends(get_db)):
-    collector = (await db.execute(
+    collectors = (await db.execute(
         select(ChestCollector).where(
             func.lower(ChestCollector.kingdom) == kingdom.lower(),
-            func.lower(ChestCollector.custom_slug) == custom_slug.lower(),
         )
-    )).scalar_one_or_none()
+    )).scalars().all()
+    collector = next((c for c in collectors if _clan_to_slug(c.clan) == custom_slug.lower()), None)
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
 

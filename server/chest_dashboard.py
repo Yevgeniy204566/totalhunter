@@ -10,6 +10,10 @@ and the global Chest Catalog/Localizations Sheets are untouched (see design doc)
 """
 import re
 import secrets
+
+
+def _clan_to_slug(clan: str) -> str:
+    return re.sub(r'[^a-z0-9]+', '-', clan.lower()).strip('-')
 from datetime import datetime
 from typing import List, Optional
 
@@ -227,11 +231,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "slug": collector.slug, "kingdom": collector.kingdom, "clan": collector.clan,
             "language": collector.language,
             "public_url": f"https://total-hunter.com/chests/{collector.slug}",
-            "custom_slug": collector.custom_slug,
-            "short_url": (
-                f"https://total-hunter.com/c/{collector.kingdom}/{collector.custom_slug}"
-                if collector.custom_slug else None
-            ),
+            "short_url": f"https://total-hunter.com/c/{collector.kingdom}/{_clan_to_slug(collector.clan)}",
             "rows": await _collector_rows(db, collector),
             "player_alias_rows": await _player_alias_rows(db, collector, global_alias_map),
             "catalog_options": await _load_catalog_options(db),
@@ -382,7 +382,6 @@ class SeasonSettingsPayload(BaseModel):
     period_end: Optional[datetime] = None
     target_points: Optional[int] = None
     target_chests: Optional[int] = None
-    custom_slug: Optional[str] = None
 
 
 @router.patch("/{slug}/season")
@@ -411,12 +410,6 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
         collector.target_chests = payload.target_chests
     if payload.period_start is not None or payload.period_end is not None:
         collector.stopped_at = None
-    if payload.custom_slug is not None:
-        slug_clean = payload.custom_slug.strip().lower()
-        if slug_clean and not re.match(r'^[a-z0-9-]{2,50}$', slug_clean):
-            raise HTTPException(status_code=400,
-                                detail="Короткое имя: только латиница, цифры, дефис, 2–50 символов")
-        collector.custom_slug = slug_clean or None
 
     await db.commit()
     return {"ok": True}
