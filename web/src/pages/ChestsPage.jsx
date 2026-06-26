@@ -40,7 +40,6 @@ export default function ChestsPage() {
   const [historyByCollector, setHistoryByCollector] = useState({})
   const [seasonDetailByCollector, setSeasonDetailByCollector] = useState({})
   const [confirmCloseByCollector, setConfirmCloseByCollector] = useState({})
-  const [myCustomNames, setMyCustomNames] = useState([])
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.chests
@@ -76,7 +75,6 @@ export default function ChestsPage() {
   }
   useEffect(() => { refresh() }, [])
   useEffect(() => { api.dashboardChestsPresets().then(setPresets).catch(() => {}) }, [])
-  useEffect(() => { api.dashboardChestsMyNames().then(r => setMyCustomNames(r.names)).catch(() => {}) }, [])
 
   function activeTab(slug) { return activeTabByCollector[slug] || 'chests' }
   function setTab(slug, tab) {
