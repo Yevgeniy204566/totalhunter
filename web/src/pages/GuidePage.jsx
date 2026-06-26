@@ -437,6 +437,82 @@ export default function GuidePage() {
             </Card>
           </Section>
 
+          {/* 6.1 Tuning */}
+          <Section id="tuning" icon="⚙️" title={G.tuning.title}>
+            <Card>
+              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+                {G.tuning.intro}
+              </p>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {G.tuning.botLabel}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 8 }}>
+                {G.tuning.steps.map(({ title, desc, img }) => (
+                  <div key={title} style={{ borderRadius: 12, padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: img ? 10 : 0 }}>{desc}</div>
+                    {img && (
+                      <img src={img} alt={title} onClick={() => setLightboxImg(img)} style={{
+                        width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                        display: 'block', cursor: 'zoom-in',
+                      }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <Note>{G.tuning.note}</Note>
+            </Card>
+          </Section>
+
+          {/* 6.2 Chests */}
+          <Section id="chests" icon="📦" title={G.chests.title}>
+            <Card style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+                {G.chests.intro}
+              </p>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {G.chests.botLabel}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+                {G.chests.botSteps.map(({ title, desc, img }) => (
+                  <div key={title} style={{ borderRadius: 12, padding: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: img ? 10 : 0 }}>{desc}</div>
+                    {img && (
+                      <img src={img} alt={title} onClick={() => setLightboxImg(img)} style={{
+                        width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                        display: 'block', cursor: 'zoom-in',
+                      }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {G.chests.webLabel}
+              </div>
+              {G.chests.webSteps.map((s, i) => (
+                <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
+              ))}
+              <Note>{G.chests.note}</Note>
+            </Card>
+          </Section>
+
+          {/* 6.3 Ancient */}
+          <Section id="ancient" icon="🐲" title={G.ancient.title}>
+            <Card>
+              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+                {G.ancient.intro}
+              </p>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {G.ancient.howLabel}
+              </div>
+              {G.ancient.steps.map((s, i) => (
+                <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
+              ))}
+              <Note>{G.ancient.note}</Note>
+            </Card>
+          </Section>
+
           {/* 6.5 ROY */}
           <Section id="roy" icon="🐝" title={G.roy.title}>
             <Card style={{ marginBottom: 16 }}>

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 const LangContext = createContext(null)
 
-const TRANSLATABLE = ['/', '/features', '/guide', '/legal', '/contacts', '/download', '/login']
+const TRANSLATABLE = ['/', '/guide', '/legal', '/contacts', '/download', '/login']
 
 function getBasePath(pathname) {
   return pathname.startsWith('/ru') ? (pathname.slice(3) || '/') : pathname

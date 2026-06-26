@@ -10,6 +10,9 @@ export const GUIDE = {
     { id: 'install',      label: 'Installation' },
     { id: 'calibration',  label: 'Calibration' },
     { id: 'modes',        label: 'Operating Modes' },
+    { id: 'tuning',       label: '⚙ Tuning (Carter)' },
+    { id: 'chests',       label: '📦 Chests' },
+    { id: 'ancient',      label: '🐲 Ancient' },
     { id: 'roy',          label: 'SWARM System 🐝' },
     { id: 'settings',     label: 'Bot Settings' },
     { id: 'credits',      label: 'Diamonds & Rates' },
@@ -128,6 +131,49 @@ export const GUIDE = {
       ],
     },
     stopNote: 'Emergency Stop: Press ESC — the bot will instantly cease all actions.',
+  },
+
+  tuning: {
+    title: 'Tuning — Carter Automation',
+    intro: 'The Tuning module automates Carter: as soon as he returns from exploration, the bot sends him out again. While the march is active, it applies the best available speedup. Runs in the background alongside any other module.',
+    botLabel: 'What the bot does — step by step',
+    steps: [
+      { title: 'Watchtower icon', desc: 'The bot spots the Watchtower icon in the city panel — the signal that Carter has returned from exploration.', img: '/img/tune_wt_icon.png' },
+      { title: 'Send Carter', desc: 'Opens the captains screen and clicks "Explore" — Carter immediately departs on a new exploration.', img: '/img/tune_carter.png' },
+      { title: 'Speed up button', desc: 'While the Carter march is active, the bot finds it in the march list and clicks "Speed up".', img: '/img/tune_speed_up.png' },
+      { title: 'Apply speedup', desc: 'In the speedup panel the bot selects the best available march speedup and clicks "Use" — march finishes much faster.', img: '/img/tune_march_accel.png' },
+    ],
+    note: '💡 Tuning is toggled independently on its own tab. It continues running even if other modules are stopped — and vice versa.',
+  },
+
+  chests: {
+    title: 'Chests — Automatic Clan Gift Tracking',
+    intro: 'The Chests module has two parts: the bot on your PC opens gifts and reads the data, while the website shows real-time statistics to the whole clan.',
+    botLabel: 'Part 1 — bot (your PC)',
+    botSteps: [
+      { title: 'Opening gifts', desc: 'The bot goes to "My Clan → Triumphal Gifts" and clicks Open on each unread gift one by one.', img: '/img/chest_open.png' },
+      { title: 'OCR: sender name', desc: 'Reads the "From:" field — the player\'s name. This is how each chest is linked to a specific clan member.', img: '/img/chest_sender.png' },
+      { title: 'OCR: source event', desc: 'Reads the "Source:" field — the event name. This determines the chest\'s point value according to your clan\'s scoring table.', img: '/img/chest_type.png' },
+    ],
+    webLabel: 'Part 2 — web dashboard (total-hunter.com)',
+    webSteps: [
+      { title: 'Leader dashboard', desc: 'In /dashboard/chests the clan leader configures the system: sets points per chest type, sets season goals (points / count), manages player name aliases.' },
+      { title: 'Public clan page', desc: 'The page /chests/{your-clan} is open to everyone. Each member can see their contribution, the clan summary, season progress, and past season history.' },
+    ],
+    note: '💡 The leader can close the season early from the dashboard — data is archived and appears in the History tab. Archive is kept for 90 days.',
+  },
+
+  ancient: {
+    title: 'Ancient — Clan Damage Quota Tracking',
+    intro: 'A web tool for clan leaders. Distributes the Ancient damage quota fairly among members based on their troop strength. Runs entirely on the website — no bot needed.',
+    howLabel: 'How it works',
+    steps: [
+      { title: 'Leader sets the goal', desc: 'In /dashboard/ancients the leader enters the total target damage for the event and picks a distribution method: equal split or proportional to troop strength (G/S/M tiers).' },
+      { title: 'Individual quotas calculated', desc: 'The system automatically computes each member\'s quota — accounting for troop tier and level. Stronger troops = proportionally higher quota.' },
+      { title: 'Progress table', desc: 'The leader sees in real time: who met their quota, who is in progress, who hasn\'t started — shown by color and numbers.' },
+      { title: 'Public page', desc: 'Members check their own quota and progress on the public clan page — no access to the leader dashboard needed.' },
+    ],
+    note: '💡 This is a web-only module. Damage data is entered by the clan leader via browser — no additional software required.',
   },
 
   roy: {

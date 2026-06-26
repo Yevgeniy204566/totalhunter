@@ -18,7 +18,6 @@ import DownloadPage from './pages/DownloadPage.jsx'
 import EarnPage from './pages/EarnPage.jsx'
 import ReferralTreePage from './pages/ReferralTreePage.jsx'
 import RoyPage from './pages/RoyPage.jsx'
-import FeaturesPage from './pages/FeaturesPage.jsx'
 import ChestsPage from './pages/ChestsPage.jsx'
 import ChestSummaryPage from './pages/ChestSummaryPage.jsx'
 import AncientsPage from './pages/AncientsPage.jsx'
@@ -32,7 +31,6 @@ export default function App() {
     <Routes>
       {/* ── EN public routes (default) ──────────────────── */}
       <Route path="/"          element={<LandingPage />} />
-      <Route path="/features"  element={<FeaturesPage />} />
       <Route path="/guide"     element={<GuidePage />} />
       <Route path="/legal"     element={<LegalPage />} />
       <Route path="/contacts"  element={<ContactsPage />} />
@@ -43,7 +41,6 @@ export default function App() {
 
       {/* ── RU public routes (/ru prefix) ───────────────── */}
       <Route path="/ru"              element={<LandingPage />} />
-      <Route path="/ru/features"     element={<FeaturesPage />} />
       <Route path="/ru/guide"        element={<GuidePage />} />
       <Route path="/ru/legal"        element={<LegalPage />} />
       <Route path="/ru/contacts"     element={<ContactsPage />} />
