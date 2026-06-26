@@ -448,7 +448,7 @@ export default function ChestsPage() {
           )}
 
           {activeTab(collector.slug) === 'players' && (
-            <>
+            <div style={{ maxWidth: 700 }}>
               <table className="chest-table">
                 <thead>
                   <tr>
@@ -478,7 +478,7 @@ export default function ChestsPage() {
               <button className="btn-primary" onClick={() => savePlayerAliases(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
                 {cx.savePlayerAliases}
               </button>
-            </>
+            </div>
           )}
 
           {activeTab(collector.slug) === 'history' && (
