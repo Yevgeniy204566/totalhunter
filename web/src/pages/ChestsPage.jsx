@@ -455,8 +455,6 @@ export default function ChestsPage() {
                   ))}
                 </tbody>
               </table>
-
-              </table>
               </div>
               <button className="btn-secondary" onClick={() => addRow(collector.slug)} style={{ marginTop: 12 }}>
                 {cx.addRow}
