@@ -214,7 +214,7 @@ export default function ChestsPage() {
   if (!collectors) return <div className="page-content text-muted">...</div>
 
   return (
-    <div className="page-content">
+    <div className="page-content" style={{ maxWidth: 1600 }}>
 <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
       <div className="card" style={{ marginBottom: 16, maxWidth: 600 }}>
