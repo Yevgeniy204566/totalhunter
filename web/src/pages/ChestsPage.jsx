@@ -383,7 +383,7 @@ export default function ChestsPage() {
                 <tbody>
                   {rowsByCollector[collector.slug]?.map((row, i) => (
                     <tr key={i}>
-                      <td>{displayName(row, collector.catalog_options)}</td>
+                      <td>{row.raw_type || '—'}</td>
                       <td>
                         <select
                           className="input-dark"
