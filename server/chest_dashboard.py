@@ -32,7 +32,24 @@ router = APIRouter(prefix="/web/dashboard/chests", tags=["chest-dashboard"])
 # not editable through the UI. T9 mirrors clan 229/BERS's live working configuration
 # as of 2026-06-22, used as the reference template. New tiers (T8, ...) are added here
 # as new dict keys, no API/schema changes required.
+_T5_T8 = [
+    {"catalog_id": "Common Crypt 25",   "points": 15,  "is_in_pattern": True},
+    {"catalog_id": "Cursed Citadel 25", "points": 25,  "is_in_pattern": True},
+    {"catalog_id": "Elven Citadel 25",  "points": 25,  "is_in_pattern": True},
+    {"catalog_id": "Elven Citadel 30",  "points": 40,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 20",     "points": 25,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 25",     "points": 45,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 30",     "points": 80,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 35",     "points": 135, "is_in_pattern": True},
+    {"catalog_id": "Rare Crypt 25",     "points": 35,  "is_in_pattern": True},
+    {"catalog_id": "Rare Crypt 30",     "points": 65,  "is_in_pattern": True},
+]
+
 CHEST_PRESETS = {
+    "T5": _T5_T8,
+    "T6": _T5_T8,
+    "T7": _T5_T8,
+    "T8": _T5_T8,
     "T9": [
         {"catalog_id": "Epic Crypt 35", "points": 135, "is_in_pattern": True},
         {"catalog_id": "Epic Crypt 30", "points": 80, "is_in_pattern": True},
