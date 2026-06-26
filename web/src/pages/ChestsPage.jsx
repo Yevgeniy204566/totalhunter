@@ -217,10 +217,7 @@ export default function ChestsPage() {
 
   return (
     <div className="page-content">
-      <datalist id="custom-names-list">
-        {myCustomNames.map(n => <option key={n} value={n} />)}
-      </datalist>
-      <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
+<h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
       <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
         <input
@@ -402,12 +399,17 @@ export default function ChestsPage() {
                         </select>
                       </td>
                       <td>
-                        <input
+                        <select
                           className="input-dark"
-                          list="custom-names-list"
                           value={row.custom_name || ''}
                           onChange={e => updateRow(collector.slug, i, 'custom_name', e.target.value || null)}
-                        />
+                        >
+                          <option value="">—</option>
+                          {myCustomNames.map(n => <option key={n} value={n}>{n}</option>)}
+                          {row.custom_name && !myCustomNames.includes(row.custom_name) && (
+                            <option value={row.custom_name}>{row.custom_name}</option>
+                          )}
+                        </select>
                       </td>
                       <td>
                         <input
