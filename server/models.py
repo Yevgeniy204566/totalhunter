@@ -402,6 +402,7 @@ class ChestCollector(Base):
     period_end              = Column(TIMESTAMP(timezone=True), nullable=True)
     target_points           = Column(Integer, nullable=True)
     target_chests           = Column(Integer, nullable=True)
+    stopped_at              = Column(TIMESTAMP(timezone=True), nullable=True)
 
 
 class Chest(Base):

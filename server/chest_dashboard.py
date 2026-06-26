@@ -346,6 +346,8 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
         collector.target_points = payload.target_points
     if payload.target_chests is not None:
         collector.target_chests = payload.target_chests
+    if payload.period_start is not None or payload.period_end is not None:
+        collector.stopped_at = None
 
     await db.commit()
     return {"ok": True}
@@ -379,6 +381,7 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
     )
     collector.period_start = None
     collector.period_end = None
+    collector.stopped_at = now
     await db.commit()
     return {"ok": True}
 

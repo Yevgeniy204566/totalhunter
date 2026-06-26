@@ -96,6 +96,23 @@ export default function ChestSummaryPage() {
         <span className="public-clan-label">{data.clan}</span>
       </h1>
 
+      {data.stopped_at && (
+        <div style={{
+          background: 'rgba(248,113,113,0.1)',
+          border: '1px solid rgba(248,113,113,0.35)',
+          borderRadius: 10,
+          padding: '12px 18px',
+          marginBottom: 16,
+          color: '#FCA5A5',
+          fontSize: 14,
+          lineHeight: 1.5,
+        }}>
+          <strong>⏸ Учёт сундуков остановлен.</strong><br />
+          Лидер клана завершил сезон досрочно. Новый сезон пока не начат — данные не обновляются.
+          Предыдущие сезоны доступны во вкладке «История».
+        </div>
+      )}
+
       {hasSeasonTargets && (
         <div className="public-season-info">
           <span className="public-season-badge">
