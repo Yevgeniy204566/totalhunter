@@ -160,9 +160,16 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector) -> lis
 @router.get("")
 async def get_dashboard_chests(user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
+    last_chest_sub = (
+        select(Chest.collector_id, func.max(Chest.created_at).label("last_chest"))
+        .group_by(Chest.collector_id)
+        .subquery()
+    )
     collectors = (await db.execute(
-        select(ChestCollector).where(ChestCollector.user_id == user.id)
-        .order_by(ChestCollector.created_at.desc())
+        select(ChestCollector)
+        .outerjoin(last_chest_sub, ChestCollector.id == last_chest_sub.c.collector_id)
+        .where(ChestCollector.user_id == user.id)
+        .order_by(last_chest_sub.c.last_chest.desc().nulls_last())
     )).scalars().all()
 
     result = []
