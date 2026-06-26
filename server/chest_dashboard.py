@@ -162,6 +162,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
     collectors = (await db.execute(
         select(ChestCollector).where(ChestCollector.user_id == user.id)
+        .order_by(ChestCollector.created_at.desc())
     )).scalars().all()
 
     result = []
