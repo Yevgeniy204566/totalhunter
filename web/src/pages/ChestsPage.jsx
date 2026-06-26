@@ -40,6 +40,7 @@ export default function ChestsPage() {
   const [historyByCollector, setHistoryByCollector] = useState({})
   const [seasonDetailByCollector, setSeasonDetailByCollector] = useState({})
   const [confirmCloseByCollector, setConfirmCloseByCollector] = useState({})
+  const [myCustomNames, setMyCustomNames] = useState([])
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.chests
@@ -75,6 +76,7 @@ export default function ChestsPage() {
   }
   useEffect(() => { refresh() }, [])
   useEffect(() => { api.dashboardChestsPresets().then(setPresets).catch(() => {}) }, [])
+  useEffect(() => { api.dashboardChestsMyNames().then(r => setMyCustomNames(r.names)).catch(() => {}) }, [])
 
   function activeTab(slug) { return activeTabByCollector[slug] || 'chests' }
   function setTab(slug, tab) {
@@ -215,6 +217,9 @@ export default function ChestsPage() {
 
   return (
     <div className="page-content">
+      <datalist id="custom-names-list">
+        {myCustomNames.map(n => <option key={n} value={n} />)}
+      </datalist>
       <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
       <div className="card" style={{ marginBottom: 16, maxWidth: 480 }}>
@@ -399,6 +404,7 @@ export default function ChestsPage() {
                       <td>
                         <input
                           className="input-dark"
+                          list="custom-names-list"
                           value={row.custom_name || ''}
                           onChange={e => updateRow(collector.slug, i, 'custom_name', e.target.value || null)}
                         />

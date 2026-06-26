@@ -50,7 +50,8 @@ export const api = {
   dashboardChestsPresets: ()            => request('GET',   '/web/dashboard/chests/presets'),
   dashboardChestsHistory: (slug) => request('GET', `/web/dashboard/chests/${slug}/history`),
   dashboardChestsHistoryDetail: (slug, seasonId) => request('GET', `/web/dashboard/chests/${slug}/history/${seasonId}`),
-  dashboardChestsCloseSeason: (slug) => request('POST', `/web/dashboard/chests/${slug}/close-season`),
+  dashboardChestsCloseSeason:   (slug) => request('POST', `/web/dashboard/chests/${slug}/close-season`),
+  dashboardChestsMyNames:       ()    => request('GET',  '/web/dashboard/chests/my-custom-names'),
   dashboardAncients:      ()              => request('GET',   '/web/dashboard/ancients'),
   dashboardAncientsTroopLevel: (slug, playerName, troopLevel) =>
     request('PATCH', `/web/dashboard/ancients/${slug}/troop-level`,

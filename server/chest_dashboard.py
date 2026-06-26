@@ -91,6 +91,23 @@ async def get_presets(user: User = Depends(get_web_user)):
     return CHEST_PRESETS
 
 
+@router.get("/my-custom-names")
+async def get_my_custom_names(user: User = Depends(get_web_user),
+                              db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(
+        select(ChestTypeAlias.custom_name)
+        .join(ChestCollector, ChestCollector.id == ChestTypeAlias.collector_id)
+        .where(
+            ChestCollector.user_id == user.id,
+            ChestTypeAlias.custom_name.isnot(None),
+            ChestTypeAlias.custom_name != "",
+        )
+        .distinct()
+        .order_by(ChestTypeAlias.custom_name)
+    )).scalars().all()
+    return {"names": rows}
+
+
 async def _raw_type_counts(db: AsyncSession, collector_id: int) -> dict:
     rows = (await db.execute(
         select(Chest.chest_type_raw, func.count())
