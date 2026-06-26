@@ -172,7 +172,8 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
     return rows
 
 
-async def _player_alias_rows(db: AsyncSession, collector: ChestCollector) -> list:
+async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
+                             global_alias_map: dict | None = None) -> list:
     aliases = (await db.execute(
         select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
     )).scalars().all()
@@ -186,7 +187,8 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector) -> lis
     for raw_name in unmapped:
         if raw_name in mapped_raw_names:
             continue
-        rows.append({"raw_name": raw_name, "canonical_name": None})
+        canonical = (global_alias_map or {}).get(raw_name)
+        rows.append({"raw_name": raw_name, "canonical_name": canonical})
 
     return rows
 
@@ -206,6 +208,18 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
         .order_by(last_chest_sub.c.last_chest.desc().nulls_last())
     )).scalars().all()
 
+    global_alias_rows = (await db.execute(
+        select(PlayerAlias.raw_name, PlayerAlias.canonical_name)
+        .join(ChestCollector, ChestCollector.id == PlayerAlias.collector_id)
+        .where(
+            ChestCollector.user_id == user.id,
+            PlayerAlias.canonical_name.isnot(None),
+            PlayerAlias.canonical_name != "",
+        )
+        .order_by(PlayerAlias.id)
+    )).all()
+    global_alias_map = {r.raw_name: r.canonical_name for r in global_alias_rows}
+
     result = []
     for collector in collectors:
         result.append({
@@ -213,7 +227,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "language": collector.language,
             "public_url": f"https://total-hunter.com/chests/{collector.slug}",
             "rows": await _collector_rows(db, collector),
-            "player_alias_rows": await _player_alias_rows(db, collector),
+            "player_alias_rows": await _player_alias_rows(db, collector, global_alias_map),
             "catalog_options": await _load_catalog_options(db),
             "timezone_offset_minutes": collector.timezone_offset_minutes,
             "period_start": collector.period_start,
