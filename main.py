@@ -1670,9 +1670,9 @@ class TotalHunterApp(ctk.CTk):
         self._nav_frame.pack(padx=20, pady=(10, 0), fill="x")
         self._nav_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        # Ряд 0 — 4 основные вкладки
+        # Ряд 0 — СКЛЕПЫ, БИРЖИ, РОЙ, РЕФЕРАЛЫ
         self._tab_init_names = {k: LANGS[self.current_lang][k]
-                                for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest", "tab_ancient")}
+                                for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
         self._main_seg = ctk.CTkSegmentedButton(
             self._nav_frame,
             values=list(self._tab_init_names.values()),
@@ -1690,18 +1690,34 @@ class TotalHunterApp(ctk.CTk):
         self._main_seg.grid(row=0, column=0, columnspan=4, sticky="ew", padx=4, pady=(4, 0))
         self._main_seg.set(self._tab_init_names["tab_crypt"])
 
-        # Ряд 1 — Калибровка, по центру
-        self._cal_btn = ctk.CTkButton(
+        # Ряд 1 — СУНДУКИ, ДРЕВНИЙ, КАЛИБРОВКА
+        self._tab2_init_names = {k: LANGS[self.current_lang][k]
+                                 for k in ("tab_chest", "tab_ancient", "tab_cal")}
+        self._main_seg2 = ctk.CTkSegmentedButton(
             self._nav_frame,
-            text=LANGS[self.current_lang]["tab_cal"],
-            width=190, height=28, corner_radius=6,
+            values=list(self._tab2_init_names.values()),
+            command=self._on_seg2_change,
+            height=28,
             fg_color=MD3["elevated"],
-            hover_color=MD3["card"],
+            selected_color=MD3["tab_selected"],
+            selected_hover_color=MD3["tab_selected_hover"],
+            unselected_color=MD3["elevated"],
+            unselected_hover_color=MD3["card"],
             text_color=MD3["on_surface"],
+            corner_radius=6,
             font=ctk.CTkFont(size=13),
-            command=self._toggle_cal,
         )
-        self._cal_btn.grid(row=1, column=0, columnspan=4, pady=(2, 4))
+        self._main_seg2.grid(row=1, column=0, columnspan=4, sticky="ew", padx=4, pady=(2, 4))
+
+        # Ряд 2 — Индикатор активного РОЙ (виден на ВСЕХ вкладках когда РОЙ тратит баланс)
+        self._roy_indicator_lb = ctk.CTkLabel(
+            self._nav_frame,
+            text="⚡ РОЙ АКТИВЕН  ·  баланс тает  (−30 сек/мин)",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color="#FFC107",
+            fg_color="transparent",
+        )
+        # Изначально скрыт; _update_roy_indicator() управляет видимостью через grid
 
         # ── Контентная область ────────────────────────────────────────────
         self._content_frame = ctk.CTkFrame(self._outer, fg_color=MD3["card"],
@@ -2934,6 +2950,30 @@ class TotalHunterApp(ctk.CTk):
         self.current_credits = n
         self.credits_label.configure(text=str(n))
         self.crypt_credits_label.configure(text=str(n))
+        self._set_start_buttons_state(n > 0)
+
+    def _set_start_buttons_state(self, enabled: bool):
+        """Блокирует/разблокирует кнопки старта при нулевом балансе.
+        Кнопки в режиме СТОП (поиск идёт) не трогаем — пользователь должен иметь возможность остановить."""
+        state = "normal" if enabled else "disabled"
+        # Биржи + дубль кнопки в РОЙ
+        if not self.is_running:
+            if hasattr(self, 'start_button'):
+                self.start_button.configure(state=state)
+            if hasattr(self, '_roy_hunt_btn'):
+                self._roy_hunt_btn.configure(state=state)
+        # Склепы
+        if not self.is_crypt_running:
+            if hasattr(self, 'crypt_start_btn'):
+                self.crypt_start_btn.configure(state=state)
+        # Сундуки
+        if not self._chest_running:
+            if hasattr(self, 'chest_start_btn'):
+                self.chest_start_btn.configure(state=state)
+        # Combo (заморожен — guard)
+        if not self.is_combo_running:
+            if hasattr(self, 'combo_start_btn'):
+                self.combo_start_btn.configure(state=state)
 
     def _start_balance_sync(self):
         """Запускает фоновый long-poll поток — мгновенное обновление баланса."""
@@ -2998,7 +3038,6 @@ class TotalHunterApp(ctk.CTk):
                 self.tab_ancient, self._cal_frame)
         for f in _all:
             f.pack_forget()
-        self._cal_btn.configure(fg_color=MD3["elevated"], hover_color=MD3["card"])
         self._cal_visible = False
         tab_map = {
             "tab_crypt": self.tab_crypt,
@@ -3012,27 +3051,43 @@ class TotalHunterApp(ctk.CTk):
         if frame:
             self._active_tab_key = key
             frame.pack(fill="both", expand=True)
-        self._main_seg.set(self._tab_init_names.get(key, ""))
+        if key in self._tab_init_names:
+            self._main_seg.set(self._tab_init_names.get(key, ""))
+            self._main_seg2.set("")
+        else:
+            self._main_seg.set("")
+            self._main_seg2.set(self._tab2_init_names.get(key, ""))
+        if key in ("tab_hunt", "tab_roy") and hasattr(self, '_roy_enabled_var'):
+            self._roy_refresh_pool()
 
     def _on_seg_change(self, val):
-        """Вызывается при клике на CTkSegmentedButton."""
+        """Вызывается при клике на верхний ряд вкладок."""
         for k, v in self._tab_init_names.items():
             if v == val:
                 self._show_tab(k)
                 return
 
+    def _on_seg2_change(self, val):
+        """Вызывается при клике на нижний ряд вкладок (СУНДУКИ, ДРЕВНИЙ, КАЛИБРОВКА)."""
+        for k, v in self._tab2_init_names.items():
+            if v == val:
+                if k == "tab_cal":
+                    self._main_seg.set("")
+                    for f in (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy,
+                               self.tab_chest, self.tab_ancient):
+                        f.pack_forget()
+                    self._cal_frame.pack(fill="both", expand=True)
+                    self._cal_visible = True
+                else:
+                    self._show_tab(k)
+                return
+
     def _toggle_cal(self):
         if self._cal_visible:
-            self._cal_btn.configure(fg_color=MD3["elevated"], hover_color=MD3["card"])
             self._cal_visible = False
             self._show_tab(self._active_tab_key)
         else:
-            for f in (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest,
-                     self.tab_ancient):
-                f.pack_forget()
-            self._cal_frame.pack(fill="both", expand=True)
-            self._cal_btn.configure(fg_color=MD3["tab_selected"], hover_color=MD3["tab_selected_hover"])
-            self._cal_visible = True
+            self._on_seg2_change(self._tab2_init_names["tab_cal"])
 
     def _on_nav_toggle(self):
         """Dim nav controls when auto-navigation is disabled."""
@@ -3442,7 +3497,7 @@ class TotalHunterApp(ctk.CTk):
         self._roy_pool_known_ids: set = set()  # (kingdom, x, y) — уже виденные координаты
         self._pool_countdown_labels: list = []  # [(CTkLabel, expires_ts), ...] — для тикера
         self._pool_countdown_running: bool = False
-        self._start_roy_sse_listener()  # real-time: мгновенное обновление при находке биржи
+        self._start_roy_sse_listener()
         L = LANGS[self.current_lang]
 
         self._roy_title_lb = ctk.CTkLabel(
@@ -3640,6 +3695,7 @@ class TotalHunterApp(ctk.CTk):
             self._tr_roy_label.configure(text=txt, text_color=color)
         if hasattr(self, 'engine') and self.engine:
             self.engine.event_active = active
+        self._update_roy_indicator()
 
     def _tick_trade_routes(self):
         """Повторяющийся тик каждую минуту."""
@@ -3651,6 +3707,7 @@ class TotalHunterApp(ctk.CTk):
 
         Простой = тумблер РОЙ включён, но поиск бирж не идёт (is_running=False).
         Списание выполняется на сервере (POST /roy/idle); здесь только условие запуска.
+        Дополнительное условие: игрок должен быть на вкладке БИРЖИ или РОЙ.
         """
         if (hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get()
                 and not self.is_running and self.engine.event_active):
@@ -3665,6 +3722,19 @@ class TotalHunterApp(ctk.CTk):
             threading.Thread(target=_send, daemon=True).start()
         self.after(60_000, self._tick_roy_drain)
 
+    def _update_roy_indicator(self):
+        """Показывает/скрывает жёлтый индикатор активного РОЙ в панели навигации.
+        Индикатор виден на ВСЕХ вкладках — чтобы игрок не забыл про расход баланса."""
+        if not hasattr(self, '_roy_indicator_lb'):
+            return
+        active = (hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get()
+                  and hasattr(self, 'engine') and self.engine.event_active)
+        if active:
+            self._roy_indicator_lb.grid(row=2, column=0, columnspan=4, sticky="ew",
+                                        padx=8, pady=(0, 4))
+        else:
+            self._roy_indicator_lb.grid_remove()
+
     def _on_roy_toggle(self):
         enabled = self._roy_enabled_var.get()
         self._save_gui_config_key("roy_enabled", enabled)
@@ -3675,6 +3745,7 @@ class TotalHunterApp(ctk.CTk):
             self._roy_refresh_pool()
         else:
             self._roy_update_list([])  # скрыть координаты при отключении
+        self._update_roy_indicator()
 
     def _on_roy_kingdom_change(self, event=None):
         try:
@@ -3713,8 +3784,11 @@ class TotalHunterApp(ctk.CTk):
                 self.after(0, lambda: self._roy_balance_lb.configure(text="—"))
         threading.Thread(target=_fetch, daemon=True).start()
 
+
     def _start_roy_sse_listener(self):
-        """Daemon-тред: подписка на SSE сервера. При pool_updated — мгновенно обновляет пул."""
+        """Daemon-тред: слушает SSE сервера. При pool_updated — звук + обновление пула.
+        Работает на любой вкладке пока тумблер РОЙ включён и ивент активен.
+        """
         import json as _json
         def _loop():
             import requests as _req, time as _t
@@ -3726,7 +3800,9 @@ class TotalHunterApp(ctk.CTk):
                             if raw.startswith('data:'):
                                 try:
                                     data = _json.loads(raw[5:].strip())
-                                    if data.get('pool_updated') and self._roy_enabled_var.get():
+                                    if (data.get('pool_updated')
+                                            and self._roy_enabled_var.get()
+                                            and self.engine.event_active):
                                         self.after(0, self._roy_refresh_pool)
                                 except Exception:
                                     pass
@@ -3908,12 +3984,22 @@ class TotalHunterApp(ctk.CTk):
         for widget, key in self._i18n_labels:
             widget.configure(text=LANGS[val][key])
 
-        # Навигация — обновляем segmented button и кнопку калибровки
-        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref", "tab_chest", "tab_ancient")}
+        # Навигация — обновляем оба ряда вкладок
+        new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
         self._tab_init_names = new_names
         self._main_seg.configure(values=list(new_names.values()))
-        self._main_seg.set(new_names.get(self._active_tab_key, list(new_names.values())[0]))
-        self._cal_btn.configure(text=LANGS[val]["tab_cal"])
+        new_names2 = {k: LANGS[val][k] for k in ("tab_chest", "tab_ancient", "tab_cal")}
+        self._tab2_init_names = new_names2
+        self._main_seg2.configure(values=list(new_names2.values()))
+        if self._cal_visible:
+            self._main_seg.set("")
+            self._main_seg2.set(new_names2["tab_cal"])
+        elif self._active_tab_key in new_names:
+            self._main_seg.set(new_names[self._active_tab_key])
+            self._main_seg2.set("")
+        else:
+            self._main_seg.set("")
+            self._main_seg2.set(new_names2.get(self._active_tab_key, ""))
 
         # Таймер Торговых Путей — заголовки и текст
         _tr_name = f"⏰ {LANGS[val].get('tr_event', 'Trade Routes')}"
@@ -3961,10 +4047,13 @@ class TotalHunterApp(ctk.CTk):
         # Tune option menu — перестроить labels, сохранить выбранный индекс
         if hasattr(self, '_tune_option_menu'):
             _tko = TUNE_TARGET_NAMES
-            _new_vals = [LANGS[val][f"cal_tune_{k}"] for k in _tko]
+            _new_vals = [LANGS[val]["tab_cal"]] + [LANGS[val][f"cal_tune_{k}"] for k in _tko]
             self._tune_option_menu.configure(values=_new_vals)
-            _idx = getattr(self, '_tune_idx', 1)
-            self._ui_tune_btn_var.set(_new_vals[_idx])
+            _idx = getattr(self, '_tune_idx', -1)
+            if _idx < 0:
+                self._ui_tune_btn_var.set(_new_vals[0])
+            else:
+                self._ui_tune_btn_var.set(_new_vals[_idx + 1])
 
         self.update_slider_labels()
         self._update_nav_labels()

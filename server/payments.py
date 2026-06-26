@@ -184,7 +184,11 @@ async def payment_webhook(
     order_id = int(order_id_raw)
 
     async with db.begin():
-        order_result = await db.execute(select(Order).where(Order.id == order_id))
+        # with_for_update() блокирует строку до конца транзакции —
+        # параллельный вебхук на тот же order_id будет ждать, а не проходить дважды
+        order_result = await db.execute(
+            select(Order).where(Order.id == order_id).with_for_update()
+        )
         order = order_result.scalar_one_or_none()
         if not order:
             raise HTTPException(status_code=400, detail="Order not found")

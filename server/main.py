@@ -25,8 +25,14 @@ main.py — Total Hunter SaaS API (FastAPI + async SQLAlchemy).
 
 import os
 import secrets
+import time as _time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+
+# Простой in-memory rate limit для /use_credit: max 1 запрос на HWID каждые 2 секунды.
+# Защита от retry-шторма при потере пакета и от случайного двойного клика.
+_credit_ratelimit: dict[str, float] = {}
+_CREDIT_COOLDOWN_SEC = 2.0
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -272,6 +278,14 @@ async def use_credit(req: UseCreditsRequest, db: AsyncSession = Depends(get_db))
     Атомарный UPDATE: credits = credits - cost WHERE credits >= cost.
     Исключает race condition без SELECT FOR UPDATE.
     """
+    # Rate limit: один расход на HWID+тип раз в 2 сек — защита от retry-шторма.
+    # Ключ включает hunt_type: если вдруг за 2 с найдены склеп И биржа — оба проходят.
+    now = _time.monotonic()
+    rl_key = f"{req.hwid}:{req.hunt_type}"
+    if now - _credit_ratelimit.get(rl_key, 0.0) < _CREDIT_COOLDOWN_SEC:
+        raise HTTPException(status_code=429, detail="Too many requests")
+    _credit_ratelimit[rl_key] = now
+
     cost = CREDIT_COST.get(req.hunt_type, req.amount)
 
     async with db.begin():
