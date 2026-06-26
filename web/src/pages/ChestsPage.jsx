@@ -300,31 +300,33 @@ export default function ChestsPage() {
                 onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
               />
             </div>
-            <button className="btn-green" onClick={() => saveSeason(collector.slug)}>
-              {cx.saveSeason}
-            </button>
-            {collector.period_end && (
-              confirmCloseByCollector[collector.slug] ? (
-                <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 13, color: '#F87171' }}>{cx.closeSeasonConfirmText}</span>
-                  <button
-                    className="btn-primary"
-                    style={{ background: '#DC2626', boxShadow: 'none' }}
-                    onClick={() => closeSeason(collector.slug)}
-                  >{cx.closeSeasonYes}</button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
+              <button className="btn-green" onClick={() => saveSeason(collector.slug)}>
+                {cx.saveSeason}
+              </button>
+              {collector.period_end && (
+                confirmCloseByCollector[collector.slug] ? (
+                  <>
+                    <span style={{ fontSize: 13, color: '#F87171' }}>{cx.closeSeasonConfirmText}</span>
+                    <button
+                      className="btn-primary"
+                      style={{ background: '#DC2626', boxShadow: 'none' }}
+                      onClick={() => closeSeason(collector.slug)}
+                    >{cx.closeSeasonYes}</button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: false }))}
+                    >{cx.closeSeasonNo}</button>
+                  </>
+                ) : (
                   <button
                     className="btn-secondary"
-                    onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: false }))}
-                  >{cx.closeSeasonNo}</button>
-                </div>
-              ) : (
-                <button
-                  className="btn-secondary"
-                  style={{ marginTop: 12, color: '#F87171', borderColor: '#F8717144' }}
-                  onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: true }))}
-                >{cx.closeSeasonBtn}</button>
-              )
-            )}
+                    style={{ color: '#F87171', borderColor: '#F8717144' }}
+                    onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: true }))}
+                  >{cx.closeSeasonBtn}</button>
+                )
+              )}
+            </div>
           </div>
 
           <div className="chest-tabs">
