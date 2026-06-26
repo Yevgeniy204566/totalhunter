@@ -18,10 +18,11 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
+from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
-    ChestTypeAlias, ChestTypeCatalog, PlayerAlias, User,
+    ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, PlayerAlias, User,
 )
 from web_routes import get_web_user
 
@@ -346,6 +347,38 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
     if payload.target_chests is not None:
         collector.target_chests = payload.target_chests
 
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/{slug}/close-season")
+async def close_season_early(slug: str, user: User = Depends(get_web_user),
+                              db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    if collector.period_start is None or collector.period_end is None:
+        raise HTTPException(status_code=400, detail="No active season")
+
+    now = datetime.utcnow()
+    rows = await query_summary_rows(db, collector, collector.period_start, now)
+    summary = pivot_summary(collector.kingdom, collector.clan, rows)
+
+    db.add(ChestSeasonHistory(
+        collector_id=collector.id,
+        period_start=collector.period_start,
+        period_end=now,
+        target_points_snapshot=collector.target_points,
+        target_chests_snapshot=collector.target_chests,
+        summary_json=summary,
+    ))
+    await db.execute(
+        delete(Chest).where(
+            Chest.collector_id == collector.id,
+            Chest.collected_at >= collector.period_start,
+            Chest.collected_at <= now,
+        )
+    )
+    collector.period_start = None
+    collector.period_end = None
     await db.commit()
     return {"ok": True}
 
