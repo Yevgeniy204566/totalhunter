@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ancient_quota import (
@@ -16,7 +16,7 @@ from ancient_quota import (
     split_strategy_a, split_strategy_b, total_quota_millions,
 )
 from database import get_db
-from models import AncientCalculation, AncientRoster, ChestCollector, User
+from models import AncientCalculation, AncientRoster, ChestCollector, PlayerProfile, User
 from web_routes import get_web_user
 
 router = APIRouter(prefix="/web/dashboard/ancients", tags=["ancients-dashboard"])
@@ -37,12 +37,24 @@ async def _get_own_collector(db: AsyncSession, slug: str, user: User) -> ChestCo
 
 async def _roster_rows(db: AsyncSession, collector_id: int) -> list:
     rows = (await db.execute(
-        select(AncientRoster).where(AncientRoster.collector_id == collector_id)
+        select(AncientRoster, PlayerProfile.troop_level.label("profile_troop"))
+        .outerjoin(
+            PlayerProfile,
+            and_(
+                PlayerProfile.collector_id == AncientRoster.collector_id,
+                PlayerProfile.canonical_name == AncientRoster.player_name,
+            )
+        )
+        .where(AncientRoster.collector_id == collector_id)
         .order_by(AncientRoster.place.asc().nullslast())
-    )).scalars().all()
+    )).all()
     return [
-        {"player_name": r.player_name, "place": r.place, "points": r.points,
-         "troop_level": r.troop_level}
+        {
+            "player_name": r.AncientRoster.player_name,
+            "place": r.AncientRoster.place,
+            "points": r.AncientRoster.points,
+            "troop_level": r.AncientRoster.troop_level or r.profile_troop,
+        }
         for r in rows
     ]
 

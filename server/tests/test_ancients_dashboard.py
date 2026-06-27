@@ -13,7 +13,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 
 from main import app
-from models import AncientCalculation, AncientRoster, ChestCollector, User
+from models import AncientCalculation, AncientRoster, ChestCollector, PlayerProfile, User
 from web_routes import create_jwt
 
 
@@ -121,3 +121,41 @@ async def test_calculate_history_capped_at_5(db_session):
         select(AncientCalculation).where(AncientCalculation.collector_id == collector.id)
     )).scalars().all()
     assert len(rows) == 5
+
+
+@pytest.mark.asyncio
+async def test_roster_uses_profile_troop_level_as_fallback(db_session):
+    user, token = await _create_user_with_token(db_session, "anc_prof1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="anc-pf-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Alice",
+                                 place=1, points=1000, troop_level=None))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Alice",
+                                 rank="Старший", troop_level="G8 S8 M8"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    roster = resp.json()["collectors"][0]["roster"]
+    alice = next(r for r in roster if r["player_name"] == "Alice")
+    assert alice["troop_level"] == "G8 S8 M8"
+
+
+@pytest.mark.asyncio
+async def test_roster_manual_troop_level_wins_over_profile(db_session):
+    user, token = await _create_user_with_token(db_session, "anc_prof2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="anc-pf-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Bob",
+                                 place=1, points=2000, troop_level="G9 S9 M9"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Bob",
+                                 rank="Глава", troop_level="G5 S5 M5"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    roster = resp.json()["collectors"][0]["roster"]
+    bob = next(r for r in roster if r["player_name"] == "Bob")
+    assert bob["troop_level"] == "G9 S9 M9"
