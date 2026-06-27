@@ -207,11 +207,12 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
         if raw_name in mapped_raw_names:
             continue
         canonical = (global_alias_map or {}).get(raw_name)
+        profile = profile_map.get(canonical or raw_name)
         rows.append({
             "raw_name": raw_name,
             "canonical_name": canonical,
-            "rank": None,
-            "troop_level": None,
+            "rank": profile.rank if profile else None,
+            "troop_level": profile.troop_level if profile else None,
         })
 
     return rows
