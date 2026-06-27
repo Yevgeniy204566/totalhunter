@@ -210,7 +210,7 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
         profile = profile_map.get(canonical or raw_name)
         rows.append({
             "raw_name": raw_name,
-            "canonical_name": canonical,
+            "canonical_name": canonical or raw_name,  # fallback so POST can always save
             "rank": profile.rank if profile else None,
             "troop_level": profile.troop_level if profile else None,
         })
@@ -368,10 +368,12 @@ async def post_player_profiles(payload: PlayerProfilesPayload,
 
     await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id))
 
+    seen: set[str] = set()
     for row in payload.rows:
         canonical = (row.canonical_name or "").strip()
-        if not canonical:
+        if not canonical or canonical in seen:
             continue
+        seen.add(canonical)
         db.add(PlayerProfile(
             collector_id=collector.id,
             canonical_name=canonical,

@@ -157,9 +157,9 @@ export default function ChestsPage() {
       await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
       // Save rank + troop_level profiles in the same action
       const profileRows = (playerRowsByCollector[slug] || [])
-        .filter(r => (r.canonical_name || '').trim())
+        .filter(r => (r.canonical_name || r.raw_name || '').trim())
         .map(r => ({
-          canonical_name: r.canonical_name,
+          canonical_name: r.canonical_name || r.raw_name,
           rank: r.rank || null,
           troop_level: r.troop_g && r.troop_s && r.troop_m
               ? `G${r.troop_g} S${r.troop_s} M${r.troop_m}`
