@@ -12,7 +12,7 @@ Auth: hwid в payload → User (как /use_credit), НЕ Bearer ADMIN_TOKEN —
 """
 import secrets
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -25,7 +25,7 @@ from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
     Chest, ChestCollector, ChestTypeAlias, Hunt,
-    PlayerAlias, Transaction, User,
+    PlayerAlias, PlayerProfile, Transaction, User,
 )
 
 router = APIRouter(prefix="/api/v1/chests", tags=["chests"])
@@ -219,6 +219,17 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
 
     result = pivot_summary(collector.kingdom, collector.clan, rows)
+
+    # Enrich each player with rank + troop_level from player_profiles
+    profiles = (await db.execute(
+        select(PlayerProfile).where(PlayerProfile.collector_id == collector.id)
+    )).scalars().all()
+    profile_map = {p.canonical_name: p for p in profiles}
+    for player in result["players"]:
+        profile = profile_map.get(player["name"])
+        player["rank"] = profile.rank if profile else None
+        player["troop_level"] = profile.troop_level if profile else None
+
     result["collector_slug"] = collector.slug
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
@@ -235,6 +246,48 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
 def _clan_to_slug(clan: str) -> str:
     import re
     return re.sub(r'[^a-z0-9]+', '-', clan.lower()).strip('-')
+
+
+class PublicPlayerProfileIn(BaseModel):
+    collector_slug: str
+    canonical_name: str
+    rank: Optional[str] = None
+    troop_level: Optional[str] = None
+
+
+@router.post("/public/player-profile")
+async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
+                                       db: AsyncSession = Depends(get_db)):
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == payload.collector_slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+
+    canonical = (payload.canonical_name or "").strip()
+    if not canonical:
+        raise HTTPException(status_code=400, detail="canonical_name required")
+
+    existing = (await db.execute(
+        select(PlayerProfile).where(
+            PlayerProfile.collector_id == collector.id,
+            PlayerProfile.canonical_name == canonical,
+        )
+    )).scalar_one_or_none()
+
+    if existing:
+        existing.rank = payload.rank or None
+        existing.troop_level = payload.troop_level or None
+    else:
+        db.add(PlayerProfile(
+            collector_id=collector.id,
+            canonical_name=canonical,
+            rank=payload.rank or None,
+            troop_level=payload.troop_level or None,
+        ))
+
+    await db.commit()
+    return {"ok": True}
 
 
 @router.get("/by/{kingdom}/{custom_slug}")
@@ -260,6 +313,17 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
     updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
 
     result = pivot_summary(collector.kingdom, collector.clan, rows)
+
+    # Enrich each player with rank + troop_level from player_profiles
+    profiles = (await db.execute(
+        select(PlayerProfile).where(PlayerProfile.collector_id == collector.id)
+    )).scalars().all()
+    profile_map = {p.canonical_name: p for p in profiles}
+    for player in result["players"]:
+        profile = profile_map.get(player["name"])
+        player["rank"] = profile.rank if profile else None
+        player["troop_level"] = profile.troop_level if profile else None
+
     result["collector_slug"] = collector.slug
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None

@@ -18,7 +18,7 @@ def test_credit_cost_chest_is_10():
 import secrets
 from sqlalchemy import select
 
-from models import User, ChestCollector, Chest
+from models import User, ChestCollector, Chest, PlayerProfile
 
 
 async def _create_user(db, hwid, is_banned=False, credits=100):
@@ -730,7 +730,8 @@ async def test_summary_uses_chest_configuration_points_and_custom_name(db_sessio
     assert body["chest_types"] == ["Толстяк"]
     assert body["totals"] == {"Толстяк": 1, "grand_total": 1, "total_points": 40}
     assert body["players"][0] == {"name": "P1", "counts": {"Толстяк": 1}, "total": 1,
-                                  "points": 40, "quota_chests": 0}
+                                  "points": 40, "quota_chests": 0,
+                                  "rank": None, "troop_level": None}
 
 
 @pytest.mark.asyncio
@@ -1064,3 +1065,102 @@ async def test_history_detail_returns_full_summary(db_session):
     body = resp.json()
     assert body["targets"]["points"] == 100
     assert body["totals"]["total_points"] == 555
+
+
+@pytest.mark.asyncio
+async def test_public_upsert_player_profile_creates(db_session):
+    from models import User, ChestCollector
+    user = User(hwid="a" * 16, ref_code="z" * 6, email="pub1@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(kingdom="K1", clan="Clan1", user_id=user.id, slug="pub-slug-1")
+    db_session.add(collector)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": "pub-slug-1",
+            "canonical_name": "Alice",
+            "rank": "Ветеран",
+            "troop_level": "G7 S7 M7",
+        })
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+    profile = (await db_session.execute(
+        select(PlayerProfile).where(
+            PlayerProfile.collector_id == collector.id,
+            PlayerProfile.canonical_name == "Alice",
+        )
+    )).scalar_one()
+    assert profile.rank == "Ветеран"
+    assert profile.troop_level == "G7 S7 M7"
+
+
+@pytest.mark.asyncio
+async def test_public_upsert_player_profile_updates(db_session):
+    from models import User, ChestCollector
+    user = User(hwid="b" * 16, ref_code="y" * 6, email="pub2@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(kingdom="K1", clan="Clan2", user_id=user.id, slug="pub-slug-2")
+    db_session.add(collector)
+    await db_session.flush()
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Bob",
+                                 rank="Рядовой", troop_level="G5 S5 M5"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": "pub-slug-2",
+            "canonical_name": "Bob",
+            "rank": "Офицер",
+            "troop_level": "G8 S8 M8",
+        })
+    assert resp.status_code == 200
+
+    # expunge_all clears the identity map so the next SELECT hits SQLite fresh
+    db_session.expunge_all()
+    profile = (await db_session.execute(
+        select(PlayerProfile).where(
+            PlayerProfile.collector_id == collector.id,
+            PlayerProfile.canonical_name == "Bob",
+        )
+    )).scalar_one()
+    assert profile.rank == "Офицер"
+    assert profile.troop_level == "G8 S8 M8"
+
+
+@pytest.mark.asyncio
+async def test_summary_includes_rank_and_troop_level(db_session):
+    from datetime import datetime
+    from models import User, ChestCollector, Chest, ChestConfiguration, PlayerProfile
+    user = User(hwid="c" * 16, ref_code="x" * 6, email="sum1@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(kingdom="K1", clan="SumClan", user_id=user.id, slug="sum-slug-1")
+    db_session.add(collector)
+    await db_session.flush()
+    db_session.add(Chest(
+        collector_id=collector.id, sender_raw="Alice", sender_canonical="Alice",
+        chest_type_raw="Epic Crypt 25", chest_type_canonical="Epic Crypt 25",
+        collected_at=datetime.fromisoformat("2026-06-27T10:00:00"),
+    ))
+    db_session.add(ChestConfiguration(
+        collector_id=collector.id, catalog_id="Epic Crypt 25",
+        points=45, is_in_pattern=True, counts_toward_quota=True,
+    ))
+    db_session.add(PlayerProfile(
+        collector_id=collector.id, canonical_name="Alice",
+        rank="Старший", troop_level="G8 S8 M9",
+    ))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/chests/summary/sum-slug-1")
+    assert resp.status_code == 200
+    players = resp.json()["players"]
+    assert len(players) == 1
+    assert players[0]["name"] == "Alice"
+    assert players[0]["rank"] == "Старший"
+    assert players[0]["troop_level"] == "G8 S8 M9"
