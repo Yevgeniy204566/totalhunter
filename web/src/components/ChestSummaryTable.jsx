@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
-const TROOP_STEPS = [
-  '', 'G5 S5 M5', 'G5 S5 M6', 'G5 S6 M6',
-  'G6 S6 M6', 'G6 S6 M7', 'G6 S7 M7',
-  'G7 S7 M7', 'G7 S7 M8', 'G7 S8 M8',
-  'G8 S8 M8', 'G8 S8 M9', 'G8 S9 M9',
-  'G9 S9 M9',
-]
+const TIERS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+const FULL_TROOP = 'G8 S8 M8'
+
+function parseTroop(troop_level) {
+  if (!troop_level) return { g: '', s: '', m: '' }
+  const mat = troop_level.match(/G(\d+) S(\d+) M(\d+)/)
+  return mat ? { g: mat[1], s: mat[2], m: mat[3] } : { g: '', s: '', m: '' }
+}
 
 function rowColorClass(player, targets) {
   const ratios = []
@@ -63,16 +64,18 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
     if (!editMode) return
     const init = {}
     players.forEach(p => {
-      init[p.name] = { rank: p.rank || '', troop_level: p.troop_level || '' }
+      const { g, s, m } = parseTroop(p.troop_level)
+      init[p.name] = { rank: p.rank || '', g, s, m }
     })
     setEditRows(init)
   }, [editMode, players])
 
   async function handleSave(playerName) {
     const row = editRows[playerName] || {}
+    const troop = row.g && row.s && row.m ? `G${row.g} S${row.s} M${row.m}` : null
     setSaving(playerName)
     try {
-      await postPublicPlayerProfile(collectorSlug, playerName, row.rank || null, row.troop_level || null)
+      await postPublicPlayerProfile(collectorSlug, playerName, row.rank || null, troop)
       if (onSaveDone) onSaveDone()
     } catch (e) {
       alert('Ошибка сохранения: ' + e.message)
@@ -108,8 +111,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
             <tr>
               <th>#</th>
               <th>Player</th>
-              {editMode && <th>Звание</th>}
-              {editMode && <th>Состав</th>}
+              <th>Звание</th>
+              <th>Состав</th>
               {editMode && <th></th>}
               <th>Points</th>
               <th className="public-epic-cell">Epic Crypts</th>
@@ -129,8 +132,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                       ? <span className={`public-tier-name public-tier-${tier}`}>{p.name}</span>
                       : p.name}
                   </td>
-                  {editMode && (
-                    <td>
+                  <td>
+                    {editMode ? (
                       <select
                         value={editRows[p.name]?.rank || ''}
                         onChange={e => setEditRows(prev => ({
@@ -141,22 +144,36 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                       >
                         {RANKS.map(r => <option key={r} value={r}>{r || '—'}</option>)}
                       </select>
-                    </td>
-                  )}
-                  {editMode && (
-                    <td>
-                      <select
-                        value={editRows[p.name]?.troop_level || ''}
-                        onChange={e => setEditRows(prev => ({
-                          ...prev,
-                          [p.name]: { ...prev[p.name], troop_level: e.target.value },
-                        }))}
-                        style={{ fontSize: 12, padding: '2px 4px', background: '#1e1e2e', color: '#cdd6f4', border: '1px solid #45475a', borderRadius: 4 }}
-                      >
-                        {TROOP_STEPS.map(s => <option key={s} value={s}>{s || '—'}</option>)}
-                      </select>
-                    </td>
-                  )}
+                    ) : (
+                      <span style={{ fontSize: 12, color: '#a6adc8' }}>{p.rank || ''}</span>
+                    )}
+                  </td>
+                  <td>
+                    {editMode ? (
+                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        {['g', 's', 'm'].map((k, idx) => (
+                          <select
+                            key={k}
+                            value={editRows[p.name]?.[k] || ''}
+                            onChange={e => setEditRows(prev => ({
+                              ...prev,
+                              [p.name]: { ...prev[p.name], [k]: e.target.value },
+                            }))}
+                            style={{ fontSize: 11, padding: '2px 2px', background: '#1e1e2e', color: '#cdd6f4', border: '1px solid #45475a', borderRadius: 4, width: 36 }}
+                          >
+                            <option value="">{'GSM'[idx]}</option>
+                            {TIERS.slice(1).map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        ))}
+                      </div>
+                    ) : p.troop_level ? (
+                      <span style={p.troop_level === FULL_TROOP
+                        ? { color: '#f9a825', fontWeight: 700, fontSize: 14 }
+                        : { fontSize: 12, color: '#cdd6f4' }}>
+                        {p.troop_level}
+                      </span>
+                    ) : null}
+                  </td>
                   {editMode && (
                     <td>
                       <button

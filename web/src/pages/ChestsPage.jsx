@@ -7,13 +7,13 @@ import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
-const TROOP_STEPS = [
-  '', 'G5 S5 M5', 'G5 S5 M6', 'G5 S6 M6',
-  'G6 S6 M6', 'G6 S6 M7', 'G6 S7 M7',
-  'G7 S7 M7', 'G7 S7 M8', 'G7 S8 M8',
-  'G8 S8 M8', 'G8 S8 M9', 'G8 S9 M9',
-  'G9 S9 M9',
-]
+const TIERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+function parseTroop(troop_level) {
+  if (!troop_level) return { g: '', s: '', m: '' }
+  const mat = troop_level.match(/G(\d+) S(\d+) M(\d+)/)
+  return mat ? { g: mat[1], s: mat[2], m: mat[3] } : { g: '', s: '', m: '' }
+}
 
 function displayName(row, catalogOptions) {
   if (row.raw_type) return row.raw_type
@@ -497,13 +497,32 @@ export default function ChestsPage() {
                         </select>
                       </td>
                       <td>
-                        <select
-                          className="input-dark"
-                          value={row.troop_level || ''}
-                          onChange={e => updatePlayerRow(collector.slug, i, 'troop_level', e.target.value)}
-                        >
-                          {TROOP_STEPS.map(s => <option key={s} value={s}>{s || '—'}</option>)}
-                        </select>
+                        {(() => {
+                          const { g, s, m } = parseTroop(row.troop_level)
+                          const setTroop = (gi, si, mi) => {
+                            const t = gi && si && mi ? `G${gi} S${si} M${mi}` : ''
+                            updatePlayerRow(collector.slug, i, 'troop_level', t)
+                          }
+                          return (
+                            <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                              <select className="input-dark" value={g} style={{ width: 44 }}
+                                onChange={e => setTroop(e.target.value, s, m)}>
+                                <option value="">G</option>
+                                {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                              </select>
+                              <select className="input-dark" value={s} style={{ width: 44 }}
+                                onChange={e => setTroop(g, e.target.value, m)}>
+                                <option value="">S</option>
+                                {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                              </select>
+                              <select className="input-dark" value={m} style={{ width: 44 }}
+                                onChange={e => setTroop(g, s, e.target.value)}>
+                                <option value="">M</option>
+                                {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                              </select>
+                            </div>
+                          )
+                        })()}
                       </td>
                     </tr>
                   ))}

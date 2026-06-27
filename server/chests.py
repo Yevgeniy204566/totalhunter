@@ -10,6 +10,7 @@ POST /api/v1/chests/import — принимает батч сундуков от
 Auth: hwid в payload → User (как /use_credit), НЕ Bearer ADMIN_TOKEN — вызывается
 рядовыми платящими пользователями бота, а не админ-скриптами.
 """
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
@@ -251,11 +252,8 @@ def _clan_to_slug(clan: str) -> str:
 _PUBLIC_PROFILE_COOLDOWN = timedelta(hours=6)
 
 _VALID_RANKS = {"Глава", "Старший", "Офицер", "Ветеран", "Рядовой"}
-_VALID_TROOP_STEPS = {
-    "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8",
-    "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
-    "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8",
-}
+# G/S/M + тир 1-9 каждый, через пробел: "G8 S7 M8"
+_TROOP_RE = re.compile(r'^G[1-9] S[1-9] M[1-9]$')
 
 
 class PublicPlayerProfileIn(BaseModel):
@@ -282,7 +280,7 @@ async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
     troop = (payload.troop_level or "").strip() or None
     if rank and rank not in _VALID_RANKS:
         raise HTTPException(status_code=422, detail="Недопустимое звание")
-    if troop and troop not in _VALID_TROOP_STEPS:
+    if troop and not _TROOP_RE.match(troop):
         raise HTTPException(status_code=422, detail="Недопустимый состав войск")
 
     existing = (await db.execute(
