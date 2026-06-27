@@ -1082,7 +1082,7 @@ async def test_public_upsert_player_profile_creates(db_session):
             "collector_slug": "pub-slug-1",
             "canonical_name": "Alice",
             "rank": "Ветеран",
-            "troop_level": "G7 S7 M7",
+            "troop_level": "G7",
         })
     assert resp.status_code == 200
     assert resp.json()["ok"] is True
@@ -1094,7 +1094,7 @@ async def test_public_upsert_player_profile_creates(db_session):
         )
     )).scalar_one()
     assert profile.rank == "Ветеран"
-    assert profile.troop_level == "G7 S7 M7"
+    assert profile.troop_level == "G7"
 
 
 @pytest.mark.asyncio
@@ -1110,7 +1110,7 @@ async def test_public_upsert_player_profile_updates(db_session):
     # Set updated_at > 6h ago so cooldown does not block the update
     old = datetime.now(timezone.utc) - timedelta(hours=7)
     db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Bob",
-                                 rank="Рядовой", troop_level="G5 S5 M5",
+                                 rank="Рядовой", troop_level="G5",
                                  updated_at=old))
     await db_session.commit()
 
@@ -1119,7 +1119,7 @@ async def test_public_upsert_player_profile_updates(db_session):
             "collector_slug": "pub-slug-2",
             "canonical_name": "Bob",
             "rank": "Офицер",
-            "troop_level": "G8 S8 M8",
+            "troop_level": "G8",
         })
     assert resp.status_code == 200
 
@@ -1132,7 +1132,7 @@ async def test_public_upsert_player_profile_updates(db_session):
         )
     )).scalar_one()
     assert profile.rank == "Офицер"
-    assert profile.troop_level == "G8 S8 M8"
+    assert profile.troop_level == "G8"
 
 
 @pytest.mark.asyncio
@@ -1193,7 +1193,7 @@ async def test_public_upsert_cooldown_blocks_rapid_update(db_session):
             "collector_slug": "cool-slug-1",
             "canonical_name": "Charlie",
             "rank": "Офицер",
-            "troop_level": "G8 S8 M8",
+            "troop_level": "G8",
         })
     assert resp.status_code == 429
     assert "мин." in resp.json()["detail"]
@@ -1221,6 +1221,51 @@ async def test_public_upsert_cooldown_allows_after_expiry(db_session):
             "collector_slug": "cool-slug-2",
             "canonical_name": "Dave",
             "rank": "Ветеран",
-            "troop_level": "G7 S7 M7",
+            "troop_level": "G7",
         })
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_cooldown_rearms_after_update(db_session):
+    """After a successful post-cooldown update, the cooldown re-arms."""
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy import text
+    from models import User, ChestCollector
+
+    user = User(hwid="f" * 16, ref_code="u" * 6, email="rearm@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(kingdom="K1", clan="RearmClan", user_id=user.id, slug="rearm-slug-1")
+    db_session.add(collector)
+    await db_session.commit()
+    slug = "rearm-slug-1"
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Insert (always free — no cooldown on first write)
+        r = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": slug, "canonical_name": "Alice",
+            "rank": "Рядовой", "troop_level": "G1",
+        })
+        assert r.status_code == 200
+
+    # Wind back updated_at so the next update passes the cooldown check
+    await db_session.execute(text(
+        "UPDATE player_profiles SET updated_at = :ts WHERE canonical_name = 'Alice'"
+    ), {"ts": datetime.now(timezone.utc) - timedelta(hours=7)})
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # First update after expiry — should succeed and re-arm the cooldown
+        r = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": slug, "canonical_name": "Alice",
+            "rank": "Офицер", "troop_level": "G2",
+        })
+        assert r.status_code == 200
+
+        # Immediate second update — cooldown must have re-armed
+        r = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": slug, "canonical_name": "Alice",
+            "rank": "Глава", "troop_level": "G3",
+        })
+        assert r.status_code == 429

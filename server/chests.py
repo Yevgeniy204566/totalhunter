@@ -250,6 +250,13 @@ def _clan_to_slug(clan: str) -> str:
 
 _PUBLIC_PROFILE_COOLDOWN = timedelta(hours=6)
 
+_VALID_RANKS = {"Глава", "Старший", "Офицер", "Ветеран", "Рядовой"}
+_VALID_TROOP_STEPS = {
+    "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8",
+    "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
+    "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8",
+}
+
 
 class PublicPlayerProfileIn(BaseModel):
     collector_slug: str
@@ -271,6 +278,13 @@ async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
     if not canonical:
         raise HTTPException(status_code=400, detail="canonical_name required")
 
+    rank = (payload.rank or "").strip() or None
+    troop = (payload.troop_level or "").strip() or None
+    if rank and rank not in _VALID_RANKS:
+        raise HTTPException(status_code=422, detail="Недопустимое звание")
+    if troop and troop not in _VALID_TROOP_STEPS:
+        raise HTTPException(status_code=422, detail="Недопустимый состав войск")
+
     existing = (await db.execute(
         select(PlayerProfile).where(
             PlayerProfile.collector_id == collector.id,
@@ -291,14 +305,15 @@ async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
                 wait_min = int((_PUBLIC_PROFILE_COOLDOWN - elapsed).total_seconds() / 60) + 1
                 raise HTTPException(status_code=429,
                                     detail=f"Повторное сохранение доступно через {wait_min} мин.")
-        existing.rank = payload.rank or None
-        existing.troop_level = payload.troop_level or None
+        existing.rank = rank
+        existing.troop_level = troop
+        existing.updated_at = now
     else:
         db.add(PlayerProfile(
             collector_id=collector.id,
             canonical_name=canonical,
-            rank=payload.rank or None,
-            troop_level=payload.troop_level or None,
+            rank=rank,
+            troop_level=troop,
         ))
 
     await db.commit()
