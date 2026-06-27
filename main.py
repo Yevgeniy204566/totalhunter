@@ -2493,8 +2493,13 @@ class TotalHunterApp(ctk.CTk):
             return
 
         import chest_reader
-        frame = chest_reader.grab_fullscreen()
-        bbox = chest_reader.detect_dialog_bbox(frame)
+        try:
+            frame = chest_reader.grab_fullscreen()
+            bbox = chest_reader.detect_dialog_bbox(frame)
+        except Exception as exc:
+            self.chest_status_label.configure(text=f"Ошибка захвата: {exc}",
+                                              text_color=MD3["error_text"])
+            return
         if bbox is None:
             self.chest_status_label.configure(text=L["chest_status_no_dialog"],
                                               text_color=MD3["error_text"])
@@ -2520,8 +2525,11 @@ class TotalHunterApp(ctk.CTk):
             self.after(0, lambda c=dict(counts): self._update_chest_counts_display(c))
 
         def _worker():
-            result = chest_reader.collect_chests(stop_event.is_set, on_update=_on_update,
-                                                  pause_range=pause_range, full_lang=full_lang)
+            try:
+                result = chest_reader.collect_chests(stop_event.is_set, on_update=_on_update,
+                                                      pause_range=pause_range, full_lang=full_lang)
+            except Exception as exc:
+                result = {"counts": {}, "error": str(exc)}
             self.after(0, lambda: self._on_chest_collection_done(result))
 
         threading.Thread(target=_worker, daemon=True).start()
