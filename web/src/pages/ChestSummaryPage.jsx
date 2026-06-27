@@ -68,12 +68,14 @@ export default function ChestSummaryPage() {
   // kingdom param is present on /c/:kingdom/:slug route, absent on /chests/:slug route
   const internalSlug = data?.collector_slug || (!kingdom ? slug : null)
 
-  useEffect(() => {
+  const loadData = () => {
     const loader = kingdom
       ? fetchChestByKingdomSlug(kingdom, slug)
       : fetchChestSummary(slug)
     loader.then(setData).catch(e => setError(e.message || 'not found'))
-  }, [slug, kingdom])
+  }
+
+  useEffect(() => { loadData() }, [slug, kingdom])  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (tab !== 'history' || history || !internalSlug) return
@@ -165,7 +167,10 @@ export default function ChestSummaryPage() {
             <button
               className="btn-secondary"
               style={{ fontSize: 13, padding: '4px 12px' }}
-              onClick={() => setEditMode(m => !m)}
+              onClick={() => {
+                if (editMode) { setEditMode(false); loadData() }
+                else { setEditMode(true) }
+              }}
             >
               {editMode ? '✕ Закрыть' : '✏️ Ввести состав'}
             </button>
@@ -176,7 +181,6 @@ export default function ChestSummaryPage() {
             targets={targets}
             editMode={editMode}
             collectorSlug={internalSlug}
-            onSaveDone={() => setEditMode(false)}
           />
         </>
       )}

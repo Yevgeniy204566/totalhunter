@@ -48,7 +48,7 @@ function isEpicColumn(typeName) {
   return typeName.includes('Epic')
 }
 
-export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, onSaveDone }) {
+export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug }) {
   const tableWrapRef = useRef(null)
   const topScrollRef = useRef(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
@@ -59,6 +59,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
 
   const [editRows, setEditRows] = useState({})
   const [saving, setSaving] = useState(null)
+  const [savedRows, setSavedRows] = useState({})
 
   useEffect(() => {
     if (!editMode) return
@@ -76,7 +77,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
     setSaving(playerName)
     try {
       await postPublicPlayerProfile(collectorSlug, playerName, row.rank || null, troop)
-      if (onSaveDone) onSaveDone()
+      setSavedRows(prev => ({ ...prev, [playerName]: true }))
+      setTimeout(() => setSavedRows(prev => { const n = { ...prev }; delete n[playerName]; return n }), 3000)
     } catch (e) {
       alert('Ошибка сохранения: ' + e.message)
     } finally {
@@ -111,8 +113,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
             <tr>
               <th>#</th>
               <th>Player</th>
-              <th>Звание</th>
-              <th>Состав</th>
+              {editMode && <th>Звание</th>}
+              {editMode && <th>Состав</th>}
               {editMode && <th></th>}
               <th>Points</th>
               <th className="public-epic-cell">Epic Crypts</th>
@@ -132,8 +134,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                       ? <span className={`public-tier-name public-tier-${tier}`}>{p.name}</span>
                       : p.name}
                   </td>
-                  <td>
-                    {editMode ? (
+                  {editMode && (
+                    <td>
                       <select
                         value={editRows[p.name]?.rank || ''}
                         onChange={e => setEditRows(prev => ({
@@ -144,13 +146,11 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                       >
                         {RANKS.map(r => <option key={r} value={r}>{r || '—'}</option>)}
                       </select>
-                    ) : (
-                      <span style={{ fontSize: 12, color: '#a6adc8' }}>{p.rank || ''}</span>
-                    )}
-                  </td>
-                  <td>
-                    {editMode ? (
-                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    </td>
+                  )}
+                  {editMode && (
+                    <td>
+                      <div style={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'nowrap' }}>
                         {['g', 's', 'm'].map((k, idx) => (
                           <select
                             key={k}
@@ -165,23 +165,32 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                             {TIERS.slice(1).map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
                         ))}
+                        {(() => {
+                          const { g, s, m } = editRows[p.name] || {}
+                          if (!g || !s || !m) return null
+                          const val = `G${g} S${s} M${m}`
+                          return (
+                            <span style={val === FULL_TROOP
+                              ? { fontSize: 11, color: '#f9a825', fontWeight: 700, marginLeft: 2 }
+                              : { fontSize: 11, color: '#6c7086', marginLeft: 2 }}>
+                              {val}
+                            </span>
+                          )
+                        })()}
                       </div>
-                    ) : p.troop_level ? (
-                      <span style={p.troop_level === FULL_TROOP
-                        ? { color: '#f9a825', fontWeight: 700, fontSize: 14 }
-                        : { fontSize: 12, color: '#cdd6f4' }}>
-                        {p.troop_level}
-                      </span>
-                    ) : null}
-                  </td>
+                    </td>
+                  )}
                   {editMode && (
                     <td>
                       <button
                         onClick={() => handleSave(p.name)}
                         disabled={saving === p.name}
-                        style={{ fontSize: 12, padding: '2px 8px', cursor: 'pointer', background: '#313244', color: '#cdd6f4', border: '1px solid #45475a', borderRadius: 4 }}
+                        style={{ fontSize: 12, padding: '2px 8px', cursor: 'pointer',
+                          background: savedRows[p.name] ? '#1e3a1e' : '#313244',
+                          color: savedRows[p.name] ? '#a6e3a1' : '#cdd6f4',
+                          border: `1px solid ${savedRows[p.name] ? '#a6e3a1' : '#45475a'}`, borderRadius: 4 }}
                       >
-                        {saving === p.name ? '...' : '💾'}
+                        {saving === p.name ? '...' : savedRows[p.name] ? '✓' : '💾'}
                       </button>
                     </td>
                   )}
