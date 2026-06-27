@@ -350,7 +350,8 @@ def collect_tournament_data(stop_flag=None, full_lang=False):
         _init_bbox = detect_dialog_bbox(_init_frame)
         hdr_x = _init_bbox[0] + _init_bbox[2] // 2
         hdr_y = _init_bbox[1] + int(_init_bbox[3] * ANTI_AFK_HEADER_Y_FRAC)
-        pyautogui.click(hdr_x, hdr_y)
+        pyautogui.moveTo(hdr_x, hdr_y, duration=0.3)
+        pyautogui.click()
         time.sleep(0.3)
     except Exception:
         pass  # dialog not yet visible — loop will handle it
