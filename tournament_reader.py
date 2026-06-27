@@ -391,9 +391,14 @@ def collect_tournament_data(stop_flag=None, full_lang=False):
             anti_afk_click(bbox)
             last_click_time = time.time()
 
-        cx = bbox[0] + bbox[2] // 2
-        cy = bbox[1] + bbox[3] // 2
-        pyautogui.moveTo(cx, cy, duration=0.05)
+        # Click the dialog header to give the game window focus — the bot is
+        # always-on-top and keeps keyboard/scroll focus after "Start" is pressed,
+        # so scroll(-2) without this click goes to the bot, not the game.
+        hdr_x = bbox[0] + bbox[2] // 2
+        hdr_y = bbox[1] + int(bbox[3] * ANTI_AFK_HEADER_Y_FRAC)
+        pyautogui.click(hdr_x, hdr_y)
+        time.sleep(0.05)
+        pyautogui.moveTo(bbox[0] + bbox[2] // 2, bbox[1] + bbox[3] // 2, duration=0.05)
         pyautogui.scroll(-2)
         time.sleep(random.uniform(0.4, 0.9))
 
