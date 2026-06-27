@@ -502,7 +502,7 @@ export default function ChestsPage() {
                         </select>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'nowrap' }}>
                           <select className="input-dark" value={row.troop_g || ''} style={{ width: 44 }}
                             onChange={e => updatePlayerRow(collector.slug, i, 'troop_g', e.target.value)}>
                             <option value="">G</option>
@@ -518,6 +518,12 @@ export default function ChestsPage() {
                             <option value="">M</option>
                             {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
+                          {row.troop_g && row.troop_s && row.troop_m
+                            ? <span style={{ fontSize: 13, fontWeight: 700, color: '#f9a825', marginLeft: 6, whiteSpace: 'nowrap' }}>
+                                G{row.troop_g} S{row.troop_s} M{row.troop_m}
+                              </span>
+                            : <span style={{ fontSize: 12, color: '#6c7086', marginLeft: 6 }}>—</span>
+                          }
                         </div>
                       </td>
                     </tr>
