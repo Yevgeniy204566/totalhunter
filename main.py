@@ -4309,11 +4309,15 @@ class TotalHunterApp(ctk.CTk):
         stop_event = self._ancient_stop_event
 
         def _worker():
-            import tournament_reader
-            data = tournament_reader.collect_tournament_data(
-                stop_flag=stop_event.is_set, full_lang=full_lang)
-            timestamp = _dt.datetime.now().isoformat(timespec='seconds')
-            success = tournament_reader.export_to_api(kingdom, clan, data, timestamp)
+            try:
+                import tournament_reader
+                data = tournament_reader.collect_tournament_data(
+                    stop_flag=stop_event.is_set, full_lang=full_lang)
+                timestamp = _dt.datetime.now().isoformat(timespec='seconds')
+                success = tournament_reader.export_to_api(kingdom, clan, data, timestamp)
+            except Exception as e:
+                print(f"[ancient] ошибка: {e}")
+                success = False
             self.after(0, lambda: self._on_ancient_collection_done(success))
 
         threading.Thread(target=_worker, daemon=True).start()

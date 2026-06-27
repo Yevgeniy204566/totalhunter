@@ -100,6 +100,8 @@ def detect_dialog_bbox(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, DIALOG_HSV_LOWER, DIALOG_HSV_UPPER)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        raise RuntimeError("Диалог «Статистика» не найден на экране")
     largest = max(contours, key=cv2.contourArea)
     return cv2.boundingRect(largest)
 
@@ -389,6 +391,9 @@ def collect_tournament_data(stop_flag=None, full_lang=False):
             anti_afk_click(bbox)
             last_click_time = time.time()
 
+        cx = bbox[0] + bbox[2] // 2
+        cy = bbox[1] + bbox[3] // 2
+        pyautogui.moveTo(cx, cy, duration=0.05)
         pyautogui.scroll(-2)
         time.sleep(random.uniform(0.4, 0.9))
 
