@@ -80,7 +80,11 @@ export async function postPublicPlayerProfile(collector_slug, canonical_name, ra
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ collector_slug, canonical_name, rank, troop_level }),
   })
-  if (!res.ok) throw new Error('Save failed')
+  if (!res.ok) {
+    let msg = 'Save failed'
+    try { const b = await res.json(); if (b.detail) msg = b.detail } catch {}
+    throw new Error(msg)
+  }
   return res.json()
 }
 
