@@ -63,6 +63,7 @@ export default function ChestSummaryPage() {
   const [historyError, setHistoryError] = useState('')
   const [selectedSeasonId, setSelectedSeasonId] = useState(null)
   const [seasonDetail, setSeasonDetail] = useState(null)
+  const [editMode, setEditMode] = useState(false)
 
   // kingdom param is present on /c/:kingdom/:slug route, absent on /chests/:slug route
   const internalSlug = data?.collector_slug || (!kingdom ? slug : null)
@@ -159,7 +160,25 @@ export default function ChestSummaryPage() {
       </div>
 
       {tab === 'current' && (
-        <ChestSummaryTable chestTypes={data.chest_types} players={data.players} targets={targets} />
+        <>
+          <div style={{ marginBottom: 12 }}>
+            <button
+              className="btn-secondary"
+              style={{ fontSize: 13, padding: '4px 12px' }}
+              onClick={() => setEditMode(m => !m)}
+            >
+              {editMode ? '✕ Закрыть' : '✏️ Ввести состав'}
+            </button>
+          </div>
+          <ChestSummaryTable
+            chestTypes={data.chest_types}
+            players={data.players}
+            targets={targets}
+            editMode={editMode}
+            collectorSlug={internalSlug}
+            onSaveDone={() => setEditMode(false)}
+          />
+        </>
       )}
 
       {tab === 'history' && !selectedSeasonId && (
