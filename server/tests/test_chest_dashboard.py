@@ -13,7 +13,7 @@ from sqlalchemy import select
 from main import app
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
-    ChestTypeAlias, ChestTypeCatalog, PlayerAlias, User,
+    ChestTypeAlias, ChestTypeCatalog, PlayerAlias, PlayerProfile, User,
 )
 from web_routes import create_jwt
 
@@ -376,7 +376,7 @@ async def test_get_chests_includes_unmapped_sender_as_player_alias_row(db_sessio
     assert resp.status_code == 200
     collector_data = resp.json()["collectors"][0]
     assert collector_data["player_alias_rows"] == [
-        {"raw_name": "Araiina", "canonical_name": None}
+        {"raw_name": "Araiina", "canonical_name": None, "rank": None, "troop_level": None}
     ]
 
 
@@ -398,7 +398,7 @@ async def test_get_chests_includes_existing_player_alias_with_canonical_name(db_
     assert resp.status_code == 200
     collector_data = resp.json()["collectors"][0]
     assert collector_data["player_alias_rows"] == [
-        {"raw_name": "Araiina", "canonical_name": "Arahna"}
+        {"raw_name": "Araiina", "canonical_name": "Arahna", "rank": None, "troop_level": None}
     ]
 
 
@@ -817,3 +817,67 @@ async def test_dashboard_history_detail_unknown_season_returns_404(db_session):
             headers={"Authorization": f"Bearer {owner_token}"},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_post_player_profiles_saves_rank_and_troop(db_session):
+    user, token = await _create_user_with_token(db_session, email="pp1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="pp-slug-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/chests/player-profiles",
+            json={"collector_slug": "pp-slug-1", "rows": [
+                {"canonical_name": "Alice", "rank": "Офицер", "troop_level": "G8 S8 M8"},
+                {"canonical_name": "Bob",   "rank": "Рядовой", "troop_level": None},
+            ]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+    profiles = (await db_session.execute(
+        select(PlayerProfile).where(PlayerProfile.collector_id == collector.id)
+    )).scalars().all()
+    by_name = {p.canonical_name: p for p in profiles}
+    assert by_name["Alice"].rank == "Офицер"
+    assert by_name["Alice"].troop_level == "G8 S8 M8"
+    assert by_name["Bob"].rank == "Рядовой"
+    assert by_name["Bob"].troop_level is None
+
+
+@pytest.mark.asyncio
+async def test_post_player_profiles_forbidden_for_other_collector(db_session):
+    user, token = await _create_user_with_token(db_session, email="pp2@test.com")
+    other_user, _ = await _create_user_with_token(db_session, email="pp3@test.com")
+    await _create_collector(db_session, other_user.id, slug="other-slug-pp")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/chests/player-profiles",
+            json={"collector_slug": "other-slug-pp", "rows": []},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_get_chests_player_alias_rows_include_profile_fields(db_session):
+    user, token = await _create_user_with_token(db_session, email="pp4@test.com")
+    collector = await _create_collector(db_session, user.id, slug="pp-slug-4")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="alice_ocr",
+                               canonical_name="Alice"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Alice",
+                                 rank="Глава", troop_level="G9 S9 M9"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    player_rows = resp.json()["collectors"][0]["player_alias_rows"]
+    alice = next(r for r in player_rows if r["raw_name"] == "alice_ocr")
+    assert alice["rank"] == "Глава"
+    assert alice["troop_level"] == "G9 S9 M9"

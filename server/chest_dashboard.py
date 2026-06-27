@@ -27,7 +27,7 @@ from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
-    ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, PlayerAlias, User,
+    ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, PlayerAlias, PlayerProfile, User,
 )
 from web_routes import get_web_user
 
@@ -182,7 +182,21 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
     aliases = (await db.execute(
         select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
     )).scalars().all()
-    rows = [{"raw_name": a.raw_name, "canonical_name": a.canonical_name} for a in aliases]
+
+    profiles = (await db.execute(
+        select(PlayerProfile).where(PlayerProfile.collector_id == collector.id)
+    )).scalars().all()
+    profile_map = {p.canonical_name: p for p in profiles}
+
+    rows = []
+    for a in aliases:
+        profile = profile_map.get(a.canonical_name)
+        rows.append({
+            "raw_name": a.raw_name,
+            "canonical_name": a.canonical_name,
+            "rank": profile.rank if profile else None,
+            "troop_level": profile.troop_level if profile else None,
+        })
 
     mapped_raw_names = {a.raw_name for a in aliases}
     unmapped = (await db.execute(
@@ -193,7 +207,12 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
         if raw_name in mapped_raw_names:
             continue
         canonical = (global_alias_map or {}).get(raw_name)
-        rows.append({"raw_name": raw_name, "canonical_name": canonical})
+        rows.append({
+            "raw_name": raw_name,
+            "canonical_name": canonical,
+            "rank": None,
+            "troop_level": None,
+        })
 
     return rows
 
@@ -324,6 +343,40 @@ async def post_player_aliases(payload: PlayerAliasesPayload, user: User = Depend
             continue
         db.add(PlayerAlias(collector_id=collector.id, raw_name=row.raw_name,
                            canonical_name=canonical))
+
+    await db.commit()
+    return {"ok": True}
+
+
+class PlayerProfileRowIn(BaseModel):
+    canonical_name: str
+    rank: Optional[str] = None
+    troop_level: Optional[str] = None
+
+
+class PlayerProfilesPayload(BaseModel):
+    collector_slug: str
+    rows: List[PlayerProfileRowIn] = []
+
+
+@router.post("/player-profiles")
+async def post_player_profiles(payload: PlayerProfilesPayload,
+                               user: User = Depends(get_web_user),
+                               db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, payload.collector_slug, user)
+
+    await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id))
+
+    for row in payload.rows:
+        canonical = (row.canonical_name or "").strip()
+        if not canonical:
+            continue
+        db.add(PlayerProfile(
+            collector_id=collector.id,
+            canonical_name=canonical,
+            rank=row.rank or None,
+            troop_level=row.troop_level or None,
+        ))
 
     await db.commit()
     return {"ok": True}
