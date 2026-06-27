@@ -7,7 +7,7 @@ import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
-const TIERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+const TIERS = ['5', '6', '7', '8', '9']
 
 function parseTroop(troop_level) {
   if (!troop_level) return { g: '', s: '', m: '' }

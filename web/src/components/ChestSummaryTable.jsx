@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
-const TIERS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+const TIERS = ['', '5', '6', '7', '8', '9']
 const FULL_TROOP = 'G8 S8 M8'
 
 function parseTroop(troop_level) {
