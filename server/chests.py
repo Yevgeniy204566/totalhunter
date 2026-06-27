@@ -11,7 +11,7 @@ Auth: hwid в payload → User (как /use_credit), НЕ Bearer ADMIN_TOKEN —
 рядовыми платящими пользователями бота, а не админ-скриптами.
 """
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -248,6 +248,9 @@ def _clan_to_slug(clan: str) -> str:
     return re.sub(r'[^a-z0-9]+', '-', clan.lower()).strip('-')
 
 
+_PUBLIC_PROFILE_COOLDOWN = timedelta(hours=6)
+
+
 class PublicPlayerProfileIn(BaseModel):
     collector_slug: str
     canonical_name: str
@@ -276,6 +279,18 @@ async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
     )).scalar_one_or_none()
 
     if existing:
+        # Anti-flood: публичный эндпоинт анонимный, кулдаун защищает от перебивания чужих данных
+        now = datetime.now(timezone.utc)
+        updated = existing.updated_at
+        if updated is not None:
+            # SQLite (тесты) возвращает naive datetime — нормализуем
+            if updated.tzinfo is None:
+                updated = updated.replace(tzinfo=timezone.utc)
+            elapsed = now - updated
+            if elapsed < _PUBLIC_PROFILE_COOLDOWN:
+                wait_min = int((_PUBLIC_PROFILE_COOLDOWN - elapsed).total_seconds() / 60) + 1
+                raise HTTPException(status_code=429,
+                                    detail=f"Повторное сохранение доступно через {wait_min} мин.")
         existing.rank = payload.rank or None
         existing.troop_level = payload.troop_level or None
     else:

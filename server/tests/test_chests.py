@@ -1099,6 +1099,7 @@ async def test_public_upsert_player_profile_creates(db_session):
 
 @pytest.mark.asyncio
 async def test_public_upsert_player_profile_updates(db_session):
+    from datetime import datetime, timedelta, timezone
     from models import User, ChestCollector
     user = User(hwid="b" * 16, ref_code="y" * 6, email="pub2@test.com")
     db_session.add(user)
@@ -1106,8 +1107,11 @@ async def test_public_upsert_player_profile_updates(db_session):
     collector = ChestCollector(kingdom="K1", clan="Clan2", user_id=user.id, slug="pub-slug-2")
     db_session.add(collector)
     await db_session.flush()
+    # Set updated_at > 6h ago so cooldown does not block the update
+    old = datetime.now(timezone.utc) - timedelta(hours=7)
     db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Bob",
-                                 rank="Рядовой", troop_level="G5 S5 M5"))
+                                 rank="Рядовой", troop_level="G5 S5 M5",
+                                 updated_at=old))
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -1164,3 +1168,59 @@ async def test_summary_includes_rank_and_troop_level(db_session):
     assert players[0]["name"] == "Alice"
     assert players[0]["rank"] == "Старший"
     assert players[0]["troop_level"] == "G8 S8 M9"
+
+
+@pytest.mark.asyncio
+async def test_public_upsert_cooldown_blocks_rapid_update(db_session):
+    """Second public update within 6h must return 429; first update (INSERT) is always allowed."""
+    from datetime import datetime, timedelta, timezone
+    from models import User, ChestCollector
+    user = User(hwid="d" * 16, ref_code="w" * 6, email="cool1@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(kingdom="K1", clan="CoolClan", user_id=user.id, slug="cool-slug-1")
+    db_session.add(collector)
+    await db_session.flush()
+    # Insert a profile with updated_at = now (simulates fresh save)
+    recent = datetime.now(timezone.utc)
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Charlie",
+                                 rank="Рядовой", troop_level="G5 S5 M5",
+                                 updated_at=recent))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": "cool-slug-1",
+            "canonical_name": "Charlie",
+            "rank": "Офицер",
+            "troop_level": "G8 S8 M8",
+        })
+    assert resp.status_code == 429
+    assert "мин." in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_public_upsert_cooldown_allows_after_expiry(db_session):
+    """Update is allowed when updated_at is older than 6 hours."""
+    from datetime import datetime, timedelta, timezone
+    from models import User, ChestCollector
+    user = User(hwid="e" * 16, ref_code="v" * 6, email="cool2@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(kingdom="K1", clan="CoolClan2", user_id=user.id, slug="cool-slug-2")
+    db_session.add(collector)
+    await db_session.flush()
+    old = datetime.now(timezone.utc) - timedelta(hours=7)
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Dave",
+                                 rank="Рядовой", troop_level="G5 S5 M5",
+                                 updated_at=old))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": "cool-slug-2",
+            "canonical_name": "Dave",
+            "rank": "Ветеран",
+            "troop_level": "G7 S7 M7",
+        })
+    assert resp.status_code == 200
