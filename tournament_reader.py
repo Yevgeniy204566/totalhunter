@@ -340,8 +340,22 @@ def collect_tournament_data(stop_flag=None, full_lang=False):
     zero_shift_streak = 0
     prev_dialog = None
     leaderboard = []
-    last_click_time = time.time()
     dialog = None
+
+    # One-time click to focus the game window — the always-on-top bot GUI
+    # keeps scroll focus after "Start"; without this, scroll(-2) goes to the
+    # bot instead of the game. anti_afk_click handles re-focus every 3 min.
+    try:
+        _init_frame = grab_fullscreen()
+        _init_bbox = detect_dialog_bbox(_init_frame)
+        hdr_x = _init_bbox[0] + _init_bbox[2] // 2
+        hdr_y = _init_bbox[1] + int(_init_bbox[3] * ANTI_AFK_HEADER_Y_FRAC)
+        pyautogui.click(hdr_x, hdr_y)
+        time.sleep(0.3)
+    except Exception:
+        pass  # dialog not yet visible — loop will handle it
+
+    last_click_time = time.time()
 
     while not stop_flag():
         frame = grab_fullscreen()
@@ -391,13 +405,6 @@ def collect_tournament_data(stop_flag=None, full_lang=False):
             anti_afk_click(bbox)
             last_click_time = time.time()
 
-        # Click the dialog header to give the game window focus — the bot is
-        # always-on-top and keeps keyboard/scroll focus after "Start" is pressed,
-        # so scroll(-2) without this click goes to the bot, not the game.
-        hdr_x = bbox[0] + bbox[2] // 2
-        hdr_y = bbox[1] + int(bbox[3] * ANTI_AFK_HEADER_Y_FRAC)
-        pyautogui.click(hdr_x, hdr_y)
-        time.sleep(0.05)
         pyautogui.moveTo(bbox[0] + bbox[2] // 2, bbox[1] + bbox[3] // 2, duration=0.05)
         pyautogui.scroll(-2)
         time.sleep(random.uniform(0.4, 0.9))
