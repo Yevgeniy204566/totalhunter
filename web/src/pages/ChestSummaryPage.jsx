@@ -122,26 +122,38 @@ export default function ChestSummaryPage() {
         </div>
       )}
 
-      {hasSeasonTargets && (
-        <div className="public-season-info">
+      <div className="public-season-info">
+        {hasSeasonTargets && (
           <span className="public-season-badge">
             Цель сезона: {targets.points ?? '—'} очков / {targets.chests ?? '—'} Epic-склепов
           </span>
-          {data.timezone_offset_minutes != null && (
-            <span className="public-season-badge">
-              Часовой пояс: UTC{formatOffsetLabel(data.timezone_offset_minutes)}
-            </span>
-          )}
-          {data.period_start && data.period_end && (
-            <span className="public-season-badge">
-              {formatPeriodPoint(data.period_start)} – {formatPeriodPoint(data.period_end)}
-            </span>
-          )}
-          {data.period_end && (
-            <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} />
-          )}
-        </div>
-      )}
+        )}
+        {hasSeasonTargets && data.timezone_offset_minutes != null && (
+          <span className="public-season-badge">
+            Часовой пояс: UTC{formatOffsetLabel(data.timezone_offset_minutes)}
+          </span>
+        )}
+        {hasSeasonTargets && data.period_start && data.period_end && (
+          <span className="public-season-badge">
+            {formatPeriodPoint(data.period_start)} – {formatPeriodPoint(data.period_end)}
+          </span>
+        )}
+        {hasSeasonTargets && data.period_end && (
+          <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} />
+        )}
+        {tab === 'current' && (
+          <button
+            className="btn-secondary"
+            style={{ fontSize: 13, padding: '4px 12px', marginLeft: 'auto' }}
+            onClick={() => {
+              if (editMode) { setEditMode(false); loadData() }
+              else { setEditMode(true) }
+            }}
+          >
+            {editMode ? '✕ Закрыть' : '✏️ Ввести состав'}
+          </button>
+        )}
+      </div>
 
       <div className="public-summary-updated">Последнее обновление: {updatedLabel}</div>
       <div className="public-summary-divider" />
@@ -163,18 +175,6 @@ export default function ChestSummaryPage() {
 
       {tab === 'current' && (
         <>
-          <div style={{ marginBottom: 12 }}>
-            <button
-              className="btn-secondary"
-              style={{ fontSize: 13, padding: '4px 12px' }}
-              onClick={() => {
-                if (editMode) { setEditMode(false); loadData() }
-                else { setEditMode(true) }
-              }}
-            >
-              {editMode ? '✕ Закрыть' : '✏️ Ввести состав'}
-            </button>
-          </div>
           <ChestSummaryTable
             chestTypes={data.chest_types}
             players={data.players}
