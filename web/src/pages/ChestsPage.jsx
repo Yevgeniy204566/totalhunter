@@ -6,6 +6,15 @@ import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
+const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
+const TROOP_STEPS = [
+  '', 'G5 S5 M5', 'G5 S5 M6', 'G5 S6 M6',
+  'G6 S6 M6', 'G6 S6 M7', 'G6 S7 M7',
+  'G7 S7 M7', 'G7 S7 M8', 'G7 S8 M8',
+  'G8 S8 M8', 'G8 S8 M9', 'G8 S9 M9',
+  'G9 S9 M9',
+]
+
 function displayName(row, catalogOptions) {
   if (row.raw_type) return row.raw_type
   if (row.custom_name) return row.custom_name
@@ -143,6 +152,15 @@ export default function ChestsPage() {
   async function savePlayerAliases(slug) {
     try {
       await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
+      // Save rank + troop_level profiles in the same action
+      const profileRows = (playerRowsByCollector[slug] || [])
+        .filter(r => (r.canonical_name || '').trim())
+        .map(r => ({
+          canonical_name: r.canonical_name,
+          rank: r.rank || null,
+          troop_level: r.troop_level || null,
+        }))
+      await api.dashboardChestsPlayerProfiles(slug, profileRows)
       setMsg(cx.saved)
       await refresh()
     } catch (e) { setMsg(e.message) }
@@ -448,12 +466,14 @@ export default function ChestsPage() {
           )}
 
           {activeTab(collector.slug) === 'players' && (
-            <div style={{ maxWidth: 700 }}>
+            <div style={{ overflowX: 'auto' }}>
               <table className="chest-table">
                 <thead>
                   <tr>
                     <th>{cx.playerRawCol}</th>
                     <th>{cx.playerCanonicalCol}</th>
+                    <th>Звание</th>
+                    <th>Состав</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -466,6 +486,24 @@ export default function ChestsPage() {
                           value={row.canonical_name || ''}
                           onChange={e => updatePlayerRow(collector.slug, i, 'canonical_name', e.target.value)}
                         />
+                      </td>
+                      <td>
+                        <select
+                          className="input-dark"
+                          value={row.rank || ''}
+                          onChange={e => updatePlayerRow(collector.slug, i, 'rank', e.target.value)}
+                        >
+                          {RANKS.map(r => <option key={r} value={r}>{r || '—'}</option>)}
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          className="input-dark"
+                          value={row.troop_level || ''}
+                          onChange={e => updatePlayerRow(collector.slug, i, 'troop_level', e.target.value)}
+                        >
+                          {TROOP_STEPS.map(s => <option key={s} value={s}>{s || '—'}</option>)}
+                        </select>
                       </td>
                     </tr>
                   ))}

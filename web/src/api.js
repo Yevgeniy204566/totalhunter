@@ -43,6 +43,8 @@ export const api = {
   dashboardChests:      ()              => request('GET',   '/web/dashboard/chests'),
   dashboardChestsSave:  (slug, rows)    => request('POST',  '/web/dashboard/chests/rows', { collector_slug: slug, rows }),
   dashboardChestsPlayerAliases: (slug, rows) => request('POST', '/web/dashboard/chests/player-aliases', { collector_slug: slug, rows }),
+  dashboardChestsPlayerProfiles: (slug, rows) =>
+    request('POST', '/web/dashboard/chests/player-profiles', { collector_slug: slug, rows }),
   dashboardChestsToken: (slug)          => request('POST',  '/web/dashboard/chests/management-token', { collector_slug: slug }),
   dashboardChestsClaim: (code)          => request('POST',  '/web/dashboard/chests/claim', { code }),
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
@@ -69,6 +71,16 @@ export async function fetchChestSummary(slug) {
 export async function fetchChestByKingdomSlug(kingdom, slug) {
   const res = await fetch(`${BASE}/api/v1/chests/by/${encodeURIComponent(kingdom)}/${encodeURIComponent(slug)}`)
   if (!res.ok) throw new Error('Not found')
+  return res.json()
+}
+
+export async function postPublicPlayerProfile(collector_slug, canonical_name, rank, troop_level) {
+  const res = await fetch(`${BASE}/api/v1/chests/public/player-profile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ collector_slug, canonical_name, rank, troop_level }),
+  })
+  if (!res.ok) throw new Error('Save failed')
   return res.json()
 }
 
