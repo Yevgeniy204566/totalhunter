@@ -227,6 +227,46 @@
     max-width: 100% !important;
   }
 
+  /* ── Публичная таблица клана ────────────────────────────── */
+
+  /* Имя игрока: обрезать длинные с «...» (title=полное имя остаётся) */
+  .public-table th:nth-child(2),
+  .public-table td:nth-child(2) {
+    max-width: 90px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Намёк о скролле: тень на правом крае таблицы */
+  .public-table-wrap {
+    position: relative !important;
+  }
+  .public-table-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 28px;
+    background: linear-gradient(to right, transparent, rgba(13,19,38,0.7));
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Меньший шрифт ячеек — больше колонок влезает */
+  .public-table th,
+  .public-table td { font-size: 12px !important; padding: 6px 8px !important; }
+
+  /* Сезонная инфо-строка: бейджи переносятся */
+  .public-season-info {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  /* Кнопка «Ввести состав» — вся ширина, своя строка */
+  .public-season-info .btn-secondary {
+    margin-left: 0 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
   /* ── Общие улучшения ────────────────────────────────────── */
   h2 { font-size: 18px !important; }
 
