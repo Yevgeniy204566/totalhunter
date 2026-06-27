@@ -66,7 +66,10 @@ export default function ChestsPage() {
       const nextSeason = {}
       for (const c of data.collectors) {
         nextRows[c.slug] = c.rows
-        nextPlayerRows[c.slug] = c.player_alias_rows
+        nextPlayerRows[c.slug] = c.player_alias_rows.map(r => {
+          const { g, s, m } = parseTroop(r.troop_level)
+          return { ...r, troop_g: g, troop_s: s, troop_m: m }
+        })
         nextSeason[c.slug] = {
           timezone_offset_minutes: c.timezone_offset_minutes,
           period_start: c.period_start ? c.period_start.slice(0, 16) : '',
@@ -158,7 +161,9 @@ export default function ChestsPage() {
         .map(r => ({
           canonical_name: r.canonical_name,
           rank: r.rank || null,
-          troop_level: r.troop_level || null,
+          troop_level: r.troop_g && r.troop_s && r.troop_m
+              ? `G${r.troop_g} S${r.troop_s} M${r.troop_m}`
+              : null,
         }))
       await api.dashboardChestsPlayerProfiles(slug, profileRows)
       setMsg(cx.saved)
@@ -497,32 +502,23 @@ export default function ChestsPage() {
                         </select>
                       </td>
                       <td>
-                        {(() => {
-                          const { g, s, m } = parseTroop(row.troop_level)
-                          const setTroop = (gi, si, mi) => {
-                            const t = gi && si && mi ? `G${gi} S${si} M${mi}` : ''
-                            updatePlayerRow(collector.slug, i, 'troop_level', t)
-                          }
-                          return (
-                            <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                              <select className="input-dark" value={g} style={{ width: 44 }}
-                                onChange={e => setTroop(e.target.value, s, m)}>
-                                <option value="">G</option>
-                                {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
-                              </select>
-                              <select className="input-dark" value={s} style={{ width: 44 }}
-                                onChange={e => setTroop(g, e.target.value, m)}>
-                                <option value="">S</option>
-                                {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
-                              </select>
-                              <select className="input-dark" value={m} style={{ width: 44 }}
-                                onChange={e => setTroop(g, s, e.target.value)}>
-                                <option value="">M</option>
-                                {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
-                              </select>
-                            </div>
-                          )
-                        })()}
+                        <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                          <select className="input-dark" value={row.troop_g || ''} style={{ width: 44 }}
+                            onChange={e => updatePlayerRow(collector.slug, i, 'troop_g', e.target.value)}>
+                            <option value="">G</option>
+                            {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                          <select className="input-dark" value={row.troop_s || ''} style={{ width: 44 }}
+                            onChange={e => updatePlayerRow(collector.slug, i, 'troop_s', e.target.value)}>
+                            <option value="">S</option>
+                            {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                          <select className="input-dark" value={row.troop_m || ''} style={{ width: 44 }}
+                            onChange={e => updatePlayerRow(collector.slug, i, 'troop_m', e.target.value)}>
+                            <option value="">M</option>
+                            {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
                       </td>
                     </tr>
                   ))}
