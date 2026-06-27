@@ -462,6 +462,26 @@ class PlayerAlias(Base):
     canonical_name = Column(String(100), nullable=False)
 
 
+class PlayerProfile(Base):
+    """Звание и состав войск игрока — один профиль на (collector, canonical_name).
+    Источников два: лидер правит в кабинете, игрок — на публичной странице.
+    Лидерский dashboard-сейв авторитетен (delete+insert весь список),
+    публичный upsert — select+update/insert одной строки."""
+    __tablename__ = "player_profiles"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "canonical_name", name="uq_player_profile"),
+    )
+
+    id             = Column(Integer, primary_key=True)
+    collector_id   = Column(Integer, ForeignKey("chest_collectors.id", ondelete="CASCADE"),
+                            nullable=False, index=True)
+    canonical_name = Column(String(100), nullable=False)
+    rank           = Column(String(20), nullable=True)
+    troop_level    = Column(String(20), nullable=True)
+    updated_at     = Column(TIMESTAMP(timezone=True), nullable=False,
+                            server_default=func.now())
+
+
 class ChestTypeAlias(Base):
     """Словарь маппинга сырого OCR-текста на официальный catalog_id, отдельно на каждого
     сборщика. Очки/кастомное имя/включение в подсчёт — в ChestConfiguration, не здесь."""
