@@ -229,12 +229,12 @@
 
   /* ── Публичная таблица клана ────────────────────────────── */
 
-  /* Имя игрока: обрезать длинные с «...» (title=полное имя остаётся) */
+  /* На мобиле колонки # и Имя НЕ прилипают — уходят влево при скролле вправо */
+  .public-table th:nth-child(1),
+  .public-table td:nth-child(1),
   .public-table th:nth-child(2),
   .public-table td:nth-child(2) {
-    max-width: 90px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    position: static !important;
   }
 
   /* Намёк о скролле: тень на правом крае таблицы */
@@ -251,7 +251,7 @@
     z-index: 5;
   }
 
-  /* Меньший шрифт ячеек — больше колонок влезает */
+  /* Меньший шрифт ячеек — больше колонок видно без скролла */
   .public-table th,
   .public-table td { font-size: 12px !important; padding: 6px 8px !important; }
 
