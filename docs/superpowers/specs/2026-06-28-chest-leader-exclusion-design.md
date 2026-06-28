@@ -20,14 +20,24 @@
 
 ## Секция 1 — База данных
 
-### Удаляем мёртвую миграцию
+### Удаляем мёртвую миграцию — точный алгоритм
 
-Файл `server/alembic/versions/z9z8z7z6z5z4_add_chest_alias_enabled.py` удалить: миграция никогда не применялась на GCP, поле `enabled` в `models.py` отсутствует, в цепочке down_revision присутствует как висящий хвост — мешает `alembic upgrade head`.
+`z9z8z7z6z5z4` стоит в середине цепочки: на неё ссылаются **две** миграции одновременно:
+- `c4d5e6f7g8h9_chest_configuration.py` → `down_revision = 'z9z8z7z6z5z4'`
+- `a1b2c3d4e5f6_add_custom_slug_to_chest_collectors.py` → `down_revision = 'z9z8z7z6z5z4'`
+
+`z9z8z7z6z5z4` сама ссылается на `down_revision = 'q1w2e3r4t5y6'`.
+
+**Шаги:**
+1. В `c4d5e6f7g8h9_chest_configuration.py` заменить `down_revision = 'z9z8z7z6z5z4'` → `'q1w2e3r4t5y6'`
+2. В `a1b2c3d4e5f6_add_custom_slug_to_chest_collectors.py` заменить `down_revision = 'z9z8z7z6z5z4'` → `'q1w2e3r4t5y6'`
+3. Физически удалить `z9z8z7z6z5z4_add_chest_alias_enabled.py`
+4. Запустить `alembic heads` — убедиться что `z9z8z7z6z5z4` больше не упоминается
 
 ### Новая миграция
 
-Revision ID: `a1b2c3d4e5f6` (сгенерировать через `alembic revision`)  
-Down revision: `q1w2e3r4t5y6` (текущий head на GCP)
+Сгенерировать через `alembic revision` (ID будет автоматический — **не использовать `a1b2c3d4e5f6`**, этот ID уже занят миграцией `add_custom_slug_to_chest_collectors`).  
+Down revision: текущий head после `alembic heads` (скорее всего multi-head — указать все через список).
 
 ```sql
 ALTER TABLE chest_collectors
