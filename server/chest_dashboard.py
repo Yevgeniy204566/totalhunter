@@ -480,7 +480,11 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
 
     now = datetime.utcnow()
     rows = await query_summary_rows(db, collector, collector.period_start, now)
-    summary = pivot_summary(collector.kingdom, collector.clan, rows)
+    summary = pivot_summary(
+        collector.kingdom, collector.clan, rows,
+        leader_name=collector.leader_canonical_name,
+        leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+    )
 
     db.add(ChestSeasonHistory(
         collector_id=collector.id,

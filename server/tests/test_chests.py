@@ -33,6 +33,7 @@ def test_pivot_leader_exclusion_removes_type_from_leader():
     assert leader["counts"]["Epic Crypt 35"] == 2
     p2 = next(p for p in result["players"] if p["name"] == "Player2")
     assert p2["points"] == 50                # not affected
+    assert result["totals"]["total_points"] == 320  # excluded chests don't count toward clan total
 
 
 def test_pivot_no_leader_unchanged():
