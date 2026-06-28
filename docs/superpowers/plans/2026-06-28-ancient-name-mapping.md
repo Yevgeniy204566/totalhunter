@@ -175,8 +175,9 @@ async def test_get_roster_suggested_name_via_fuzzy(db_session):
     assert row["player_name"] == "Marisha"
     assert row["mapping_confirmed"] is False
     assert row["mapped_name"] is None
-    # fuzzy match cross-script won't fire (Cyrillic vs Latin) — suggested_name is None here
-    # The absence of a crash is what matters; suggested_name can be None or str
+    assert "is_alias_source" in row
+    # cross-script fuzzy won't fire; suggested_name None → is_alias_source False
+    assert row["is_alias_source"] is False
 
 
 @pytest.mark.asyncio
@@ -200,6 +201,7 @@ async def test_get_roster_confirmed_mapping_applied(db_session):
     assert row["mapped_name"] == "Маришка"
     assert row["mapping_confirmed"] is True
     assert row["suggested_name"] is None
+    assert row["is_alias_source"] is False  # confirmed mapping → no suggestion active
 ```
 
 - [ ] **Step 2: Run tests — expect failures**
@@ -264,6 +266,7 @@ async def _roster_rows(
             "mapped_name": mapped_name,
             "suggested_name": suggested_name,
             "mapping_confirmed": confirmed,
+            "is_alias_source": suggested_name is not None,  # True = авто-найдено из Сундуков
         })
     return result
 ```
