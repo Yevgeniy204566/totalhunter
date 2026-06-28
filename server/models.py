@@ -7,8 +7,10 @@ Timestamps: server_default=func.now() — DB sets time, not Python.
 Naming convention: предсказуемые имена для индексов и ключей (Alembic gold standard).
 """
 
+from datetime import datetime
+
 from sqlalchemy import (
-    BigInteger, Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey, Integer,
+    BigInteger, Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer,
     JSON, MetaData, Numeric, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -593,3 +595,21 @@ class AncientCalculation(Base):
     veteran_count         = Column(Integer, nullable=True)
     total_quota_millions  = Column(Float, nullable=False)
     result_json           = Column(JSON, nullable=False)
+
+
+class AncientNameMapping(Base):
+    __tablename__ = "ancient_name_mappings"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "raw_ocr_name",
+                         name="uq_ancient_name_mapping"),
+        Index("ix_ancient_name_mappings_lookup", "collector_id", "raw_ocr_name"),
+    )
+    id             = Column(Integer, primary_key=True)
+    collector_id   = Column(Integer, ForeignKey("chest_collectors.id", ondelete="CASCADE"),
+                            nullable=False)
+    raw_ocr_name   = Column(String(200), nullable=False)
+    canonical_name = Column(String(200), nullable=False)
+    confirmed      = Column(Boolean, nullable=False, default=False)
+    created_at     = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at     = Column(DateTime, nullable=False, default=datetime.utcnow,
+                            onupdate=datetime.utcnow)
