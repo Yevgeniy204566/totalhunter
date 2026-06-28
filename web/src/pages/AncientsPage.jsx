@@ -10,6 +10,28 @@ const DEFAULT_FORM = {
   preset: 'T8', amplification: 1.0, officerCount: 0, veteranCount: 0,
 }
 
+function lcsLength(a, b) {
+  const m = a.length, n = b.length
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1])
+  return dp[m][n]
+}
+
+function clientFuzzyMatch(raw, candidates, cutoff) {
+  const a = raw.toLowerCase()
+  let best = null, bestScore = cutoff - 0.001
+  for (const cand of candidates) {
+    const b = cand.toLowerCase()
+    if (!a || !b) continue
+    const common = lcsLength(a, b)
+    const score = 2.0 * common / (a.length + b.length)
+    if (score > bestScore) { bestScore = score; best = cand }
+  }
+  return best
+}
+
 export default function AncientsPage() {
   const [collectors, setCollectors] = useState(null)
   const [levelHp, setLevelHp] = useState({})
@@ -56,22 +78,6 @@ export default function AncientsPage() {
     }
   }
   useEffect(() => { refresh() }, [])
-
-  // Mirrors Python difflib.get_close_matches: ratio = 2*common_chars / (len_a+len_b)
-  function clientFuzzyMatch(raw, candidates, cutoff) {
-    const a = raw.toLowerCase()
-    let best = null, bestScore = cutoff - 0.001
-    for (const cand of candidates) {
-      const b = cand.toLowerCase()
-      if (!a || !b) continue
-      const minLen = Math.min(a.length, b.length)
-      let common = 0
-      for (let i = 0; i < minLen; i++) if (a[i] === b[i]) common++
-      const score = (2.0 * common) / (a.length + b.length)
-      if (score > bestScore) { bestScore = score; best = cand }
-    }
-    return best
-  }
 
   function updateForm(slug, patch) {
     setFormByCollector(prev => ({ ...prev, [slug]: { ...prev[slug], ...patch } }))
@@ -339,18 +345,18 @@ export default function AncientsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {c.roster.map(p => (
-                      <tr key={p.player_name}>
-                        <td>{p.player_name}</td>
-                        <td>
-                          {(() => {
-                            const srcSlug = canonicalSourceSlug[c.slug] || c.slug
-                            const srcNames = canonicalSources.find(s => s.slug === srcSlug)?.canonical_names || c.canonical_names || []
-                            const suggestion = srcSlug === c.slug
-                              ? (p.suggested_name || '')
-                              : (clientFuzzyMatch(p.player_name, srcNames, fuzzyThreshold) || '')
-                            const pending = (pendingMappings[c.slug] || {})[p.player_name]
-                            if (p.mapping_confirmed) return (
+                    {c.roster.map(p => {
+                      const srcSlug = canonicalSourceSlug[c.slug] ?? c.slug
+                      const srcNames = canonicalSources.find(s => s.slug === srcSlug)?.canonical_names ?? c.canonical_names ?? []
+                      const suggestion = srcSlug === c.slug
+                        ? (p.suggested_name || '')
+                        : (clientFuzzyMatch(p.player_name, srcNames, fuzzyThreshold) || '')
+                      const pending = (pendingMappings[c.slug] || {})[p.player_name]
+                      return (
+                        <tr key={p.player_name}>
+                          <td>{p.player_name}</td>
+                          <td>
+                            {p.mapping_confirmed ? (
                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span style={{ color: '#a6e3a1', fontWeight: 600 }}>{p.mapped_name}</span>
                                 <button
@@ -365,8 +371,7 @@ export default function AncientsPage() {
                                   🔓 Разблокировать
                                 </button>
                               </span>
-                            )
-                            return (
+                            ) : (
                               <select
                                 className="input-dark"
                                 value={pending ?? suggestion}
@@ -381,45 +386,43 @@ export default function AncientsPage() {
                                   <option key={name} value={name}>{name}</option>
                                 ))}
                               </select>
-                            )
-                          })()}
-                        </td>
-                        <td>{p.place ?? '—'}</td>
-                        <td>{p.points !== null && p.points !== undefined ? fmtNum(p.points, 0) : '—'}</td>
-                        <td>
-                          <select
-                            className="input-dark"
-                            value={p.troop_level || ''}
-                            onChange={e => handleTroopLevelChange(c.slug, p.player_name, e.target.value)}
-                          >
-                            <option value="">{cx.noTroopLevel}</option>
-                            {c.troop_steps.map(step => <option key={step} value={step}>{step}</option>)}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
+                            )}
+                          </td>
+                          <td>{p.place ?? '—'}</td>
+                          <td>{p.points !== null && p.points !== undefined ? fmtNum(p.points, 0) : '—'}</td>
+                          <td>
+                            <select
+                              className="input-dark"
+                              value={p.troop_level || ''}
+                              onChange={e => handleTroopLevelChange(c.slug, p.player_name, e.target.value)}
+                            >
+                              <option value="">{cx.noTroopLevel}</option>
+                              {c.troop_steps.map(step => <option key={step} value={step}>{step}</option>)}
+                            </select>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
-                {Object.keys(pendingMappings[c.slug] || {}).length > 0 && (
-                  <button
-                    className="btn-primary"
-                    style={{ marginTop: 10 }}
-                    onClick={async () => {
-                      const pending = pendingMappings[c.slug] || {}
-                      const mappings = Object.entries(pending)
-                        .filter(([, canonical]) => canonical)
-                        .map(([raw_ocr_name, canonical_name]) => ({
-                          raw_ocr_name, canonical_name, confirmed: true,
-                        }))
-                      if (mappings.length === 0) return
-                      await api.dashboardAncientsNameMappings(c.slug, mappings)
-                      setPendingMappings(prev => ({ ...prev, [c.slug]: {} }))
-                      refresh()
-                    }}
-                  >
-                    Сохранить маппинги
-                  </button>
-                )}
+                <button
+                  className="btn-primary"
+                  style={{ marginTop: 10 }}
+                  onClick={async () => {
+                    const pending = pendingMappings[c.slug] || {}
+                    const mappings = Object.entries(pending)
+                      .filter(([, canonical]) => canonical)
+                      .map(([raw_ocr_name, canonical_name]) => ({
+                        raw_ocr_name, canonical_name, confirmed: true,
+                      }))
+                    if (mappings.length === 0) return
+                    await api.dashboardAncientsNameMappings(c.slug, mappings)
+                    setPendingMappings(prev => ({ ...prev, [c.slug]: {} }))
+                    refresh()
+                  }}
+                >
+                  Сохранить маппинги
+                </button>
                 </>
               )}
             </div>
