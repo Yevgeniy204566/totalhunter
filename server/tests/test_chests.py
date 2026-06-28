@@ -1421,3 +1421,63 @@ async def test_summary_leader_no_exclusions_unchanged(db_session):
     assert leader["points"] == 100          # 2 * 50, no exclusions
     assert leader["counts"]["Tournament Chest"] == 2
     assert body["totals"]["Tournament Chest"] == 2
+
+
+@pytest.mark.asyncio
+async def test_patch_leader_unknown_player_returns_400(db_session):
+    """PATCH /leader with a non-existent player name must return 400."""
+    from web_routes import create_jwt
+    user = await _create_user(db_session, "leaderval1")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K30", clan="ValClan1",
+            items=[{"chest_type": "Common", "sender": "RealPlayer",
+                    "timestamp": "2026-06-28T12:00:00"}],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        token = create_jwt(user.id, "leaderval1@test.com")
+        resp = await client.patch(
+            f"/web/dashboard/chests/{slug}/leader",
+            json={"leader_canonical_name": "GhostPlayer", "leader_excluded_catalog_ids": []},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400
+    assert "Unknown player" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_patch_leader_null_clears_leader(db_session):
+    """PATCH /leader with null leader_canonical_name clears the leader (skips validation)."""
+    from web_routes import create_jwt
+    user = await _create_user(db_session, "leaderval2")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        import_resp = await client.post("/api/v1/chests/import", json=_payload(
+            user.hwid, kingdom="K31", clan="ValClan2",
+            items=[{"chest_type": "Common", "sender": "RealPlayer",
+                    "timestamp": "2026-06-28T13:00:00"}],
+        ))
+        slug = import_resp.json()["collector_slug"]
+        token = create_jwt(user.id, "leaderval2@test.com")
+        # First set a valid leader (RealPlayer exists as sender_canonical)
+        set_resp = await client.patch(
+            f"/web/dashboard/chests/{slug}/leader",
+            json={"leader_canonical_name": "RealPlayer", "leader_excluded_catalog_ids": []},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert set_resp.status_code == 200
+        # Then clear it with null
+        resp = await client.patch(
+            f"/web/dashboard/chests/{slug}/leader",
+            json={"leader_canonical_name": None, "leader_excluded_catalog_ids": []},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+        # Verify cleared in DB
+        from sqlalchemy import select as sa_select
+        collector = (await db_session.execute(
+            sa_select(ChestCollector).where(ChestCollector.slug == slug)
+        )).scalar_one()
+        await db_session.refresh(collector)
+    assert collector.leader_canonical_name is None

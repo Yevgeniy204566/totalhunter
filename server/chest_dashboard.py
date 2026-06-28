@@ -452,6 +452,23 @@ async def update_leader_settings(slug: str, payload: LeaderSettingsPayload,
                                   user: User = Depends(get_web_user),
                                   db: AsyncSession = Depends(get_db)):
     collector = await _get_own_collector(db, slug, user)
+    if payload.leader_canonical_name is not None:
+        # Validate name exists: check PlayerAlias first, then raw sender_canonical
+        alias_hit = (await db.execute(
+            select(PlayerAlias.canonical_name)
+            .where(PlayerAlias.collector_id == collector.id,
+                   PlayerAlias.canonical_name == payload.leader_canonical_name)
+        )).scalar_one_or_none()
+        sender_hit = None
+        if alias_hit is None:
+            sender_hit = (await db.execute(
+                select(Chest.sender_canonical)
+                .where(Chest.collector_id == collector.id,
+                       Chest.sender_canonical == payload.leader_canonical_name)
+                .limit(1)
+            )).scalar_one_or_none()
+        if alias_hit is None and sender_hit is None:
+            raise HTTPException(status_code=400, detail="Unknown player")
     collector.leader_canonical_name = payload.leader_canonical_name
     collector.leader_excluded_catalog_ids = payload.leader_excluded_catalog_ids
     await db.commit()
