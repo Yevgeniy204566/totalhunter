@@ -13,7 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import Chest, ChestConfiguration, ChestCollector, ChestLocalization, ChestTypeAlias, PlayerAlias
 
 
-def pivot_summary(kingdom: str, clan: str, rows) -> dict:
+def pivot_summary(kingdom: str, clan: str, rows, *,
+                  leader_name: str | None = None,
+                  leader_excluded: frozenset = frozenset()) -> dict:
     """rows: iterable of (sender, chest_type_en, display_name, points_per_unit,
     counts_toward_quota, count).
 
@@ -21,6 +23,11 @@ def pivot_summary(kingdom: str, clan: str, rows) -> dict:
     independent) — display_name is only substituted in at the very end, so two
     different chest types that happen to share an identical translation can never be
     merged into one row by mistake.
+
+    leader_name / leader_excluded: when a collector marks certain catalog IDs as
+    excluded for the clan leader, those chest types still count toward clan totals
+    and grand_total (the raw numbers are real) but are stripped from the leader's
+    per_player row and point tally so they don't distort the ranking table.
     """
     chest_type_order: list[str] = []
     seen_types = set()
@@ -33,6 +40,15 @@ def pivot_summary(kingdom: str, clan: str, rows) -> dict:
     total_points = 0
 
     for sender, chest_type_en, display_name, points, counts_toward_quota, count in rows:
+        if leader_name and sender == leader_name and chest_type_en in leader_excluded:
+            # Excluded from leader score but still tracked in clan totals
+            grand_total += count
+            totals[chest_type_en] = totals.get(chest_type_en, 0) + count
+            if chest_type_en not in seen_types:
+                seen_types.add(chest_type_en)
+                chest_type_order.append(chest_type_en)
+                display_names[chest_type_en] = display_name
+            continue
         if chest_type_en not in seen_types:
             seen_types.add(chest_type_en)
             chest_type_order.append(chest_type_en)

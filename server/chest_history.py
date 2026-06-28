@@ -62,7 +62,11 @@ async def archive_one(db: AsyncSession, collector: ChestCollector) -> None:
     period_end = collector.period_end
 
     rows = await query_summary_rows(db, collector, period_start, period_end)
-    summary = pivot_summary(collector.kingdom, collector.clan, rows)
+    summary = pivot_summary(
+        collector.kingdom, collector.clan, rows,
+        leader_name=collector.leader_canonical_name,
+        leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+    )
 
     db.add(ChestSeasonHistory(
         collector_id=collector.id,

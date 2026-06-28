@@ -219,7 +219,11 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         updated_at_query = updated_at_query.where(Chest.collected_at <= collector.period_end)
     updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
 
-    result = pivot_summary(collector.kingdom, collector.clan, rows)
+    result = pivot_summary(
+        collector.kingdom, collector.clan, rows,
+        leader_name=collector.leader_canonical_name,
+        leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+    )
 
     # Enrich each player with rank + troop_level from player_profiles
     profiles = (await db.execute(
@@ -340,7 +344,11 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
         updated_at_query = updated_at_query.where(Chest.collected_at <= collector.period_end)
     updated_at = (await db.execute(updated_at_query)).scalar_one_or_none()
 
-    result = pivot_summary(collector.kingdom, collector.clan, rows)
+    result = pivot_summary(
+        collector.kingdom, collector.clan, rows,
+        leader_name=collector.leader_canonical_name,
+        leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+    )
 
     # Enrich each player with rank + troop_level from player_profiles
     profiles = (await db.execute(

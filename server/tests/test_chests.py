@@ -15,6 +15,49 @@ def test_credit_cost_chest_is_10():
     assert CREDIT_COST["chest"] == 10
 
 
+from chest_summary import pivot_summary as _pivot
+
+
+def test_pivot_leader_exclusion_removes_type_from_leader():
+    rows = [
+        ("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3),
+        ("Leader", "Epic Crypt 35",    "Epic Crypt 35",    135, True,  2),
+        ("Player2", "Tournament Chest", "Tournament Chest", 50, False, 1),
+    ]
+    result = _pivot("K1", "Clan1", rows,
+                    leader_name="Leader",
+                    leader_excluded=frozenset(["Tournament Chest"]))
+    leader = next(p for p in result["players"] if p["name"] == "Leader")
+    assert leader["points"] == 270           # 2 * 135 only
+    assert "Tournament Chest" not in leader["counts"]
+    assert leader["counts"]["Epic Crypt 35"] == 2
+    p2 = next(p for p in result["players"] if p["name"] == "Player2")
+    assert p2["points"] == 50                # not affected
+
+
+def test_pivot_no_leader_unchanged():
+    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3)]
+    result = _pivot("K1", "Clan1", rows)
+    assert result["players"][0]["points"] == 150
+    assert result["players"][0]["counts"]["Tournament Chest"] == 3
+
+
+def test_pivot_leader_empty_excluded_no_effect():
+    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3)]
+    result = _pivot("K1", "Clan1", rows,
+                    leader_name="Leader", leader_excluded=frozenset())
+    assert result["players"][0]["points"] == 150
+
+
+def test_pivot_leader_all_excluded_disappears_from_players():
+    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3)]
+    result = _pivot("K1", "Clan1", rows,
+                    leader_name="Leader",
+                    leader_excluded=frozenset(["Tournament Chest"]))
+    assert result["players"] == []
+    assert result["totals"]["Tournament Chest"] == 3   # totals still track all
+
+
 import secrets
 from sqlalchemy import select
 
@@ -1269,3 +1312,111 @@ async def test_cooldown_rearms_after_update(db_session):
             "rank": "Глава", "troop_level": "G8 S8 M8",
         })
         assert r.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_summary_leader_exclusion_via_model(db_session):
+    """Leader's excluded catalog IDs are stripped from their per_player row
+    but still counted in clan totals."""
+    from datetime import datetime
+    from models import User, ChestCollector, Chest, ChestConfiguration
+
+    user = User(hwid="g" * 16, ref_code="t" * 6, email="leaderexcl@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(
+        kingdom="K1", clan="LeaderClan", user_id=user.id, slug="leader-excl-1",
+        leader_canonical_name="Leader",
+        leader_excluded_catalog_ids=["Tournament Chest"],
+    )
+    db_session.add(collector)
+    await db_session.flush()
+
+    # Leader: 3 Tournament Chests (excluded) + 2 Epic Crypt 35 (counted)
+    for ts in ("2026-06-28T10:00:00", "2026-06-28T10:01:00", "2026-06-28T10:02:00"):
+        db_session.add(Chest(
+            collector_id=collector.id, sender_raw="Leader", sender_canonical="Leader",
+            chest_type_raw="Tournament Chest", chest_type_canonical="Tournament Chest",
+            collected_at=datetime.fromisoformat(ts),
+        ))
+    for ts in ("2026-06-28T10:03:00", "2026-06-28T10:04:00"):
+        db_session.add(Chest(
+            collector_id=collector.id, sender_raw="Leader", sender_canonical="Leader",
+            chest_type_raw="Epic Crypt 35", chest_type_canonical="Epic Crypt 35",
+            collected_at=datetime.fromisoformat(ts),
+        ))
+    # Player2: 1 Tournament Chest (not excluded — different player)
+    db_session.add(Chest(
+        collector_id=collector.id, sender_raw="Player2", sender_canonical="Player2",
+        chest_type_raw="Tournament Chest", chest_type_canonical="Tournament Chest",
+        collected_at=datetime.fromisoformat("2026-06-28T10:05:00"),
+    ))
+    db_session.add(ChestConfiguration(
+        collector_id=collector.id, catalog_id="Tournament Chest",
+        points=50, is_in_pattern=True,
+    ))
+    db_session.add(ChestConfiguration(
+        collector_id=collector.id, catalog_id="Epic Crypt 35",
+        points=135, is_in_pattern=True,
+    ))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    leader = next(p for p in body["players"] if p["name"] == "Leader")
+    assert leader["points"] == 270          # 2 * 135 only; 3 * 50 excluded
+    assert "Tournament Chest" not in leader["counts"]
+    assert leader["counts"]["Epic Crypt 35"] == 2
+
+    p2 = next(p for p in body["players"] if p["name"] == "Player2")
+    assert p2["points"] == 50              # unaffected
+    assert p2["counts"]["Tournament Chest"] == 1
+
+    # Clan totals include Leader's excluded chests (3 Leader + 1 Player2 = 4)
+    assert body["totals"]["Tournament Chest"] == 4
+
+
+@pytest.mark.asyncio
+async def test_summary_leader_no_exclusions_unchanged(db_session):
+    """When leader_excluded_catalog_ids is empty, summary is identical to
+    having no leader settings at all."""
+    from datetime import datetime
+    from models import User, ChestCollector, Chest, ChestConfiguration
+
+    user = User(hwid="h" * 16, ref_code="s" * 6, email="leadernoexcl@test.com")
+    db_session.add(user)
+    await db_session.flush()
+    collector = ChestCollector(
+        kingdom="K1", clan="LeaderNoExclClan", user_id=user.id, slug="leader-noexcl-1",
+        leader_canonical_name="Leader",
+        leader_excluded_catalog_ids=[],
+    )
+    db_session.add(collector)
+    await db_session.flush()
+
+    for ts in ("2026-06-28T11:00:00", "2026-06-28T11:01:00"):
+        db_session.add(Chest(
+            collector_id=collector.id, sender_raw="Leader", sender_canonical="Leader",
+            chest_type_raw="Tournament Chest", chest_type_canonical="Tournament Chest",
+            collected_at=datetime.fromisoformat(ts),
+        ))
+    db_session.add(ChestConfiguration(
+        collector_id=collector.id, catalog_id="Tournament Chest",
+        points=50, is_in_pattern=True,
+    ))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/api/v1/chests/summary/{collector.slug}")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    assert len(body["players"]) == 1
+    leader = body["players"][0]
+    assert leader["name"] == "Leader"
+    assert leader["points"] == 100          # 2 * 50, no exclusions
+    assert leader["counts"]["Tournament Chest"] == 2
+    assert body["totals"]["Tournament Chest"] == 2
