@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
@@ -49,6 +49,8 @@ export default function ChestsPage() {
   const [historyByCollector, setHistoryByCollector] = useState({})
   const [seasonDetailByCollector, setSeasonDetailByCollector] = useState({})
   const [confirmCloseByCollector, setConfirmCloseByCollector] = useState({})
+  const [leaderByCollector, setLeaderByCollector] = useState({})
+  const [leaderExcludedByCollector, setLeaderExcludedByCollector] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.chests
@@ -64,6 +66,8 @@ export default function ChestsPage() {
       const nextRows = {}
       const nextPlayerRows = {}
       const nextSeason = {}
+      const nextLeader = {}
+      const nextLeaderExcluded = {}
       for (const c of data.collectors) {
         nextRows[c.slug] = c.rows
         nextPlayerRows[c.slug] = c.player_alias_rows.map(r => {
@@ -77,10 +81,14 @@ export default function ChestsPage() {
           target_points: c.target_points,
           target_chests: c.target_chests,
         }
+        nextLeader[c.slug] = c.leader_canonical_name || null
+        nextLeaderExcluded[c.slug] = c.leader_excluded_catalog_ids || []
       }
       setRowsByCollector(nextRows)
       setPlayerRowsByCollector(nextPlayerRows)
       setSeasonByCollector(nextSeason)
+      setLeaderByCollector(nextLeader)
+      setLeaderExcludedByCollector(nextLeaderExcluded)
     } catch (e) {
       setLoadError(e.message || 'failed to load')
     }
@@ -166,6 +174,10 @@ export default function ChestsPage() {
               : null,
         }))
       await api.dashboardChestsPlayerProfiles(slug, profileRows)
+      await api.dashboardChestsLeader(slug, {
+        leader_canonical_name: leaderByCollector[slug] || null,
+        leader_excluded_catalog_ids: leaderExcludedByCollector[slug] || [],
+      })
       setMsg(cx.saved)
       await refresh()
     } catch (e) { setMsg(e.message) }
@@ -479,11 +491,13 @@ export default function ChestsPage() {
                     <th>{cx.playerCanonicalCol}</th>
                     <th>Звание</th>
                     <th>Состав</th>
+                    <th>Глава</th>
                   </tr>
                 </thead>
                 <tbody>
                   {playerRowsByCollector[collector.slug]?.map((row, i) => (
-                    <tr key={i}>
+                    <Fragment key={i}>
+                    <tr>
                       <td>{row.raw_name || '—'}</td>
                       <td>
                         <input
@@ -526,7 +540,61 @@ export default function ChestsPage() {
                           }
                         </div>
                       </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="radio"
+                          name={`leader-${collector.slug}`}
+                          checked={leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name)}
+                          onClick={() => {
+                            const name = row.canonical_name || row.raw_name
+                            setLeaderByCollector(prev => ({
+                              ...prev,
+                              [collector.slug]: prev[collector.slug] === name ? null : name,
+                            }))
+                          }}
+                          onChange={() => {}}
+                        />
+                      </td>
                     </tr>
+                    {leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name) && (
+                      <tr key={`leader-excl-${i}`}>
+                        <td colSpan={5} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
+                          <div style={{ fontSize: 13, color: '#a6adc8', marginBottom: 6 }}>
+                            Не считать в статистику:
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                            {(rowsByCollector[collector.slug] || [])
+                              .filter(r => r.is_in_pattern)
+                              .map(r => {
+                                const label = r.custom_name || r.catalog_id
+                                const isExcluded = (leaderExcludedByCollector[collector.slug] || [])
+                                  .includes(r.catalog_id)
+                                return (
+                                  <label key={r.catalog_id}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 5,
+                                             cursor: 'pointer', fontSize: 13, color: '#cdd6f4' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isExcluded}
+                                      onChange={e => {
+                                        setLeaderExcludedByCollector(prev => {
+                                          const current = prev[collector.slug] || []
+                                          const next = e.target.checked
+                                            ? [...current, r.catalog_id]
+                                            : current.filter(id => id !== r.catalog_id)
+                                          return { ...prev, [collector.slug]: next }
+                                        })
+                                      }}
+                                    />
+                                    {label}
+                                  </label>
+                                )
+                              })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
