@@ -261,7 +261,7 @@ async def test_delete_name_mapping_unlocks(db_session):
             headers={"Authorization": f"Bearer {token}"},
         )
     assert resp.status_code == 200
-    assert resp.json() == {"ok": True}
+    assert resp.json() == {"deleted": True}
 
     from sqlalchemy import select as sa_select
     row = (await db_session.execute(
@@ -288,6 +288,22 @@ async def test_patch_name_mappings_wrong_owner_returns_403(db_session):
             headers={"Authorization": f"Bearer {attacker_token}"},
         )
     assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_name_mapping_not_found_returns_404(db_session):
+    """DELETE on a nonexistent mapping returns 404, not 200."""
+    user, token = await _create_user_with_token(db_session, "del2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="del-2")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            f"/web/dashboard/ancients/{collector.slug}/name-mappings/nonexistent",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Mapping not found"
 
 
 @pytest.mark.asyncio

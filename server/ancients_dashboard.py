@@ -206,6 +206,14 @@ async def delete_name_mapping(slug: str, raw_ocr_name: str,
                                user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
     collector = await _get_own_collector(db, slug, user)
+    existing = (await db.execute(
+        select(AncientNameMapping).where(
+            AncientNameMapping.collector_id == collector.id,
+            AncientNameMapping.raw_ocr_name == raw_ocr_name,
+        )
+    )).scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Mapping not found")
     await db.execute(
         delete(AncientNameMapping).where(
             AncientNameMapping.collector_id == collector.id,
@@ -213,7 +221,7 @@ async def delete_name_mapping(slug: str, raw_ocr_name: str,
         )
     )
     await db.commit()
-    return {"ok": True}
+    return {"deleted": True}
 
 
 class CalculatePayload(BaseModel):
