@@ -260,6 +260,8 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "period_end": collector.period_end,
             "target_points": collector.target_points,
             "target_chests": collector.target_chests,
+            "leader_canonical_name": collector.leader_canonical_name,
+            "leader_excluded_catalog_ids": collector.leader_excluded_catalog_ids or [],
         })
     return {"collectors": result}
 
@@ -438,6 +440,22 @@ class SeasonSettingsPayload(BaseModel):
     period_end: Optional[datetime] = None
     target_points: Optional[int] = None
     target_chests: Optional[int] = None
+
+
+class LeaderSettingsPayload(BaseModel):
+    leader_canonical_name: Optional[str] = None
+    leader_excluded_catalog_ids: List[str] = []
+
+
+@router.patch("/{slug}/leader")
+async def update_leader_settings(slug: str, payload: LeaderSettingsPayload,
+                                  user: User = Depends(get_web_user),
+                                  db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    collector.leader_canonical_name = payload.leader_canonical_name
+    collector.leader_excluded_catalog_ids = payload.leader_excluded_catalog_ids
+    await db.commit()
+    return {"ok": True}
 
 
 @router.patch("/{slug}/season")
