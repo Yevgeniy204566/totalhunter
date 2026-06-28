@@ -405,6 +405,8 @@ class ChestCollector(Base):
     target_points           = Column(Integer, nullable=True)
     target_chests           = Column(Integer, nullable=True)
     stopped_at              = Column(TIMESTAMP(timezone=True), nullable=True)
+    leader_canonical_name   = Column(String(200), nullable=True)
+    leader_excluded_catalog_ids = Column(JSON, nullable=False, server_default=text("'[]'"))
 
 
 class Chest(Base):
