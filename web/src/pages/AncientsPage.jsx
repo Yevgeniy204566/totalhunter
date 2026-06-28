@@ -57,6 +57,22 @@ export default function AncientsPage() {
   }
   useEffect(() => { refresh() }, [])
 
+  // Mirrors Python difflib.get_close_matches: ratio = 2*common_chars / (len_a+len_b)
+  function clientFuzzyMatch(raw, candidates, cutoff) {
+    const a = raw.toLowerCase()
+    let best = null, bestScore = cutoff - 0.001
+    for (const cand of candidates) {
+      const b = cand.toLowerCase()
+      if (!a || !b) continue
+      const minLen = Math.min(a.length, b.length)
+      let common = 0
+      for (let i = 0; i < minLen; i++) if (a[i] === b[i]) common++
+      const score = (2.0 * common) / (a.length + b.length)
+      if (score > bestScore) { bestScore = score; best = cand }
+    }
+    return best
+  }
+
   function updateForm(slug, patch) {
     setFormByCollector(prev => ({ ...prev, [slug]: { ...prev[slug], ...patch } }))
   }
@@ -327,41 +343,46 @@ export default function AncientsPage() {
                       <tr key={p.player_name}>
                         <td>{p.player_name}</td>
                         <td>
-                          {p.mapping_confirmed ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ color: '#a6e3a1', fontWeight: 600 }}>
-                                {p.mapped_name}
+                          {(() => {
+                            const srcSlug = canonicalSourceSlug[c.slug] || c.slug
+                            const srcNames = canonicalSources.find(s => s.slug === srcSlug)?.canonical_names || c.canonical_names || []
+                            const suggestion = srcSlug === c.slug
+                              ? (p.suggested_name || '')
+                              : (clientFuzzyMatch(p.player_name, srcNames, fuzzyThreshold) || '')
+                            const pending = (pendingMappings[c.slug] || {})[p.player_name]
+                            if (p.mapping_confirmed) return (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ color: '#a6e3a1', fontWeight: 600 }}>{p.mapped_name}</span>
+                                <button
+                                  style={{ fontSize: 11, padding: '1px 6px', cursor: 'pointer',
+                                           background: 'transparent', border: '1px solid #6c7086',
+                                           color: '#6c7086', borderRadius: 4 }}
+                                  onClick={async () => {
+                                    await api.dashboardAncientsNameMappingDelete(c.slug, p.player_name)
+                                    refresh()
+                                  }}
+                                >
+                                  🔓 Разблокировать
+                                </button>
                               </span>
-                              <button
-                                style={{ fontSize: 11, padding: '1px 6px', cursor: 'pointer',
-                                         background: 'transparent', border: '1px solid #6c7086',
-                                         color: '#6c7086', borderRadius: 4 }}
-                                onClick={async () => {
-                                  await api.dashboardAncientsNameMappingDelete(c.slug, p.player_name)
-                                  refresh()
-                                }}
+                            )
+                            return (
+                              <select
+                                className="input-dark"
+                                value={pending ?? suggestion}
+                                onChange={e => setPendingMappings(prev => ({
+                                  ...prev,
+                                  [c.slug]: { ...(prev[c.slug] || {}), [p.player_name]: e.target.value },
+                                }))}
+                                style={{ minWidth: 130 }}
                               >
-                                🔓 Разблокировать
-                              </button>
-                            </span>
-                          ) : (
-                            <select
-                              className="input-dark"
-                              value={(pendingMappings[c.slug] || {})[p.player_name] ??
-                                     (p.suggested_name || '')}
-                              onChange={e => setPendingMappings(prev => ({
-                                ...prev,
-                                [c.slug]: { ...(prev[c.slug] || {}),
-                                            [p.player_name]: e.target.value },
-                              }))}
-                              style={{ minWidth: 130 }}
-                            >
-                              <option value="">— не сопоставлять —</option>
-                              {(canonicalSources.find(s => s.slug === (canonicalSourceSlug[c.slug] || c.slug))?.canonical_names || c.canonical_names || []).map(name => (
-                                <option key={name} value={name}>{name}</option>
-                              ))}
-                            </select>
-                          )}
+                                <option value="">— не сопоставлять —</option>
+                                {srcNames.map(name => (
+                                  <option key={name} value={name}>{name}</option>
+                                ))}
+                              </select>
+                            )
+                          })()}
                         </td>
                         <td>{p.place ?? '—'}</td>
                         <td>{p.points !== null && p.points !== undefined ? fmtNum(p.points, 0) : '—'}</td>
