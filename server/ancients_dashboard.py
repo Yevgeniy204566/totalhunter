@@ -110,12 +110,23 @@ async def get_dashboard_ancients(
         select(ChestCollector).where(ChestCollector.user_id == user.id)
     )).scalars().all()
 
+    # Load canonical names for all collectors once — used both per-section and as cross-clan sources
+    all_canonical: dict[str, list[str]] = {}
+    for c in collectors:
+        names = list((await db.execute(
+            select(PlayerAlias.canonical_name).where(PlayerAlias.collector_id == c.id)
+        )).scalars().all())
+        all_canonical[c.slug] = names
+
+    canonical_sources = [
+        {"slug": c.slug, "clan": c.clan, "kingdom": c.kingdom,
+         "canonical_names": all_canonical[c.slug]}
+        for c in collectors
+    ]
+
     result = []
     for collector in collectors:
-        canonical_names = list((await db.execute(
-            select(PlayerAlias.canonical_name).where(
-                PlayerAlias.collector_id == collector.id)
-        )).scalars().all())
+        canonical_names = all_canonical[collector.slug]
 
         mappings = (await db.execute(
             select(AncientNameMapping).where(
@@ -134,7 +145,8 @@ async def get_dashboard_ancients(
             "troop_steps": TROOP_STEPS,
             "presets": sorted(TROOP_QUOTA_PRESETS.keys()),
         })
-    return {"collectors": result, "ancient_level_hp": ANCIENT_LEVEL_HP}
+    return {"collectors": result, "canonical_sources": canonical_sources,
+            "ancient_level_hp": ANCIENT_LEVEL_HP}
 
 
 class TroopLevelPayload(BaseModel):

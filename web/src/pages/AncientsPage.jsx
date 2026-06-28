@@ -18,6 +18,8 @@ export default function AncientsPage() {
   const [resultByCollector, setResultByCollector] = useState({})
   const [fuzzyThreshold, setFuzzyThreshold] = useState(0.75)
   const [pendingMappings, setPendingMappings] = useState({})
+  const [canonicalSources, setCanonicalSources] = useState([])
+  const [canonicalSourceSlug, setCanonicalSourceSlug] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -42,6 +44,7 @@ export default function AncientsPage() {
     try {
       const data = await api.dashboardAncients(threshold)
       setCollectors(data.collectors)
+      setCanonicalSources(data.canonical_sources || [])
       setLevelHp(data.ancient_level_hp || {})
       const nextForm = {}
       for (const c of data.collectors) {
@@ -278,7 +281,7 @@ export default function AncientsPage() {
 
             {/* ── Ростер клана — внизу ── */}
             <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
                 <label style={{ fontSize: 13, color: '#a6adc8', whiteSpace: 'nowrap' }}>
                   Точность совпадения: {Math.round(fuzzyThreshold * 100)}% — чем выше, тем строже подбор
                 </label>
@@ -292,6 +295,21 @@ export default function AncientsPage() {
                   }}
                   style={{ width: 140 }}
                 />
+                {canonicalSources.length > 1 && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#a6adc8' }}>
+                    Имена из:
+                    <select
+                      className="input-dark"
+                      value={canonicalSourceSlug[c.slug] || c.slug}
+                      onChange={e => setCanonicalSourceSlug(prev => ({ ...prev, [c.slug]: e.target.value }))}
+                      style={{ minWidth: 120 }}
+                    >
+                      {canonicalSources.map(s => (
+                        <option key={s.slug} value={s.slug}>{s.clan}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
               <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.rosterTitle}</div>
               {c.roster.length === 0 ? (
@@ -339,7 +357,7 @@ export default function AncientsPage() {
                               style={{ minWidth: 130 }}
                             >
                               <option value="">— не сопоставлять —</option>
-                              {(c.canonical_names || []).map(name => (
+                              {(canonicalSources.find(s => s.slug === (canonicalSourceSlug[c.slug] || c.slug))?.canonical_names || c.canonical_names || []).map(name => (
                                 <option key={name} value={name}>{name}</option>
                               ))}
                             </select>
