@@ -2,7 +2,7 @@
 canonical_type to catalog_id, drop enabled/custom_display_name, add management_token
 
 Revision ID: c4d5e6f7g8h9
-Revises: z9z8z7z6z5z4
+Revises: q1w2e3r4t5y6
 Create Date: 2026-06-20
 
 Phase 4: points and pattern-membership move from the global ChestTypeCatalog (one shared
@@ -15,7 +15,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision      = 'c4d5e6f7g8h9'
-down_revision = 'z9z8z7z6z5z4'
+down_revision = 'q1w2e3r4t5y6'
 branch_labels = None
 depends_on    = None
 

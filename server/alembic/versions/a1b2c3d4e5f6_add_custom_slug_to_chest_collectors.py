@@ -1,7 +1,7 @@
 """add custom_slug to chest_collectors for short public URLs (/c/{kingdom}/{slug})
 
 Revision ID: a1b2c3d4e5f6
-Revises: z9z8z7z6z5z4
+Revises: q1w2e3r4t5y6
 Create Date: 2026-06-27
 
 Enables readable short URLs like total-hunter.com/c/229/eldorado
@@ -11,7 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = 'a1b2c3d4e5f6'
-down_revision = 'z9z8z7z6z5z4'
+down_revision = 'q1w2e3r4t5y6'
 branch_labels = None
 depends_on = None
 
