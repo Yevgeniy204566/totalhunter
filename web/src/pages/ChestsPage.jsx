@@ -51,6 +51,7 @@ export default function ChestsPage() {
   const [confirmCloseByCollector, setConfirmCloseByCollector] = useState({})
   const [leaderByCollector, setLeaderByCollector] = useState({})
   const [leaderExcludedByCollector, setLeaderExcludedByCollector] = useState({})
+  const [sortByCollector, setSortByCollector] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.chests
@@ -150,6 +151,13 @@ export default function ChestsPage() {
       const rows = [...prev[slug]]
       rows[index] = { ...rows[index], [field]: value }
       return { ...prev, [slug]: rows }
+    })
+  }
+
+  function toggleSort(slug, field) {
+    setSortByCollector(prev => {
+      const cur = prev[slug] || { field: 'name', dir: 'asc' }
+      return { ...prev, [slug]: { field, dir: cur.field === field && cur.dir === 'asc' ? 'desc' : 'asc' } }
     })
   }
 
@@ -482,35 +490,65 @@ export default function ChestsPage() {
             </>
           )}
 
-          {activeTab(collector.slug) === 'players' && (
+          {activeTab(collector.slug) === 'players' && (() => {
+            const sort = sortByCollector[collector.slug] || { field: 'name', dir: 'asc' }
+            const sortArrow = (field) => sort.field === field ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''
+            const sortedRows = (playerRowsByCollector[collector.slug] || [])
+              .map((row, origIdx) => ({ row, origIdx }))
+              .sort(({ row: a }, { row: b }) => {
+                if (sort.field === 'name') {
+                  const na = (a.canonical_name || a.raw_name || '').toLowerCase()
+                  const nb = (b.canonical_name || b.raw_name || '').toLowerCase()
+                  return sort.dir === 'asc' ? na.localeCompare(nb, 'ru') : nb.localeCompare(na, 'ru')
+                } else {
+                  const ta = (parseInt(a.troop_g)||0) + (parseInt(a.troop_s)||0) + (parseInt(a.troop_m)||0)
+                  const tb = (parseInt(b.troop_g)||0) + (parseInt(b.troop_s)||0) + (parseInt(b.troop_m)||0)
+                  if (!ta && !tb) return 0
+                  if (!ta) return 1
+                  if (!tb) return -1
+                  return sort.dir === 'asc' ? ta - tb : tb - ta
+                }
+              })
+            return (
             <div style={{ overflowX: 'auto' }}>
+              <div style={{ marginBottom: 8, textAlign: 'right' }}>
+                <button className="btn-primary" onClick={() => savePlayerAliases(collector.slug)}>
+                  {cx.savePlayerAliases}
+                </button>
+              </div>
               <table className="chest-table">
                 <thead>
                   <tr>
                     <th>{cx.playerRawCol}</th>
-                    <th>{cx.playerCanonicalCol}</th>
+                    <th style={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleSort(collector.slug, 'name')}>
+                      {cx.playerCanonicalCol}{sortArrow('name')}
+                    </th>
                     <th>Звание</th>
-                    <th>Состав</th>
+                    <th style={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleSort(collector.slug, 'troop')}>
+                      Состав{sortArrow('troop')}
+                    </th>
                     <th>Глава</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {playerRowsByCollector[collector.slug]?.map((row, i) => (
-                    <Fragment key={i}>
+                  {sortedRows.map(({ row, origIdx }) => (
+                    <Fragment key={origIdx}>
                     <tr>
                       <td>{row.raw_name || '—'}</td>
                       <td>
                         <input
                           className="input-dark"
                           value={row.canonical_name || ''}
-                          onChange={e => updatePlayerRow(collector.slug, i, 'canonical_name', e.target.value)}
+                          onChange={e => updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}
                         />
                       </td>
                       <td>
                         <select
                           className="input-dark"
                           value={row.rank || ''}
-                          onChange={e => updatePlayerRow(collector.slug, i, 'rank', e.target.value)}
+                          onChange={e => updatePlayerRow(collector.slug, origIdx, 'rank', e.target.value)}
                         >
                           {RANKS.map(r => <option key={r} value={r}>{r || '—'}</option>)}
                         </select>
@@ -518,17 +556,17 @@ export default function ChestsPage() {
                       <td>
                         <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'nowrap' }}>
                           <select className="input-dark" value={row.troop_g || ''} style={{ width: 44 }}
-                            onChange={e => updatePlayerRow(collector.slug, i, 'troop_g', e.target.value)}>
+                            onChange={e => updatePlayerRow(collector.slug, origIdx, 'troop_g', e.target.value)}>
                             <option value="">G</option>
                             {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
                           <select className="input-dark" value={row.troop_s || ''} style={{ width: 44 }}
-                            onChange={e => updatePlayerRow(collector.slug, i, 'troop_s', e.target.value)}>
+                            onChange={e => updatePlayerRow(collector.slug, origIdx, 'troop_s', e.target.value)}>
                             <option value="">S</option>
                             {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
                           <select className="input-dark" value={row.troop_m || ''} style={{ width: 44 }}
-                            onChange={e => updatePlayerRow(collector.slug, i, 'troop_m', e.target.value)}>
+                            onChange={e => updatePlayerRow(collector.slug, origIdx, 'troop_m', e.target.value)}>
                             <option value="">M</option>
                             {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
@@ -557,7 +595,7 @@ export default function ChestsPage() {
                       </td>
                     </tr>
                     {leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name) && (
-                      <tr key={`leader-excl-${i}`}>
+                      <tr key={`leader-excl-${origIdx}`}>
                         <td colSpan={5} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
                           <div style={{ fontSize: 13, color: '#a6adc8', marginBottom: 6 }}>
                             Не считать в статистику:
@@ -606,7 +644,8 @@ export default function ChestsPage() {
                 {cx.savePlayerAliases}
               </button>
             </div>
-          )}
+            )
+          })()}
 
           {activeTab(collector.slug) === 'history' && (
             <div>
