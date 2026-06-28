@@ -165,6 +165,57 @@ async def patch_troop_level(slug: str, payload: TroopLevelPayload,
     return {"ok": True}
 
 
+class NameMappingItem(BaseModel):
+    raw_ocr_name: str
+    canonical_name: str
+    confirmed: bool = True
+
+
+class NameMappingsPayload(BaseModel):
+    mappings: List[NameMappingItem]
+
+
+@router.patch("/{slug}/name-mappings")
+async def patch_name_mappings(slug: str, payload: NameMappingsPayload,
+                               user: User = Depends(get_web_user),
+                               db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    for item in payload.mappings:
+        existing = (await db.execute(
+            select(AncientNameMapping).where(
+                AncientNameMapping.collector_id == collector.id,
+                AncientNameMapping.raw_ocr_name == item.raw_ocr_name,
+            )
+        )).scalar_one_or_none()
+        if existing:
+            existing.canonical_name = item.canonical_name
+            existing.confirmed = item.confirmed
+        else:
+            db.add(AncientNameMapping(
+                collector_id=collector.id,
+                raw_ocr_name=item.raw_ocr_name,
+                canonical_name=item.canonical_name,
+                confirmed=item.confirmed,
+            ))
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{slug}/name-mappings/{raw_ocr_name}")
+async def delete_name_mapping(slug: str, raw_ocr_name: str,
+                               user: User = Depends(get_web_user),
+                               db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    await db.execute(
+        delete(AncientNameMapping).where(
+            AncientNameMapping.collector_id == collector.id,
+            AncientNameMapping.raw_ocr_name == raw_ocr_name,
+        )
+    )
+    await db.commit()
+    return {"ok": True}
+
+
 class CalculatePayload(BaseModel):
     strategy: str
     summon_levels: List[int]

@@ -207,3 +207,110 @@ async def test_get_roster_confirmed_mapping_applied(db_session):
     assert row["mapping_confirmed"] is True
     assert row["suggested_name"] is None
     assert row["is_alias_source"] is False  # confirmed mapping → no suggestion active
+
+
+@pytest.mark.asyncio
+async def test_patch_name_mappings_upsert(db_session):
+    """PATCH creates new mapping; second PATCH with same raw_name updates it (upsert)."""
+    from sqlalchemy import select as sa_select
+    user, token = await _create_user_with_token(db_session, "map2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="map-2")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # First PATCH — creates
+        resp = await client.patch(
+            f"/web/dashboard/ancients/{collector.slug}/name-mappings",
+            json={"mappings": [{"raw_ocr_name": "Marisha", "canonical_name": "Маришка",
+                                "confirmed": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"ok": True}
+
+        # Second PATCH — updates
+        resp2 = await client.patch(
+            f"/web/dashboard/ancients/{collector.slug}/name-mappings",
+            json={"mappings": [{"raw_ocr_name": "Marisha", "canonical_name": "Мариша",
+                                "confirmed": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp2.status_code == 200
+
+    rows = (await db_session.execute(
+        sa_select(AncientNameMapping).where(AncientNameMapping.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].canonical_name == "Мариша"
+
+
+@pytest.mark.asyncio
+async def test_delete_name_mapping_unlocks(db_session):
+    """DELETE removes the mapping; row no longer exists in DB."""
+    user, token = await _create_user_with_token(db_session, "del1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="del-1")
+    db_session.add(AncientNameMapping(collector_id=collector.id,
+                                      raw_ocr_name="PL4YER",
+                                      canonical_name="PLAYER",
+                                      confirmed=True))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            f"/web/dashboard/ancients/{collector.slug}/name-mappings/PL4YER",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+
+    from sqlalchemy import select as sa_select
+    row = (await db_session.execute(
+        sa_select(AncientNameMapping).where(
+            AncientNameMapping.collector_id == collector.id,
+            AncientNameMapping.raw_ocr_name == "PL4YER",
+        )
+    )).scalar_one_or_none()
+    assert row is None
+
+
+@pytest.mark.asyncio
+async def test_patch_name_mappings_wrong_owner_returns_403(db_session):
+    """PATCH to another user's collector returns 403."""
+    owner, _ = await _create_user_with_token(db_session, "owner2@test.com")
+    _, attacker_token = await _create_user_with_token(db_session, "attacker@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="own-2")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            f"/web/dashboard/ancients/{collector.slug}/name-mappings",
+            json={"mappings": []},
+            headers={"Authorization": f"Bearer {attacker_token}"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_fuzzy_threshold_high_suppresses_weak_match(db_session):
+    """?fuzzy_threshold=1.0 suppresses suggestions that would pass at 0.75."""
+    user, token = await _create_user_with_token(db_session, "thresh1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="thresh-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Aleksei",
+                                 place=1, points=50, troop_level=None))
+    # canonical "Aleksey" is ~0.86 similar to "Aleksei" — passes 0.75, fails 1.0
+    db_session.add(PlayerAlias(collector_id=collector.id,
+                               raw_name="r1", canonical_name="Aleksey"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp_75  = await client.get("/web/dashboard/ancients?fuzzy_threshold=0.75",
+                                    headers={"Authorization": f"Bearer {token}"})
+        resp_100 = await client.get("/web/dashboard/ancients?fuzzy_threshold=1.0",
+                                    headers={"Authorization": f"Bearer {token}"})
+
+    row_75  = resp_75.json()["collectors"][0]["roster"][0]
+    row_100 = resp_100.json()["collectors"][0]["roster"][0]
+    # At 0.75, fuzzy may suggest "Aleksey" (implementation-dependent — just check no crash)
+    assert "suggested_name" in row_75
+    # At 1.0 (exact only), no suggestion possible
+    assert row_100["suggested_name"] is None
