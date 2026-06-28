@@ -55,12 +55,17 @@ export const api = {
   dashboardChestsHistoryDetail: (slug, seasonId) => request('GET', `/web/dashboard/chests/${slug}/history/${seasonId}`),
   dashboardChestsCloseSeason:   (slug) => request('POST', `/web/dashboard/chests/${slug}/close-season`),
   dashboardChestsMyNames:       ()    => request('GET',  '/web/dashboard/chests/my-custom-names'),
-  dashboardAncients:      ()              => request('GET',   '/web/dashboard/ancients'),
+  dashboardAncients:      (fuzzyThreshold = 0.75) =>
+    request('GET',   `/web/dashboard/ancients?fuzzy_threshold=${fuzzyThreshold}`),
   dashboardAncientsTroopLevel: (slug, playerName, troopLevel) =>
     request('PATCH', `/web/dashboard/ancients/${slug}/troop-level`,
             { player_name: playerName, troop_level: troopLevel }),
   dashboardAncientsCalculate: (slug, payload) =>
     request('POST', `/web/dashboard/ancients/${slug}/calculate`, payload),
+  dashboardAncientsNameMappings: (slug, mappings) =>
+    request('PATCH', `/web/dashboard/ancients/${slug}/name-mappings`, { mappings }),
+  dashboardAncientsNameMappingDelete: (slug, rawOcrName) =>
+    request('DELETE', `/web/dashboard/ancients/${slug}/name-mappings/${encodeURIComponent(rawOcrName)}`),
 }
 
 export async function fetchChestSummary(slug) {
