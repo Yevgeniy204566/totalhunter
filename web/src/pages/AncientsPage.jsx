@@ -20,11 +20,12 @@ function lcsLength(a, b) {
 }
 
 function clientFuzzyMatch(raw, candidates, cutoff) {
+  if (!raw || !candidates || candidates.length === 0) return null
   const a = raw.toLowerCase()
   let best = null, bestScore = cutoff - 0.001
   for (const cand of candidates) {
     const b = cand.toLowerCase()
-    if (!a || !b) continue
+    if (!b) continue
     const common = lcsLength(a, b)
     const score = 2.0 * common / (a.length + b.length)
     if (score > bestScore) { bestScore = score; best = cand }
@@ -63,17 +64,20 @@ export default function AncientsPage() {
     return d.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })
   }
 
-  async function refresh(threshold = fuzzyThreshold) {
+  async function refresh(threshold) {
+    const t = threshold !== undefined ? threshold : fuzzyThreshold
     try {
-      const data = await api.dashboardAncients(threshold)
-      setCollectors(data.collectors)
+      const data = await api.dashboardAncients(t)
+      setCollectors(data.collectors || [])
       setCanonicalSources(data.canonical_sources || [])
       setLevelHp(data.ancient_level_hp || {})
-      const nextForm = {}
-      for (const c of data.collectors) {
-        nextForm[c.slug] = { ...DEFAULT_FORM }
-      }
-      setFormByCollector(prev => ({ ...nextForm, ...prev }))
+      setFormByCollector(prev => {
+        const next = {}
+        for (const c of (data.collectors || [])) {
+          next[c.slug] = prev[c.slug] || { ...DEFAULT_FORM }
+        }
+        return next
+      })
     } catch (e) {
       setLoadError(e.message || 'failed to load')
     }
@@ -87,7 +91,8 @@ export default function AncientsPage() {
   function toggleSort(slug, field) {
     setSortByCollector(prev => {
       const cur = prev[slug] || { field: 'place', dir: 'asc' }
-      return { ...prev, [slug]: { field, dir: cur.field === field && cur.dir === 'asc' ? 'desc' : 'asc' } }
+      const dir = cur.field === field && cur.dir === 'asc' ? 'desc' : 'asc'
+      return { ...prev, [slug]: { field, dir } }
     })
   }
 
@@ -122,7 +127,9 @@ export default function AncientsPage() {
     <div className="page-content">
       <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
-      {collectors.length === 0 && <div className="text-muted" style={{ marginTop: 12 }}>{cx.noRoster}</div>}
+      {collectors.length === 0 && (
+        <div className="text-muted" style={{ marginTop: 12 }}>{cx.noRoster}</div>
+      )}
 
       {collectors.map(c => {
         const form = formByCollector[c.slug] || DEFAULT_FORM
@@ -130,11 +137,28 @@ export default function AncientsPage() {
         const levels = levelsFor(form)
         const maxStartLevel = 250 - (form.summonCount - 1)
 
+        const sort = sortByCollector[c.slug] || { field: 'place', dir: 'asc' }
+        const sortArrow = field => sort.field === field ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''
+        const sortedRoster = [...(c.roster || [])].sort((a, b) => {
+          if (sort.field === 'name') {
+            const na = (a.player_name || '').toLowerCase()
+            const nb = (b.player_name || '').toLowerCase()
+            return sort.dir === 'asc' ? na.localeCompare(nb, 'ru') : nb.localeCompare(na, 'ru')
+          }
+          const pa = a.place ?? 999
+          const pb = b.place ?? 999
+          return sort.dir === 'asc' ? pa - pb : pb - pa
+        })
+
+        const srcSlug = canonicalSourceSlug[c.slug] ?? c.slug
+        const srcNames = (canonicalSources.find(s => s.slug === srcSlug)?.canonical_names)
+          ?? (c.canonical_names ?? [])
+
         return (
           <div key={c.slug} style={{ marginBottom: 32 }}>
             <div style={{ marginBottom: 12, fontWeight: 600 }}>{c.kingdom} / {c.clan}</div>
 
-            {/* ── Калькулятор — наверху ── */}
+            {/* ── Калькулятор ── */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.calcTitle}</div>
 
@@ -238,7 +262,7 @@ export default function AncientsPage() {
                       value={form.preset}
                       onChange={e => updateForm(c.slug, { preset: e.target.value })}
                     >
-                      {c.presets.map(p => <option key={p} value={p}>{p}</option>)}
+                      {(c.presets || []).map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   </label>
                 </div>
@@ -263,7 +287,7 @@ export default function AncientsPage() {
                       <tr><th>{cx.player}</th><th>{cx.troopLevel}</th><th>{cx.totalQuota}</th></tr>
                     </thead>
                     <tbody>
-                      {result.result.players.map(p => (
+                      {(result.result.players || []).map(p => (
                         <tr key={p.name}>
                           <td>{p.name}</td><td>{p.troop_level}</td><td>{fmtNum(p.quota, 2)}</td>
                         </tr>
@@ -309,28 +333,28 @@ export default function AncientsPage() {
               )}
             </div>
 
-            {/* ── Ростер клана — внизу ── */}
+            {/* ── Ростер клана ── */}
             <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-                <label style={{ fontSize: 13, color: '#a6adc8', whiteSpace: 'nowrap' }}>
-                  Точность совпадения: {Math.round(fuzzyThreshold * 100)}% — чем выше, тем строже подбор
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+                <label style={{ fontSize: 13, color: '#a6adc8', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>Точность: {Math.round(fuzzyThreshold * 100)}%</span>
+                  <input
+                    type="range" min={50} max={100} step={5}
+                    value={Math.round(fuzzyThreshold * 100)}
+                    onChange={e => {
+                      const val = parseInt(e.target.value) / 100
+                      setFuzzyThreshold(val)
+                      refresh(val)
+                    }}
+                    style={{ width: 120 }}
+                  />
                 </label>
-                <input
-                  type="range" min={50} max={100} step={5}
-                  value={Math.round(fuzzyThreshold * 100)}
-                  onChange={e => {
-                    const val = parseInt(e.target.value) / 100
-                    setFuzzyThreshold(val)
-                    refresh(val)
-                  }}
-                  style={{ width: 140 }}
-                />
                 {canonicalSources.length > 1 && (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#a6adc8' }}>
                     Имена из:
                     <select
                       className="input-dark"
-                      value={canonicalSourceSlug[c.slug] || c.slug}
+                      value={srcSlug}
                       onChange={e => setCanonicalSourceSlug(prev => ({ ...prev, [c.slug]: e.target.value }))}
                       style={{ minWidth: 120 }}
                     >
@@ -341,36 +365,34 @@ export default function AncientsPage() {
                   </label>
                 )}
               </div>
+
               <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.rosterTitle}</div>
-              {c.roster.length === 0 ? (
+
+              {sortedRoster.length === 0 ? (
                 <div className="text-muted">{cx.noRoster}</div>
               ) : (
-                <>
-                {(() => {
-                  const sort = sortByCollector[c.slug] || { field: 'place', dir: 'asc' }
-                  const sortArrow = (field) => sort.field === field ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''
-                  const sortedRoster = [...c.roster].sort((a, b) => {
-                    if (sort.field === 'name') {
-                      const na = (a.player_name || '').toLowerCase()
-                      const nb = (b.player_name || '').toLowerCase()
-                      return sort.dir === 'asc' ? na.localeCompare(nb, 'ru') : nb.localeCompare(na, 'ru')
-                    } else {
-                      const pa = a.place ?? 999
-                      const pb = b.place ?? 999
-                      return sort.dir === 'asc' ? pa - pb : pb - pa
-                    }
-                  })
-                  return (
                 <table className="chest-table">
                   <thead>
                     <tr>
-                      <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(c.slug, 'name')}>Игрок (OCR){sortArrow('name')}</th><th>Правильное имя</th><th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(c.slug, 'place')}>{cx.place}{sortArrow('place')}</th><th>{cx.points}</th><th>{cx.troopLevel}</th>
+                      <th
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleSort(c.slug, 'name')}
+                      >
+                        Игрок (OCR){sortArrow('name')}
+                      </th>
+                      <th>Правильное имя</th>
+                      <th
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleSort(c.slug, 'place')}
+                      >
+                        {cx.place}{sortArrow('place')}
+                      </th>
+                      <th>{cx.points}</th>
+                      <th>{cx.troopLevel}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedRoster.map(p => {
-                      const srcSlug = canonicalSourceSlug[c.slug] ?? c.slug
-                      const srcNames = canonicalSources.find(s => s.slug === srcSlug)?.canonical_names ?? c.canonical_names ?? []
                       const suggestion = srcSlug === c.slug
                         ? (p.suggested_name || '')
                         : (clientFuzzyMatch(p.player_name, srcNames, fuzzyThreshold) || '')
@@ -383,21 +405,23 @@ export default function AncientsPage() {
                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span style={{ color: '#a6e3a1', fontWeight: 600 }}>{p.mapped_name}</span>
                                 <button
-                                  style={{ fontSize: 11, padding: '1px 6px', cursor: 'pointer',
-                                           background: 'transparent', border: '1px solid #6c7086',
-                                           color: '#6c7086', borderRadius: 4 }}
+                                  style={{
+                                    fontSize: 11, padding: '1px 6px', cursor: 'pointer',
+                                    background: 'transparent', border: '1px solid #6c7086',
+                                    color: '#6c7086', borderRadius: 4,
+                                  }}
                                   onClick={async () => {
                                     await api.dashboardAncientsNameMappingDelete(c.slug, p.player_name)
                                     refresh()
                                   }}
                                 >
-                                  🔓 Разблокировать
+                                  Разблокировать
                                 </button>
                               </span>
                             ) : (
                               <select
                                 className="input-dark"
-                                value={pending ?? suggestion}
+                                value={pending !== undefined ? pending : suggestion}
                                 onChange={e => setPendingMappings(prev => ({
                                   ...prev,
                                   [c.slug]: { ...(prev[c.slug] || {}), [p.player_name]: e.target.value },
@@ -420,7 +444,9 @@ export default function AncientsPage() {
                               onChange={e => handleTroopLevelChange(c.slug, p.player_name, e.target.value)}
                             >
                               <option value="">{cx.noTroopLevel}</option>
-                              {c.troop_steps.map(step => <option key={step} value={step}>{step}</option>)}
+                              {(c.troop_steps || []).map(step => (
+                                <option key={step} value={step}>{step}</option>
+                              ))}
                             </select>
                           </td>
                         </tr>
@@ -428,28 +454,24 @@ export default function AncientsPage() {
                     })}
                   </tbody>
                 </table>
-                  )
-                })()}
-                <button
-                  className="btn-primary"
-                  style={{ marginTop: 10 }}
-                  onClick={async () => {
-                    const pending = pendingMappings[c.slug] || {}
-                    const mappings = Object.entries(pending)
-                      .filter(([, canonical]) => canonical)
-                      .map(([raw_ocr_name, canonical_name]) => ({
-                        raw_ocr_name, canonical_name, confirmed: true,
-                      }))
-                    if (mappings.length === 0) return
-                    await api.dashboardAncientsNameMappings(c.slug, mappings)
-                    setPendingMappings(prev => ({ ...prev, [c.slug]: {} }))
-                    refresh()
-                  }}
-                >
-                  Сохранить маппинги
-                </button>
-                </>
               )}
+
+              <button
+                className="btn-primary"
+                style={{ marginTop: 12 }}
+                onClick={async () => {
+                  const pending = pendingMappings[c.slug] || {}
+                  const mappings = Object.entries(pending)
+                    .filter(([, canonical]) => canonical)
+                    .map(([raw_ocr_name, canonical_name]) => ({ raw_ocr_name, canonical_name, confirmed: true }))
+                  if (mappings.length === 0) return
+                  await api.dashboardAncientsNameMappings(c.slug, mappings)
+                  setPendingMappings(prev => ({ ...prev, [c.slug]: {} }))
+                  refresh()
+                }}
+              >
+                Сохранить маппинги
+              </button>
             </div>
           </div>
         )
