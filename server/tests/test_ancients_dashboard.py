@@ -13,7 +13,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 
 from main import app
-from models import AncientCalculation, AncientRoster, ChestCollector, PlayerProfile, User
+from models import AncientCalculation, AncientNameMapping, AncientRoster, ChestCollector, PlayerAlias, PlayerProfile, User
 from web_routes import create_jwt
 
 
@@ -159,3 +159,51 @@ async def test_roster_manual_troop_level_wins_over_profile(db_session):
     roster = resp.json()["collectors"][0]["roster"]
     bob = next(r for r in roster if r["player_name"] == "Bob")
     assert bob["troop_level"] == "G9 S9 M9"
+
+
+@pytest.mark.asyncio
+async def test_get_roster_suggested_name_via_fuzzy(db_session):
+    """Roster row gets suggested_name when fuzzy-match finds a canonical name."""
+    user, token = await _create_user_with_token(db_session, "fuzzy1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="fuzzy-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Marisha",
+                                 place=1, points=100, troop_level=None))
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="ocr_raw",
+                               canonical_name="Маришка"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["player_name"] == "Marisha"
+    assert row["mapping_confirmed"] is False
+    assert row["mapped_name"] is None
+    assert "is_alias_source" in row
+    # cross-script fuzzy won't fire; suggested_name None → is_alias_source False
+    assert row["is_alias_source"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_roster_confirmed_mapping_applied(db_session):
+    """Confirmed mapping → mapped_name populated, mapping_confirmed=True."""
+    user, token = await _create_user_with_token(db_session, "mapped1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="mapped-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Marisha",
+                                 place=1, points=100, troop_level=None))
+    db_session.add(AncientNameMapping(collector_id=collector.id,
+                                      raw_ocr_name="Marisha",
+                                      canonical_name="Маришка",
+                                      confirmed=True))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["mapped_name"] == "Маришка"
+    assert row["mapping_confirmed"] is True
+    assert row["suggested_name"] is None
+    assert row["is_alias_source"] is False  # confirmed mapping → no suggestion active

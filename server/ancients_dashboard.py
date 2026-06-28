@@ -4,9 +4,10 @@ ancients_dashboard.py — Личный кабинет, вкладка «Древ
 Auth: site session (JWT Bearer via get_web_user), как chest_dashboard.py — лидер
 управляет только своими ChestCollector. Бесплатно для всех пользователей.
 """
+from difflib import get_close_matches
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +17,10 @@ from ancient_quota import (
     split_strategy_a, split_strategy_b, total_quota_millions,
 )
 from database import get_db
-from models import AncientCalculation, AncientRoster, ChestCollector, PlayerProfile, User
+from models import (
+    AncientCalculation, AncientNameMapping, AncientRoster,
+    ChestCollector, PlayerAlias, PlayerProfile, User,
+)
 from web_routes import get_web_user
 
 router = APIRouter(prefix="/web/dashboard/ancients", tags=["ancients-dashboard"])
@@ -35,7 +39,13 @@ async def _get_own_collector(db: AsyncSession, slug: str, user: User) -> ChestCo
     return collector
 
 
-async def _roster_rows(db: AsyncSession, collector_id: int) -> list:
+async def _roster_rows(
+    db: AsyncSession,
+    collector_id: int,
+    mappings_dict: dict,        # raw_ocr_name → AncientNameMapping
+    canonical_names: list,
+    fuzzy_threshold: float,
+) -> list:
     rows = (await db.execute(
         select(AncientRoster, PlayerProfile.troop_level.label("profile_troop"))
         .outerjoin(
@@ -48,15 +58,31 @@ async def _roster_rows(db: AsyncSession, collector_id: int) -> list:
         .where(AncientRoster.collector_id == collector_id)
         .order_by(AncientRoster.place.asc().nullslast())
     )).all()
-    return [
-        {
-            "player_name": r.AncientRoster.player_name,
+
+    result = []
+    for r in rows:
+        raw = r.AncientRoster.player_name
+        mapping = mappings_dict.get(raw)
+        if mapping and mapping.confirmed:
+            mapped_name = mapping.canonical_name
+            suggested_name = None
+            confirmed = True
+        else:
+            mapped_name = None
+            matches = get_close_matches(raw, canonical_names, n=1, cutoff=fuzzy_threshold)
+            suggested_name = matches[0] if matches else None
+            confirmed = False
+        result.append({
+            "player_name": raw,
             "place": r.AncientRoster.place,
             "points": r.AncientRoster.points,
             "troop_level": r.AncientRoster.troop_level or r.profile_troop,
-        }
-        for r in rows
-    ]
+            "mapped_name": mapped_name,
+            "suggested_name": suggested_name,
+            "mapping_confirmed": confirmed,
+            "is_alias_source": suggested_name is not None,  # True = авто-найдено из Сундуков
+        })
+    return result
 
 
 async def _history_rows(db: AsyncSession, collector_id: int) -> list:
@@ -75,17 +101,35 @@ async def _history_rows(db: AsyncSession, collector_id: int) -> list:
 
 
 @router.get("")
-async def get_dashboard_ancients(user: User = Depends(get_web_user),
-                                 db: AsyncSession = Depends(get_db)):
+async def get_dashboard_ancients(
+    fuzzy_threshold: float = Query(default=0.75, ge=0.5, le=1.0),
+    user: User = Depends(get_web_user),
+    db: AsyncSession = Depends(get_db),
+):
     collectors = (await db.execute(
         select(ChestCollector).where(ChestCollector.user_id == user.id)
     )).scalars().all()
 
     result = []
     for collector in collectors:
+        canonical_names = list((await db.execute(
+            select(PlayerAlias.canonical_name).where(
+                PlayerAlias.collector_id == collector.id)
+        )).scalars().all())
+
+        mappings = (await db.execute(
+            select(AncientNameMapping).where(
+                AncientNameMapping.collector_id == collector.id)
+        )).scalars().all()
+        mappings_dict = {m.raw_ocr_name: m for m in mappings}
+
         result.append({
-            "slug": collector.slug, "kingdom": collector.kingdom, "clan": collector.clan,
-            "roster": await _roster_rows(db, collector.id),
+            "slug": collector.slug,
+            "kingdom": collector.kingdom,
+            "clan": collector.clan,
+            "canonical_names": canonical_names,
+            "roster": await _roster_rows(
+                db, collector.id, mappings_dict, canonical_names, fuzzy_threshold),
             "history": await _history_rows(db, collector.id),
             "troop_steps": TROOP_STEPS,
             "presets": sorted(TROOP_QUOTA_PRESETS.keys()),
