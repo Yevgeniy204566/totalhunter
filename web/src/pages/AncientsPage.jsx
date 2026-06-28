@@ -323,7 +323,7 @@ export default function AncientsPage() {
                                   refresh()
                                 }}
                               >
-                                🔓
+                                🔓 Разблокировать
                               </button>
                             </span>
                           ) : (
