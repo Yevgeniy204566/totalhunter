@@ -609,7 +609,7 @@ class AncientNameMapping(Base):
                             nullable=False)
     raw_ocr_name   = Column(String(200), nullable=False)
     canonical_name = Column(String(200), nullable=False)
-    confirmed      = Column(Boolean, nullable=False, default=False)
-    created_at     = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at     = Column(DateTime, nullable=False, default=datetime.utcnow,
-                            onupdate=datetime.utcnow)
+    confirmed      = Column(Boolean, nullable=False, server_default="false")
+    created_at     = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    updated_at     = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(),
+                            onupdate=func.now())
