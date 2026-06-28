@@ -40,6 +40,7 @@ export default function AncientsPage() {
   const [resultByCollector, setResultByCollector] = useState({})
   const [fuzzyThreshold, setFuzzyThreshold] = useState(0.75)
   const [pendingMappings, setPendingMappings] = useState({})
+  const [sortByCollector, setSortByCollector] = useState({})
   const [canonicalSources, setCanonicalSources] = useState([])
   const [canonicalSourceSlug, setCanonicalSourceSlug] = useState({})
   const { lang } = useLang()
@@ -81,6 +82,13 @@ export default function AncientsPage() {
 
   function updateForm(slug, patch) {
     setFormByCollector(prev => ({ ...prev, [slug]: { ...prev[slug], ...patch } }))
+  }
+
+  function toggleSort(slug, field) {
+    setSortByCollector(prev => {
+      const cur = prev[slug] || { field: 'place', dir: 'asc' }
+      return { ...prev, [slug]: { field, dir: cur.field === field && cur.dir === 'asc' ? 'desc' : 'asc' } }
+    })
   }
 
   function levelsFor(form) {
@@ -338,14 +346,29 @@ export default function AncientsPage() {
                 <div className="text-muted">{cx.noRoster}</div>
               ) : (
                 <>
+                {(() => {
+                  const sort = sortByCollector[c.slug] || { field: 'place', dir: 'asc' }
+                  const sortArrow = (field) => sort.field === field ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''
+                  const sortedRoster = [...c.roster].sort((a, b) => {
+                    if (sort.field === 'name') {
+                      const na = (a.player_name || '').toLowerCase()
+                      const nb = (b.player_name || '').toLowerCase()
+                      return sort.dir === 'asc' ? na.localeCompare(nb, 'ru') : nb.localeCompare(na, 'ru')
+                    } else {
+                      const pa = a.place ?? 999
+                      const pb = b.place ?? 999
+                      return sort.dir === 'asc' ? pa - pb : pb - pa
+                    }
+                  })
+                  return (
                 <table className="chest-table">
                   <thead>
                     <tr>
-                      <th>{cx.player}</th><th>Правильное имя</th><th>{cx.place}</th><th>{cx.points}</th><th>{cx.troopLevel}</th>
+                      <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(c.slug, 'name')}>Игрок (OCR){sortArrow('name')}</th><th>Правильное имя</th><th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort(c.slug, 'place')}>{cx.place}{sortArrow('place')}</th><th>{cx.points}</th><th>{cx.troopLevel}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {c.roster.map(p => {
+                    {sortedRoster.map(p => {
                       const srcSlug = canonicalSourceSlug[c.slug] ?? c.slug
                       const srcNames = canonicalSources.find(s => s.slug === srcSlug)?.canonical_names ?? c.canonical_names ?? []
                       const suggestion = srcSlug === c.slug
@@ -405,6 +428,8 @@ export default function AncientsPage() {
                     })}
                   </tbody>
                 </table>
+                  )
+                })()}
                 <button
                   className="btn-primary"
                   style={{ marginTop: 10 }}
