@@ -39,7 +39,7 @@ TEXT_DARK_THR = 150
 ROW_MERGE_GAP = 4
 ROW_PAD       = 4
 MIN_NAME_LEN  = 2
-MAX_NAME_LEN  = 40
+MAX_NAME_LEN  = 20
 
 # ── Скроллинг ─────────────────────────────────────────────────────────────────
 SCROLL_CLICKS    = 1
@@ -239,6 +239,10 @@ def _is_junk(name):
     if _JUNK_CHARS.search(name):
         return True
     if _JUNK_ONLY.match(name):
+        return True
+    if re.search(r'\d{3,}', name):
+        return True
+    if len(name) > 0 and sum(c.isdigit() for c in name) / len(name) > 0.4:
         return True
     if sum(1 for c in name if c.isalpha()) < 2:
         return True
