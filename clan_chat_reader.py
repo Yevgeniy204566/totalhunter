@@ -39,6 +39,7 @@ TEXT_DARK_THR = 150
 ROW_MERGE_GAP = 4
 ROW_PAD       = 4
 MIN_NAME_LEN  = 2
+MAX_NAME_LEN  = 40
 
 # ── Скроллинг ─────────────────────────────────────────────────────────────────
 SCROLL_CLICKS    = 1
@@ -233,6 +234,8 @@ def _is_junk(name):
     name = _PREFIX_NUM.sub("", name)
     if len(name) < 2:
         return True
+    if len(name) > MAX_NAME_LEN:
+        return True
     if _JUNK_CHARS.search(name):
         return True
     if _JUNK_ONLY.match(name):
@@ -321,20 +324,16 @@ def collect(stop_flag, on_status=None):
     scroll_cx = list_x + list_w // 2
     scroll_cy = list_y + list_h // 2
 
-    # Клик в список — без него игровое окно не принимает scroll-события
-    status("Перемотка вверх...")
-    pyautogui.click(scroll_cx, scroll_cy)
-    time.sleep(0.3)
-    for _ in range(30):
-        pyautogui.scroll(5)
-        time.sleep(0.04)
-    time.sleep(0.5)
-
     all_names = []
     end_streak = 0
     prev_frame = None
     last_afk   = time.time()
     i = 0
+
+    # Передаём фокус игре: always-on-top GUI бота удерживает фокус после «Старт»,
+    # scroll(-N) без этого клика уходит в бот-окно, а не в список участников.
+    pyautogui.click(scroll_cx, scroll_cy)
+    time.sleep(0.3)
 
     while not stop_flag():
         if time.time() - last_afk >= ANTI_AFK_SEC:

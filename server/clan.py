@@ -104,6 +104,8 @@ async def upload_clan_roster(
         name = name.strip()
         if not name or name in existing:
             continue
+        if len(name) > 100:
+            continue
         db.add(ClanRosterEntry(
             collector_id=collector.id,
             raw_name=name,
