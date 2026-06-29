@@ -328,25 +328,15 @@ def collect(stop_flag, on_status=None):
     end_streak = 0
     prev_frame = None
     last_afk   = time.time()
-    i = 0
 
-    # Передаём фокус игре: always-on-top GUI бота удерживает фокус после «Старт»,
-    # scroll(-N) без этого клика уходит в бот-окно, а не в список участников.
-    pyautogui.click(scroll_cx, scroll_cy)
+    # Точный паттерн tournament_reader.py: медленный moveTo(duration=0.3) + click()
+    # без аргументов. click(x,y) телепортирует мгновенно — игра не успевает
+    # зарегистрировать hover и не принимает последующие scroll-события.
+    pyautogui.moveTo(scroll_cx, scroll_cy, duration=0.3)
+    pyautogui.click()
     time.sleep(0.3)
 
     while not stop_flag():
-        if time.time() - last_afk >= ANTI_AFK_SEC:
-            pyautogui.click(scroll_cx + random.randint(-5, 5),
-                            scroll_cy + random.randint(-5, 5))
-            last_afk = time.time()
-            time.sleep(0.3)
-
-        if i > 0:
-            pyautogui.moveTo(scroll_cx, scroll_cy, duration=0.05)
-            pyautogui.scroll(-SCROLL_CLICKS)
-            time.sleep(SCROLL_PAUSE_SEC)
-
         frame = _grab(region)
 
         if prev_frame is not None and _frames_same(prev_frame, frame):
@@ -361,7 +351,19 @@ def collect(stop_flag, on_status=None):
         status(f"В работе... {len(all_names)} имён")
 
         prev_frame = frame
-        i += 1
+
+        # Anti-AFK — паттерн tournament_reader: moveTo + click()
+        if time.time() - last_afk >= ANTI_AFK_SEC:
+            pyautogui.moveTo(scroll_cx + random.randint(-5, 5),
+                             scroll_cy + random.randint(-5, 5), duration=0.1)
+            pyautogui.click()
+            last_afk = time.time()
+            time.sleep(0.3)
+
+        # Скролл в КОНЦЕ итерации — как в tournament_reader
+        pyautogui.moveTo(scroll_cx, scroll_cy, duration=0.05)
+        pyautogui.scroll(-2)
+        time.sleep(SCROLL_PAUSE_SEC)
 
     if stop_flag():
         return []
