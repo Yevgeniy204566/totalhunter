@@ -66,6 +66,8 @@ export const api = {
     request('PATCH', `/web/dashboard/ancients/${slug}/name-mappings`, { mappings }),
   dashboardAncientsNameMappingDelete: (slug, rawOcrName) =>
     request('DELETE', `/web/dashboard/ancients/${slug}/name-mappings/${encodeURIComponent(rawOcrName)}`),
+  dashboardRoster:     ()            => request('GET',  '/web/dashboard/roster'),
+  dashboardRosterSave: (slug, rows)  => request('POST', '/web/dashboard/roster/members', { collector_slug: slug, rows }),
 }
 
 export async function fetchChestSummary(slug) {

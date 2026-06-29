@@ -466,6 +466,22 @@ class PlayerAlias(Base):
     canonical_name = Column(String(100), nullable=False)
 
 
+class ClanRosterEntry(Base):
+    """Список участников клана из клан-чата (OCR) с ручной правкой лидером.
+    raw_name — как распознал OCR, canonical_name — правильное имя.
+    Привязан к коллектору (клан-чат = источник для одного клана)."""
+    __tablename__ = "clan_roster"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "raw_name", name="uq_clan_roster_raw_name"),
+    )
+
+    id             = Column(Integer, primary_key=True)
+    collector_id   = Column(Integer, ForeignKey("chest_collectors.id"),
+                            nullable=False, index=True)
+    raw_name       = Column(String(100), nullable=False)
+    canonical_name = Column(String(100), nullable=False)
+
+
 class PlayerProfile(Base):
     """Звание и состав войск игрока — один профиль на (collector, canonical_name).
     Источников два: лидер правит в кабинете, игрок — на публичной странице.
