@@ -11,12 +11,14 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
 from database import get_db
-from models import ClanMember
+from models import ClanMember, ClanRosterEntry, User
+from chests import _get_or_create_collector
 
 router = APIRouter(prefix="/api/v1/clan", tags=["clan"])
 
@@ -62,3 +64,52 @@ async def upsert_clan_roster(
 
     await db.commit()
     return {"ok": True, "count": len(payload.roster)}
+
+
+# ── Bot-facing: clan chat roster upload ───────────────────────────────────────
+
+class RosterUploadPayload(BaseModel):
+    hwid: str
+    kingdom: str
+    clan: str
+    names: List[str]
+
+
+@router.post("/roster-upload")
+async def upload_clan_roster(
+    payload: RosterUploadPayload,
+    db: AsyncSession = Depends(get_db),
+):
+    """Бот отправляет hwid+kingdom+clan+names, сервер делает upsert по raw_name."""
+    user = (await db.execute(
+        select(User).where(User.hwid == payload.hwid)
+    )).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if getattr(user, "is_banned", False):
+        raise HTTPException(status_code=403, detail="Banned")
+
+    collector = await _get_or_create_collector(payload.kingdom, payload.clan, user.id, db)
+
+    existing = {
+        r.raw_name
+        for r in (await db.execute(
+            select(ClanRosterEntry.raw_name)
+            .where(ClanRosterEntry.collector_id == collector.id)
+        )).all()
+    }
+
+    added = 0
+    for name in payload.names:
+        name = name.strip()
+        if not name or name in existing:
+            continue
+        db.add(ClanRosterEntry(
+            collector_id=collector.id,
+            raw_name=name,
+            canonical_name=name,
+        ))
+        added += 1
+
+    await db.commit()
+    return {"ok": True, "added": added, "total": len(payload.names)}

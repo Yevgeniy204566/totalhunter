@@ -154,6 +154,10 @@ LANGS = {
         "chest_send_failed": "Сервер недоступен. Данные сохранены локально.",
         "tab_ancient": "ДРЕВНИЙ", "ancient_status_running": "Сбор турнирной таблицы...", "ancient_status_sent": "Отправлено на сервер", "ancient_status_failed": "Сервер недоступен. Данные сохранены локально.",
         "ancient_desc": "Откройте диалог «Статистика» в игре перед запуском.",
+        "chat_desc": "Откройте «Клановый чат» → 👥 в игре перед запуском.",
+        "chat_start_btn": "КЛАН ЧАТ", "chat_status_running": "В работе...",
+        "chat_status_sent": "Готово ({count} имён)", "chat_status_stopped": "Ожидание",
+        "chat_status_failed": "Ошибка — повторите попытку",
         "chest_total_lb": "Всего открыто:",
         "chest_speed_lb": "Скорость клика:",
         # --- hunt tab ---
@@ -228,6 +232,10 @@ LANGS = {
         "chest_send_failed": "Server unavailable. Data saved locally.",
         "tab_ancient": "ANCIENT", "ancient_status_running": "Collecting tournament data...", "ancient_status_sent": "Sent to server", "ancient_status_failed": "Server unavailable. Data saved locally.",
         "ancient_desc": "Open the in-game «Statistics» dialog before starting.",
+        "chat_desc": "Open «Clan Chat» → 👥 in the game before starting.",
+        "chat_start_btn": "CLAN CHAT", "chat_status_running": "Working...",
+        "chat_status_sent": "Done ({count} names)", "chat_status_stopped": "Waiting",
+        "chat_status_failed": "Error — please retry",
         "chest_total_lb": "Total opened:",
         "chest_speed_lb": "Click speed:",
         # --- hunt tab ---
@@ -1199,6 +1207,10 @@ LANGS = {
         "chest_send_failed": "Сервер недоступний. Дані збережено локально.",
         "tab_ancient": "ДАВНІЙ", "ancient_status_running": "Збір турнірної таблиці...", "ancient_status_sent": "Відправлено на сервер", "ancient_status_failed": "Сервер недоступний. Дані збережено локально.",
         "ancient_desc": "Відкрийте діалог «Статистика» в грі перед запуском.",
+        "chat_desc": "Відкрийте «Клановий чат» → 👥 в грі перед запуском.",
+        "chat_start_btn": "КЛАНОВИЙ ЧАТ", "chat_status_running": "В роботі...",
+        "chat_status_sent": "Готово ({count} імен)", "chat_status_stopped": "Очікування",
+        "chat_status_failed": "Помилка — спробуйте ще раз",
         "chest_total_lb": "Всього відкрито:",
         "chest_speed_lb": "Швидкість кліку:",
         "nn_title": "Нейромережа", "nav_main_title": "Навігація",
@@ -2553,14 +2565,19 @@ class TotalHunterApp(ctk.CTk):
                                               text_color=MD3["error_text"])
             return
 
+        self.chest_send_btn.configure(state="disabled")
+
         def _worker():
             import chest_reader
             conn = chest_reader.init_db()
             rows = chest_reader.get_unsynced(conn)
             if not rows:
                 conn.close()
-                self.after(0, lambda: self.chest_status_label.configure(
-                    text=L["chest_status_stopped"], text_color=MD3["on_surface2"]))
+                self.after(0, lambda: (
+                    self.chest_send_btn.configure(state="normal"),
+                    self.chest_status_label.configure(
+                        text=L["chest_status_stopped"], text_color=MD3["on_surface2"]),
+                ))
                 return
 
             items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
@@ -2571,6 +2588,7 @@ class TotalHunterApp(ctk.CTk):
             conn.close()
 
             def _update():
+                self.chest_send_btn.configure(state="normal")
                 if result.get("success"):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                        text_color=MD3["secondary"])
@@ -3990,7 +4008,7 @@ class TotalHunterApp(ctk.CTk):
 
         # Статичные i18n лейблы
         for widget, key in self._i18n_labels:
-            widget.configure(text=LANGS[val][key])
+            widget.configure(text=LANGS[val].get(key, LANGS["EN"].get(key, key)))
 
         # Навигация — обновляем оба ряда вкладок
         new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
@@ -4282,6 +4300,36 @@ class TotalHunterApp(ctk.CTk):
 
         self._ancient_running = False
 
+        # ── КЛАН ЧАТ ──────────────────────────────────────────────────────────
+        sep = ctk.CTkFrame(self.tab_ancient, height=1, fg_color=MD3["outline"])
+        sep.pack(fill="x", padx=20, pady=(8, 12))
+
+        chat_desc_lb = ctk.CTkLabel(
+            self.tab_ancient,
+            text=L.get("chat_desc", "Open «Clan Chat» → 👥 in the game before starting."),
+            font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"], wraplength=380)
+        chat_desc_lb.pack(pady=(0, 8), padx=20)
+        self._i18n_labels.append((chat_desc_lb, "chat_desc"))
+
+        self.chat_start_btn = ctk.CTkButton(
+            self.tab_ancient,
+            text=L.get("chat_start_btn", "CLAN CHAT"),
+            height=42, corner_radius=10,
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
+            command=self.toggle_chat_collection)
+        self.chat_start_btn.pack(padx=20, pady=(0, 8), fill="x")
+        self._i18n_labels.append((self.chat_start_btn, "chat_start_btn"))
+
+        self.chat_status_label = ctk.CTkLabel(
+            self.tab_ancient,
+            text=L.get("chat_status_stopped", "Ожидание"),
+            font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"])
+        self.chat_status_label.pack(pady=(0, 8))
+        self._i18n_labels.append((self.chat_status_label, "chat_status_stopped"))
+
+        self._chat_running = False
+
     def _on_ancient_full_lang_change(self):
         self._save_gui_config_key("ancient_full_lang_ocr", bool(self.ancient_full_lang_var.get()))
 
@@ -4333,6 +4381,66 @@ class TotalHunterApp(ctk.CTk):
         else:
             self.ancient_status_label.configure(text=L["ancient_status_failed"],
                                                 text_color=MD3["error_text"])
+
+    def toggle_chat_collection(self):
+        L = LANGS[self.current_lang]
+        if self._chat_running:
+            self._chat_stop_event.set()
+            return
+
+        kingdom = self.chest_kingdom_entry.get().strip()
+        clan = self.chest_clan_entry.get().strip()
+        if not kingdom or not clan:
+            self.chat_status_label.configure(text=L["chest_missing_fields"],
+                                             text_color=MD3["error_text"])
+            return
+
+        self._chat_running = True
+        self._chat_stop_event = threading.Event()
+        self.chat_start_btn.configure(
+            text=L["chest_stop_btn"],
+            fg_color=MD3["error"], hover_color=MD3["error_hover"])
+        self.chat_status_label.configure(
+            text=L.get("chat_status_running", "Working..."),
+            text_color=MD3["secondary"])
+
+        stop_event = self._chat_stop_event
+
+        def _on_status(msg):
+            self.after(0, lambda m=msg: self.chat_status_label.configure(text=m))
+
+        def _worker():
+            try:
+                import clan_chat_reader
+                result, data = clan_chat_reader.run(
+                    kingdom, clan,
+                    stop_flag=stop_event.is_set,
+                    on_status=_on_status)
+            except Exception as e:
+                print(f"[chat] ошибка: {e}")
+                result, data = "error", str(e)
+            self.after(0, lambda r=result, d=data: self._on_chat_done(r, d))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_chat_done(self, result, data):
+        L = LANGS[self.current_lang]
+        self._chat_running = False
+        self.chat_start_btn.configure(
+            text=L.get("chat_start_btn", "CLAN CHAT"),
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
+        if result == "ok":
+            tmpl = L.get("chat_status_sent", "Done ({count} names)")
+            self.chat_status_label.configure(
+                text=tmpl.format(count=data),
+                text_color=MD3["secondary"])
+        elif result == "stopped":
+            self.chat_status_label.configure(
+                text=L.get("chat_status_stopped", "Waiting"),
+                text_color=MD3["on_surface2"])
+        else:
+            msg = L.get("chat_status_failed", "Error — please retry")
+            self.chat_status_label.configure(text=msg, text_color=MD3["error_text"])
 
     def _update_chest_counts_display(self, counts):
         if not hasattr(self, "_chest_count_labels"):
