@@ -19,18 +19,17 @@ from auth import SERVER_URL, get_hwid
 
 API_PATH = "/api/v1/clan/roster-upload"
 
-# ── Детекция диалога ──────────────────────────────────────────────────────────
-# Та же золотая рамка что у турнирного окна
-DIALOG_HSV_LOWER = np.array([10,  20, 150], dtype=np.uint8)
-DIALOG_HSV_UPPER = np.array([40, 120, 255], dtype=np.uint8)
-MIN_DIALOG_DIM   = 200
-
-# Список участников = правые 63% диалога (левее — панель каналов)
-# Вертикально: пропускаем поиск (18% сверху) и кнопочную панель (12% снизу)
-LIST_X_FRAC = 0.36
-LIST_W_FRAC = 0.63
-LIST_Y_FRAC = 0.18
-LIST_H_FRAC = 0.70
+# ── Детекция списка участников ────────────────────────────────────────────────
+# Ищем кремово-бежевый фон самого списка (не золотую рамку — она на ЛЕВОЙ панели
+# каналов, и именно её находил старый детектор, ставя курсор не туда).
+# BGR ≈ (195,225,240) → HSV: H≈25-45, S≈10-70, V≈185-255
+LIST_HSV_LOWER = np.array([15, 10, 185], dtype=np.uint8)
+LIST_HSV_UPPER = np.array([45, 75, 255], dtype=np.uint8)
+MIN_LIST_W = 100
+MIN_LIST_H = 120
+# Пропускаем строку поиска сверху (~14%) и кнопки снизу (~8%)
+SKIP_TOP_FRAC = 0.14
+SKIP_BOT_FRAC = 0.08
 
 # ── OCR: препроцессинг ────────────────────────────────────────────────────────
 SCALE        = 5
@@ -78,27 +77,39 @@ _HAVE_SCRIPTS = (
 # ── Детекция ──────────────────────────────────────────────────────────────────
 
 def detect_list_region():
-    """Возвращает (left, top, width, height) региона списка участников."""
+    """
+    Возвращает (left, top, width, height) кремового списка участников.
+    Детектируем сам список по цвету фона, а не золотую рамку (та стоит
+    на ЛЕВОЙ панели каналов и сбивала курсор не туда).
+    """
     with mss.mss() as sct:
         frame = cv2.cvtColor(np.array(sct.grab(sct.monitors[1])), cv2.COLOR_BGRA2BGR)
 
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, DIALOG_HSV_LOWER, DIALOG_HSV_UPPER)
+    mask = cv2.inRange(hsv, LIST_HSV_LOWER, LIST_HSV_UPPER)
+
+    # Морфология: убираем шум, склеиваем прерывистые пятна
+    k = np.ones((12, 12), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  k)
+
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        raise RuntimeError("Диалог «Клановый чат» не найден — откройте его в игре")
+        raise RuntimeError("Список участников не найден — откройте «Клановый чат» → 👥")
 
     largest = max(contours, key=cv2.contourArea)
-    dx, dy, dw, dh = cv2.boundingRect(largest)
-    if dw < MIN_DIALOG_DIM or dh < MIN_DIALOG_DIM:
-        raise RuntimeError("Диалог слишком мал — откройте Клановый чат")
+    lx, ly, lw, lh = cv2.boundingRect(largest)
 
-    return (
-        dx + int(dw * LIST_X_FRAC),
-        dy + int(dh * LIST_Y_FRAC),
-        int(dw * LIST_W_FRAC),
-        int(dh * LIST_H_FRAC),
-    )
+    if lw < MIN_LIST_W or lh < MIN_LIST_H:
+        raise RuntimeError("Список участников слишком мал — убедитесь что открыт раздел «Участники»")
+
+    # Отрезаем строку поиска (top) и кнопочную панель (bottom)
+    skip_top = int(lh * SKIP_TOP_FRAC)
+    skip_bot = int(lh * SKIP_BOT_FRAC)
+    ly += skip_top
+    lh -= (skip_top + skip_bot)
+
+    return lx, ly, lw, lh
 
 
 # ── Захват ────────────────────────────────────────────────────────────────────
@@ -310,9 +321,10 @@ def collect(stop_flag, on_status=None):
     scroll_cx = list_x + list_w // 2
     scroll_cy = list_y + list_h // 2
 
-    # Сначала прокручиваем в самый верх
+    # Клик в список — без него игровое окно не принимает scroll-события
     status("Перемотка вверх...")
-    pyautogui.moveTo(scroll_cx, scroll_cy, duration=0.05)
+    pyautogui.click(scroll_cx, scroll_cy)
+    time.sleep(0.3)
     for _ in range(30):
         pyautogui.scroll(5)
         time.sleep(0.04)
