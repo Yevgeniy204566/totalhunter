@@ -60,7 +60,7 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
             player_quota[sender] = player_quota.get(sender, 0) + count
         totals[chest_type_en] = totals.get(chest_type_en, 0) + count
         grand_total += count
-        total_points += count * points
+        total_points += count * (points or 0)
 
     chest_type_order_sorted = sorted(
         seen_types, key=lambda t: (-totals[t], display_names[t])
