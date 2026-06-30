@@ -55,7 +55,7 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
             display_names[chest_type_en] = display_name
         per_player.setdefault(sender, {})
         per_player[sender][chest_type_en] = per_player[sender].get(chest_type_en, 0) + count
-        player_points[sender] = player_points.get(sender, 0) + count * points
+        player_points[sender] = player_points.get(sender, 0) + count * (points or 0)
         if counts_toward_quota:
             player_quota[sender] = player_quota.get(sender, 0) + count
         totals[chest_type_en] = totals.get(chest_type_en, 0) + count
@@ -112,11 +112,10 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
             and_(ChestTypeAlias.collector_id == Chest.collector_id,
                  ChestTypeAlias.raw_type == Chest.chest_type_raw),
         )
-        .join(
+        .outerjoin(
             ChestConfiguration,
             and_(ChestConfiguration.collector_id == Chest.collector_id,
-                 ChestConfiguration.catalog_id == chest_type_expr,
-                 ChestConfiguration.is_in_pattern.is_(True)),
+                 ChestConfiguration.catalog_id == chest_type_expr),
         )
         .outerjoin(
             ChestLocalization,
