@@ -99,8 +99,10 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
                                  ChestLocalization.display_text, chest_type_expr)
 
     rows_query = (
-        select(sender_expr, chest_type_expr, display_expr, ChestConfiguration.points,
-               ChestConfiguration.counts_toward_quota, func.count())
+        select(sender_expr, chest_type_expr, display_expr,
+               func.max(ChestConfiguration.points).label("points"),
+               func.bool_or(ChestConfiguration.counts_toward_quota).label("counts_toward_quota"),
+               func.count())
         .select_from(Chest)
         .outerjoin(
             PlayerAlias,
@@ -129,7 +131,5 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
     if period_end is not None:
         rows_query = rows_query.where(Chest.collected_at <= period_end)
 
-    rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr,
-                                     ChestConfiguration.points,
-                                     ChestConfiguration.counts_toward_quota)
+    rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr)
     return (await db.execute(rows_query)).all()
