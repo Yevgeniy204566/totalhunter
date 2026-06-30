@@ -330,7 +330,12 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
             func.lower(ChestCollector.kingdom) == kingdom.lower(),
         )
     )).scalars().all()
-    collector = next((c for c in collectors if _clan_to_slug(c.clan) == custom_slug.lower()), None)
+    collector = next(
+        (c for c in collectors if
+         (c.custom_slug and c.custom_slug.lower() == custom_slug.lower()) or
+         _clan_to_slug(c.clan) == custom_slug.lower()),
+        None
+    )
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
 
