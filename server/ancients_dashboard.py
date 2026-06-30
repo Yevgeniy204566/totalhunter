@@ -3,7 +3,13 @@ ancients_dashboard.py — Личный кабинет, вкладка «Древ
 
 Auth: site session (JWT Bearer via get_web_user), как chest_dashboard.py — лидер
 управляет только своими ChestCollector. Бесплатно для всех пользователей.
+
+Редакторы: сокланы с активным AncientEditor-записью могут редактировать состав войск
+и маппинги, но не запускать калькулятор. Доступ выдаётся через одноразовый invite-код
+(TTL 24ч), и действует 30 дней с момента принятия.
 """
+import secrets
+from datetime import datetime, timedelta, timezone
 from difflib import get_close_matches
 from typing import List, Optional
 
@@ -18,7 +24,8 @@ from ancient_quota import (
 )
 from database import get_db
 from models import (
-    AncientCalculation, AncientNameMapping, AncientRoster,
+    AncientCalculation, AncientEditor, AncientInviteCode,
+    AncientNameMapping, AncientRoster,
     ChestCollector, PlayerAlias, PlayerProfile, User,
 )
 from web_routes import get_web_user
@@ -37,6 +44,30 @@ async def _get_own_collector(db: AsyncSession, slug: str, user: User) -> ChestCo
     if collector.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your collector")
     return collector
+
+
+async def _get_own_or_editor_collector(
+    db: AsyncSession, slug: str, user: User
+) -> tuple[ChestCollector, bool]:
+    """Returns (collector, is_owner). Raises 403 if user has no access at all."""
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+    if collector.user_id == user.id:
+        return collector, True
+    now = datetime.now(timezone.utc)
+    editor = (await db.execute(
+        select(AncientEditor).where(
+            AncientEditor.collector_id == collector.id,
+            AncientEditor.user_id == user.id,
+            AncientEditor.expires_at > now,
+        )
+    )).scalar_one_or_none()
+    if editor:
+        return collector, False
+    raise HTTPException(status_code=403, detail="Not your collector")
 
 
 async def _roster_rows(
@@ -106,13 +137,29 @@ async def get_dashboard_ancients(
     user: User = Depends(get_web_user),
     db: AsyncSession = Depends(get_db),
 ):
-    collectors = (await db.execute(
+    own_collectors = (await db.execute(
         select(ChestCollector).where(ChestCollector.user_id == user.id)
     )).scalars().all()
 
-    # Load canonical names for all collectors once — used both per-section and as cross-clan sources
+    now = datetime.now(timezone.utc)
+    editor_rows = (await db.execute(
+        select(AncientEditor, ChestCollector)
+        .join(ChestCollector, ChestCollector.id == AncientEditor.collector_id)
+        .where(
+            AncientEditor.user_id == user.id,
+            AncientEditor.expires_at > now,
+        )
+    )).all()
+    own_ids = {c.id for c in own_collectors}
+    editor_collectors = [row.ChestCollector for row in editor_rows if row.ChestCollector.id not in own_ids]
+
+    # (collector, is_owner) pairs
+    all_pairs: list[tuple[ChestCollector, bool]] = (
+        [(c, True) for c in own_collectors] + [(c, False) for c in editor_collectors]
+    )
+
     all_canonical: dict[str, list[str]] = {}
-    for c in collectors:
+    for c, _ in all_pairs:
         names = list((await db.execute(
             select(PlayerAlias.canonical_name).where(PlayerAlias.collector_id == c.id)
         )).scalars().all())
@@ -121,11 +168,11 @@ async def get_dashboard_ancients(
     canonical_sources = [
         {"slug": c.slug, "clan": c.clan, "kingdom": c.kingdom,
          "canonical_names": all_canonical[c.slug]}
-        for c in collectors
+        for c, _ in all_pairs
     ]
 
     result = []
-    for collector in collectors:
+    for collector, is_owner in all_pairs:
         canonical_names = all_canonical[collector.slug]
 
         mappings = (await db.execute(
@@ -138,6 +185,7 @@ async def get_dashboard_ancients(
             "slug": collector.slug,
             "kingdom": collector.kingdom,
             "clan": collector.clan,
+            "is_owner": is_owner,
             "canonical_names": canonical_names,
             "roster": await _roster_rows(
                 db, collector.id, mappings_dict, canonical_names, fuzzy_threshold),
@@ -158,7 +206,7 @@ class TroopLevelPayload(BaseModel):
 async def patch_troop_level(slug: str, payload: TroopLevelPayload,
                             user: User = Depends(get_web_user),
                             db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, slug, user)
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
     if payload.troop_level is not None and payload.troop_level not in TROOP_STEPS:
         raise HTTPException(status_code=400,
                             detail=f"Unknown troop_level: {payload.troop_level!r}")
@@ -191,7 +239,7 @@ class NameMappingsPayload(BaseModel):
 async def patch_name_mappings(slug: str, payload: NameMappingsPayload,
                                user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, slug, user)
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
     for item in payload.mappings:
         existing = (await db.execute(
             select(AncientNameMapping).where(
@@ -217,7 +265,7 @@ async def patch_name_mappings(slug: str, payload: NameMappingsPayload,
 async def delete_name_mapping(slug: str, raw_ocr_name: str,
                                user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, slug, user)
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
     existing = (await db.execute(
         select(AncientNameMapping).where(
             AncientNameMapping.collector_id == collector.id,
@@ -299,3 +347,55 @@ async def calculate(slug: str, payload: CalculatePayload,
 
     await db.commit()
     return {"total_quota_millions": total, "result": result}
+
+
+class JoinPayload(BaseModel):
+    code: str
+
+
+@router.post("/join")
+async def join_as_editor(payload: JoinPayload,
+                         user: User = Depends(get_web_user),
+                         db: AsyncSession = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    invite = (await db.execute(
+        select(AncientInviteCode).where(AncientInviteCode.code == payload.code)
+    )).scalar_one_or_none()
+    if not invite or invite.used_at is not None or invite.expires_at < now:
+        raise HTTPException(status_code=404, detail="Invite code is invalid or expired")
+
+    existing = (await db.execute(
+        select(AncientEditor).where(
+            AncientEditor.collector_id == invite.collector_id,
+            AncientEditor.user_id == user.id,
+        )
+    )).scalar_one_or_none()
+    if existing:
+        existing.expires_at = now + timedelta(days=30)
+    else:
+        db.add(AncientEditor(
+            collector_id=invite.collector_id,
+            user_id=user.id,
+            expires_at=now + timedelta(days=30),
+        ))
+
+    invite.used_at = now
+    invite.used_by_user_id = user.id
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/{slug}/invite")
+async def create_invite(slug: str,
+                        user: User = Depends(get_web_user),
+                        db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    now = datetime.now(timezone.utc)
+    code = secrets.token_urlsafe(24)
+    db.add(AncientInviteCode(
+        collector_id=collector.id,
+        code=code,
+        expires_at=now + timedelta(hours=24),
+    ))
+    await db.commit()
+    return {"code": code}

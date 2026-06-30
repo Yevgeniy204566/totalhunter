@@ -108,6 +108,12 @@ export const DASHBOARD = {
     historyTotal: 'Норма',
     noHistory: 'Расчётов пока не было',
     noRoster: 'Ростер пуст — запустите tournament_reader.py на машине лидера.',
+    rosterTitle: 'Ростер клана',
+    inviteBtn: 'Пригласить сокланера',
+    inviteCopied: 'Ссылка скопирована!',
+    editorBadge: 'Редактор',
+    joinSuccess: 'Доступ получен! Страница обновляется...',
+    joinError: 'Ссылка недействительна или истекла',
   },
 
 

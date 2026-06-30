@@ -108,6 +108,12 @@ export const DASHBOARD = {
     historyTotal: 'Quota',
     noHistory: 'No calculations yet',
     noRoster: 'Roster is empty — run tournament_reader.py on the leader\'s machine.',
+    rosterTitle: 'Clan roster',
+    inviteBtn: 'Invite clanmate',
+    inviteCopied: 'Link copied!',
+    editorBadge: 'Editor',
+    joinSuccess: 'Access granted! Reloading...',
+    joinError: 'Invite link is invalid or expired',
   },
 
   feedback: {

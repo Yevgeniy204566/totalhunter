@@ -629,3 +629,33 @@ class AncientNameMapping(Base):
     created_at     = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     updated_at     = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(),
                             onupdate=func.now())
+
+
+class AncientInviteCode(Base):
+    __tablename__ = "ancient_invite_codes"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_ancient_invite_code"),
+        Index("ix_ancient_invite_codes_collector", "collector_id"),
+    )
+    id               = Column(Integer, primary_key=True)
+    collector_id     = Column(Integer, ForeignKey("chest_collectors.id", ondelete="CASCADE"),
+                              nullable=False)
+    code             = Column(String(64), nullable=False)
+    created_at       = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    expires_at       = Column(TIMESTAMP(timezone=True), nullable=False)
+    used_at          = Column(TIMESTAMP(timezone=True), nullable=True)
+    used_by_user_id  = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+
+class AncientEditor(Base):
+    __tablename__ = "ancient_editors"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "user_id", name="uq_ancient_editor"),
+        Index("ix_ancient_editors_user", "user_id"),
+    )
+    id           = Column(Integer, primary_key=True)
+    collector_id = Column(Integer, ForeignKey("chest_collectors.id", ondelete="CASCADE"),
+                          nullable=False)
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=False)
+    granted_at   = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    expires_at   = Column(TIMESTAMP(timezone=True), nullable=False)

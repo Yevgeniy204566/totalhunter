@@ -44,6 +44,8 @@ export default function AncientsPage() {
   const [sortByCollector, setSortByCollector] = useState({})
   const [canonicalSources, setCanonicalSources] = useState([])
   const [canonicalSourceSlug, setCanonicalSourceSlug] = useState({})
+  const [joinMessage, setJoinMessage] = useState('')
+  const [inviteMsg, setInviteMsg] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -82,7 +84,18 @@ export default function AncientsPage() {
       setLoadError(e.message || 'failed to load')
     }
   }
-  useEffect(() => { refresh() }, [])
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const joinCode = params.get('join')
+    if (joinCode) {
+      params.delete('join')
+      window.history.replaceState({}, '', window.location.pathname + (params.toString() ? '?' + params : ''))
+      api.dashboardAncientsJoin(joinCode)
+        .then(() => setJoinMessage(cx.joinSuccess))
+        .catch(() => setJoinMessage(cx.joinError))
+    }
+    refresh()
+  }, [])
 
   function updateForm(slug, patch) {
     setFormByCollector(prev => ({ ...prev, [slug]: { ...prev[slug], ...patch } }))
@@ -98,6 +111,18 @@ export default function AncientsPage() {
 
   function levelsFor(form) {
     return Array.from({ length: form.summonCount }, (_, i) => form.startLevel + i)
+  }
+
+  async function handleInvite(slug) {
+    try {
+      const { code } = await api.dashboardAncientsInvite(slug)
+      const url = `${window.location.origin}/dashboard/ancients?join=${code}`
+      await navigator.clipboard.writeText(url)
+      setInviteMsg(prev => ({ ...prev, [slug]: cx.inviteCopied }))
+      setTimeout(() => setInviteMsg(prev => ({ ...prev, [slug]: '' })), 3000)
+    } catch {
+      setInviteMsg(prev => ({ ...prev, [slug]: '—' }))
+    }
   }
 
   async function handleTroopLevelChange(slug, playerName, troopLevel) {
@@ -126,6 +151,17 @@ export default function AncientsPage() {
   return (
     <div className="page-content">
       <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
+
+      {joinMessage && (
+        <div style={{
+          marginBottom: 16, padding: '10px 16px', borderRadius: 8,
+          background: joinMessage === cx.joinSuccess ? 'rgba(166,227,161,0.15)' : 'rgba(243,139,168,0.15)',
+          border: `1px solid ${joinMessage === cx.joinSuccess ? '#a6e3a1' : '#f38ba8'}`,
+          color: joinMessage === cx.joinSuccess ? '#a6e3a1' : '#f38ba8',
+        }}>
+          {joinMessage}
+        </div>
+      )}
 
       {collectors.length === 0 && (
         <div className="text-muted" style={{ marginTop: 12 }}>{cx.noRoster}</div>
@@ -156,10 +192,30 @@ export default function AncientsPage() {
 
         return (
           <div key={c.slug} style={{ marginBottom: 32 }}>
-            <div style={{ marginBottom: 12, fontWeight: 600 }}>{c.kingdom} / {c.clan}</div>
+            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 600 }}>{c.kingdom} / {c.clan}</span>
+              {!c.is_owner && (
+                <span style={{
+                  fontSize: 11, padding: '2px 8px', borderRadius: 12,
+                  background: 'rgba(137,180,250,0.15)', border: '1px solid #89b4fa',
+                  color: '#89b4fa', fontWeight: 600,
+                }}>
+                  {cx.editorBadge}
+                </span>
+              )}
+              {c.is_owner && (
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: 12, padding: '4px 12px' }}
+                  onClick={() => handleInvite(c.slug)}
+                >
+                  {inviteMsg[c.slug] || cx.inviteBtn}
+                </button>
+              )}
+            </div>
 
-            {/* ── Калькулятор ── */}
-            <div className="card" style={{ marginBottom: 16 }}>
+            {/* ── Калькулятор (только для владельца) ── */}
+            {c.is_owner && <div className="card" style={{ marginBottom: 16 }}>
               <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.calcTitle}</div>
 
               <div style={{ marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -271,9 +327,9 @@ export default function AncientsPage() {
               <button className="btn-primary" onClick={() => handleCalculate(c.slug)}>
                 {cx.calculateButton}
               </button>
-            </div>
+            </div>}
 
-            {result && (
+            {result && c.is_owner && (
               <div className="card" style={{ marginBottom: 16 }}>
                 <div>{cx.totalQuota}: <strong>{fmtNum(result.total_quota_millions)}</strong></div>
                 {result.result.officer_quota !== undefined ? (

@@ -66,6 +66,10 @@ export const api = {
     request('PATCH', `/web/dashboard/ancients/${slug}/name-mappings`, { mappings }),
   dashboardAncientsNameMappingDelete: (slug, rawOcrName) =>
     request('DELETE', `/web/dashboard/ancients/${slug}/name-mappings/${encodeURIComponent(rawOcrName)}`),
+  dashboardAncientsInvite: (slug) =>
+    request('POST', `/web/dashboard/ancients/${slug}/invite`),
+  dashboardAncientsJoin: (code) =>
+    request('POST', '/web/dashboard/ancients/join', { code }),
 }
 
 export async function fetchChestSummary(slug) {
