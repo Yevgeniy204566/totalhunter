@@ -4270,6 +4270,24 @@ class TotalHunterApp(ctk.CTk):
         desc_lb.pack(pady=(0, 12), padx=20)
         self._i18n_labels.append((desc_lb, "ancient_desc"))
 
+        row_ak = ctk.CTkFrame(self.tab_ancient, fg_color="transparent")
+        row_ak.pack(fill="x", padx=20, pady=(0, 4))
+        lb_ak = ctk.CTkLabel(row_ak, text=L.get("chest_kingdom_lb", "Kingdom:"),
+                              width=130, anchor="w", font=ctk.CTkFont(size=13))
+        lb_ak.pack(side="left")
+        self.ancient_kingdom_entry = ctk.CTkEntry(row_ak, height=32, corner_radius=8)
+        self.ancient_kingdom_entry.pack(side="left", fill="x", expand=True)
+        self._i18n_labels.append((lb_ak, "chest_kingdom_lb"))
+
+        row_ac = ctk.CTkFrame(self.tab_ancient, fg_color="transparent")
+        row_ac.pack(fill="x", padx=20, pady=(0, 8))
+        lb_ac = ctk.CTkLabel(row_ac, text=L.get("chest_clan_lb", "Clan name:"),
+                              width=130, anchor="w", font=ctk.CTkFont(size=13))
+        lb_ac.pack(side="left")
+        self.ancient_clan_entry = ctk.CTkEntry(row_ac, height=32, corner_radius=8)
+        self.ancient_clan_entry.pack(side="left", fill="x", expand=True)
+        self._i18n_labels.append((lb_ac, "chest_clan_lb"))
+
         saved_full_lang = self._load_gui_config().get("ancient_full_lang_ocr", False)
         self.ancient_full_lang_var = ctk.BooleanVar(value=saved_full_lang)
         ancient_lang_toggle_row = ctk.CTkFrame(self.tab_ancient, fg_color="transparent")
@@ -4311,24 +4329,6 @@ class TotalHunterApp(ctk.CTk):
         chat_desc_lb.pack(pady=(0, 8), padx=20)
         self._i18n_labels.append((chat_desc_lb, "chat_desc"))
 
-        row_ck = ctk.CTkFrame(self.tab_ancient, fg_color="transparent")
-        row_ck.pack(fill="x", padx=20, pady=(0, 4))
-        lb_ck = ctk.CTkLabel(row_ck, text=L.get("chest_kingdom_lb", "Kingdom:"),
-                              width=130, anchor="w", font=ctk.CTkFont(size=13))
-        lb_ck.pack(side="left")
-        self.chat_kingdom_entry = ctk.CTkEntry(row_ck, height=32, corner_radius=8)
-        self.chat_kingdom_entry.pack(side="left", fill="x", expand=True)
-        self._i18n_labels.append((lb_ck, "chest_kingdom_lb"))
-
-        row_cc = ctk.CTkFrame(self.tab_ancient, fg_color="transparent")
-        row_cc.pack(fill="x", padx=20, pady=(0, 8))
-        lb_cc = ctk.CTkLabel(row_cc, text=L.get("chest_clan_lb", "Clan name:"),
-                              width=130, anchor="w", font=ctk.CTkFont(size=13))
-        lb_cc.pack(side="left")
-        self.chat_clan_entry = ctk.CTkEntry(row_cc, height=32, corner_radius=8)
-        self.chat_clan_entry.pack(side="left", fill="x", expand=True)
-        self._i18n_labels.append((lb_cc, "chest_clan_lb"))
-
         self.chat_start_btn = ctk.CTkButton(
             self.tab_ancient,
             text=L.get("chat_start_btn", "CLAN CHAT"),
@@ -4357,8 +4357,8 @@ class TotalHunterApp(ctk.CTk):
             self._ancient_stop_event.set()
             return
 
-        kingdom = self.chest_kingdom_entry.get().strip()
-        clan = self.chest_clan_entry.get().strip()
+        kingdom = self.ancient_kingdom_entry.get().strip()
+        clan = self.ancient_clan_entry.get().strip()
         if not kingdom or not clan:
             self.ancient_status_label.configure(text=L["chest_missing_fields"],
                                                 text_color=MD3["error_text"])
@@ -4406,8 +4406,8 @@ class TotalHunterApp(ctk.CTk):
             self._chat_stop_event.set()
             return
 
-        kingdom = self.chat_kingdom_entry.get().strip()
-        clan = self.chat_clan_entry.get().strip()
+        kingdom = self.ancient_kingdom_entry.get().strip()
+        clan = self.ancient_clan_entry.get().strip()
         if not kingdom or not clan:
             self.chat_status_label.configure(text=L["chest_missing_fields"],
                                              text_color=MD3["error_text"])

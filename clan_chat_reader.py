@@ -251,7 +251,33 @@ def _is_junk(name):
         return True
     if re.match(r"^[a-z]{2,3}$", name):
         return True
-    first = name.split()[0]
+
+    words = name.split()
+    # 4+ слов → почти всегда мусор UI/OCR
+    if len(words) >= 4:
+        return True
+    # 2+ коротких слова (≤ 2 символа) → мусор
+    if sum(1 for w in words if len(w) <= 2) >= 2:
+        return True
+    # Цифра между буквами → OCR-артефакт ("Ma3aQakxa")
+    if re.search(r'[A-Za-zА-Яа-я]\d[A-Za-zА-Яа-я]', name):
+        return True
+    # Любое длинное слово с почти нулевыми гласными → случайный набор букв
+    for word in words:
+        if len(word) > 7 and word.isalpha():
+            vowels = sum(1 for c in word.lower() if c in "aeiouаеіоуиє")
+            if vowels / len(word) < 0.15:
+                return True
+    # Высокое чередование регистра → OCR склеил две строки ("MaKnJoHaHnH")
+    if len(name) > 8:
+        alpha = [c for c in name if c.isalpha()]
+        if len(alpha) > 5:
+            transitions = sum(1 for i in range(1, len(alpha))
+                              if alpha[i - 1].isupper() != alpha[i].isupper())
+            if transitions / len(alpha) > 0.55:
+                return True
+
+    first = words[0]
     if len(first) > 5 and first.islower():
         vowels = sum(1 for c in first if c in "aeiouаеіоуиє")
         if vowels / len(first) < 0.15:
@@ -307,7 +333,7 @@ def clean_names(raw):
     for name in filtered:
         key = name.lower()
         seen[key] = _pick_better(seen[key], name) if key in seen else name
-    after_fuzzy = _fuzzy_dedup(list(seen.values()), threshold=0.85)
+    after_fuzzy = _fuzzy_dedup(list(seen.values()), threshold=0.82)
     return sorted(after_fuzzy, key=lambda n: n.lower())
 
 

@@ -11,7 +11,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
@@ -91,20 +91,16 @@ async def upload_clan_roster(
 
     collector = await _get_or_create_collector(payload.kingdom, payload.clan, user.id, db)
 
-    existing = {
-        r.raw_name
-        for r in (await db.execute(
-            select(ClanRosterEntry.raw_name)
-            .where(ClanRosterEntry.collector_id == collector.id)
-        )).all()
-    }
+    # Полная замена: удаляем старый ростер и заливаем свежие имена.
+    # Аддитивный upsert накапливал OCR-мусор из разных прогонов.
+    await db.execute(
+        delete(ClanRosterEntry).where(ClanRosterEntry.collector_id == collector.id)
+    )
 
     added = 0
     for name in payload.names:
         name = name.strip()
-        if not name or name in existing:
-            continue
-        if len(name) > 100:
+        if not name or len(name) > 100:
             continue
         db.add(ClanRosterEntry(
             collector_id=collector.id,
