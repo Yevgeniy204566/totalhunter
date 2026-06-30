@@ -543,6 +543,22 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
     return {"ok": True}
 
 
+@router.delete("/{slug}")
+async def delete_collector(slug: str, user: User = Depends(get_web_user),
+                           db: AsyncSession = Depends(get_db)):
+    from models import AncientRoster, AncientNameMapping, AncientEditor, AncientInviteCode
+    collector = await _get_own_collector(db, slug, user)
+    # Cascades not guaranteed in all FK definitions — delete explicitly in order
+    await db.execute(delete(Chest).where(Chest.collector_id == collector.id))
+    await db.execute(delete(AncientRoster).where(AncientRoster.collector_id == collector.id))
+    await db.execute(delete(AncientNameMapping).where(AncientNameMapping.collector_id == collector.id))
+    await db.execute(delete(AncientEditor).where(AncientEditor.collector_id == collector.id))
+    await db.execute(delete(AncientInviteCode).where(AncientInviteCode.collector_id == collector.id))
+    await db.execute(delete(ChestCollector).where(ChestCollector.id == collector.id))
+    await db.commit()
+    return {"ok": True}
+
+
 @router.get("/{slug}/history")
 async def get_dashboard_history(slug: str, user: User = Depends(get_web_user),
                                 db: AsyncSession = Depends(get_db)):

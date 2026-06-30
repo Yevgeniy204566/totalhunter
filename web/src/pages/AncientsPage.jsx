@@ -91,7 +91,7 @@ export default function AncientsPage() {
       params.delete('join')
       window.history.replaceState({}, '', window.location.pathname + (params.toString() ? '?' + params : ''))
       api.dashboardAncientsJoin(joinCode)
-        .then(() => setJoinMessage(cx.joinSuccess))
+        .then(() => { setJoinMessage(cx.joinSuccess); refresh() })
         .catch(() => setJoinMessage(cx.joinError))
     }
     refresh()
@@ -126,8 +126,12 @@ export default function AncientsPage() {
   }
 
   async function handleTroopLevelChange(slug, playerName, troopLevel) {
-    await api.dashboardAncientsTroopLevel(slug, playerName, troopLevel || null)
-    refresh()
+    try {
+      await api.dashboardAncientsTroopLevel(slug, playerName, troopLevel || null)
+      refresh()
+    } catch (e) {
+      alert(e.message || 'Ошибка сохранения')
+    }
   }
 
   async function handleCalculate(slug) {
@@ -140,9 +144,13 @@ export default function AncientsPage() {
       officer_count: form.strategy === 'A' ? Number(form.officerCount) : null,
       veteran_count: form.strategy === 'A' ? Number(form.veteranCount) : null,
     }
-    const result = await api.dashboardAncientsCalculate(slug, payload)
-    setResultByCollector(prev => ({ ...prev, [slug]: result }))
-    refresh()
+    try {
+      const result = await api.dashboardAncientsCalculate(slug, payload)
+      setResultByCollector(prev => ({ ...prev, [slug]: result }))
+      refresh()
+    } catch (e) {
+      alert(e.message || 'Ошибка расчёта')
+    }
   }
 
   if (loadError) return <div className="page-content text-muted">{loadError}</div>

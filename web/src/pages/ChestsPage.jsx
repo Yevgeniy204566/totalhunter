@@ -49,6 +49,7 @@ export default function ChestsPage() {
   const [historyByCollector, setHistoryByCollector] = useState({})
   const [seasonDetailByCollector, setSeasonDetailByCollector] = useState({})
   const [confirmCloseByCollector, setConfirmCloseByCollector] = useState({})
+  const [confirmDeleteByCollector, setConfirmDeleteByCollector] = useState({})
   const [leaderByCollector, setLeaderByCollector] = useState({})
   const [leaderExcludedByCollector, setLeaderExcludedByCollector] = useState({})
   const [sortByCollector, setSortByCollector] = useState({})
@@ -277,7 +278,34 @@ export default function ChestsPage() {
         <div className="card" key={collector.slug} style={{ marginBottom: 24 }}>
           {/* Header: kingdom/clan left | links stacked right */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>{collector.kingdom} / {collector.clan}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: 16 }}>{collector.kingdom} / {collector.clan}</span>
+              {confirmDeleteByCollector[collector.slug] ? (
+                <>
+                  <span style={{ fontSize: 12, color: '#F87171' }}>{cx.deleteCollectorConfirm}</span>
+                  <button
+                    className="btn-primary"
+                    style={{ fontSize: 12, padding: '3px 10px', background: '#DC2626', boxShadow: 'none' }}
+                    onClick={async () => {
+                      await api.dashboardChestsDelete(collector.slug)
+                      setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))
+                      refresh()
+                    }}
+                  >{cx.deleteCollectorYes}</button>
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: 12, padding: '3px 10px' }}
+                    onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))}
+                  >{cx.closeSeasonNo}</button>
+                </>
+              ) : (
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: 12, padding: '3px 10px', color: '#F87171', borderColor: '#F8717144' }}
+                  onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: true }))}
+                >{cx.deleteCollectorBtn}</button>
+              )}
+            </div>
             <div style={{ textAlign: 'right' }}>
               {collector.short_url && (
                 <div>

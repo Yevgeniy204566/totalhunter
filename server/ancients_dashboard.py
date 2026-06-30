@@ -323,7 +323,7 @@ async def calculate(slug: str, payload: CalculatePayload,
         players = [(r.player_name, r.troop_level) for r in roster]
         try:
             result = split_strategy_b(total, payload.clan_preset, players)
-        except ValueError as e:
+        except (ValueError, KeyError) as e:
             raise HTTPException(status_code=400, detail=str(e))
 
     db.add(AncientCalculation(

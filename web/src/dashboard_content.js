@@ -82,6 +82,9 @@ export const DASHBOARD = {
     noCollectors: 'У вас пока нет ни одного клана. Бот создаёт коллектор автоматически при первой отправке сундуков, или попроси код передачи у того, кто уже его настроил.',
     noCatalog: '— выбрать —',
     language: 'Язык клана',
+    deleteCollectorBtn: 'Удалить коллектор',
+    deleteCollectorConfirm: 'НАВСЕГДА удалить клан и все его сундуки?',
+    deleteCollectorYes: 'Да, удалить',
   },
 
   ancients: {

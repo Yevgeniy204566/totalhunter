@@ -55,6 +55,7 @@ export const api = {
   dashboardChestsHistoryDetail: (slug, seasonId) => request('GET', `/web/dashboard/chests/${slug}/history/${seasonId}`),
   dashboardChestsCloseSeason:   (slug) => request('POST', `/web/dashboard/chests/${slug}/close-season`),
   dashboardChestsMyNames:       ()    => request('GET',  '/web/dashboard/chests/my-custom-names'),
+  dashboardChestsDelete:        (slug) => request('DELETE', `/web/dashboard/chests/${slug}`),
   dashboardAncients:      (fuzzyThreshold = 0.75) =>
     request('GET',   `/web/dashboard/ancients?fuzzy_threshold=${fuzzyThreshold}`),
   dashboardAncientsTroopLevel: (slug, playerName, troopLevel) =>
