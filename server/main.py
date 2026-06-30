@@ -49,13 +49,11 @@ from vault import router as vault_router
 from earn import router as earn_router
 from roy import router as roy_router
 from debug_router import router as debug_router
-from clan import router as clan_router
 from chests import router as chests_router
 from chest_aliases import router as chest_aliases_router
 from chest_catalog import router as chest_catalog_router
 from chest_dashboard import router as chest_dashboard_router
 from ancients_dashboard import router as ancients_dashboard_router
-from roster_dashboard import router as roster_dashboard_router
 from tournaments import router as tournaments_router
 import chest_history
 from schemas import (
@@ -95,13 +93,11 @@ app.include_router(vault_router)
 app.include_router(earn_router)
 app.include_router(roy_router)
 app.include_router(debug_router)
-app.include_router(clan_router)
 app.include_router(chests_router)
 app.include_router(chest_aliases_router)
 app.include_router(chest_catalog_router)
 app.include_router(chest_dashboard_router)
 app.include_router(ancients_dashboard_router)
-app.include_router(roster_dashboard_router)
 app.include_router(tournaments_router)
 
 

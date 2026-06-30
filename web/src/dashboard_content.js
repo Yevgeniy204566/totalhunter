@@ -21,7 +21,6 @@ export const DASHBOARD = {
     roy:          'РОЙ',
     chests:       'Сундуки',
     ancients:     'Древний',
-    roster:       'Участники',
   },
 
   devices: {
@@ -87,7 +86,6 @@ export const DASHBOARD = {
 
   ancients: {
     title: 'Древний',
-    rosterTitle: 'Ростер клана',
     player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Состав',
     noTroopLevel: 'не указан',
     calcTitle: 'Калькулятор нормы',
@@ -112,19 +110,6 @@ export const DASHBOARD = {
     noRoster: 'Ростер пуст — запустите tournament_reader.py на машине лидера.',
   },
 
-  roster: {
-    title:        'Участники клана',
-    selectClan:   'Выберите клан',
-    noClan:       'Нет коллекторов — сначала создайте клан в разделе Сундуки',
-    rawName:      'OCR-имя',
-    canonName:    'Каноническое имя',
-    addRow:       '+ Добавить строку',
-    save:         'Сохранить',
-    saved:        'Сохранено',
-    empty:        'Нет записей — загрузите список из clan_chat_canonical.json',
-    importBtn:    'Импорт из JSON',
-    importHint:   'Вставьте содержимое clan_chat_canonical.json',
-  },
 
   feedback: {
     title:       'Обратная связь',

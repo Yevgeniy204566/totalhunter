@@ -21,7 +21,6 @@ export const DASHBOARD = {
     roy:          'SWARM',
     chests:       'Chests',
     ancients:     'Ancient',
-    roster:       'Roster',
   },
 
   devices: {
@@ -87,7 +86,6 @@ export const DASHBOARD = {
 
   ancients: {
     title: 'Ancient',
-    rosterTitle: 'Clan roster',
     player: 'Player', place: 'Place', points: 'Points', troopLevel: 'Composition',
     noTroopLevel: 'not set',
     calcTitle: 'Quota calculator',
@@ -110,20 +108,6 @@ export const DASHBOARD = {
     historyTotal: 'Quota',
     noHistory: 'No calculations yet',
     noRoster: 'Roster is empty — run tournament_reader.py on the leader\'s machine.',
-  },
-
-  roster: {
-    title:        'Clan Roster',
-    selectClan:   'Select clan',
-    noClan:       'No collectors — create a clan in the Chests section first',
-    rawName:      'OCR name',
-    canonName:    'Canonical name',
-    addRow:       '+ Add row',
-    save:         'Save',
-    saved:        'Saved',
-    empty:        'No entries — import from clan_chat_canonical.json',
-    importBtn:    'Import from JSON',
-    importHint:   'Paste the contents of clan_chat_canonical.json',
   },
 
   feedback: {
