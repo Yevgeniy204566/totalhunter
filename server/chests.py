@@ -253,7 +253,7 @@ def _clan_to_slug(clan: str) -> str:
     return re.sub(r'[^a-z0-9]+', '-', clan.lower()).strip('-')
 
 
-_PUBLIC_PROFILE_COOLDOWN = timedelta(hours=6)
+_PUBLIC_PROFILE_COOLDOWN = timedelta(minutes=15)
 
 _VALID_RANKS = {"Глава", "Старший", "Офицер", "Ветеран", "Рядовой"}
 # G/S/M + тир 1-9 каждый, через пробел: "G8 S7 M8"
