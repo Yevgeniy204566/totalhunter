@@ -27,8 +27,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chest_summary import pivot_summary, query_summary_rows
 from database import AsyncSessionLocal
 from models import (
-    Chest, ChestCollector, ChestConfiguration, ChestSeasonHistory,
-    ChestTypeAlias, PlayerAlias,
+    AncientCalculation, AncientEditor, AncientInviteCode, AncientNameMapping,
+    AncientRoster, Chest, ChestCollector, ChestConfiguration,
+    ChestSeasonHistory, ChestTypeAlias, PlayerAlias,
 )
 
 ARCHIVE_TICK_SEC             = 86400  # раз в сутки — сезоны измеряются неделями, чаще не нужно
@@ -138,6 +139,11 @@ async def run_stopped_collector_tick(db: AsyncSession) -> int:
             await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == cid))
             await db.execute(delete(ChestConfiguration).where(ChestConfiguration.collector_id == cid))
             await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == cid))
+            await db.execute(delete(AncientRoster).where(AncientRoster.collector_id == cid))
+            await db.execute(delete(AncientNameMapping).where(AncientNameMapping.collector_id == cid))
+            await db.execute(delete(AncientCalculation).where(AncientCalculation.collector_id == cid))
+            await db.execute(delete(AncientEditor).where(AncientEditor.collector_id == cid))
+            await db.execute(delete(AncientInviteCode).where(AncientInviteCode.collector_id == cid))
             await db.execute(delete(ChestCollector).where(ChestCollector.id == cid))
             await db.commit()
             deleted += 1

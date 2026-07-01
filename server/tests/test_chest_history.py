@@ -311,6 +311,63 @@ async def test_build_history_detail_includes_target_snapshot(db_session):
     assert "period_start" in detail and "period_end" in detail
 
 
+@pytest.mark.asyncio
+async def test_stopped_collector_tick_deletes_ancient_tables_too(db_session):
+    from models import AncientCalculation, AncientNameMapping, AncientRoster, PlayerAlias
+    from chest_history import run_stopped_collector_tick
+
+    collector = await _make_collector(
+        db_session, slug="stopped-with-ancient",
+        stopped_at=datetime.utcnow() - timedelta(days=91),
+    )
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="P1", place=1, points=10))
+    db_session.add(AncientNameMapping(collector_id=collector.id, raw_ocr_name="p1", canonical_name="P1"))
+    db_session.add(AncientCalculation(
+        collector_id=collector.id, strategy="A", summon_levels=[81],
+        amplification_coef=1.0, officer_count=1, veteran_count=0,
+        total_quota_millions=1.0, result_json={},
+    ))
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="p1raw", canonical_name="P1"))
+    await db_session.commit()
+
+    deleted = await run_stopped_collector_tick(db_session)
+
+    assert deleted == 1
+    assert (await db_session.execute(
+        select(ChestCollector).where(ChestCollector.id == collector.id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all() == []
+    assert (await db_session.execute(
+        select(AncientNameMapping).where(AncientNameMapping.collector_id == collector.id)
+    )).scalars().all() == []
+    assert (await db_session.execute(
+        select(AncientCalculation).where(AncientCalculation.collector_id == collector.id)
+    )).scalars().all() == []
+    # PlayerAlias behavior unchanged — still deleted with the collector.
+    assert (await db_session.execute(
+        select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
+    )).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_stopped_collector_tick_ignores_recent_stop(db_session):
+    from chest_history import run_stopped_collector_tick
+    collector = await _make_collector(
+        db_session, slug="stopped-recent",
+        stopped_at=datetime.utcnow() - timedelta(days=10),
+    )
+    await db_session.commit()
+
+    deleted = await run_stopped_collector_tick(db_session)
+
+    assert deleted == 0
+    assert (await db_session.execute(
+        select(ChestCollector).where(ChestCollector.id == collector.id)
+    )).scalar_one_or_none() is not None
+
+
 def test_app_startup_schedules_archive_background_tasks(monkeypatch):
     import chest_history
     calls = []
