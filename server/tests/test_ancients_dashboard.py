@@ -575,3 +575,93 @@ async def test_calculate_strategy_b_uses_raw_name_when_unmapped(db_session):
     assert resp.status_code == 200
     names = [p["name"] for p in resp.json()["result"]["players"]]
     assert names == ["Ivan0v_raw"]
+
+
+@pytest.mark.asyncio
+async def test_add_manual_roster_entry_creates_row(db_session):
+    user, token = await _create_user_with_token(db_session, "manual1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="manual-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/manual-1/roster/manual",
+            json={"player_name": "НовыйИгрок", "troop_level": "G7 S7 M8", "rank": "Ветеран"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(AncientRoster).where(
+            AncientRoster.collector_id == collector.id,
+            AncientRoster.player_name == "НовыйИгрок",
+        )
+    )).scalar_one()
+    assert row.source == "manual"
+    assert row.rank == "Ветеран"
+    assert row.troop_level == "G7 S7 M8"
+    assert row.place is None
+    assert row.points is None
+    assert row.manual_expires_at is not None
+
+
+@pytest.mark.asyncio
+async def test_add_manual_roster_entry_rejects_exact_duplicate(db_session):
+    user, token = await _create_user_with_token(db_session, "manual2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="manual-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Существующий",
+                                 place=1, points=10))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/manual-2/roster/manual",
+            json={"player_name": "Существующий", "troop_level": None, "rank": None},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_add_manual_roster_entry_warns_on_similar_name(db_session):
+    user, token = await _create_user_with_token(db_session, "manual3@test.com")
+    collector = await _create_collector(db_session, user.id, slug="manual-3")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="raw1",
+                               canonical_name="Иванов"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/manual-3/roster/manual",
+            json={"player_name": "Иваанов", "troop_level": None, "rank": None},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 409
+    assert resp.json()["detail"]["similar_name"] == "Иванов"
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_add_manual_roster_entry_editor_can_add(db_session):
+    """Editors (not just the owner) can add manual entries, matching the
+    troop-level/name-mappings permission model."""
+    from datetime import timedelta
+    from models import AncientEditor
+    owner, _ = await _create_user_with_token(db_session, "manualowner@test.com")
+    editor, editor_token = await _create_user_with_token(db_session, "manualeditor@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="manual-4")
+    db_session.add(AncientEditor(collector_id=collector.id, user_id=editor.id,
+                                 expires_at=datetime.now(timezone.utc) + timedelta(days=30)))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/manual-4/roster/manual",
+            json={"player_name": "ДобавленРедактором", "troop_level": None, "rank": None},
+            headers={"Authorization": f"Bearer {editor_token}"},
+        )
+    assert resp.status_code == 200

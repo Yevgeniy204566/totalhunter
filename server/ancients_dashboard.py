@@ -28,6 +28,7 @@ from models import (
     AncientNameMapping, AncientRoster,
     ChestCollector, PlayerAlias, PlayerProfile, User,
 )
+from roy import next_trade_routes_end
 from web_routes import get_web_user
 
 router = APIRouter(prefix="/web/dashboard/ancients", tags=["ancients-dashboard"])
@@ -381,6 +382,50 @@ async def calculate(slug: str, payload: CalculatePayload,
 
     await db.commit()
     return {"total_quota_millions": total, "result": result}
+
+
+class ManualRosterPayload(BaseModel):
+    player_name: str
+    troop_level: Optional[str] = None
+    rank: Optional[str] = None
+
+
+@router.post("/{slug}/roster/manual")
+async def add_manual_roster_entry(slug: str, payload: ManualRosterPayload,
+                                  user: User = Depends(get_web_user),
+                                  db: AsyncSession = Depends(get_db)):
+    """Ручное добавление участника Древнего — для игроков, которых нет ни
+    в турнирной таблице (OCR), ни в базе Сундуков. Сгорает на ближайшем
+    завершении «Торговых Путей», если реальные данные так и не появятся."""
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
+
+    existing = (await db.execute(
+        select(AncientRoster).where(
+            AncientRoster.collector_id == collector.id,
+            AncientRoster.player_name == payload.player_name,
+        )
+    )).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="Player already in roster")
+
+    canonical_names = list((await db.execute(
+        select(PlayerAlias.canonical_name).where(PlayerAlias.collector_id == collector.id)
+    )).scalars().all())
+    matches = get_close_matches(payload.player_name, canonical_names, n=1, cutoff=0.75)
+    if matches and matches[0] != payload.player_name:
+        raise HTTPException(status_code=409, detail={
+            "message": "Similar name already confirmed",
+            "similar_name": matches[0],
+        })
+
+    db.add(AncientRoster(
+        collector_id=collector.id, player_name=payload.player_name,
+        place=None, points=None, troop_level=payload.troop_level,
+        rank=payload.rank, source="manual",
+        manual_expires_at=next_trade_routes_end(),
+    ))
+    await db.commit()
+    return {"ok": True}
 
 
 class JoinPayload(BaseModel):
