@@ -70,6 +70,23 @@ async def run_ancient_retention_tick(db: AsyncSession) -> int:
     return purged
 
 
+async def run_manual_entry_expiry_tick(db: AsyncSession) -> int:
+    """Удаляет вручную добавленные строки ростера, чьё время жизни истекло
+    (ближайшее завершение «Торговых Путей» на момент добавления прошло, а
+    реальные данные так и не подтвердили игрока). Возвращает количество
+    удалённых строк."""
+    now = datetime.now(timezone.utc)
+    result = await db.execute(
+        delete(AncientRoster).where(
+            AncientRoster.source == "manual",
+            AncientRoster.manual_expires_at.is_not(None),
+            AncientRoster.manual_expires_at < now,
+        )
+    )
+    await db.commit()
+    return result.rowcount or 0
+
+
 def ensure_background_tasks() -> None:
     """Запускается раз за жизнь процесса из main.py при старте приложения."""
     global _retention_task
@@ -82,3 +99,4 @@ async def _retention_loop() -> None:
         await asyncio.sleep(RETENTION_TICK_SEC)
         async with AsyncSessionLocal() as db:
             await run_ancient_retention_tick(db)
+            await run_manual_entry_expiry_tick(db)

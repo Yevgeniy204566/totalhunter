@@ -13,7 +13,7 @@ from models import (
     AncientCalculation, AncientNameMapping, AncientRoster, Chest,
     ChestCollector, PlayerAlias,
 )
-from ancient_retention import run_ancient_retention_tick
+from ancient_retention import run_ancient_retention_tick, run_manual_entry_expiry_tick
 
 
 async def _make_collector(db, **overrides):
@@ -102,6 +102,62 @@ async def test_tick_purges_ancient_tables_for_stale_hidden_collector(db_session)
     await db_session.refresh(collector)
     assert collector.ancient_hidden_at is None
     assert collector.ancient_hidden is True
+
+
+@pytest.mark.asyncio
+async def test_expiry_tick_deletes_expired_manual_entry(db_session):
+    collector = await _make_collector(db_session, slug="expired-manual-1")
+    db_session.add(AncientRoster(
+        collector_id=collector.id, player_name="Просрочен",
+        source="manual", manual_expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    ))
+    await db_session.commit()
+
+    deleted = await run_manual_entry_expiry_tick(db_session)
+
+    assert deleted == 1
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_expiry_tick_ignores_not_yet_expired_manual_entry(db_session):
+    collector = await _make_collector(db_session, slug="fresh-manual-1")
+    db_session.add(AncientRoster(
+        collector_id=collector.id, player_name="Свежий",
+        source="manual", manual_expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+    ))
+    await db_session.commit()
+
+    deleted = await run_manual_entry_expiry_tick(db_session)
+
+    assert deleted == 0
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+
+
+@pytest.mark.asyncio
+async def test_expiry_tick_ignores_ocr_rows_regardless_of_dates(db_session):
+    """source='ocr' rows never have manual_expires_at set, and must never be
+    touched by this tick even if some future bug set a past timestamp on one."""
+    collector = await _make_collector(db_session, slug="ocr-with-past-date-1")
+    db_session.add(AncientRoster(
+        collector_id=collector.id, player_name="ОбычныйИгрок",
+        source="ocr", manual_expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    ))
+    await db_session.commit()
+
+    deleted = await run_manual_entry_expiry_tick(db_session)
+
+    assert deleted == 0
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
 
 
 def test_app_startup_schedules_ancient_retention_background_task(monkeypatch):
