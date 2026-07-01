@@ -2,6 +2,7 @@
 import os
 import secrets
 import sys
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -201,3 +202,24 @@ async def test_import_does_not_charge_credits(db_session):
 
     await db_session.refresh(user)
     assert user.credits == 5  # unchanged — free feature
+
+
+@pytest.mark.asyncio
+async def test_import_touches_ancient_hidden_at_when_hidden(db_session):
+    user = await _create_user(db_session, "hwid7000000000a")
+    collector = ChestCollector(
+        kingdom="K229", clan="BERS7", user_id=user.id, slug="hidden-import-1",
+        ancient_hidden=True,
+        ancient_hidden_at=datetime.now(timezone.utc) - timedelta(days=55),
+    )
+    db_session.add(collector)
+    await db_session.commit()
+    old_touch = collector.ancient_hidden_at
+
+    payload = _payload(user.hwid, clan="BERS7",
+                       items=[{"name": "Иванов", "place": 1, "points": 100}])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=payload)
+
+    await db_session.refresh(collector)
+    assert collector.ancient_hidden_at > old_touch

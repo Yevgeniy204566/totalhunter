@@ -11,6 +11,7 @@ Auth: hwid в payload → User (как /api/v1/chests/import). Бесплатн�
 весь функционал «Древний» бесплатен по требованию.
 """
 import difflib
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -78,6 +79,8 @@ async def import_tournament(payload: TournamentImportPayload,
         raise HTTPException(status_code=403, detail="Banned")
 
     collector = await _get_or_create_collector(payload.kingdom, payload.clan, user.id, db)
+    if collector.ancient_hidden_at is not None:
+        collector.ancient_hidden_at = datetime.now(timezone.utc)
 
     player_aliases = {
         row.raw_name: row.canonical_name

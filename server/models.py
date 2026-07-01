@@ -7,17 +7,39 @@ Timestamps: server_default=func.now() — DB sets time, not Python.
 Naming convention: предсказуемые имена для индексов и ключей (Alembic gold standard).
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     BigInteger, Boolean, CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer,
-    JSON, MetaData, Numeric, String, Text, UniqueConstraint, text,
+    JSON, MetaData, Numeric, String, Text, TypeDecorator, UniqueConstraint, text,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
 
+
+class TZDateTime(TypeDecorator):
+    """
+    Handles timezone-aware datetimes for both PostgreSQL and SQLite.
+    For SQLite (tests), converts timezone-aware to UTC-naive for storage,
+    and back to UTC-aware on retrieval.
+    """
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            if dialect.name == 'sqlite' and isinstance(value, datetime) and value.tzinfo is not None:
+                return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None and dialect.name == 'sqlite':
+            return value.replace(tzinfo=timezone.utc)
+        return value
+
+
 # Use timezone-aware DateTime — works with both PostgreSQL and SQLite (tests)
-TIMESTAMP = DateTime
+TIMESTAMP = TZDateTime
 
 
 # ── Naming convention — предсказуемые имена индексов/ключей для Alembic ──────
