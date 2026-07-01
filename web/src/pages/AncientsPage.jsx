@@ -525,27 +525,29 @@ export default function AncientsPage() {
                 )}
               </div>
 
-              <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>{cx.thresholdsTitle}:</span>
-                <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
-                  {cx.thresholdLight}
-                  <input type="number" className="input-dark" style={{ width: 60 }}
-                    value={c.quota_thresholds.light_pct}
-                    onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'light_pct', e.target.value)} />
-                </label>
-                <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
-                  {cx.thresholdMedium}
-                  <input type="number" className="input-dark" style={{ width: 60 }}
-                    value={c.quota_thresholds.medium_pct}
-                    onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'medium_pct', e.target.value)} />
-                </label>
-                <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
-                  {cx.thresholdCritical}
-                  <input type="number" className="input-dark" style={{ width: 60 }}
-                    value={c.quota_thresholds.critical_pct}
-                    onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'critical_pct', e.target.value)} />
-                </label>
-              </div>
+              {c.is_owner && (
+                <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>{cx.thresholdsTitle}:</span>
+                  <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {cx.thresholdLight}
+                    <input type="number" className="input-dark" style={{ width: 60 }}
+                      value={c.quota_thresholds.light_pct}
+                      onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'light_pct', e.target.value)} />
+                  </label>
+                  <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {cx.thresholdMedium}
+                    <input type="number" className="input-dark" style={{ width: 60 }}
+                      value={c.quota_thresholds.medium_pct}
+                      onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'medium_pct', e.target.value)} />
+                  </label>
+                  <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {cx.thresholdCritical}
+                    <input type="number" className="input-dark" style={{ width: 60 }}
+                      value={c.quota_thresholds.critical_pct}
+                      onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'critical_pct', e.target.value)} />
+                  </label>
+                </div>
+              )}
 
               <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.rosterTitle}</div>
 
