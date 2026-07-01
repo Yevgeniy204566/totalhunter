@@ -1076,3 +1076,95 @@ async def test_populate_from_chests_editor_can_call(db_session):
         )
     assert resp.status_code == 200
     assert resp.json() == {"synced": 1, "removed": 0}
+
+
+@pytest.mark.asyncio
+async def test_get_dashboard_returns_default_thresholds(db_session):
+    user, token = await _create_user_with_token(db_session, "thresh1@test.com")
+    await _create_collector(db_session, user.id, slug="thresh-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    thresholds = resp.json()["collectors"][0]["quota_thresholds"]
+    assert thresholds == {"light_pct": 10.0, "medium_pct": 30.0, "critical_pct": 60.0}
+
+
+@pytest.mark.asyncio
+async def test_patch_quota_thresholds_saves_and_reflects_in_get(db_session):
+    user, token = await _create_user_with_token(db_session, "thresh2@test.com")
+    await _create_collector(db_session, user.id, slug="thresh-2")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        patch_resp = await client.patch(
+            "/web/dashboard/ancients/thresh-2/quota-thresholds",
+            json={"light_pct": 15.0, "medium_pct": 40.0, "critical_pct": 70.0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert patch_resp.status_code == 200
+
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    thresholds = resp.json()["collectors"][0]["quota_thresholds"]
+    assert thresholds == {"light_pct": 15.0, "medium_pct": 40.0, "critical_pct": 70.0}
+
+
+@pytest.mark.asyncio
+async def test_patch_quota_thresholds_rejects_non_owner_editor(db_session):
+    from models import AncientEditor
+    owner, _ = await _create_user_with_token(db_session, "thresh3owner@test.com")
+    editor, editor_token = await _create_user_with_token(db_session, "thresh3editor@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="thresh-3")
+    db_session.add(AncientEditor(collector_id=collector.id, user_id=editor.id,
+                                 expires_at=datetime.now(timezone.utc) + timedelta(days=30)))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/thresh-3/quota-thresholds",
+            json={"light_pct": 15.0, "medium_pct": 40.0, "critical_pct": 70.0},
+            headers={"Authorization": f"Bearer {editor_token}"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_roster_shortfall_pct_present_when_quota_and_points_exist(db_session):
+    user, token = await _create_user_with_token(db_session, "shortfallget1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="shortfallget-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 place=1, points=50, rank="Глава"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        calc_resp = await client.post(
+            "/web/dashboard/ancients/shortfallget-1/calculate",
+            json={"strategy": "A", "summon_levels": [81], "amplification_coef": 1.0,
+                  "officer_count": 1, "veteran_count": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert calc_resp.status_code == 200
+        officer_quota = calc_resp.json()["result"]["officer_quota"]
+
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    row = resp.json()["collectors"][0]["roster"][0]
+    expected = (officer_quota - 50) / officer_quota * 100.0
+    assert row["shortfall_pct"] == pytest.approx(expected)
+
+
+@pytest.mark.asyncio
+async def test_roster_shortfall_pct_none_without_quota(db_session):
+    user, token = await _create_user_with_token(db_session, "shortfallget2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="shortfallget-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 place=1, points=50, rank=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["shortfall_pct"] is None

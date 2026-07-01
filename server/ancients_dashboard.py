@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ancient_quota import (
     ANCIENT_LEVEL_HP, OFFICER_RANKS, RANKS, VALID_PRESETS, parse_troop_level,
-    split_strategy_a, split_strategy_b, total_quota_millions,
+    shortfall_pct, split_strategy_a, split_strategy_b, total_quota_millions,
 )
 from database import get_db
 from models import (
@@ -131,6 +131,7 @@ async def _roster_rows(
             "troop_level": r.AncientRoster.troop_level or r.profile_troop,
             "rank": r.AncientRoster.rank,
             "quota": quota,
+            "shortfall_pct": shortfall_pct(quota, r.AncientRoster.points),
             "mapped_name": mapped_name,
             "suggested_name": suggested_name,
             "mapping_confirmed": confirmed,
@@ -226,6 +227,11 @@ async def get_dashboard_ancients(
                 latest_calc),
             "history": await _history_rows(db, collector.id),
             "presets": sorted(VALID_PRESETS),
+            "quota_thresholds": {
+                "light_pct": collector.ancient_shortfall_light_pct if collector.ancient_shortfall_light_pct is not None else 10.0,
+                "medium_pct": collector.ancient_shortfall_medium_pct if collector.ancient_shortfall_medium_pct is not None else 30.0,
+                "critical_pct": collector.ancient_shortfall_critical_pct if collector.ancient_shortfall_critical_pct is not None else 60.0,
+            },
         })
     hidden_collectors = [
         {"slug": c.slug, "kingdom": c.kingdom, "clan": c.clan} for c in own_hidden
@@ -248,6 +254,24 @@ async def set_ancient_visibility(slug: str, payload: VisibilityPayload,
     collector = await _get_own_collector(db, slug, user)
     collector.ancient_hidden = payload.hidden
     collector.ancient_hidden_at = datetime.now(timezone.utc) if payload.hidden else None
+    await db.commit()
+    return {"ok": True}
+
+
+class QuotaThresholdsPayload(BaseModel):
+    light_pct: float
+    medium_pct: float
+    critical_pct: float
+
+
+@router.patch("/{slug}/quota-thresholds")
+async def set_quota_thresholds(slug: str, payload: QuotaThresholdsPayload,
+                               user: User = Depends(get_web_user),
+                               db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    collector.ancient_shortfall_light_pct = payload.light_pct
+    collector.ancient_shortfall_medium_pct = payload.medium_pct
+    collector.ancient_shortfall_critical_pct = payload.critical_pct
     await db.commit()
     return {"ok": True}
 
