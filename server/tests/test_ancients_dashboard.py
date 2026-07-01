@@ -614,6 +614,21 @@ async def test_calculate_strategy_b_uses_raw_name_when_unmapped(db_session):
 
 
 @pytest.mark.asyncio
+async def test_add_manual_roster_entry_rejects_malformed_troop_level(db_session):
+    user, token = await _create_user_with_token(db_session, "manualbad1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="manual-bad-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/manual-bad-1/roster/manual",
+            json={"player_name": "НовыйИгрок", "troop_level": "G10 S7 M8", "rank": None},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_add_manual_roster_entry_creates_row(db_session):
     user, token = await _create_user_with_token(db_session, "manual1@test.com")
     collector = await _create_collector(db_session, user.id, slug="manual-1")

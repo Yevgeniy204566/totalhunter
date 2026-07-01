@@ -386,7 +386,7 @@ async def calculate(slug: str, payload: CalculatePayload,
         players = [(mapped_names.get(r.player_name, r.player_name), r.troop_level) for r in roster]
         try:
             result = split_strategy_b(total, payload.clan_preset, players)
-        except (ValueError, KeyError) as e:
+        except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
     db.add(AncientCalculation(
@@ -426,6 +426,13 @@ async def add_manual_roster_entry(slug: str, payload: ManualRosterPayload,
     в турнирной таблице (OCR), ни в базе Сундуков. Сгорает на ближайшем
     завершении «Торговых Путей», если реальные данные так и не появятся."""
     collector, _ = await _get_own_or_editor_collector(db, slug, user)
+
+    if payload.troop_level is not None:
+        try:
+            parse_troop_level(payload.troop_level)
+        except ValueError:
+            raise HTTPException(status_code=400,
+                                detail=f"Unknown troop_level: {payload.troop_level!r}")
 
     existing = (await db.execute(
         select(AncientRoster).where(
