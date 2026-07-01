@@ -56,6 +56,7 @@ from chest_dashboard import router as chest_dashboard_router
 from ancients_dashboard import router as ancients_dashboard_router
 from tournaments import router as tournaments_router
 import chest_history
+import ancient_retention
 from schemas import (
     BasicResponse,
     CheckAuthResponse,
@@ -104,6 +105,7 @@ app.include_router(tournaments_router)
 @app.on_event("startup")
 async def _start_background_tasks() -> None:
     chest_history.ensure_background_tasks()
+    ancient_retention.ensure_background_tasks()
 
 # Статика для админки (иконка)
 from fastapi.staticfiles import StaticFiles as _SF
