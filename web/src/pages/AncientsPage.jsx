@@ -236,11 +236,11 @@ export default function AncientsPage() {
     }
   }
 
-  if (loadError) return <div className="page-content text-muted">{loadError}</div>
-  if (!collectors) return <div className="page-content text-muted">...</div>
+  if (loadError) return <div className="page-content text-muted" style={{ maxWidth: 1600 }}>{loadError}</div>
+  if (!collectors) return <div className="page-content text-muted" style={{ maxWidth: 1600 }}>...</div>
 
   return (
-    <div className="page-content">
+    <div className="page-content" style={{ maxWidth: 1600 }}>
       <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
       {joinMessage && (
@@ -570,7 +570,7 @@ export default function AncientsPage() {
                                   ...prev,
                                   [c.slug]: { ...(prev[c.slug] || {}), [p.player_name]: e.target.value },
                                 }))}
-                                style={{ minWidth: 130 }}
+                                style={{ minWidth: 220 }}
                               >
                                 <option value="">— не сопоставлять —</option>
                                 {srcNames.map(name => (
