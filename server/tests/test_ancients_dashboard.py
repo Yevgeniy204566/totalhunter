@@ -665,3 +665,62 @@ async def test_add_manual_roster_entry_editor_can_add(db_session):
             headers={"Authorization": f"Bearer {editor_token}"},
         )
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_delete_roster_entry_by_owner(db_session):
+    """Owner can delete any roster row (OCR or manual) — departed clan
+    members shouldn't keep receiving quota ('мёртвые души')."""
+    user, token = await _create_user_with_token(db_session, "deleteroster1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="delete-roster-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Ушедший",
+                                 place=1, points=100, source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            "/web/dashboard/ancients/delete-roster-1/roster/Ушедший",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"deleted": True}
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_delete_roster_entry_by_editor(db_session):
+    from datetime import timedelta
+    from models import AncientEditor
+    owner, _ = await _create_user_with_token(db_session, "deleterosterowner@test.com")
+    editor, editor_token = await _create_user_with_token(db_session, "deleterostereditor@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="delete-roster-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Ушедший2",
+                                 place=1, points=50, source="manual"))
+    db_session.add(AncientEditor(collector_id=collector.id, user_id=editor.id,
+                                 expires_at=datetime.now(timezone.utc) + timedelta(days=30)))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            "/web/dashboard/ancients/delete-roster-2/roster/Ушедший2",
+            headers={"Authorization": f"Bearer {editor_token}"},
+        )
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_delete_roster_entry_not_found_returns_404(db_session):
+    user, token = await _create_user_with_token(db_session, "deleteroster3@test.com")
+    collector = await _create_collector(db_session, user.id, slug="delete-roster-3")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            "/web/dashboard/ancients/delete-roster-3/roster/НеСуществует",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 404

@@ -310,6 +310,32 @@ async def delete_name_mapping(slug: str, raw_ocr_name: str,
     return {"deleted": True}
 
 
+@router.delete("/{slug}/roster/{player_name}")
+async def delete_roster_entry(slug: str, player_name: str,
+                              user: User = Depends(get_web_user),
+                              db: AsyncSession = Depends(get_db)):
+    """Удаление игрока из ростера Древнего вручную — например, если он ушёл
+    из клана и больше не будет участвовать в турнирах («мёртвые души» не
+    должны получать квоту урона)."""
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
+    existing = (await db.execute(
+        select(AncientRoster).where(
+            AncientRoster.collector_id == collector.id,
+            AncientRoster.player_name == player_name,
+        )
+    )).scalar_one_or_none()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Player not in roster")
+    await db.execute(
+        delete(AncientRoster).where(
+            AncientRoster.collector_id == collector.id,
+            AncientRoster.player_name == player_name,
+        )
+    )
+    await db.commit()
+    return {"deleted": True}
+
+
 class CalculatePayload(BaseModel):
     strategy: str
     summon_levels: List[int]
