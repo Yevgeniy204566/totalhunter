@@ -247,3 +247,80 @@ async def test_import_rearms_timer_after_it_was_cleared_by_a_purge(db_session):
 
     await db_session.refresh(collector)
     assert collector.ancient_hidden_at is not None
+
+
+@pytest.mark.asyncio
+async def test_reimport_does_not_delete_manual_entry(db_session):
+    """A manual roster row (no OCR name maps to it this cycle) survives a
+    full tournament re-import, unlike normal OCR rows for players who left."""
+    user = await _create_user(db_session, "hwid9000000000a")
+    await db_session.commit()
+
+    base_payload = _payload(
+        user.hwid, clan="BERS9",
+        items=[{"name": "Иванов", "place": 1, "points": 100}],
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=base_payload)
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == "K229", ChestCollector.clan == "BERS9")
+    )).scalar_one()
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="РучнойИгрок",
+                                 place=None, points=None, source="manual",
+                                 manual_expires_at=datetime.now(timezone.utc) + timedelta(days=3)))
+    await db_session.commit()
+
+    reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
+                            items=[{"name": "Иванов", "place": 1, "points": 100}])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=reimport_payload)
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Иванов", "РучнойИгрок"}
+
+
+@pytest.mark.asyncio
+async def test_reimport_promotes_manual_entry_when_matched(db_session):
+    """A manual entry whose name matches an incoming tournament row gets
+    real place/points and its source flips to 'ocr' — no duplicate row, no
+    more expiry."""
+    user = await _create_user(db_session, "hwidA000000000a")
+    await db_session.commit()
+
+    base_payload = _payload(
+        user.hwid, clan="BERSA",
+        items=[{"name": "Петров", "place": 1, "points": 50}],
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=base_payload)
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == "K229", ChestCollector.clan == "BERSA")
+    )).scalar_one()
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="СталНоситьСундуки",
+                                 place=None, points=None, source="manual",
+                                 manual_expires_at=datetime.now(timezone.utc) + timedelta(days=3)))
+    await db_session.commit()
+
+    reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
+                            items=[
+                                {"name": "Петров", "place": 1, "points": 50},
+                                {"name": "СталНоситьСундуки", "place": 5, "points": 20},
+                            ])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=reimport_payload)
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 2
+    promoted = next(r for r in rows if r.player_name == "СталНоситьСундуки")
+    assert promoted.source == "ocr"
+    assert promoted.manual_expires_at is None
+    assert promoted.place == 5
+    assert promoted.points == 20

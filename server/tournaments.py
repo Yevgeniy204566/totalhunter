@@ -104,10 +104,13 @@ async def import_tournament(payload: TournamentImportPayload,
         if existing:
             existing.place = item.place
             existing.points = item.points
+            existing.source = "ocr"
+            existing.manual_expires_at = None
         else:
             db.add(AncientRoster(
                 collector_id=collector.id, player_name=canonical_name,
                 place=item.place, points=item.points, troop_level=None,
+                source="ocr",
             ))
 
     await db.flush()
@@ -115,6 +118,7 @@ async def import_tournament(payload: TournamentImportPayload,
         delete(AncientRoster).where(
             AncientRoster.collector_id == collector.id,
             AncientRoster.player_name.not_in(incoming_names),
+            AncientRoster.source == "ocr",
         )
     )
 
