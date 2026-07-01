@@ -75,6 +75,42 @@ async def test_patch_troop_level(db_session):
 
 
 @pytest.mark.asyncio
+async def test_patch_troop_level_accepts_non_diagonal_combo(db_session):
+    """A combo like G7 S9 M8 was rejected by the old 13-entry TROOP_STEPS list —
+    it must now be accepted since G/S/M are entered independently."""
+    user, token = await _create_user_with_token(db_session, "nondiag1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="nondiag-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 place=1, points=100, troop_level=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/nondiag-1/troop-level",
+            json={"player_name": "Петров", "troop_level": "G7 S9 M8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_patch_troop_level_rejects_malformed_value(db_session):
+    user, token = await _create_user_with_token(db_session, "malformed1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="malformed-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 place=1, points=100, troop_level=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/malformed-1/troop-level",
+            json={"player_name": "Петров", "troop_level": "G10 S9 M8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_calculate_strategy_a_saves_history(db_session):
     user, token = await _create_user_with_token(db_session)
     collector = await _create_collector(db_session, user.id, slug="s3")

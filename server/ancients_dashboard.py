@@ -19,7 +19,7 @@ from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ancient_quota import (
-    ANCIENT_LEVEL_HP, TROOP_QUOTA_PRESETS, TROOP_STEPS,
+    ANCIENT_LEVEL_HP, VALID_PRESETS, parse_troop_level,
     split_strategy_a, split_strategy_b, total_quota_millions,
 )
 from database import get_db
@@ -195,8 +195,7 @@ async def get_dashboard_ancients(
             "roster": await _roster_rows(
                 db, collector.id, mappings_dict, canonical_names, fuzzy_threshold),
             "history": await _history_rows(db, collector.id),
-            "troop_steps": TROOP_STEPS,
-            "presets": sorted(TROOP_QUOTA_PRESETS.keys()),
+            "presets": sorted(VALID_PRESETS),
         })
     hidden_collectors = [
         {"slug": c.slug, "kingdom": c.kingdom, "clan": c.clan} for c in own_hidden
@@ -233,9 +232,12 @@ async def patch_troop_level(slug: str, payload: TroopLevelPayload,
                             user: User = Depends(get_web_user),
                             db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_own_or_editor_collector(db, slug, user)
-    if payload.troop_level is not None and payload.troop_level not in TROOP_STEPS:
-        raise HTTPException(status_code=400,
-                            detail=f"Unknown troop_level: {payload.troop_level!r}")
+    if payload.troop_level is not None:
+        try:
+            parse_troop_level(payload.troop_level)
+        except ValueError:
+            raise HTTPException(status_code=400,
+                                detail=f"Unknown troop_level: {payload.troop_level!r}")
 
     row = (await db.execute(
         select(AncientRoster).where(
@@ -369,7 +371,7 @@ async def calculate(slug: str, payload: CalculatePayload,
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
     else:
-        if payload.clan_preset not in TROOP_QUOTA_PRESETS:
+        if payload.clan_preset not in VALID_PRESETS:
             raise HTTPException(status_code=400, detail="clan_preset must be one of T5-T9")
         roster = (await db.execute(
             select(AncientRoster).where(AncientRoster.collector_id == collector.id)
