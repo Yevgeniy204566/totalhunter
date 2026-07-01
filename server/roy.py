@@ -81,6 +81,26 @@ def is_trade_routes_active() -> bool:
     return offset < duration_sec
 
 
+def next_trade_routes_end() -> datetime:
+    """
+    Возвращает timestamp ближайшего завершения ивента «Торговые Пути» —
+    либо конец текущего активного окна (если ивент сейчас идёт), либо конец
+    следующего окна (если сейчас пауза). Детерминированная формула по тем же
+    константам, без нового состояния.
+    """
+    cycle_sec    = _EVENT_CYCLE_H    * 3600
+    duration_sec = _EVENT_DURATION_H * 3600
+    now = datetime.now(timezone.utc)
+    now_ts = now.timestamp()
+    offset = (now_ts - _EVENT_ANCHOR_TS) % cycle_sec
+    window_start_ts = now_ts - offset
+    if offset < duration_sec:
+        end_ts = window_start_ts + duration_sec
+    else:
+        end_ts = window_start_ts + cycle_sec + duration_sec
+    return datetime.fromtimestamp(end_ts, tz=timezone.utc)
+
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 def _active_count(kingdom: int) -> int:

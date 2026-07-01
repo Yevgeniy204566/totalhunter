@@ -241,3 +241,41 @@ async def test_pool_without_kingdom_param_returns_all(db_session):
     data = r.json()
     assert data["success"] is True
     assert len(data["pool"]) == 2
+
+
+# ── next_trade_routes_end() — детерминированный якорь истечения ────────────
+
+from roy import next_trade_routes_end, _EVENT_ANCHOR_TS, _EVENT_CYCLE_H, _EVENT_DURATION_H
+
+
+def test_next_trade_routes_end_during_active_window(monkeypatch):
+    """If we're inside the 24h active window, the nearest end is the end of
+    THIS window (anchor + duration)."""
+    import roy
+    mid_active = datetime.fromtimestamp(_EVENT_ANCHOR_TS, tz=timezone.utc) + timedelta(hours=5)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return mid_active
+
+    monkeypatch.setattr(roy, "datetime", FixedDatetime)
+    expected = datetime.fromtimestamp(_EVENT_ANCHOR_TS, tz=timezone.utc) + timedelta(hours=_EVENT_DURATION_H)
+    assert next_trade_routes_end() == expected
+
+
+def test_next_trade_routes_end_during_pause_window(monkeypatch):
+    """If we're inside the pause (event not active), the nearest end is the
+    end of the NEXT cycle's active window."""
+    import roy
+    mid_pause = datetime.fromtimestamp(_EVENT_ANCHOR_TS, tz=timezone.utc) + timedelta(hours=_EVENT_DURATION_H + 10)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return mid_pause
+
+    monkeypatch.setattr(roy, "datetime", FixedDatetime)
+    expected = (datetime.fromtimestamp(_EVENT_ANCHOR_TS, tz=timezone.utc)
+                + timedelta(hours=_EVENT_CYCLE_H + _EVENT_DURATION_H))
+    assert next_trade_routes_end() == expected
