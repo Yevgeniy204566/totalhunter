@@ -584,15 +584,18 @@ class AncientRoster(Base):
         UniqueConstraint("collector_id", "player_name", name="uq_ancient_roster_player"),
     )
 
-    id            = Column(Integer, primary_key=True)
-    collector_id  = Column(Integer, ForeignKey("chest_collectors.id"),
-                           nullable=False, index=True)
-    player_name   = Column(String(100), nullable=False)
-    place         = Column(Integer, nullable=True)
-    points        = Column(BigInteger, nullable=True)
-    troop_level   = Column(String(20), nullable=True)
-    updated_at    = Column(TIMESTAMP(timezone=True), nullable=False,
-                           server_default=func.now())
+    id                 = Column(Integer, primary_key=True)
+    collector_id       = Column(Integer, ForeignKey("chest_collectors.id"),
+                                nullable=False, index=True)
+    player_name        = Column(String(100), nullable=False)
+    place              = Column(Integer, nullable=True)
+    points             = Column(BigInteger, nullable=True)
+    troop_level        = Column(String(20), nullable=True)
+    source             = Column(String(8), nullable=False, server_default=text("'ocr'"))
+    manual_expires_at  = Column(TIMESTAMP(timezone=True), nullable=True)
+    rank               = Column(String(20), nullable=True)
+    updated_at        = Column(TIMESTAMP(timezone=True), nullable=False,
+                               server_default=func.now())
 
 
 class AncientCalculation(Base):

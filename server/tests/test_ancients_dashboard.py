@@ -510,3 +510,22 @@ async def test_calculate_rearms_timer_after_it_was_cleared_by_a_purge(db_session
 
     await db_session.refresh(collector)
     assert collector.ancient_hidden_at is not None
+
+
+@pytest.mark.asyncio
+async def test_ocr_roster_rows_default_to_ocr_source(db_session):
+    """Existing (pre-manual-entries) rows created the normal way default to
+    source='ocr' with no manual expiry — the new columns don't break the
+    existing tournament-import path."""
+    user, token = await _create_user_with_token(db_session, "sourcedefault1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="source-default-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 place=1, points=100))
+    await db_session.commit()
+
+    row = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalar_one()
+    assert row.source == "ocr"
+    assert row.manual_expires_at is None
+    assert row.rank is None
