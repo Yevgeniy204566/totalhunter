@@ -452,40 +452,40 @@ a:hover { color: var(--on-surface); }
   animation: public-tier-shimmer 3s linear infinite;
 }
 .public-tier-50k {
-  font-size: 15.5px;
-  background-image: linear-gradient(90deg, #11998E 0%, #38EF7D 50%, #11998E 100%);
+  font-size: 17.5px;
+  background-image: linear-gradient(90deg, #11998E 0%, #7CFFC4 50%, #11998E 100%);
   -webkit-text-stroke: 0.5px #0F5E55;
-  text-shadow: 0 0 10px rgba(56, 239, 125, 0.4);
+  text-shadow: 0 0 4px rgba(56, 239, 125, 0.35);
 }
 .public-tier-100k {
-  font-size: 16px;
-  background-image: linear-gradient(90deg, #00C6FF 0%, #0072FF 50%, #00C6FF 100%);
+  font-size: 18px;
+  background-image: linear-gradient(90deg, #0072FF 0%, #9FE3FF 50%, #0072FF 100%);
   -webkit-text-stroke: 0.5px #003D82;
-  text-shadow: 0 0 10px rgba(0, 198, 255, 0.4);
+  text-shadow: 0 0 4px rgba(0, 198, 255, 0.35);
 }
 .public-tier-200k {
-  font-size: 16.5px;
-  background-image: linear-gradient(90deg, #F2994A 0%, #F2C94C 50%, #F2994A 100%);
+  font-size: 18.5px;
+  background-image: linear-gradient(90deg, #F2994A 0%, #FFF3B0 50%, #F2994A 100%);
   -webkit-text-stroke: 0.5px #A65D14;
-  text-shadow: 0 0 11px rgba(242, 201, 76, 0.45);
+  text-shadow: 0 0 5px rgba(242, 201, 76, 0.4);
 }
 .public-tier-300k {
-  font-size: 17px;
-  background-image: linear-gradient(90deg, #EE0979 0%, #FF6A00 50%, #EE0979 100%);
+  font-size: 19px;
+  background-image: linear-gradient(90deg, #EE0979 0%, #FFB3D9 50%, #EE0979 100%);
   -webkit-text-stroke: 0.5px #8A0643;
-  text-shadow: 0 0 12px rgba(238, 9, 121, 0.45);
+  text-shadow: 0 0 5px rgba(238, 9, 121, 0.4);
 }
 .public-tier-400k {
-  font-size: 17.5px;
-  background-image: linear-gradient(90deg, #8E2DE2 0%, #4A00E0 50%, #8E2DE2 100%);
+  font-size: 19.5px;
+  background-image: linear-gradient(90deg, #8E2DE2 0%, #D9B3FF 50%, #8E2DE2 100%);
   -webkit-text-stroke: 0.5px #401070;
-  text-shadow: 0 0 13px rgba(142, 45, 226, 0.5);
+  text-shadow: 0 0 6px rgba(142, 45, 226, 0.45);
 }
 .public-tier-500k {
-  font-size: 18px;
-  background-image: linear-gradient(90deg, #FF00CC 0%, #333399 50%, #FF00CC 100%);
+  font-size: 20px;
+  background-image: linear-gradient(90deg, #FF00CC 0%, #FFFFFF 50%, #FF00CC 100%);
   -webkit-text-stroke: 0.5px #7A0054;
-  text-shadow: 0 0 14px rgba(255, 0, 204, 0.5);
+  text-shadow: 0 0 6px rgba(255, 0, 204, 0.45);
 }
 
 .public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
