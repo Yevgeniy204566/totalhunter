@@ -133,7 +133,9 @@ export const DASHBOARD = {
     deleteRosterBtn: 'Удалить',
     deleteRosterYes: 'Да, удалить',
     populateFromChestsBtn: 'Заполнить из Сундуков',
-    populateFromChestsResult: n => `Добавлено игроков: ${n}`,
+    populateFromChestsConfirm: 'Ростер станет точной копией базы Сундуков — лишние записи (в т.ч. добавленные вручную, если их нет в Сундуках) будут удалены. Продолжить?',
+    populateFromChestsYes: 'Да, синхронизировать',
+    populateFromChestsResult: (synced, removed) => `Синхронизировано: ${synced}, удалено лишних: ${removed}`,
   },
 
 

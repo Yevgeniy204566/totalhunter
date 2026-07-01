@@ -62,6 +62,7 @@ export default function AncientsPage() {
   const [manualSimilar, setManualSimilar] = useState({})
   const [confirmDeleteRoster, setConfirmDeleteRoster] = useState({})
   const [populateMsg, setPopulateMsg] = useState({})
+  const [confirmPopulate, setConfirmPopulate] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -173,9 +174,10 @@ export default function AncientsPage() {
   }
 
   async function handlePopulateFromChests(slug) {
-    const { added } = await api.dashboardAncientsPopulateFromChests(slug)
-    setPopulateMsg(prev => ({ ...prev, [slug]: cx.populateFromChestsResult(added) }))
-    setTimeout(() => setPopulateMsg(prev => ({ ...prev, [slug]: '' })), 4000)
+    const { synced, removed } = await api.dashboardAncientsPopulateFromChests(slug)
+    setPopulateMsg(prev => ({ ...prev, [slug]: cx.populateFromChestsResult(synced, removed) }))
+    setConfirmPopulate(prev => ({ ...prev, [slug]: false }))
+    setTimeout(() => setPopulateMsg(prev => ({ ...prev, [slug]: '' })), 5000)
     refresh()
   }
 
@@ -626,10 +628,24 @@ export default function AncientsPage() {
               )}
 
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--outline)' }}>
-                <button className="btn-secondary" style={{ fontSize: 13, marginBottom: 12 }}
-                  onClick={() => handlePopulateFromChests(c.slug)}>
-                  {populateMsg[c.slug] || cx.populateFromChestsBtn}
-                </button>
+                {confirmPopulate[c.slug] ? (
+                  <div style={{ marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, color: '#F87171' }}>{cx.populateFromChestsConfirm}</span>
+                    <button className="btn-primary" style={{ fontSize: 12, padding: '3px 10px', background: '#DC2626', boxShadow: 'none' }}
+                      onClick={() => handlePopulateFromChests(c.slug)}>
+                      {cx.populateFromChestsYes}
+                    </button>
+                    <button className="btn-secondary" style={{ fontSize: 12, padding: '3px 10px' }}
+                      onClick={() => setConfirmPopulate(prev => ({ ...prev, [c.slug]: false }))}>
+                      {cx.closeSeasonNo}
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn-secondary" style={{ fontSize: 13, marginBottom: 12 }}
+                    onClick={() => setConfirmPopulate(prev => ({ ...prev, [c.slug]: true }))}>
+                    {populateMsg[c.slug] || cx.populateFromChestsBtn}
+                  </button>
+                )}
                 <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.manualAddTitle}</div>
                 {manualSimilar[c.slug] && (
                   <div style={{ marginBottom: 8, fontSize: 13, color: '#f9a825' }}>

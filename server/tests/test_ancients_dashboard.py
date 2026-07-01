@@ -740,7 +740,7 @@ async def test_populate_from_chests_adds_missing_canonical_names(db_session):
             headers={"Authorization": f"Bearer {token}"},
         )
     assert resp.status_code == 200
-    assert resp.json() == {"added": 2}
+    assert resp.json() == {"synced": 2, "removed": 0}
 
     rows = (await db_session.execute(
         select(AncientRoster).where(AncientRoster.collector_id == collector.id)
@@ -754,7 +754,7 @@ async def test_populate_from_chests_adds_missing_canonical_names(db_session):
 
 
 @pytest.mark.asyncio
-async def test_populate_from_chests_skips_existing_names_second_call(db_session):
+async def test_populate_from_chests_is_idempotent_on_second_call(db_session):
     user, token = await _create_user_with_token(db_session, "populate2@test.com")
     collector = await _create_collector(db_session, user.id, slug="populate-2")
     db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r1", canonical_name="Сидоров"))
@@ -769,9 +769,9 @@ async def test_populate_from_chests_skips_existing_names_second_call(db_session)
             "/web/dashboard/ancients/populate-2/roster/populate-from-chests",
             headers={"Authorization": f"Bearer {token}"},
         )
-    assert first.json() == {"added": 1}
+    assert first.json() == {"synced": 1, "removed": 0}
     assert second.status_code == 200
-    assert second.json() == {"added": 0}
+    assert second.json() == {"synced": 1, "removed": 0}
 
     rows = (await db_session.execute(
         select(AncientRoster).where(AncientRoster.collector_id == collector.id)
@@ -780,9 +780,9 @@ async def test_populate_from_chests_skips_existing_names_second_call(db_session)
 
 
 @pytest.mark.asyncio
-async def test_populate_from_chests_does_not_overwrite_existing_ocr_row(db_session):
-    """A name already in the roster (e.g. real OCR data) is left untouched —
-    populate never overwrites, only fills gaps."""
+async def test_populate_from_chests_renames_exact_match_row_and_keeps_real_data(db_session):
+    """A raw OCR row whose name already equals the canonical name (bot's own
+    fuzzy resolution already matched it) survives with its real data intact."""
     user, token = await _create_user_with_token(db_session, "populate3@test.com")
     collector = await _create_collector(db_session, user.id, slug="populate-3")
     db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r1", canonical_name="Кузнецов"))
@@ -795,7 +795,7 @@ async def test_populate_from_chests_does_not_overwrite_existing_ocr_row(db_sessi
             "/web/dashboard/ancients/populate-3/roster/populate-from-chests",
             headers={"Authorization": f"Bearer {token}"},
         )
-    assert resp.json() == {"added": 0}
+    assert resp.json() == {"synced": 1, "removed": 0}
 
     row = (await db_session.execute(
         select(AncientRoster).where(AncientRoster.collector_id == collector.id)
@@ -803,6 +803,64 @@ async def test_populate_from_chests_does_not_overwrite_existing_ocr_row(db_sessi
     assert row.source == "ocr"
     assert row.place == 3
     assert row.points == 500
+
+
+@pytest.mark.asyncio
+async def test_populate_from_chests_merges_confirmed_mapping_into_canonical_name(db_session):
+    """A raw OCR row with a CONFIRMED name mapping gets renamed to the
+    canonical name, keeping its real place/points — no duplicate row."""
+    user, token = await _create_user_with_token(db_session, "populate5@test.com")
+    collector = await _create_collector(db_session, user.id, slug="populate-5")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="pa1", canonical_name="Маришка"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Marisha_raw",
+                                 place=7, points=333, troop_level="G8 S8 M8", source="ocr"))
+    db_session.add(AncientNameMapping(collector_id=collector.id, raw_ocr_name="Marisha_raw",
+                                      canonical_name="Маришка", confirmed=True))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/populate-5/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.json() == {"synced": 1, "removed": 0}
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.player_name == "Маришка"
+    assert row.place == 7
+    assert row.points == 333
+    assert row.troop_level == "G8 S8 M8"
+    assert row.source == "ocr"
+
+
+@pytest.mark.asyncio
+async def test_populate_from_chests_deletes_rows_with_no_chests_relation(db_session):
+    """A row with no exact canonical match and no confirmed mapping (e.g. a
+    manually-added participant who doesn't carry chests) is deleted —
+    explicit owner requirement: the roster mirrors Chests exactly."""
+    user, token = await _create_user_with_token(db_session, "populate6@test.com")
+    collector = await _create_collector(db_session, user.id, slug="populate-6")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="pa1", canonical_name="Иванов"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов", place=1, points=10, source="ocr"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="НетВСундуках",
+                                 troop_level="G7 S7 M7", rank="Ветеран", source="manual"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/populate-6/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.json() == {"synced": 1, "removed": 1}
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Иванов"}
 
 
 @pytest.mark.asyncio
@@ -823,4 +881,4 @@ async def test_populate_from_chests_editor_can_call(db_session):
             headers={"Authorization": f"Bearer {editor_token}"},
         )
     assert resp.status_code == 200
-    assert resp.json() == {"added": 1}
+    assert resp.json() == {"synced": 1, "removed": 0}

@@ -458,32 +458,67 @@ async def add_manual_roster_entry(slug: str, payload: ManualRosterPayload,
 async def populate_roster_from_chests(slug: str,
                                       user: User = Depends(get_web_user),
                                       db: AsyncSession = Depends(get_db)):
-    """Разовое массовое добавление костяка клана из базы Сундуков — для
-    подготовки к событию (назначить состав войск заранее). Не трогает уже
-    существующие строки ростера, не сгорает по таймеру (source='chests')."""
+    """Отзеркалить точный список имён из базы Сундуков в ростер Древнего —
+    ровно одна строка на канонического игрока. Сырая OCR-строка с
+    подтверждённым сопоставлением («Правильное имя») переносит свои данные
+    (место/очки/состав/звание) под каноническое имя. Любая строка без
+    подтверждённого соответствия и без точного совпадения с базой Сундуков
+    удаляется целиком — по явному требованию владельца («заменить всё,
+    точная копия имён Сундуков»). Это относится и к вручную добавленным
+    записям (source='manual') — если игрока нет в Сундуках, эта кнопка его
+    уберёт; для не-носящих сундуки участников Древнего это осознанный
+    компромисс владельца, не баг."""
     collector, _ = await _get_own_or_editor_collector(db, slug, user)
 
-    canonical_names = list((await db.execute(
+    canonical_names = list(dict.fromkeys((await db.execute(
         select(PlayerAlias.canonical_name).where(PlayerAlias.collector_id == collector.id)
-    )).scalars().all())
-    existing_names = set((await db.execute(
-        select(AncientRoster.player_name).where(AncientRoster.collector_id == collector.id)
-    )).scalars().all())
+    )).scalars().all()))
+    canonical_set = set(canonical_names)
 
-    added = 0
-    for name in canonical_names:
-        if name in existing_names:
+    mappings = (await db.execute(
+        select(AncientNameMapping).where(
+            AncientNameMapping.collector_id == collector.id,
+            AncientNameMapping.confirmed == True,
+        )
+    )).scalars().all()
+    raw_to_canonical = {m.raw_ocr_name: m.canonical_name for m in mappings}
+
+    roster_rows = (await db.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+
+    preserved: dict[str, dict] = {}
+    removed = 0
+    for row in roster_rows:
+        target = row.player_name if row.player_name in canonical_set \
+            else raw_to_canonical.get(row.player_name)
+        if target not in canonical_set:
+            await db.delete(row)
+            removed += 1
             continue
+        current = preserved.get(target, {})
+        preserved[target] = {
+            "place": row.place if row.place is not None else current.get("place"),
+            "points": row.points if row.points is not None else current.get("points"),
+            "troop_level": row.troop_level if row.troop_level is not None else current.get("troop_level"),
+            "rank": row.rank if row.rank is not None else current.get("rank"),
+            "source": "ocr" if row.source == "ocr" else current.get("source", row.source),
+        }
+        await db.delete(row)
+
+    await db.flush()
+
+    for name in canonical_names:
+        data = preserved.get(name, {})
         db.add(AncientRoster(
             collector_id=collector.id, player_name=name,
-            place=None, points=None, troop_level=None,
-            rank=None, source="chests", manual_expires_at=None,
+            place=data.get("place"), points=data.get("points"),
+            troop_level=data.get("troop_level"), rank=data.get("rank"),
+            source=data.get("source", "chests"), manual_expires_at=None,
         ))
-        existing_names.add(name)
-        added += 1
 
     await db.commit()
-    return {"added": added}
+    return {"synced": len(canonical_names), "removed": removed}
 
 
 class JoinPayload(BaseModel):

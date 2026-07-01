@@ -133,7 +133,9 @@ export const DASHBOARD = {
     deleteRosterBtn: 'Delete',
     deleteRosterYes: 'Yes, delete',
     populateFromChestsBtn: 'Populate from Chests',
-    populateFromChestsResult: n => `Players added: ${n}`,
+    populateFromChestsConfirm: 'The roster will become an exact mirror of the Chests base — extra rows (including manually added ones not present in Chests) will be deleted. Continue?',
+    populateFromChestsYes: 'Yes, sync',
+    populateFromChestsResult: (synced, removed) => `Synced: ${synced}, removed: ${removed}`,
   },
 
   feedback: {
