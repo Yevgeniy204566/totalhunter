@@ -10,6 +10,14 @@ const DEFAULT_FORM = {
   preset: 'T8', amplification: 1.0, officerCount: 0, veteranCount: 0,
 }
 
+const TIERS = ['5', '6', '7', '8', '9']
+
+function parseTroop(troop_level) {
+  if (!troop_level) return { g: '', s: '', m: '' }
+  const mat = troop_level.match(/G(\d+) S(\d+) M(\d+)/)
+  return mat ? { g: mat[1], s: mat[2], m: mat[3] } : { g: '', s: '', m: '' }
+}
+
 function lcsLength(a, b) {
   const m = a.length, n = b.length
   const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
@@ -48,6 +56,7 @@ export default function AncientsPage() {
   const [inviteMsg, setInviteMsg] = useState({})
   const [hiddenCollectors, setHiddenCollectors] = useState([])
   const [confirmHideByCollector, setConfirmHideByCollector] = useState({})
+  const [troopEdits, setTroopEdits] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -140,6 +149,21 @@ export default function AncientsPage() {
       refresh()
     } catch (e) {
       alert(e.message || 'Ошибка сохранения')
+    }
+  }
+
+  function handleTroopFieldChange(slug, playerName, currentTroopLevel, field, value) {
+    const key = `${slug}:${playerName}`
+    const base = { ...parseTroop(currentTroopLevel), ...(troopEdits[key] || {}) }
+    const next = { ...base, [field]: value }
+    if (next.g && next.s && next.m) {
+      setTroopEdits(prev => {
+        const { [key]: _drop, ...rest } = prev
+        return rest
+      })
+      handleTroopLevelChange(slug, playerName, `G${next.g} S${next.s} M${next.m}`)
+    } else {
+      setTroopEdits(prev => ({ ...prev, [key]: next }))
     }
   }
 
@@ -399,36 +423,6 @@ export default function AncientsPage() {
               </div>
             )}
 
-            {/* ── История расчётов ── */}
-            <div className="card" style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.historyTitle}</div>
-              {c.history.length === 0 ? (
-                <div className="text-muted">{cx.noHistory}</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {c.history.map(h => (
-                    <div
-                      key={h.id}
-                      style={{
-                        paddingLeft: 12, borderLeft: '3px solid var(--accent)',
-                        display: 'flex', flexDirection: 'column', gap: 2,
-                      }}
-                    >
-                      <div style={{ color: 'var(--on-surface2)', fontSize: 12 }}>
-                        {fmtDate(h.computed_at)} · {h.strategy === 'A' ? cx.strategyAName : cx.strategyBName}
-                      </div>
-                      <div style={{ color: 'var(--on-surface)', fontSize: 13 }}>
-                        {cx.historyLevels}: {(h.summon_levels || []).join(', ')}
-                      </div>
-                      <div style={{ color: 'var(--credits-gold)', fontWeight: 600 }}>
-                        {cx.historyTotal}: {fmtNum(h.total_quota_millions)} {cx.powerUnit}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* ── Ростер клана ── */}
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -534,16 +528,35 @@ export default function AncientsPage() {
                           <td>{p.place ?? '—'}</td>
                           <td>{p.points !== null && p.points !== undefined ? fmtNum(p.points, 0) : '—'}</td>
                           <td>
-                            <select
-                              className="input-dark"
-                              value={p.troop_level || ''}
-                              onChange={e => handleTroopLevelChange(c.slug, p.player_name, e.target.value)}
-                            >
-                              <option value="">{cx.noTroopLevel}</option>
-                              {(c.troop_steps || []).map(step => (
-                                <option key={step} value={step}>{step}</option>
-                              ))}
-                            </select>
+                            {(() => {
+                              const key = `${c.slug}:${p.player_name}`
+                              const troop = { ...parseTroop(p.troop_level), ...(troopEdits[key] || {}) }
+                              return (
+                                <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'nowrap' }}>
+                                  <select className="input-dark" value={troop.g} style={{ width: 44 }}
+                                    onChange={e => handleTroopFieldChange(c.slug, p.player_name, p.troop_level, 'g', e.target.value)}>
+                                    <option value="">G</option>
+                                    {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                                  </select>
+                                  <select className="input-dark" value={troop.s} style={{ width: 44 }}
+                                    onChange={e => handleTroopFieldChange(c.slug, p.player_name, p.troop_level, 's', e.target.value)}>
+                                    <option value="">S</option>
+                                    {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                                  </select>
+                                  <select className="input-dark" value={troop.m} style={{ width: 44 }}
+                                    onChange={e => handleTroopFieldChange(c.slug, p.player_name, p.troop_level, 'm', e.target.value)}>
+                                    <option value="">M</option>
+                                    {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                                  </select>
+                                  {troop.g && troop.s && troop.m
+                                    ? <span style={{ fontSize: 13, fontWeight: 700, color: '#f9a825', marginLeft: 6, whiteSpace: 'nowrap' }}>
+                                        G{troop.g} S{troop.s} M{troop.m}
+                                      </span>
+                                    : <span style={{ fontSize: 12, color: '#6c7086', marginLeft: 6 }}>{cx.noTroopLevel}</span>
+                                  }
+                                </div>
+                              )
+                            })()}
                           </td>
                         </tr>
                       )
@@ -568,6 +581,36 @@ export default function AncientsPage() {
               >
                 Сохранить маппинги
               </button>
+            </div>
+
+            {/* ── История расчётов ── */}
+            <div className="card" style={{ marginTop: 16 }}>
+              <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.historyTitle}</div>
+              {c.history.length === 0 ? (
+                <div className="text-muted">{cx.noHistory}</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {c.history.map(h => (
+                    <div
+                      key={h.id}
+                      style={{
+                        paddingLeft: 12, borderLeft: '3px solid var(--accent)',
+                        display: 'flex', flexDirection: 'column', gap: 2,
+                      }}
+                    >
+                      <div style={{ color: 'var(--on-surface2)', fontSize: 12 }}>
+                        {fmtDate(h.computed_at)} · {h.strategy === 'A' ? cx.strategyAName : cx.strategyBName}
+                      </div>
+                      <div style={{ color: 'var(--on-surface)', fontSize: 13 }}>
+                        {cx.historyLevels}: {(h.summon_levels || []).join(', ')}
+                      </div>
+                      <div style={{ color: 'var(--credits-gold)', fontWeight: 600 }}>
+                        {cx.historyTotal}: {fmtNum(h.total_quota_millions)} {cx.powerUnit}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )
