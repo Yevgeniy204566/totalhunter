@@ -160,6 +160,28 @@ async def test_expiry_tick_ignores_ocr_rows_regardless_of_dates(db_session):
     assert len(rows) == 1
 
 
+@pytest.mark.asyncio
+async def test_expiry_tick_ignores_chests_seeded_rows_regardless_of_dates(db_session):
+    """source='chests' (bulk-populated from PlayerAlias) rows never carry a
+    manual_expires_at either, but the same defensive guard applies as for
+    'ocr' rows above — the tick must key off source=='manual', not the mere
+    presence of a past date."""
+    collector = await _make_collector(db_session, slug="chests-with-past-date-1")
+    db_session.add(AncientRoster(
+        collector_id=collector.id, player_name="ИзСундуков",
+        source="chests", manual_expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    ))
+    await db_session.commit()
+
+    deleted = await run_manual_entry_expiry_tick(db_session)
+
+    assert deleted == 0
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+
+
 def test_app_startup_schedules_ancient_retention_background_task(monkeypatch):
     import ancient_retention
     calls = []

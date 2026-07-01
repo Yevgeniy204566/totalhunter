@@ -132,6 +132,8 @@ export const DASHBOARD = {
     manualDuplicateError: 'This player is already in the roster',
     deleteRosterBtn: 'Delete',
     deleteRosterYes: 'Yes, delete',
+    populateFromChestsBtn: 'Populate from Chests',
+    populateFromChestsResult: n => `Players added: ${n}`,
   },
 
   feedback: {

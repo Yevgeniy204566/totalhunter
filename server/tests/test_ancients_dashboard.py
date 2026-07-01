@@ -724,3 +724,103 @@ async def test_delete_roster_entry_not_found_returns_404(db_session):
             headers={"Authorization": f"Bearer {token}"},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_populate_from_chests_adds_missing_canonical_names(db_session):
+    user, token = await _create_user_with_token(db_session, "populate1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="populate-1")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r1", canonical_name="Иванов"))
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r2", canonical_name="Петров"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/populate-1/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"added": 2}
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Иванов", "Петров"}
+    for r in rows:
+        assert r.source == "chests"
+        assert r.place is None
+        assert r.points is None
+        assert r.manual_expires_at is None
+
+
+@pytest.mark.asyncio
+async def test_populate_from_chests_skips_existing_names_second_call(db_session):
+    user, token = await _create_user_with_token(db_session, "populate2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="populate-2")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r1", canonical_name="Сидоров"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post(
+            "/web/dashboard/ancients/populate-2/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        second = await client.post(
+            "/web/dashboard/ancients/populate-2/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert first.json() == {"added": 1}
+    assert second.status_code == 200
+    assert second.json() == {"added": 0}
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+
+
+@pytest.mark.asyncio
+async def test_populate_from_chests_does_not_overwrite_existing_ocr_row(db_session):
+    """A name already in the roster (e.g. real OCR data) is left untouched —
+    populate never overwrites, only fills gaps."""
+    user, token = await _create_user_with_token(db_session, "populate3@test.com")
+    collector = await _create_collector(db_session, user.id, slug="populate-3")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r1", canonical_name="Кузнецов"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Кузнецов",
+                                 place=3, points=500, source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/populate-3/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.json() == {"added": 0}
+
+    row = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalar_one()
+    assert row.source == "ocr"
+    assert row.place == 3
+    assert row.points == 500
+
+
+@pytest.mark.asyncio
+async def test_populate_from_chests_editor_can_call(db_session):
+    from datetime import timedelta
+    from models import AncientEditor
+    owner, _ = await _create_user_with_token(db_session, "populateowner@test.com")
+    editor, editor_token = await _create_user_with_token(db_session, "populateeditor@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="populate-4")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r1", canonical_name="Смирнов"))
+    db_session.add(AncientEditor(collector_id=collector.id, user_id=editor.id,
+                                 expires_at=datetime.now(timezone.utc) + timedelta(days=30)))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/populate-4/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {editor_token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"added": 1}

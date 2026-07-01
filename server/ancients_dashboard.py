@@ -454,6 +454,38 @@ async def add_manual_roster_entry(slug: str, payload: ManualRosterPayload,
     return {"ok": True}
 
 
+@router.post("/{slug}/roster/populate-from-chests")
+async def populate_roster_from_chests(slug: str,
+                                      user: User = Depends(get_web_user),
+                                      db: AsyncSession = Depends(get_db)):
+    """Разовое массовое добавление костяка клана из базы Сундуков — для
+    подготовки к событию (назначить состав войск заранее). Не трогает уже
+    существующие строки ростера, не сгорает по таймеру (source='chests')."""
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
+
+    canonical_names = list((await db.execute(
+        select(PlayerAlias.canonical_name).where(PlayerAlias.collector_id == collector.id)
+    )).scalars().all())
+    existing_names = set((await db.execute(
+        select(AncientRoster.player_name).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all())
+
+    added = 0
+    for name in canonical_names:
+        if name in existing_names:
+            continue
+        db.add(AncientRoster(
+            collector_id=collector.id, player_name=name,
+            place=None, points=None, troop_level=None,
+            rank=None, source="chests", manual_expires_at=None,
+        ))
+        existing_names.add(name)
+        added += 1
+
+    await db.commit()
+    return {"added": added}
+
+
 class JoinPayload(BaseModel):
     code: str
 

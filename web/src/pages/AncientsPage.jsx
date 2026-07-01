@@ -61,6 +61,7 @@ export default function AncientsPage() {
   const [manualForm, setManualForm] = useState({})
   const [manualSimilar, setManualSimilar] = useState({})
   const [confirmDeleteRoster, setConfirmDeleteRoster] = useState({})
+  const [populateMsg, setPopulateMsg] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -169,6 +170,13 @@ export default function AncientsPage() {
     } else {
       setTroopEdits(prev => ({ ...prev, [key]: next }))
     }
+  }
+
+  async function handlePopulateFromChests(slug) {
+    const { added } = await api.dashboardAncientsPopulateFromChests(slug)
+    setPopulateMsg(prev => ({ ...prev, [slug]: cx.populateFromChestsResult(added) }))
+    setTimeout(() => setPopulateMsg(prev => ({ ...prev, [slug]: '' })), 4000)
+    refresh()
   }
 
   async function handleDeleteRosterEntry(slug, playerName) {
@@ -618,6 +626,10 @@ export default function AncientsPage() {
               )}
 
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--outline)' }}>
+                <button className="btn-secondary" style={{ fontSize: 13, marginBottom: 12 }}
+                  onClick={() => handlePopulateFromChests(c.slug)}>
+                  {populateMsg[c.slug] || cx.populateFromChestsBtn}
+                </button>
                 <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.manualAddTitle}</div>
                 {manualSimilar[c.slug] && (
                   <div style={{ marginBottom: 8, fontSize: 13, color: '#f9a825' }}>

@@ -132,6 +132,8 @@ export const DASHBOARD = {
     manualDuplicateError: 'Такой игрок уже в ростере',
     deleteRosterBtn: 'Удалить',
     deleteRosterYes: 'Да, удалить',
+    populateFromChestsBtn: 'Заполнить из Сундуков',
+    populateFromChestsResult: n => `Добавлено игроков: ${n}`,
   },
 
 

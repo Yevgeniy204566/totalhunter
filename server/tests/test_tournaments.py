@@ -284,6 +284,39 @@ async def test_reimport_does_not_delete_manual_entry(db_session):
 
 
 @pytest.mark.asyncio
+async def test_reimport_does_not_delete_chests_seeded_entry(db_session):
+    """A row seeded by 'Populate from Chests' (source='chests') survives a
+    full tournament re-import the same way a manual row does."""
+    user = await _create_user(db_session, "hwidB000000000a")
+    await db_session.commit()
+
+    base_payload = _payload(
+        user.hwid, clan="BERSB",
+        items=[{"name": "Иванов", "place": 1, "points": 100}],
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=base_payload)
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(
+            ChestCollector.kingdom == "K229", ChestCollector.clan == "BERSB")
+    )).scalar_one()
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="ИзСундуков",
+                                 place=None, points=None, source="chests"))
+    await db_session.commit()
+
+    reimport_payload = dict(base_payload, timestamp="2026-06-23T11:00:00",
+                            items=[{"name": "Иванов", "place": 1, "points": 100}])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=reimport_payload)
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert {r.player_name for r in rows} == {"Иванов", "ИзСундуков"}
+
+
+@pytest.mark.asyncio
 async def test_reimport_promotes_manual_entry_when_matched(db_session):
     """A manual entry whose name matches an incoming tournament row gets
     real place/points and its source flips to 'ocr' — no duplicate row, no
