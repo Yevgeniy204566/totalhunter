@@ -107,3 +107,11 @@ def split_strategy_b(total: float, preset: str,
 
 RANKS: list[str] = ["Глава", "Старший", "Офицер", "Ветеран", "Рядовой"]
 OFFICER_RANKS: set[str] = {"Глава", "Старший", "Офицер"}
+
+
+def shortfall_pct(quota: float | None, points: int | None) -> float | None:
+    if quota is None or points is None:
+        return None
+    if quota == 0:
+        return None
+    return (quota - points) / quota * 100.0

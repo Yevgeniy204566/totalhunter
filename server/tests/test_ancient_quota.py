@@ -5,6 +5,7 @@ from ancient_quota import (
     _tier_factor, troop_weight, parse_troop_level,
     total_quota_millions, split_strategy_a, split_strategy_b,
 )
+from ancient_quota import shortfall_pct
 
 
 def test_ancient_level_hp_covers_full_range():
@@ -146,3 +147,34 @@ def test_split_strategy_b_handles_non_diagonal_combo():
     assert result["players"][0]["name"] == "Игрок"
     assert result["players"][0]["quota"] == pytest.approx(100.0)
     assert result["excluded"] == []
+
+
+def test_shortfall_pct_basic_case():
+    assert shortfall_pct(100, 50) == pytest.approx(50.0)
+
+
+def test_shortfall_pct_zero_shortfall():
+    assert shortfall_pct(100, 100) == pytest.approx(0.0)
+
+
+def test_shortfall_pct_full_miss():
+    assert shortfall_pct(100, 0) == pytest.approx(100.0)
+
+
+def test_shortfall_pct_zero_quota_returns_none():
+    # Division-by-zero guard — owner-mandated explicit test.
+    assert shortfall_pct(0, 50) is None
+
+
+def test_shortfall_pct_overshoot_is_negative_not_an_error():
+    # Owner-mandated: exceeding quota must not raise, and must be negative
+    # (falls into the "no highlight" zone at the call site, not a special case here).
+    assert shortfall_pct(100, 150) == pytest.approx(-50.0)
+
+
+def test_shortfall_pct_none_quota_returns_none():
+    assert shortfall_pct(None, 50) is None
+
+
+def test_shortfall_pct_none_points_returns_none():
+    assert shortfall_pct(100, None) is None

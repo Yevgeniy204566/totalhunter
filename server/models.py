@@ -411,6 +411,9 @@ class ChestCollector(Base):
     leader_excluded_catalog_ids = Column(JSON, nullable=False, server_default=text("'[]'"))
     ancient_hidden          = Column(Boolean, nullable=False, server_default=text("false"))
     ancient_hidden_at       = Column(TIMESTAMP(timezone=True), nullable=True)
+    ancient_shortfall_light_pct    = Column(Float, nullable=True)
+    ancient_shortfall_medium_pct   = Column(Float, nullable=True)
+    ancient_shortfall_critical_pct = Column(Float, nullable=True)
 
 
 class Chest(Base):
