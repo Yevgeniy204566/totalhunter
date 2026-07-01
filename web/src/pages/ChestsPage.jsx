@@ -547,6 +547,7 @@ export default function ChestsPage() {
               <table className="chest-table">
                 <thead>
                   <tr>
+                    <th>№</th>
                     <th>{cx.playerRawCol}</th>
                     <th style={{ cursor: 'pointer', userSelect: 'none' }}
                         onClick={() => toggleSort(collector.slug, 'name')}>
@@ -561,9 +562,10 @@ export default function ChestsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedRows.map(({ row, origIdx }) => (
+                  {sortedRows.map(({ row, origIdx }, idx) => (
                     <Fragment key={origIdx}>
                     <tr>
+                      <td>{idx + 1}</td>
                       <td>{row.raw_name || '—'}</td>
                       <td>
                         <input
@@ -624,7 +626,7 @@ export default function ChestsPage() {
                     </tr>
                     {leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name) && (
                       <tr key={`leader-excl-${origIdx}`}>
-                        <td colSpan={5} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
+                        <td colSpan={6} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
                           <div style={{ fontSize: 13, color: '#a6adc8', marginBottom: 6 }}>
                             Не считать в статистику:
                           </div>

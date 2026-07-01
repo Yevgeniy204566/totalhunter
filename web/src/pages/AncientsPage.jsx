@@ -557,6 +557,7 @@ export default function AncientsPage() {
                 <table className="chest-table">
                   <thead>
                     <tr>
+                      <th>№</th>
                       <th
                         style={{ cursor: 'pointer', userSelect: 'none' }}
                         onClick={() => toggleSort(c.slug, 'name')}
@@ -578,7 +579,7 @@ export default function AncientsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedRoster.map(p => {
+                    {sortedRoster.map((p, idx) => {
                       const suggestion = srcSlug === c.slug
                         ? (p.suggested_name || '')
                         : (clientFuzzyMatch(p.player_name, srcNames, fuzzyThreshold) || '')
@@ -587,6 +588,7 @@ export default function AncientsPage() {
                       return (
                         <tr key={p.player_name}
                           className={rowShortfallClass(p.shortfall_pct, c.quota_thresholds)}>
+                          <td>{idx + 1}</td>
                           <td>{p.player_name}</td>
                           <td>
                             {p.mapping_confirmed ? (
