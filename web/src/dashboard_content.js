@@ -117,6 +117,11 @@ export const DASHBOARD = {
     editorBadge: 'Редактор',
     joinSuccess: 'Доступ получен! Страница обновляется...',
     joinError: 'Ссылка недействительна или истекла',
+    hideBtn: 'Скрыть',
+    hideConfirm: 'Скрыть из списка? Данные не удаляются, вернуть можно из «Скрытые».',
+    hideYes: 'Да, скрыть',
+    hiddenSectionTitle: 'Скрытые',
+    showBtn: 'Показать',
   },
 
 

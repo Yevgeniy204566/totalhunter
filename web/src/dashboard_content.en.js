@@ -117,6 +117,11 @@ export const DASHBOARD = {
     editorBadge: 'Editor',
     joinSuccess: 'Access granted! Reloading...',
     joinError: 'Invite link is invalid or expired',
+    hideBtn: 'Hide',
+    hideConfirm: 'Hide from the list? Data is not deleted, restore it from "Hidden".',
+    hideYes: 'Yes, hide',
+    hiddenSectionTitle: 'Hidden',
+    showBtn: 'Show',
   },
 
   feedback: {

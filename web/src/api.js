@@ -71,6 +71,8 @@ export const api = {
     request('POST', `/web/dashboard/ancients/${slug}/invite`),
   dashboardAncientsJoin: (code) =>
     request('POST', '/web/dashboard/ancients/join', { code }),
+  dashboardAncientsSetHidden: (slug, hidden) =>
+    request('PATCH', `/web/dashboard/ancients/${slug}/ancient-visibility`, { hidden }),
 }
 
 export async function fetchChestSummary(slug) {

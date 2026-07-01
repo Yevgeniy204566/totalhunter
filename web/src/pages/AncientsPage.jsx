@@ -46,6 +46,8 @@ export default function AncientsPage() {
   const [canonicalSourceSlug, setCanonicalSourceSlug] = useState({})
   const [joinMessage, setJoinMessage] = useState('')
   const [inviteMsg, setInviteMsg] = useState({})
+  const [hiddenCollectors, setHiddenCollectors] = useState([])
+  const [confirmHideByCollector, setConfirmHideByCollector] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -73,6 +75,7 @@ export default function AncientsPage() {
       setCollectors(data.collectors || [])
       setCanonicalSources(data.canonical_sources || [])
       setLevelHp(data.ancient_level_hp || {})
+      setHiddenCollectors(data.hidden_collectors || [])
       setFormByCollector(prev => {
         const next = {}
         for (const c of (data.collectors || [])) {
@@ -123,6 +126,12 @@ export default function AncientsPage() {
     } catch {
       setInviteMsg(prev => ({ ...prev, [slug]: '—' }))
     }
+  }
+
+  async function handleSetHidden(slug, hidden) {
+    await api.dashboardAncientsSetHidden(slug, hidden)
+    setConfirmHideByCollector(prev => ({ ...prev, [slug]: false }))
+    refresh()
   }
 
   async function handleTroopLevelChange(slug, playerName, troopLevel) {
@@ -219,6 +228,29 @@ export default function AncientsPage() {
                 >
                   {inviteMsg[c.slug] || cx.inviteBtn}
                 </button>
+              )}
+              {c.is_owner && (
+                confirmHideByCollector[c.slug] ? (
+                  <>
+                    <span style={{ fontSize: 12, color: '#F87171' }}>{cx.hideConfirm}</span>
+                    <button
+                      className="btn-primary"
+                      style={{ fontSize: 12, padding: '3px 10px', background: '#DC2626', boxShadow: 'none' }}
+                      onClick={() => handleSetHidden(c.slug, true)}
+                    >{cx.hideYes}</button>
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: 12, padding: '3px 10px' }}
+                      onClick={() => setConfirmHideByCollector(prev => ({ ...prev, [c.slug]: false }))}
+                    >{cx.closeSeasonNo}</button>
+                  </>
+                ) : (
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: 12, padding: '4px 12px', color: '#F87171', borderColor: '#F8717144' }}
+                    onClick={() => setConfirmHideByCollector(prev => ({ ...prev, [c.slug]: true }))}
+                  >{cx.hideBtn}</button>
+                )
               )}
             </div>
 
@@ -540,6 +572,26 @@ export default function AncientsPage() {
           </div>
         )
       })}
+
+      {hiddenCollectors.length > 0 && (
+        <div className="card" style={{ marginTop: 8 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600 }}>
+            {cx.hiddenSectionTitle} ({hiddenCollectors.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {hiddenCollectors.map(h => (
+              <div key={h.slug} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span className="text-muted">{h.kingdom} / {h.clan}</span>
+                <button
+                  className="btn-secondary"
+                  style={{ fontSize: 12, padding: '3px 10px' }}
+                  onClick={() => handleSetHidden(h.slug, false)}
+                >{cx.showBtn}</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
