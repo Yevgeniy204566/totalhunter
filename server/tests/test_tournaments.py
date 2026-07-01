@@ -204,6 +204,11 @@ async def test_import_does_not_charge_credits(db_session):
     assert user.credits == 5  # unchanged — free feature
 
 
+def _normalize_tz(dt):
+    """Strip timezone for SQLite naive/aware comparison."""
+    return dt.replace(tzinfo=None) if dt.tzinfo else dt
+
+
 @pytest.mark.asyncio
 async def test_import_touches_ancient_hidden_at_when_hidden(db_session):
     user = await _create_user(db_session, "hwid7000000000a")
@@ -222,4 +227,4 @@ async def test_import_touches_ancient_hidden_at_when_hidden(db_session):
         await client.post("/api/v1/tournaments/import", json=payload)
 
     await db_session.refresh(collector)
-    assert collector.ancient_hidden_at > old_touch
+    assert _normalize_tz(collector.ancient_hidden_at) > _normalize_tz(old_touch)
