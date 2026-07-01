@@ -347,7 +347,14 @@ async def calculate(slug: str, payload: CalculatePayload,
         roster = (await db.execute(
             select(AncientRoster).where(AncientRoster.collector_id == collector.id)
         )).scalars().all()
-        players = [(r.player_name, r.troop_level) for r in roster]
+        confirmed_mappings = (await db.execute(
+            select(AncientNameMapping).where(
+                AncientNameMapping.collector_id == collector.id,
+                AncientNameMapping.confirmed == True,
+            )
+        )).scalars().all()
+        mapped_names = {m.raw_ocr_name: m.canonical_name for m in confirmed_mappings}
+        players = [(mapped_names.get(r.player_name, r.player_name), r.troop_level) for r in roster]
         try:
             result = split_strategy_b(total, payload.clan_preset, players)
         except (ValueError, KeyError) as e:
