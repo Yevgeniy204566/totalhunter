@@ -122,6 +122,14 @@ export const DASHBOARD = {
     hideYes: 'Да, скрыть',
     hiddenSectionTitle: 'Скрытые',
     showBtn: 'Показать',
+    manualAddTitle: 'Добавить участника вручную',
+    manualNamePlaceholder: 'Имя игрока',
+    manualRankLabel: 'Звание',
+    manualAddButton: 'Добавить',
+    manualSimilarNameWarning: name => `Похоже на «${name}» — использовать это имя?`,
+    manualUseSuggested: 'Да, это он',
+    manualAddAnyway: 'Нет, добавить как есть',
+    manualDuplicateError: 'Такой игрок уже в ростере',
   },
 
 

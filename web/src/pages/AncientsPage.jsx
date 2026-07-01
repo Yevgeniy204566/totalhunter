@@ -11,6 +11,7 @@ const DEFAULT_FORM = {
 }
 
 const TIERS = ['5', '6', '7', '8', '9']
+const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 
 function parseTroop(troop_level) {
   if (!troop_level) return { g: '', s: '', m: '' }
@@ -57,6 +58,8 @@ export default function AncientsPage() {
   const [hiddenCollectors, setHiddenCollectors] = useState([])
   const [confirmHideByCollector, setConfirmHideByCollector] = useState({})
   const [troopEdits, setTroopEdits] = useState({})
+  const [manualForm, setManualForm] = useState({})
+  const [manualSimilar, setManualSimilar] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -164,6 +167,26 @@ export default function AncientsPage() {
       handleTroopLevelChange(slug, playerName, `G${next.g} S${next.s} M${next.m}`)
     } else {
       setTroopEdits(prev => ({ ...prev, [key]: next }))
+    }
+  }
+
+  async function handleAddManual(slug, useNameOverride) {
+    const form = manualForm[slug] || {}
+    const name = useNameOverride || form.name
+    if (!name) return
+    try {
+      await api.dashboardAncientsAddManual(slug, {
+        player_name: name, troop_level: form.troop_level || null, rank: form.rank || null,
+      })
+      setManualForm(prev => ({ ...prev, [slug]: {} }))
+      setManualSimilar(prev => ({ ...prev, [slug]: null }))
+      refresh()
+    } catch (e) {
+      if (e.similarName) {
+        setManualSimilar(prev => ({ ...prev, [slug]: e.similarName }))
+      } else {
+        alert(e.message || cx.manualDuplicateError)
+      }
     }
   }
 
@@ -564,6 +587,67 @@ export default function AncientsPage() {
                   </tbody>
                 </table>
               )}
+
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--outline)' }}>
+                <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.manualAddTitle}</div>
+                {manualSimilar[c.slug] && (
+                  <div style={{ marginBottom: 8, fontSize: 13, color: '#f9a825' }}>
+                    {cx.manualSimilarNameWarning(manualSimilar[c.slug])}
+                    <button className="btn-secondary" style={{ fontSize: 12, marginLeft: 8, padding: '2px 8px' }}
+                      onClick={() => handleAddManual(c.slug, manualSimilar[c.slug])}>
+                      {cx.manualUseSuggested}
+                    </button>
+                    <button className="btn-secondary" style={{ fontSize: 12, marginLeft: 4, padding: '2px 8px' }}
+                      onClick={() => setManualSimilar(prev => ({ ...prev, [c.slug]: null }))}>
+                      {cx.manualAddAnyway}
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input
+                    className="input-dark"
+                    placeholder={cx.manualNamePlaceholder}
+                    value={(manualForm[c.slug] || {}).name || ''}
+                    onChange={e => setManualForm(prev => ({ ...prev, [c.slug]: { ...(prev[c.slug] || {}), name: e.target.value } }))}
+                    style={{ minWidth: 140 }}
+                  />
+                  <select className="input-dark"
+                    value={(manualForm[c.slug] || {}).rank || ''}
+                    onChange={e => setManualForm(prev => ({ ...prev, [c.slug]: { ...(prev[c.slug] || {}), rank: e.target.value } }))}>
+                    {RANKS.map(r => <option key={r} value={r}>{r || cx.manualRankLabel}</option>)}
+                  </select>
+                  <select className="input-dark" style={{ width: 44 }}
+                    value={(manualForm[c.slug] || {}).g || ''}
+                    onChange={e => setManualForm(prev => {
+                      const f = { ...(prev[c.slug] || {}), g: e.target.value }
+                      return { ...prev, [c.slug]: { ...f, troop_level: (f.g && f.s && f.m) ? `G${f.g} S${f.s} M${f.m}` : undefined } }
+                    })}>
+                    <option value="">G</option>
+                    {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <select className="input-dark" style={{ width: 44 }}
+                    value={(manualForm[c.slug] || {}).s || ''}
+                    onChange={e => setManualForm(prev => {
+                      const f = { ...(prev[c.slug] || {}), s: e.target.value }
+                      return { ...prev, [c.slug]: { ...f, troop_level: (f.g && f.s && f.m) ? `G${f.g} S${f.s} M${f.m}` : undefined } }
+                    })}>
+                    <option value="">S</option>
+                    {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <select className="input-dark" style={{ width: 44 }}
+                    value={(manualForm[c.slug] || {}).m || ''}
+                    onChange={e => setManualForm(prev => {
+                      const f = { ...(prev[c.slug] || {}), m: e.target.value }
+                      return { ...prev, [c.slug]: { ...f, troop_level: (f.g && f.s && f.m) ? `G${f.g} S${f.s} M${f.m}` : undefined } }
+                    })}>
+                    <option value="">M</option>
+                    {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <button className="btn-primary" onClick={() => handleAddManual(c.slug)}>
+                    {cx.manualAddButton}
+                  </button>
+                </div>
+              </div>
 
               <button
                 className="btn-primary"

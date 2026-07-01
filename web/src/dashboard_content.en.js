@@ -122,6 +122,14 @@ export const DASHBOARD = {
     hideYes: 'Yes, hide',
     hiddenSectionTitle: 'Hidden',
     showBtn: 'Show',
+    manualAddTitle: 'Add participant manually',
+    manualNamePlaceholder: 'Player name',
+    manualRankLabel: 'Rank',
+    manualAddButton: 'Add',
+    manualSimilarNameWarning: name => `Looks like "${name}" — use this name?`,
+    manualUseSuggested: 'Yes, that\'s them',
+    manualAddAnyway: 'No, add as-is',
+    manualDuplicateError: 'This player is already in the roster',
   },
 
   feedback: {

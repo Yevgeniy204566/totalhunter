@@ -73,6 +73,22 @@ export const api = {
     request('POST', '/web/dashboard/ancients/join', { code }),
   dashboardAncientsSetHidden: (slug, hidden) =>
     request('PATCH', `/web/dashboard/ancients/${slug}/ancient-visibility`, { hidden }),
+  dashboardAncientsAddManual: async (slug, payload) => {
+    const token = getToken()
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${BASE}/web/dashboard/ancients/${slug}/roster/manual`, {
+      method: 'POST', headers, body: JSON.stringify(payload),
+    })
+    let data
+    try { data = await res.json() } catch { data = {} }
+    if (!res.ok) {
+      const err = new Error(data.detail?.message || data.detail || 'Request failed')
+      err.similarName = data.detail?.similar_name
+      throw err
+    }
+    return data
+  },
 }
 
 export async function fetchChestSummary(slug) {
