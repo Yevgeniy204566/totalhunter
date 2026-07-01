@@ -42,6 +42,14 @@ function clientFuzzyMatch(raw, candidates, cutoff) {
   return best
 }
 
+function rowShortfallClass(shortfallPct, thresholds) {
+  if (shortfallPct == null || !thresholds) return ''
+  if (shortfallPct <= thresholds.light_pct) return ''
+  if (shortfallPct <= thresholds.medium_pct) return 'row-quota-light'
+  if (shortfallPct <= thresholds.critical_pct) return 'row-lagging'
+  return 'row-danger'
+}
+
 export default function AncientsPage() {
   const [collectors, setCollectors] = useState(null)
   const [levelHp, setLevelHp] = useState({})
@@ -161,6 +169,17 @@ export default function AncientsPage() {
   async function handleRankChange(slug, playerName, rank) {
     try {
       await api.dashboardAncientsRank(slug, playerName, rank || null)
+      refresh()
+    } catch (e) {
+      alert(e.message || 'Ошибка сохранения')
+    }
+  }
+
+  async function handleThresholdChange(slug, thresholds, field, value) {
+    const next = { ...thresholds, [field]: parseFloat(value) || 0 }
+    try {
+      await api.dashboardAncientsQuotaThresholds(
+        slug, next.light_pct, next.medium_pct, next.critical_pct)
       refresh()
     } catch (e) {
       alert(e.message || 'Ошибка сохранения')
@@ -506,6 +525,28 @@ export default function AncientsPage() {
                 )}
               </div>
 
+              <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>{cx.thresholdsTitle}:</span>
+                <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
+                  {cx.thresholdLight}
+                  <input type="number" className="input-dark" style={{ width: 60 }}
+                    value={c.quota_thresholds.light_pct}
+                    onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'light_pct', e.target.value)} />
+                </label>
+                <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
+                  {cx.thresholdMedium}
+                  <input type="number" className="input-dark" style={{ width: 60 }}
+                    value={c.quota_thresholds.medium_pct}
+                    onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'medium_pct', e.target.value)} />
+                </label>
+                <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
+                  {cx.thresholdCritical}
+                  <input type="number" className="input-dark" style={{ width: 60 }}
+                    value={c.quota_thresholds.critical_pct}
+                    onChange={e => handleThresholdChange(c.slug, c.quota_thresholds, 'critical_pct', e.target.value)} />
+                </label>
+              </div>
+
               <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.rosterTitle}</div>
 
               {sortedRoster.length === 0 ? (
@@ -542,7 +583,8 @@ export default function AncientsPage() {
                       const pending = (pendingMappings[c.slug] || {})[p.player_name]
                       const deleteKey = `${c.slug}:${p.player_name}`
                       return (
-                        <tr key={p.player_name}>
+                        <tr key={p.player_name}
+                          className={rowShortfallClass(p.shortfall_pct, c.quota_thresholds)}>
                           <td>{p.player_name}</td>
                           <td>
                             {p.mapping_confirmed ? (

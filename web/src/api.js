@@ -64,6 +64,9 @@ export const api = {
   dashboardAncientsRank: (slug, playerName, rank) =>
     request('PATCH', `/web/dashboard/ancients/${slug}/rank`,
             { player_name: playerName, rank }),
+  dashboardAncientsQuotaThresholds: (slug, lightPct, mediumPct, criticalPct) =>
+    request('PATCH', `/web/dashboard/ancients/${slug}/quota-thresholds`,
+            { light_pct: lightPct, medium_pct: mediumPct, critical_pct: criticalPct }),
   dashboardAncientsCalculate: (slug, payload) =>
     request('POST', `/web/dashboard/ancients/${slug}/calculate`, payload),
   dashboardAncientsNameMappings: (slug, mappings) =>

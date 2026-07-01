@@ -92,6 +92,8 @@ export const DASHBOARD = {
     player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Состав',
     rank: 'Звание', quota: 'Квота',
     noTroopLevel: 'не указан',
+    thresholdsTitle: 'Пороги недобора квоты (%)',
+    thresholdLight: 'Лёгкий', thresholdMedium: 'Средний', thresholdCritical: 'Критический',
     calcTitle: 'Калькулятор нормы',
     summonsLabel: 'Количество вызовов',
     startLevelLabel: 'Уровень первого Древнего',

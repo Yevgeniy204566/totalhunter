@@ -427,6 +427,7 @@ a:hover { color: var(--on-surface); }
 .row-success td { color: #50C878; font-weight: 600; }
 .row-lagging td { color: #FFB347; }
 .row-danger td { color: #FF6961; }
+.row-quota-light td { color: #F5D76E; }
 
 .public-table th:nth-child(1), .public-table td:nth-child(1) {
   position: sticky; left: 0; z-index: 2; width: 40px; background: var(--card);

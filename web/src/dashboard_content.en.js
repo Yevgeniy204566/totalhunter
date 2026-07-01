@@ -92,6 +92,8 @@ export const DASHBOARD = {
     player: 'Player', place: 'Place', points: 'Points', troopLevel: 'Composition',
     rank: 'Rank', quota: 'Quota',
     noTroopLevel: 'not set',
+    thresholdsTitle: 'Quota shortfall thresholds (%)',
+    thresholdLight: 'Light', thresholdMedium: 'Medium', thresholdCritical: 'Critical',
     calcTitle: 'Quota calculator',
     summonsLabel: 'Number of summons',
     startLevelLabel: 'First Ancient level',
