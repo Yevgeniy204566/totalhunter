@@ -90,6 +90,7 @@ export const DASHBOARD = {
   ancients: {
     title: 'Древний',
     player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Состав',
+    rank: 'Звание', quota: 'Квота',
     noTroopLevel: 'не указан',
     calcTitle: 'Калькулятор нормы',
     summonsLabel: 'Количество вызовов',

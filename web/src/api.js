@@ -61,6 +61,9 @@ export const api = {
   dashboardAncientsTroopLevel: (slug, playerName, troopLevel) =>
     request('PATCH', `/web/dashboard/ancients/${slug}/troop-level`,
             { player_name: playerName, troop_level: troopLevel }),
+  dashboardAncientsRank: (slug, playerName, rank) =>
+    request('PATCH', `/web/dashboard/ancients/${slug}/rank`,
+            { player_name: playerName, rank }),
   dashboardAncientsCalculate: (slug, payload) =>
     request('POST', `/web/dashboard/ancients/${slug}/calculate`, payload),
   dashboardAncientsNameMappings: (slug, mappings) =>

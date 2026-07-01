@@ -158,6 +158,15 @@ export default function AncientsPage() {
     }
   }
 
+  async function handleRankChange(slug, playerName, rank) {
+    try {
+      await api.dashboardAncientsRank(slug, playerName, rank || null)
+      refresh()
+    } catch (e) {
+      alert(e.message || 'Ошибка сохранения')
+    }
+  }
+
   function handleTroopFieldChange(slug, playerName, currentTroopLevel, field, value) {
     const key = `${slug}:${playerName}`
     const base = { ...parseTroop(currentTroopLevel), ...(troopEdits[key] || {}) }
@@ -520,6 +529,8 @@ export default function AncientsPage() {
                       </th>
                       <th>{cx.points}</th>
                       <th>{cx.troopLevel}</th>
+                      <th>{cx.rank}</th>
+                      <th>{cx.quota}</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -601,6 +612,14 @@ export default function AncientsPage() {
                               )
                             })()}
                           </td>
+                          <td>
+                            <select className="input-dark" value={p.rank || ''}
+                              style={{ width: 100 }}
+                              onChange={e => handleRankChange(c.slug, p.player_name, e.target.value)}>
+                              {RANKS.map(r => <option key={r} value={r}>{r || cx.noTroopLevel}</option>)}
+                            </select>
+                          </td>
+                          <td>{p.quota != null ? fmtNum(p.quota, 2) : '—'}</td>
                           <td>
                             {confirmDeleteRoster[deleteKey] ? (
                               <span style={{ display: 'flex', gap: 4, alignItems: 'center', whiteSpace: 'nowrap' }}>
