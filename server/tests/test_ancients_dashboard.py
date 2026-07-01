@@ -5,7 +5,7 @@ exist in conftest.py)."""
 import os
 import secrets
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -462,3 +462,30 @@ async def test_hide_sets_ancient_hidden_at_unhide_clears_it(db_session):
         )
     await db_session.refresh(collector)
     assert collector.ancient_hidden_at is None
+
+
+def _normalize_tz(dt):
+    """Strip timezone for SQLite naive/aware comparison."""
+    return dt.replace(tzinfo=None) if dt.tzinfo else dt
+
+
+@pytest.mark.asyncio
+async def test_calculate_touches_ancient_hidden_at_when_hidden(db_session):
+    user, token = await _create_user_with_token(db_session, "calctouch1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="calc-touch-1")
+    collector.ancient_hidden = True
+    collector.ancient_hidden_at = datetime.now(timezone.utc) - timedelta(days=55)
+    await db_session.commit()
+    old_touch = collector.ancient_hidden_at
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/calc-touch-1/calculate",
+            json={"strategy": "A", "summon_levels": [81], "amplification_coef": 1.0,
+                  "officer_count": 1, "veteran_count": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    await db_session.refresh(collector)
+    assert _normalize_tz(collector.ancient_hidden_at) > _normalize_tz(old_touch)

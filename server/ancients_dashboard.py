@@ -323,6 +323,8 @@ async def calculate(slug: str, payload: CalculatePayload,
                     user: User = Depends(get_web_user),
                     db: AsyncSession = Depends(get_db)):
     collector = await _get_own_collector(db, slug, user)
+    if collector.ancient_hidden_at is not None:
+        collector.ancient_hidden_at = datetime.now(timezone.utc)
 
     if payload.strategy not in ("A", "B"):
         raise HTTPException(status_code=400, detail="strategy must be 'A' or 'B'")
