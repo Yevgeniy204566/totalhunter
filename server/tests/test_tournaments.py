@@ -228,3 +228,22 @@ async def test_import_touches_ancient_hidden_at_when_hidden(db_session):
 
     await db_session.refresh(collector)
     assert _normalize_tz(collector.ancient_hidden_at) > _normalize_tz(old_touch)
+
+
+@pytest.mark.asyncio
+async def test_import_rearms_timer_after_it_was_cleared_by_a_purge(db_session):
+    user = await _create_user(db_session, "hwid8000000000a")
+    collector = ChestCollector(
+        kingdom="K229", clan="BERS8", user_id=user.id, slug="post-purge-import-1",
+        ancient_hidden=True, ancient_hidden_at=None,
+    )
+    db_session.add(collector)
+    await db_session.commit()
+
+    payload = _payload(user.hwid, clan="BERS8",
+                       items=[{"name": "Иванов", "place": 1, "points": 100}])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/tournaments/import", json=payload)
+
+    await db_session.refresh(collector)
+    assert collector.ancient_hidden_at is not None

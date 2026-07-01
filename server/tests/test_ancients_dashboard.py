@@ -489,3 +489,24 @@ async def test_calculate_touches_ancient_hidden_at_when_hidden(db_session):
 
     await db_session.refresh(collector)
     assert _normalize_tz(collector.ancient_hidden_at) > _normalize_tz(old_touch)
+
+
+@pytest.mark.asyncio
+async def test_calculate_rearms_timer_after_it_was_cleared_by_a_purge(db_session):
+    user, token = await _create_user_with_token(db_session, "postpurgecalc1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="post-purge-calc-1")
+    collector.ancient_hidden = True
+    collector.ancient_hidden_at = None
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/post-purge-calc-1/calculate",
+            json={"strategy": "A", "summon_levels": [81], "amplification_coef": 1.0,
+                  "officer_count": 1, "veteran_count": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    await db_session.refresh(collector)
+    assert collector.ancient_hidden_at is not None

@@ -79,7 +79,7 @@ async def import_tournament(payload: TournamentImportPayload,
         raise HTTPException(status_code=403, detail="Banned")
 
     collector = await _get_or_create_collector(payload.kingdom, payload.clan, user.id, db)
-    if collector.ancient_hidden_at is not None:
+    if collector.ancient_hidden:
         collector.ancient_hidden_at = datetime.now(timezone.utc)
 
     player_aliases = {
