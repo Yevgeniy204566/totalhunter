@@ -5,6 +5,7 @@ exist in conftest.py)."""
 import os
 import secrets
 import sys
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -26,8 +27,8 @@ async def _create_user_with_token(db, email="owner@example.com"):
     return user, token
 
 
-async def _create_collector(db, user_id, slug=None):
-    collector = ChestCollector(kingdom="K1", clan="ClanA", user_id=user_id,
+async def _create_collector(db, user_id, slug=None, clan="ClanA"):
+    collector = ChestCollector(kingdom="K1", clan=clan, user_id=user_id,
                                slug=slug or secrets.token_urlsafe(16))
     db.add(collector)
     await db.flush()
@@ -307,6 +308,112 @@ async def test_delete_name_mapping_not_found_returns_404(db_session):
 
 
 @pytest.mark.asyncio
+async def test_collectors_sorted_newest_first(db_session):
+    """Newest collector (highest id) appears first in the list, not insertion order."""
+    user, token = await _create_user_with_token(db_session, "sortorder@test.com")
+    await _create_collector(db_session, user.id, slug="sort-old", clan="ClanA")
+    await db_session.commit()
+    await _create_collector(db_session, user.id, slug="sort-new", clan="ClanB")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    slugs = [c["slug"] for c in resp.json()["collectors"]]
+    assert slugs == ["sort-new", "sort-old"]
+
+
+@pytest.mark.asyncio
+async def test_hide_collector_removes_from_list_and_lists_as_hidden(db_session):
+    """PATCH ancient-visibility {hidden:true} removes collector from `collectors`
+    and surfaces it in `hidden_collectors` — underlying data (Chests) untouched."""
+    user, token = await _create_user_with_token(db_session, "hide1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="hide-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/hide-1/ancient-visibility",
+            json={"hidden": True},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+
+        resp2 = await client.get("/web/dashboard/ancients",
+                                 headers={"Authorization": f"Bearer {token}"})
+    data = resp2.json()
+    assert data["collectors"] == []
+    assert [h["slug"] for h in data["hidden_collectors"]] == ["hide-1"]
+
+
+@pytest.mark.asyncio
+async def test_unhide_collector_restores_to_list(db_session):
+    """PATCH hidden:false brings the collector back into `collectors`."""
+    user, token = await _create_user_with_token(db_session, "hide2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="hide-2")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.patch(
+            "/web/dashboard/ancients/hide-2/ancient-visibility",
+            json={"hidden": True},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        resp = await client.patch(
+            "/web/dashboard/ancients/hide-2/ancient-visibility",
+            json={"hidden": False},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 200
+
+        resp2 = await client.get("/web/dashboard/ancients",
+                                 headers={"Authorization": f"Bearer {token}"})
+    data = resp2.json()
+    assert [c["slug"] for c in data["collectors"]] == ["hide-2"]
+    assert data["hidden_collectors"] == []
+
+
+@pytest.mark.asyncio
+async def test_hide_collector_wrong_owner_returns_403(db_session):
+    owner, _ = await _create_user_with_token(db_session, "hideowner@test.com")
+    _, attacker_token = await _create_user_with_token(db_session, "hideattacker@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="hide-3")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/hide-3/ancient-visibility",
+            json={"hidden": True},
+            headers={"Authorization": f"Bearer {attacker_token}"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_hidden_collector_editor_access_unaffected(db_session):
+    """Hiding is an owner-only view preference — editors still see the collector."""
+    from datetime import datetime, timedelta, timezone
+    from models import AncientEditor
+    owner, owner_token = await _create_user_with_token(db_session, "hideownereditor@test.com")
+    editor, editor_token = await _create_user_with_token(db_session, "hideeditor@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="hide-4")
+    db_session.add(AncientEditor(collector_id=collector.id, user_id=editor.id,
+                                 expires_at=datetime.now(timezone.utc) + timedelta(days=30)))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.patch(
+            "/web/dashboard/ancients/hide-4/ancient-visibility",
+            json={"hidden": True},
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {editor_token}"})
+    assert [c["slug"] for c in resp.json()["collectors"]] == ["hide-4"]
+
+
+@pytest.mark.asyncio
 async def test_fuzzy_threshold_high_suppresses_weak_match(db_session):
     """?fuzzy_threshold=1.0 suppresses suggestions that would pass at 0.75."""
     user, token = await _create_user_with_token(db_session, "thresh1@test.com")
@@ -330,3 +437,28 @@ async def test_fuzzy_threshold_high_suppresses_weak_match(db_session):
     assert "suggested_name" in row_75
     # At 1.0 (exact only), no suggestion possible
     assert row_100["suggested_name"] is None
+
+
+@pytest.mark.asyncio
+async def test_hide_sets_ancient_hidden_at_unhide_clears_it(db_session):
+    user, token = await _create_user_with_token(db_session, "hideat1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="hide-at-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.patch(
+            "/web/dashboard/ancients/hide-at-1/ancient-visibility",
+            json={"hidden": True},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    await db_session.refresh(collector)
+    assert collector.ancient_hidden_at is not None
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.patch(
+            "/web/dashboard/ancients/hide-at-1/ancient-visibility",
+            json={"hidden": False},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    await db_session.refresh(collector)
+    assert collector.ancient_hidden_at is None

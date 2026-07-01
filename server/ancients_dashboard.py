@@ -137,9 +137,12 @@ async def get_dashboard_ancients(
     user: User = Depends(get_web_user),
     db: AsyncSession = Depends(get_db),
 ):
-    own_collectors = (await db.execute(
+    own_collectors_all = (await db.execute(
         select(ChestCollector).where(ChestCollector.user_id == user.id)
+        .order_by(ChestCollector.id.desc())
     )).scalars().all()
+    own_collectors = [c for c in own_collectors_all if not c.ancient_hidden]
+    own_hidden = [c for c in own_collectors_all if c.ancient_hidden]
 
     now = datetime.now(timezone.utc)
     editor_rows = (await db.execute(
@@ -149,6 +152,7 @@ async def get_dashboard_ancients(
             AncientEditor.user_id == user.id,
             AncientEditor.expires_at > now,
         )
+        .order_by(ChestCollector.id.desc())
     )).all()
     own_ids = {c.id for c in own_collectors}
     editor_collectors = [row.ChestCollector for row in editor_rows if row.ChestCollector.id not in own_ids]
@@ -193,8 +197,29 @@ async def get_dashboard_ancients(
             "troop_steps": TROOP_STEPS,
             "presets": sorted(TROOP_QUOTA_PRESETS.keys()),
         })
+    hidden_collectors = [
+        {"slug": c.slug, "kingdom": c.kingdom, "clan": c.clan} for c in own_hidden
+    ]
     return {"collectors": result, "canonical_sources": canonical_sources,
-            "ancient_level_hp": ANCIENT_LEVEL_HP}
+            "ancient_level_hp": ANCIENT_LEVEL_HP, "hidden_collectors": hidden_collectors}
+
+
+class VisibilityPayload(BaseModel):
+    hidden: bool
+
+
+@router.patch("/{slug}/ancient-visibility")
+async def set_ancient_visibility(slug: str, payload: VisibilityPayload,
+                                 user: User = Depends(get_web_user),
+                                 db: AsyncSession = Depends(get_db)):
+    """Скрыть/показать коллектор во вкладке «Древний» — не удаляет данные.
+    Коллектор общий с Сундуками, поэтому это только owner-view preference,
+    не влияет на доступ редакторов и не трогает данные Сундуков."""
+    collector = await _get_own_collector(db, slug, user)
+    collector.ancient_hidden = payload.hidden
+    collector.ancient_hidden_at = datetime.now(timezone.utc) if payload.hidden else None
+    await db.commit()
+    return {"ok": True}
 
 
 class TroopLevelPayload(BaseModel):
