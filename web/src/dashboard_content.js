@@ -130,6 +130,8 @@ export const DASHBOARD = {
     manualUseSuggested: 'Да, это он',
     manualAddAnyway: 'Нет, добавить как есть',
     manualDuplicateError: 'Такой игрок уже в ростере',
+    deleteRosterBtn: 'Удалить',
+    deleteRosterYes: 'Да, удалить',
   },
 
 

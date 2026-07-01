@@ -60,6 +60,7 @@ export default function AncientsPage() {
   const [troopEdits, setTroopEdits] = useState({})
   const [manualForm, setManualForm] = useState({})
   const [manualSimilar, setManualSimilar] = useState({})
+  const [confirmDeleteRoster, setConfirmDeleteRoster] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -168,6 +169,13 @@ export default function AncientsPage() {
     } else {
       setTroopEdits(prev => ({ ...prev, [key]: next }))
     }
+  }
+
+  async function handleDeleteRosterEntry(slug, playerName) {
+    const key = `${slug}:${playerName}`
+    await api.dashboardAncientsDeleteRosterEntry(slug, playerName)
+    setConfirmDeleteRoster(prev => ({ ...prev, [key]: false }))
+    refresh()
   }
 
   async function handleAddManual(slug, useNameOverride) {
@@ -502,6 +510,7 @@ export default function AncientsPage() {
                       </th>
                       <th>{cx.points}</th>
                       <th>{cx.troopLevel}</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -510,6 +519,7 @@ export default function AncientsPage() {
                         ? (p.suggested_name || '')
                         : (clientFuzzyMatch(p.player_name, srcNames, fuzzyThreshold) || '')
                       const pending = (pendingMappings[c.slug] || {})[p.player_name]
+                      const deleteKey = `${c.slug}:${p.player_name}`
                       return (
                         <tr key={p.player_name}>
                           <td>{p.player_name}</td>
@@ -580,6 +590,25 @@ export default function AncientsPage() {
                                 </div>
                               )
                             })()}
+                          </td>
+                          <td>
+                            {confirmDeleteRoster[deleteKey] ? (
+                              <span style={{ display: 'flex', gap: 4, alignItems: 'center', whiteSpace: 'nowrap' }}>
+                                <button
+                                  style={{ fontSize: 11, padding: '2px 6px', background: '#DC2626', border: 'none', color: '#fff', borderRadius: 4 }}
+                                  onClick={() => handleDeleteRosterEntry(c.slug, p.player_name)}
+                                >{cx.deleteRosterYes}</button>
+                                <button
+                                  style={{ fontSize: 11, padding: '2px 6px', background: 'transparent', border: '1px solid #6c7086', color: '#6c7086', borderRadius: 4 }}
+                                  onClick={() => setConfirmDeleteRoster(prev => ({ ...prev, [deleteKey]: false }))}
+                                >{cx.closeSeasonNo}</button>
+                              </span>
+                            ) : (
+                              <button
+                                style={{ fontSize: 11, padding: '2px 6px', background: 'transparent', border: '1px solid #F8717144', color: '#F87171', borderRadius: 4 }}
+                                onClick={() => setConfirmDeleteRoster(prev => ({ ...prev, [deleteKey]: true }))}
+                              >{cx.deleteRosterBtn}</button>
+                            )}
                           </td>
                         </tr>
                       )

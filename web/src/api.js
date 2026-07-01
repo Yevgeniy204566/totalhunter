@@ -89,6 +89,8 @@ export const api = {
     }
     return data
   },
+  dashboardAncientsDeleteRosterEntry: (slug, playerName) =>
+    request('DELETE', `/web/dashboard/ancients/${slug}/roster/${encodeURIComponent(playerName)}`),
 }
 
 export async function fetchChestSummary(slug) {

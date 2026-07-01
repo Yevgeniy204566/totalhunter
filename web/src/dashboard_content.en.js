@@ -130,6 +130,8 @@ export const DASHBOARD = {
     manualUseSuggested: 'Yes, that\'s them',
     manualAddAnyway: 'No, add as-is',
     manualDuplicateError: 'This player is already in the roster',
+    deleteRosterBtn: 'Delete',
+    deleteRosterYes: 'Yes, delete',
   },
 
   feedback: {
