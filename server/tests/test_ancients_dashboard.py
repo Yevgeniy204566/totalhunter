@@ -75,6 +75,149 @@ async def test_patch_troop_level(db_session):
 
 
 @pytest.mark.asyncio
+async def test_patch_rank_saves_value(db_session):
+    user, token = await _create_user_with_token(db_session, "rank1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="rank-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 place=1, points=100, rank=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/rank-1/rank",
+            json={"player_name": "Петров", "rank": "Офицер"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalar_one()
+    assert row.rank == "Офицер"
+
+
+@pytest.mark.asyncio
+async def test_patch_rank_rejects_unknown_value(db_session):
+    user, token = await _create_user_with_token(db_session, "rank2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="rank-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 place=1, points=100, rank=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/rank-2/rank",
+            json={"player_name": "Петров", "rank": "Новичок"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_patch_rank_404_for_unknown_player(db_session):
+    user, token = await _create_user_with_token(db_session, "rank3@test.com")
+    collector = await _create_collector(db_session, user.id, slug="rank-3")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/rank-3/rank",
+            json={"player_name": "НетТакого", "rank": "Офицер"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_roster_get_includes_rank_field(db_session):
+    user, token = await _create_user_with_token(db_session, "rankget1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="rankget-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 place=1, points=100, rank="Ветеран"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["rank"] == "Ветеран"
+
+
+@pytest.mark.asyncio
+async def test_roster_quota_strategy_a_officer_bucket(db_session):
+    user, token = await _create_user_with_token(db_session, "quotaA1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="quota-a-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Глава1",
+                                 place=1, points=100, rank="Глава"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Рядовой1",
+                                 place=2, points=50, rank="Рядовой"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="БезЗвания",
+                                 place=3, points=10, rank=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        calc_resp = await client.post(
+            "/web/dashboard/ancients/quota-a-1/calculate",
+            json={"strategy": "A", "summon_levels": [81], "amplification_coef": 1.0,
+                  "officer_count": 1, "veteran_count": 1},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert calc_resp.status_code == 200
+        officer_quota = calc_resp.json()["result"]["officer_quota"]
+        veteran_quota = calc_resp.json()["result"]["veteran_quota"]
+
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    roster = {p["player_name"]: p for p in resp.json()["collectors"][0]["roster"]}
+    assert roster["Глава1"]["quota"] == pytest.approx(officer_quota)
+    assert roster["Рядовой1"]["quota"] == pytest.approx(veteran_quota)
+    assert roster["БезЗвания"]["quota"] is None
+
+
+@pytest.mark.asyncio
+async def test_roster_quota_strategy_b_matches_by_name(db_session):
+    user, token = await _create_user_with_token(db_session, "quotaB1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="quota-b-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 place=1, points=100, troop_level="G8 S8 M8"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="БезВойск",
+                                 place=2, points=50, troop_level=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        calc_resp = await client.post(
+            "/web/dashboard/ancients/quota-b-1/calculate",
+            json={"strategy": "B", "summon_levels": [81], "amplification_coef": 1.0,
+                  "clan_preset": "T8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert calc_resp.status_code == 200
+        ivanov_quota = calc_resp.json()["result"]["players"][0]["quota"]
+
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    roster = {p["player_name"]: p for p in resp.json()["collectors"][0]["roster"]}
+    assert roster["Иванов"]["quota"] == pytest.approx(ivanov_quota)
+    assert roster["БезВойск"]["quota"] is None
+
+
+@pytest.mark.asyncio
+async def test_roster_quota_none_when_no_calculation_yet(db_session):
+    user, token = await _create_user_with_token(db_session, "quotanone1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="quota-none-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 place=1, points=100, rank="Глава", troop_level="G8 S8 M8"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["quota"] is None
+
+
+@pytest.mark.asyncio
 async def test_patch_troop_level_accepts_non_diagonal_combo(db_session):
     """A combo like G7 S9 M8 was rejected by the old 13-entry TROOP_STEPS list —
     it must now be accepted since G/S/M are entered independently."""

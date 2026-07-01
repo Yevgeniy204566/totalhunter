@@ -103,3 +103,7 @@ def split_strategy_b(total: float, preset: str,
         ],
         "excluded": excluded,
     }
+
+
+RANKS: list[str] = ["Глава", "Старший", "Офицер", "Ветеран", "Рядовой"]
+OFFICER_RANKS: set[str] = {"Глава", "Старший", "Офицер"}

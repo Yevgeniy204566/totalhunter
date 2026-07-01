@@ -19,7 +19,7 @@ from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ancient_quota import (
-    ANCIENT_LEVEL_HP, VALID_PRESETS, parse_troop_level,
+    ANCIENT_LEVEL_HP, OFFICER_RANKS, RANKS, VALID_PRESETS, parse_troop_level,
     split_strategy_a, split_strategy_b, total_quota_millions,
 )
 from database import get_db
@@ -77,6 +77,7 @@ async def _roster_rows(
     mappings_dict: dict,        # raw_ocr_name → AncientNameMapping
     canonical_names: list,
     fuzzy_threshold: float,
+    latest_calc,                # Optional[AncientCalculation]
 ) -> list:
     rows = (await db.execute(
         select(AncientRoster, PlayerProfile.troop_level.label("profile_troop"))
@@ -104,11 +105,32 @@ async def _roster_rows(
             matches = get_close_matches(raw, canonical_names, n=1, cutoff=fuzzy_threshold)
             suggested_name = matches[0] if matches else None
             confirmed = False
+
+        quota = None
+        if latest_calc is not None:
+            if latest_calc.strategy == "A":
+                rank = r.AncientRoster.rank
+                if rank in OFFICER_RANKS:
+                    quota = latest_calc.result_json.get("officer_quota")
+                elif rank is not None:
+                    quota = latest_calc.result_json.get("veteran_quota")
+            else:
+                lookup_name = mapped_name if confirmed else raw
+                match = next(
+                    (p for p in latest_calc.result_json.get("players", [])
+                     if p["name"] == lookup_name),
+                    None,
+                )
+                if match is not None:
+                    quota = match["quota"]
+
         result.append({
             "player_name": raw,
             "place": r.AncientRoster.place,
             "points": r.AncientRoster.points,
             "troop_level": r.AncientRoster.troop_level or r.profile_troop,
+            "rank": r.AncientRoster.rank,
+            "quota": quota,
             "mapped_name": mapped_name,
             "suggested_name": suggested_name,
             "mapping_confirmed": confirmed,
@@ -186,6 +208,13 @@ async def get_dashboard_ancients(
         )).scalars().all()
         mappings_dict = {m.raw_ocr_name: m for m in mappings}
 
+        latest_calc = (await db.execute(
+            select(AncientCalculation)
+            .where(AncientCalculation.collector_id == collector.id)
+            .order_by(AncientCalculation.computed_at.desc())
+            .limit(1)
+        )).scalar_one_or_none()
+
         result.append({
             "slug": collector.slug,
             "kingdom": collector.kingdom,
@@ -193,7 +222,8 @@ async def get_dashboard_ancients(
             "is_owner": is_owner,
             "canonical_names": canonical_names,
             "roster": await _roster_rows(
-                db, collector.id, mappings_dict, canonical_names, fuzzy_threshold),
+                db, collector.id, mappings_dict, canonical_names, fuzzy_threshold,
+                latest_calc),
             "history": await _history_rows(db, collector.id),
             "presets": sorted(VALID_PRESETS),
         })
@@ -249,6 +279,34 @@ async def patch_troop_level(slug: str, payload: TroopLevelPayload,
         raise HTTPException(status_code=404, detail="Player not in roster")
 
     row.troop_level = payload.troop_level
+    await db.commit()
+    return {"ok": True}
+
+
+class RankPayload(BaseModel):
+    player_name: str
+    rank: Optional[str] = None
+
+
+@router.patch("/{slug}/rank")
+async def patch_rank(slug: str, payload: RankPayload,
+                     user: User = Depends(get_web_user),
+                     db: AsyncSession = Depends(get_db)):
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
+    if payload.rank is not None and payload.rank not in RANKS:
+        raise HTTPException(status_code=400,
+                            detail=f"Unknown rank: {payload.rank!r}")
+
+    row = (await db.execute(
+        select(AncientRoster).where(
+            AncientRoster.collector_id == collector.id,
+            AncientRoster.player_name == payload.player_name,
+        )
+    )).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Player not in roster")
+
+    row.rank = payload.rank
     await db.commit()
     return {"ok": True}
 
