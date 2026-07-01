@@ -1,7 +1,8 @@
 import pytest
 
 from ancient_quota import (
-    ANCIENT_LEVEL_HP, TROOP_QUOTA_PRESETS, TROOP_STEPS,
+    ANCIENT_LEVEL_HP, VALID_PRESETS,
+    _tier_factor, troop_weight, parse_troop_level,
     total_quota_millions, split_strategy_a, split_strategy_b,
 )
 
@@ -18,25 +19,71 @@ def test_ancient_level_hp_monotonically_increasing():
         assert ANCIENT_LEVEL_HP[b] > ANCIENT_LEVEL_HP[a]
 
 
-def test_troop_steps_has_13_entries():
-    assert len(TROOP_STEPS) == 13
-    assert TROOP_STEPS[0] == "G5 S5 M5"
-    assert TROOP_STEPS[-1] == "G9 S9 M9"
+def test_valid_presets_are_t5_through_t9():
+    assert VALID_PRESETS == {"T5", "T6", "T7", "T8", "T9"}
 
 
-def test_troop_quota_presets_shape():
-    assert set(TROOP_QUOTA_PRESETS.keys()) == {"T5", "T6", "T7", "T8", "T9"}
-    for preset, weights in TROOP_QUOTA_PRESETS.items():
-        assert set(weights.keys()) == set(TROOP_STEPS)
+def test_tier_factor_geometric_progression():
+    assert _tier_factor(5) == pytest.approx(1.0)
+    assert _tier_factor(6) == pytest.approx(1.8)
+    assert _tier_factor(7) == pytest.approx(3.24)
+    assert _tier_factor(8) == pytest.approx(5.832)
+    assert _tier_factor(9) == pytest.approx(10.4976)
 
 
-def test_troop_quota_presets_cap_at_own_tier():
-    # G9 S9 M9 is always 1.0 regardless of preset (player's tier >= every preset).
-    for preset in TROOP_QUOTA_PRESETS:
-        assert TROOP_QUOTA_PRESETS[preset]["G9 S9 M9"] == 1.0
-    # А player matching the clan's own preset tier is always 1.0.
-    assert TROOP_QUOTA_PRESETS["T8"]["G8 S8 M8"] == 1.0
-    assert TROOP_QUOTA_PRESETS["T7"]["G7 S7 M7"] == 1.0
+def test_troop_weight_matches_own_preset_tier_exactly():
+    # A player whose G/S/M all match the clan's preset tier always gets weight 1.0,
+    # for every preset — this is the cap rule from the old manual table.
+    for preset, tier in [("T5", 5), ("T6", 6), ("T7", 7), ("T8", 8), ("T9", 9)]:
+        assert troop_weight(preset, tier, tier, tier) == pytest.approx(1.0)
+
+
+def test_troop_weight_caps_at_one_above_preset_tier():
+    # Player's tier is higher than the preset -> weight is capped at 1.0, not > 1.0.
+    assert troop_weight("T7", 9, 9, 9) == pytest.approx(1.0)
+    assert troop_weight("T5", 9, 8, 9) == pytest.approx(1.0)
+
+
+def test_troop_weight_matches_old_manual_table_within_tolerance():
+    # Spot-checks against docs/superpowers/specs/2026-06-23-ancient-quota-calculator-design.md
+    # (the old TROOP_QUOTA_PRESETS values), tolerance +/-0.05 as agreed with the owner.
+    assert troop_weight("T8", 5, 5, 5) == pytest.approx(0.15, abs=0.05)
+    assert troop_weight("T8", 6, 6, 6) == pytest.approx(0.30, abs=0.05)
+    assert troop_weight("T8", 7, 7, 7) == pytest.approx(0.55, abs=0.05)
+    assert troop_weight("T9", 8, 8, 8) == pytest.approx(0.55, abs=0.05)
+    assert troop_weight("T9", 7, 7, 7) == pytest.approx(0.30, abs=0.05)
+    assert troop_weight("T9", 6, 6, 6) == pytest.approx(0.15, abs=0.05)
+
+
+def test_troop_weight_handles_independent_non_diagonal_combos():
+    # This is the entire point of the feature: combos that never existed in the old
+    # 13-entry diagonal table must compute without raising.
+    w = troop_weight("T8", 7, 9, 8)
+    assert 0.0 < w <= 1.0
+    # Raising any single tier should never decrease the weight.
+    assert troop_weight("T8", 8, 9, 8) >= w
+
+
+def test_parse_troop_level_valid():
+    assert parse_troop_level("G7 S7 M8") == (7, 7, 8)
+    assert parse_troop_level("G5 S9 M5") == (5, 9, 5)
+
+
+def test_parse_troop_level_rejects_tier_out_of_range():
+    with pytest.raises(ValueError):
+        parse_troop_level("G10 S7 M8")
+    with pytest.raises(ValueError):
+        parse_troop_level("G4 S7 M8")
+
+
+def test_parse_troop_level_rejects_wrong_letter_order():
+    with pytest.raises(ValueError):
+        parse_troop_level("S7 G7 M8")
+
+
+def test_parse_troop_level_rejects_garbage():
+    with pytest.raises(ValueError):
+        parse_troop_level("not a troop level")
 
 
 def test_total_quota_millions_sums_and_amplifies():
@@ -69,8 +116,8 @@ def test_split_strategy_a_zero_total_members_raises():
 def test_split_strategy_b_basic():
     players = [("Иванов", "G8 S8 M8"), ("Петров", "G7 S7 M8")]
     result = split_strategy_b(total=100.0, preset="T8", players=players)
-    w_ivanov = TROOP_QUOTA_PRESETS["T8"]["G8 S8 M8"]
-    w_petrov = TROOP_QUOTA_PRESETS["T8"]["G7 S7 M8"]
+    w_ivanov = troop_weight("T8", 8, 8, 8)
+    w_petrov = troop_weight("T8", 7, 7, 8)
     denom = w_ivanov + w_petrov
     by_name = {p["name"]: p["quota"] for p in result["players"]}
     assert by_name["Иванов"] == pytest.approx(100.0 * w_ivanov / denom)
@@ -89,3 +136,13 @@ def test_split_strategy_b_excludes_missing_troop_level():
 def test_split_strategy_b_all_excluded_raises():
     with pytest.raises(ValueError):
         split_strategy_b(total=100.0, preset="T8", players=[("Никто", None)])
+
+
+def test_split_strategy_b_handles_non_diagonal_combo():
+    # The scenario the whole feature exists for: a player with an independent G/S/M
+    # combo that was never a valid key in the old 13-entry table.
+    players = [("Игрок", "G7 S9 M8")]
+    result = split_strategy_b(total=100.0, preset="T8", players=players)
+    assert result["players"][0]["name"] == "Игрок"
+    assert result["players"][0]["quota"] == pytest.approx(100.0)
+    assert result["excluded"] == []

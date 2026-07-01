@@ -4,6 +4,7 @@ ancient_quota.py — pure reference tables and split math for the "Древни�
 No DB, no FastAPI — kept dependency-free so the weight math is trivially testable in
 isolation. See docs/superpowers/specs/2026-06-23-ancient-quota-calculator-design.md.
 """
+import re
 
 # Уровень Древнего (81-250) → суммарный требуемый урон (HP) в миллионах. Источник —
 # Google Sheet 1CvfVs4cWUr4EXs7e8uKi2wbT-sQ_gYSIWDw3oJ0Xo64, вкладка «Древний» (полная
@@ -40,57 +41,33 @@ ANCIENT_LEVEL_HP: dict[int, float] = {
     250: 18100.0,
 }
 
-# 13-ступенчатая матрица переходных войск (Монстры→Спецы→Гварды переходят на новый
-# тир по очереди, M первым), финальная версия из переписки с Gemini
-# (docs/Входящие_Gemini.md, «Мастер-план: Подсистема «Древний»», раздел 3). Ключи —
-# буквальный «Состав» из игры (G/S/M + номер тира каждого типа войск), а не порядковый
-# номер шага — так привычнее лидерам клана читать, чем «База 8»/«Шаг 8.1». Cap-правило
-# (тир игрока выше прессета → 1.0) уже встроено в значения.
-TROOP_STEPS: list[str] = [
-    "G5 S5 M5", "G5 S5 M6", "G5 S6 M6",
-    "G6 S6 M6", "G6 S6 M7", "G6 S7 M7",
-    "G7 S7 M7", "G7 S7 M8", "G7 S8 M8",
-    "G8 S8 M8", "G8 S8 M9", "G8 S9 M9",
-    "G9 S9 M9",
-]
+# Множитель силы одного тира войск относительно тира 5 (база = 1.0). Подтверждено
+# владельцем — каждый следующий тир (5→9) в 1.8 раза сильнее предыдущего. Формула
+# проверена на всех точках прежней вручную настроенной 13-шаговой диагональной таблицы
+# (docs/superpowers/specs/2026-07-01-ancient-troop-weight-geometric-formula-design.md) —
+# совпадает с допуском ±0.05, и, в отличие от диагонали, определена для ЛЮБОЙ независимой
+# комбинации тиров G/S/M (5-9 каждый), а не только для 13 фиксированных строк.
+TROOP_TIER_GROWTH = 1.8
 
-TROOP_QUOTA_PRESETS: dict[str, dict[str, float]] = {
-    "T5": {
-        "G5 S5 M5": 1.0, "G5 S5 M6": 1.0, "G5 S6 M6": 1.0,
-        "G6 S6 M6": 1.0, "G6 S6 M7": 1.0, "G6 S7 M7": 1.0,
-        "G7 S7 M7": 1.0, "G7 S7 M8": 1.0, "G7 S8 M8": 1.0,
-        "G8 S8 M8": 1.0, "G8 S8 M9": 1.0, "G8 S9 M9": 1.0,
-        "G9 S9 M9": 1.0,
-    },
-    "T6": {
-        "G5 S5 M5": 0.55, "G5 S5 M6": 0.65, "G5 S6 M6": 0.80,
-        "G6 S6 M6": 1.0, "G6 S6 M7": 1.0, "G6 S7 M7": 1.0,
-        "G7 S7 M7": 1.0, "G7 S7 M8": 1.0, "G7 S8 M8": 1.0,
-        "G8 S8 M8": 1.0, "G8 S8 M9": 1.0, "G8 S9 M9": 1.0,
-        "G9 S9 M9": 1.0,
-    },
-    "T7": {
-        "G5 S5 M5": 0.30, "G5 S5 M6": 0.35, "G5 S6 M6": 0.45,
-        "G6 S6 M6": 0.55, "G6 S6 M7": 0.65, "G6 S7 M7": 0.80,
-        "G7 S7 M7": 1.0, "G7 S7 M8": 1.0, "G7 S8 M8": 1.0,
-        "G8 S8 M8": 1.0, "G8 S8 M9": 1.0, "G8 S9 M9": 1.0,
-        "G9 S9 M9": 1.0,
-    },
-    "T8": {
-        "G5 S5 M5": 0.15, "G5 S5 M6": 0.20, "G5 S6 M6": 0.25,
-        "G6 S6 M6": 0.30, "G6 S6 M7": 0.35, "G6 S7 M7": 0.45,
-        "G7 S7 M7": 0.55, "G7 S7 M8": 0.65, "G7 S8 M8": 0.80,
-        "G8 S8 M8": 1.0, "G8 S8 M9": 1.0, "G8 S9 M9": 1.0,
-        "G9 S9 M9": 1.0,
-    },
-    "T9": {
-        "G5 S5 M5": 0.05, "G5 S5 M6": 0.05, "G5 S6 M6": 0.10,
-        "G6 S6 M6": 0.15, "G6 S6 M7": 0.20, "G6 S7 M7": 0.25,
-        "G7 S7 M7": 0.30, "G7 S7 M8": 0.35, "G7 S8 M8": 0.45,
-        "G8 S8 M8": 0.55, "G8 S8 M9": 0.65, "G8 S9 M9": 0.80,
-        "G9 S9 M9": 1.0,
-    },
-}
+VALID_PRESETS: set[str] = {"T5", "T6", "T7", "T8", "T9"}
+
+
+def _tier_factor(tier: int) -> float:
+    return TROOP_TIER_GROWTH ** (tier - 5)
+
+
+def troop_weight(preset: str, g: int, s: int, m: int) -> float:
+    preset_tier = int(preset[1:])
+    player_power = _tier_factor(g) + _tier_factor(s) + _tier_factor(m)
+    preset_power = 3 * _tier_factor(preset_tier)
+    return min(1.0, player_power / preset_power)
+
+
+def parse_troop_level(troop_level: str) -> tuple[int, int, int]:
+    match = re.fullmatch(r"G([5-9]) S([5-9]) M([5-9])", troop_level)
+    if not match:
+        raise ValueError(f"Malformed troop_level: {troop_level!r}")
+    return int(match.group(1)), int(match.group(2)), int(match.group(3))
 
 
 def total_quota_millions(levels: list[int], amplification: float) -> float:
@@ -111,16 +88,18 @@ def split_strategy_a(total: float, officer_count: int, veteran_count: int) -> di
 
 def split_strategy_b(total: float, preset: str,
                       players: list[tuple[str, str | None]]) -> dict:
-    weights = TROOP_QUOTA_PRESETS[preset]
-    included = [(name, weights[level]) for name, level in players if level is not None]
+    included = [
+        (name, level, troop_weight(preset, *parse_troop_level(level)))
+        for name, level in players if level is not None
+    ]
     excluded = [name for name, level in players if level is None]
-    denom = sum(w for _, w in included)
+    denom = sum(w for _, _, w in included)
     if denom <= 0:
         raise ValueError("no players with a troop_level set")
     return {
         "players": [
-            {"name": name, "troop_level": level, "quota": total * weights[level] / denom}
-            for name, level in players if level is not None
+            {"name": name, "troop_level": level, "quota": total * w / denom}
+            for name, level, w in included
         ],
         "excluded": excluded,
     }
