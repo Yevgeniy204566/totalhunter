@@ -44,6 +44,7 @@ class TestCryptHunterHelpers:
             h.is_running = True
             h._conf = 0.7
             h._model = MagicMock()
+            h._speed_delta = 0.0
             return h
 
     def test_click_calls_pyautogui(self):
@@ -88,55 +89,31 @@ class TestWatchtowerMenu:
             h.on_status_callback = None
             return h
 
-    def test_open_watchtower_uses_template_when_available(self):
-        """Когда template matching доступен — кликает по найденной позиции, не по hardcoded."""
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        clicks = []
-        found_pos = (700, 950)
-        with patch('crypt_hunter._TEMPLATE_AVAILABLE', True):
-            with patch('crypt_hunter.find_in_screen_region', return_value=found_pos):
-                with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
-                    with patch.object(hunter, '_random_pause'):
-                        hunter._open_watchtower()
-        assert found_pos in clicks
-
-    def test_open_watchtower_falls_back_to_wt_icon_when_template_not_found(self):
-        """Если шаблон не найден — кликает по WT_ICON напрямую (без scale_coord)."""
+    def test_open_watchtower_clicks_wt_icon(self):
+        """Template matching был осознанно удалён (ANTI-PATTERNS.md — только HSV+геометрия).
+        Текущая реализация просто кликает по масштабированной точке WT_ICON.
+        pyautogui.size() замокан на 1920x1080 (эталон), чтобы тест не зависел
+        от реального разрешения экрана машины, где запущены тесты."""
         from unittest.mock import patch
         import crypt_hunter as ch
         hunter = self._make_hunter()
         clicks = []
-        with patch('crypt_hunter._TEMPLATE_AVAILABLE', True):
-            with patch('crypt_hunter.find_in_screen_region', return_value=None):
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
                 with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
                     with patch.object(hunter, '_random_pause'):
                         hunter._open_watchtower()
-        # Должен кликнуть РЯДОМ с WT_ICON (с jitter ±5)
         assert any(abs(x - ch.WT_ICON[0]) <= 5 and abs(y - ch.WT_ICON[1]) <= 5
                    for x, y in clicks), f"Ожидал клик около {ch.WT_ICON}, получил {clicks}"
 
-    def test_select_crypts_tab_uses_template_when_available(self):
-        """Когда template matching доступен — кликает по найденной вкладке."""
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        clicks = []
-        found_pos = (690, 470)
-        with patch('crypt_hunter._TEMPLATE_AVAILABLE', True):
-            with patch('crypt_hunter.find_in_screen_region', return_value=found_pos):
-                with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
-                    with patch.object(hunter, '_random_pause'):
-                        hunter._select_crypts_tab()
-        assert found_pos in clicks
-
-    def test_select_crypts_tab_falls_back_to_wt_crypts_tab_when_template_not_found(self):
-        """Если шаблон вкладки не найден — кликает по WT_CRYPTS_TAB напрямую."""
+    def test_select_crypts_tab_clicks_wt_crypts_tab(self):
+        """Аналогично _open_watchtower — прямой клик по WT_CRYPTS_TAB, без шаблона."""
         from unittest.mock import patch
         import crypt_hunter as ch
         hunter = self._make_hunter()
         clicks = []
-        with patch('crypt_hunter._TEMPLATE_AVAILABLE', True):
-            with patch('crypt_hunter.find_in_screen_region', return_value=None):
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
                 with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
                     with patch.object(hunter, '_random_pause'):
                         hunter._select_crypts_tab()
@@ -198,13 +175,12 @@ class TestScrollAndFind:
         mock_result.names = {0: 'crypt_0'}  # YOLO-имя; YOLO_TO_GUI['crypt_0'] == 'Ordinary_1'
         hunter._model.return_value = [mock_result]
         with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
-            with patch('crypt_hunter._TEMPLATE_AVAILABLE', False):
-                with patch.object(hunter, '_screenshot', return_value=np.zeros((1080, 1920, 3), dtype=np.uint8)):
-                    with patch.object(hunter, '_click'):
-                        with patch.object(hunter, '_random_pause'):
-                            with patch('crypt_hunter.pyautogui.scroll'):
-                                with patch('crypt_hunter.time.sleep'):
-                                    result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=3)
+            with patch.object(hunter, '_screenshot', return_value=np.zeros((1080, 1920, 3), dtype=np.uint8)):
+                with patch.object(hunter, '_click'):
+                    with patch.object(hunter, '_random_pause'):
+                        with patch('crypt_hunter.pyautogui.scroll'):
+                            with patch('crypt_hunter.time.sleep'):
+                                result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=3)
         assert result == 'Ordinary_1'
 
 
@@ -258,52 +234,10 @@ class TestMapDetection:
         with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
             with patch.object(hunter, '_random_pause'):
                 with patch.object(hunter, '_interruptible_sleep'):
-                    with patch.object(hunter, '_check_oil_dialog', return_value=False):
-                        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
-                            result = hunter._send_captain('R_1')
+                    with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+                        result = hunter._send_captain('R_1')
         assert ch.CRYPT_STUDY_BTN in clicks
         assert result is True
-
-
-class TestImagesDiffer:
-    """Tests for _images_differ — pure function, no screen access."""
-
-    def test_identical_images_returns_false(self):
-        import numpy as np
-        import crypt_hunter as ch
-        img = np.zeros((100, 100, 3), dtype=np.uint8)
-        assert ch._images_differ(img, img.copy()) is False
-
-    def test_completely_different_images_returns_true(self):
-        import numpy as np
-        import crypt_hunter as ch
-        a = np.zeros((100, 100, 3), dtype=np.uint8)
-        b = np.full((100, 100, 3), 200, dtype=np.uint8)
-        assert ch._images_differ(a, b) is True
-
-    def test_single_pixel_change_below_threshold(self):
-        import numpy as np
-        import crypt_hunter as ch
-        a = np.zeros((100, 100, 3), dtype=np.uint8)
-        b = a.copy()
-        b[50, 50] = [128, 128, 128]  # один пиксель из 10000 — ниже порога
-        assert ch._images_differ(a, b) is False
-
-    def test_scrolled_menu_above_threshold(self):
-        """Прокрутка меняет ~30-40% пикселей — выше порога."""
-        import numpy as np
-        import crypt_hunter as ch
-        a = np.zeros((100, 100, 3), dtype=np.uint8)
-        b = a.copy()
-        b[30:70, :] = 150  # 40% строк изменились
-        assert ch._images_differ(a, b) is True
-
-    def test_different_shapes_returns_true(self):
-        import numpy as np
-        import crypt_hunter as ch
-        a = np.zeros((100, 100, 3), dtype=np.uint8)
-        b = np.zeros((50, 50, 3), dtype=np.uint8)
-        assert ch._images_differ(a, b) is True
 
 
 class TestScrollAndFindEndOfList:
@@ -341,15 +275,35 @@ class TestScrollAndFindEndOfList:
         img2 = np.full((1080, 1920, 3), 80, dtype=np.uint8)  # отличается → не freeze
         screenshots = iter([img1, img2])
         with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
-            with patch('crypt_hunter._TEMPLATE_AVAILABLE', False):
-                with patch.object(hunter, '_screenshot', side_effect=screenshots):
-                    with patch.object(hunter, '_click'):
-                        with patch.object(hunter, '_random_pause'):
-                            with patch('crypt_hunter.time.sleep'):
-                                with patch('crypt_hunter.pyautogui.scroll'):
-                                    with patch('crypt_hunter.pyautogui.moveTo'):
-                                        result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=5)
+            with patch.object(hunter, '_screenshot', side_effect=screenshots):
+                with patch.object(hunter, '_click'):
+                    with patch.object(hunter, '_random_pause'):
+                        with patch('crypt_hunter.time.sleep'):
+                            with patch('crypt_hunter.pyautogui.scroll'):
+                                with patch('crypt_hunter.pyautogui.moveTo'):
+                                    result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=5)
         assert result == 'Ordinary_1'
+
+    def test_returns_none_when_menu_frozen_after_scroll(self):
+        """Меню не изменилось после скролла (diff.mean() < 2.0) → список закончился."""
+        from unittest.mock import patch, MagicMock
+        import numpy as np
+        hunter = self._make_hunter()
+        no_result = MagicMock()
+        no_result.boxes = []
+        hunter._model.return_value = [no_result]
+        # Оба скриншота идентичны — меню упёрлось в конец списка
+        frozen_img = np.full((1080, 1920, 3), 80, dtype=np.uint8)
+        screenshots = iter([frozen_img, frozen_img.copy()])
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch.object(hunter, '_screenshot', side_effect=screenshots):
+                with patch.object(hunter, '_click'):
+                    with patch.object(hunter, '_random_pause'):
+                        with patch('crypt_hunter.time.sleep'):
+                            with patch('crypt_hunter.pyautogui.scroll'):
+                                with patch('crypt_hunter.pyautogui.moveTo'):
+                                    result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=5)
+        assert result is None
 
 
 class TestRunCycleEndOfList:
@@ -370,6 +324,8 @@ class TestRunCycleEndOfList:
             h.on_status_callback = None
             h.on_found_callback = None
             h.on_countdown_callback = None
+            h._detect_fail_streak = 0
+            h._log_file = None
             return h
 
     def test_resets_and_waits_when_no_crypt_found(self):
@@ -475,9 +431,10 @@ class TestSendCaptainVerification:
             h = CryptHunter.__new__(CryptHunter)
             h.is_running = True
             h.on_status_callback = None
+            h._speed_delta = 0.0
             return h
 
-    def test_returns_true_always(self):
+    def test_send_captain_returns_true_always(self):
         from unittest.mock import patch
         hunter = self._make_hunter()
         with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
@@ -487,7 +444,7 @@ class TestSendCaptainVerification:
         assert result is True
 
 
-    def test_returns_true_always(self):
+    def test_click_captain_event_returns_true_always(self):
         from unittest.mock import patch
         hunter = self._make_hunter()
         with patch.object(hunter, '_find_button', return_value=(1239, 122)):
@@ -495,121 +452,6 @@ class TestSendCaptainVerification:
                 with patch.object(hunter, '_interruptible_sleep'):
                     result = hunter._click_captain_event()
         assert result is True
-
-    def test_returns_false_when_oil_dialog_detected(self):
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
-            with patch.object(hunter, '_click'):
-                with patch.object(hunter, '_random_pause'):
-                    with patch.object(hunter, '_interruptible_sleep'):
-                        with patch.object(hunter, '_check_oil_dialog', return_value=True):
-                            with patch.object(hunter, '_emergency_stop') as mock_stop:
-                                result = hunter._send_captain('Ordinary_1')
-        assert result is False
-        mock_stop.assert_called_once_with("OIL_LOW: масло закончилось")
-
-    def test_returns_true_when_no_oil_dialog(self):
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
-            with patch.object(hunter, '_click'):
-                with patch.object(hunter, '_random_pause'):
-                    with patch.object(hunter, '_interruptible_sleep'):
-                        with patch.object(hunter, '_check_oil_dialog', return_value=False):
-                            result = hunter._send_captain('Ordinary_1')
-        assert result is True
-
-
-class TestDetectOilButtons:
-    """
-    _detect_oil_buttons(img_bgr) -> bool
-    True если в img_bgr достаточно зелёных (масло на складе)
-    или синих (кнопка "Купить") пикселей.
-    Порог: 100 пикселей.
-    """
-
-    def _make_hunter(self):
-        from unittest.mock import patch, MagicMock
-        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
-            from crypt_hunter import CryptHunter
-            h = CryptHunter.__new__(CryptHunter)
-            h.is_running = True
-            h.on_status_callback = None
-            return h
-
-    def _solid_bgr(self, bgr, h=100, w=200):
-        """Создаём numpy BGR изображение одного цвета."""
-        import numpy as np
-        img = np.zeros((h, w, 3), dtype=np.uint8)
-        img[:, :] = bgr
-        return img
-
-    def test_black_image_returns_false(self):
-        hunter = self._make_hunter()
-        img = self._solid_bgr((0, 0, 0))
-        assert hunter._detect_oil_buttons(img) is False
-
-    def test_green_only_returns_false(self):
-        # Только зелёная кнопка (Carter overlay) → False: диалог масла требует ОБЕ
-        hunter = self._make_hunter()
-        img = self._solid_bgr((30, 180, 60))
-        assert hunter._detect_oil_buttons(img) is False
-
-    def test_blue_only_returns_false(self):
-        # Только синяя кнопка → False
-        hunter = self._make_hunter()
-        img = self._solid_bgr((200, 120, 60))
-        assert hunter._detect_oil_buttons(img) is False
-
-    def test_both_buttons_returns_true(self):
-        # ОБЕ кнопки — зелёная >= 500 И синяя >= 50 → True
-        import numpy as np
-        hunter = self._make_hunter()
-        img = np.zeros((280, 460, 3), dtype=np.uint8)
-        img[0:20, 0:30]  = (30, 180, 60)   # 600 зелёных пикселей
-        img[0:10, 30:40] = (200, 120, 60)  # 100 синих пикселей
-        assert hunter._detect_oil_buttons(img) is True
-
-    def test_red_image_returns_false(self):
-        hunter = self._make_hunter()
-        img = self._solid_bgr((0, 0, 200))
-        assert hunter._detect_oil_buttons(img) is False
-
-    def test_few_green_pixels_returns_false(self):
-        # < 500 зелёных пикселей — не диалог
-        import numpy as np
-        hunter = self._make_hunter()
-        img = self._solid_bgr((0, 0, 0), h=100, w=200)
-        img[0:5, 0:10] = (30, 180, 60)   # 50 пикселей
-        assert hunter._detect_oil_buttons(img) is False
-
-    def test_enough_green_no_blue_returns_false(self):
-        # >= 500 зелёных, но нет синей — Carter overlay, не масло
-        import numpy as np
-        hunter = self._make_hunter()
-        img = self._solid_bgr((0, 0, 0), h=100, w=200)
-        img[0:25, 0:25] = (30, 180, 60)  # 625 зелёных, нет синих
-        assert hunter._detect_oil_buttons(img) is False
-
-    def test_check_oil_dialog_returns_true_when_both_buttons_found(self):
-        import numpy as np
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        img = np.zeros((280, 460, 3), dtype=np.uint8)
-        img[0:20, 0:30]  = (30, 180, 60)   # зелёная
-        img[0:10, 30:40] = (200, 120, 60)  # синяя
-        with patch.object(hunter, '_screenshot', return_value=img):
-            result = hunter._check_oil_dialog()
-        assert result is True
-
-    def test_check_oil_dialog_returns_false_when_no_buttons(self):
-        from unittest.mock import patch
-        hunter = self._make_hunter()
-        black_img = self._solid_bgr((0, 0, 0), h=420, w=550)
-        with patch.object(hunter, '_screenshot', return_value=black_img):
-            result = hunter._check_oil_dialog()
-        assert result is False
 
 
 class TestTesseractSetup:

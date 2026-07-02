@@ -141,7 +141,6 @@ LANGS = {
         "copy": "КОПИРОВАТЬ", "share_text": "ПОДЕЛИТЕСЬ КОДОМ И ПОЛУЧАЙТЕ %", "copied": "Скопировано!",
         "clicker_title": "Синхронизация Clickermann", "clicker_on": "ВКЛЮЧИТЬ", "key_start": "Старт:", "key_stop": "Стоп:",
         "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: В ПОИСКЕ...",
-        "add_oil": "Добавь масла",
         # --- новые tab names ---
         "tab_crypt": "СКЛЕПЫ", "tab_cal": "Калибровка", "tab_roy": "РОЙ", "tab_chest": "СУНДУКИ",
         # --- chest tab ---
@@ -215,7 +214,6 @@ LANGS = {
         "copy": "COPY", "share_text": "SHARE CODE AND GET %", "copied": "Copied!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ENABLED", "key_start": "Start:", "key_stop": "Stop:",
         "status_ready": "READY", "status_running": "STATUS: SEARCHING...",
-        "add_oil": "Add Oil",
         # --- новые tab names ---
         "tab_crypt": "CRYPTS", "tab_cal": "Calibration", "tab_roy": "SWARM", "tab_chest": "CHESTS",
         # --- chest tab ---
@@ -287,7 +285,7 @@ LANGS = {
         "accuracy": "Erkennungsgenauigkeit", "scan_rate": "Scan-Intervall", "sec": "Sek.",
         "copy": "KOPIEREN", "share_text": "CODE TEILEN UND % ERHALTEN", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVIERT", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "BEREIT", "status_running": "STATUS: SUCHE...", "add_oil": "Öl hinzufügen",
+        "status_ready": "BEREIT", "status_running": "STATUS: SUCHE...",
         "tab_crypt": "KRYPTEN", "tab_cal": "Kalibrierung", "tab_roy": "SCHWARM", "tab_chest": "TRUHEN",
         # --- chest tab ---
         "chest_kingdom_lb": "Königreich:", "chest_clan_lb": "Clanname:",
@@ -347,7 +345,7 @@ LANGS = {
         "accuracy": "Precisión de detección", "scan_rate": "Intervalo de escaneo", "sec": "seg.",
         "copy": "COPIAR", "share_text": "COMPARTE EL CÓDIGO Y GANA %", "copied": "¡Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVADO", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "LISTO", "status_running": "ESTADO: BUSCANDO...", "add_oil": "Agregar aceite",
+        "status_ready": "LISTO", "status_running": "ESTADO: BUSCANDO...",
         "tab_crypt": "CRIPTAS", "tab_cal": "Calibración", "tab_roy": "ENJAMBRE", "tab_chest": "COFRES",
         # --- chest tab ---
         "chest_kingdom_lb": "Reino:", "chest_clan_lb": "Nombre del clan:",
@@ -407,7 +405,7 @@ LANGS = {
         "accuracy": "Précision de détection", "scan_rate": "Intervalle de scan", "sec": "sec.",
         "copy": "COPIER", "share_text": "PARTAGEZ LE CODE ET GAGNEZ %", "copied": "Copié !",
         "clicker_title": "Clickermann Sync", "clicker_on": "ACTIVÉ", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "PRÊT", "status_running": "STATUT : RECHERCHE...", "add_oil": "Ajouter de l'huile",
+        "status_ready": "PRÊT", "status_running": "STATUT : RECHERCHE...",
         "tab_crypt": "CRYPTES", "tab_cal": "Calibration", "tab_roy": "ESSAIM", "tab_chest": "COFFRES",
         # --- chest tab ---
         "chest_kingdom_lb": "Royaume :", "chest_clan_lb": "Nom du clan :",
@@ -467,7 +465,7 @@ LANGS = {
         "accuracy": "Precisione rilevamento", "scan_rate": "Intervallo scansione", "sec": "sec.",
         "copy": "COPIA", "share_text": "CONDIVIDI IL CODICE E GUADAGNA %", "copied": "Copiato!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ABILITATO", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "PRONTO", "status_running": "STATO: RICERCA...", "add_oil": "Aggiungi olio",
+        "status_ready": "PRONTO", "status_running": "STATO: RICERCA...",
         "tab_crypt": "CRIPTE", "tab_cal": "Calibrazione", "tab_roy": "SCIAME", "tab_chest": "SCRIGNI",
         # --- chest tab ---
         "chest_kingdom_lb": "Regno:", "chest_clan_lb": "Nome del clan:",
@@ -527,7 +525,7 @@ LANGS = {
         "accuracy": "Detectienauwkeurigheid", "scan_rate": "Scaninterval", "sec": "sec.",
         "copy": "KOPIËREN", "share_text": "DEEL CODE EN VERDIEN %", "copied": "Gekopieerd!",
         "clicker_title": "Clickermann Sync", "clicker_on": "INGESCHAKELD", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "KLAAR", "status_running": "STATUS: ZOEKEN...", "add_oil": "Olie toevoegen",
+        "status_ready": "KLAAR", "status_running": "STATUS: ZOEKEN...",
         "tab_crypt": "CRYPTEN", "tab_cal": "Kalibratie", "tab_roy": "ZWERM", "tab_chest": "KISTEN",
         # --- chest tab ---
         "chest_kingdom_lb": "Koninkrijk:", "chest_clan_lb": "Clannaam:",
@@ -587,7 +585,7 @@ LANGS = {
         "accuracy": "Deteksjonsnøyaktighet", "scan_rate": "Skanneintervall", "sec": "sek.",
         "copy": "KOPIER", "share_text": "DEL KODE OG TJEN %", "copied": "Kopiert!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERT", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "KLAR", "status_running": "STATUS: SØKER...", "add_oil": "Legg til olje",
+        "status_ready": "KLAR", "status_running": "STATUS: SØKER...",
         "tab_crypt": "KRYPTER", "tab_cal": "Kalibrering", "tab_roy": "SVERM", "tab_chest": "KISTER",
         # --- chest tab ---
         "chest_kingdom_lb": "Kongerike:", "chest_clan_lb": "Klannavn:",
@@ -647,7 +645,7 @@ LANGS = {
         "accuracy": "Dokładność wykrywania", "scan_rate": "Interwał skanowania", "sec": "sek.",
         "copy": "KOPIUJ", "share_text": "UDOSTĘPNIJ KOD I ZDOBĄDŹ %", "copied": "Skopiowano!",
         "clicker_title": "Clickermann Sync", "clicker_on": "WŁĄCZONO", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "GOTOWY", "status_running": "STATUS: SZUKAM...", "add_oil": "Dodaj olej",
+        "status_ready": "GOTOWY", "status_running": "STATUS: SZUKAM...",
         "tab_crypt": "KRYPTY", "tab_cal": "Kalibracja", "tab_roy": "RÓJ", "tab_chest": "SKRZYNIE",
         # --- chest tab ---
         "chest_kingdom_lb": "Królestwo:", "chest_clan_lb": "Nazwa klanu:",
@@ -707,7 +705,7 @@ LANGS = {
         "accuracy": "Precisão de detecção", "scan_rate": "Intervalo de varredura", "sec": "seg.",
         "copy": "COPIAR", "share_text": "COMPARTILHE O CÓDIGO E GANHE %", "copied": "Copiado!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ATIVADO", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "PRONTO", "status_running": "STATUS: BUSCANDO...", "add_oil": "Adicionar óleo",
+        "status_ready": "PRONTO", "status_running": "STATUS: BUSCANDO...",
         "tab_crypt": "CRIPTAS", "tab_cal": "Calibração", "tab_roy": "ENXAME", "tab_chest": "BAÚS",
         # --- chest tab ---
         "chest_kingdom_lb": "Reino:", "chest_clan_lb": "Nome do clã:",
@@ -767,7 +765,7 @@ LANGS = {
         "accuracy": "Detektionsnoggrannhet", "scan_rate": "Skanningsintervall", "sec": "sek.",
         "copy": "KOPIERA", "share_text": "DELA KOD OCH TJÄNA %", "copied": "Kopierat!",
         "clicker_title": "Clickermann Sync", "clicker_on": "AKTIVERAD", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "REDO", "status_running": "STATUS: SÖKER...", "add_oil": "Lägg till olja",
+        "status_ready": "REDO", "status_running": "STATUS: SÖKER...",
         "tab_crypt": "KRYPTOR", "tab_cal": "Kalibrering", "tab_roy": "SVÄRM", "tab_chest": "KISTOR",
         # --- chest tab ---
         "chest_kingdom_lb": "Kungarike:", "chest_clan_lb": "Klannamn:",
@@ -827,7 +825,7 @@ LANGS = {
         "accuracy": "Algılama hassasiyeti", "scan_rate": "Tarama aralığı", "sec": "sn.",
         "copy": "KOPYALA", "share_text": "KODU PAYLAŞ VE % KAZAN", "copied": "Kopyalandı!",
         "clicker_title": "Clickermann Sync", "clicker_on": "ETKİN", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "HAZIR", "status_running": "DURUM: ARIYOR...", "add_oil": "Yağ ekle",
+        "status_ready": "HAZIR", "status_running": "DURUM: ARIYOR...",
         "tab_crypt": "KRİPTALAR", "tab_cal": "Kalibrasyon", "tab_roy": "OĞUL", "tab_chest": "SANDIKLAR",
         # --- chest tab ---
         "chest_kingdom_lb": "Krallık:", "chest_clan_lb": "Klan adı:",
@@ -887,7 +885,7 @@ LANGS = {
         "accuracy": "دقة الكشف", "scan_rate": "فترة المسح", "sec": "ث.",
         "copy": "نسخ", "share_text": "شارك الرمز واكسب %", "copied": "تم النسخ!",
         "clicker_title": "Clickermann Sync", "clicker_on": "مفعّل", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "جاهز", "status_running": "الحالة: يبحث...", "add_oil": "أضف زيتاً",
+        "status_ready": "جاهز", "status_running": "الحالة: يبحث...",
         "tab_crypt": "المقابر", "tab_cal": "معايرة", "tab_roy": "سرب", "tab_chest": "الصناديق",
         # --- chest tab ---
         "chest_kingdom_lb": "المملكة:", "chest_clan_lb": "اسم العشيرة:",
@@ -947,7 +945,7 @@ LANGS = {
         "accuracy": "検出精度", "scan_rate": "スキャン間隔", "sec": "秒",
         "copy": "コピー", "share_text": "コードを共有して%を獲得", "copied": "コピーしました！",
         "clicker_title": "Clickermann Sync", "clicker_on": "有効", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "準備完了", "status_running": "ステータス: 検索中...", "add_oil": "オイルを追加",
+        "status_ready": "準備完了", "status_running": "ステータス: 検索中...",
         "tab_crypt": "クリプト", "tab_cal": "キャリブレーション", "tab_roy": "群れ", "tab_chest": "宝箱",
         # --- chest tab ---
         "chest_kingdom_lb": "王国:", "chest_clan_lb": "クラン名:",
@@ -1007,7 +1005,7 @@ LANGS = {
         "accuracy": "检测精度", "scan_rate": "扫描间隔", "sec": "秒",
         "copy": "复制", "share_text": "分享代码获得%", "copied": "已复制！",
         "clicker_title": "Clickermann Sync", "clicker_on": "已启用", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "准备就绪", "status_running": "状态: 搜索中...", "add_oil": "添加油",
+        "status_ready": "准备就绪", "status_running": "状态: 搜索中...",
         "tab_crypt": "地下墓穴", "tab_cal": "校准", "tab_roy": "蜂群", "tab_chest": "宝箱",
         # --- chest tab ---
         "chest_kingdom_lb": "王国:", "chest_clan_lb": "公会名称:",
@@ -1067,7 +1065,7 @@ LANGS = {
         "accuracy": "偵測精度", "scan_rate": "掃描間隔", "sec": "秒",
         "copy": "複製", "share_text": "分享代碼獲得%", "copied": "已複製！",
         "clicker_title": "Clickermann Sync", "clicker_on": "已啟用", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "準備就緒", "status_running": "狀態: 搜尋中...", "add_oil": "添加油",
+        "status_ready": "準備就緒", "status_running": "狀態: 搜尋中...",
         "tab_crypt": "地下墓穴", "tab_cal": "校準", "tab_roy": "蜂群", "tab_chest": "寶箱",
         # --- chest tab ---
         "chest_kingdom_lb": "王國:", "chest_clan_lb": "公會名稱:",
@@ -1127,7 +1125,7 @@ LANGS = {
         "accuracy": "감지 정확도", "scan_rate": "스캔 간격", "sec": "초",
         "copy": "복사", "share_text": "코드 공유하여 % 획득", "copied": "복사됨!",
         "clicker_title": "Clickermann Sync", "clicker_on": "활성화됨", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "준비 완료", "status_running": "상태: 검색 중...", "add_oil": "오일 추가",
+        "status_ready": "준비 완료", "status_running": "상태: 검색 중...",
         "tab_crypt": "크립트", "tab_cal": "보정", "tab_roy": "군집", "tab_chest": "보물상자",
         # --- chest tab ---
         "chest_kingdom_lb": "왕국:", "chest_clan_lb": "클랜 이름:",
@@ -1187,7 +1185,7 @@ LANGS = {
         "accuracy": "Точність пошуку", "scan_rate": "Частота сканування", "sec": "сек.",
         "copy": "КОПІЮВАТИ", "share_text": "ПОДІЛІТЬСЯ КОДОМ І ОТРИМАЙТЕ %", "copied": "Скопійовано!",
         "clicker_title": "Синхронізація Clickermann", "clicker_on": "УВІМКНУТИ", "key_start": "Старт:", "key_stop": "Стоп:",
-        "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: У ПОШУКУ...", "add_oil": "Додай масла",
+        "status_ready": "СИСТЕМА ГОТОВА", "status_running": "СТАТУС: У ПОШУКУ...",
         "tab_crypt": "СКЛЕПИ", "tab_cal": "Калібрування", "tab_roy": "РОЙ", "tab_chest": "СКРИНІ",
         # --- chest tab ---
         "chest_kingdom_lb": "Королівство:", "chest_clan_lb": "Назва клану:",
@@ -1247,7 +1245,7 @@ LANGS = {
         "accuracy": "Akurasi deteksi", "scan_rate": "Interval pemindaian", "sec": "dtk.",
         "copy": "SALIN", "share_text": "BAGIKAN KODE DAN DAPATKAN %", "copied": "Disalin!",
         "clicker_title": "Clickermann Sync", "clicker_on": "DIAKTIFKAN", "key_start": "Start:", "key_stop": "Stop:",
-        "status_ready": "SIAP", "status_running": "STATUS: MENCARI...", "add_oil": "Tambah minyak",
+        "status_ready": "SIAP", "status_running": "STATUS: MENCARI...",
         "tab_crypt": "KRIPTA", "tab_cal": "Kalibrasi", "tab_roy": "KAWANAN", "tab_chest": "PETI",
         # --- chest tab ---
         "chest_kingdom_lb": "Kerajaan:", "chest_clan_lb": "Nama klan:",
@@ -2468,7 +2466,6 @@ class TotalHunterApp(ctk.CTk):
             self.crypt_start_btn.configure(text=LANGS[self.current_lang]["crypt_stop_btn"],
                                            fg_color=MD3["error"],
                                            hover_color=MD3["error_hover"])
-            self.crypt_engine.oil_check_enabled = False
             self.crypt_engine.lang = self.current_lang
             self.crypt_engine.start(
                 selected_crypts=selected,

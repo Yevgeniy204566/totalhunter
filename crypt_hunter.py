@@ -78,62 +78,6 @@ CARTER_EVENT_BAR   = (1239, 122)   # полоса события Картера 
 ACCEL_USE_BTN      = (1125, 466)   # кнопка «Использовать» в диалоге ускорения
 ACCEL_TIME_REGION  = (980, 295, 340, 80)  # OCR времени внутри Carter overlay (y≈295)
 
-# Центральный регион экрана где появляется диалог масла
-# Фикс: сужен чтобы не перекрываться с Carter overlay (y<340) и диалогом склепа
-OIL_DIALOG_REGION = (700, 340, 460, 280)   # (x, y, w, h) в 1920×1080
-
-# Привязка панели масла к Point B (серебро) — 1920×1080
-# Серебро и масло на одном горизонтальном уровне.
-# Одно смещение до начала первой секции (718, 78), дальше — фиксированный шаг.
-# Point B = (1149, 88) → якорь масла: dx = 718-1149 = -431, dy = 78-88 = -10
-_OIL_DX_ANCHOR  = -431    # смещение по X от Point B до начала зелёной секции
-_OIL_DY         = -10     # смещение по Y от Point B (масло чуть выше)
-_OIL_SECTION_W  =  96     # ширина одной секции (иконка + число)
-_OIL_ICON_W     =  41     # смещение от начала секции до числа (иконка до x=759)
-_OIL_NUM_W      =  76     # ширина числа
-_OIL_H          =  23     # высота строки
-OIL_MIN_AMOUNT  = 70_000  # стоп если нужного масла < 70k
-
-# Индексы секций: 0=зелёное(обычное), 1=синее(эпическое), 2=фиолетовое(редкое)
-_OIL_IDX = {"ordinary": 0, "epic": 1, "rare": 2}
-
-# Маппинг GUI-имени склепа → тип масла
-def _crypt_oil_type(gui_name: str) -> str:
-    if gui_name.startswith("Ordinary"):
-        return "ordinary"   # зелёное
-    elif gui_name.startswith("Epic"):
-        return "epic"       # синее
-    return "rare"           # фиолетовое (R_1, R_2)
-
-
-def parse_oil_value(text: str) -> int:
-    """Парсит '5.84M', '758K', '8900', ',5.84M', '55.76M' → целое число.
-    Артефакт иконки даёт лишнюю цифру перед числом (55.76M вместо 5.76M) — обрезаем."""
-    import re as _re
-    t = text.strip()
-    # Убираем артефакт: одна лишняя цифра перед "X.XXM" → "55.76M" → "5.76M"
-    t = _re.sub(r'^\d(\d[.,]\d)', r'\1', t)
-    # Убираем прочие нечисловые символы в начале (запятая, пробел)
-    m = _re.search(r"(\d+[.,]\d+|\d+)\s*([MmKk]?)", t)
-    if not m:
-        return 0
-    num_str = m.group(1).replace(",", ".")
-    suffix = m.group(2).upper()
-    val = float(num_str)
-    if suffix == "M":
-        return int(val * 1_000_000)
-    if suffix == "K":
-        return int(val * 1_000)
-    return int(val)
-
-
-# ══════════════════════════════════════════════════════════════
-#  ЧИСТЫЕ ФУНКЦИИ (легко тестировать)
-# ══════════════════════════════════════════════════════════════
-
-
-
-
 # ══════════════════════════════════════════════════════════════
 #  Путь к модели
 # ══════════════════════════════════════════════════════════════
@@ -143,8 +87,6 @@ _MODEL_PLAIN   = os.path.join(_SCRIPT_DIR, 'targets', 'crypts.pt')
 MODEL_PATH     = _MODEL_ENC if os.path.exists(_MODEL_ENC) else _MODEL_PLAIN
 _LOG_DIR       = os.path.join(_SCRIPT_DIR, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
-
-_EXP_OIL_BLUE_THR = 3000   # был 50; поднят чтобы не срабатывать на синие объекты карты
 
 # Типы редких склепов — требуют «Открыть» перед «Исследовать»
 RARE_CRYPT_TYPES = {'R_1', 'R_2'}
@@ -189,8 +131,6 @@ class CryptHunter:
         self.on_found_callback  = None   # fn(crypt_type: str)
         self.on_status_callback = None   # fn(message: str)
         self.on_stop_callback   = None   # fn(reason: str)
-        self.on_oil_callback    = None   # fn(ordinary: int, epic: int, rare: int)
-        self.oil_check_enabled  = False  # OCR нестабилен + Tesseract не у всех — AP-21
 
         self._log_file: str | None = None
 
@@ -226,7 +166,6 @@ class CryptHunter:
         on_status_callback        = None,
         on_stop_callback          = None,
         on_countdown_callback     = None,
-        on_oil_callback           = None,
     ):
         """Запустить охоту в отдельном потоке."""
         self._selected       = selected_crypts
@@ -242,7 +181,6 @@ class CryptHunter:
         self.on_status_callback     = on_status_callback
         self.on_stop_callback       = on_stop_callback
         self.on_countdown_callback  = on_countdown_callback
-        self.on_oil_callback        = on_oil_callback
 
         _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         self._log_file = os.path.join(_LOG_DIR, f"crypt_{_ts}.log")
@@ -285,67 +223,6 @@ class CryptHunter:
             self._log("DEBUG", f"screenshot → {fname}")
         except Exception as e:
             self._log("ERROR", f"screenshot save failed: {e}")
-
-    def _oil_screen_region(self, section_idx: int) -> tuple:
-        """
-        Вычисляет экранный регион числа масла по индексу секции (0/1/2).
-        Якорь = Point B (серебро) из текущего калибровочного профиля.
-        Работает для Client / Browser 1 / Browser 2 автоматически.
-        """
-        if _VISUAL_NAV_AVAILABLE:
-            bx, by = _cm._point_b
-            sx = _cm.scale_x
-            sy = abs(_cm.scale_y)
-        else:
-            bx, by = REF_B
-            sx = sy = 1.0
-        x = bx + int((_OIL_DX_ANCHOR + section_idx * _OIL_SECTION_W + _OIL_ICON_W) * sx)
-        y = by + int(_OIL_DY * sy)
-        pad = int(10 * sx)
-        return (x - pad, y, int(_OIL_NUM_W * sx) + pad, int(_OIL_H * sy))
-
-    def _ocr_oil_region(self, section_idx: int) -> int:
-        """OCR одного числа масла по индексу секции (0=обычное,1=эпическое,2=редкое)."""
-        region = self._oil_screen_region(section_idx)
-        img = self._screenshot(region)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        w, h = region[2], region[3]
-        blur = cv2.GaussianBlur(gray, (0, 0), 3)
-        sharp = cv2.addWeighted(gray, 2.0, blur, -1.0, 0)
-        big = cv2.resize(sharp, (w * 4, h * 4), interpolation=cv2.INTER_LANCZOS4)
-        _, thresh = cv2.threshold(big, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        text = pytesseract.image_to_string(thresh, config='--psm 7 -c tessedit_char_whitelist=0123456789.,MmKk')
-        return parse_oil_value(text)
-
-    def _read_oil_panel(self) -> dict:
-        """
-        OCR трёх регионов масла (иконки вырезаны).
-        Возвращает {'ordinary': int, 'epic': int, 'rare': int}.
-        """
-        ordinary = self._ocr_oil_region(0)
-        epic     = self._ocr_oil_region(2)
-        rare     = self._ocr_oil_region(1)
-        self._log("INFO", f"oil panel: ordinary={ordinary:,} epic={epic:,} rare={rare:,}")
-        if self.on_oil_callback:
-            try:
-                self.on_oil_callback(ordinary, epic, rare)
-            except Exception:
-                pass
-        return {"ordinary": ordinary, "epic": epic, "rare": rare}
-
-    def _check_oil_level(self, crypt_type: str) -> bool:
-        """
-        Читает панель масла и проверяет нужный тип для данного склепа.
-        Возвращает True если масла достаточно, False если < OIL_MIN_AMOUNT.
-        """
-        oil_type = _crypt_oil_type(crypt_type)
-        levels   = self._read_oil_panel()
-        amount   = levels.get(oil_type, 0)
-        self._status(f"Масло [{oil_type}]: {amount:,} (мин {OIL_MIN_AMOUNT:,})")
-        if amount < OIL_MIN_AMOUNT:
-            self._emergency_stop(f"OIL_LOW: {oil_type}={amount:,} < {OIL_MIN_AMOUNT:,}")
-            return False
-        return True
 
     def _status(self, msg: str):
         self._log("INFO", msg)
@@ -686,19 +563,13 @@ class CryptHunter:
 
 
     def _send_captain(self, crypt_type: str) -> bool:
-        """Нажать «Исследовать». Возвращает False если появился диалог масла."""
+        """Нажать «Исследовать»."""
         self._random_pause()
-
-        if self.oil_check_enabled and not self._check_oil_level(crypt_type):
-            return False
 
         sc = scale_dialog(*CRYPT_STUDY_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_STUDY_BTN
         ox, oy = _cm.get_ui_offset("carter") if _VISUAL_NAV_AVAILABLE else (0, 0)
         self._click(sc[0] + ox, sc[1] + oy, jitter=2, raw=True)
         self._interruptible_sleep(1.5)
-        if self.oil_check_enabled and self._check_oil_dialog():
-            self._emergency_stop("OIL_LOW: масло закончилось")
-            return False
 
         self._random_pause(0.3, 0.8)
         return True
@@ -787,45 +658,6 @@ class CryptHunter:
             return scale_coord(*fallback)
         return fallback
 
-    def _detect_oil_buttons(self, img_bgr: 'np.ndarray') -> bool:
-        """
-        Ищет зелёные (использовать) или синие (купить) кнопки в BGR-изображении.
-        Возвращает True если найдено ≥ 100 таких пикселей → масляный диалог.
-        HSV scale: H 0-180, S 0-255, V 0-255 (OpenCV convention).
-        """
-        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-        # Зелёная кнопка «Использовать» (масло на складе)
-        green_mask = cv2.inRange(
-            hsv,
-            np.array([35,  80,  80]),
-            np.array([85, 255, 220]),
-        )
-        # Синяя кнопка «Купить» (покупка масла)
-        blue_mask = cv2.inRange(
-            hsv,
-            np.array([100,  80,  80]),
-            np.array([130, 255, 230]),
-        )
-        green_px = int(green_mask.sum() // 255)
-        blue_px  = int(blue_mask.sum() // 255)
-        # Требуем ОБЕ кнопки: Carter overlay имеет только зелёную
-        result = green_px >= 500 and blue_px >= _EXP_OIL_BLUE_THR
-        self._log("DEBUG", f"oil_buttons: green={green_px} (thr≥500) blue={blue_px} (thr≥{_EXP_OIL_BLUE_THR}) → {result}")
-        return result
-
-    def _check_oil_dialog(self) -> bool:
-        """
-        Делает скриншот центра экрана и проверяет наличие кнопок диалога масла.
-        Вызывается из _send_captain() через 1.5с после клика «Исследовать».
-        Не зависит от языка игры — ищет цвет кнопок, не текст.
-        """
-        img = self._screenshot(scale_region(*OIL_DIALOG_REGION) if _VISUAL_NAV_AVAILABLE else OIL_DIALOG_REGION)
-        detected = self._detect_oil_buttons(img)
-        if detected:
-            self._save_debug_screenshot(img, "oil_region")
-            self._save_debug_screenshot(self._screenshot(), "oil_fullscreen")
-            self._log("WARN", f"oil dialog DETECTED at OIL_DIALOG_REGION={OIL_DIALOG_REGION}")
-        return detected
 
     # ─── Полный цикл ─────────────────────────────────────────
 
