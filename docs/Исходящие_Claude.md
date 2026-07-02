@@ -1,5 +1,63 @@
 # Исходящие Claude → Gemini
 
+## 2026-07-03 — Пост для Telegram-канала (v1.8.6 → v1.8.10)
+
+**🇷🇺 Русский:**
+
+```
+🔄 Обновление Total Hunter — что нового за последние релизы
+
+📌 Склепы
+— Убрали старую нерабочую функцию отслеживания масла, которая иногда вызывала сбой
+— Починили распознавание текста в модуле Склепов
+— Если мышка случайно оказалась в углу экрана — бот теперь мягко продолжает работу вместо ошибки
+
+📌 Древний
+— Исправлена реальная проблема: бот не дочитывал турнирную таблицу до конца и завершал работу почти сразу. Теперь читает всю таблицу целиком
+
+📌 Сундуки
+— Починили баг, из-за которого бот иногда не запускался при нажатии СТАРТ и требовал перезапуска
+
+📌 Калибровка / Тюнинг
+— Добавлены подсказки-скриншоты при настройке каждого элемента
+— Минимальная скорость сбора сундуков снижена
+
+📌 Безопасность
+— Исключено двойное начисление алмазов при оплате
+— Добавлена защита от случайных повторных списаний
+
+Скачать свежую версию: TotalHunter.zip в разделе Releases
+```
+
+**🇬🇧 English:**
+
+```
+🔄 Total Hunter update — what's new in the last few releases
+
+📌 Crypts
+— Removed an old, non-functional oil-tracking feature that occasionally caused a crash
+— Fixed text recognition in the Crypts module
+— If your mouse accidentally ends up in a screen corner, the bot now recovers gracefully instead of erroring out
+
+📌 Ancient
+— Fixed a real issue: the bot stopped reading the tournament table almost immediately instead of scrolling through it fully. Now reads the entire table
+
+📌 Chests
+— Fixed a bug where the bot would sometimes silently fail to start on STOP, requiring a restart
+
+📌 Calibration / Tuning
+— Added screenshot hints when tuning each UI element
+— Lowered the minimum chest-collection speed
+
+📌 Security
+— Eliminated a possible double-charge on diamond purchases
+— Added protection against accidental repeated charges
+
+Download the latest version: TotalHunter.zip in the Releases section
+```
+
+---
+
 ## 2026-07-01 (сессия #113) — Хангоф: техдолг «Древний» + статус цепочки сундуков
 
 **Что исправлено в сессии:**
