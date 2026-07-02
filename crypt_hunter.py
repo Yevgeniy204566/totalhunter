@@ -18,7 +18,8 @@ try:
     import mss
     import cv2
     import pytesseract
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    from tesseract_setup import configure_pytesseract
+    configure_pytesseract(pytesseract)
     from ultralytics import YOLO
     _GAME_DEPS_AVAILABLE = True
 except ImportError:
@@ -367,6 +368,15 @@ class CryptHunter:
         while self.is_running:
             try:
                 self._run_cycle()
+            except pyautogui.FailSafeException:
+                # Not a code bug — PyAutoGUI's own safety net: the user's real cursor is
+                # resting in a screen corner, so it refuses to move/click at all. Reporting
+                # this to log_error_to_server would just add noise to the crash stats.
+                self._status("Mouse safety stop: move your cursor away from the screen corner — retry in 10s")
+                for _ in range(100):
+                    if not self.is_running:
+                        break
+                    time.sleep(0.1)
             except Exception as e:
                 import traceback
                 err = traceback.format_exc()

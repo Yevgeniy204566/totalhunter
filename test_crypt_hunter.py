@@ -610,3 +610,54 @@ class TestDetectOilButtons:
         with patch.object(hunter, '_screenshot', return_value=black_img):
             result = hunter._check_oil_dialog()
         assert result is False
+
+
+class TestTesseractSetup:
+    def test_crypt_hunter_configures_tesseract_via_setup(self, monkeypatch):
+        import importlib
+        import tesseract_setup
+        calls = []
+        monkeypatch.setattr(tesseract_setup, 'configure_pytesseract',
+                            lambda mod, **kw: calls.append(mod) or True)
+        import crypt_hunter
+        importlib.reload(crypt_hunter)
+        # >=1, not ==1: if crypt_hunter was already imported earlier in this test
+        # process, the plain `import` above is a cache hit and only the explicit
+        # reload() re-executes the module body — count depends on import order,
+        # not on the behavior under test.
+        assert len(calls) >= 1
+        assert calls[0].__name__ == 'pytesseract'
+
+
+class TestFailSafeHandling:
+    def _make_hunter(self):
+        from unittest.mock import patch, MagicMock
+        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
+            from crypt_hunter import CryptHunter
+            h = CryptHunter.__new__(CryptHunter)
+            h.is_running = True
+            h.lang = "EN"
+            h.on_stop_callback = None
+            return h
+
+    def test_failsafe_exception_shows_friendly_message_without_reporting_as_error(self):
+        from unittest.mock import patch, MagicMock
+        import pyautogui
+        hunter = self._make_hunter()
+        calls = {"cycles": 0}
+
+        def _run_cycle_side_effect():
+            calls["cycles"] += 1
+            hunter.is_running = False  # stop after first iteration
+            raise pyautogui.FailSafeException("fail-safe triggered")
+
+        with patch.object(hunter, '_run_cycle', side_effect=_run_cycle_side_effect), \
+             patch.object(hunter, '_status') as mock_status, \
+             patch('auth.log_error_to_server') as mock_log, \
+             patch('crypt_hunter.time.sleep'):
+            hunter._run()
+
+        assert calls["cycles"] == 1
+        mock_status.assert_called_once()
+        assert "corner" in mock_status.call_args[0][0].lower()
+        mock_log.assert_not_called()
