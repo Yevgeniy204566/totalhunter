@@ -17,7 +17,11 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
                   leader_name: str | None = None,
                   leader_excluded: frozenset = frozenset()) -> dict:
     """rows: iterable of (sender, chest_type_en, display_name, points_per_unit,
-    counts_toward_quota, count).
+    counts_toward_quota, is_in_pattern, count).
+
+    is_in_pattern gates whether a chest type counts toward the clan tally at all —
+    types never configured (is_in_pattern NULL from the LEFT JOIN) or explicitly
+    marked out of pattern are skipped entirely: no column, no totals, no grand_total.
 
     chest_type_en is used as the internal dedup/grouping key (stable, language-
     independent) — display_name is only substituted in at the very end, so two
@@ -39,7 +43,9 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
     grand_total = 0
     total_points = 0
 
-    for sender, chest_type_en, display_name, points, counts_toward_quota, count in rows:
+    for sender, chest_type_en, display_name, points, counts_toward_quota, is_in_pattern, count in rows:
+        if not is_in_pattern:
+            continue
         if leader_name and sender == leader_name and chest_type_en in leader_excluded:
             # Excluded from leader score but still tracked in clan totals
             grand_total += count
@@ -102,6 +108,7 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
         select(sender_expr, chest_type_expr, display_expr,
                func.max(ChestConfiguration.points).label("points"),
                func.bool_or(ChestConfiguration.counts_toward_quota).label("counts_toward_quota"),
+               func.bool_or(ChestConfiguration.is_in_pattern).label("is_in_pattern"),
                func.count())
         .select_from(Chest)
         .outerjoin(

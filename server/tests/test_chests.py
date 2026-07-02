@@ -20,9 +20,9 @@ from chest_summary import pivot_summary as _pivot
 
 def test_pivot_leader_exclusion_removes_type_from_leader():
     rows = [
-        ("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3),
-        ("Leader", "Epic Crypt 35",    "Epic Crypt 35",    135, True,  2),
-        ("Player2", "Tournament Chest", "Tournament Chest", 50, False, 1),
+        ("Leader", "Tournament Chest", "Tournament Chest", 50, False, True, 3),
+        ("Leader", "Epic Crypt 35",    "Epic Crypt 35",    135, True,  True, 2),
+        ("Player2", "Tournament Chest", "Tournament Chest", 50, False, True, 1),
     ]
     result = _pivot("K1", "Clan1", rows,
                     leader_name="Leader",
@@ -37,21 +37,21 @@ def test_pivot_leader_exclusion_removes_type_from_leader():
 
 
 def test_pivot_no_leader_unchanged():
-    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3)]
+    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, True, 3)]
     result = _pivot("K1", "Clan1", rows)
     assert result["players"][0]["points"] == 150
     assert result["players"][0]["counts"]["Tournament Chest"] == 3
 
 
 def test_pivot_leader_empty_excluded_no_effect():
-    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3)]
+    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, True, 3)]
     result = _pivot("K1", "Clan1", rows,
                     leader_name="Leader", leader_excluded=frozenset())
     assert result["players"][0]["points"] == 150
 
 
 def test_pivot_leader_all_excluded_disappears_from_players():
-    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, 3)]
+    rows = [("Leader", "Tournament Chest", "Tournament Chest", 50, False, True, 3)]
     result = _pivot("K1", "Clan1", rows,
                     leader_name="Leader",
                     leader_excluded=frozenset(["Tournament Chest"]))
