@@ -515,6 +515,21 @@
     <div class="nav-item" :class="{active:page==='leaderboard'}" @click="page='leaderboard';loadLeaderboard()">
       <span class="material-symbols-rounded">leaderboard</span> Leaderboard
     </div>
+    <div class="nav-item" :class="{active:page==='act_simple'&&activityMetric==='crypt'}" @click="page='act_simple';loadActivity('crypt','Крипты')">
+      <span class="material-symbols-rounded">castle</span> Крипты
+    </div>
+    <div class="nav-item" :class="{active:page==='act_simple'&&activityMetric==='exchange'}" @click="page='act_simple';loadActivity('exchange','Биржи')">
+      <span class="material-symbols-rounded">storefront</span> Биржи
+    </div>
+    <div class="nav-item" :class="{active:page==='act_simple'&&activityMetric==='chest'}" @click="page='act_simple';loadActivity('chest','Сундуки')">
+      <span class="material-symbols-rounded">inventory_2</span> Сундуки
+    </div>
+    <div class="nav-item" :class="{active:page==='act_roulette'}" @click="page='act_roulette';loadActivity('roulette','Рулетка')">
+      <span class="material-symbols-rounded">casino</span> Рулетка
+    </div>
+    <div class="nav-item" :class="{active:page==='act_ancient'}" @click="page='act_ancient';loadActivity('ancient','Древний')">
+      <span class="material-symbols-rounded">military_tech</span> Древний
+    </div>
   </nav>
 
   <!-- Main content -->
@@ -926,6 +941,101 @@
       </div>
     </template>
 
+    <!-- ACTIVITY: Крипты / Биржи / Сундуки (общий формат) -->
+    <template x-if="page==='act_simple'">
+      <div>
+        <div class="page-title" x-text="'Активность — ' + activityLabel"></div>
+        <div class="section">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Игрок</th><th x-text="activityLabel"></th>
+              </tr></thead>
+              <tbody>
+                <template x-for="(row, idx) in activity" :key="row.hwid">
+                  <tr>
+                    <td style="color:var(--text-dim);font-weight:700" x-text="idx+1"></td>
+                    <td>
+                      <div style="font-weight:600" x-text="row.username||row.email||'—'"></div>
+                      <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
+                    </td>
+                    <td style="font-weight:700;color:var(--accent)" x-text="row.count"></td>
+                  </tr>
+                </template>
+                <tr x-show="activity.length===0">
+                  <td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ACTIVITY: Рулетка -->
+    <template x-if="page==='act_roulette'">
+      <div>
+        <div class="page-title">Активность — Рулетка</div>
+        <div class="section">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Игрок</th><th>Спинов</th><th>Алмазов получено</th>
+              </tr></thead>
+              <tbody>
+                <template x-for="(row, idx) in activity" :key="row.hwid">
+                  <tr>
+                    <td style="color:var(--text-dim);font-weight:700" x-text="idx+1"></td>
+                    <td>
+                      <div style="font-weight:600" x-text="row.username||row.email||'—'"></div>
+                      <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
+                    </td>
+                    <td style="font-weight:700;color:var(--accent)" x-text="row.count"></td>
+                    <td style="font-weight:700;color:var(--green)" x-text="row.credits_total"></td>
+                  </tr>
+                </template>
+                <tr x-show="activity.length===0">
+                  <td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ACTIVITY: Древний -->
+    <template x-if="page==='act_ancient'">
+      <div>
+        <div class="page-title">Активность — Древний</div>
+        <div class="section">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Игрок</th><th>Выгрузок OCR</th><th>Расчётов квоты</th>
+              </tr></thead>
+              <tbody>
+                <template x-for="(row, idx) in activity" :key="row.hwid">
+                  <tr>
+                    <td style="color:var(--text-dim);font-weight:700" x-text="idx+1"></td>
+                    <td>
+                      <div style="font-weight:600" x-text="row.username||row.email||'—'"></div>
+                      <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
+                    </td>
+                    <td style="font-weight:700;color:var(--accent)" x-text="row.ocr_imports"></td>
+                    <td style="font-weight:700;color:var(--green)" x-text="row.quota_calcs"></td>
+                  </tr>
+                </template>
+                <tr x-show="activity.length===0">
+                  <td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+
   </main>
 
   <!-- Mobile Bottom Nav -->
@@ -985,6 +1095,7 @@ function adminApp() {
     currentVersion: '',
     newVersion: '',
     leaderboard: [], lbPeriod: 'alltime',
+    activity: [], activityMetric: '', activityLabel: '',
 
     async init() {
       if (this.token) {
@@ -1018,6 +1129,8 @@ function adminApp() {
       const map = {
         dashboard: 'Dashboard', users: 'Игроки', logs: 'Логи',
         broadcast: 'Broadcast', feedback: 'Feedback', leaderboard: 'Leaderboard',
+        act_simple: 'Активность — ' + this.activityLabel,
+        act_roulette: 'Рулетка', act_ancient: 'Древний',
       };
       return map[this.page] || this.page;
     },
@@ -1028,6 +1141,8 @@ function adminApp() {
       else if (this.page === 'logs') this.loadLogs();
       else if (this.page === 'feedback') this.loadFeedback();
       else if (this.page === 'leaderboard') this.loadLeaderboard();
+      else if (this.page === 'act_simple' || this.page === 'act_roulette' || this.page === 'act_ancient')
+        this.loadActivity(this.activityMetric, this.activityLabel);
     },
 
     async loadStats() {
@@ -1190,6 +1305,12 @@ function adminApp() {
     async loadLeaderboard() {
       const r = await fetch(`${API}/admin/leaderboard?period=${this.lbPeriod}`, { headers: this.headers() });
       if (r.ok) { const d = await r.json(); this.leaderboard = d.items; }
+    },
+
+    async loadActivity(metric, label) {
+      this.activityMetric = metric; this.activityLabel = label;
+      const r = await fetch(`${API}/admin/activity/${metric}`, { headers: this.headers() });
+      if (r.ok) { const d = await r.json(); this.activity = d.rows; }
     },
 
     formatDate(iso) {

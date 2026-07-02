@@ -26,7 +26,7 @@ from database import get_db
 from models import (
     AncientCalculation, AncientEditor, AncientInviteCode,
     AncientNameMapping, AncientRoster,
-    ChestCollector, PlayerAlias, PlayerProfile, User,
+    ChestCollector, Log, PlayerAlias, PlayerProfile, User,
 )
 from roy import next_trade_routes_end
 from web_routes import get_web_user
@@ -489,6 +489,8 @@ async def calculate(slug: str, payload: CalculatePayload,
         stale_ids = history_ids[HISTORY_LIMIT:]
         await db.execute(delete(AncientCalculation).where(
             AncientCalculation.id.in_(stale_ids)))
+
+    db.add(Log(hwid=user.hwid, event_type="ancient_quota_calc"))
 
     await db.commit()
     return {"total_quota_millions": total, "result": result}

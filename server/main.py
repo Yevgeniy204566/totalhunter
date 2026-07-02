@@ -20,6 +20,7 @@ main.py — Total Hunter SaaS API (FastAPI + async SQLAlchemy).
     POST /admin/adjust_credits  — ручная корректировка баланса
     POST /admin/broadcast       — отправить broadcast всем ботам
     GET  /admin/logs            — последние 50 записей телеметрии
+    GET  /admin/activity/{metric} — по-игрочная разбивка (crypt/exchange/chest/roulette/ancient)
     GET  /admin                 — HTML-страница Admin Panel
 """
 
@@ -38,7 +39,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBasic, HTTPBasicCredentials, HTTPBearer
-from sqlalchemy import Integer, func, select, update, delete as sa_delete
+from sqlalchemy import Integer, case, func, select, update, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -877,6 +878,49 @@ async def admin_logs(db: AsyncSession = Depends(get_db), limit: int = 50):
         }
         for l in logs
     ]
+
+
+# ── GET /admin/activity/{metric} ──────────────────────────────────────────────
+
+@app.get("/admin/activity/{metric}", dependencies=[Depends(require_admin)])
+async def admin_activity(metric: str, db: AsyncSession = Depends(get_db)):
+    """По-игрочная разбивка для вкладок Рулетка/Сундуки/Крипты/Биржи/Древний."""
+    if metric in ("crypt", "exchange", "chest"):
+        result = await db.execute(
+            select(User.hwid, User.email, User.username, func.count(Hunt.id))
+            .join(Hunt, Hunt.user_id == User.id)
+            .where(Hunt.hunt_type == metric)
+            .group_by(User.id)
+            .order_by(func.count(Hunt.id).desc())
+        )
+        rows = [{"hwid": h, "email": e, "username": u, "count": c}
+                for h, e, u, c in result.all()]
+    elif metric == "roulette":
+        result = await db.execute(
+            select(User.hwid, User.email, User.username,
+                   func.count(Transaction.id), func.sum(Transaction.amount))
+            .join(Transaction, Transaction.user_id == User.id)
+            .where(Transaction.type == "ad_reward")
+            .group_by(User.id)
+            .order_by(func.count(Transaction.id).desc())
+        )
+        rows = [{"hwid": h, "email": e, "username": u, "count": c, "credits_total": s or 0}
+                for h, e, u, c, s in result.all()]
+    elif metric == "ancient":
+        result = await db.execute(
+            select(User.hwid, User.email, User.username,
+                   func.sum(case((Log.event_type == "ancient_ocr_import", 1), else_=0)),
+                   func.sum(case((Log.event_type == "ancient_quota_calc", 1), else_=0)))
+            .join(Log, Log.hwid == User.hwid)
+            .where(Log.event_type.in_(["ancient_ocr_import", "ancient_quota_calc"]))
+            .group_by(User.id)
+        )
+        rows = [{"hwid": h, "email": e, "username": u, "ocr_imports": oi or 0, "quota_calcs": qc or 0}
+                for h, e, u, oi, qc in result.all()]
+    else:
+        raise HTTPException(status_code=400, detail="unknown metric")
+
+    return {"metric": metric, "rows": rows}
 
 
 # ── GET /admin/crashes ────────────────────────────────────────────────────────

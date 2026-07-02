@@ -11,7 +11,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 
 from main import app
-from models import AncientRoster, ChestCollector, PlayerAlias, User
+from models import AncientRoster, ChestCollector, Log, PlayerAlias, User
 
 
 async def _create_user(db, hwid, is_banned=False, credits=100):
@@ -52,6 +52,21 @@ async def test_import_creates_roster(db_session):
         select(AncientRoster).where(AncientRoster.collector_id == collector.id)
     )).scalars().all()
     assert {r.player_name for r in rows} == {"Иванов", "Петров"}
+
+
+@pytest.mark.asyncio
+async def test_import_logs_ancient_ocr_import_event(db_session):
+    user = await _create_user(db_session, "hwidlogimport0a")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/tournaments/import", json=_payload(user.hwid))
+    assert resp.status_code == 200
+
+    logs = (await db_session.execute(
+        select(Log).where(Log.hwid == user.hwid, Log.event_type == "ancient_ocr_import")
+    )).scalars().all()
+    assert len(logs) == 1
 
 
 @pytest.mark.asyncio

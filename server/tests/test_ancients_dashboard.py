@@ -14,7 +14,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 
 from main import app
-from models import AncientCalculation, AncientNameMapping, AncientRoster, ChestCollector, PlayerAlias, PlayerProfile, User
+from models import AncientCalculation, AncientNameMapping, AncientRoster, ChestCollector, Log, PlayerAlias, PlayerProfile, User
 from web_routes import create_jwt
 
 
@@ -173,6 +173,29 @@ async def test_roster_quota_strategy_a_officer_bucket(db_session):
     assert roster["Глава1"]["quota"] == pytest.approx(officer_quota)
     assert roster["Рядовой1"]["quota"] == pytest.approx(veteran_quota)
     assert roster["БезЗвания"]["quota"] is None
+
+
+@pytest.mark.asyncio
+async def test_calculate_logs_ancient_quota_calc_event(db_session):
+    user, token = await _create_user_with_token(db_session, "quotalog1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="quota-log-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 place=1, points=100, rank="Глава"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/quota-log-1/calculate",
+            json={"strategy": "A", "summon_levels": [81], "amplification_coef": 1.0,
+                  "officer_count": 1, "veteran_count": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    logs = (await db_session.execute(
+        select(Log).where(Log.hwid == user.hwid, Log.event_type == "ancient_quota_calc")
+    )).scalars().all()
+    assert len(logs) == 1
 
 
 @pytest.mark.asyncio

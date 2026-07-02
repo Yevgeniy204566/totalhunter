@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chests import _get_or_create_collector
 from database import get_db
-from models import AncientRoster, PlayerAlias, User
+from models import AncientRoster, Log, PlayerAlias, User
 
 router = APIRouter(prefix="/api/v1/tournaments", tags=["tournaments"])
 
@@ -121,6 +121,8 @@ async def import_tournament(payload: TournamentImportPayload,
             AncientRoster.source == "ocr",
         )
     )
+
+    db.add(Log(hwid=user.hwid, event_type="ancient_ocr_import"))
 
     await db.commit()
     return {"ok": True, "count": len(payload.items), "collector_slug": collector.slug}
