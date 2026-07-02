@@ -6,6 +6,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from datetime import datetime
+
 import pytest
 from httpx import AsyncClient, ASGITransport
 
@@ -68,9 +70,12 @@ async def test_activity_crypt_counts_hunts_per_user(db_session):
 async def test_activity_roulette_counts_spins_and_credits(db_session):
     u1 = await _create_user(db_session, "hwidroulette0a", email="c@test.com")
     db_session.add_all([
-        Transaction(user_id=u1.id, type="ad_reward", amount=5),
-        Transaction(user_id=u1.id, type="ad_reward", amount=50),
-        Transaction(user_id=u1.id, type="purchase", amount=1000),  # different type, must not count
+        Transaction(user_id=u1.id, type="ad_reward", amount=5,
+                    created_at=datetime(2026, 6, 1, 10, 0, 0)),
+        Transaction(user_id=u1.id, type="ad_reward", amount=50,
+                    created_at=datetime(2026, 7, 2, 15, 30, 0)),
+        Transaction(user_id=u1.id, type="purchase", amount=1000,
+                    created_at=datetime(2026, 7, 3, 0, 0, 0)),  # different type, must not count
     ])
     await db_session.commit()
 
@@ -80,7 +85,32 @@ async def test_activity_roulette_counts_spins_and_credits(db_session):
     assert resp.status_code == 200
     row = next(r for r in resp.json()["rows"] if r["hwid"] == "hwidroulette0a")
     assert row["count"] == 2
+    assert row["last_spin_at"].startswith("2026-07-02T15:30:00")
     assert row["credits_total"] == 55
+
+
+@pytest.mark.asyncio
+async def test_activity_rows_include_balance_last_seen_and_diamond_flow(db_session):
+    u1 = await _create_user(db_session, "hwidfinance00a", email="fin@test.com", credits=250)
+    u1.last_seen = datetime(2026, 7, 2, 12, 0, 0)
+    db_session.add_all([
+        Hunt(user_id=u1.id, hunt_type="crypt"),
+        Transaction(user_id=u1.id, type="credit_use", amount=-30),
+        Transaction(user_id=u1.id, type="purchase", amount=500),
+        Transaction(user_id=u1.id, type="ad_reward", amount=5),
+    ])
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/admin/activity/crypt",
+                                headers={"Authorization": f"Bearer {ADMIN_TOKEN}"})
+    assert resp.status_code == 200
+    row = next(r for r in resp.json()["rows"] if r["hwid"] == "hwidfinance00a")
+    assert row["credits"] == 250
+    assert row["last_seen"].startswith("2026-07-02T12:00:00")
+    assert row["spent_total"] == 30
+    assert row["purchased_total"] == 500
+    assert row["earned_total"] == 5
 
 
 @pytest.mark.asyncio

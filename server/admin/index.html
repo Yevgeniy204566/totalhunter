@@ -515,8 +515,8 @@
     <div class="nav-item" :class="{active:page==='leaderboard'}" @click="page='leaderboard';loadLeaderboard()">
       <span class="material-symbols-rounded">leaderboard</span> Leaderboard
     </div>
-    <div class="nav-item" :class="{active:page==='act_simple'&&activityMetric==='crypt'}" @click="page='act_simple';loadActivity('crypt','Крипты')">
-      <span class="material-symbols-rounded">castle</span> Крипты
+    <div class="nav-item" :class="{active:page==='act_simple'&&activityMetric==='crypt'}" @click="page='act_simple';loadActivity('crypt','Склепы')">
+      <span class="material-symbols-rounded">castle</span> Склепы
     </div>
     <div class="nav-item" :class="{active:page==='act_simple'&&activityMetric==='exchange'}" @click="page='act_simple';loadActivity('exchange','Биржи')">
       <span class="material-symbols-rounded">storefront</span> Биржи
@@ -941,7 +941,7 @@
       </div>
     </template>
 
-    <!-- ACTIVITY: Крипты / Биржи / Сундуки (общий формат) -->
+    <!-- ACTIVITY: Склепы / Биржи / Сундуки (общий формат) -->
     <template x-if="page==='act_simple'">
       <div>
         <div class="page-title" x-text="'Активность — ' + activityLabel"></div>
@@ -950,6 +950,7 @@
             <table>
               <thead><tr>
                 <th>#</th><th>Игрок</th><th x-text="activityLabel"></th>
+                <th>Баланс</th><th>Последний заход</th><th>Потрачено</th><th>Куплено</th><th>Заработано</th>
               </tr></thead>
               <tbody>
                 <template x-for="(row, idx) in activity" :key="row.hwid">
@@ -960,10 +961,15 @@
                       <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
                     </td>
                     <td style="font-weight:700;color:var(--accent)" x-text="row.count"></td>
+                    <td style="font-weight:700" x-text="row.credits"></td>
+                    <td style="color:var(--text-dim)" x-text="row.last_seen?formatDate(row.last_seen):'—'"></td>
+                    <td style="color:var(--red)" x-text="row.spent_total"></td>
+                    <td style="color:var(--accent)" x-text="row.purchased_total"></td>
+                    <td style="color:var(--green)" x-text="row.earned_total"></td>
                   </tr>
                 </template>
                 <tr x-show="activity.length===0">
-                  <td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
+                  <td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
                 </tr>
               </tbody>
             </table>
@@ -980,7 +986,8 @@
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>#</th><th>Игрок</th><th>Спинов</th><th>Алмазов получено</th>
+                <th>#</th><th>Игрок</th><th>Спинов</th><th>Алмазов получено</th><th>Последний раз</th>
+                <th>Баланс</th><th>Последний заход</th><th>Потрачено</th><th>Куплено</th><th>Заработано</th>
               </tr></thead>
               <tbody>
                 <template x-for="(row, idx) in activity" :key="row.hwid">
@@ -992,10 +999,16 @@
                     </td>
                     <td style="font-weight:700;color:var(--accent)" x-text="row.count"></td>
                     <td style="font-weight:700;color:var(--green)" x-text="row.credits_total"></td>
+                    <td style="color:var(--text-dim)" x-text="row.last_spin_at?formatDate(row.last_spin_at):'—'"></td>
+                    <td style="font-weight:700" x-text="row.credits"></td>
+                    <td style="color:var(--text-dim)" x-text="row.last_seen?formatDate(row.last_seen):'—'"></td>
+                    <td style="color:var(--red)" x-text="row.spent_total"></td>
+                    <td style="color:var(--accent)" x-text="row.purchased_total"></td>
+                    <td style="color:var(--green)" x-text="row.earned_total"></td>
                   </tr>
                 </template>
                 <tr x-show="activity.length===0">
-                  <td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
+                  <td colspan="10" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
                 </tr>
               </tbody>
             </table>
@@ -1013,6 +1026,7 @@
             <table>
               <thead><tr>
                 <th>#</th><th>Игрок</th><th>Выгрузок OCR</th><th>Расчётов квоты</th>
+                <th>Баланс</th><th>Последний заход</th><th>Потрачено</th><th>Куплено</th><th>Заработано</th>
               </tr></thead>
               <tbody>
                 <template x-for="(row, idx) in activity" :key="row.hwid">
@@ -1024,10 +1038,15 @@
                     </td>
                     <td style="font-weight:700;color:var(--accent)" x-text="row.ocr_imports"></td>
                     <td style="font-weight:700;color:var(--green)" x-text="row.quota_calcs"></td>
+                    <td style="font-weight:700" x-text="row.credits"></td>
+                    <td style="color:var(--text-dim)" x-text="row.last_seen?formatDate(row.last_seen):'—'"></td>
+                    <td style="color:var(--red)" x-text="row.spent_total"></td>
+                    <td style="color:var(--accent)" x-text="row.purchased_total"></td>
+                    <td style="color:var(--green)" x-text="row.earned_total"></td>
                   </tr>
                 </template>
                 <tr x-show="activity.length===0">
-                  <td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
+                  <td colspan="9" style="text-align:center;color:var(--text-dim);padding:24px">Нет данных</td>
                 </tr>
               </tbody>
             </table>

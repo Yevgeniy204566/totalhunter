@@ -882,43 +882,77 @@ async def admin_logs(db: AsyncSession = Depends(get_db), limit: int = 50):
 
 # ── GET /admin/activity/{metric} ──────────────────────────────────────────────
 
+async def _activity_finance_summary(db: AsyncSession, user_ids: list) -> dict:
+    """Потрачено (credit_use) / куплено (purchase) / заработано бесплатно
+    (ad_reward + ref_earning) на пользователя — независимо от вкладки-метрики."""
+    if not user_ids:
+        return {}
+    result = await db.execute(
+        select(Transaction.user_id,
+               func.sum(case((Transaction.type == "credit_use", -Transaction.amount), else_=0)),
+               func.sum(case((Transaction.type == "purchase", Transaction.amount), else_=0)),
+               func.sum(case((Transaction.type.in_(("ad_reward", "ref_earning")), Transaction.amount), else_=0)))
+        .where(Transaction.user_id.in_(user_ids))
+        .group_by(Transaction.user_id)
+    )
+    return {
+        uid: {"spent_total": spent or 0, "purchased_total": purchased or 0, "earned_total": earned or 0}
+        for uid, spent, purchased, earned in result.all()
+    }
+
+
 @app.get("/admin/activity/{metric}", dependencies=[Depends(require_admin)])
 async def admin_activity(metric: str, db: AsyncSession = Depends(get_db)):
-    """По-игрочная разбивка для вкладок Рулетка/Сундуки/Крипты/Биржи/Древний."""
+    """По-игрочная разбивка для вкладок Рулетка/Сундуки/Склепы/Биржи/Древний.
+    Общие поля (баланс, последний заход, потрачено/куплено/заработано) добавляются
+    ко всем вкладкам одинаково — не только к той, где действие произошло."""
     if metric in ("crypt", "exchange", "chest"):
         result = await db.execute(
-            select(User.hwid, User.email, User.username, func.count(Hunt.id))
+            select(User.id, User.hwid, User.email, User.username,
+                   User.credits, User.last_seen, func.count(Hunt.id))
             .join(Hunt, Hunt.user_id == User.id)
             .where(Hunt.hunt_type == metric)
             .group_by(User.id)
             .order_by(func.count(Hunt.id).desc())
         )
-        rows = [{"hwid": h, "email": e, "username": u, "count": c}
-                for h, e, u, c in result.all()]
+        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "credits": cr,
+                 "last_seen": ls.isoformat() if ls else None, "count": c}
+                for uid, h, e, u, cr, ls, c in result.all()]
     elif metric == "roulette":
         result = await db.execute(
-            select(User.hwid, User.email, User.username,
-                   func.count(Transaction.id), func.sum(Transaction.amount))
+            select(User.id, User.hwid, User.email, User.username,
+                   User.credits, User.last_seen,
+                   func.count(Transaction.id), func.sum(Transaction.amount),
+                   func.max(Transaction.created_at))
             .join(Transaction, Transaction.user_id == User.id)
             .where(Transaction.type == "ad_reward")
             .group_by(User.id)
             .order_by(func.count(Transaction.id).desc())
         )
-        rows = [{"hwid": h, "email": e, "username": u, "count": c, "credits_total": s or 0}
-                for h, e, u, c, s in result.all()]
+        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "credits": cr,
+                 "last_seen": ls.isoformat() if ls else None, "count": c, "credits_total": s or 0,
+                 "last_spin_at": ts.isoformat() if ts else None}
+                for uid, h, e, u, cr, ls, c, s, ts in result.all()]
     elif metric == "ancient":
         result = await db.execute(
-            select(User.hwid, User.email, User.username,
+            select(User.id, User.hwid, User.email, User.username,
+                   User.credits, User.last_seen,
                    func.sum(case((Log.event_type == "ancient_ocr_import", 1), else_=0)),
                    func.sum(case((Log.event_type == "ancient_quota_calc", 1), else_=0)))
             .join(Log, Log.hwid == User.hwid)
             .where(Log.event_type.in_(["ancient_ocr_import", "ancient_quota_calc"]))
             .group_by(User.id)
         )
-        rows = [{"hwid": h, "email": e, "username": u, "ocr_imports": oi or 0, "quota_calcs": qc or 0}
-                for h, e, u, oi, qc in result.all()]
+        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "credits": cr,
+                 "last_seen": ls.isoformat() if ls else None, "ocr_imports": oi or 0, "quota_calcs": qc or 0}
+                for uid, h, e, u, cr, ls, oi, qc in result.all()]
     else:
         raise HTTPException(status_code=400, detail="unknown metric")
+
+    finance = await _activity_finance_summary(db, [r["user_id"] for r in rows])
+    empty_finance = {"spent_total": 0, "purchased_total": 0, "earned_total": 0}
+    for r in rows:
+        r.update(finance.get(r.pop("user_id"), empty_finance))
 
     return {"metric": metric, "rows": rows}
 
