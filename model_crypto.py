@@ -9,6 +9,7 @@ import hmac
 import hashlib
 import base64
 from cryptography.fernet import Fernet
+from version import VERSION
 
 # Соль зашита в код — меняй при каждом релизе
 _SECRET_SALT = b"TH-2026-x9kQmR7vNpLsWjYe"
@@ -85,7 +86,7 @@ def yolo_from_encrypted(enc_path: str):
     except Exception:
         model.to('cpu')
         _device = 'cpu'
-    print(f"[TH v1.2.6] YOLO device: {_device}")
+    print(f"[TH v{VERSION}] YOLO device: {_device}")
     return model
 
 

@@ -10,6 +10,7 @@ from ultralytics import YOLO
 
 from navigator import PacmanEngine
 from auth import heartbeat as _heartbeat, get_hwid
+from version import VERSION
 import nav_logger
 nav_logger.install()
 
@@ -71,7 +72,7 @@ class HuntEngine:
             except Exception:
                 self.model.to('cpu')
                 _device = 'cpu'
-            print(f"[TH v1.2.6] YOLO device (pt): {_device}")
+            print(f"[TH v{VERSION}] YOLO device (pt): {_device}")
 
         import sys
         _base = getattr(sys, '_MEIPASS', script_dir)
