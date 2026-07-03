@@ -1348,3 +1348,72 @@ async def test_get_roster_raw_ocr_name_none_for_pure_chests_row(db_session):
     row = resp.json()["collectors"][0]["roster"][0]
     assert row["raw_ocr_name"] is None
     assert row["mapping_confirmed"] is False
+
+
+@pytest.mark.asyncio
+async def test_clear_ocr_deletes_pure_ocr_rows(db_session):
+    """A row with no troop_level/rank — pure tournament-import junk — is
+    deleted entirely."""
+    user, token = await _create_user_with_token(db_session, "clear1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="clear-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Случайный*VIP",
+                                 place=9, points=10, raw_ocr_name="Случайный*VIP",
+                                 source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            "/web/dashboard/ancients/clear-1/roster/ocr-import",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"deleted": 1, "cleared": 0}
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert rows == []
+
+
+@pytest.mark.asyncio
+async def test_clear_ocr_only_clears_points_on_curated_row(db_session):
+    """A row that carries troop_level/rank (curated by the leader, possibly
+    merged from a tournament import) survives — only place/points reset."""
+    user, token = await _create_user_with_token(db_session, "clear2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="clear-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 place=5, points=80000, raw_ocr_name="Пeтрoв*VIP",
+                                 troop_level="G8 S8 M8", rank="Офицер", source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            "/web/dashboard/ancients/clear-2/roster/ocr-import",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == {"deleted": 0, "cleared": 1}
+
+    row = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalar_one()
+    assert row.place is None
+    assert row.points is None
+    assert row.troop_level == "G8 S8 M8"
+    assert row.rank == "Офицер"
+    assert row.player_name == "Петров"
+
+
+@pytest.mark.asyncio
+async def test_clear_ocr_wrong_owner_returns_403(db_session):
+    owner, _ = await _create_user_with_token(db_session, "clear3owner@test.com")
+    _, attacker_token = await _create_user_with_token(db_session, "clear3attacker@test.com")
+    collector = await _create_collector(db_session, owner.id, slug="clear-3")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete(
+            "/web/dashboard/ancients/clear-3/roster/ocr-import",
+            headers={"Authorization": f"Bearer {attacker_token}"},
+        )
+    assert resp.status_code == 403

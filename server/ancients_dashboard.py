@@ -466,6 +466,36 @@ async def delete_name_mapping(slug: str, raw_ocr_name: str,
     return {"deleted": True}
 
 
+@router.delete("/{slug}/roster/ocr-import")
+async def clear_ocr_import(slug: str,
+                           user: User = Depends(get_web_user),
+                           db: AsyncSession = Depends(get_db)):
+    """«Очистить» — стирает результаты последнего турнирного импорта.
+    Строка без войск/звания (чистый OCR-мусор) удаляется целиком. Строка,
+    несущая войска/звание (слитая с Сундуками или ручная), только теряет
+    место/очки — иначе кнопка стирала бы кураторские данные лидера."""
+    collector, _ = await _get_own_or_editor_collector(db, slug, user)
+    rows = (await db.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+
+    deleted = 0
+    cleared = 0
+    for row in rows:
+        if row.place is None and row.points is None:
+            continue
+        if row.source == "ocr" and row.troop_level is None and row.rank is None:
+            await db.delete(row)
+            deleted += 1
+        else:
+            row.place = None
+            row.points = None
+            cleared += 1
+
+    await db.commit()
+    return {"deleted": deleted, "cleared": cleared}
+
+
 @router.delete("/{slug}/roster/{player_name}")
 async def delete_roster_entry(slug: str, player_name: str,
                               user: User = Depends(get_web_user),
