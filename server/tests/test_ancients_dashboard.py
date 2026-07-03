@@ -1351,6 +1351,37 @@ async def test_get_roster_raw_ocr_name_none_for_pure_chests_row(db_session):
 
 
 @pytest.mark.asyncio
+async def test_get_roster_rank_falls_back_to_player_profile(db_session):
+    """A row with no AncientRoster.rank set falls back to PlayerProfile.rank
+    (the same table players self-report through on the public Chests page),
+    both in the displayed 'rank' field and in Strategy-A quota lookup."""
+    from models import PlayerProfile
+    user, token = await _create_user_with_token(db_session, "rankfallback1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="rankfallback-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Кузнецов",
+                                 place=1, points=100, rank=None, source="ocr"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Кузнецов",
+                                 rank="Офицер", troop_level=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        calc_resp = await client.post(
+            "/web/dashboard/ancients/rankfallback-1/calculate",
+            json={"strategy": "A", "summon_levels": [81], "amplification_coef": 1.0,
+                  "officer_count": 1, "veteran_count": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert calc_resp.status_code == 200
+        officer_quota = calc_resp.json()["result"]["officer_quota"]
+
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["rank"] == "Офицер"
+    assert row["quota"] == pytest.approx(officer_quota)
+
+
+@pytest.mark.asyncio
 async def test_clear_ocr_deletes_pure_ocr_rows(db_session):
     """A row with no troop_level/rank — pure tournament-import junk — is
     deleted entirely."""

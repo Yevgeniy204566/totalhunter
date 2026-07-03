@@ -141,7 +141,8 @@ async def _roster_rows(
     latest_calc,                # Optional[AncientCalculation]
 ) -> list:
     rows = (await db.execute(
-        select(AncientRoster, PlayerProfile.troop_level.label("profile_troop"))
+        select(AncientRoster, PlayerProfile.troop_level.label("profile_troop"),
+               PlayerProfile.rank.label("profile_rank"))
         .outerjoin(
             PlayerProfile,
             and_(
@@ -174,10 +175,12 @@ async def _roster_rows(
                 suggested_name = matches[0] if matches else None
                 confirmed = False
 
+        effective_rank = r.AncientRoster.rank or r.profile_rank
+
         quota = None
         if latest_calc is not None:
             if latest_calc.strategy == "A":
-                rank = r.AncientRoster.rank
+                rank = effective_rank
                 if rank in OFFICER_RANKS:
                     quota = latest_calc.result_json.get("officer_quota")
                 elif rank is not None:
@@ -198,7 +201,7 @@ async def _roster_rows(
             "place": r.AncientRoster.place,
             "points": r.AncientRoster.points,
             "troop_level": r.AncientRoster.troop_level or r.profile_troop,
-            "rank": r.AncientRoster.rank,
+            "rank": effective_rank,
             "quota": quota,
             "shortfall_pct": shortfall_pct(quota, r.AncientRoster.points),
             "mapped_name": mapped_name,
