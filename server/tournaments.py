@@ -21,7 +21,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chests import _get_or_create_collector
@@ -98,13 +98,19 @@ async def import_tournament(payload: TournamentImportPayload,
             ))
 
     await db.flush()
-    await db.execute(
-        delete(AncientRoster).where(
+    stale_rows = (await db.execute(
+        select(AncientRoster).where(
             AncientRoster.collector_id == collector.id,
             AncientRoster.player_name.not_in(incoming_names),
             AncientRoster.source == "ocr",
         )
-    )
+    )).scalars().all()
+    for row in stale_rows:
+        if row.troop_level is None and row.rank is None:
+            await db.delete(row)
+        else:
+            row.place = None
+            row.points = None
 
     db.add(Log(hwid=user.hwid, event_type="ancient_ocr_import"))
 
