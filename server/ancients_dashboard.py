@@ -71,6 +71,21 @@ async def _get_own_or_editor_collector(
     raise HTTPException(status_code=403, detail="Not your collector")
 
 
+def _coalesce_roster_fields(base: dict, row: AncientRoster) -> dict:
+    """Merges row's non-NULL fields into base, keeping base's existing
+    value wherever row's is NULL. Used to combine two physical
+    AncientRoster rows (e.g. a Chests-seeded row and an OCR-imported row)
+    into one set of fields before writing a single merged row."""
+    return {
+        "place": row.place if row.place is not None else base.get("place"),
+        "points": row.points if row.points is not None else base.get("points"),
+        "troop_level": row.troop_level if row.troop_level is not None else base.get("troop_level"),
+        "rank": row.rank if row.rank is not None else base.get("rank"),
+        "raw_ocr_name": row.raw_ocr_name if row.raw_ocr_name is not None else base.get("raw_ocr_name"),
+        "source": "ocr" if row.source == "ocr" else base.get("source", row.source),
+    }
+
+
 async def _roster_rows(
     db: AsyncSession,
     collector_id: int,
@@ -589,14 +604,7 @@ async def populate_roster_from_chests(slug: str,
             await db.delete(row)
             removed += 1
             continue
-        current = preserved.get(target, {})
-        preserved[target] = {
-            "place": row.place if row.place is not None else current.get("place"),
-            "points": row.points if row.points is not None else current.get("points"),
-            "troop_level": row.troop_level if row.troop_level is not None else current.get("troop_level"),
-            "rank": row.rank if row.rank is not None else current.get("rank"),
-            "source": "ocr" if row.source == "ocr" else current.get("source", row.source),
-        }
+        preserved[target] = _coalesce_roster_fields(preserved.get(target, {}), row)
         await db.delete(row)
 
     await db.flush()
@@ -607,6 +615,7 @@ async def populate_roster_from_chests(slug: str,
             collector_id=collector.id, player_name=name,
             place=data.get("place"), points=data.get("points"),
             troop_level=data.get("troop_level"), rank=data.get("rank"),
+            raw_ocr_name=data.get("raw_ocr_name"),
             source=data.get("source", "chests"), manual_expires_at=None,
         ))
 

@@ -1055,6 +1055,32 @@ async def test_populate_from_chests_merges_confirmed_mapping_into_canonical_name
 
 
 @pytest.mark.asyncio
+async def test_populate_from_chests_preserves_raw_ocr_name(db_session):
+    """The synced canonical row keeps the raw OCR text that was on the
+    source row, so the dashboard can still show 'what the bot actually read'
+    after populate-from-chests renames the row."""
+    user, token = await _create_user_with_token(db_session, "populate7@test.com")
+    collector = await _create_collector(db_session, user.id, slug="populate-7")
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="r1", canonical_name="Кузнецов"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Кузнецов",
+                                 place=3, points=500, raw_ocr_name="Кузнецoв_VIP",
+                                 source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/populate-7/roster/populate-from-chests",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalar_one()
+    assert row.raw_ocr_name == "Кузнецoв_VIP"
+
+
+@pytest.mark.asyncio
 async def test_populate_from_chests_deletes_rows_with_no_chests_relation(db_session):
     """A row with no exact canonical match and no confirmed mapping (e.g. a
     manually-added participant who doesn't carry chests) is deleted —
