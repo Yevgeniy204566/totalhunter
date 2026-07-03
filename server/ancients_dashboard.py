@@ -561,8 +561,16 @@ async def calculate(slug: str, payload: CalculatePayload,
         if payload.clan_preset not in VALID_PRESETS:
             raise HTTPException(status_code=400, detail="clan_preset must be one of T5-T9")
         roster = (await db.execute(
-            select(AncientRoster).where(AncientRoster.collector_id == collector.id)
-        )).scalars().all()
+            select(AncientRoster, PlayerProfile.troop_level.label("profile_troop"))
+            .outerjoin(
+                PlayerProfile,
+                and_(
+                    PlayerProfile.collector_id == AncientRoster.collector_id,
+                    PlayerProfile.canonical_name == AncientRoster.player_name,
+                )
+            )
+            .where(AncientRoster.collector_id == collector.id)
+        )).all()
         confirmed_mappings = (await db.execute(
             select(AncientNameMapping).where(
                 AncientNameMapping.collector_id == collector.id,
@@ -570,7 +578,18 @@ async def calculate(slug: str, payload: CalculatePayload,
             )
         )).scalars().all()
         mapped_names = {m.raw_ocr_name: m.canonical_name for m in confirmed_mappings}
-        players = [(mapped_names.get(r.player_name, r.player_name), r.troop_level) for r in roster]
+        players = []
+        for r in roster:
+            troop_level = r.AncientRoster.troop_level or r.profile_troop
+            if troop_level is not None:
+                try:
+                    parse_troop_level(troop_level)
+                except ValueError:
+                    troop_level = None
+            players.append((
+                mapped_names.get(r.AncientRoster.player_name, r.AncientRoster.player_name),
+                troop_level,
+            ))
         try:
             result = split_strategy_b(total, payload.clan_preset, players)
         except ValueError as e:

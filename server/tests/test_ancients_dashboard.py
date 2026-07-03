@@ -1448,3 +1448,58 @@ async def test_clear_ocr_wrong_owner_returns_403(db_session):
             headers={"Authorization": f"Bearer {attacker_token}"},
         )
     assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_calculate_strategy_b_uses_player_profile_troop_fallback(db_session):
+    """A roster row with no AncientRoster.troop_level but a valid
+    PlayerProfile.troop_level is included in the Strategy-B quota split —
+    not silently excluded just because the leader never re-typed it."""
+    from models import PlayerProfile
+    user, token = await _create_user_with_token(db_session, "calcfallback1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="calcfallback-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 troop_level=None, source="manual"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Иванов",
+                                 rank=None, troop_level="G8 S8 M8"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/calcfallback-1/calculate",
+            json={"strategy": "B", "summon_levels": [81], "amplification_coef": 1.0,
+                  "clan_preset": "T8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    players = resp.json()["result"]["players"]
+    assert len(players) == 1
+    assert players[0]["name"] == "Иванов"
+    assert players[0]["troop_level"] == "G8 S8 M8"
+    assert resp.json()["result"]["excluded"] == []
+
+
+@pytest.mark.asyncio
+async def test_calculate_strategy_b_ignores_invalid_player_profile_troop(db_session):
+    """A PlayerProfile.troop_level value that passes the laxer Chests
+    validator (tiers 1-9) but fails Ancients' stricter parse_troop_level
+    (tiers 5-9 only) must not crash calculate() — the player is excluded,
+    same as if troop_level had never been set."""
+    from models import PlayerProfile
+    user, token = await _create_user_with_token(db_session, "calcfallback2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="calcfallback-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 troop_level=None, source="manual"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Петров",
+                                 rank=None, troop_level="G3 S2 M4"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/calcfallback-2/calculate",
+            json={"strategy": "B", "summon_levels": [81], "amplification_coef": 1.0,
+                  "clan_preset": "T8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400  # no players with a valid troop_level at all
+
