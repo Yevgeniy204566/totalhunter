@@ -589,24 +589,28 @@ export default function AncientsPage() {
                         <tr key={p.player_name}
                           className={rowShortfallClass(p.shortfall_pct, c.quota_thresholds)}>
                           <td>{idx + 1}</td>
-                          <td>{p.player_name}</td>
+                          <td>{p.raw_ocr_name || p.player_name}</td>
                           <td>
                             {p.mapping_confirmed ? (
                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span style={{ color: '#a6e3a1', fontWeight: 600 }}>{p.mapped_name}</span>
-                                <button
-                                  style={{
-                                    fontSize: 11, padding: '1px 6px', cursor: 'pointer',
-                                    background: 'transparent', border: '1px solid #6c7086',
-                                    color: '#6c7086', borderRadius: 4,
-                                  }}
-                                  onClick={async () => {
-                                    await api.dashboardAncientsNameMappingDelete(c.slug, p.player_name)
-                                    refresh()
-                                  }}
-                                >
-                                  Разблокировать
-                                </button>
+                                {p.raw_ocr_name && p.raw_ocr_name !== p.player_name ? (
+                                  <span title="Слияние необратимо" style={{ fontSize: 12 }}>🔒</span>
+                                ) : (
+                                  <button
+                                    style={{
+                                      fontSize: 11, padding: '1px 6px', cursor: 'pointer',
+                                      background: 'transparent', border: '1px solid #6c7086',
+                                      color: '#6c7086', borderRadius: 4,
+                                    }}
+                                    onClick={async () => {
+                                      await api.dashboardAncientsNameMappingDelete(c.slug, p.raw_ocr_name || p.player_name)
+                                      refresh()
+                                    }}
+                                  >
+                                    Разблокировать
+                                  </button>
+                                )}
                               </span>
                             ) : (
                               <select
