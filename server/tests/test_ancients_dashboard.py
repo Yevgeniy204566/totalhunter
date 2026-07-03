@@ -494,6 +494,96 @@ async def test_patch_name_mappings_wrong_owner_returns_403(db_session):
 
 
 @pytest.mark.asyncio
+async def test_patch_name_mappings_merges_into_existing_canonical_row(db_session):
+    """Confirming a mapping when a canonical row already exists (e.g. from
+    populate-from-chests) physically merges the two rows into one — no
+    duplicate, quota (troop_level) and points end up on the same row."""
+    user, token = await _create_user_with_token(db_session, "merge1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="merge-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 troop_level="G8 S8 M8", rank="Офицер", source="chests"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Пeтрoв*VIP",
+                                 place=5, points=80000, raw_ocr_name="Пeтрoв*VIP",
+                                 source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/merge-1/name-mappings",
+            json={"mappings": [{"raw_ocr_name": "Пeтрoв*VIP", "canonical_name": "Петров",
+                                "confirmed": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+    merged = rows[0]
+    assert merged.player_name == "Петров"
+    assert merged.troop_level == "G8 S8 M8"
+    assert merged.rank == "Офицер"
+    assert merged.points == 80000
+    assert merged.place == 5
+    assert merged.raw_ocr_name == "Пeтрoв*VIP"
+
+
+@pytest.mark.asyncio
+async def test_patch_name_mappings_renames_when_no_canonical_row_exists(db_session):
+    """Confirming a mapping when no canonical-named row exists yet just
+    renames the raw row in place (nothing to merge with)."""
+    user, token = await _create_user_with_token(db_session, "merge2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="merge-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Marisha",
+                                 place=1, points=100, raw_ocr_name="Marisha", source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/merge-2/name-mappings",
+            json={"mappings": [{"raw_ocr_name": "Marisha", "canonical_name": "Маришка",
+                                "confirmed": True}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].player_name == "Маришка"
+    assert rows[0].raw_ocr_name == "Marisha"
+    assert rows[0].points == 100
+
+
+@pytest.mark.asyncio
+async def test_patch_name_mappings_unconfirmed_does_not_merge(db_session):
+    """confirmed=False must not trigger a physical merge — only a confirmed
+    mapping is trusted enough to rewrite roster data."""
+    user, token = await _create_user_with_token(db_session, "merge3@test.com")
+    collector = await _create_collector(db_session, user.id, slug="merge-3")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Сидоров*99",
+                                 place=2, points=200, raw_ocr_name="Сидоров*99", source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch(
+            "/web/dashboard/ancients/merge-3/name-mappings",
+            json={"mappings": [{"raw_ocr_name": "Сидоров*99", "canonical_name": "Сидоров",
+                                "confirmed": False}]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+
+    rows = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].player_name == "Сидоров*99"  # unchanged — not merged
+
+
+@pytest.mark.asyncio
 async def test_delete_name_mapping_not_found_returns_404(db_session):
     """DELETE on a nonexistent mapping returns 404, not 200."""
     user, token = await _create_user_with_token(db_session, "del2@test.com")

@@ -86,6 +86,52 @@ def _coalesce_roster_fields(base: dict, row: AncientRoster) -> dict:
     }
 
 
+async def _merge_roster_on_mapping_confirm(
+    db: AsyncSession, collector_id: int, raw_ocr_name: str, canonical_name: str,
+) -> None:
+    """Physically merges the roster row sitting under raw_ocr_name into the
+    row sitting under canonical_name (creating the canonical row if it
+    didn't exist), so quota-bearing fields (troop_level/rank) and
+    points-bearing fields (place/points) end up on one row instead of two.
+    No-op if no row exists under raw_ocr_name yet — future tournament
+    imports will resolve straight to the canonical name instead (see
+    tournaments.py)."""
+    if raw_ocr_name == canonical_name:
+        return
+    raw_row = (await db.execute(
+        select(AncientRoster).where(
+            AncientRoster.collector_id == collector_id,
+            AncientRoster.player_name == raw_ocr_name,
+        )
+    )).scalar_one_or_none()
+    if raw_row is None:
+        return
+
+    canonical_row = (await db.execute(
+        select(AncientRoster).where(
+            AncientRoster.collector_id == collector_id,
+            AncientRoster.player_name == canonical_name,
+        )
+    )).scalar_one_or_none()
+
+    merged: dict = {}
+    if canonical_row is not None:
+        merged = _coalesce_roster_fields(merged, canonical_row)
+        await db.delete(canonical_row)
+    merged = _coalesce_roster_fields(merged, raw_row)
+    merged["raw_ocr_name"] = merged.get("raw_ocr_name") or raw_row.player_name
+    await db.delete(raw_row)
+    await db.flush()
+
+    db.add(AncientRoster(
+        collector_id=collector_id, player_name=canonical_name,
+        place=merged.get("place"), points=merged.get("points"),
+        troop_level=merged.get("troop_level"), rank=merged.get("rank"),
+        raw_ocr_name=merged.get("raw_ocr_name"),
+        source=merged.get("source", "ocr"), manual_expires_at=None,
+    ))
+
+
 async def _roster_rows(
     db: AsyncSession,
     collector_id: int,
@@ -382,6 +428,9 @@ async def patch_name_mappings(slug: str, payload: NameMappingsPayload,
                 canonical_name=item.canonical_name,
                 confirmed=item.confirmed,
             ))
+        if item.confirmed:
+            await _merge_roster_on_mapping_confirm(
+                db, collector.id, item.raw_ocr_name, item.canonical_name)
     await db.commit()
     return {"ok": True}
 
