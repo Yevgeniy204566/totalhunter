@@ -46,9 +46,27 @@ async def test_scan_consecutive_same_hwid_second_is_rate_limited():
     assert r2.json().get("note") == "rate_limited"
 
 
+def _force_trade_routes_active(monkeypatch):
+    """/roy/scan only accrues balance while the «Торговые Пути» event is
+    active, which is_trade_routes_active() derives from real wall-clock
+    time. Pin it inside the active window so these tests don't flake
+    depending on when they happen to run — same monkeypatch pattern as
+    test_next_trade_routes_end_during_active_window below."""
+    import roy
+    mid_active = datetime.fromtimestamp(_EVENT_ANCHOR_TS, tz=timezone.utc) + timedelta(hours=5)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return mid_active
+
+    monkeypatch.setattr(roy, "datetime", FixedDatetime)
+
+
 @pytest.mark.asyncio
-async def test_scan_rate_limited_request_does_not_accrue_balance():
+async def test_scan_rate_limited_request_does_not_accrue_balance(monkeypatch):
     """Rate-limited /scan не начисляет 45 сек — баланс = 45, не 90."""
+    _force_trade_routes_active(monkeypatch)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         await c.post("/roy/scan", json={"hwid": "HWID_SCAN02"})   # засчитан
         await c.post("/roy/scan", json={"hwid": "HWID_SCAN02"})   # rate_limited
@@ -63,8 +81,9 @@ async def test_scan_rate_limited_request_does_not_accrue_balance():
 
 
 @pytest.mark.asyncio
-async def test_scan_different_hwids_both_accrue():
+async def test_scan_different_hwids_both_accrue(monkeypatch):
     """Два разных HWID могут обоими засчитать /scan независимо."""
+    _force_trade_routes_active(monkeypatch)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         await c.post("/roy/scan", json={"hwid": "HWID_SCAN03"})
         await c.post("/roy/scan", json={"hwid": "HWID_SCAN04"})

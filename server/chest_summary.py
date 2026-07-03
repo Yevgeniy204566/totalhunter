@@ -107,8 +107,8 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
     rows_query = (
         select(sender_expr, chest_type_expr, display_expr,
                func.max(ChestConfiguration.points).label("points"),
-               func.bool_or(ChestConfiguration.counts_toward_quota).label("counts_toward_quota"),
-               func.bool_or(ChestConfiguration.is_in_pattern).label("is_in_pattern"),
+               func.max(ChestConfiguration.counts_toward_quota).label("counts_toward_quota"),
+               func.max(ChestConfiguration.is_in_pattern).label("is_in_pattern"),
                func.count())
         .select_from(Chest)
         .outerjoin(
