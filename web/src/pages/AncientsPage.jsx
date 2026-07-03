@@ -69,6 +69,8 @@ export default function AncientsPage() {
   const [manualForm, setManualForm] = useState({})
   const [manualSimilar, setManualSimilar] = useState({})
   const [confirmDeleteRoster, setConfirmDeleteRoster] = useState({})
+  const [confirmClearOcr, setConfirmClearOcr] = useState({})
+  const [clearOcrMsg, setClearOcrMsg] = useState({})
   const [populateMsg, setPopulateMsg] = useState({})
   const [confirmPopulate, setConfirmPopulate] = useState({})
   const { lang } = useLang()
@@ -213,6 +215,14 @@ export default function AncientsPage() {
     const key = `${slug}:${playerName}`
     await api.dashboardAncientsDeleteRosterEntry(slug, playerName)
     setConfirmDeleteRoster(prev => ({ ...prev, [key]: false }))
+    refresh()
+  }
+
+  async function handleClearOcrImport(slug) {
+    const { deleted, cleared } = await api.dashboardAncientsClearOcrImport(slug)
+    setConfirmClearOcr(prev => ({ ...prev, [slug]: false }))
+    setClearOcrMsg(prev => ({ ...prev, [slug]: `Удалено: ${deleted}, очищено: ${cleared}` }))
+    setTimeout(() => setClearOcrMsg(prev => ({ ...prev, [slug]: '' })), 5000)
     refresh()
   }
 
@@ -549,7 +559,32 @@ export default function AncientsPage() {
                 </div>
               )}
 
-              <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.rosterTitle}</div>
+              <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontWeight: 600 }}>{cx.rosterTitle}</span>
+                {confirmClearOcr[c.slug] ? (
+                  <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: '#f9a825' }}>Стереть турнирные очки?</span>
+                    <button
+                      style={{ fontSize: 11, padding: '2px 6px', background: '#DC2626', border: 'none', color: '#fff', borderRadius: 4 }}
+                      onClick={() => handleClearOcrImport(c.slug)}
+                    >{cx.deleteRosterYes}</button>
+                    <button
+                      style={{ fontSize: 11, padding: '2px 6px', background: 'transparent', border: '1px solid #6c7086', color: '#6c7086', borderRadius: 4 }}
+                      onClick={() => setConfirmClearOcr(prev => ({ ...prev, [c.slug]: false }))}
+                    >{cx.closeSeasonNo}</button>
+                  </span>
+                ) : (
+                  <button
+                    style={{ fontSize: 11, padding: '2px 8px', cursor: 'pointer', background: 'transparent', border: '1px solid #6c7086', color: '#6c7086', borderRadius: 4 }}
+                    onClick={() => setConfirmClearOcr(prev => ({ ...prev, [c.slug]: true }))}
+                  >
+                    Очистить
+                  </button>
+                )}
+                {clearOcrMsg[c.slug] && (
+                  <span style={{ fontSize: 12, color: '#a6e3a1' }}>{clearOcrMsg[c.slug]}</span>
+                )}
+              </div>
 
               {sortedRoster.length === 0 ? (
                 <div className="text-muted">{cx.noRoster}</div>

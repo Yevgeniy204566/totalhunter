@@ -97,6 +97,8 @@ export const api = {
   },
   dashboardAncientsDeleteRosterEntry: (slug, playerName) =>
     request('DELETE', `/web/dashboard/ancients/${slug}/roster/${encodeURIComponent(playerName)}`),
+  dashboardAncientsClearOcrImport: (slug) =>
+    request('DELETE', `/web/dashboard/ancients/${slug}/roster/ocr-import`),
   dashboardAncientsPopulateFromChests: (slug) =>
     request('POST', `/web/dashboard/ancients/${slug}/roster/populate-from-chests`),
 }
