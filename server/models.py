@@ -591,6 +591,7 @@ class AncientRoster(Base):
     collector_id       = Column(Integer, ForeignKey("chest_collectors.id"),
                                 nullable=False, index=True)
     player_name        = Column(String(100), nullable=False)
+    raw_ocr_name       = Column(String(200), nullable=True)
     place              = Column(Integer, nullable=True)
     points             = Column(BigInteger, nullable=True)
     troop_level        = Column(String(20), nullable=True)
