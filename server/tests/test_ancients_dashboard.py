@@ -1307,3 +1307,44 @@ async def test_roster_shortfall_pct_none_without_quota(db_session):
                                 headers={"Authorization": f"Bearer {token}"})
     row = resp.json()["collectors"][0]["roster"][0]
     assert row["shortfall_pct"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_roster_already_merged_row_reports_confirmed_without_mapping_row(db_session):
+    """A row that was already physically merged (raw_ocr_name differs from
+    player_name) must show as confirmed even if the AncientNameMapping
+    record was later deleted (unlock doesn't un-merge — see spec)."""
+    user, token = await _create_user_with_token(db_session, "mergedget1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="mergedget-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 place=5, points=80000, raw_ocr_name="Пeтрoв*VIP",
+                                 troop_level="G8 S8 M8", source="ocr"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["player_name"] == "Петров"
+    assert row["raw_ocr_name"] == "Пeтрoв*VIP"
+    assert row["mapped_name"] == "Петров"
+    assert row["mapping_confirmed"] is True
+    assert row["suggested_name"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_roster_raw_ocr_name_none_for_pure_chests_row(db_session):
+    """A row seeded purely by populate-from-chests, never touched by a
+    tournament import, has no raw_ocr_name."""
+    user, token = await _create_user_with_token(db_session, "mergedget2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="mergedget-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Сидоров",
+                                 troop_level="G7 S7 M7", source="chests"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["raw_ocr_name"] is None
+    assert row["mapping_confirmed"] is False

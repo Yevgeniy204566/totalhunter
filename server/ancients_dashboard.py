@@ -156,16 +156,23 @@ async def _roster_rows(
     result = []
     for r in rows:
         raw = r.AncientRoster.player_name
-        mapping = mappings_dict.get(raw)
-        if mapping and mapping.confirmed:
-            mapped_name = mapping.canonical_name
+        raw_ocr_name = r.AncientRoster.raw_ocr_name
+        already_merged = raw_ocr_name is not None and raw_ocr_name != raw
+        if already_merged:
+            mapped_name = raw
             suggested_name = None
             confirmed = True
         else:
-            mapped_name = None
-            matches = get_close_matches(raw, canonical_names, n=1, cutoff=fuzzy_threshold)
-            suggested_name = matches[0] if matches else None
-            confirmed = False
+            mapping = mappings_dict.get(raw)
+            if mapping and mapping.confirmed:
+                mapped_name = mapping.canonical_name
+                suggested_name = None
+                confirmed = True
+            else:
+                mapped_name = None
+                matches = get_close_matches(raw, canonical_names, n=1, cutoff=fuzzy_threshold)
+                suggested_name = matches[0] if matches else None
+                confirmed = False
 
         quota = None
         if latest_calc is not None:
@@ -187,6 +194,7 @@ async def _roster_rows(
 
         result.append({
             "player_name": raw,
+            "raw_ocr_name": raw_ocr_name,
             "place": r.AncientRoster.place,
             "points": r.AncientRoster.points,
             "troop_level": r.AncientRoster.troop_level or r.profile_troop,
