@@ -1544,3 +1544,15 @@ async def test_calculate_strategy_b_excludes_only_the_invalid_row_not_the_whole_
     assert result["players"][0]["quota"] > 0
     assert result["excluded"] == ["Невалидный"]
 
+
+@pytest.mark.asyncio
+async def test_get_dashboard_includes_public_url(db_session):
+    user, token = await _create_user_with_token(db_session, "puburl1@test.com")
+    await _create_collector(db_session, user.id, slug="puburl-slug-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    collector_data = resp.json()["collectors"][0]
+    assert collector_data["public_url"] == "https://total-hunter.com/ancients/puburl-slug-1"

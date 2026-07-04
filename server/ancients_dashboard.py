@@ -292,6 +292,7 @@ async def get_dashboard_ancients(
             "slug": collector.slug,
             "kingdom": collector.kingdom,
             "clan": collector.clan,
+            "public_url": f"https://total-hunter.com/ancients/{collector.slug}",
             "is_owner": is_owner,
             "canonical_names": canonical_names,
             "roster": await _roster_rows(
