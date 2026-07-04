@@ -11,6 +11,14 @@ function parseTroop(troop_level) {
   return mat ? { g: mat[1], s: mat[2], m: mat[3] } : { g: '', s: '', m: '' }
 }
 
+function fmtNum(n, fractionDigits = 0) {
+  if (n === null || n === undefined) return '—'
+  return Number(n).toLocaleString('ru-RU', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })
+}
+
 export default function AncientPublicTable({ roster, quotaThresholds, editMode, collectorSlug }) {
   const [editRows, setEditRows] = useState({})
   const [saving, setSaving] = useState(null)
@@ -109,8 +117,8 @@ export default function AncientPublicTable({ roster, quotaThresholds, editMode, 
                   </button>
                 </td>
               )}
-              <td>{p.points ?? '—'}</td>
-              <td>{p.quota != null ? p.quota.toFixed(2) : '—'}</td>
+              <td>{fmtNum(p.points)}</td>
+              <td>{fmtNum(p.quota, 2)}</td>
               <td>{p.shortfall_pct != null ? `${p.shortfall_pct.toFixed(1)}%` : '—'}</td>
             </tr>
           ))}
