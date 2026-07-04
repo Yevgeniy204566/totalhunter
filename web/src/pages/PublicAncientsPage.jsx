@@ -28,7 +28,7 @@ export default function PublicAncientsPage() {
           className="btn-secondary"
           style={{ fontSize: 13, padding: '4px 12px', marginLeft: 'auto' }}
           onClick={() => {
-            if (editMode) { setEditMode(false); fetchAncientsPublic(slug).then(setData) }
+            if (editMode) { setEditMode(false); fetchAncientsPublic(slug).then(setData).catch(e => setError(e.message || 'not found')) }
             else { setEditMode(true) }
           }}
         >
