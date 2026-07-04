@@ -89,6 +89,7 @@ export const DASHBOARD = {
 
   ancients: {
     title: 'Ancient',
+    publicLink: 'Clan public page',
     player: 'Player', place: 'Place', points: 'Points', troopLevel: 'Composition',
     rank: 'Rank', quota: 'Quota',
     noTroopLevel: 'not set',

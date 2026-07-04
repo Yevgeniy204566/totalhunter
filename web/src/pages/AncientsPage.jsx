@@ -307,6 +307,12 @@ export default function AncientsPage() {
           <div key={c.slug} style={{ marginBottom: 32 }}>
             <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 600 }}>{c.kingdom} / {c.clan}</span>
+              {c.public_url && (
+                <a href={c.public_url} target="_blank" rel="noreferrer"
+                   style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
+                  {cx.publicLink}
+                </a>
+              )}
               {!c.is_owner && (
                 <span style={{
                   fontSize: 11, padding: '2px 8px', borderRadius: 12,

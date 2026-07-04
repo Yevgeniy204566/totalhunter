@@ -89,6 +89,7 @@ export const DASHBOARD = {
 
   ancients: {
     title: 'Древний',
+    publicLink: 'Публичная страница клана',
     player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Состав',
     rank: 'Звание', quota: 'Квота',
     noTroopLevel: 'не указан',
