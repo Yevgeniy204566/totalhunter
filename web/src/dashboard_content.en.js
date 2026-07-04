@@ -140,6 +140,35 @@ export const DASHBOARD = {
     populateFromChestsConfirm: 'The roster will become an exact mirror of the Chests base — extra rows (including manually added ones not present in Chests) will be deleted. Continue?',
     populateFromChestsYes: 'Yes, sync',
     populateFromChestsResult: (synced, removed) => `Synced: ${synced}, removed: ${removed}`,
+    tabClans: 'My clans',
+    tabHowItWorks: 'How it works',
+    howItWorksIntro: '"Ancient" helps a clan plan damage for the daily "Ancient" event: it calculates how much damage each player should deal, and shows who is falling short of quota.',
+    howItWorksSections: [
+      {
+        title: 'How players get on the list',
+        body: 'Two ways, and you can use both at once. Automatically — the leader opens the in-game "Ancient" tournament statistics and presses "Start" on the ANCIENT tab in the bot: the bot reads the table (name, place, points) itself and uploads it to the site. Manually — in the dashboard you can add a player by name and set their rank and troop composition — handy for anyone the bot hasn\'t seen in the tournament table yet.',
+      },
+      {
+        title: 'Clan public page',
+        body: 'Every clan has its own shareable page — no login required — where players enter their own rank and troop composition instead of waiting on the leader. Copy the "🔗 Clan public page" link above the clan card and drop it in clan chat.',
+      },
+      {
+        title: 'How the quota is calculated',
+        body: 'Two calculation methods. By rank — the quota is split between Officers and Veterans (an Officer gets twice a Veteran\'s quota). By troop level — the quota is split in proportion to each player\'s troop strength: the higher the Ground/Siege/Mounted tier, the larger the quota.',
+      },
+      {
+        title: 'If the clan already tracks Chests',
+        body: 'The "Populate from Chests" button pulls the clan\'s player list from Chests in one click — no need to type names by hand. After clicking, the Ancient roster becomes an exact mirror of the Chests list (this is a one-time sync, not an ongoing link).',
+      },
+      {
+        title: 'If the clan does NOT track Chests',
+        body: 'Everything works exactly the same way: just add players manually, or wait for the bot to pick them up from the tournament table. Chests is not required for Ancient.',
+      },
+      {
+        title: 'Sharing access with a clanmate',
+        body: 'The leader can grant a clanmate access — the "Invite clanmate" button creates a link valid for 24 hours. An editor can fill in troop levels, ranks, and player names, but cannot change the quota calculation, thresholds, or hide the clan — that stays with the leader only.',
+      },
+    ],
   },
 
   feedback: {

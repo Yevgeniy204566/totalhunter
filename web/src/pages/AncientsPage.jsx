@@ -66,6 +66,7 @@ export default function AncientsPage() {
   const [clearOcrMsg, setClearOcrMsg] = useState({})
   const [populateMsg, setPopulateMsg] = useState({})
   const [confirmPopulate, setConfirmPopulate] = useState({})
+  const [activeTab, setActiveTab] = useState('clans')
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -265,6 +266,26 @@ export default function AncientsPage() {
     <div className="page-content" style={{ maxWidth: 1600 }}>
       <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
+      <div className="chest-tabs" style={{ marginBottom: 24 }}>
+        <button className={`chest-tab ${activeTab === 'clans' ? 'chest-tab--active' : ''}`}
+                onClick={() => setActiveTab('clans')}>{cx.tabClans}</button>
+        <button className={`chest-tab ${activeTab === 'help' ? 'chest-tab--active' : ''}`}
+                onClick={() => setActiveTab('help')}>{cx.tabHowItWorks}</button>
+      </div>
+
+      {activeTab === 'help' && (
+        <div style={{ maxWidth: 760 }}>
+          <p className="text-muted" style={{ marginBottom: 24, fontSize: 15, lineHeight: 1.6 }}>{cx.howItWorksIntro}</p>
+          {cx.howItWorksSections.map((s, i) => (
+            <div key={i} style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, marginBottom: 6 }}>{s.title}</h3>
+              <p className="text-muted" style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{s.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'clans' && (<>
       {joinMessage && (
         <div style={{
           marginBottom: 16, padding: '10px 16px', borderRadius: 8,
@@ -879,6 +900,7 @@ export default function AncientsPage() {
           </div>
         </div>
       )}
+      </>)}
     </div>
   )
 }
