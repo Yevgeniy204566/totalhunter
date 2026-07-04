@@ -1351,6 +1351,37 @@ async def test_get_roster_raw_ocr_name_none_for_pure_chests_row(db_session):
 
 
 @pytest.mark.asyncio
+async def test_get_roster_rank_falls_back_to_player_profile(db_session):
+    """A row with no AncientRoster.rank set falls back to PlayerProfile.rank
+    (the same table players self-report through on the public Chests page),
+    both in the displayed 'rank' field and in Strategy-A quota lookup."""
+    from models import PlayerProfile
+    user, token = await _create_user_with_token(db_session, "rankfallback1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="rankfallback-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Кузнецов",
+                                 place=1, points=100, rank=None, source="ocr"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Кузнецов",
+                                 rank="Офицер", troop_level=None))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        calc_resp = await client.post(
+            "/web/dashboard/ancients/rankfallback-1/calculate",
+            json={"strategy": "A", "summon_levels": [81], "amplification_coef": 1.0,
+                  "officer_count": 1, "veteran_count": 0},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert calc_resp.status_code == 200
+        officer_quota = calc_resp.json()["result"]["officer_quota"]
+
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    row = resp.json()["collectors"][0]["roster"][0]
+    assert row["rank"] == "Офицер"
+    assert row["quota"] == pytest.approx(officer_quota)
+
+
+@pytest.mark.asyncio
 async def test_clear_ocr_deletes_pure_ocr_rows(db_session):
     """A row with no troop_level/rank — pure tournament-import junk — is
     deleted entirely."""
@@ -1417,3 +1448,111 @@ async def test_clear_ocr_wrong_owner_returns_403(db_session):
             headers={"Authorization": f"Bearer {attacker_token}"},
         )
     assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_calculate_strategy_b_uses_player_profile_troop_fallback(db_session):
+    """A roster row with no AncientRoster.troop_level but a valid
+    PlayerProfile.troop_level is included in the Strategy-B quota split —
+    not silently excluded just because the leader never re-typed it."""
+    from models import PlayerProfile
+    user, token = await _create_user_with_token(db_session, "calcfallback1@test.com")
+    collector = await _create_collector(db_session, user.id, slug="calcfallback-1")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Иванов",
+                                 troop_level=None, source="manual"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Иванов",
+                                 rank=None, troop_level="G8 S8 M8"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/calcfallback-1/calculate",
+            json={"strategy": "B", "summon_levels": [81], "amplification_coef": 1.0,
+                  "clan_preset": "T8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    players = resp.json()["result"]["players"]
+    assert len(players) == 1
+    assert players[0]["name"] == "Иванов"
+    assert players[0]["troop_level"] == "G8 S8 M8"
+    assert resp.json()["result"]["excluded"] == []
+
+
+@pytest.mark.asyncio
+async def test_calculate_strategy_b_ignores_invalid_player_profile_troop(db_session):
+    """A PlayerProfile.troop_level value that passes the laxer Chests
+    validator (tiers 1-9) but fails Ancients' stricter parse_troop_level
+    (tiers 5-9 only) must not crash calculate() — the player is excluded,
+    same as if troop_level had never been set."""
+    from models import PlayerProfile
+    user, token = await _create_user_with_token(db_session, "calcfallback2@test.com")
+    collector = await _create_collector(db_session, user.id, slug="calcfallback-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Петров",
+                                 troop_level=None, source="manual"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Петров",
+                                 rank=None, troop_level="G3 S2 M4"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/calcfallback-2/calculate",
+            json={"strategy": "B", "summon_levels": [81], "amplification_coef": 1.0,
+                  "clan_preset": "T8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400  # no players with a valid troop_level at all
+
+
+@pytest.mark.asyncio
+async def test_calculate_strategy_b_excludes_only_the_invalid_row_not_the_whole_batch(db_session):
+    """Discriminating regression test: a mixed roster (one valid PlayerProfile
+    troop_level fallback, one invalid) must still calculate successfully for
+    the valid player — proving the per-row guard actually exists, not just
+    that *some* exception gets turned into a 400 somewhere. A single-row
+    test can't tell the two apart (see test_calculate_strategy_b_ignores_invalid_player_profile_troop's
+    limitation): with only one player, "guard filters the bad value" and
+    "guard is missing entirely" both end up producing the same 400, since
+    split_strategy_b's own exception is caught by the same handler either
+    way. With two players, only a *working* per-row guard lets the calculation
+    still succeed for the good one."""
+    from models import PlayerProfile
+    user, token = await _create_user_with_token(db_session, "calcfallback3@test.com")
+    collector = await _create_collector(db_session, user.id, slug="calcfallback-3")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Валидный",
+                                 troop_level=None, source="manual"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Валидный",
+                                 rank=None, troop_level="G8 S8 M8"))
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Невалидный",
+                                 troop_level=None, source="manual"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Невалидный",
+                                 rank=None, troop_level="G3 S2 M4"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/calcfallback-3/calculate",
+            json={"strategy": "B", "summon_levels": [81], "amplification_coef": 1.0,
+                  "clan_preset": "T8"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    result = resp.json()["result"]
+    assert len(result["players"]) == 1
+    assert result["players"][0]["name"] == "Валидный"
+    assert result["players"][0]["troop_level"] == "G8 S8 M8"
+    assert result["players"][0]["quota"] > 0
+    assert result["excluded"] == ["Невалидный"]
+
+
+@pytest.mark.asyncio
+async def test_get_dashboard_includes_public_url(db_session):
+    user, token = await _create_user_with_token(db_session, "puburl1@test.com")
+    await _create_collector(db_session, user.id, slug="puburl-slug-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/ancients",
+                                headers={"Authorization": f"Bearer {token}"})
+    collector_data = resp.json()["collectors"][0]
+    assert collector_data["public_url"] == "https://total-hunter.com/ancients/puburl-slug-1"

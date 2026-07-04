@@ -115,6 +115,12 @@ export async function fetchChestByKingdomSlug(kingdom, slug) {
   return res.json()
 }
 
+export async function fetchAncientsPublic(slug) {
+  const res = await fetch(`${BASE}/api/v1/ancients/public/${encodeURIComponent(slug)}`)
+  if (!res.ok) throw new Error('Not found')
+  return res.json()
+}
+
 export async function postPublicPlayerProfile(collector_slug, canonical_name, rank, troop_level) {
   const res = await fetch(`${BASE}/api/v1/chests/public/player-profile`, {
     method: 'POST',

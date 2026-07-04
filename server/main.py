@@ -55,6 +55,7 @@ from chest_aliases import router as chest_aliases_router
 from chest_catalog import router as chest_catalog_router
 from chest_dashboard import router as chest_dashboard_router
 from ancients_dashboard import router as ancients_dashboard_router
+from ancients_public import router as ancients_public_router
 from tournaments import router as tournaments_router
 import chest_history
 import ancient_retention
@@ -100,6 +101,7 @@ app.include_router(chest_aliases_router)
 app.include_router(chest_catalog_router)
 app.include_router(chest_dashboard_router)
 app.include_router(ancients_dashboard_router)
+app.include_router(ancients_public_router)
 app.include_router(tournaments_router)
 
 

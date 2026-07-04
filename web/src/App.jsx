@@ -17,6 +17,7 @@ import ReferralTreePage from './pages/ReferralTreePage.jsx'
 import RoyPage from './pages/RoyPage.jsx'
 import ChestsPage from './pages/ChestsPage.jsx'
 import ChestSummaryPage from './pages/ChestSummaryPage.jsx'
+import PublicAncientsPage from './pages/PublicAncientsPage.jsx'
 import AncientsPage from './pages/AncientsPage.jsx'
 
 function PrivateRoute({ element }) {
@@ -36,6 +37,7 @@ export default function App() {
       <Route path="/ref/:code" element={<RefPage />} />
       <Route path="/chests/:slug" element={<ChestSummaryPage />} />
       <Route path="/c/:kingdom/:slug" element={<ChestSummaryPage />} />
+      <Route path="/ancients/:slug" element={<PublicAncientsPage />} />
 
       {/* ── RU public routes (/ru prefix) ───────────────── */}
       <Route path="/ru"              element={<LandingPage />} />
