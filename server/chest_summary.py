@@ -7,7 +7,7 @@ two may import from the other without creating a circular import, since
 chests.py needs chest_history.py's history endpoints helpers and
 chest_history.py needs this module's summary-building logic.
 """
-from sqlalchemy import and_, func, select
+from sqlalchemy import Integer, and_, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Chest, ChestConfiguration, ChestCollector, ChestLocalization, ChestTypeAlias, PlayerAlias
@@ -107,8 +107,8 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
     rows_query = (
         select(sender_expr, chest_type_expr, display_expr,
                func.max(ChestConfiguration.points).label("points"),
-               func.max(ChestConfiguration.counts_toward_quota).label("counts_toward_quota"),
-               func.max(ChestConfiguration.is_in_pattern).label("is_in_pattern"),
+               func.max(cast(ChestConfiguration.counts_toward_quota, Integer)).label("counts_toward_quota"),
+               func.max(cast(ChestConfiguration.is_in_pattern, Integer)).label("is_in_pattern"),
                func.count())
         .select_from(Chest)
         .outerjoin(
