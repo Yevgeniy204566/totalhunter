@@ -19,7 +19,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ancient_quota import OFFICER_RANKS, shortfall_pct
 from database import get_db
-from models import AncientCalculation, AncientRoster, ChestCollector, PlayerProfile
+from models import (
+    AncientCalculation, AncientNameMapping, AncientRoster, ChestCollector,
+    PlayerProfile,
+)
 
 router = APIRouter(prefix="/api/v1/ancients/public", tags=["ancients-public"])
 
@@ -53,11 +56,30 @@ async def get_public_ancients(slug: str, db: AsyncSession = Depends(get_db)):
         .order_by(AncientRoster.place.asc().nullslast())
     )).all()
 
+    # Only needed to resolve the correct lookup_name for Strategy-B matching
+    # below (mirrors _roster_rows in ancients_dashboard.py) — never exposed
+    # in the response, see module docstring.
+    confirmed_mappings = (await db.execute(
+        select(AncientNameMapping).where(
+            AncientNameMapping.collector_id == collector.id,
+            AncientNameMapping.confirmed == True,
+        )
+    )).scalars().all()
+    confirmed_mappings_dict = {m.raw_ocr_name: m.canonical_name for m in confirmed_mappings}
+
     roster = []
     for r in rows:
         player_name = r.AncientRoster.player_name
         effective_rank = r.AncientRoster.rank or r.profile_rank
         effective_troop = r.AncientRoster.troop_level or r.profile_troop
+
+        raw_ocr_name = r.AncientRoster.raw_ocr_name
+        already_merged = raw_ocr_name is not None and raw_ocr_name != player_name
+        if already_merged:
+            lookup_name = player_name
+        else:
+            canonical_name = confirmed_mappings_dict.get(player_name)
+            lookup_name = canonical_name if canonical_name is not None else player_name
 
         quota = None
         if latest_calc is not None:
@@ -69,7 +91,7 @@ async def get_public_ancients(slug: str, db: AsyncSession = Depends(get_db)):
             else:
                 match = next(
                     (p for p in latest_calc.result_json.get("players", [])
-                     if p["name"] == player_name),
+                     if p["name"] == lookup_name),
                     None,
                 )
                 if match is not None:

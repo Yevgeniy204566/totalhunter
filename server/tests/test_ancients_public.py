@@ -11,7 +11,8 @@ from sqlalchemy import select
 
 from main import app
 from models import (
-    AncientCalculation, AncientRoster, ChestCollector, PlayerProfile, User,
+    AncientCalculation, AncientNameMapping, AncientRoster, ChestCollector,
+    PlayerProfile, User,
 )
 
 
@@ -115,6 +116,42 @@ async def test_public_ancients_includes_quota_thresholds(db_session):
     assert resp.json()["quota_thresholds"] == {
         "light_pct": 15.0, "medium_pct": 40.0, "critical_pct": 70.0,
     }
+
+
+@pytest.mark.asyncio
+async def test_public_ancients_strategy_b_resolves_confirmed_mapping_not_yet_merged(db_session):
+    """Regression: calculate()'s Strategy-B branch stores each player under
+    the confirmed AncientNameMapping.canonical_name (mirroring _roster_rows'
+    resolution) even when the roster row hasn't been physically merged yet
+    (raw_ocr_name is still NULL/unset on the row, i.e. player_name IS the raw
+    OCR name). The public endpoint must apply the same resolution to find
+    the right lookup_name — matching raw player_name against result_json
+    would miss the entry entirely and show quota: None, while the dashboard
+    (_roster_rows) shows the correct quota for the identical calculation."""
+    user = await _create_user(db_session)
+    collector = await _create_collector(db_session, user.id, slug="pub-6")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Ivanov_raw",
+                                 points=10, rank="Ветеран", source="ocr"))
+    db_session.add(AncientNameMapping(collector_id=collector.id, raw_ocr_name="Ivanov_raw",
+                                      canonical_name="Ivanov", confirmed=True))
+    db_session.add(AncientCalculation(
+        collector_id=collector.id, strategy="B", summon_levels=[81],
+        amplification_coef=1.0, officer_count=0, veteran_count=1,
+        total_quota_millions=42.0,
+        result_json={"players": [{"name": "Ivanov", "quota": 42.0}]},
+    ))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/ancients/public/pub-6")
+    row = resp.json()["roster"][0]
+    assert row["player_name"] == "Ivanov_raw"
+    assert row["quota"] == pytest.approx(42.0)
+    assert row["shortfall_pct"] == pytest.approx((42.0 - 10) / 42.0 * 100)
+    assert "mapped_name" not in row
+    assert "suggested_name" not in row
+    assert "mapping_confirmed" not in row
+    assert "raw_ocr_name" not in row
 
 
 @pytest.mark.asyncio
