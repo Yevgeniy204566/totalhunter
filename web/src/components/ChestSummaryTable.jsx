@@ -11,6 +11,11 @@ function parseTroop(troop_level) {
   return mat ? { g: mat[1], s: mat[2], m: mat[3] } : { g: '', s: '', m: '' }
 }
 
+function fmtNum(n) {
+  if (n === null || n === undefined) return '—'
+  return Number(n).toLocaleString('ru-RU')
+}
+
 function hexToRgb(hex) {
   const s = hex.replace('#', '')
   const full = s.length === 3 ? s.split('').map(c => c + c).join('') : s
@@ -69,8 +74,9 @@ function renderPlayerName(p, targets) {
         className="public-name-shimmer"
         style={{
           backgroundImage: `linear-gradient(100deg, ${s.color} 0%, ${s.color} 38%, #FFFFFF 50%, ${s.color} 62%, ${s.color} 100%)`,
-          WebkitTextStroke: `0.3px ${s.stroke}`,
+          WebkitTextStroke: '0.35px rgba(255, 255, 255, 0.9)',
           fontSize: s.fontSize,
+          '--glow-color': s.color,
         }}
       >
         {p.name}
@@ -238,7 +244,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                     </td>
                   )}
                   <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
-                    {p.points}
+                    {fmtNum(p.points)}
                   </td>
                   <td className={[
                     'public-epic-cell',
