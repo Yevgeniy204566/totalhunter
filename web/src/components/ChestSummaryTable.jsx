@@ -43,8 +43,8 @@ function darkenHex(hex, factor) {
 
 // 0 → квота: рубин → бронза → сапфир → изумруд (насыщенные, "ювелирные" тона)
 const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E', '#1E6FE0', '#0FA968']
-// квота → квота+100к: ярко-зелёный (салатовый) → золото → оранжевый → ярко-красный (5 шагов по 20к)
-const ABOVE_QUOTA_STOPS = ['#39FF6A', '#FFD700', '#FF9100', '#FF1E3D']
+// квота → квота+100к: ярко-зелёный (салатовый) → жёлтый
+const ABOVE_QUOTA_STOPS = ['#39FF6A', '#FFD700']
 const LEGENDARY_OVERAGE = 100000
 
 function nameGradientStyle(player, targets) {
