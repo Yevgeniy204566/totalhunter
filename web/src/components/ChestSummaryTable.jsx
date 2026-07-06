@@ -41,8 +41,8 @@ function darkenHex(hex, factor) {
   return rgbToHex({ r: r * factor, g: g * factor, b: b * factor })
 }
 
-// 0 → квота: рубин → бронза → сапфир → изумруд (насыщенные, "ювелирные" тона)
-const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E', '#1E6FE0', '#0FA968']
+// 0 → квота: красный → оранжевый → зелёный
+const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E', '#0FA968']
 // квота → квота+100к: ярко-зелёный (салатовый) → жёлтый
 const ABOVE_QUOTA_STOPS = ['#39FF6A', '#FFD700']
 const LEGENDARY_OVERAGE = 100000
@@ -53,7 +53,7 @@ function nameGradientStyle(player, targets) {
   const ratio = player.points / quota
   if (ratio < 1) {
     const color = multiLerp(BELOW_QUOTA_STOPS, ratio)
-    return { mode: 'plain', color, stroke: darkenHex(color, 0.45), fontSize: 13 + ratio * 1.5 }
+    return { mode: 'plain', color, stroke: darkenHex(color, 0.45), fontSize: 14.5 }
   }
   const overage = player.points - quota
   if (overage < LEGENDARY_OVERAGE) {
