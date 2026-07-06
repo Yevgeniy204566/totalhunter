@@ -445,23 +445,23 @@ a:hover { color: var(--on-surface); }
   to { background-position: -200% center; }
 }
 .public-name-shimmer {
-  font-weight: 900;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   background-size: 260% auto;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
   animation: public-tier-shimmer 2.4s linear infinite;
 }
 .public-name-legendary {
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  font-size: 20.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  font-size: 19px;
   background-image: linear-gradient(100deg,
-    #0FA968 0%, #D4AF37 16%, #FF7A1A 32%, #C81E3A 48%, #B23CD9 64%, #1E6FE0 80%, #0FA968 100%);
+    #39FF6A 0%, #FFD700 16%, #FF9100 32%, #FF1E3D 48%, #E040FB 64%, #2979FF 80%, #39FF6A 100%);
   background-size: 400% auto;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 0.6px #120818;
-  text-shadow: 0 0 6px rgba(255, 244, 214, 0.6), 0 0 16px rgba(212, 175, 55, 0.45);
+  -webkit-text-stroke: 0.3px #1A1A1A;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.55), 0 0 14px rgba(255, 215, 0, 0.4);
   animation: public-tier-shimmer 1.8s linear infinite;
 }
 

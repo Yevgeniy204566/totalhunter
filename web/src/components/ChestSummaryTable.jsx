@@ -38,8 +38,8 @@ function darkenHex(hex, factor) {
 
 // 0 → квота: рубин → бронза → сапфир → изумруд (насыщенные, "ювелирные" тона)
 const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E', '#1E6FE0', '#0FA968']
-// квота → квота+100к: изумруд → золото → янтарь → рубин (5 шагов по 20к)
-const ABOVE_QUOTA_STOPS = ['#0FA968', '#D4AF37', '#FF7A1A', '#C81E3A']
+// квота → квота+100к: ярко-зелёный (салатовый) → золото → оранжевый → ярко-красный (5 шагов по 20к)
+const ABOVE_QUOTA_STOPS = ['#39FF6A', '#FFD700', '#FF9100', '#FF1E3D']
 const LEGENDARY_OVERAGE = 100000
 
 function nameGradientStyle(player, targets) {
@@ -54,7 +54,7 @@ function nameGradientStyle(player, targets) {
   if (overage < LEGENDARY_OVERAGE) {
     const t = overage / LEGENDARY_OVERAGE
     const color = multiLerp(ABOVE_QUOTA_STOPS, t)
-    return { mode: 'shimmer', color, stroke: darkenHex(color, 0.4), fontSize: 14.5 + t * 3.5 }
+    return { mode: 'shimmer', color, stroke: darkenHex(color, 0.55), fontSize: 14.5 + t * 3 }
   }
   return { mode: 'legendary' }
 }
@@ -68,8 +68,8 @@ function renderPlayerName(p, targets) {
       <span
         className="public-name-shimmer"
         style={{
-          backgroundImage: `linear-gradient(100deg, ${s.color} 0%, ${s.color} 38%, #FFF3C4 50%, ${s.color} 62%, ${s.color} 100%)`,
-          WebkitTextStroke: `0.5px ${s.stroke}`,
+          backgroundImage: `linear-gradient(100deg, ${s.color} 0%, ${s.color} 38%, #FFFFFF 50%, ${s.color} 62%, ${s.color} 100%)`,
+          WebkitTextStroke: `0.3px ${s.stroke}`,
           fontSize: s.fontSize,
         }}
       >
