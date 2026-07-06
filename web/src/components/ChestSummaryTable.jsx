@@ -11,31 +11,77 @@ function parseTroop(troop_level) {
   return mat ? { g: mat[1], s: mat[2], m: mat[3] } : { g: '', s: '', m: '' }
 }
 
-function rowColorClass(player, targets) {
-  const ratios = []
-  if (targets.points) ratios.push(player.points / targets.points)
-  if (targets.chests) ratios.push(player.quota_chests / targets.chests)
-  if (ratios.length === 0) return ''
-  const ratio = Math.min(...ratios)
-  if (ratio >= 1) return 'row-success'
-  if (ratio >= 0.5) return ''
-  if (ratio > 0) return 'row-lagging'
-  return 'row-danger'
+function hexToRgb(hex) {
+  const s = hex.replace('#', '')
+  const full = s.length === 3 ? s.split('').map(c => c + c).join('') : s
+  const n = parseInt(full, 16)
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+function rgbToHex({ r, g, b }) {
+  return '#' + [r, g, b].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('')
+}
+function lerpColor(hexA, hexB, t) {
+  const a = hexToRgb(hexA), b = hexToRgb(hexB)
+  return rgbToHex({ r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t })
+}
+function multiLerp(stops, t) {
+  const n = stops.length - 1
+  const clamped = Math.max(0, Math.min(1, t))
+  const scaled = clamped * n
+  const idx = Math.min(Math.floor(scaled), n - 1)
+  return lerpColor(stops[idx], stops[idx + 1], scaled - idx)
+}
+function darkenHex(hex, factor) {
+  const { r, g, b } = hexToRgb(hex)
+  return rgbToHex({ r: r * factor, g: g * factor, b: b * factor })
 }
 
-const POINT_TIERS = [
-  { key: '500k', threshold: 500000 },
-  { key: '400k', threshold: 400000 },
-  { key: '300k', threshold: 300000 },
-  { key: '200k', threshold: 200000 },
-  { key: '100k', threshold: 100000 },
-  { key: '50k', threshold: 50000 },
-]
+// 0 → квота: красный → коричневый → голубой → зелёный
+const BELOW_QUOTA_STOPS = ['#FF6961', '#A66A3D', '#4FC3F7', '#50C878']
+// квота → квота+100к: зелёный → жёлтый → золото → красный (5 шагов по 20к)
+const ABOVE_QUOTA_STOPS = ['#50C878', '#F5D76E', '#FFD166', '#FF6961']
+const LEGENDARY_OVERAGE = 100000
 
-function pointTier(player, targets) {
-  if (rowColorClass(player, targets) !== 'row-success') return null
-  const tier = POINT_TIERS.find(t => player.points >= t.threshold)
-  return tier ? tier.key : null
+function nameGradientStyle(player, targets) {
+  const quota = targets?.points
+  if (!quota) return null
+  const ratio = player.points / quota
+  if (ratio < 1) {
+    const color = multiLerp(BELOW_QUOTA_STOPS, ratio)
+    return { mode: 'plain', color, stroke: darkenHex(color, 0.45), fontSize: 13 + ratio * 1.5 }
+  }
+  const overage = player.points - quota
+  if (overage < LEGENDARY_OVERAGE) {
+    const t = overage / LEGENDARY_OVERAGE
+    const color = multiLerp(ABOVE_QUOTA_STOPS, t)
+    return { mode: 'shimmer', color, stroke: darkenHex(color, 0.4), fontSize: 14.5 + t * 3.5 }
+  }
+  return { mode: 'legendary' }
+}
+
+function renderPlayerName(p, targets) {
+  const s = nameGradientStyle(p, targets)
+  if (!s) return p.name
+  if (s.mode === 'legendary') return <span className="public-name-legendary">{p.name}</span>
+  if (s.mode === 'shimmer') {
+    return (
+      <span
+        className="public-name-shimmer"
+        style={{
+          backgroundImage: `linear-gradient(90deg, ${s.color} 0%, #FFFFFF 50%, ${s.color} 100%)`,
+          WebkitTextStroke: `0.4px ${s.stroke}`,
+          fontSize: s.fontSize,
+        }}
+      >
+        {p.name}
+      </span>
+    )
+  }
+  return (
+    <span style={{ color: s.color, WebkitTextStroke: `0.35px ${s.stroke}`, fontWeight: 700, fontSize: s.fontSize }}>
+      {p.name}
+    </span>
+  )
 }
 
 function pointsHitTarget(player, targets) {
@@ -125,14 +171,11 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
           </thead>
           <tbody>
             {players.map((p, i) => {
-              const tier = pointTier(p, targets)
               return (
-                <tr key={p.name} className={rowColorClass(p, targets)}>
+                <tr key={p.name}>
                   <td>{i + 1}</td>
                   <td title={p.name}>
-                    {tier
-                      ? <span className={`public-tier-name public-tier-${tier}`}>{p.name}</span>
-                      : p.name}
+                    {renderPlayerName(p, targets)}
                   </td>
                   {editMode && (
                     <td>

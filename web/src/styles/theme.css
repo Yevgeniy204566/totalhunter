@@ -440,52 +440,28 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr:hover td:nth-child(1),
 .public-table tbody tr:hover td:nth-child(2) { background: var(--accent-glow); }
 
-/* ── Point tiers (Путь Героя) — 6 уровней самоцветов выше квоты, shimmer-анимация ── */
+/* ── Имя игрока — непрерывный градиент прогресса (0→квота→легенда) ── */
 @keyframes public-tier-shimmer {
   to { background-position: -200% center; }
 }
-.public-tier-name {
+.public-name-shimmer {
   font-weight: 900;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   background-size: 200% auto;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  animation: public-tier-shimmer 3s linear infinite;
+  animation: public-tier-shimmer 2.6s linear infinite;
 }
-.public-tier-50k {
-  font-size: 17.5px;
-  background-image: linear-gradient(90deg, #11998E 0%, #7CFFC4 50%, #11998E 100%);
-  -webkit-text-stroke: 0.5px #0F5E55;
-  text-shadow: 0 0 4px rgba(56, 239, 125, 0.35);
-}
-.public-tier-100k {
-  font-size: 18px;
-  background-image: linear-gradient(90deg, #0072FF 0%, #9FE3FF 50%, #0072FF 100%);
-  -webkit-text-stroke: 0.5px #003D82;
-  text-shadow: 0 0 4px rgba(0, 198, 255, 0.35);
-}
-.public-tier-200k {
-  font-size: 18.5px;
-  background-image: linear-gradient(90deg, #F2994A 0%, #FFF3B0 50%, #F2994A 100%);
-  -webkit-text-stroke: 0.5px #A65D14;
-  text-shadow: 0 0 5px rgba(242, 201, 76, 0.4);
-}
-.public-tier-300k {
-  font-size: 19px;
-  background-image: linear-gradient(90deg, #EE0979 0%, #FFB3D9 50%, #EE0979 100%);
-  -webkit-text-stroke: 0.5px #8A0643;
-  text-shadow: 0 0 5px rgba(238, 9, 121, 0.4);
-}
-.public-tier-400k {
+.public-name-legendary {
+  font-weight: 900;
+  letter-spacing: 0.4px;
   font-size: 19.5px;
-  background-image: linear-gradient(90deg, #8E2DE2 0%, #D9B3FF 50%, #8E2DE2 100%);
-  -webkit-text-stroke: 0.5px #401070;
-  text-shadow: 0 0 6px rgba(142, 45, 226, 0.45);
-}
-.public-tier-500k {
-  font-size: 20px;
-  background-image: linear-gradient(90deg, #FF00CC 0%, #FFFFFF 50%, #FF00CC 100%);
-  -webkit-text-stroke: 0.5px #7A0054;
-  text-shadow: 0 0 6px rgba(255, 0, 204, 0.45);
+  background-image: linear-gradient(90deg,
+    #FF6961 0%, #FFD166 20%, #50C878 40%, #4FC3F7 60%, #B24BF3 80%, #FF6961 100%);
+  background-size: 300% auto;
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.5px #170B29;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.45), 0 0 14px rgba(255, 209, 102, 0.35);
+  animation: public-tier-shimmer 2s linear infinite;
 }
 
 .public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
