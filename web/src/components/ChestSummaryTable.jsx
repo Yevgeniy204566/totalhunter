@@ -40,12 +40,43 @@ function darkenHex(hex, factor) {
   const { r, g, b } = hexToRgb(hex)
   return rgbToHex({ r: r * factor, g: g * factor, b: b * factor })
 }
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100
+  const k = n => (n + h / 30) % 12
+  const a = s * Math.min(l, 1 - l)
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))
+  return rgbToHex({ r: 255 * f(0), g: 255 * f(8), b: 255 * f(4) })
+}
 
 // 0 → квота: красный → оранжевый (зелёный убран — сливался с зоной после квоты)
 const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E']
 // квота → квота+100к: ярко-зелёный (салатовый) → жёлтый
 const ABOVE_QUOTA_STOPS = ['#39FF6A', '#FFD700']
 const LEGENDARY_OVERAGE = 100000
+// легендарный: число цветов растёт каждые 100к превышения (макс. 6), оттенки едут непрерывно
+const LEGENDARY_BAND_SIZE = 100000
+const LEGENDARY_MAX_COLORS = 6
+
+function legendaryPalette(overageBeyond) {
+  const band = Math.floor(overageBeyond / LEGENDARY_BAND_SIZE)
+  const numColors = Math.min(band + 1, LEGENDARY_MAX_COLORS)
+  const baseHue = (overageBeyond / 1000) % 360
+  const colors = []
+  for (let i = 0; i < numColors; i++) {
+    const hue = (baseHue + i * (360 / numColors)) % 360
+    colors.push(hslToHex(hue, 88, 56))
+  }
+  return colors
+}
+function legendaryGradient(colors) {
+  if (colors.length === 1) {
+    const c = colors[0]
+    return `linear-gradient(100deg, ${c} 0%, ${c} 38%, #FFFFFF 50%, ${c} 62%, ${c} 100%)`
+  }
+  const stops = colors.map((c, i) => `${c} ${(i / colors.length * 100).toFixed(1)}%`)
+  stops.push(`${colors[0]} 100%`)
+  return `linear-gradient(100deg, ${stops.join(', ')})`
+}
 
 function nameGradientStyle(player, targets) {
   const quota = targets?.points
@@ -61,13 +92,26 @@ function nameGradientStyle(player, targets) {
     const color = multiLerp(ABOVE_QUOTA_STOPS, t)
     return { mode: 'shimmer', color, stroke: darkenHex(color, 0.55), fontSize: 14.5 + t * 3 }
   }
-  return { mode: 'legendary' }
+  const extra = overage - LEGENDARY_OVERAGE
+  const band = Math.floor(extra / LEGENDARY_BAND_SIZE)
+  const colors = legendaryPalette(extra)
+  const fontSize = 19 + Math.min(band, 5) * 0.4
+  return { mode: 'legendary', backgroundImage: legendaryGradient(colors), fontSize }
 }
 
 function renderPlayerName(p, targets) {
   const s = nameGradientStyle(p, targets)
   if (!s) return p.name
-  if (s.mode === 'legendary') return <span className="public-name-legendary">{p.name}</span>
+  if (s.mode === 'legendary') {
+    return (
+      <span
+        className="public-name-legendary"
+        style={{ backgroundImage: s.backgroundImage, fontSize: s.fontSize }}
+      >
+        {p.name}
+      </span>
+    )
+  }
   if (s.mode === 'shimmer') {
     return (
       <span
