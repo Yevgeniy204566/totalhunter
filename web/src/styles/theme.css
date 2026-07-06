@@ -449,7 +449,7 @@ a:hover { color: var(--on-surface); }
   letter-spacing: 0.3px;
   background-size: 260% auto;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.5), 0 0 9px var(--glow-color, transparent);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
   animation: public-tier-shimmer 2.4s linear infinite;
 }
 .public-name-legendary {
@@ -460,12 +460,9 @@ a:hover { color: var(--on-surface); }
     #39FF6A 0%, #FFD700 16%, #FF9100 32%, #FF1E3D 48%, #E040FB 64%, #2979FF 80%, #39FF6A 100%);
   background-size: 400% auto;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 0.3px rgba(255, 255, 255, 0.85);
-  animation: public-tier-shimmer 1.8s linear infinite, public-legendary-pulse 3s ease-in-out infinite;
-}
-@keyframes public-legendary-pulse {
-  0%, 100% { text-shadow: 0 0 4px rgba(255, 255, 255, 0.75), 0 0 12px rgba(255, 215, 0, 0.55), 0 0 20px rgba(224, 64, 251, 0.35); }
-  50%      { text-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 16px rgba(41, 121, 255, 0.6), 0 0 26px rgba(255, 30, 61, 0.4); }
+  -webkit-text-stroke: 0.3px #1A1A1A;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.55), 0 0 14px rgba(255, 215, 0, 0.4);
+  animation: public-tier-shimmer 1.8s linear infinite;
 }
 
 .public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }

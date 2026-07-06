@@ -74,9 +74,8 @@ function renderPlayerName(p, targets) {
         className="public-name-shimmer"
         style={{
           backgroundImage: `linear-gradient(100deg, ${s.color} 0%, ${s.color} 38%, #FFFFFF 50%, ${s.color} 62%, ${s.color} 100%)`,
-          WebkitTextStroke: '0.35px rgba(255, 255, 255, 0.9)',
+          WebkitTextStroke: `0.3px ${s.stroke}`,
           fontSize: s.fontSize,
-          '--glow-color': s.color,
         }}
       >
         {p.name}
