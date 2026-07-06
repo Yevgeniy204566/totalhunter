@@ -41,8 +41,8 @@ function darkenHex(hex, factor) {
   return rgbToHex({ r: r * factor, g: g * factor, b: b * factor })
 }
 
-// 0 → квота: красный → оранжевый → зелёный
-const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E', '#0FA968']
+// 0 → квота: красный → оранжевый (зелёный убран — сливался с зоной после квоты)
+const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E']
 // квота → квота+100к: ярко-зелёный (салатовый) → жёлтый
 const ABOVE_QUOTA_STOPS = ['#39FF6A', '#FFD700']
 const LEGENDARY_OVERAGE = 100000
