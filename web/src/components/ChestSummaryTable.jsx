@@ -36,10 +36,10 @@ function darkenHex(hex, factor) {
   return rgbToHex({ r: r * factor, g: g * factor, b: b * factor })
 }
 
-// 0 → квота: красный → коричневый → голубой → зелёный
-const BELOW_QUOTA_STOPS = ['#FF6961', '#A66A3D', '#4FC3F7', '#50C878']
-// квота → квота+100к: зелёный → жёлтый → золото → красный (5 шагов по 20к)
-const ABOVE_QUOTA_STOPS = ['#50C878', '#F5D76E', '#FFD166', '#FF6961']
+// 0 → квота: рубин → бронза → сапфир → изумруд (насыщенные, "ювелирные" тона)
+const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E', '#1E6FE0', '#0FA968']
+// квота → квота+100к: изумруд → золото → янтарь → рубин (5 шагов по 20к)
+const ABOVE_QUOTA_STOPS = ['#0FA968', '#D4AF37', '#FF7A1A', '#C81E3A']
 const LEGENDARY_OVERAGE = 100000
 
 function nameGradientStyle(player, targets) {
@@ -68,8 +68,8 @@ function renderPlayerName(p, targets) {
       <span
         className="public-name-shimmer"
         style={{
-          backgroundImage: `linear-gradient(90deg, ${s.color} 0%, #FFFFFF 50%, ${s.color} 100%)`,
-          WebkitTextStroke: `0.4px ${s.stroke}`,
+          backgroundImage: `linear-gradient(100deg, ${s.color} 0%, ${s.color} 38%, #FFF3C4 50%, ${s.color} 62%, ${s.color} 100%)`,
+          WebkitTextStroke: `0.5px ${s.stroke}`,
           fontSize: s.fontSize,
         }}
       >
