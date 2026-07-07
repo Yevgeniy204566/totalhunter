@@ -331,6 +331,50 @@ def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     conn.close()
 
 
+def test_collect_chests_tolerates_single_transient_button_miss(tmp_path, monkeypatch):
+    """Regression test: a one-off HSV miss (dialog fade-in animation, a hover-state
+    color shift, a reward popup briefly overlapping the button) must not be read as
+    "list is empty" — the loop must keep going and pick up the next chest instead of
+    stopping instantly on the very first missed check."""
+    responses = iter([(10, 10), None, (10, 10)] + [None] * cr.EMPTY_BUTTON_RETRY_LIMIT)
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox: next(responses))
+    monkeypatch.setattr(cr.time, "sleep", lambda s: None)
+    monkeypatch.setattr(cr, "read_top_row", lambda frame, **kwargs: ("Сундук", "Alice"))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+
+    db_path = str(tmp_path / "test_chest_buffer.db")
+    result = cr.collect_chests(lambda: False, db_path=db_path)
+
+    assert result["counts"] == {"Сундук": 2}
+
+
+def test_collect_chests_stops_after_limit_consecutive_button_misses(tmp_path, monkeypatch):
+    """Discriminating counterpart to the transient-miss test above: the loop must
+    still stop, and after exactly EMPTY_BUTTON_RETRY_LIMIT consecutive misses — not
+    fewer (would reintroduce the instant-stop bug) and not more (would hang on a
+    genuinely empty list)."""
+    calls = {"n": 0}
+
+    def fake_find_open_button(bbox):
+        calls["n"] += 1
+        return None
+
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
+    monkeypatch.setattr(cr.time, "sleep", lambda s: None)
+
+    db_path = str(tmp_path / "test_chest_buffer.db")
+    result = cr.collect_chests(lambda: False, db_path=db_path)
+
+    assert result == {"counts": {}, "items": []}
+    assert calls["n"] == cr.EMPTY_BUTTON_RETRY_LIMIT
+
+
 def test_collect_chests_stops_immediately_when_flag_already_set(tmp_path, monkeypatch):
     def boom():
         raise AssertionError("grab_fullscreen must not be called when stop_flag is already True")

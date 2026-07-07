@@ -61,6 +61,12 @@ BUTTON_X_FRAC = (0.78, 1.0)
 BUTTON_Y_FRAC = (0.45, 1.0)
 OPEN_BUTTON_REF_POS = (1352, 416)
 
+# A single missed detection (dialog open animation, a hover-state color shift,
+# a reward popup momentarily overlapping the button) must not be read as "list
+# is empty" — only conclude that after this many consecutive misses in a row.
+EMPTY_BUTTON_RETRY_LIMIT = 3
+EMPTY_BUTTON_RETRY_PAUSE = 0.3
+
 # --- Anti-detect click ------------------------------------------------------
 ANTI_DETECT_OFFSET_PX = 8
 ANTI_DETECT_PAUSE_RANGE = (0.16, 0.28)  # reduced again 2026-06-19 by owner decision, chests-only
@@ -228,8 +234,10 @@ def click_open_button(pause_range=ANTI_DETECT_PAUSE_RANGE):
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                    pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False):
     """Reads and opens chests from the top of the «Мой клан → Подарки» list
-    until the list is empty (no «Открыть» button found — presence-only HSV
-    check, see find_open_button) or stop_flag() returns True. Every chest is
+    until the list is empty (no «Открыть» button found for EMPTY_BUTTON_RETRY_LIMIT
+    consecutive checks in a row — presence-only HSV check, see find_open_button;
+    a single miss is treated as a transient rendering glitch and retried, not
+    an empty list) or stop_flag() returns True. Every chest is
     persisted to SQLite as it's read.
     Returns {'counts': {chest_type: n}, 'items': [{'chest_type', 'sender',
     'timestamp'}, ...]} for this session. 'counts' is sourced from the DB
@@ -241,6 +249,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     sender-name field — see LIGHT_SENDER_OCR_LANG/FULL_SENDER_OCR_LANG."""
     conn = init_db(db_path)
     items = []
+    empty_streak = 0
     try:
         while not stop_flag():
             frame = grab_fullscreen()
@@ -254,7 +263,12 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                 continue
 
             if find_open_button(bbox) is None:
-                break
+                empty_streak += 1
+                if empty_streak >= EMPTY_BUTTON_RETRY_LIMIT:
+                    break
+                time.sleep(EMPTY_BUTTON_RETRY_PAUSE)
+                continue
+            empty_streak = 0
 
             chest_type, sender = read_top_row(frame, full_lang=full_lang)
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
