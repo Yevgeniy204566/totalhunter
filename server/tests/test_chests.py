@@ -1,7 +1,7 @@
 """Tests for chests.py — tenant isolation, alias dictionary, idempotent import."""
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -259,6 +259,28 @@ async def test_resending_same_batch_does_not_duplicate(db_session):
 
 
 from models import Hunt, Transaction
+
+
+def test_dedupe_recognizes_resend_of_already_committed_row():
+    """Real Postgres always returns Chest.collected_at as tz-aware UTC on
+    read-back (unlike the SQLite test DB, which round-trips it naive), while
+    the client sends a naive timestamp string with no offset. If _dedupe
+    doesn't normalize both sides to the same representation, every resend of
+    an already-committed batch looks 'new', hits the DB unique constraint on
+    insert, and — since the one-shot retry reloads the same broken keys —
+    surfaces as an uncaught 500 instead of a graceful idempotent 200
+    (2026-07-07 production incident: 851-row stuck local queue, batch
+    already committed server-side kept getting resent by the client)."""
+    from chests import _dedupe, _normalize_ts
+    import types
+
+    existing_keys = {
+        ("S1", "A", _normalize_ts(datetime(2026, 7, 7, 6, 27, 41, tzinfo=timezone.utc))),
+    }
+    item = types.SimpleNamespace(sender="S1", chest_type="A",
+                                 timestamp="2026-07-07T06:27:41")
+
+    assert _dedupe([item], existing_keys) == []
 
 
 @pytest.mark.asyncio

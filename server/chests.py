@@ -87,9 +87,25 @@ async def _load_aliases(collector_id: int, db: AsyncSession):
     return player_aliases, type_aliases
 
 
+def _normalize_ts(value) -> datetime:
+    """Приводит collected_at к naive UTC-эквиваленту для сравнения ключей.
+
+    Postgres (в отличие от тестовой SQLite) всегда возвращает `collected_at`
+    (TIMESTAMP WITH TIME ZONE) как tz-aware UTC datetime, а клиент шлёт
+    naive-строку без смещения. Без нормализации оба представления никогда не
+    совпадают как ключи → повторная отправка уже сохранённого батча всегда
+    доходит до реального unique constraint в БД вместо тихого no-op.
+    """
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value)
+    if value.tzinfo is not None:
+        value = value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
 async def _load_existing_keys(collector_id: int, db: AsyncSession):
     return {
-        (row.sender_raw, row.chest_type_raw, row.collected_at.isoformat())
+        (row.sender_raw, row.chest_type_raw, _normalize_ts(row.collected_at))
         for row in (await db.execute(
             select(Chest).where(Chest.collector_id == collector_id)
         )).scalars().all()
@@ -102,7 +118,7 @@ def _dedupe(items, existing_keys):
     new_items = []
     seen = set(existing_keys)
     for item in items:
-        key = (item.sender, item.chest_type, item.timestamp)
+        key = (item.sender, item.chest_type, _normalize_ts(item.timestamp))
         if key in seen:
             continue
         seen.add(key)
