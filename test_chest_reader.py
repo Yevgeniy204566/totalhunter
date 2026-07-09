@@ -463,6 +463,94 @@ def test_export_to_api_low_credits(monkeypatch):
     assert cr.export_to_api("K229", "Legion", []) == {"success": False, "low_credits": True}
 
 
+def test_export_to_api_uses_45_second_timeout(monkeypatch):
+    captured = {}
+
+    def fake_post(url, json, timeout):
+        captured['timeout'] = timeout
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(cr.requests, "post", fake_post)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    cr.export_to_api("K229", "Legion", [])
+    assert captured['timeout'] == 45
+
+
+def test_export_to_api_retries_once_on_timeout_then_succeeds(monkeypatch):
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(1)
+        if len(calls) == 1:
+            raise cr.requests.Timeout("timed out")
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(cr.requests, "post", fake_post)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+
+    result = cr.export_to_api("K229", "Legion", [])
+
+    assert result == {"success": True}
+    assert len(calls) == 2
+
+
+def test_export_to_api_gives_up_after_second_attempt_fails(monkeypatch):
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(1)
+        raise cr.requests.RequestException("no connection")
+
+    monkeypatch.setattr(cr.requests, "post", fake_post)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    monkeypatch.setattr(cr, "log_error_to_server", lambda msg: None)
+
+    result = cr.export_to_api("K229", "Legion", [])
+
+    assert result == {"success": False}
+    assert len(calls) == 2
+
+
+def test_export_to_api_does_not_retry_on_low_credits(monkeypatch):
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(1)
+        return _FakeResponse(402)
+
+    monkeypatch.setattr(cr.requests, "post", fake_post)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+
+    cr.export_to_api("K229", "Legion", [])
+
+    assert len(calls) == 1
+
+
+def test_export_to_api_logs_failure_reason_after_exhausting_retries(monkeypatch):
+    logged = {}
+
+    def fake_post(url, json, timeout):
+        raise cr.requests.Timeout("timed out")
+
+    monkeypatch.setattr(cr.requests, "post", fake_post)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    monkeypatch.setattr(cr, "log_error_to_server", lambda msg: logged.setdefault('msg', msg))
+
+    cr.export_to_api("K229", "Legion", [])
+
+    assert 'Timeout' in logged['msg']
+
+
+def test_export_to_api_does_not_log_on_success(monkeypatch):
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(200))
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    monkeypatch.setattr(cr, "log_error_to_server", lambda msg: (_ for _ in ()).throw(AssertionError("should not log on success")))
+
+    result = cr.export_to_api("K229", "Legion", [])
+
+    assert result == {"success": True}
+
+
 def test_click_open_button_uses_passed_pause_range(monkeypatch):
     captured = {}
 

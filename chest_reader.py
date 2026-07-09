@@ -20,7 +20,7 @@ import pyautogui
 import pytesseract
 import requests
 
-from auth import SERVER_URL, get_hwid
+from auth import SERVER_URL, get_hwid, log_error_to_server
 from button_finder import find_colored_button
 from coord_manager import coord_manager
 from tesseract_setup import configure_pytesseract
@@ -287,6 +287,9 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     return {'counts': final_counts, 'items': items}
 
 
+EXPORT_MAX_ATTEMPTS = 2
+
+
 def export_to_api(kingdom, clan, items):
     payload = {
         "hwid": get_hwid(),
@@ -295,12 +298,17 @@ def export_to_api(kingdom, clan, items):
         "timestamp": datetime.datetime.now().isoformat(timespec='seconds'),
         "items": items,
     }
-    try:
-        response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=10)
+    reason = None
+    for _ in range(EXPORT_MAX_ATTEMPTS):
+        try:
+            response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=45)
+        except requests.RequestException as exc:
+            reason = f"{type(exc).__name__}: {exc}"
+            continue
         if response.status_code == 402:
             return {"success": False, "low_credits": True}
         if 200 <= response.status_code < 300:
             return {"success": True}
-        return {"success": False}
-    except requests.RequestException:
-        return {"success": False}
+        reason = f"http_{response.status_code}"
+    log_error_to_server(f"chest_export_failed after {EXPORT_MAX_ATTEMPTS} attempts: {reason}")
+    return {"success": False}
