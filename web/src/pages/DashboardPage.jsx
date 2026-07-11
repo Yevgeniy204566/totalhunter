@@ -151,7 +151,7 @@ function ProfileTab({ user, stats, hunts, D, onViewHunts, onRefresh }) {
       </div>
 
       {/* two-column: profile + devices */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div className="dash-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
 
         {/* profile card */}
         <div>
@@ -345,7 +345,7 @@ function HuntsTab({ data, D }) {
       )}
 
       <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-        <div style={{
+        <div className="dash-row" style={{
           display: 'grid', gridTemplateColumns: '40px 1fr 1fr', padding: '10px 20px',
           borderBottom: '1px solid var(--outline)',
           fontSize: 11, fontWeight: 700, letterSpacing: '1px',
@@ -360,7 +360,7 @@ function HuntsTab({ data, D }) {
           const meta  = HUNT_COLORS[item.hunt_type] ?? { color: 'var(--on-surface2)' }
           const label = D.huntTypes[item.hunt_type] ?? item.hunt_type
           return (
-            <div key={i} style={{
+            <div key={i} className="dash-row" style={{
               display: 'grid', gridTemplateColumns: '40px 1fr 1fr', alignItems: 'center',
               padding: '12px 20px',
               borderBottom: i < items.length - 1 ? '1px solid var(--separator)' : 'none',
@@ -406,7 +406,7 @@ function TransactionsTab({ data, D }) {
       </h2>
 
       <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-        <div style={{
+        <div className="dash-row dash-row--tx" style={{
           display: 'grid', gridTemplateColumns: '36px 1fr 100px 140px', padding: '10px 20px',
           borderBottom: '1px solid var(--outline)',
           fontSize: 11, fontWeight: 700, letterSpacing: '1px',
@@ -428,7 +428,7 @@ function TransactionsTab({ data, D }) {
           const isPos = tx.amount > 0
           const prefix = tx.amount > 0 ? '+' : tx.amount < 0 ? '−' : ''
           return (
-            <div key={i} style={{
+            <div key={i} className="dash-row dash-row--tx" style={{
               display: 'grid', gridTemplateColumns: '36px 1fr 100px 140px',
               alignItems: 'center', padding: '13px 20px',
               borderBottom: i < items.length - 1 ? '1px solid var(--separator)' : 'none',
@@ -498,7 +498,7 @@ export default function DashboardPage() {
   if (!user) return <div className="page-content text-muted">{D.loading}</div>
 
   return (
-    <div style={{
+    <div className="dash-page-wrap" style={{
       minHeight: '100%',
       background: 'radial-gradient(ellipse 120% 40% at 50% 0%, rgba(61,127,255,0.07) 0%, transparent 55%)',
       padding: '32px 24px',

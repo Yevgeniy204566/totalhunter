@@ -41,7 +41,7 @@ export default function TransactionsPage() {
   const items = data.items ?? []
 
   return (
-    <div style={{
+    <div className="dash-page-wrap" style={{
       minHeight: '100%',
       background: 'radial-gradient(ellipse 100% 40% at 50% 0%, rgba(74,222,128,0.04) 0%, transparent 55%)',
       padding: '32px 24px', maxWidth: 860, margin: '0 auto',
@@ -51,7 +51,7 @@ export default function TransactionsPage() {
       </h2>
 
       <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-        <div style={{
+        <div className="dash-row dash-row--tx" style={{
           display: 'grid', gridTemplateColumns: '36px 1fr 100px 140px', padding: '10px 20px',
           borderBottom: '1px solid var(--outline)',
           fontSize: 11, fontWeight: 700, letterSpacing: '1px',
@@ -73,7 +73,7 @@ export default function TransactionsPage() {
           const isPos = tx.amount > 0
           const prefix = tx.amount > 0 ? '+' : tx.amount < 0 ? '−' : ''
           return (
-            <div key={i} style={{
+            <div key={i} className="dash-row dash-row--tx" style={{
               display: 'grid', gridTemplateColumns: '36px 1fr 100px 140px',
               alignItems: 'center', padding: '13px 20px',
               borderBottom: i < items.length - 1 ? '1px solid var(--separator)' : 'none',

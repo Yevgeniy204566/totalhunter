@@ -446,7 +446,7 @@ export default function GuidePage() {
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.tuning.botLabel}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 8 }}>
+              <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 8 }}>
                 {G.tuning.steps.map(({ title, desc, img }) => (
                   <div key={title} style={{ borderRadius: 12, padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
@@ -473,7 +473,7 @@ export default function GuidePage() {
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.chests.botLabel}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+              <div className="guide-packages" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
                 {G.chests.botSteps.map(({ title, desc, img }) => (
                   <div key={title} style={{ borderRadius: 12, padding: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>

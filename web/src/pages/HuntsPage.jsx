@@ -61,7 +61,7 @@ export default function HuntsPage() {
   const exRatio   = visTotal > 0 ? (exchanges / visTotal) * 100 : 50
 
   return (
-    <div style={{
+    <div className="dash-page-wrap" style={{
       minHeight: '100%',
       background: 'radial-gradient(ellipse 100% 40% at 50% 0%, rgba(61,127,255,0.06) 0%, transparent 55%)',
       padding: '32px 24px', maxWidth: 960, margin: '0 auto',
@@ -98,7 +98,7 @@ export default function HuntsPage() {
       )}
 
       <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-        <div style={{
+        <div className="dash-row" style={{
           display: 'grid', gridTemplateColumns: '40px 1fr 1fr', padding: '10px 20px',
           borderBottom: '1px solid var(--outline)',
           fontSize: 11, fontWeight: 700, letterSpacing: '1px',
@@ -116,7 +116,7 @@ export default function HuntsPage() {
           const meta = HUNT_COLORS[item.hunt_type] ?? { icon: '◈', color: 'var(--on-surface2)', bg: 'transparent' }
           const label = D.huntTypes[item.hunt_type] ?? item.hunt_type
           return (
-            <div key={i} style={{
+            <div key={i} className="dash-row" style={{
               display: 'grid', gridTemplateColumns: '40px 1fr 1fr', alignItems: 'center',
               padding: '12px 20px',
               borderBottom: i < items.length - 1 ? '1px solid var(--separator)' : 'none',

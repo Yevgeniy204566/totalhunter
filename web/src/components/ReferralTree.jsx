@@ -377,7 +377,7 @@ export default function ReferralTree({ currentUser, canvasHeight = 520 }) {
           </div>
           <style>{`
             .rt-mobile { display: none; }
-            @media (max-width: 640px) {
+            @media (max-width: 768px) {
               .rt-desktop { display: none; }
               .rt-mobile  { display: block; }
             }

@@ -88,6 +88,7 @@ function PackageCard({ pkg, buying, onBuy }) {
 
   return (
     <div
+      className="package-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

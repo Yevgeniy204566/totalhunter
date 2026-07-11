@@ -265,6 +265,17 @@ const WHEEL_CSS = `
   #earn-page-root .controls { margin-top: 10px; }
   #earn-page-root .earn-hud { margin-top: 8px; gap: 4px; }
 }
+/* Телефоны: колесо было фиксированной px-ширины и обрезалось на узких
+   экранах — предыдущие правила выше масштабируют только по высоте. */
+@media (max-width: 480px) {
+  #earn-page-root .brand { font-size: 28px; }
+  #earn-page-root .stage { width: 92vw; height: 92vw; }
+  #earn-page-root .disk-wrap, #earn-page-root .glass { width: 74vw; height: 74vw; }
+  #earn-page-root .static-overlay { width: 78vw; height: 78vw; }
+  #earn-page-root .pointer-wrap { width: 44px; height: 76px; margin-left: -22px; }
+  #earn-page-root .controls { margin-top: 8px; }
+  #earn-page-root .earn-hud { margin-top: 6px; gap: 4px; }
+}
 `
 
 // ─── Adapted wheel logic from design bundle ────────────────────────────────────

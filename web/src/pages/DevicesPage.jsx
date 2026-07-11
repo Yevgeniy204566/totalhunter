@@ -55,7 +55,7 @@ export default function DevicesPage() {
       {user.hwid ? (
         <div className="card" style={{ maxWidth: 480, marginBottom: 16 }}>
           <div className="text-muted" style={{ marginBottom: 8 }}>{dv.linked}</div>
-          <code style={{ fontSize: 18, fontWeight: 600 }}>{user.hwid}</code>
+          <code style={{ fontSize: 18, fontWeight: 600, wordBreak: 'break-all' }}>{user.hwid}</code>
           <div className="separator" />
           <button
             className="btn-secondary"
