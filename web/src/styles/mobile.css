@@ -267,6 +267,38 @@
     justify-content: center !important;
   }
 
+  /* ── Древний: таблица ростера в личном кабинете ─────────── */
+  /* Только кабинет лидера (/dashboard/ancients) — публичная страница
+     клана (.public-table) уже сама подстраивает ширину колонки имени
+     под длину имени и здесь не трогается. */
+  .ancient-roster-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    position: relative !important;
+  }
+  .ancient-roster-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 24px;
+    background: linear-gradient(to right, transparent, rgba(13,19,38,0.7));
+    pointer-events: none;
+  }
+  .ancient-roster-table { white-space: nowrap !important; }
+  .ancient-roster-table th,
+  .ancient-roster-table td { font-size: 12px !important; padding: 6px 8px !important; }
+  /* Колонка «Игрок (OCR)» (имя) остаётся видна при скролле вправо */
+  .ancient-roster-table th:nth-child(1),
+  .ancient-roster-table td:nth-child(1) {
+    position: sticky !important; left: 0; z-index: 2;
+    width: 28px; background: var(--card);
+  }
+  .ancient-roster-table th:nth-child(2),
+  .ancient-roster-table td:nth-child(2) {
+    position: sticky !important; left: 28px; z-index: 2;
+    background: var(--card); max-width: 160px; white-space: normal !important;
+  }
+
   /* ── Общие улучшения ────────────────────────────────────── */
   h2 { font-size: 18px !important; }
 

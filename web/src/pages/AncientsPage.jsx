@@ -686,7 +686,8 @@ export default function AncientsPage() {
               {sortedRoster.length === 0 ? (
                 <div className="text-muted">{cx.noRoster}</div>
               ) : (
-                <table className="chest-table">
+                <div className="ancient-roster-wrap">
+                <table className="chest-table ancient-roster-table">
                   <thead>
                     <tr>
                       <th>№</th>
@@ -826,6 +827,7 @@ export default function AncientsPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
 
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--outline)' }}>
