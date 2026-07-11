@@ -328,7 +328,7 @@ export default function LandingPage() {
 
           <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* ── BIG GREEN DOWNLOAD ── */}
-            <a href={RELEASE_URL} onClick={() => track('App_Downloaded', { source: 'hero' })} style={{
+            <a href={RELEASE_URL} onClick={() => track('App_Downloaded', { source: 'hero' })} className="landing-hero-download" style={{
               padding: '20px 52px', borderRadius: 12, fontSize: 20,
               background: 'linear-gradient(135deg, #00C853, #00FF88)',
               color: '#000',
@@ -351,8 +351,8 @@ export default function LandingPage() {
               {isLoggedIn() ? (lang === 'en' ? 'Dashboard →' : 'Dashboard →') : (lang === 'en' ? 'Sign In →' : 'Войти →')}
             </Link>
           </div>
-          <p style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-            Windows 10/11 · 64-bit · {lang === 'en' ? 'Installer · VC++ included' : 'Установщик · VC++ встроен'}
+          <p className="landing-hero-download" style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            {lang === 'en' ? 'Windows PC only · 10/11 · 64-bit · Installer · VC++ included' : 'Только для Windows ПК · 10/11 · 64-bit · Установщик · VC++ встроен'}
           </p>
         </div>
       </section>
@@ -396,7 +396,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Download CTA under screenshots ─────────────────────── */}
-      <div style={{ textAlign: 'center', paddingBottom: 64, background: 'var(--bg)' }}>
+      <div className="landing-screenshots-download" style={{ textAlign: 'center', paddingBottom: 64, background: 'var(--bg)' }}>
         <a href={RELEASE_URL} onClick={() => track('App_Downloaded', { source: 'screenshots_cta' })} style={{
           padding: '18px 56px', borderRadius: 12, fontSize: 19,
           background: 'linear-gradient(135deg, #00C853, #00FF88)',
@@ -410,7 +410,7 @@ export default function LandingPage() {
           {lang === 'en' ? 'Download TotalHunter (.zip)' : 'Скачать TotalHunter (.zip)'}
         </a>
         <p style={{ marginTop: 10, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-          v1.6.9 · Windows 10/11 · 64-bit
+          v1.6.9 · {lang === 'en' ? 'Windows PC only · 10/11 · 64-bit' : 'Только для Windows ПК · 10/11 · 64-bit'}
         </p>
       </div>
 
@@ -679,7 +679,7 @@ export default function LandingPage() {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 20 }}>
-          <Link to="/download" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
+          <Link to="/download" className="landing-footer-download" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
             {lang === 'en' ? 'Download' : 'Скачать'}
           </Link>
           <Link to="/guide" style={{ color: 'var(--on-surface2)', fontSize: 13 }}>

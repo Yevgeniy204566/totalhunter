@@ -154,6 +154,14 @@
     width: 100% !important;
   }
 
+  /* Скачать доступен только для Windows-ПК — на мобиле кнопка бесполезна,
+     убрана из hero, CTA под скриншотами и футера (nav уже скрыт выше) */
+  .landing-hero-download,
+  .landing-screenshots-download,
+  .landing-footer-download {
+    display: none !important;
+  }
+
   .landing-stats-grid {
     grid-template-columns: 1fr 1fr !important;
     gap: 10px !important;
