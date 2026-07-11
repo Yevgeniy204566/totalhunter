@@ -267,14 +267,19 @@
     justify-content: center !important;
   }
 
-  /* ── Древний: пороги недобора квоты — одна строка со скроллом ── */
+  /* ── Древний: пороги недобора квоты — колонкой, каждый порог своей строкой ── */
   .ancient-thresholds-row {
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding-bottom: 4px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
   }
-  .ancient-thresholds-row > * { flex-shrink: 0 !important; }
+  .ancient-thresholds-row label {
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+  .ancient-thresholds-row label input {
+    flex: 0 0 auto !important;
+  }
 
   /* ── Древний: таблица ростера в личном кабинете ─────────── */
   /* Только кабинет лидера (/dashboard/ancients) — публичная страница
