@@ -1,0 +1,62 @@
+════════════════════════════════════════════════════════════════
+ТЕЛЕГРАМ: ДРЕВНИЙ — теперь можно вести без установки бота
+Файл: docs/telegram_posts/ancient_web_onboarding.txt
+════════════════════════════════════════════════════════════════
+
+🐲 ДРЕВНИЙ: теперь можно начать вообще без бота
+
+Раньше, чтобы завести клан в разделе «Древний», нужно было сначала поставить бота и один раз отправить с него данные. Если бот не нужен — раздел был недоступен.
+
+Теперь это не так. Заходите на сайт, открываете «Древний» → «Создать клан», вписываете номер королевства и название клана — и всё, у вас готовая страница для подсчёта нормы урона.
+
+С чего начать, если у вас ещё ничего не настроено:
+
+1. Зайдите на total-hunter.com и войдите через Google.
+2. Откройте раздел «Древний» в личном кабинете.
+3. Нажмите «Создать клан», укажите королевство и клан.
+4. Скопируйте ссылку на публичную страницу клана и киньте её в клан-чат.
+5. Каждый игрок сам переходит по ссылке и вписывает своё звание и состав войск — вам никого не нужно опрашивать.
+6. Когда всё готово, задайте уровни Древнего — сайт сам разделит норму между игроками и покажет, кто отстаёт.
+
+Если позже поставите бота — он сам подхватит уже существующий клан, ничего не потеряется и не задвоится.
+
+📋 Публичная страница теперь тоже умеет больше
+
+Раньше на публичной странице игрок мог только уточнить своё звание и состав войск, если его уже кто-то добавил в список. Теперь, если игрока в списке ещё нет вообще — он может добавить себя сам, прямо по ссылке, без вашего участия.
+
+Напоминаем, как считается норма (можно выбрать любой из двух способов):
+— По званию — норма делится между Офицерами и Ветеранами (Офицер получает вдвое больше)
+— По составу войск — норма делится по силе войск: чем выше уровень войск игрока, тем больше его личная норма
+
+Полный гайд по разделу: total-hunter.com/guide
+
+════════════════════════════════════════════════════════════════
+ENGLISH VERSION
+════════════════════════════════════════════════════════════════
+
+🐲 ANCIENT: now works without installing the bot at all
+
+Before, to start a clan in the "Ancient" section, you had to install the bot first and send data from it at least once. If you didn't need the bot, the section simply wasn't available.
+
+Not anymore. Go to the site, open "Ancient" → "Create clan", enter your kingdom number and clan name — done, you have a ready page for tracking damage quotas.
+
+Where to start if you haven't set anything up yet:
+
+1. Go to total-hunter.com and sign in with Google.
+2. Open the "Ancient" section in your dashboard.
+3. Click "Create clan", enter your kingdom and clan.
+4. Copy the link to the clan's public page and drop it in your clan chat.
+5. Every player opens the link themselves and fills in their rank and troop level — you don't need to ask anyone individually.
+6. Set the Ancient levels — the site splits the quota between players and shows who's falling behind.
+
+If you install the bot later, it will pick up the existing clan automatically — nothing gets lost or duplicated.
+
+📋 The public page can now do more too
+
+Before, on the public page a player could only update their rank/troops if someone had already added them to the list. Now, if a player isn't on the list at all, they can add themselves.
+
+Reminder of how the quota is calculated:
+— By rank — split between Officers and Veterans (Officer gets double)
+— By troop level — split by troop strength: the higher the troop level, the bigger the personal quota
+
+Full guide: total-hunter.com/guide
