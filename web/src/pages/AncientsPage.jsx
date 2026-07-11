@@ -633,7 +633,7 @@ export default function AncientsPage() {
               </div>
 
               {c.is_owner && (
-                <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="ancient-thresholds-row" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12, color: 'var(--on-surface2)' }}>{cx.thresholdsTitle}:</span>
                   <label style={{ fontSize: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
                     {cx.thresholdLight}
@@ -695,9 +695,10 @@ export default function AncientsPage() {
                         style={{ cursor: 'pointer', userSelect: 'none' }}
                         onClick={() => toggleSort(c.slug, 'name')}
                       >
-                        Игрок (OCR){sortArrow('name')}
+                        Имя{sortArrow('name')}
                       </th>
-                      <th>Правильное имя</th>
+                      <th>{cx.rank}</th>
+                      <th>{cx.troopLevel}</th>
                       <th
                         style={{ cursor: 'pointer', userSelect: 'none' }}
                         onClick={() => toggleSort(c.slug, 'place')}
@@ -705,8 +706,6 @@ export default function AncientsPage() {
                         {cx.place}{sortArrow('place')}
                       </th>
                       <th>{cx.points}</th>
-                      <th>{cx.troopLevel}</th>
-                      <th>{cx.rank}</th>
                       <th>{cx.quota}</th>
                       <th></th>
                     </tr>
@@ -722,48 +721,55 @@ export default function AncientsPage() {
                         <tr key={p.player_name}
                           className={rowShortfallClass(p.shortfall_pct, c.quota_thresholds)}>
                           <td>{idx + 1}</td>
-                          <td>{p.raw_ocr_name || p.player_name}</td>
                           <td>
-                            {p.mapping_confirmed ? (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ color: '#a6e3a1', fontWeight: 600 }}>{p.mapped_name}</span>
-                                {p.raw_ocr_name && p.raw_ocr_name !== p.player_name ? (
-                                  <span title="Слияние необратимо" style={{ fontSize: 12 }}>🔒</span>
-                                ) : (
-                                  <button
-                                    style={{
-                                      fontSize: 11, padding: '1px 6px', cursor: 'pointer',
-                                      background: 'transparent', border: '1px solid #6c7086',
-                                      color: '#6c7086', borderRadius: 4,
-                                    }}
-                                    onClick={async () => {
-                                      await api.dashboardAncientsNameMappingDelete(c.slug, p.raw_ocr_name || p.player_name)
-                                      refresh()
-                                    }}
-                                  >
-                                    Разблокировать
-                                  </button>
-                                )}
-                              </span>
-                            ) : (
-                              <select
-                                className="input-dark"
-                                value={pending !== undefined ? pending : suggestion}
-                                onChange={e => setPendingMappings(prev => ({
-                                  ...prev,
-                                  [c.slug]: { ...(prev[c.slug] || {}), [p.player_name]: e.target.value },
-                                }))}
-                                style={{ minWidth: 220 }}
-                              >
-                                <option value="">— не сопоставлять —</option>
-                                {srcNames.map(name => (
-                                  <option key={name} value={name}>{name}</option>
-                                ))}
-                              </select>
-                            )}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <span>{p.raw_ocr_name || p.player_name}</span>
+                              {p.mapping_confirmed ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ color: '#a6e3a1', fontWeight: 600 }}>✅ {p.mapped_name}</span>
+                                  {p.raw_ocr_name && p.raw_ocr_name !== p.player_name ? (
+                                    <span title="Слияние необратимо" style={{ fontSize: 12 }}>🔒</span>
+                                  ) : (
+                                    <button
+                                      style={{
+                                        fontSize: 11, padding: '1px 6px', cursor: 'pointer',
+                                        background: 'transparent', border: '1px solid #6c7086',
+                                        color: '#6c7086', borderRadius: 4,
+                                      }}
+                                      onClick={async () => {
+                                        await api.dashboardAncientsNameMappingDelete(c.slug, p.raw_ocr_name || p.player_name)
+                                        refresh()
+                                      }}
+                                    >
+                                      Разблокировать
+                                    </button>
+                                  )}
+                                </span>
+                              ) : (
+                                <select
+                                  className="input-dark"
+                                  value={pending !== undefined ? pending : suggestion}
+                                  onChange={e => setPendingMappings(prev => ({
+                                    ...prev,
+                                    [c.slug]: { ...(prev[c.slug] || {}), [p.player_name]: e.target.value },
+                                  }))}
+                                  style={{ minWidth: 160 }}
+                                >
+                                  <option value="">— не сопоставлять —</option>
+                                  {srcNames.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
                           </td>
-                          <td>{p.place ?? '—'}</td>
-                          <td>{p.points !== null && p.points !== undefined ? fmtNum(p.points, 0) : '—'}</td>
+                          <td>
+                            <select className="input-dark" value={p.rank || ''}
+                              style={{ width: 100 }}
+                              onChange={e => handleRankChange(c.slug, p.player_name, e.target.value)}>
+                              {RANKS.map(r => <option key={r} value={r}>{r || cx.noTroopLevel}</option>)}
+                            </select>
+                          </td>
                           <td>
                             {(() => {
                               const key = `${c.slug}:${p.player_name}`
@@ -795,13 +801,8 @@ export default function AncientsPage() {
                               )
                             })()}
                           </td>
-                          <td>
-                            <select className="input-dark" value={p.rank || ''}
-                              style={{ width: 100 }}
-                              onChange={e => handleRankChange(c.slug, p.player_name, e.target.value)}>
-                              {RANKS.map(r => <option key={r} value={r}>{r || cx.noTroopLevel}</option>)}
-                            </select>
-                          </td>
+                          <td>{p.place ?? '—'}</td>
+                          <td>{p.points !== null && p.points !== undefined ? fmtNum(p.points, 0) : '—'}</td>
                           <td>{p.quota != null ? fmtNum(p.quota, 2) : '—'}</td>
                           <td>
                             {confirmDeleteRoster[deleteKey] ? (
