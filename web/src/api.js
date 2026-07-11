@@ -101,6 +101,8 @@ export const api = {
     request('DELETE', `/web/dashboard/ancients/${slug}/roster/ocr-import`),
   dashboardAncientsPopulateFromChests: (slug) =>
     request('POST', `/web/dashboard/ancients/${slug}/roster/populate-from-chests`),
+  dashboardAncientsCreate: (kingdom, clan) =>
+    request('POST', '/web/dashboard/ancients/create', { kingdom, clan }),
 }
 
 export async function fetchChestSummary(slug) {
@@ -133,6 +135,22 @@ export async function postPublicPlayerProfile(collector_slug, canonical_name, ra
     throw new Error(msg)
   }
   return res.json()
+}
+
+export async function postPublicAddSelf(slug, player_name, rank, troop_level) {
+  const res = await fetch(`${BASE}/api/v1/ancients/public/${encodeURIComponent(slug)}/roster`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ player_name, rank, troop_level }),
+  })
+  let data
+  try { data = await res.json() } catch { data = {} }
+  if (!res.ok) {
+    const err = new Error(data.detail?.message || data.detail || 'Save failed')
+    err.similarName = data.detail?.similar_name
+    throw err
+  }
+  return data
 }
 
 export async function fetchChestHistory(slug) {

@@ -89,6 +89,15 @@ export const DASHBOARD = {
 
   ancients: {
     title: 'Ancient',
+    createClanBtn: '➕ Create clan',
+    createClanTitle: 'Create clan',
+    createClanKingdomLabel: 'Kingdom (number)',
+    createClanClanLabel: 'Clan name',
+    createClanSubmit: 'Create',
+    createClanCancel: 'Cancel',
+    createClanError: 'Failed to create clan',
+    emptyStateTitle: "You don't manage any clans yet",
+    emptyStateBody: 'Create a clan manually, or install the bot — it will pick up the clan automatically on the first report.',
     publicLink: 'Clan public page',
     player: 'Player', place: 'Place', points: 'Points', troopLevel: 'Composition',
     rank: 'Rank', quota: 'Quota',

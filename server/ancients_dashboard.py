@@ -15,7 +15,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ancient_quota import (
@@ -69,6 +69,45 @@ async def _get_own_or_editor_collector(
     if editor:
         return collector, False
     raise HTTPException(status_code=403, detail="Not your collector")
+
+
+class CreateClanPayload(BaseModel):
+    kingdom: str
+    clan: str
+
+
+@router.post("/create")
+async def create_clan(
+    payload: CreateClanPayload,
+    user: User = Depends(get_web_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Web-only onboarding: lets a leader who never installed the bot start
+    a manual roster. Reuses the same [kingdom, clan, user_id] tenant match as
+    chests.py's _get_or_create_collector, so installing the bot later joins
+    the same ChestCollector instead of creating a duplicate."""
+    kingdom = payload.kingdom.strip()
+    clan = payload.clan.strip()
+    if not kingdom or not clan:
+        raise HTTPException(status_code=400, detail="Kingdom and clan are required")
+
+    existing = (await db.execute(
+        select(ChestCollector).where(
+            func.lower(ChestCollector.kingdom) == kingdom.lower(),
+            func.lower(ChestCollector.clan) == clan.lower(),
+            ChestCollector.user_id == user.id,
+        )
+    )).scalar_one_or_none()
+    if existing:
+        return {"slug": existing.slug}
+
+    collector = ChestCollector(
+        kingdom=kingdom, clan=clan, user_id=user.id,
+        slug=secrets.token_urlsafe(16),
+    )
+    db.add(collector)
+    await db.commit()
+    return {"slug": collector.slug}
 
 
 def _coalesce_roster_fields(base: dict, row: AncientRoster) -> dict:

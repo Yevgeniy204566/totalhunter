@@ -89,6 +89,15 @@ export const DASHBOARD = {
 
   ancients: {
     title: 'Древний',
+    createClanBtn: '➕ Создать клан',
+    createClanTitle: 'Создать клан',
+    createClanKingdomLabel: 'Королевство (номер)',
+    createClanClanLabel: 'Название клана',
+    createClanSubmit: 'Создать',
+    createClanCancel: 'Отмена',
+    createClanError: 'Не удалось создать клан',
+    emptyStateTitle: 'Вы пока не управляете ни одним кланом',
+    emptyStateBody: 'Создайте клан вручную или установите бота — он подхватит клан сам при первой отправке отчёта.',
     publicLink: 'Публичная страница клана',
     player: 'Игрок', place: 'Место', points: 'Очки', troopLevel: 'Состав',
     rank: 'Звание', quota: 'Квота',

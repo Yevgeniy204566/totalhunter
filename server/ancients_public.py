@@ -13,16 +13,21 @@ PlayerProfile — общая таблица с Сундуками (тот же c
 mapping_confirmed — это исключительно внутренний инструмент лидера в личном
 кабинете (ancients_dashboard.py), не публичная информация.
 """
+from difflib import get_close_matches
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
-from ancient_quota import OFFICER_RANKS, shortfall_pct
+from ancient_quota import OFFICER_RANKS, parse_troop_level, shortfall_pct
 from database import get_db
 from models import (
     AncientCalculation, AncientNameMapping, AncientRoster, ChestCollector,
     PlayerProfile,
 )
+from roy import next_trade_routes_end
 
 router = APIRouter(prefix="/api/v1/ancients/public", tags=["ancients-public"])
 
@@ -116,3 +121,55 @@ async def get_public_ancients(slug: str, db: AsyncSession = Depends(get_db)):
         },
         "roster": roster,
     }
+
+
+class PublicAddSelfPayload(BaseModel):
+    player_name: str
+    rank: Optional[str] = None
+    troop_level: Optional[str] = None
+
+
+@router.post("/{slug}/roster")
+async def public_add_self(slug: str, payload: PublicAddSelfPayload,
+                          db: AsyncSession = Depends(get_db)):
+    """Lets a clan member add themselves to the roster from the anonymous
+    public page — mirrors ancients_dashboard.py's owner-only /roster/manual,
+    minus the auth check, for clans led without the bot."""
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+
+    player_name = payload.player_name.strip()
+    if not player_name:
+        raise HTTPException(status_code=400, detail="player_name required")
+
+    if payload.troop_level is not None:
+        try:
+            parse_troop_level(payload.troop_level)
+        except ValueError:
+            raise HTTPException(status_code=400,
+                                detail=f"Unknown troop_level: {payload.troop_level!r}")
+
+    existing_names = list((await db.execute(
+        select(AncientRoster.player_name).where(AncientRoster.collector_id == collector.id)
+    )).scalars().all())
+    if player_name in existing_names:
+        raise HTTPException(status_code=409, detail="Player already in roster")
+
+    matches = get_close_matches(player_name, existing_names, n=1, cutoff=0.75)
+    if matches:
+        raise HTTPException(status_code=409, detail={
+            "message": "Similar name already in roster",
+            "similar_name": matches[0],
+        })
+
+    db.add(AncientRoster(
+        collector_id=collector.id, player_name=player_name,
+        place=None, points=None, troop_level=payload.troop_level,
+        rank=payload.rank, source="manual",
+        manual_expires_at=next_trade_routes_end(),
+    ))
+    await db.commit()
+    return {"ok": True}

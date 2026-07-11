@@ -169,3 +169,98 @@ async def test_public_ancients_visible_even_when_hidden_from_owner_dashboard(db_
         resp = await client.get("/api/v1/ancients/public/pub-5")
     assert resp.status_code == 200
     assert len(resp.json()["roster"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_public_add_self_404_for_unknown_slug(db_session):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/ancients/public/does-not-exist/roster",
+            json={"player_name": "Новый", "rank": None, "troop_level": None},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_public_add_self_creates_manual_roster_entry(db_session):
+    user = await _create_user(db_session)
+    collector = await _create_collector(db_session, user.id, slug="addself-1")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/ancients/public/addself-1/roster",
+            json={"player_name": "Новичок", "rank": "Ветеран", "troop_level": "G7 S7 M7"},
+        )
+    assert resp.status_code == 200
+
+    row = (await db_session.execute(
+        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
+    )).scalar_one()
+    assert row.player_name == "Новичок"
+    assert row.rank == "Ветеран"
+    assert row.troop_level == "G7 S7 M7"
+    assert row.source == "manual"
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        get_resp = await client.get("/api/v1/ancients/public/addself-1")
+    assert get_resp.json()["roster"][0]["player_name"] == "Новичок"
+
+
+@pytest.mark.asyncio
+async def test_public_add_self_rejects_exact_duplicate(db_session):
+    user = await _create_user(db_session)
+    collector = await _create_collector(db_session, user.id, slug="addself-2")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Уже Есть", source="manual"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/ancients/public/addself-2/roster",
+            json={"player_name": "Уже Есть", "rank": None, "troop_level": None},
+        )
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_public_add_self_rejects_similar_name(db_session):
+    user = await _create_user(db_session)
+    collector = await _create_collector(db_session, user.id, slug="addself-3")
+    db_session.add(AncientRoster(collector_id=collector.id, player_name="Александров", source="manual"))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/ancients/public/addself-3/roster",
+            json={"player_name": "Александрова", "rank": None, "troop_level": None},
+        )
+    assert resp.status_code == 409
+    assert resp.json()["detail"]["similar_name"] == "Александров"
+
+
+@pytest.mark.asyncio
+async def test_public_add_self_rejects_invalid_troop_level(db_session):
+    user = await _create_user(db_session)
+    await _create_collector(db_session, user.id, slug="addself-4")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/ancients/public/addself-4/roster",
+            json={"player_name": "Игрок", "rank": None, "troop_level": "bad"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_public_add_self_rejects_blank_name(db_session):
+    user = await _create_user(db_session)
+    await _create_collector(db_session, user.id, slug="addself-5")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/api/v1/ancients/public/addself-5/roster",
+            json={"player_name": "  ", "rank": None, "troop_level": None},
+        )
+    assert resp.status_code == 400

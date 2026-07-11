@@ -1556,3 +1556,62 @@ async def test_get_dashboard_includes_public_url(db_session):
                                 headers={"Authorization": f"Bearer {token}"})
     collector_data = resp.json()["collectors"][0]
     assert collector_data["public_url"] == "https://total-hunter.com/ancients/puburl-slug-1"
+
+
+@pytest.mark.asyncio
+async def test_create_clan_creates_collector_owned_by_caller(db_session):
+    user, token = await _create_user_with_token(db_session, "create1@test.com")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/create",
+            json={"kingdom": "K9", "clan": "NewClan"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    slug = resp.json()["slug"]
+    assert slug
+
+    collector = (await db_session.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one()
+    assert collector.kingdom == "K9"
+    assert collector.clan == "NewClan"
+    assert collector.user_id == user.id
+
+
+@pytest.mark.asyncio
+async def test_create_clan_reuses_existing_collector_case_insensitive(db_session):
+    user, token = await _create_user_with_token(db_session, "create2@test.com")
+    existing = await _create_collector(db_session, user.id, slug="reuse-slug", clan="MyClan")
+    existing.kingdom = "K5"
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/create",
+            json={"kingdom": "k5", "clan": "myclan"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["slug"] == "reuse-slug"
+
+    count = len((await db_session.execute(
+        select(ChestCollector).where(ChestCollector.user_id == user.id)
+    )).scalars().all())
+    assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_create_clan_rejects_blank_fields(db_session):
+    user, token = await _create_user_with_token(db_session, "create3@test.com")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post(
+            "/web/dashboard/ancients/create",
+            json={"kingdom": "  ", "clan": "Clan"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 400

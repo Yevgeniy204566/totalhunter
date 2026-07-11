@@ -67,6 +67,10 @@ export default function AncientsPage() {
   const [populateMsg, setPopulateMsg] = useState({})
   const [confirmPopulate, setConfirmPopulate] = useState({})
   const [activeTab, setActiveTab] = useState('clans')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createForm, setCreateForm] = useState({ kingdom: '', clan: '' })
+  const [createError, setCreateError] = useState('')
+  const [creating, setCreating] = useState(false)
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.ancients
@@ -240,6 +244,22 @@ export default function AncientsPage() {
     }
   }
 
+  async function handleCreateClan() {
+    if (!createForm.kingdom.trim() || !createForm.clan.trim()) return
+    setCreating(true)
+    setCreateError('')
+    try {
+      await api.dashboardAncientsCreate(createForm.kingdom.trim(), createForm.clan.trim())
+      setShowCreateModal(false)
+      setCreateForm({ kingdom: '', clan: '' })
+      refresh()
+    } catch (e) {
+      setCreateError(e.message || cx.createClanError)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   async function handleCalculate(slug) {
     const form = formByCollector[slug]
     const payload = {
@@ -264,7 +284,58 @@ export default function AncientsPage() {
 
   return (
     <div className="page-content" style={{ maxWidth: 1600 }}>
-      <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+        <h2 style={{ margin: 0 }}>{cx.title}</h2>
+        <button className="btn-secondary" style={{ fontSize: 13 }} onClick={() => setShowCreateModal(true)}>
+          {cx.createClanBtn}
+        </button>
+      </div>
+
+      {showCreateModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }}
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: 360, maxWidth: '90vw' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 600, marginBottom: 16 }}>{cx.createClanTitle}</div>
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, marginBottom: 12 }}>
+              {cx.createClanKingdomLabel}
+              <input
+                className="input-dark"
+                value={createForm.kingdom}
+                onChange={e => setCreateForm(prev => ({ ...prev, kingdom: e.target.value }))}
+                autoFocus
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, marginBottom: 16 }}>
+              {cx.createClanClanLabel}
+              <input
+                className="input-dark"
+                value={createForm.clan}
+                onChange={e => setCreateForm(prev => ({ ...prev, clan: e.target.value }))}
+              />
+            </label>
+            {createError && (
+              <div style={{ color: '#F87171', fontSize: 12, marginBottom: 12 }}>{createError}</div>
+            )}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setShowCreateModal(false)}>
+                {cx.createClanCancel}
+              </button>
+              <button className="btn-primary" disabled={creating} onClick={handleCreateClan}>
+                {cx.createClanSubmit}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="chest-tabs" style={{ marginBottom: 24 }}>
         <button className={`chest-tab ${activeTab === 'clans' ? 'chest-tab--active' : ''}`}
@@ -298,7 +369,13 @@ export default function AncientsPage() {
       )}
 
       {collectors.length === 0 && (
-        <div className="text-muted" style={{ marginTop: 12 }}>{cx.noRoster}</div>
+        <div className="card" style={{ marginTop: 12, textAlign: 'center', padding: 32 }}>
+          <div style={{ fontWeight: 600, marginBottom: 8 }}>{cx.emptyStateTitle}</div>
+          <div className="text-muted" style={{ marginBottom: 16 }}>{cx.emptyStateBody}</div>
+          <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
+            {cx.createClanBtn}
+          </button>
+        </div>
       )}
 
       {collectors.map(c => {
