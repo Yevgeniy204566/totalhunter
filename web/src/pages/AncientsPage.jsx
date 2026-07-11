@@ -63,6 +63,7 @@ export default function AncientsPage() {
   const [manualSimilar, setManualSimilar] = useState({})
   const [confirmDeleteRoster, setConfirmDeleteRoster] = useState({})
   const [confirmClearOcr, setConfirmClearOcr] = useState({})
+  const [mappingEditOpen, setMappingEditOpen] = useState({})
   const [clearOcrMsg, setClearOcrMsg] = useState({})
   const [populateMsg, setPopulateMsg] = useState({})
   const [confirmPopulate, setConfirmPopulate] = useState({})
@@ -722,46 +723,63 @@ export default function AncientsPage() {
                           className={rowShortfallClass(p.shortfall_pct, c.quota_thresholds)}>
                           <td>{idx + 1}</td>
                           <td>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              <span>{p.raw_ocr_name || p.player_name}</span>
-                              {p.mapping_confirmed ? (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ color: '#a6e3a1', fontWeight: 600 }}>✅ {p.mapped_name}</span>
-                                  {p.raw_ocr_name && p.raw_ocr_name !== p.player_name ? (
-                                    <span title="Слияние необратимо" style={{ fontSize: 12 }}>🔒</span>
+                            {(() => {
+                              const rowKey = `${c.slug}:${p.player_name}`
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  <span style={{ fontWeight: 600 }}>{p.raw_ocr_name || p.player_name}</span>
+                                  {p.mapping_confirmed ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span style={{ color: '#a6e3a1', fontWeight: 600, fontSize: 12 }}>✅ {p.mapped_name}</span>
+                                      {p.raw_ocr_name && p.raw_ocr_name !== p.player_name ? (
+                                        <span title="Слияние необратимо" style={{ fontSize: 12 }}>🔒</span>
+                                      ) : (
+                                        <button
+                                          style={{
+                                            fontSize: 11, padding: '1px 6px', cursor: 'pointer',
+                                            background: 'transparent', border: '1px solid #6c7086',
+                                            color: '#6c7086', borderRadius: 4,
+                                          }}
+                                          onClick={async () => {
+                                            await api.dashboardAncientsNameMappingDelete(c.slug, p.raw_ocr_name || p.player_name)
+                                            refresh()
+                                          }}
+                                        >
+                                          Разблокировать
+                                        </button>
+                                      )}
+                                    </span>
+                                  ) : mappingEditOpen[rowKey] ? (
+                                    <select
+                                      className="input-dark"
+                                      autoFocus
+                                      value={pending !== undefined ? pending : suggestion}
+                                      onChange={e => setPendingMappings(prev => ({
+                                        ...prev,
+                                        [c.slug]: { ...(prev[c.slug] || {}), [p.player_name]: e.target.value },
+                                      }))}
+                                      style={{ minWidth: 160 }}
+                                    >
+                                      <option value="">— не сопоставлять —</option>
+                                      {srcNames.map(name => (
+                                        <option key={name} value={name}>{name}</option>
+                                      ))}
+                                    </select>
                                   ) : (
                                     <button
                                       style={{
-                                        fontSize: 11, padding: '1px 6px', cursor: 'pointer',
+                                        fontSize: 11, padding: '1px 6px', cursor: 'pointer', alignSelf: 'flex-start',
                                         background: 'transparent', border: '1px solid #6c7086',
                                         color: '#6c7086', borderRadius: 4,
                                       }}
-                                      onClick={async () => {
-                                        await api.dashboardAncientsNameMappingDelete(c.slug, p.raw_ocr_name || p.player_name)
-                                        refresh()
-                                      }}
+                                      onClick={() => setMappingEditOpen(prev => ({ ...prev, [rowKey]: true }))}
                                     >
-                                      Разблокировать
+                                      🔗 {pending ? pending : 'Сопоставить'}
                                     </button>
                                   )}
-                                </span>
-                              ) : (
-                                <select
-                                  className="input-dark"
-                                  value={pending !== undefined ? pending : suggestion}
-                                  onChange={e => setPendingMappings(prev => ({
-                                    ...prev,
-                                    [c.slug]: { ...(prev[c.slug] || {}), [p.player_name]: e.target.value },
-                                  }))}
-                                  style={{ minWidth: 160 }}
-                                >
-                                  <option value="">— не сопоставлять —</option>
-                                  {srcNames.map(name => (
-                                    <option key={name} value={name}>{name}</option>
-                                  ))}
-                                </select>
-                              )}
-                            </div>
+                                </div>
+                              )
+                            })()}
                           </td>
                           <td>
                             <select className="input-dark" value={p.rank || ''}
