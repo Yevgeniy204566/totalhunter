@@ -86,6 +86,17 @@ export default function AncientsPage() {
     return Number(n).toLocaleString(locale, { maximumFractionDigits: maxFractionDigits })
   }
 
+  // Итоговые нормы (общая/офицер/ветеран/на игрока) хранятся в АРС.total_quota_millions
+  // (миллионы), но при 6 вызовах на высоких уровнях сумма легко переваливает за 1000 —
+  // без переключения единиц "12 068" читается как двенадцать тысяч, а не 12 млрд.
+  function fmtQuota(millions, fractionDigits = 2) {
+    if (millions === null || millions === undefined) return '—'
+    if (Math.abs(millions) >= 1000) {
+      return `${fmtNum(millions / 1000, fractionDigits)} ${cx.powerUnitBillion}`
+    }
+    return `${fmtNum(millions, fractionDigits)} ${cx.powerUnit}`
+  }
+
   function fmtDate(iso) {
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return iso
@@ -572,11 +583,11 @@ export default function AncientsPage() {
 
             {result && c.is_owner && (
               <div className="card" style={{ marginBottom: 16 }}>
-                <div>{cx.totalQuota}: <strong>{fmtNum(result.total_quota_millions)}</strong></div>
+                <div>{cx.totalQuota}: <strong>{fmtQuota(result.total_quota_millions)}</strong></div>
                 {result.result.officer_quota !== undefined ? (
                   <>
-                    <div>{cx.officerQuota}: {fmtNum(result.result.officer_quota, 2)}</div>
-                    <div>{cx.veteranQuota}: {fmtNum(result.result.veteran_quota, 2)}</div>
+                    <div>{cx.officerQuota}: {fmtQuota(result.result.officer_quota)}</div>
+                    <div>{cx.veteranQuota}: {fmtQuota(result.result.veteran_quota)}</div>
                   </>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
@@ -587,7 +598,7 @@ export default function AncientsPage() {
                       <tbody>
                         {(result.result.players || []).map(p => (
                           <tr key={p.name}>
-                            <td>{p.name}</td><td>{p.troop_level}</td><td>{fmtNum(p.quota, 2)}</td>
+                            <td>{p.name}</td><td>{p.troop_level}</td><td>{fmtQuota(p.quota)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -817,7 +828,7 @@ export default function AncientsPage() {
                           </td>
                           <td>{p.place ?? '—'}</td>
                           <td>{p.points !== null && p.points !== undefined ? fmtNum(p.points, 0) : '—'}</td>
-                          <td>{p.quota != null ? fmtNum(p.quota, 2) : '—'}</td>
+                          <td>{fmtQuota(p.quota)}</td>
                           <td>
                             {confirmDeleteRoster[deleteKey] ? (
                               <span style={{ display: 'flex', gap: 4, alignItems: 'center', whiteSpace: 'nowrap' }}>
@@ -964,7 +975,7 @@ export default function AncientsPage() {
                         {cx.historyLevels}: {(h.summon_levels || []).join(', ')}
                       </div>
                       <div style={{ color: 'var(--credits-gold)', fontWeight: 600 }}>
-                        {cx.historyTotal}: {fmtNum(h.total_quota_millions)} {cx.powerUnit}
+                        {cx.historyTotal}: {fmtQuota(h.total_quota_millions)}
                       </div>
                     </div>
                   ))}
