@@ -76,6 +76,23 @@ async def test_admin_users_sort_by_bot_version_asc(db_session):
 
 
 @pytest.mark.asyncio
+async def test_admin_users_sort_by_bot_version_is_numeric_not_lexicographic(db_session):
+    """Real bug hit in prod: '1.8.9' < '1.8.12' numerically, but '1.8.9' > '1.8.12'
+    as a plain string ('9' > '1'). Sorting must compare version parts as integers."""
+    await _create_user(db_session, "hwidsortx0001a", bot_version="1.8.9")
+    await _create_user(db_session, "hwidsortx0002b", bot_version="1.8.12")
+    await _create_user(db_session, "hwidsortx0003c", bot_version="1.8.6")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/admin/users?sort=bot_version&sort_dir=asc",
+                                 headers={"Authorization": f"Bearer {ADMIN_TOKEN}"})
+    assert resp.status_code == 200
+    hwids = [r["hwid"] for r in resp.json()["users"] if r["hwid"].startswith("hwidsortx")]
+    assert hwids == ["hwidsortx0003c", "hwidsortx0001a", "hwidsortx0002b"]
+
+
+@pytest.mark.asyncio
 async def test_admin_users_sort_by_username_asc(db_session):
     await _create_user(db_session, "hwidsortn0001a", username="Zeta")
     await _create_user(db_session, "hwidsortn0002b", username="Alpha")

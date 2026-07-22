@@ -25,6 +25,7 @@ main.py — Total Hunter SaaS API (FastAPI + async SQLAlchemy).
 """
 
 import os
+import re
 import secrets
 import time as _time
 from datetime import datetime, timedelta, timezone
@@ -588,12 +589,29 @@ async def admin_stats(db: AsyncSession = Depends(get_db)):
 
 # ── GET /admin/users ──────────────────────────────────────────────────────────
 
-ADMIN_USERS_SORT_COLUMNS = {
-    "username":    User.username,
-    "bot_version": User.bot_version,
-    "credits":     User.credits,
-    "last_seen":   User.last_seen,
-}
+ADMIN_USERS_SORT_COLUMNS = {"username", "bot_version", "credits", "last_seen"}
+
+
+def _admin_users_sort_key(u: User, sort: str):
+    """Значение для сортировки. bot_version сравнивается по частям как числа
+    (1.8.9 < 1.8.12), а не лексикографически как строка ('9' > '1' ломало порядок)."""
+    if sort == "username":
+        return (u.username or "").lower()
+    if sort == "bot_version":
+        return tuple(int(p) for p in re.findall(r"\d+", u.bot_version))
+    if sort == "last_seen":
+        return u.last_seen
+    return u.credits  # sort == "credits"
+
+
+def _admin_users_has_sort_value(u: User, sort: str) -> bool:
+    if sort == "username":
+        return bool(u.username)
+    if sort == "bot_version":
+        return bool(u.bot_version)
+    if sort == "last_seen":
+        return u.last_seen is not None
+    return True  # credits всегда числовое поле
 
 
 @app.get("/admin/users", dependencies=[Depends(require_admin)])
@@ -610,17 +628,18 @@ async def admin_users(
     Список пользователей с поиском (HWID / email / username) и пагинацией.
     Возвращает данные для таблицы: баланс, ref_credits, онлайн, IP, версия бота.
     sort — один из ADMIN_USERS_SORT_COLUMNS (кликабельные заголовки в админке),
-    по умолчанию — последний вход (как и раньше).
+    по умолчанию — последний вход (как и раньше). Сортировка идёт в Python
+    (а не в SQL), т.к. bot_version требует натурального (числового) сравнения
+    частей версии, а не строкового ORDER BY.
     """
     now = datetime.now(timezone.utc)
     online_threshold = now - timedelta(minutes=5)
 
     if sort is not None and sort not in ADMIN_USERS_SORT_COLUMNS:
         raise HTTPException(status_code=400, detail=f"Unknown sort column: {sort}")
+    sort = sort or "last_seen"
 
-    sort_col = ADMIN_USERS_SORT_COLUMNS.get(sort, User.last_seen)
-    order = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
-    query = select(User).order_by(order, User.created_at.desc())
+    query = select(User).order_by(User.created_at.desc())
     if search:
         like = f"%{search}%"
         query = query.where(
@@ -631,12 +650,15 @@ async def admin_users(
     if online_only == '1':
         query = query.where(User.last_seen >= online_threshold)
 
-    total = (await db.execute(
-        select(func.count()).select_from(query.subquery())
-    )).scalar()
+    all_users = (await db.execute(query)).scalars().all()
 
-    result = await db.execute(query.offset((page - 1) * per_page).limit(per_page))
-    users = result.scalars().all()
+    with_value = [u for u in all_users if _admin_users_has_sort_value(u, sort)]
+    without_value = [u for u in all_users if not _admin_users_has_sort_value(u, sort)]
+    with_value.sort(key=lambda u: _admin_users_sort_key(u, sort), reverse=(sort_dir != "asc"))
+    users_sorted = with_value + without_value  # без значения — всегда в конце, как nulls_last
+
+    total = len(users_sorted)
+    users = users_sorted[(page - 1) * per_page: (page - 1) * per_page + per_page]
 
     # Referral tree counts (L1 / L2 / L3)
     rows = []
