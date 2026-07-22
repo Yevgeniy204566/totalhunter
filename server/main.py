@@ -235,8 +235,9 @@ async def check_auth(req: HwidRequest, request: Request, db: AsyncSession = Depe
         # иначе "Последний вход" в админке не совпадает с фактическим открытием бота.
         now = datetime.now(timezone.utc)
         prev_last_seen = _as_aware_utc(user.last_seen)
-        if prev_last_seen is None or prev_last_seen < now - timedelta(minutes=5):
-            user.session_started_at = now  # оффлайн→онлайн: новая сессия
+        if (prev_last_seen is None or prev_last_seen < now - timedelta(minutes=5)
+                or user.session_started_at is None):
+            user.session_started_at = now  # оффлайн→онлайн (или ещё не проставлено): новая сессия
         user.last_seen = now
 
         if user.is_banned:
@@ -396,7 +397,11 @@ async def heartbeat(req: HwidRequest, db: AsyncSession = Depends(get_db)):
             .where(User.hwid == req.hwid)
             .values(
                 session_started_at=case(
-                    (User.last_seen.is_(None) | (User.last_seen < threshold), now),
+                    (
+                        User.last_seen.is_(None) | (User.last_seen < threshold)
+                        | User.session_started_at.is_(None),
+                        now,
+                    ),
                     else_=User.session_started_at,
                 ),
                 last_seen=now,

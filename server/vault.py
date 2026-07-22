@@ -55,7 +55,11 @@ async def balance_sync(hwid: str, db: AsyncSession = Depends(get_db)):
             update(User).where(User.hwid == hwid)
             .values(
                 session_started_at=case(
-                    (User.last_seen.is_(None) | (User.last_seen < threshold), now),
+                    (
+                        User.last_seen.is_(None) | (User.last_seen < threshold)
+                        | User.session_started_at.is_(None),
+                        now,
+                    ),
                     else_=User.session_started_at,
                 ),
                 last_seen=now,

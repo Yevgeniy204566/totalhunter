@@ -7,7 +7,7 @@ TDD: GET /vault/sync/{hwid} должен обновлять last_seen на ка�
 import asyncio
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -77,6 +77,31 @@ async def test_balance_sync_sets_session_started_at_only_on_offline_to_online_tr
 
     await db_session.refresh(u)
     assert u.session_started_at == first_session_start
+
+
+@pytest.mark.asyncio
+async def test_balance_sync_backfills_session_started_at_when_null_even_if_recently_seen(db_session):
+    """Реальный кейс после миграции: у уже онлайн-пользователей last_seen свежий
+    (обновлялся старым кодом), но session_started_at ещё NULL (колонка новая).
+    "Оффлайн→онлайн" условие по last_seen не сработает — нужен отдельный
+    self-heal: session_started_at IS NULL тоже считается новой сессией."""
+    recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
+    u = User(hwid="hwidvault0003c", credits=1, ref_code="vault3", last_seen=recent,
+              session_started_at=None)
+    db_session.add(u)
+    await db_session.commit()
+
+    async def _call():
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            return await client.get(f"/vault/sync/{u.hwid}")
+
+    task = asyncio.create_task(_call())
+    await asyncio.sleep(0.05)
+    notify_balance_changed(u.hwid)
+    await task
+
+    await db_session.refresh(u)
+    assert u.session_started_at is not None
 
 
 @pytest.mark.asyncio
