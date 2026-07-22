@@ -6,10 +6,11 @@ notify_balance_changed(hwid) вызывается после начислени�
 """
 
 import asyncio
+from datetime import datetime, timezone
 from typing import Dict
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -42,8 +43,16 @@ async def balance_sync(hwid: str, db: AsyncSession = Depends(get_db)):
     finally:
         _notifiers.pop(hwid, None)
 
-    result = await db.execute(select(User).where(User.hwid == hwid))
-    user = result.scalar_one_or_none()
-    if not user:
+    # UPDATE вместо SELECT — этот long-poll работает непрерывно, пока бот
+    # открыт (даже без охоты), поэтому заодно служит heartbeat'ом для
+    # "онлайн"-статуса в админке, без единого лишнего запроса.
+    async with db.begin():
+        row = (await db.execute(
+            update(User).where(User.hwid == hwid)
+            .values(last_seen=datetime.now(timezone.utc))
+            .returning(User.credits, User.ref_credits)
+        )).first()
+
+    if not row:
         return {"credits": 0, "ref_credits": 0}
-    return {"credits": user.credits, "ref_credits": user.ref_credits}
+    return {"credits": row.credits, "ref_credits": row.ref_credits}

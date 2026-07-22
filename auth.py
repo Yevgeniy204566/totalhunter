@@ -6,6 +6,11 @@ import webbrowser
 SERVER_URL  = "https://api.total-hunter.com"
 AUTH_DOMAIN = "https://api.total-hunter.com"
 
+# Общая Session для повторяющихся вызовов (heartbeat, vault/sync long-poll) —
+# TLS-handshake один раз при первом подключении, а не на каждое переподключение
+# (long-poll переподключается каждые ~50-58 сек, пока бот открыт).
+_session = requests.Session()
+
 def get_hwid():
     """HWID = SHA256(MAC) — стабильная привязка к сетевой карте."""
     mac = str(uuid.getnode())
@@ -104,7 +109,7 @@ def get_balance_update():
     Возвращает {"credits": N, "ref_credits": M} или None при ошибке."""
     hwid = get_hwid()
     try:
-        response = requests.get(
+        response = _session.get(
             f"{SERVER_URL}/vault/sync/{hwid}",
             timeout=58
         )
@@ -124,7 +129,7 @@ def heartbeat():
     """
     hwid = get_hwid()
     try:
-        requests.post(f"{SERVER_URL}/heartbeat", json={"hwid": hwid}, timeout=3)
+        _session.post(f"{SERVER_URL}/heartbeat", json={"hwid": hwid}, timeout=3)
     except Exception:
         pass  # heartbeat не критичен — падение не останавливает бота
 
