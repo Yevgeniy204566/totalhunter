@@ -46,6 +46,29 @@ async def test_check_auth_updates_last_seen_on_login(db_session):
 
 
 @pytest.mark.asyncio
+async def test_check_auth_sets_session_started_at_on_new_session_only(db_session):
+    """session_started_at должен ставиться при переходе оффлайн→онлайн, но НЕ
+    сдвигаться на повторных check_auth в рамках уже идущей сессии (например,
+    activate_referral/claim_trial тоже дёргают check_auth) — иначе "Онлайн с
+    HH:MM" будет постоянно врать, уезжая вперёд на каждое действие."""
+    stale = datetime(2026, 7, 20, 9, 0, 0)
+    u = await _create_user(db_session, "hwidsession001", last_seen=stale)
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/check_auth", json={"hwid": "hwidsession001"})
+    await db_session.refresh(u)
+    first_start = u.session_started_at
+    assert first_start is not None
+    assert first_start.replace(tzinfo=None) > stale
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/check_auth", json={"hwid": "hwidsession001"})
+    await db_session.refresh(u)
+    assert u.session_started_at == first_start
+
+
+@pytest.mark.asyncio
 async def test_admin_users_sort_by_credits_desc(db_session):
     await _create_user(db_session, "hwidsortc0001a", credits=10)
     await _create_user(db_session, "hwidsortc0002b", credits=500)

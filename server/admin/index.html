@@ -683,7 +683,7 @@
                       <span x-text="u.referrals.l3"></span>
                     </td>
                     <td style="font-family:monospace;font-size:11px;color:#00CFFF;font-weight:700" x-text="u.bot_version||'—'"></td>
-                    <td style="color:var(--text-dim);white-space:nowrap" x-text="u.last_seen?formatDate(u.last_seen):'—'"></td>
+                    <td style="color:var(--text-dim);white-space:nowrap" x-text="sessionLabel(u)"></td>
                     <td style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="u.ip_address||'—'"></td>
                     <td>
                       <div class="actions">
@@ -733,7 +733,7 @@
                 <!-- Name / email -->
                 <div class="user-row-info">
                   <div class="user-row-name" x-text="u.username||u.hwid"></div>
-                  <div class="user-row-email" x-text="u.email||formatDate(u.last_seen)||'—'"></div>
+                  <div class="user-row-email" x-text="u.email||sessionLabel(u)"></div>
                 </div>
 
                 <!-- Credits -->
@@ -1362,6 +1362,18 @@ function adminApp() {
     formatDate(iso) {
       if (!iso) return '—';
       return new Date(iso).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+    },
+
+    sessionLabel(u) {
+      if (!u.is_online || !u.session_started_at) {
+        return u.last_seen ? this.formatDate(u.last_seen) : '—';
+      }
+      const start = new Date(u.session_started_at);
+      const startLabel = start.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const mins = Math.max(0, Math.floor((Date.now() - start.getTime()) / 60000));
+      const h = Math.floor(mins / 60), m = mins % 60;
+      const dur = h > 0 ? `${h}ч ${m}м` : `${m}м`;
+      return `Онлайн с ${startLabel} (${dur})`;
     },
 
     showToast(msg) {

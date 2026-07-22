@@ -77,6 +77,14 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+def _as_aware_utc(dt):
+    """sqlite (тесты) теряет tzinfo при чтении TIMESTAMP — трактуем naive как UTC,
+    чтобы сравнение с datetime.now(timezone.utc) не падало и не давало неверный результат."""
+    if dt and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -225,7 +233,11 @@ async def check_auth(req: HwidRequest, request: Request, db: AsyncSession = Depe
         # last_seen = момент реального входа (check_auth вызывается при каждом
         # старте бота), а не только heartbeat из HuntEngine во время охоты —
         # иначе "Последний вход" в админке не совпадает с фактическим открытием бота.
-        user.last_seen = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc)
+        prev_last_seen = _as_aware_utc(user.last_seen)
+        if prev_last_seen is None or prev_last_seen < now - timedelta(minutes=5):
+            user.session_started_at = now  # оффлайн→онлайн: новая сессия
+        user.last_seen = now
 
         if user.is_banned:
             return CheckAuthResponse(
@@ -373,12 +385,22 @@ async def heartbeat(req: HwidRequest, db: AsyncSession = Depends(get_db)):
     """
     Онлайн-пинг от бота — каждые 2-3 минуты пока бот запущен.
     Обновляет last_seen → админка считает онлайн за последние 5 минут.
+    session_started_at ставится только на переходе оффлайн→онлайн —
+    админка показывает "Онлайн с HH:MM", а не время последнего пинга.
     """
+    now = datetime.now(timezone.utc)
+    threshold = now - timedelta(minutes=5)
     async with db.begin():
         await db.execute(
             update(User)
             .where(User.hwid == req.hwid)
-            .values(last_seen=datetime.now(timezone.utc))
+            .values(
+                session_started_at=case(
+                    (User.last_seen.is_(None) | (User.last_seen < threshold), now),
+                    else_=User.session_started_at,
+                ),
+                last_seen=now,
+            )
         )
     return BasicResponse(success=True)
 
@@ -688,9 +710,7 @@ async def admin_users(
                 select(func.count(User.id)).where(User.invited_by_id.in_(l3_ids))
             )).scalar()
 
-        u_last_seen = u.last_seen
-        if u_last_seen and u_last_seen.tzinfo is None:
-            u_last_seen = u_last_seen.replace(tzinfo=timezone.utc)  # sqlite (тесты) теряет tzinfo
+        u_last_seen = _as_aware_utc(u.last_seen)
         is_online = bool(u_last_seen and u_last_seen >= online_threshold)
 
         rows.append({
@@ -706,6 +726,7 @@ async def admin_users(
             "ip_address":  u.ip_address,
             "bot_version": u.bot_version,
             "last_seen":   u.last_seen.isoformat() if u.last_seen else None,
+            "session_started_at": u.session_started_at.isoformat() if u.session_started_at else None,
             "created_at":  u.created_at.isoformat() if u.created_at else None,
             "referrals":   {"l1": l1, "l2": l2, "l3": l3},
         })

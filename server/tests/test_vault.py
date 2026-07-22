@@ -44,6 +44,42 @@ async def test_balance_sync_updates_last_seen_on_each_cycle(db_session):
 
 
 @pytest.mark.asyncio
+async def test_balance_sync_sets_session_started_at_only_on_offline_to_online_transition(db_session):
+    """Первый вызов после долгого отсутствия (или впервые) — session_started_at
+    ставится в "сейчас". Повторный вызов, пока пользователь ещё онлайн, НЕ должен
+    сдвигать session_started_at вперёд — иначе "Онлайн с HH:MM" будет врать,
+    постоянно уезжая вместе с last_seen."""
+    stale = datetime(2026, 7, 20, 9, 0, 0)
+    u = User(hwid="hwidvault0002b", credits=5, ref_code="vault2", last_seen=stale)
+    db_session.add(u)
+    await db_session.commit()
+
+    async def _call():
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            return await client.get(f"/vault/sync/{u.hwid}")
+
+    # Первый цикл — оффлайн → онлайн
+    task = asyncio.create_task(_call())
+    await asyncio.sleep(0.05)
+    notify_balance_changed(u.hwid)
+    await task
+
+    await db_session.refresh(u)
+    first_session_start = u.session_started_at
+    assert first_session_start is not None
+    assert first_session_start.replace(tzinfo=None) > stale
+
+    # Второй цикл сразу же — пользователь уже онлайн, сессия та же
+    task2 = asyncio.create_task(_call())
+    await asyncio.sleep(0.05)
+    notify_balance_changed(u.hwid)
+    await task2
+
+    await db_session.refresh(u)
+    assert u.session_started_at == first_session_start
+
+
+@pytest.mark.asyncio
 async def test_balance_sync_returns_zero_for_unknown_hwid_without_crashing(db_session):
     async def _call():
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

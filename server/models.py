@@ -48,7 +48,9 @@ class User(Base):
     ref_code     — уникальный код пользователя (раздаёт друзьям)
     invited_by_id — self-referential FK: L1 = invited_by,
                     L2 = invited_by.invited_by, L3 = ...
-    last_seen    — обновляется при /heartbeat (онлайн-счётчик в админке)
+    last_seen    — обновляется при /heartbeat и /vault/sync (онлайн-счётчик в админке)
+    session_started_at — момент перехода оффлайн→онлайн; не трогается повторными
+                   пингами внутри одной сессии (админка: "Онлайн с HH:MM")
 
     CheckConstraint: credits и ref_credits не могут уйти в минус —
     последний рубеж защиты от race condition при двойном списании.
@@ -73,6 +75,7 @@ class User(Base):
     bot_version   = Column(String(20))
     ip_address    = Column(String(45))   # последний IP (IPv4 до 15, IPv6 до 45 символов)
     last_seen     = Column(TIMESTAMP(timezone=True))
+    session_started_at = Column(TIMESTAMP(timezone=True), nullable=True)
     hwid_reset_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at    = Column(TIMESTAMP(timezone=True), nullable=False,
                            server_default=func.now())
