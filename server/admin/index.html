@@ -244,6 +244,9 @@
       letter-spacing: .5px;
     }
 
+    .th-sort:hover { color: var(--accent); }
+    .th-sort span { font-size: 9px; color: var(--accent); }
+
     td {
       padding: 9px 10px;
       border-bottom: 1px solid rgba(37,45,61,.6);
@@ -634,13 +637,21 @@
             <table>
               <thead><tr>
                 <th>Статус</th>
-                <th>Игрок</th>
+                <th class="th-sort" @click="sortBy('username')" style="cursor:pointer;user-select:none">
+                  Игрок <span x-text="sortArrow('username')"></span>
+                </th>
                 <th>Email</th>
-                <th>Баланс ◆</th>
+                <th class="th-sort" @click="sortBy('credits')" style="cursor:pointer;user-select:none">
+                  Баланс ◆ <span x-text="sortArrow('credits')"></span>
+                </th>
                 <th>Реф. ◆</th>
                 <th>L1/L2/L3</th>
-                <th>Версия бота</th>
-                <th>Последний вход</th>
+                <th class="th-sort" @click="sortBy('bot_version')" style="cursor:pointer;user-select:none">
+                  Версия бота <span x-text="sortArrow('bot_version')"></span>
+                </th>
+                <th class="th-sort" @click="sortBy('last_seen')" style="cursor:pointer;user-select:none">
+                  Последний вход <span x-text="sortArrow('last_seen')"></span>
+                </th>
                 <th>IP</th>
                 <th>Действия</th>
               </tr></thead>
@@ -1107,6 +1118,7 @@ function adminApp() {
     stats: {},
     users: [], totalUsers: 0,
     page_num: 1, search: '', onlineOnly: false,
+    sortKey: 'last_seen', sortDir: 'desc',
     logs: [],
     crashes: [],
     broadcastMsg: '',
@@ -1196,12 +1208,27 @@ function adminApp() {
 
     async loadUsers() {
       this.loading = true;
-      const q = new URLSearchParams({ page: this.page_num, per_page: PER });
+      const q = new URLSearchParams({
+        page: this.page_num, per_page: PER,
+        sort: this.sortKey, sort_dir: this.sortDir,
+      });
       if (this.search) q.append('search', this.search);
       if (this.onlineOnly) q.append('online_only', '1');
       const r = await fetch(`${API}/admin/users?${q}`, { headers: this.headers() });
       if (r.ok) { const d = await r.json(); this.users = d.users; this.totalUsers = d.total; }
       this.loading = false;
+    },
+
+    sortBy(key) {
+      if (this.sortKey === key) { this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; }
+      else { this.sortKey = key; this.sortDir = key === 'username' ? 'asc' : 'desc'; }
+      this.page_num = 1;
+      this.loadUsers();
+    },
+
+    sortArrow(key) {
+      if (this.sortKey !== key) return '';
+      return this.sortDir === 'asc' ? '▲' : '▼';
     },
 
     adjustCreditsInput(u) {

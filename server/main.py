@@ -221,6 +221,10 @@ async def check_auth(req: HwidRequest, request: Request, db: AsyncSession = Depe
         user = await _get_or_create_user(req.hwid, db, ip=client_ip)
         if req.bot_version:
             user.bot_version = req.bot_version
+        # last_seen = момент реального входа (check_auth вызывается при каждом
+        # старте бота), а не только heartbeat из HuntEngine во время охоты —
+        # иначе "Последний вход" в админке не совпадает с фактическим открытием бота.
+        user.last_seen = datetime.now(timezone.utc)
 
         if user.is_banned:
             return CheckAuthResponse(
@@ -584,6 +588,14 @@ async def admin_stats(db: AsyncSession = Depends(get_db)):
 
 # ── GET /admin/users ──────────────────────────────────────────────────────────
 
+ADMIN_USERS_SORT_COLUMNS = {
+    "username":    User.username,
+    "bot_version": User.bot_version,
+    "credits":     User.credits,
+    "last_seen":   User.last_seen,
+}
+
+
 @app.get("/admin/users", dependencies=[Depends(require_admin)])
 async def admin_users(
     db: AsyncSession = Depends(get_db),
@@ -591,15 +603,24 @@ async def admin_users(
     online_only: Optional[str] = None,
     page: int = 1,
     per_page: int = 50,
+    sort: Optional[str] = None,
+    sort_dir: str = "desc",
 ):
     """
     Список пользователей с поиском (HWID / email / username) и пагинацией.
     Возвращает данные для таблицы: баланс, ref_credits, онлайн, IP, версия бота.
+    sort — один из ADMIN_USERS_SORT_COLUMNS (кликабельные заголовки в админке),
+    по умолчанию — последний вход (как и раньше).
     """
     now = datetime.now(timezone.utc)
     online_threshold = now - timedelta(minutes=5)
 
-    query = select(User).order_by(User.last_seen.desc().nulls_last(), User.created_at.desc())
+    if sort is not None and sort not in ADMIN_USERS_SORT_COLUMNS:
+        raise HTTPException(status_code=400, detail=f"Unknown sort column: {sort}")
+
+    sort_col = ADMIN_USERS_SORT_COLUMNS.get(sort, User.last_seen)
+    order = sort_col.asc().nulls_last() if sort_dir == "asc" else sort_col.desc().nulls_last()
+    query = select(User).order_by(order, User.created_at.desc())
     if search:
         like = f"%{search}%"
         query = query.where(
@@ -645,7 +666,10 @@ async def admin_users(
                 select(func.count(User.id)).where(User.invited_by_id.in_(l3_ids))
             )).scalar()
 
-        is_online = bool(u.last_seen and u.last_seen >= online_threshold)
+        u_last_seen = u.last_seen
+        if u_last_seen and u_last_seen.tzinfo is None:
+            u_last_seen = u_last_seen.replace(tzinfo=timezone.utc)  # sqlite (тесты) теряет tzinfo
+        is_online = bool(u_last_seen and u_last_seen >= online_threshold)
 
         rows.append({
             "id":          u.id,
