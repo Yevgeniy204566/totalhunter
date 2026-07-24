@@ -331,6 +331,38 @@ class TestScrollAndFindEndOfList:
                                     result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=3)
         assert result is None
 
+    def test_bails_out_instead_of_scrolling_forever_when_crop_stays_empty(self):
+        """
+        Ревью основного фикса: если MENU_SCAN_REGION вылезает за экран НЕ разово,
+        а постоянно (сломанная калибровка/разрешение у игрока), пропуск сравнения
+        на каждой итерации означал бы бесконечный тихий скролл без единого признака
+        проблемы — раньше на этом месте был хотя бы громкий крах, который мы видели
+        в логах. Вместо этого после EMPTY_MENU_CROP_STREAK_LIMIT (5) пустых вырезок
+        подряд отдаём None — включается штатный сброс цикла (_run_cycle: reset +
+        sleep 30 + повтор), а не вечный молчаливый скролл.
+        """
+        from unittest.mock import patch, MagicMock
+        import numpy as np
+        hunter = self._make_hunter()
+        no_result = MagicMock()
+        no_result.boxes = []
+        hunter._model.return_value = [no_result]
+        tiny_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch.object(hunter, '_screenshot', return_value=tiny_img):
+                with patch.object(hunter, '_click'):
+                    with patch.object(hunter, '_random_pause'):
+                        with patch('crypt_hunter.time.sleep'):
+                            with patch('crypt_hunter.pyautogui.scroll'):
+                                with patch('crypt_hunter.pyautogui.moveTo'):
+                                    # max_scrolls=0 — как в реальном вызове из _run_cycle,
+                                    # единственный выход должен быть через streak-лимит.
+                                    result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=0)
+        assert result is None
+        # Возврат случается на 5-й итерации ДО вызова YOLO (пустая вырезка обнаружена
+        # раньше) — значит модель успевает отработать только на первых 4 попытках.
+        assert hunter._model.call_count == 4
+
 
 class TestRunCycleEndOfList:
     """_run_cycle без счётчика resets — просто reset + sleep(30) + повтор."""
