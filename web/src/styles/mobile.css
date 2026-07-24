@@ -331,8 +331,10 @@
     min-height: 44px; /* минимум для пальца */
   }
 
-  /* Кнопки хедера (Telegram/Discord/язык/выход) — минимум для пальца */
-  .header-btn {
+  /* Кнопки хедера (Telegram/Discord/язык/выход) — минимум для пальца.
+     :not(.header-download-btn) — иначе эта же специфичность (0,0,1,0) и более
+     позднее место в файле перебивали display:none у кнопки скачивания (строка 28). */
+  .header-btn:not(.header-download-btn) {
     min-height: 44px !important;
     min-width: 44px !important;
     display: inline-flex !important;
