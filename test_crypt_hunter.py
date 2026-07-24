@@ -305,6 +305,32 @@ class TestScrollAndFindEndOfList:
                                     result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=5)
         assert result is None
 
+    def test_does_not_crash_when_menu_crop_is_empty(self):
+        """
+        AD318469CF106F61, 24.07.2026: cv2.absdiff() тихо возвращает None (не бросает
+        исключение), когда оба входных массива пустые — а не при обычном несовпадении
+        размеров (там честный cv2.error). Если MENU_SCAN_REGION вылезает за границы
+        реального скриншота (нестандартное разрешение/масштаб), вырезка пустая, и
+        diff.mean() падал AttributeError: 'NoneType' object has no attribute 'mean'.
+        Скриншот 100x100 меньше MENU_SCAN_REGION (597,242,721,575) → пустой вырез.
+        """
+        from unittest.mock import patch, MagicMock
+        import numpy as np
+        hunter = self._make_hunter()
+        no_result = MagicMock()
+        no_result.boxes = []
+        hunter._model.return_value = [no_result]
+        tiny_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch.object(hunter, '_screenshot', return_value=tiny_img):
+                with patch.object(hunter, '_click'):
+                    with patch.object(hunter, '_random_pause'):
+                        with patch('crypt_hunter.time.sleep'):
+                            with patch('crypt_hunter.pyautogui.scroll'):
+                                with patch('crypt_hunter.pyautogui.moveTo'):
+                                    result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=3)
+        assert result is None
+
 
 class TestRunCycleEndOfList:
     """_run_cycle без счётчика resets — просто reset + sleep(30) + повтор."""

@@ -423,7 +423,13 @@ class CryptHunter:
 
             # Конец списка: если меню не изменилось после скролла — список встал
             curr_menu_crop = img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w]
-            if prev_menu_crop is not None:
+            # Вырезка может оказаться пустой (MENU_SCAN_REGION вылез за границы
+            # реального скриншота при нестандартном разрешении/масштабе калибровки) —
+            # cv2.absdiff() на двух пустых массивах тихо возвращает None вместо ошибки,
+            # и .mean() падает AttributeError. Не считаем это концом списка.
+            if (prev_menu_crop is not None
+                    and curr_menu_crop.size > 0
+                    and curr_menu_crop.shape == prev_menu_crop.shape):
                 diff = cv2.absdiff(curr_menu_crop, prev_menu_crop)
                 if diff.mean() < 2.0:
                     return None
