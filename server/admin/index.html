@@ -508,6 +508,9 @@
     <div class="nav-item" :class="{active:page==='crashes'}" @click="page='crashes';loadCrashes()">
       <span class="material-symbols-rounded">crisis_alert</span> Краши
     </div>
+    <div class="nav-item" :class="{active:page==='purchases'}" @click="page='purchases';loadPurchases()">
+      <span class="material-symbols-rounded">payments</span> Покупки
+    </div>
     <div class="nav-item" :class="{active:page==='broadcast'}" @click="page='broadcast'">
       <span class="material-symbols-rounded">campaign</span> Broadcast
     </div>
@@ -846,6 +849,43 @@
       </div>
     </template>
 
+    <!-- PURCHASES -->
+    <template x-if="page==='purchases'">
+      <div>
+        <div class="page-title">Покупки</div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Последние покупки</div>
+            <button class="btn btn-ghost btn-sm" @click="loadPurchases()">
+              <span class="material-symbols-rounded" style="font-size:15px">refresh</span>
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Время</th><th>Покупатель</th><th>HWID</th><th>Пакет</th><th>Сумма</th><th>Кредиты</th>
+              </tr></thead>
+              <tbody>
+                <template x-for="p in purchases" :key="p.id">
+                  <tr>
+                    <td style="white-space:nowrap;color:var(--text-dim)" x-text="formatDate(p.created_at)"></td>
+                    <td x-text="p.name"></td>
+                    <td style="font-family:monospace;font-size:10px" x-text="p.hwid || '—'"></td>
+                    <td><span style="background:rgba(255,179,0,.12);color:var(--orange);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600" x-text="p.package || '?'"></span></td>
+                    <td style="color:var(--accent)" x-text="p.usd_amount ? ('$'+p.usd_amount) : '—'"></td>
+                    <td style="color:var(--accent)" x-text="'+'+p.credits"></td>
+                  </tr>
+                </template>
+                <tr x-show="purchases.length===0">
+                  <td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Покупок пока не было</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+
     <!-- BROADCAST -->
     <template x-if="page==='broadcast'">
       <div>
@@ -1121,6 +1161,7 @@ function adminApp() {
     sortKey: 'last_seen', sortDir: 'desc',
     logs: [],
     crashes: [],
+    purchases: [],
     broadcastMsg: '',
     feedbackItems: [],
     currentVersion: '',
@@ -1305,6 +1346,11 @@ function adminApp() {
     async loadCrashes() {
       const r = await fetch(`${API}/admin/crashes?limit=50`, { headers: this.headers() });
       if (r.ok) this.crashes = await r.json();
+    },
+
+    async loadPurchases() {
+      const r = await fetch(`${API}/admin/purchases?limit=50`, { headers: this.headers() });
+      if (r.ok) this.purchases = await r.json();
     },
 
     async clearBroadcast() {

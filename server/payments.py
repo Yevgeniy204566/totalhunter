@@ -12,7 +12,7 @@ import os
 import uuid
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 logger = logging.getLogger(__name__)
 from fastapi.responses import JSONResponse
@@ -24,6 +24,7 @@ from models import Order, Transaction, User
 from schemas import PaymentCreateRequest, PaymentCreateResponse
 from web_routes import get_web_user
 from vault import notify_balance_changed
+from tg_channel import send_purchase_alert
 
 router = APIRouter(prefix="/web", tags=["payments"])
 
@@ -163,6 +164,7 @@ async def payment_create(
 @router.post("/payment/webhook")
 async def payment_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     body = await request.body()
@@ -213,7 +215,20 @@ async def payment_webhook(
 
         await _apply_referral_cascade(db, user, order.credits_total)
         order.status = "paid"
-        user_hwid = user.hwid  # capture before session closes
+        # capture before session closes — ORM attrs unavailable after commit
+        user_hwid    = user.hwid
+        user_name    = user.username or user.email or f"user#{user.id}"
+        user_ip      = user.ip_address
+        bot_version  = user.bot_version
+        package      = order.package
+        usd_amount   = order.usd_amount
+        credits_total = order.credits_total
 
     notify_balance_changed(user_hwid)  # wake bot's long-poll after commit
+    background_tasks.add_task(
+        send_purchase_alert,
+        name=user_name, hwid=user_hwid, package=package,
+        usd_amount=str(usd_amount), credits=credits_total,
+        ip=user_ip, bot_version=bot_version,
+    )
     return JSONResponse({"status": "ok"})

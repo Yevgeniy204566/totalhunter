@@ -12,6 +12,12 @@
    - Run TotalHunter.exe
    - Sign in with your Google account
 
+   IMPORTANT: Fully extract the ZIP before running the app. Do NOT
+   double-click TotalHunter.exe from inside the archive viewer
+   (WinRAR / 7-Zip) — this launches the bot from a temporary folder
+   and can cause it to crash, especially if you click more than once
+   and end up running several copies at the same time.
+
 --------------------------------------------------------------------------------
 2. CALIBRATION (one time only)
    Open the game exactly as you will play it (browser or client).
@@ -135,6 +141,12 @@ Support    : totalhunter.support@gmail.com
    - Распакуй TotalHunter.zip в любую папку
    - Запусти TotalHunter.exe
    - Войди через Google-аккаунт
+
+   ВАЖНО: Сначала полностью распакуй ZIP, потом запускай программу.
+   НЕ запускай TotalHunter.exe двойным кликом прямо из окна архиватора
+   (WinRAR / 7-Zip) — в этом случае бот стартует из временной папки и
+   может упасть с ошибкой, особенно если кликнуть несколько раз и
+   случайно запустить сразу несколько копий одновременно.
 
 --------------------------------------------------------------------------------
 2. КАЛИБРОВКА (один раз)

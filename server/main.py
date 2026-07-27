@@ -1033,6 +1033,30 @@ async def admin_activity(metric: str, db: AsyncSession = Depends(get_db)):
 
 # ── GET /admin/crashes ────────────────────────────────────────────────────────
 
+@app.get("/admin/purchases", dependencies=[Depends(require_admin)])
+async def admin_purchases(db: AsyncSession = Depends(get_db), limit: int = 50):
+    """Последние N покупок (Transaction.type == 'purchase') с данными покупателя."""
+    result = await db.execute(
+        select(Transaction, User)
+        .join(User, User.id == Transaction.user_id)
+        .where(Transaction.type == "purchase")
+        .order_by(Transaction.created_at.desc())
+        .limit(limit)
+    )
+    return [
+        {
+            "id":          t.id,
+            "name":        u.username or u.email or f"user#{u.id}",
+            "hwid":        u.hwid,
+            "package":     t.package,
+            "usd_amount":  str(t.usd_amount) if t.usd_amount is not None else None,
+            "credits":     t.amount,
+            "created_at":  t.created_at.isoformat() if t.created_at else None,
+        }
+        for t, u in result.all()
+    ]
+
+
 @app.get("/admin/crashes", dependencies=[Depends(require_admin)])
 async def admin_crashes(db: AsyncSession = Depends(get_db), limit: int = 50):
     """Последние N crash-отчётов от ботов."""
