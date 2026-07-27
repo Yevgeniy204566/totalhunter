@@ -24,15 +24,6 @@ const ROUTES = [
     faqLang:     'en',
   },
   {
-    path: '/features',
-    lang: 'en',
-    title:       'Total Hunter Features — ROY System, Crypts, Exchanges | Total Battle',
-    description: 'ROY system, auto-crypt collection and mercenary exchange hunting in Total Battle. How the collective coordinate pool and neural network search work.',
-    canonical:   `${BASE}/features`,
-    enHref:      `${BASE}/features`,
-    ruHref:      `${BASE}/ru/features`,
-  },
-  {
     path: '/guide',
     lang: 'en',
     title:       'Total Hunter Guide — Setup, Calibration & Launch | Total Battle',
@@ -79,15 +70,6 @@ const ROUTES = [
     enHref:      `${BASE}/`,
     ruHref:      `${BASE}/ru`,
     faqLang:     'ru',
-  },
-  {
-    path: '/ru/features',
-    lang: 'ru',
-    title:       'Возможности Total Hunter — Рой, склепы, биржи | Total Battle автоматизация',
-    description: 'Система РОЙ, автосбор склепов и поиск бирж наёмников в Total Battle. Как работает коллективный пул координат и нейросетевой поиск.',
-    canonical:   `${BASE}/ru/features`,
-    enHref:      `${BASE}/features`,
-    ruHref:      `${BASE}/ru/features`,
   },
   {
     path: '/ru/guide',
