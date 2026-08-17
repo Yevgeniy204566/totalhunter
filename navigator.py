@@ -434,6 +434,8 @@ class CoastalSnakeNavigator:
     Coast angle is re-detected from minimap at each step (EMA-smoothed).
     """
 
+    DIVE_DEPTH_CAP = 10  # потолок роста глубины нырка — максимум GUI-ползунка
+
     def __init__(
         self,
         center_x: int   = 90,
@@ -491,6 +493,12 @@ class CoastalSnakeNavigator:
         self._steps_since_shift = 0
         self._last_move_vec = (0.0, 0.0)  # последний вектор джойстика — для backtracking
 
+        # Рост глубины нырка: каждые footprint_ttl секунд без найденной биржи,
+        # max_inland_steps += 1 (потолок — DIVE_DEPTH_CAP, максимум GUI-ползунка).
+        # Таймер лениво стартует с первого шага, не с момента конструирования
+        # объекта — см. _maybe_grow_dive_depth().
+        self._dive_growth_next_at = None
+
     def reset(self):
         self._state         = 'HOMING'
         self._inland_steps  = 0
@@ -505,6 +513,7 @@ class CoastalSnakeNavigator:
         self._shift_vec_set      = False
         self._steps_since_shift  = 0
         self._footprint.reset()
+        self._dive_growth_next_at = None
 
     # ── calibration helper (same API as CompassNavigator) ────────────────
     def move(self, direction: str):
@@ -599,6 +608,27 @@ class CoastalSnakeNavigator:
         else:
             self._click_vec(iv[0], iv[1])
         self._steps_since_shift += 1
+
+    def _maybe_grow_dive_depth(self) -> None:
+        """Каждые footprint_ttl секунд без найденной биржи — max_inland_steps += 1,
+        до потолка DIVE_DEPTH_CAP. Таймер лениво стартует с первого реального
+        вызова (не с момента __init__/конструирования) — совпадает с реальным
+        началом охоты, а не с моментом создания объекта Python.
+
+        Безопасно относительно золотого правила нырок→сдвиг→возврат→сдвиг: цикл
+        всегда читает max_inland_steps заново на каждом шаге, поэтому рост
+        глубины лишь продлевает текущий нырок — переход в RETURNING и расчёт
+        return_steps происходят от уже актуального (выросшего) значения.
+        """
+        if self._footprint_ttl <= 0:
+            return
+        now = time.time()
+        if self._dive_growth_next_at is None:
+            self._dive_growth_next_at = now + self._footprint_ttl
+            return
+        while now >= self._dive_growth_next_at and self.max_inland_steps < self.DIVE_DEPTH_CAP:
+            self.max_inland_steps += 1
+            self._dive_growth_next_at += self._footprint_ttl
 
     def _effective_delta(self) -> int:
         """Scale return_delta_px by how horizontal the dive direction is.
@@ -789,6 +819,8 @@ class CoastalSnakeNavigator:
         never changes — guarantees consistent strip direction all session.
         Walls (left + mirror) are drawn at each HOMING→DIVING transition.
         """
+        self._maybe_grow_dive_depth()
+
         if self._state == 'HOMING':
             info = self._read_minimap(frame=frame)   # angle/direction update happens here
 

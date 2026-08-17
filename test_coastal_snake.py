@@ -782,3 +782,91 @@ class TestReadMinimapFootprintAhead:
             result = nav._read_minimap()
         assert result['has_footprint_ahead'] is False, \
             "Footprint disabled → must not report wall even if pixels exist"
+
+
+# ── dive depth growth — every footprint_ttl seconds, +1, capped at 10 ─────────
+
+class TestDiveDepthGrowth:
+    """Глубина нырка растёт каждые footprint_ttl секунд без найденной биржи,
+    до потолка 10 (максимум ползунка в GUI). Владелец 2026-08-18: привязать
+    рост к уже существующей настройке 'Память следов', не заводить новую.
+    Таймер роста лениво стартует с первого реального вызова (не с момента
+    конструирования объекта) — иначе не совпадает с реальным началом охоты."""
+
+    def _make(self, max_inland=2, footprint_ttl=100.0):
+        nav = CoastalSnakeNavigator(
+            center_x=90, center_y=925, step=13,
+            max_inland_steps=max_inland,
+            footprint_ttl=footprint_ttl,
+        )
+        nav._click_vec    = MagicMock()
+        nav._grab_minimap = MagicMock()
+        return nav
+
+    def test_depth_unchanged_before_ttl_elapsed(self):
+        nav = self._make(max_inland=2, footprint_ttl=100.0)
+        with patch('navigator.time.time', return_value=1_000_000.0):
+            nav._maybe_grow_dive_depth()  # первый вызов — стартует таймер
+        with patch('navigator.time.time', return_value=1_000_050.0):  # +50s < ttl
+            nav._maybe_grow_dive_depth()
+        assert nav.max_inland_steps == 2
+
+    def test_depth_grows_by_one_after_ttl_elapsed(self):
+        nav = self._make(max_inland=2, footprint_ttl=100.0)
+        with patch('navigator.time.time', return_value=1_000_000.0):
+            nav._maybe_grow_dive_depth()  # старт таймера
+        with patch('navigator.time.time', return_value=1_000_101.0):  # +101s >= ttl
+            nav._maybe_grow_dive_depth()
+        assert nav.max_inland_steps == 3
+
+    def test_depth_growth_capped_at_ten(self):
+        nav = self._make(max_inland=9, footprint_ttl=10.0)
+        with patch('navigator.time.time', return_value=1_000_000.0):
+            nav._maybe_grow_dive_depth()  # старт таймера
+        # Далеко вперёд — несколько периодов ttl сразу пройдено разом
+        with patch('navigator.time.time', return_value=1_000_500.0):
+            nav._maybe_grow_dive_depth()
+        assert nav.max_inland_steps == 10, "Потолок — 10, как максимум GUI-ползунка"
+
+    def test_full_dive_cycle_still_completes_when_depth_grows_mid_dive(self):
+        """Золотое правило: нырок→сдвиг→возврат→сдвиг обязан завершиться
+        полностью, даже если глубина выросла прямо во время DIVING.
+
+        Трасса при max_inland=2, ttl=5, начало t=1000:
+          step#1 (t=1000): HOMING→DIVING (fallthrough), inland_steps 0→1
+          step#2 (t=1000): DIVING, inland_steps 1→2
+          step#3 (t=1006, >=ttl): рост 2→3, DIVING inland_steps 2→3 (глубже старого предела!)
+          step#4 (t=1006): DIVING, inland_steps(3)>=max(3) → shift → RETURNING
+        """
+        nav = self._make(max_inland=2, footprint_ttl=5.0)
+        t = [1_000_000.0]
+
+        def _fake_time():
+            return t[0]
+
+        with patch('navigator.time.time', side_effect=_fake_time), \
+             patch.object(nav, '_read_minimap',
+                          return_value=_info(is_at_coast=True)), \
+             patch.object(nav, '_is_at_coast_now', return_value=True):
+            nav.step()  # step#1 — HOMING→DIVING, inland_steps→1
+            assert nav._state == 'DIVING'
+
+            nav.step()  # step#2 — inland_steps→2
+            t[0] = 1_000_006.0  # форсируем рост глубины (>= ttl с момента старта таймера)
+
+            nav.step()  # step#3 — рост 2→3, inland_steps→3 (глубже старого предела 2)
+            assert nav.max_inland_steps == 3, "Глубина должна была вырасти к этому шагу"
+            assert nav._state == 'DIVING', \
+                "На выросшем пределе нырок должен продолжаться, а не обрываться"
+
+            nav.step()  # step#4 — inland_steps(3) >= max(3) → RETURNING
+            assert nav._state == 'RETURNING', \
+                f"Ожидали переход в RETURNING после выросшей глубины, state={nav._state}"
+
+            # Прогоняем RETURNING до конца — цикл обязан завершиться в HOMING
+            for _ in range(20):
+                if nav._state == 'HOMING':
+                    break
+                nav.step()
+            assert nav._state == 'HOMING', \
+                "Полный цикл нырок→сдвиг→возврат→сдвиг обязан завершиться, даже с выросшей глубиной"

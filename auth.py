@@ -47,7 +47,7 @@ def check_license():
     hwid = get_hwid()
     try:
         response = requests.post(f"{SERVER_URL}/check_auth",
-                                 json={"hwid": hwid, "bot_version": VERSION}, timeout=5)
+                                 json={"hwid": hwid, "bot_version": VERSION}, timeout=15)
         _mark_contact_success()
         if response.status_code == 200:
             return response.json()
@@ -62,7 +62,7 @@ def generate_link_code():
     hwid = get_hwid()
     try:
         response = requests.post(f"{SERVER_URL}/web/link/generate",
-                                 json={"hwid": hwid}, timeout=5)
+                                 json={"hwid": hwid}, timeout=15)
         data = response.json()
         return data.get("code"), data.get("expires_in_seconds", 600)
     except Exception as e:
@@ -86,8 +86,8 @@ def activate_referral(code):
     """Отправляет код пригласителя на сервер для получения бонуса"""
     hwid = get_hwid()
     try:
-        response = requests.post(f"{SERVER_URL}/activate_referral", 
-                                 json={"hwid": hwid, "ref_code": code}, timeout=5)
+        response = requests.post(f"{SERVER_URL}/activate_referral",
+                                 json={"hwid": hwid, "ref_code": code}, timeout=15)
         return response.json()
     except Exception as e:
         log_error_to_server(f"Activate Ref Error: {str(e)}")
@@ -97,7 +97,7 @@ def get_free_trial():
     """Запрос 300 стартовых попыток (Trial)"""
     hwid = get_hwid()
     try:
-        response = requests.post(f"{SERVER_URL}/claim_trial", json={"hwid": hwid}, timeout=5)
+        response = requests.post(f"{SERVER_URL}/claim_trial", json={"hwid": hwid}, timeout=15)
         return response.json()
     except Exception as e:
         log_error_to_server(f"Trial Claim Error: {str(e)}")
