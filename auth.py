@@ -1,4 +1,5 @@
 import requests
+import time
 import uuid
 import hashlib
 import webbrowser
@@ -10,6 +11,23 @@ AUTH_DOMAIN = "https://api.total-hunter.com"
 # TLS-handshake один раз при первом подключении, а не на каждое переподключение
 # (long-poll переподключается каждые ~50-58 сек, пока бот открыт).
 _session = requests.Session()
+
+# Offline-guard: время последнего УСПЕШНОГО ответа сервера (любой HTTP-статус —
+# даже 402 подтверждает, что сеть у процесса бота работает). Обновляется в
+# check_license/spend_credit/get_balance_update/heartbeat. Рабочие циклы (crypt/exchange)
+# останавливаются, если не обновлялось дольше HEARTBEAT_TIMEOUT — защита от блокировки
+# только процесса TotalHunter.exe через firewall, пока игра и интернет работают нормально.
+HEARTBEAT_TIMEOUT = 120
+last_successful_contact = time.time()
+
+
+def _mark_contact_success():
+    global last_successful_contact
+    last_successful_contact = time.time()
+
+
+def seconds_since_last_contact():
+    return time.time() - last_successful_contact
 
 def get_hwid():
     """HWID = SHA256(MAC) — стабильная привязка к сетевой карте."""
@@ -30,6 +48,7 @@ def check_license():
     try:
         response = requests.post(f"{SERVER_URL}/check_auth",
                                  json={"hwid": hwid, "bot_version": VERSION}, timeout=5)
+        _mark_contact_success()
         if response.status_code == 200:
             return response.json()
         return {"authorized": False, "credits": 0, "message": "Ошибка сервера"}
@@ -97,6 +116,7 @@ def spend_credit(hunt_type: str = "crypt"):
             json={"hwid": hwid, "hunt_type": hunt_type},
             timeout=5,
         )
+        _mark_contact_success()
         if response.status_code == 402:
             return {"success": False, "low_credits": True, "message": response.json().get("detail", {}).get("message", "")}
         return response.json()
@@ -114,6 +134,7 @@ def get_balance_update():
             timeout=58
         )
         if response.status_code == 200:
+            _mark_contact_success()
             return response.json()
     except requests.exceptions.Timeout:
         pass  # Нормально — сервер завершил цикл, переподключаемся
@@ -130,6 +151,7 @@ def heartbeat():
     hwid = get_hwid()
     try:
         _session.post(f"{SERVER_URL}/heartbeat", json={"hwid": hwid}, timeout=3)
+        _mark_contact_success()
     except Exception:
         pass  # heartbeat не критичен — падение не останавливает бота
 
