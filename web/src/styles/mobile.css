@@ -163,7 +163,7 @@
   }
 
   .landing-stats-grid {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr !important;
     gap: 10px !important;
   }
 
@@ -222,7 +222,7 @@
   /* Отступ снизу чтобы контент не залезал под баннер+nav */
   .main-content { padding-bottom: calc(50px + 64px) !important; }
 
-  /* ── Landing: Screenshots — колонка на мобиле ───────────── */
+  /* ── Landing: Screenshots — колонка на мобиле, поменьше ──── */
   .landing-screenshots-row {
     flex-direction: column !important;
     gap: 16px !important;
@@ -233,9 +233,22 @@
     margin-left: 0 !important;
     transform: none !important;
     transition: none !important;
-    width: min(90vw, 340px) !important;
+    width: min(72vw, 240px) !important;
     max-width: 100% !important;
   }
+  /* Склепы выше Бирж внутри стека (Screenshot3D рендерит Биржи первым в DOM) */
+  .landing-screenshots-row img:nth-child(1) { order: 2 !important; }
+  .landing-screenshots-row img:nth-child(2) { order: 1 !important; }
+
+  /* ── Landing: показ-кластер — видео → скрины → статистика ── */
+  .landing-showcase-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .landing-showcase-video       { order: 1 !important; }
+  .landing-showcase-screenshots { order: 2 !important; }
+  .landing-screenshots-download { order: 3 !important; }
+  .landing-showcase-stats       { order: 4 !important; }
 
   /* ── Публичная таблица клана ────────────────────────────── */
 

@@ -357,8 +357,13 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Showcase cluster (screenshots/CTA/video/stats) — order stays
+           document order on desktop; mobile.css flips it to flex+order
+           so video leads, screenshots follow smaller, stats stack under ── */}
+      <div className="landing-showcase-mobile">
+
       {/* ── Screenshots 3D ─────────────────────────────────────── */}
-      <section style={{
+      <section className="landing-showcase-screenshots" style={{
         padding: '64px 24px 56px',
         background: 'var(--bg)',
         overflow: 'hidden',
@@ -415,10 +420,12 @@ export default function LandingPage() {
       </div>
 
       {/* ── Demo Video ─────────────────────────────────────────── */}
-      <DemoVideo lang={lang} />
+      <div className="landing-showcase-video">
+        <DemoVideo lang={lang} />
+      </div>
 
       {/* ── Live Stats ─────────────────────────────────────────── */}
-      <section style={{
+      <section className="landing-showcase-stats" style={{
         padding: '72px 24px',
         background: 'linear-gradient(180deg, var(--bg) 0%, var(--card) 100%)',
         borderTop: '1px solid var(--outline)', borderBottom: '1px solid var(--outline)',
@@ -438,6 +445,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      </div>
       {/* ── Features ───────────────────────────────────────────── */}
       <section id="features" style={{ padding: '88px 24px', background: 'var(--card)' }}>
         <div style={{ maxWidth: 920, margin: '0 auto' }}>
