@@ -345,7 +345,12 @@ async def send_feedback(
 @router.post("/link/generate", response_model=LinkGenerateResponse)
 async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get_db)):
     code = _generate_link_code()
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    # Раньше код жил 10 минут — юзеры не успевали зайти на сайт и залогиниться
+    # через Google, код истекал, повторный клик в боте был заблокирован
+    # (см. handle_login) → люди застревали без возможности привязать аккаунт.
+    # Код теперь живёт, пока не будет использован или не сгенерирован новый
+    # для того же HWID (generate уже удаляет старые коды этого HWID выше).
+    expires_at = datetime.now(timezone.utc) + timedelta(days=3650)
 
     async with db.begin():
         existing = await db.execute(select(LinkCode).where(LinkCode.hwid == req.hwid))
@@ -353,7 +358,7 @@ async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get
             await db.delete(row)
         db.add(LinkCode(hwid=req.hwid, code=code, expires_at=expires_at))
 
-    return LinkGenerateResponse(code=code, expires_in_seconds=600)
+    return LinkGenerateResponse(code=code, expires_in_seconds=int(timedelta(days=3650).total_seconds()))
 
 
 TRIAL_CREDITS    = 100

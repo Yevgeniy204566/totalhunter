@@ -3447,10 +3447,13 @@ class TotalHunterApp(ctk.CTk):
             messagebox.showerror("Hunter", "Connection error. Check internet and try again.")
             return
 
-        # Show code in button + open devices page
+        # Show code in button — остаётся кликабельной: код больше не истекает
+        # за 10 мин (сервер), но юзер может застрять на сайте/логине Google и
+        # ему нужен способ повторить попытку без рестарта бота. Повторный клик
+        # просто сгенерирует новый код (старый инвалидируется на сервере).
         self.login_button.configure(
-            text=f"Code: {code}   (10 min)",
-            state="disabled", fg_color="#1B3A4B",
+            text=f"Code: {code}   (click to retry)",
+            fg_color="#1B3A4B",
             hover_color="#1B3A4B",
         )
         webbrowser.open("https://total-hunter.com/dashboard/devices")
