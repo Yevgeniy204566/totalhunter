@@ -1648,6 +1648,17 @@ class TotalHunterApp(ctk.CTk):
                                         corner_radius=10)
         self.info_banner.pack(fill="x", padx=20, pady=(4, 0))
 
+        # Кнопка пробных 300 кредитов — видна, пока не использована (не требует
+        # логина, только HWID); стоит ПЕРЕД кнопкой логина — новый юзер должен
+        # сначала попробовать бота, а не сразу упираться в требование логина.
+        self.trial_button = ctk.CTkButton(self.info_banner,
+                                          text=LANGS[self.current_lang]["get_trial"],
+                                          fg_color="#1A5C2A", hover_color="#226B33",
+                                          text_color=MD3["on_surface"],
+                                          height=40, corner_radius=8,
+                                          command=self.claim_trial_action)
+        self.trial_button.pack(pady=(6, 0), padx=10, fill="x")
+
         # Кнопка Google Входа — видна пока не авторизован
         self.login_button = ctk.CTkButton(self.info_banner,
                                           text=LANGS[self.current_lang]["login_btn"],
@@ -3024,6 +3035,8 @@ class TotalHunterApp(ctk.CTk):
                 self.label_email.configure(text=f"User: {self.user_email}")
                 # Авторизован — скрываем кнопку логина в баннере
                 self.login_button.pack_forget()
+            if data.get("trial_used"):
+                self.trial_button.pack_forget()
             if data.get("ref_id"):
                 self.my_ref_id = data["ref_id"]
                 self.my_code_val.configure(text=self.my_ref_id)
@@ -3045,8 +3058,9 @@ class TotalHunterApp(ctk.CTk):
                 self.info_banner.pack(fill="x", padx=20, pady=(4, 0))
             else:
                 self.broadcast_frame.pack_forget()
-                # Прячем баннер полностью если нет broadcast и пользователь авторизован
-                if data.get("email"):
+                # Прячем баннер полностью, если в нём больше нечего показывать:
+                # нет broadcast, юзер авторизован (email) и трайл уже использован
+                if data.get("email") and data.get("trial_used"):
                     self.info_banner.pack_forget()
         except: pass
 
@@ -3511,9 +3525,25 @@ class TotalHunterApp(ctk.CTk):
 
 
     def claim_trial_action(self):
-        res = get_free_trial()
-        messagebox.showinfo("System", res.get("message"))
-        self.update_license_info()
+        # Блокируем кнопку на время запроса (до 15с при медленном интернете) —
+        # без этого дублирующий клик уходит вторым запросом параллельно первому;
+        # сервер это уже исключает атомарным UPDATE, кнопка — просто UX, чтобы
+        # не казалось, что клик не сработал.
+        self.trial_button.configure(state="disabled", text="⏳...")
+
+        def _worker():
+            res = get_free_trial()
+
+            def _upd():
+                if res.get("success"):
+                    messagebox.showinfo("Hunter", res.get("message"))
+                else:
+                    messagebox.showerror("Hunter", res.get("message") or "Ошибка сервера")
+                    self.trial_button.configure(state="normal",
+                                                text=LANGS[self.current_lang]["get_trial"])
+                self.update_license_info()
+            self.after(0, _upd)
+        threading.Thread(target=_worker, daemon=True).start()
 
 
     # ── ROY методы ───────────────────────────────────────────────────────────

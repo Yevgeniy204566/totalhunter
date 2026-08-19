@@ -284,6 +284,7 @@ async def check_auth(req: HwidRequest, request: Request, db: AsyncSession = Depe
             current_version=current_version,
             referrals={"l1": l1, "l2": l2, "l3": l3},
             is_referred=user.invited_by_id is not None,
+            trial_used=user.trial_used,
         )
 
 
@@ -358,23 +359,35 @@ async def claim_trial(req: HwidRequest, db: AsyncSession = Depends(get_db)):
     """
     Выдаёт 300 пробных кредитов — один раз на HWID.
     Повторный вызов возвращает success=False.
+
+    Атомарный UPDATE ... WHERE trial_used = false (тот же паттерн, что в
+    /use_credit) — исключает начисление 600 при двух параллельных вызовах
+    (двойной клик, два открытых бота на одном HWID).
     """
     async with db.begin():
-        user = await _get_or_create_user(req.hwid, db)
+        await _get_or_create_user(req.hwid, db)  # авторегистрация, если это первый визит
 
-        if user.trial_used:
+        row = (await db.execute(
+            update(User)
+            .where(User.hwid == req.hwid, User.trial_used == False)
+            .values(credits=User.credits + 300, trial_used=True)
+            .returning(User.id, User.credits)
+        )).first()
+
+        if not row:
+            user = (await db.execute(
+                select(User).where(User.hwid == req.hwid)
+            )).scalar_one_or_none()
             return BasicResponse(
                 success=False,
                 message="Пробный период уже использован.",
-                credits=user.credits,
+                credits=user.credits if user else 0,
             )
 
-        user.credits    += 300
-        user.trial_used  = True
+        user_id, new_credits = row
+        db.add(Transaction(user_id=user_id, type="trial", amount=300))
 
-        db.add(Transaction(user_id=user.id, type="trial", amount=300))
-
-    return BasicResponse(success=True, message="300 кредитов зачислено!", credits=user.credits)
+    return BasicResponse(success=True, message="300 кредитов зачислено!", credits=new_credits)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
