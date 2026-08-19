@@ -18,6 +18,14 @@
    and can cause it to crash, especially if you click more than once
    and end up running several copies at the same time.
 
+   IMPORTANT: If login/account linking shows "Connection error" even
+   though your internet works fine, your antivirus may be silently
+   blocking TotalHunter.exe from reaching the internet (the app is not
+   digitally signed, so some antivirus products flag it by default).
+   Add TotalHunter.exe / TotalHunter folder to your antivirus
+   exceptions/allow-list, or temporarily disable the antivirus and
+   try again.
+
 --------------------------------------------------------------------------------
 2. CALIBRATION (one time only)
    Open the game exactly as you will play it (browser or client).
@@ -147,6 +155,13 @@ Support    : totalhunter.support@gmail.com
    (WinRAR / 7-Zip) — в этом случае бот стартует из временной папки и
    может упасть с ошибкой, особенно если кликнуть несколько раз и
    случайно запустить сразу несколько копий одновременно.
+
+   ВАЖНО: Если при входе/привязке аккаунта пишет "Connection error"
+   (ошибка соединения), хотя интернет работает — скорее всего,
+   антивирус молча блокирует TotalHunter.exe (программа без цифровой
+   подписи, некоторые антивирусы блокируют такие .exe по умолчанию).
+   Добавь TotalHunter.exe / папку TotalHunter в исключения антивируса,
+   либо временно отключи антивирус и попробуй снова.
 
 --------------------------------------------------------------------------------
 2. КАЛИБРОВКА (один раз)
