@@ -643,7 +643,6 @@
                 <th class="th-sort" @click="sortBy('username')" style="cursor:pointer;user-select:none">
                   Игрок <span x-text="sortArrow('username')"></span>
                 </th>
-                <th>Бот</th>
                 <th>Email</th>
                 <th class="th-sort" @click="sortBy('credits')" style="cursor:pointer;user-select:none">
                   Баланс ◆ <span x-text="sortArrow('credits')"></span>
@@ -675,9 +674,6 @@
                       <div style="font-weight:600" x-text="u.username||'—'"></div>
                       <div class="hwid-cell" :title="u.hwid" x-text="u.hwid"></div>
                     </td>
-                    <td :title="u.hwid||'Бота не устанавливал'"
-                        :style="u.hwid?'color:#4ADE80;font-weight:700':'color:var(--text-dim)'"
-                        x-text="u.hwid?'✓ установлен':'—'"></td>
                     <td style="color:var(--text-dim)" x-text="u.email||'—'"></td>
                     <td>
                       <span style="color:var(--accent);font-weight:700" x-text="u.credits"></span>
@@ -719,7 +715,7 @@
                   </tr>
                 </template>
                 <tr x-show="!loading&&users.length===0">
-                  <td colspan="10" style="text-align:center;color:var(--text-dim);padding:28px">
+                  <td colspan="9" style="text-align:center;color:var(--text-dim);padding:28px">
                     Пользователи не найдены
                   </td>
                 </tr>
