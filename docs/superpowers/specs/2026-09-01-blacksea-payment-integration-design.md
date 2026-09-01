@@ -95,8 +95,10 @@ class BlackSeaSale(Base):
    - Сетевая ошибка/невалидный ответ → 200 OK (не ретраить бесконечно на
    нашей стороне), залогировать error — ручной разбор.
    - paid == false или chargedback/refunded == true → 200 OK, не начислять.
-5. Найти User по email (case-insensitive, как email матчится в остальном
-   проекте). Не найден → алерт (см. решение п.2), 200 OK, не начислять.
+5. Найти User по email — прямое `User.email == email`, тот же паттерн
+   (без `lower()`/case-insensitive — в проекте нигде не применяется,
+   `web_routes.py:132,228` матчат так же напрямую). Не найден → алерт
+   (см. решение п.2), 200 OK, не начислять.
 6. **Атомарная точка идемпотентности.** Шаги 2 и 5 уже выполнили SELECT на
    этой сессии → SQLAlchemy autobegin уже открыл транзакцию → явный
    `async with db.begin():` здесь упадёт `InvalidRequestError: A transaction
@@ -120,9 +122,16 @@ class BlackSeaSale(Base):
        # — savepoint именно для того и нужен, чтобы это обойти).
        return JSONResponse({"status": "ok"})
    ```
-7. user.credits += 5000; Transaction(type="purchase", amount=5000,
-   meta={"blacksea_sale_id": sale_id}) — тот же паттерн, что Transaction у
-   NOWPayments-покупки.
+7. user.credits += 5000; db.add(Transaction(user_id=user.id, type="purchase",
+   amount=5000, usd_amount=str(PACKAGES["ultra"]["usd"]), package="ultra",
+   meta={"blacksea_sale_id": sale_id})) — `str()` вокруг usd_amount, тот же
+   приём, что в `payments.py:142` (запись float в Numeric-колонку через
+   строку, не напрямую). Те же поля, что заполняет
+   NOWPayments-покупка (`payments.py:206-214`: `user_id`/`usd_amount`/`package`
+   обязательны по факту, не формально — `/admin/purchases`, `main.py:1049-1070`,
+   рендерит `t.package`/`t.usd_amount` напрямую; без них покупки BlackSea
+   отображались бы в админке пустыми). `user_id` дополнительно NOT NULL на
+   уровне схемы (`models.py:114`) — без него INSERT упадёт.
 8. _apply_referral_cascade(db, user, 5000) — переиспользовать существующую
    функцию из payments.py как есть (сигнатура не завязана на Order).
 9. await db.commit() — сохраняет BlackSeaSale (из savepoint) + credits +
@@ -217,11 +226,14 @@ TDD, по образцу `server/tests/test_payments.py`. Ключевые сц�
   notify_balance_changed вызван.
 - Повторная доставка того же sale_id → повторного начисления нет (200 OK,
   no-op).
-- Два одновременных вебхука с одним sale_id (`asyncio.gather`, тот же
-  паттерн, что уже использован для гонки в `/claim_trial`,
-  см. `MEMORY/project_link_code_timeout_fix_v1817.md`) → кредиты начислены
-  ровно один раз, вторая ветка получает IntegrityError и корректно
-  откатывается без 500.
+- Два одновременных вебхука с одним sale_id (`asyncio.gather` двух реальных
+  HTTP-вызовов через `AsyncClient`/`ASGITransport` — та же структура теста,
+  что `test_claim_trial_concurrent_calls_credit_exactly_once`,
+  `server/tests/test_claim_trial.py:82-97`; там гонка закрыта атомарным
+  `UPDATE ... RETURNING`, здесь — `INSERT` под `UNIQUE(sale_id)`, механизм
+  другой, но тестовая структура и критерий та же: ровно один `success`)
+  → кредиты начислены ровно один раз, вторая ветка получает IntegrityError
+  и корректно откатывается без 500.
 - Email не найден → алерт отправлен, кредиты не начислены, 200 OK.
 - API-верификация вернула paid:false/chargedback:true → не начислять.
 - Сетевая ошибка при обращении к BlackSea API → не начислять, не падать
