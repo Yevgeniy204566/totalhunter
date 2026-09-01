@@ -79,10 +79,12 @@ class BlackSeaSale(Base):
 (не JSON, в отличие от NOWPayments) — парсить через `await request.form()`.
 
 ```
-1. Распарсить form-поля: sale_id, email, price (копейки/минорные единицы),
-   product_id, test.
-2. Если sale_id уже есть в blacksea_sales → 200 OK, ничего не делать
-   (идемпотентность на повторную доставку).
+1. Распарсить form-поля: sale_id, email, price (МИНОРНЫЕ ЕДИНИЦЫ — копейки;
+   подтверждено реальным вебхуком: price=100 при цене 1 грн), product_id, test.
+2. Быстрый предварительный SELECT sale_id в blacksea_sales — если уже есть,
+   200 OK, ничего не делать (оптимизация: не дёргать BlackSea API повторно
+   на ретраи одного и того же вебхука). Это НЕ единственная защита от
+   двойного начисления — см. п.6 про атомарность.
 3. Если product_id не совпадает с известным BLACKSEA_PRODUCT_ID (конфиг,
    как PACKAGES у NOWPayments) → 200 OK, залогировать и не начислять — вебхук
    не от нашего товара Ultra (защита на случай появления другого товара на
@@ -95,22 +97,51 @@ class BlackSeaSale(Base):
    - paid == false или chargedback/refunded == true → 200 OK, не начислять.
 5. Найти User по email (case-insensitive, как email матчится в остальном
    проекте). Не найден → алерт (см. решение п.2), 200 OK, не начислять.
-6. user.credits += 5000; INSERT BlackSeaSale(sale_id, user_id, 5000, price).
+6. **Атомарная точка идемпотентности** (закрывает гонку двух одновременных
+   вебхуков с одним sale_id — INSERT под UNIQUE(sale_id), не предварительный
+   SELECT): внутри одной транзакции (`async with db.begin()`),
+   db.add(BlackSeaSale(sale_id, user_id, credits_total=5000,
+   uah_amount=Decimal(price) / 100)) → await db.flush() сразу же.
+   - Конкурентный вебхук с тем же sale_id физически ждёт эту транзакцию на
+     уровне UNIQUE-индекса Postgres (второй flush блокируется, затем либо
+     проходит, если первая транзакция откатилась, либо падает
+     IntegrityError, если закоммитилась).
+   - IntegrityError на flush → rollback, 200 OK, ничего не начислять (кто-то
+     уже обработал этот sale_id) — не поднимать как 5xx.
+   - Только после успешного flush — продолжить: user.credits += 5000.
 7. Transaction(type="purchase", amount=5000, meta={"blacksea_sale_id": sale_id})
-   — тот же паттерн, что Transaction у NOWPayments-покупки.
+   — тот же паттерн, что Transaction у NOWPayments-покупки, в той же
+   транзакции.
 8. _apply_referral_cascade(db, user, 5000) — переиспользовать существующую
-   функцию из payments.py как есть (сигнатура не завязана на Order).
+   функцию из payments.py как есть (сигнатура не завязана на Order), в той
+   же транзакции.
 9. commit() → notify_balance_changed(user.hwid) → BackgroundTasks:
-   send_purchase_alert(...) — тот же паттерн, что в payment_webhook
-   у NOWPayments (server/payments.py:227-233).
+   send_purchase_alert(name=..., hwid=..., package="ultra",
+   usd_amount=str(PACKAGES["ultra"]["usd"]), credits=5000, ip=..., bot_version=...)
+   — см. ниже почему не uah_amount.
 10. Всегда отвечать 200 OK на синтаксически валидный вебхук (BlackSea не
    должна ретраить бесконечно из-за проблем на нашей стороне) — ошибки
    логируются, не пробрасываются как 4xx/5xx, кроме как в исключительных
    случаях (невалидное тело формы).
 ```
 
-`_apply_referral_cascade` и `send_purchase_alert` — существующий код,
-переиспользуется без изменений (импорт из `payments.py`/`tg_channel.py`).
+`_apply_referral_cascade` — существующий код, переиспользуется без изменений
+(импорт из `payments.py`).
+
+**`send_purchase_alert` — переиспользуется БЕЗ изменения сигнатуры, но со
+специфичными для BlackSea значениями, не с `BlackSeaSale`-полями напрямую.**
+Проверено: `tg_channel.py:59-61` — `package: str, usd_amount: str` жёстко
+вшиты в текст уведомления с `$`-префиксом (`f"${usd_amount}"`), у
+`BlackSeaSale` таких полей нет (`uah_amount` вместо `usd_amount`, `package`
+не хранится вовсе). Трогать сигнатуру НЕ нужно — она общая с NOWPayments,
+риск регресса не оправдан ради одного нового источника платежа. Раз пакет
+на старте всегда один (Ultra), передавать константы: `package="ultra"`,
+`usd_amount=str(PACKAGES["ultra"]["usd"])` (т.е. `"10.00"`, тот же словарь,
+что уже используется в `payment_create`, `server/payments.py:38`) — это
+каталожная цена пакета, а не реально списанная сумма в UAH (которая
+плавает по курсу конвертации BlackSea на момент продажи). Фактическая
+`uah_amount` из `BlackSeaSale` в Telegram-алерт не идёт — только в БД, для
+отчётности/сверки с реальными выплатами.
 
 ## Токены доступа BlackSea — конфигурация
 
@@ -163,6 +194,11 @@ TDD, по образцу `server/tests/test_payments.py`. Ключевые сц�
   notify_balance_changed вызван.
 - Повторная доставка того же sale_id → повторного начисления нет (200 OK,
   no-op).
+- Два одновременных вебхука с одним sale_id (`asyncio.gather`, тот же
+  паттерн, что уже использован для гонки в `/claim_trial`,
+  см. `MEMORY/project_link_code_timeout_fix_v1817.md`) → кредиты начислены
+  ровно один раз, вторая ветка получает IntegrityError и корректно
+  откатывается без 500.
 - Email не найден → алерт отправлен, кредиты не начислены, 200 OK.
 - API-верификация вернула paid:false/chargedback:true → не начислять.
 - Сетевая ошибка при обращении к BlackSea API → не начислять, не падать
