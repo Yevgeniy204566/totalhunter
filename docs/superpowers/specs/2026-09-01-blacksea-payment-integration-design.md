@@ -1,0 +1,173 @@
+# BlackSea — вторая платёжка (вебхук + верификация + начисление алмазов)
+
+**Дата:** 2026-09-01
+**Статус:** черновик, ждёт ревью владельца перед переходом к implementation plan
+
+## Контекст
+
+NOWPayments (крипта) — единственный способ оплаты сейчас, минимальная сумма
+$10. Владелец давно искал фиатную платёжку для карт (Украина, физлицо без
+ФОП) и нашёл blacksea.in.ua (укр. аналог Gumroad). Прошлая сессия (#133)
+живьём подтвердила пригодность — см. `MEMORY/project_blacksea_payment_gateway.md`
+(комиссии, ограничения, структура вебхука). Эта сессия (#134) живьём
+подтвердила механизм верификации продажи через API — см.
+`MEMORY/project_blacksea_sale_verification_recipe.md`. Обе памяти читать
+перед реализацией — там же точные curl-команды, которые эта спека не
+дублирует.
+
+Объём этой спеки: серверный эндпоинт вебхука BlackSea + идемпотентность +
+верификация + начисление, по образцу уже существующего `server/payments.py`
+(NOWPayments). Сайт (кнопка «Купить через карту») и боевой товар на BlackSea
+— отдельные некодовые шаги, тоже входят в объём, но не архитектурно значимы.
+
+## Согласованные с владельцем решения
+
+1. **Один пакет на старте** — Ultra, $10 → 5000 ◆. Тот же пакет, что уже есть
+   в `PACKAGES` для NOWPayments (`server/payments.py:38`). Lite/Pro на сайте
+   сейчас не работают вообще (не в объёме).
+2. **Email не найден среди пользователей сайта** → кредиты НЕ начисляются,
+   уходит алерт в Telegram/админку с деталями (email, сумма, sale_id) —
+   разбирается вручную. Никакого автосоздания аккаунта.
+3. **Реферальный каскад применяется** — те же 10%/5%/1%, что и для NOWPayments
+   (`_apply_referral_cascade`, `server/payments.py:92`), без изменений.
+
+## Архитектура — принципиальное отличие от NOWPayments
+
+У NOWPayments поток «создать заказ → получить invoice → оплатить →
+вебхук» — `Order` создаётся ДО оплаты (`POST /web/payment/create`), у заказа
+уже известен `user_id`, вебхук только его находит по `order_id` и помечает
+`paid`.
+
+У BlackSea такого шага нет: покупатель уходит на фиксированную ссылку товара
+BlackSea напрямую (с сайта, без захода на наш сервер), платит — единственный
+сигнал о покупке это входящий вебхук, идентификация только по email внутри
+его тела. `Order` в текущем виде (столбцы под NOWPayments — `nowpayments_payment_id`,
+`idempotency_key` = наш UUID, генерируемый на шаге create) сюда не ложится
+без создания синтетического заказа задним числом. Вместо этого — отдельная
+таблица только для идемпотентности и учёта, без стадии `pending`.
+
+### Новая таблица `BlackSeaSale`
+
+```python
+class BlackSeaSale(Base):
+    __tablename__ = "blacksea_sales"
+
+    id            = Column(Integer, primary_key=True)
+    sale_id       = Column(String(50), unique=True, nullable=False, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    credits_total = Column(Integer, nullable=False)
+    uah_amount    = Column(Numeric(10, 2), nullable=False)
+    created_at    = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+
+    user = relationship("User", backref="blacksea_sales")
+```
+
+Строка пишется ТОЛЬКО при успешном начислении (после прохождения всех
+проверок) — сама её наличие по `sale_id` и есть идемпотентность, тем же
+паттерном что `Order.status == "paid"` у NOWPayments, но здесь без
+промежуточного `pending`-состояния (создавать нечего заранее). Email-промах
+(п.2 решений) НЕ создаёт строку — если BlackSea повторно пришлёт тот же
+вебхук, алерт уйдёт снова; это осознанный компромисс (редкий кейс, ручной
+разбор всё равно нужен).
+
+Миграция alembic — новая ревизия, `head` на момент реализации сверить
+(в репо бывают несведённые головы, см. `MEMORY/project_gcloud_local_access.md`).
+
+## Поток обработки вебхука
+
+`POST /web/payment/blacksea/webhook`, `Content-Type: application/x-www-form-urlencoded`
+(не JSON, в отличие от NOWPayments) — парсить через `await request.form()`.
+
+```
+1. Распарсить form-поля: sale_id, email, price (копейки/минорные единицы),
+   product_id, test.
+2. Если sale_id уже есть в blacksea_sales → 200 OK, ничего не делать
+   (идемпотентность на повторную доставку).
+3. Если product_id не совпадает с известным BLACKSEA_PRODUCT_ID (конфиг,
+   как PACKAGES у NOWPayments) → 200 OK, залогировать и не начислять — вебхук
+   не от нашего товара Ultra (защита на случай появления другого товара на
+   том же аккаунте в будущем).
+4. Позвать GET /api/v2/sales/{sale_id}?access_token=... (см. рецепт в
+   памяти) — сверить: paid == true, chargedback == false, refunded == false,
+   email/price/product_id совпадают с телом вебхука.
+   - Сетевая ошибка/невалидный ответ → 200 OK (не ретраить бесконечно на
+   нашей стороне), залогировать error — ручной разбор.
+   - paid == false или chargedback/refunded == true → 200 OK, не начислять.
+5. Найти User по email (case-insensitive, как email матчится в остальном
+   проекте). Не найден → алерт (см. решение п.2), 200 OK, не начислять.
+6. user.credits += 5000; INSERT BlackSeaSale(sale_id, user_id, 5000, price).
+7. Transaction(type="purchase", amount=5000, meta={"blacksea_sale_id": sale_id})
+   — тот же паттерн, что Transaction у NOWPayments-покупки.
+8. _apply_referral_cascade(db, user, 5000) — переиспользовать существующую
+   функцию из payments.py как есть (сигнатура не завязана на Order).
+9. commit() → notify_balance_changed(user.hwid) → BackgroundTasks:
+   send_purchase_alert(...) — тот же паттерн, что в payment_webhook
+   у NOWPayments (server/payments.py:227-233).
+10. Всегда отвечать 200 OK на синтаксически валидный вебхук (BlackSea не
+   должна ретраить бесконечно из-за проблем на нашей стороне) — ошибки
+   логируются, не пробрасываются как 4xx/5xx, кроме как в исключительных
+   случаях (невалидное тело формы).
+```
+
+`_apply_referral_cascade` и `send_purchase_alert` — существующий код,
+переиспользуется без изменений (импорт из `payments.py`/`tg_channel.py`).
+
+## Токены доступа BlackSea — конфигурация
+
+По аналогии с `NOWPAYMENTS_API_KEY`/`NOWPAYMENTS_IPN_SECRET` в
+`server/payments.py:31-32`, новые env vars в systemd `override.conf` на GCP:
+
+```
+BLACKSEA_ACCESS_TOKEN=...
+BLACKSEA_REFRESH_TOKEN=...
+BLACKSEA_CLIENT_ID=...
+BLACKSEA_CLIENT_SECRET=...
+```
+
+Значения уже получены и лежат в `reference_secrets.md` (раздел BlackSea) —
+взять оттуда при выкладке, не создавать заново. `client_id`/`client_secret`
+нужны только если `access_token` инвалидируется и требуется refresh (Шаг 2
+рецепта) — реализовать `refresh_token`-обмен как fallback при 401 от
+`/api/v2/sales/{id}`, не заранее на каждый запрос.
+
+## Идентификация покупателя — нет подписи вебхука
+
+В отличие от NOWPayments (`verify_nowpayments_sig`, HMAC-SHA512 по raw body),
+у вебхука BlackSea подписи нет вообще (подтверждено дважды живыми тестами).
+Поэтому Шаг 4 потока (сверка через API) — не опциональная подстраховка, а
+единственная защита от поддельного POST на наш эндпоинт. Без него любой,
+кто узнает URL вебхука, может начислить себе кредиты произвольным POST.
+Endpoint URL должен быть непубличным (не логироваться, не светиться в
+клиентском коде) - как и IPN URL NOWPayments.
+
+## Что НЕ входит в объём (осознанно)
+
+- Автопроверка лицензионных ключей — недоступна у BlackSea API, путь исключён
+  (см. память).
+- Автоматический редирект покупателя обратно на сайт — недоступен у BlackSea,
+  начисление полностью asynchronous через вебхук, UI на сайте просто должен
+  не полагаться на моментальное обновление баланса сразу после клика «Купить»
+  (баланс придёт через уже существующий long-poll `vault.py`, с задержкой на
+  реальную обработку платежа).
+- Retry/пуллинг списка продаж как fallback на случай пропущенного вебхука —
+  список `/api/v2/sales` не работает (см. память), полноценного fallback
+  сейчас нет. Если вебхук потеряется — потребуется ручной разбор по
+  `sale_id`, который покупатель может прислать в поддержку. Не в объёме
+  первой итерации, зафиксировать как известное ограничение.
+
+## Тестирование
+
+TDD, по образцу `server/tests/test_payments.py`. Ключевые сценарии:
+- Валидный вебхук + успешная API-верификация + известный email → кредиты
+  начислены, Transaction записан, реферальный каскад сработал,
+  notify_balance_changed вызван.
+- Повторная доставка того же sale_id → повторного начисления нет (200 OK,
+  no-op).
+- Email не найден → алерт отправлен, кредиты не начислены, 200 OK.
+- API-верификация вернула paid:false/chargedback:true → не начислять.
+- Сетевая ошибка при обращении к BlackSea API → не начислять, не падать
+  500-й, залогировать.
+
+API-моки строить на реальном payload из памяти (`project_blacksea_payment_gateway.md`)
+и реальном ответе show-by-id (`project_blacksea_sale_verification_recipe.md`)
+— фикстуры уже есть, не выдумывать поля заново.
