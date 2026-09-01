@@ -90,15 +90,29 @@ class BlackSeaSale(Base):
    не от нашего товара Ultra (защита на случай появления другого товара на
    том же аккаунте в будущем).
 4. Позвать GET /api/v2/sales/{sale_id}?access_token=... (см. рецепт в
-   памяти) — сверить: paid == true, chargedback == false, refunded == false,
-   email/price/product_id совпадают с телом вебхука.
+   памяти) — сверить: paid == true, chargedback == false, refunded == false.
+   **Плюс сверить email/price/product_id API-ответа (`sale.email`,
+   `sale.price`, `sale.product_id` — источник истины) против тела вебхука
+   (`email`, `price`, `product_id` из шага 1 — недоверенное, вебхук без
+   подписи).**
    - Сетевая ошибка/невалидный ответ → 200 OK (не ретраить бесконечно на
    нашей стороне), залогировать error — ручной разбор.
    - paid == false или chargedback/refunded == true → 200 OK, не начислять.
-5. Найти User по email — прямое `User.email == email`, тот же паттерн
-   (без `lower()`/case-insensitive — в проекте нигде не применяется,
-   `web_routes.py:132,228` матчат так же напрямую). Не найден → алерт
-   (см. решение п.2), 200 OK, не начислять.
+   - **Любое несовпадение email/price/product_id между API-ответом и телом
+     вебхука → 200 OK, залогировать как подозрительную попытку (кто-то
+     подделал тело вебхука с чужим email на реальный чужой sale_id —
+     ровно тот сценарий, от которого шаг 4 и задуман как защита), НЕ
+     начислять.** `test`-поле из вебхука НЕ используется нигде в этой
+     логике (осознанно, не забыто) — живая проверка (`MEMORY/project_blacksea_payment_gateway.md`)
+     показала, что оно ненадёжно отличает реальную продажу от тестовой
+     (`test:true` наблюдался даже на настоящей боевой оплате) — единственный
+     критерий начисления: `paid:true` + совпадение email/price/product_id.
+5. Найти User по **`sale.email` из API-ответа** (НЕ по `email` из тела
+   вебхука — тело недоверенное, см. п.4; после успешной сверки оба значения
+   равны, но источником для запроса берётся верифицированное). Прямое
+   `User.email == sale.email`, тот же паттерн без `lower()`/case-insensitive
+   (в проекте нигде не применяется, `web_routes.py:132,228` матчат так же
+   напрямую). Не найден → алерт (см. решение п.2), 200 OK, не начислять.
 6. **Атомарная точка идемпотентности.** Шаги 2 и 5 уже выполнили SELECT на
    этой сессии → SQLAlchemy autobegin уже открыл транзакцию → явный
    `async with db.begin():` здесь упадёт `InvalidRequestError: A transaction
@@ -107,10 +121,11 @@ class BlackSeaSale(Base):
    (savepoint), тот же идиом, что уже в проекте (`web_routes.py:335-337`,
    `send_feedback`):
    ```python
+   credits = PACKAGES["ultra"]["credits"]  # 5000 — не хардкодить число трижды
    try:
        async with db.begin_nested():
            db.add(BlackSeaSale(
-               sale_id=sale_id, user_id=user.id, credits_total=5000,
+               sale_id=sale_id, user_id=user.id, credits_total=credits,
                uah_amount=Decimal(price) / 100,
            ))
    except IntegrityError:
@@ -122,9 +137,10 @@ class BlackSeaSale(Base):
        # — savepoint именно для того и нужен, чтобы это обойти).
        return JSONResponse({"status": "ok"})
    ```
-7. user.credits += 5000; db.add(Transaction(user_id=user.id, type="purchase",
-   amount=5000, usd_amount=str(PACKAGES["ultra"]["usd"]), package="ultra",
-   meta={"blacksea_sale_id": sale_id})) — `str()` вокруг usd_amount, тот же
+7. user.credits += credits; db.add(Transaction(user_id=user.id, type="purchase",
+   amount=credits, usd_amount=str(PACKAGES["ultra"]["usd"]), package="ultra",
+   meta={"blacksea_sale_id": sale_id})) — `credits` из шага 6 (`PACKAGES["ultra"]["credits"]`),
+   не хардкод. `str()` вокруг usd_amount, тот же
    приём, что в `payments.py:142` (запись float в Numeric-колонку через
    строку, не напрямую). Те же поля, что заполняет
    NOWPayments-покупка (`payments.py:206-214`: `user_id`/`usd_amount`/`package`
@@ -132,13 +148,13 @@ class BlackSeaSale(Base):
    рендерит `t.package`/`t.usd_amount` напрямую; без них покупки BlackSea
    отображались бы в админке пустыми). `user_id` дополнительно NOT NULL на
    уровне схемы (`models.py:114`) — без него INSERT упадёт.
-8. _apply_referral_cascade(db, user, 5000) — переиспользовать существующую
+8. _apply_referral_cascade(db, user, credits) — переиспользовать существующую
    функцию из payments.py как есть (сигнатура не завязана на Order).
 9. await db.commit() — сохраняет BlackSeaSale (из savepoint) + credits +
    Transaction + referral cascade одним коммитом внешней (autobegin)
    транзакции. Только ПОСЛЕ успешного commit — notify_balance_changed(user.hwid)
    → BackgroundTasks: send_purchase_alert(name=..., hwid=..., package="ultra",
-   usd_amount=str(PACKAGES["ultra"]["usd"]), credits=5000, ip=..., bot_version=...)
+   usd_amount=str(PACKAGES["ultra"]["usd"]), credits=credits, ip=..., bot_version=...)
    — см. ниже почему не uah_amount.
 10. Всегда отвечать 200 OK на синтаксически валидный вебхук (BlackSea не
    должна ретраить бесконечно из-за проблем на нашей стороне) — ошибки
@@ -235,6 +251,10 @@ TDD, по образцу `server/tests/test_payments.py`. Ключевые сц�
   → кредиты начислены ровно один раз, вторая ветка получает IntegrityError
   и корректно откатывается без 500.
 - Email не найден → алерт отправлен, кредиты не начислены, 200 OK.
+- **Email в теле вебхука подделан (не совпадает с `sale.email` из API-ответа
+  на тот же реальный `sale_id`)** → не начислять НИКОМУ (ни по email из
+  вебхука, ни по email из API), 200 OK, залогировано как подозрительная
+  попытка — закрывает уязвимость, найденную Stage 8 (см. текст п.4 потока).
 - API-верификация вернула paid:false/chargedback:true → не начислять.
 - Сетевая ошибка при обращении к BlackSea API → не начислять, не падать
   500-й, залогировать.
