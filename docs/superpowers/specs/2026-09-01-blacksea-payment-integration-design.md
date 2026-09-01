@@ -81,6 +81,14 @@ class BlackSeaSale(Base):
 ```
 1. Распарсить form-поля: sale_id, email, price (МИНОРНЫЕ ЕДИНИЦЫ — копейки;
    подтверждено реальным вебхуком: price=100 при цене 1 грн), product_id, test.
+   Все значения из `request.form()` — `str` (Starlette/FastAPI не приводит
+   типы form-данных сама) — `price_kopecks = int(price)` сразу здесь, дальше
+   по потоку использовать только `price_kopecks` (число), не сырую строку.
+   `sale_id` на этом шаге — только сырой
+   идентификатор для запроса к API на шаге 4, не доверенное значение само
+   по себе: начисление допускается ТОЛЬКО если API успешно вернул продажу
+   по этому `sale_id` И все проверяемые поля совпали (шаг 4) — сам факт
+   «в теле пришёл какой-то sale_id» ничего не доказывает.
 2. Быстрый предварительный SELECT sale_id в blacksea_sales — если уже есть,
    200 OK, ничего не делать (оптимизация: не дёргать BlackSea API повторно
    на ретраи одного и того же вебхука). Это НЕ единственная защита от
@@ -94,7 +102,12 @@ class BlackSeaSale(Base):
    **Плюс сверить email/price/product_id API-ответа (`sale.email`,
    `sale.price`, `sale.product_id` — источник истины) против тела вебхука
    (`email`, `price`, `product_id` из шага 1 — недоверенное, вебхук без
-   подписи).**
+   подписи).** Сравнивать `price_kopecks == sale.price` (оба `int` — см.
+   шаг 1), НЕ `price == sale.price` — `sale.price` в JSON-ответе API это
+   `int` (подтверждено живым вызовом,
+   `MEMORY/project_blacksea_sale_verification_recipe.md`), а сырой `price`
+   из формы вебхука — `str`, `"100" == 100` в Python всегда `False`, иначе
+   КАЖДАЯ покупка проваливала бы сверку.
    - Сетевая ошибка/невалидный ответ → 200 OK (не ретраить бесконечно на
    нашей стороне), залогировать error — ручной разбор.
    - paid == false или chargedback/refunded == true → 200 OK, не начислять.
@@ -126,8 +139,9 @@ class BlackSeaSale(Base):
        async with db.begin_nested():
            db.add(BlackSeaSale(
                sale_id=sale_id, user_id=user.id, credits_total=credits,
-               uah_amount=Decimal(price) / 100,
+               uah_amount=Decimal(price_kopecks) / 100,
            ))
+           await db.flush()  # см. ниже — не строго обязательно, но явно
    except IntegrityError:
        # конкурентный вебхук уже обработал этот sale_id — savepoint
        # автоматически откатился САМ, внешняя транзакция осталась валидна.
@@ -137,6 +151,17 @@ class BlackSeaSale(Base):
        # — savepoint именно для того и нужен, чтобы это обойти).
        return JSONResponse({"status": "ok"})
    ```
+
+   **Про `await db.flush()`:** эмпирически проверено в этой же сессии (агент
+   прочитал исходники установленного SQLAlchemy 2.0.49,
+   `site-packages/sqlalchemy/orm/session.py:1272-1292`, и прогнал реальный
+   скрипт против тестовой SQLite-фикстуры проекта, `server/tests/conftest.py`)
+   — выход из `async with db.begin_nested():` САМ делает implicit flush
+   перед RELEASE SAVEPOINT, `IntegrityError` вылетает и без явного вызова.
+   Строка выше — не обязательная поправка корректности, а защита от
+   неочевидности этого поведения для будущего читателя кода: без неё
+   правильность конкретно ЭТОГО блока зависит от знания недокументированной
+   явно (хоть и стабильной) детали ORM.
 7. user.credits += credits; db.add(Transaction(user_id=user.id, type="purchase",
    amount=credits, usd_amount=str(PACKAGES["ultra"]["usd"]), package="ultra",
    meta={"blacksea_sale_id": sale_id})) — `credits` из шага 6 (`PACKAGES["ultra"]["credits"]`),
@@ -209,15 +234,50 @@ systemd-конфиг сам (нет sudo/systemctl-доступа изнутри
 используются только для refresh-обмена (fallback при 401 от
 `/api/v2/sales/{id}`), не на каждый запрос.
 
+**Защита от двойного refresh при двух одновременных 401.** Если два вебхука
+получат 401 почти одновременно и оба попробуют обменять один и тот же
+`refresh_token` — BlackSea может ротировать его на первом обмене, второй
+запрос обменяет уже невалидный `refresh_token` и получит ошибку вместо
+нового токена, хотя первый вебхук всё сделал правильно. Просто сравнить
+прочитанное значение токена до сетевого вызова недостаточно — гонка
+остаётся в промежутке между чтением и записью нового токена (сетевой
+round-trip к BlackSea не под защитой такого сравнения). Нужна настоящая
+сериализация — тот же приём, что уже используется в проекте для
+конкурентного доступа к общей строке: `with_for_update()`
+(`payments.py:192`, лочит строку `Order` на время обработки вебхука
+NOWPayments). Здесь — лочить строку `app_settings` с ключом
+`blacksea_access_token`:
+
+```python
+async with db.begin_nested():
+    row = (await db.execute(
+        select(AppSetting).where(AppSetting.key == "blacksea_access_token")
+        .with_for_update()
+    )).scalar_one()
+    if row.value != stale_token:
+        # кто-то другой уже обновил, пока мы ждали лок — используем его результат
+        access_token = row.value
+    else:
+        access_token, refresh_token = await refresh_blacksea_token(...)
+        row.value = access_token
+        # + обновить строку blacksea_refresh_token тем же способом
+```
+
+Конкурентный вебхук блокируется на `with_for_update()` до коммита первого
+(а не гоняет собственный refresh параллельно) — после разблокировки видит
+уже обновлённое значение и просто использует его, без повторного обмена.
+
 ## Идентификация покупателя — нет подписи вебхука
 
 В отличие от NOWPayments (`verify_nowpayments_sig`, HMAC-SHA512 по raw body),
 у вебхука BlackSea подписи нет вообще (подтверждено дважды живыми тестами).
 Поэтому Шаг 4 потока (сверка через API) — не опциональная подстраховка, а
-единственная защита от поддельного POST на наш эндпоинт. Без него любой,
-кто узнает URL вебхука, может начислить себе кредиты произвольным POST.
-Endpoint URL должен быть непубличным (не логироваться, не светиться в
-клиентском коде) - как и IPN URL NOWPayments.
+**единственная реальная защита** от поддельного POST на наш эндпоинт.
+Секретность URL вебхука — НЕ защита сама по себе (security through
+obscurity: URL может засветиться в логах/трафике/ошибках стороннего
+сервиса) и не заменяет проверку шага 4 ни при каких обстоятельствах; не
+публиковать URL без необходимости — гигиена, а не граница безопасности,
+как и IPN URL NOWPayments.
 
 ## Что НЕ входит в объём (осознанно)
 
@@ -258,6 +318,12 @@ TDD, по образцу `server/tests/test_payments.py`. Ключевые сц�
 - API-верификация вернула paid:false/chargedback:true → не начислять.
 - Сетевая ошибка при обращении к BlackSea API → не начислять, не падать
   500-й, залогировать.
+- Два одновременных вебхука получают 401 от BlackSea API одновременно
+  (мокнутый клиент BlackSea) → `refresh_blacksea_token` реально вызван
+  ровно один раз (не дважды с одним и тем же протухшим `refresh_token`),
+  оба вебхука в итоге успешно верифицируют продажу и оба (при разных
+  `sale_id`) корректно начисляют — покрывает `with_for_update()`-лок из
+  раздела «Токены доступа».
 
 API-моки строить на реальном payload из памяти (`project_blacksea_payment_gateway.md`)
 и реальном ответе show-by-id (`project_blacksea_sale_verification_recipe.md`)
