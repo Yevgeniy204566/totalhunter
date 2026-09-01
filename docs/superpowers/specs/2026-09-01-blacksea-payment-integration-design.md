@@ -97,26 +97,38 @@ class BlackSeaSale(Base):
    - paid == false или chargedback/refunded == true → 200 OK, не начислять.
 5. Найти User по email (case-insensitive, как email матчится в остальном
    проекте). Не найден → алерт (см. решение п.2), 200 OK, не начислять.
-6. **Атомарная точка идемпотентности** (закрывает гонку двух одновременных
-   вебхуков с одним sale_id — INSERT под UNIQUE(sale_id), не предварительный
-   SELECT): внутри одной транзакции (`async with db.begin()`),
-   db.add(BlackSeaSale(sale_id, user_id, credits_total=5000,
-   uah_amount=Decimal(price) / 100)) → await db.flush() сразу же.
-   - Конкурентный вебхук с тем же sale_id физически ждёт эту транзакцию на
-     уровне UNIQUE-индекса Postgres (второй flush блокируется, затем либо
-     проходит, если первая транзакция откатилась, либо падает
-     IntegrityError, если закоммитилась).
-   - IntegrityError на flush → rollback, 200 OK, ничего не начислять (кто-то
-     уже обработал этот sale_id) — не поднимать как 5xx.
-   - Только после успешного flush — продолжить: user.credits += 5000.
-7. Transaction(type="purchase", amount=5000, meta={"blacksea_sale_id": sale_id})
-   — тот же паттерн, что Transaction у NOWPayments-покупки, в той же
-   транзакции.
+6. **Атомарная точка идемпотентности.** Шаги 2 и 5 уже выполнили SELECT на
+   этой сессии → SQLAlchemy autobegin уже открыл транзакцию → явный
+   `async with db.begin():` здесь упадёт `InvalidRequestError: A transaction
+   is already begun` (задокументированный антипаттерн проекта,
+   `ANTI-PATTERNS.md:842-847`, Хангоф #70). Поэтому — `db.begin_nested()`
+   (savepoint), тот же идиом, что уже в проекте (`web_routes.py:335-337`,
+   `send_feedback`):
+   ```python
+   try:
+       async with db.begin_nested():
+           db.add(BlackSeaSale(
+               sale_id=sale_id, user_id=user.id, credits_total=5000,
+               uah_amount=Decimal(price) / 100,
+           ))
+   except IntegrityError:
+       # конкурентный вебхук уже обработал этот sale_id — savepoint
+       # автоматически откатился САМ, внешняя транзакция осталась валидна.
+       # Паттерн try/except СНАРУЖИ async with — как в roy.py:264-287,
+       # НЕ ловить исключение изнутри блока (после неудачного flush сессия
+       # входит в состояние, где обычный commit() рвётся PendingRollbackError
+       # — savepoint именно для того и нужен, чтобы это обойти).
+       return JSONResponse({"status": "ok"})
+   ```
+7. user.credits += 5000; Transaction(type="purchase", amount=5000,
+   meta={"blacksea_sale_id": sale_id}) — тот же паттерн, что Transaction у
+   NOWPayments-покупки.
 8. _apply_referral_cascade(db, user, 5000) — переиспользовать существующую
-   функцию из payments.py как есть (сигнатура не завязана на Order), в той
-   же транзакции.
-9. commit() → notify_balance_changed(user.hwid) → BackgroundTasks:
-   send_purchase_alert(name=..., hwid=..., package="ultra",
+   функцию из payments.py как есть (сигнатура не завязана на Order).
+9. await db.commit() — сохраняет BlackSeaSale (из savepoint) + credits +
+   Transaction + referral cascade одним коммитом внешней (autobegin)
+   транзакции. Только ПОСЛЕ успешного commit — notify_balance_changed(user.hwid)
+   → BackgroundTasks: send_purchase_alert(name=..., hwid=..., package="ultra",
    usd_amount=str(PACKAGES["ultra"]["usd"]), credits=5000, ip=..., bot_version=...)
    — см. ниже почему не uah_amount.
 10. Всегда отвечать 200 OK на синтаксически валидный вебхук (BlackSea не
@@ -145,21 +157,32 @@ class BlackSeaSale(Base):
 
 ## Токены доступа BlackSea — конфигурация
 
-По аналогии с `NOWPAYMENTS_API_KEY`/`NOWPAYMENTS_IPN_SECRET` в
-`server/payments.py:31-32`, новые env vars в systemd `override.conf` на GCP:
+**Статичное (никогда не меняется после выпуска приложения на BlackSea)** —
+env vars в systemd `override.conf`, по аналогии с `NOWPAYMENTS_API_KEY`
+(`server/payments.py:31-32`):
 
 ```
-BLACKSEA_ACCESS_TOKEN=...
-BLACKSEA_REFRESH_TOKEN=...
 BLACKSEA_CLIENT_ID=...
 BLACKSEA_CLIENT_SECRET=...
 ```
 
-Значения уже получены и лежат в `reference_secrets.md` (раздел BlackSea) —
-взять оттуда при выкладке, не создавать заново. `client_id`/`client_secret`
-нужны только если `access_token` инвалидируется и требуется refresh (Шаг 2
-рецепта) — реализовать `refresh_token`-обмен как fallback при 401 от
-`/api/v2/sales/{id}`, не заранее на каждый запрос.
+**Изменяемое (access_token/refresh_token могут ротироваться при каждом
+refresh-обмене)** — НЕ в `override.conf`. Процесс не может переписать
+systemd-конфиг сам (нет sudo/systemctl-доступа изнутри приложения), а
+после рестарта сервиса (деплой, плановый рестарт) снова читались бы
+протухшие статичные значения — интеграция сломалась бы намертво при первом
+же рестарте после ротации. Хранить в уже существующей `AppSetting`
+(`models.py:185-199`, key-value, тот же паттерн, что `current_version`):
+ключи `blacksea_access_token` / `blacksea_refresh_token`. Читать оттуда
+перед каждым вызовом `/api/v2/sales/{id}`, перезаписывать (`UPDATE`) сразу
+после успешного refresh-обмена — до применения нового токена дальше по коду.
+
+Текущая пара (`access_token`+`refresh_token`), полученная живым OAuth-flow
+в сессии #134, лежит в `reference_secrets.md` (раздел BlackSea) — при
+реализации записать её начальные значения в `app_settings` (не в env vars),
+`client_id`/`client_secret` — в `override.conf`. `client_id`/`client_secret`
+используются только для refresh-обмена (fallback при 401 от
+`/api/v2/sales/{id}`), не на каждый запрос.
 
 ## Идентификация покупателя — нет подписи вебхука
 
