@@ -701,11 +701,13 @@ async def test_webhook_concurrent_duplicate_credits_exactly_once(db_session, mon
     _stub_fetch(monkeypatch, [sale_body, sale_body])
     _stub_alerts(monkeypatch)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        results = await asyncio.gather(
-            client.post("/web/payment/blacksea/webhook", data=_form()),
-            client.post("/web/payment/blacksea/webhook", data=_form()),
-        )
+    # Разные IP на каждый конкурентный запрос — иначе оба идут через один и тот
+    # же request.client.host, и второй молча гасится rate-limiter'ом (10 сек/IP)
+    # раньше, чем доходит до проверяемой здесь SQLite-гонки (см. _post_webhook).
+    results = await asyncio.gather(
+        _post_webhook(_form(), ip="10.0.0.1"),
+        _post_webhook(_form(), ip="10.0.0.2"),
+    )
 
     assert [r.status_code for r in results] == [200, 200]
     assert len(await _sales_rows()) == 1
@@ -930,11 +932,14 @@ async def test_concurrent_401_webhooks_both_credit_and_leave_valid_tokens(db_ses
     refreshes = _stub_refresh(monkeypatch)
     _stub_alerts(monkeypatch)
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        results = await asyncio.gather(
-            client.post("/web/payment/blacksea/webhook", data=_form()),
-            client.post("/web/payment/blacksea/webhook", data=_form(sale_id=second_sale_id)),
-        )
+    # Разные IP на каждый конкурентный запрос — те же причины, что и в
+    # test_webhook_concurrent_duplicate_credits_exactly_once выше: с одного IP
+    # второй запрос (второй sale_id) гасился бы rate-limiter'ом, а не доходил
+    # до задокументированной здесь SQLite-гонки вокруг refresh-токена.
+    results = await asyncio.gather(
+        _post_webhook(_form(), ip="10.0.1.1"),
+        _post_webhook(_form(sale_id=second_sale_id), ip="10.0.1.2"),
+    )
 
     assert [r.status_code for r in results] == [200, 200]
     assert len(refreshes) >= 1

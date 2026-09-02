@@ -270,7 +270,7 @@ async def blacksea_webhook(
     client_ip = request.client.host if request.client else _UNKNOWN_IP
     now_ts = time.time()
     if now_ts - _webhook_rate.get(client_ip, 0) < RATE_LIMIT_SEC:
-        logger.warning("[BLACKSEA] webhook rate-limited for IP %s", client_ip)
+        logger.error("[BLACKSEA] webhook rate-limited for IP %s", client_ip)
         return JSONResponse({"status": "ok"})
     _webhook_rate[client_ip] = now_ts
 
