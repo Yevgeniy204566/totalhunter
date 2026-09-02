@@ -6,19 +6,58 @@ import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 
+const BLACKSEA_URLS = {
+  scout:  'https://totalhunter.blacksea.in.ua/l/pso',
+  hunter: 'https://totalhunter.blacksea.in.ua/l/hvy',
+  ultra:  'https://totalhunter.blacksea.in.ua/l/dbb',
+}
+
+// Ultra — визуал не менять (владелец зафиксировал). Scout/Hunter — та же
+// структура карточки, другая цветовая гамма (accent/border/glow/buttonGrad),
+// плюс bonusLine — выгода в % относительно базового тарифа Scout ($3/1000 —
+// 1 алмаз = $0.003; Hunter 2000 за $5 = +20%; Ultra 5000 за $10 = +50%).
 const PACKAGES = [
   {
-    id:       'ultra',
-    name:     'TOTAL HUNTER',
-    subtitle: '5000 Diamonds',
-    credits:  5000,
-    bonus:    null,
-    total:    5000,
-    price:    '$10.00',
-    grad:     ['#0066CC', '#00CFFF'],
-    border:   '#00CFFF',
-    glow:     'rgba(0,207,255,0.45)',
-    featured: true,
+    id: 'scout', name: 'SCOUT', price: '$3', usd: 3, credits: 1000, creditsDisplay: '1 000',
+    topBadge: null, bonusLine: null,
+    usageHint: '100 Exchange hunts · 1000 Crypt hunts',
+    countColor: '#00FFA3', countGrad: 'linear-gradient(135deg, #00CC7A, #00FFA3)',
+    countGlow: 'rgba(0,255,163,0.8)',
+    diamondGlow: 'drop-shadow(0 0 20px rgba(0,255,163,0.9)) drop-shadow(0 0 40px rgba(0,180,110,0.5))',
+    borderBase: '#00663D', borderHover: '#00FFA3',
+    shadowBase: '0 0 30px rgba(0,180,110,0.2), inset 0 0 20px rgba(0,150,90,0.05)',
+    shadowHover: '0 0 60px rgba(0,255,163,0.5), 0 0 120px rgba(0,180,110,0.25), inset 0 0 40px rgba(0,150,90,0.08)',
+    buttonGrad: 'linear-gradient(135deg, #009955, #00CC7A, #009955)',
+    buttonBorder: 'rgba(0,255,163,0.4)', buttonShadow: '0 0 24px rgba(0,200,130,0.6)',
+    hasCrypto: false,
+  },
+  {
+    id: 'hunter', name: 'HUNTER', price: '$5', usd: 5, credits: 2000, creditsDisplay: '2 000',
+    topBadge: '🔥 POPULAR', bonusLine: '+20% MORE DIAMONDS',
+    usageHint: '200 Exchange hunts · 2000 Crypt hunts',
+    countColor: '#B060FF', countGrad: 'linear-gradient(135deg, #9933FF, #C080FF)',
+    countGlow: 'rgba(176,96,255,0.8)',
+    diamondGlow: 'drop-shadow(0 0 20px rgba(176,96,255,0.9)) drop-shadow(0 0 40px rgba(120,50,220,0.5))',
+    borderBase: '#5A2299', borderHover: '#C080FF',
+    shadowBase: '0 0 30px rgba(120,50,220,0.2), inset 0 0 20px rgba(100,40,200,0.05)',
+    shadowHover: '0 0 60px rgba(176,96,255,0.5), 0 0 120px rgba(120,50,220,0.25), inset 0 0 40px rgba(100,40,200,0.08)',
+    buttonGrad: 'linear-gradient(135deg, #7A2FCC, #B060FF, #7A2FCC)',
+    buttonBorder: 'rgba(176,96,255,0.4)', buttonShadow: '0 0 24px rgba(150,80,255,0.6)',
+    hasCrypto: false,
+  },
+  {
+    id: 'ultra', name: 'TOTAL HUNTER', price: '$10', usd: 10, credits: 5000, creditsDisplay: '5 000',
+    topBadge: '★ BEST VALUE ★', bonusLine: '+50% MORE DIAMONDS',
+    usageHint: '500 Exchange hunts · 5000 Crypt hunts',
+    countColor: '#00CFFF', countGrad: 'linear-gradient(135deg, #00CFFF, #00EFFF)',
+    countGlow: 'rgba(0,207,255,0.8)',
+    diamondGlow: 'drop-shadow(0 0 20px rgba(0,207,255,0.9)) drop-shadow(0 0 40px rgba(0,100,255,0.5))',
+    borderBase: '#0066AA', borderHover: '#00EFFF',
+    shadowBase: '0 0 30px rgba(0,100,255,0.2), inset 0 0 20px rgba(0,80,200,0.05)',
+    shadowHover: '0 0 60px rgba(0,180,255,0.5), 0 0 120px rgba(0,100,255,0.25), inset 0 0 40px rgba(0,100,255,0.08)',
+    buttonGrad: 'linear-gradient(135deg, #0066FF, #00AAFF, #0066FF)',
+    buttonBorder: 'rgba(0,200,255,0.4)', buttonShadow: '0 0 24px rgba(0,150,255,0.6)',
+    hasCrypto: true, featured: true,
   },
 ]
 
@@ -96,21 +135,18 @@ function PackageCard({ pkg, buying, onBuy }) {
         position: 'relative', textAlign: 'center',
         borderRadius: 24,
         background: 'linear-gradient(160deg, #0a0a1a 0%, #0d0f2a 50%, #080818 100%)',
-        border: `2px solid ${hovered ? '#00EFFF' : '#0066AA'}`,
+        border: `2px solid ${hovered ? pkg.borderHover : pkg.borderBase}`,
         padding: '32px 24px 28px',
-        boxShadow: hovered
-          ? '0 0 60px rgba(0,180,255,0.5), 0 0 120px rgba(0,100,255,0.25), inset 0 0 40px rgba(0,100,255,0.08)'
-          : '0 0 30px rgba(0,100,255,0.2), inset 0 0 20px rgba(0,80,200,0.05)',
+        boxShadow: hovered ? pkg.shadowHover : pkg.shadowBase,
         transform: hovered ? 'scale(1.04) translateY(-4px)' : 'scale(1)',
         transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
-        cursor: 'pointer',
         overflow: 'hidden',
       }}
     >
       {/* Animated corner glow */}
       <div style={{
         position: 'absolute', top: -40, right: -40, width: 120, height: 120,
-        background: 'radial-gradient(circle, rgba(0,207,255,0.25) 0%, transparent 70%)',
+        background: `radial-gradient(circle, ${pkg.countGlow.replace('0.8', '0.25')} 0%, transparent 70%)`,
         borderRadius: '50%', pointerEvents: 'none',
       }} />
       <div style={{
@@ -120,23 +156,24 @@ function PackageCard({ pkg, buying, onBuy }) {
       }} />
 
       {/* TOP BADGE */}
-      <div style={{
-        position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)',
-        background: 'linear-gradient(90deg, #0055BB, #00AAFF, #0055BB)',
-        borderRadius: '0 0 14px 14px',
-        padding: '4px 22px', fontSize: 9, fontWeight: 900,
-        color: '#fff', letterSpacing: '2px', textTransform: 'uppercase',
-        boxShadow: '0 4px 16px rgba(0,150,255,0.5)',
-        whiteSpace: 'nowrap',
-      }}>
-        ★ BEST VALUE ★
-      </div>
+      {pkg.topBadge && (
+        <div style={{
+          position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)',
+          background: pkg.buttonGrad,
+          borderRadius: '0 0 14px 14px',
+          padding: '4px 22px', fontSize: 9, fontWeight: 900,
+          color: '#fff', letterSpacing: '2px', textTransform: 'uppercase',
+          boxShadow: `0 4px 16px ${pkg.countGlow.replace('0.8', '0.5')}`,
+          whiteSpace: 'nowrap',
+        }}>
+          {pkg.topBadge}
+        </div>
+      )}
 
       {/* Big Diamond */}
       <div style={{
         fontSize: 52, lineHeight: 1, marginBottom: 4, marginTop: 14,
-        filter: 'drop-shadow(0 0 20px rgba(0,207,255,0.9)) drop-shadow(0 0 40px rgba(0,100,255,0.5))',
-        animation: 'none',
+        filter: pkg.diamondGlow,
       }}>◆</div>
 
       {/* Price */}
@@ -148,32 +185,40 @@ function PackageCard({ pkg, buying, onBuy }) {
         filter: 'drop-shadow(0 0 16px rgba(255,200,0,0.8))',
         fontVariantNumeric: 'tabular-nums', marginBottom: 2,
       }}>
-        $10
+        {pkg.price}
       </div>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: 16 }}>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', marginBottom: pkg.bonusLine ? 4 : 16 }}>
         USD · ONE TIME
       </div>
+      {pkg.bonusLine && (
+        <div style={{
+          fontSize: 11, fontWeight: 800, letterSpacing: '1px',
+          color: pkg.countColor, marginBottom: 16,
+        }}>
+          {pkg.bonusLine}
+        </div>
+      )}
 
       {/* Divider */}
       <div style={{
         width: '80%', height: 1, margin: '0 auto 16px',
-        background: 'linear-gradient(90deg, transparent, #00AAFF66, transparent)',
+        background: `linear-gradient(90deg, transparent, ${pkg.countColor}66, transparent)`,
       }} />
 
       {/* Diamonds count */}
       <div style={{
         fontSize: 42, fontWeight: 900, lineHeight: 1,
-        background: 'linear-gradient(135deg, #00CFFF, #00EFFF)',
+        background: pkg.countGrad,
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
-        filter: 'drop-shadow(0 0 16px rgba(0,207,255,0.8))',
+        filter: `drop-shadow(0 0 16px ${pkg.countGlow})`,
         fontVariantNumeric: 'tabular-nums', marginBottom: 4,
       }}>
-        5 000
+        {pkg.creditsDisplay}
       </div>
       <div style={{
         fontSize: 11, fontWeight: 700, letterSpacing: '3px',
-        color: '#00CFFF', textTransform: 'uppercase', marginBottom: 6,
+        color: pkg.countColor, textTransform: 'uppercase', marginBottom: 6,
         opacity: 0.85,
       }}>
         ◆ DIAMONDS
@@ -184,36 +229,53 @@ function PackageCard({ pkg, buying, onBuy }) {
         fontSize: 11, color: 'rgba(255,255,255,0.35)',
         marginBottom: 22, lineHeight: 1.5,
       }}>
-        500 Exchange hunts · 5000 Crypt hunts
+        {pkg.usageHint}
       </div>
 
-      {/* BUY BUTTON */}
-      <button
-        disabled={!!buying}
-        onClick={() => onBuy(pkg.id)}
+      {/* BUY WITH CARD (BlackSea) — static product link, no backend call */}
+      <a
+        href={BLACKSEA_URLS[pkg.id]}
+        target="_blank"
+        rel="noopener noreferrer"
         style={{
-          width: '100%', padding: '14px 0',
-          background: isBuying
-            ? 'rgba(0,100,200,0.3)'
-            : 'linear-gradient(135deg, #0066FF, #00AAFF, #0066FF)',
+          display: 'block', width: '100%', padding: '14px 0',
+          background: pkg.buttonGrad,
           backgroundSize: '200% 100%',
           color: '#fff',
-          border: '1px solid rgba(0,200,255,0.4)',
+          border: `1px solid ${pkg.buttonBorder}`,
           borderRadius: 12, fontSize: 14, fontWeight: 900,
-          cursor: buying ? 'not-allowed' : 'pointer',
-          opacity: buying && !isBuying ? 0.4 : 1,
+          cursor: 'pointer',
           transition: 'all 0.2s',
-          boxShadow: isBuying ? 'none' : '0 0 24px rgba(0,150,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2)',
+          boxShadow: `${pkg.buttonShadow}, inset 0 1px 0 rgba(255,255,255,0.2)`,
           fontFamily: 'inherit', letterSpacing: '2px', textTransform: 'uppercase',
+          textDecoration: 'none', boxSizing: 'border-box',
         }}
       >
-        {isBuying ? '⏳ Redirecting...' : '💎 BUY NOW'}
-      </button>
+        💳 PAY BY CARD
+      </a>
 
-      {/* Crypto note */}
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 12 }}>
-        Crypto · Instant · Secure
-      </div>
+      {/* BUY WITH CRYPTO (NOWPayments) — only the $10 package: NOWPayments has a
+          $10 minimum invoice, unusable for Scout/Hunter */}
+      {pkg.hasCrypto && (
+        <button
+          disabled={!!buying}
+          onClick={() => onBuy(pkg.id)}
+          style={{
+            display: 'block', width: '100%', padding: '12px 0', marginTop: 10,
+            background: isBuying ? 'rgba(0,100,200,0.3)' : 'transparent',
+            color: 'rgba(255,255,255,0.7)',
+            border: `1px solid ${pkg.buttonBorder}`,
+            borderRadius: 12, fontSize: 12, fontWeight: 800,
+            cursor: buying ? 'not-allowed' : 'pointer',
+            opacity: buying && !isBuying ? 0.4 : 1,
+            transition: 'all 0.2s',
+            fontFamily: 'inherit', letterSpacing: '1.5px', textTransform: 'uppercase',
+            boxSizing: 'border-box',
+          }}
+        >
+          {isBuying ? '⏳ Redirecting...' : '◇ Pay with Crypto'}
+        </button>
+      )}
     </div>
   )
 }
@@ -299,7 +361,7 @@ export default function BalancePage() {
         alignItems: 'flex-start', paddingTop: 20, marginBottom: 36,
       }}>
         {PACKAGES.map(pkg => (
-          <PackageCard key={pkg.name} pkg={pkg} buying={buying} onBuy={handleBuy} />
+          <PackageCard key={pkg.id} pkg={pkg} buying={buying} onBuy={handleBuy} />
         ))}
       </div>
 
