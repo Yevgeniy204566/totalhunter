@@ -18,11 +18,14 @@ from decimal import Decimal
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AppSetting, BlackSeaSale, User
+from models import AppSetting, BlackSeaSale, Transaction, User
+from payments import PACKAGES, _apply_referral_cascade
 from tg_channel import send_manual_review_alert, send_purchase_alert
+from vault import notify_balance_changed
 
 logger = logging.getLogger(__name__)
 
@@ -277,5 +280,49 @@ async def blacksea_webhook(
         )
         return JSONResponse({"status": "ok"})
 
-    logger.info("[BLACKSEA] sale %s verified for user %s", sale_id, user.id)
+    credits = PACKAGES["ultra"]["credits"]
+
+    # Атомарная точка идемпотентности. db.begin() здесь НЕЛЬЗЯ: SELECT'ы выше уже
+    # открыли транзакцию через autobegin (ANTI-PATTERNS.md:842-847). Savepoint
+    # откатывается сам, внешняя транзакция остаётся валидной, поэтому except —
+    # СНАРУЖИ блока (паттерн roy.py:264-287): после неудачного flush внутри блока
+    # обычный commit() рвался бы PendingRollbackError.
+    try:
+        async with db.begin_nested():
+            db.add(BlackSeaSale(
+                sale_id=sale_id, user_id=user.id, credits_total=credits,
+                uah_amount=uah_amount,
+            ))
+            await db.flush()
+    except IntegrityError:
+        logger.info("[BLACKSEA] concurrent webhook already credited sale %s", sale_id)
+        return JSONResponse({"status": "ok"})
+
+    user.credits += credits
+    db.add(Transaction(
+        user_id=user.id,
+        type="purchase",
+        amount=credits,
+        usd_amount=str(PACKAGES["ultra"]["usd"]),
+        package="ultra",
+        meta={"blacksea_sale_id": sale_id},
+    ))
+    await _apply_referral_cascade(db, user, credits)
+
+    # снять до commit — после закрытия сессии ORM-атрибуты недоступны
+    user_hwid   = user.hwid
+    user_name   = user.username or user.email or f"user#{user.id}"
+    user_ip     = user.ip_address
+    bot_version = user.bot_version
+
+    await db.commit()
+
+    notify_balance_changed(user_hwid)   # разбудить long-poll бота, только после commit
+    background_tasks.add_task(
+        send_purchase_alert,
+        name=user_name, hwid=user_hwid, package="ultra",
+        usd_amount=str(PACKAGES["ultra"]["usd"]), credits=credits,
+        ip=user_ip, bot_version=bot_version,
+    )
+    logger.info("[BLACKSEA] sale %s credited %s to user %s", sale_id, credits, user.id)
     return JSONResponse({"status": "ok"})
