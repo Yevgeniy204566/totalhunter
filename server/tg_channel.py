@@ -73,3 +73,20 @@ async def send_purchase_alert(
         f"🤖 Версия бота: {bot_version or '—'}"
     )
     await asyncio.to_thread(_send_debug_sync, text)
+
+
+async def send_manual_review_alert(
+    *, reason: str, sale_id: str, email: str, uah_amount: str,
+) -> None:
+    """Fire-and-forget: продажа BlackSea, которую нельзя начислить автоматически.
+    Не бросает исключений."""
+    if not _DEBUG_TOKEN or not _DEBUG_CHAT_ID:
+        return
+    text = (
+        "⚠️ BlackSea — нужен ручной разбор\n"
+        f"❓ Причина: {reason}\n"
+        f"📧 Email: {email}\n"
+        f"🧾 sale_id: {sale_id}\n"
+        f"💳 Сумма: {uah_amount} UAH"
+    )
+    await asyncio.to_thread(_send_debug_sync, text)

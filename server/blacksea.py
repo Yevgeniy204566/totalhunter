@@ -13,13 +13,16 @@ import logging
 import os
 import urllib.parse
 
+from decimal import Decimal
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AppSetting, BlackSeaSale
+from models import AppSetting, BlackSeaSale, User
+from tg_channel import send_manual_review_alert, send_purchase_alert
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +167,26 @@ def sale_matches_webhook(sale: dict, *, sale_id: str, email: str,
     return None
 
 
+async def _verify_sale(db: AsyncSession, sale_id: str) -> dict:
+    """Запись продажи из BlackSea API либо BlackSeaApiError.
+
+    Единственная реальная защита от поддельного POST: у вебхука BlackSea нет
+    подписи, поэтому «в теле пришёл sale_id» само по себе не доказывает ничего.
+    """
+    access_token = await _read_setting(db, KEY_ACCESS_TOKEN)
+    if not access_token:
+        raise BlackSeaApiError(f"app_settings['{KEY_ACCESS_TOKEN}'] is missing")
+
+    status, body = await fetch_blacksea_sale(sale_id, access_token)
+
+    if status != 200:
+        raise BlackSeaApiError(f"sales API returned HTTP {status}")
+    sale = body.get("sale")
+    if not isinstance(sale, dict):
+        raise BlackSeaApiError("sales API response has no sale object")
+    return sale
+
+
 def _form_str(form, key: str) -> str:
     """Значения form-данных в Starlette — str; всё остальное (например файл в
     multipart) считаем отсутствующим, а не приводим к строке."""
@@ -194,4 +217,65 @@ async def blacksea_webhook(
         raise HTTPException(status_code=400, detail="Malformed webhook body")
 
     logger.info("[BLACKSEA] webhook sale=%s price_kopecks=%s", sale_id, price_kopecks)
+
+    quantity_raw = form.get("quantity")
+    if quantity_raw is None:
+        logger.warning("[BLACKSEA] sale %s came without quantity — treating as '1'", sale_id)
+        quantity = "1"
+    else:
+        quantity = quantity_raw if isinstance(quantity_raw, str) else ""
+
+    existing = (await db.execute(
+        select(BlackSeaSale.id).where(BlackSeaSale.sale_id == sale_id)
+    )).scalar_one_or_none()
+    if existing is not None:
+        logger.info("[BLACKSEA] sale %s already credited — no-op", sale_id)
+        return JSONResponse({"status": "ok"})
+
+    if product_id != PRODUCT_ID:
+        logger.info("[BLACKSEA] webhook for foreign product %s — ignored", product_id)
+        return JSONResponse({"status": "ok"})
+
+    try:
+        sale = await _verify_sale(db, sale_id)
+    except (BlackSeaApiError, httpx.HTTPError) as exc:
+        logger.error("[BLACKSEA] verification failed for sale %s: %s", sale_id, exc)
+        return JSONResponse({"status": "ok"})
+
+    reason = sale_matches_webhook(
+        sale, sale_id=sale_id, email=email,
+        price_kopecks=price_kopecks, product_id=product_id,
+    )
+    if reason is not None:
+        logger.error("[BLACKSEA] sale %s rejected (%s) — webhook body does not match "
+                     "the verified sale, possible forgery", sale_id, reason)
+        return JSONResponse({"status": "ok"})
+
+    uah_amount = Decimal(price_kopecks) / 100
+
+    if quantity != "1":
+        logger.warning("[BLACKSEA] sale %s has quantity=%r — manual review", sale_id, quantity)
+        background_tasks.add_task(
+            send_manual_review_alert, reason=f"quantity={quantity}",
+            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount),
+        )
+        return JSONResponse({"status": "ok"})
+
+    # email берётся из ВЕРИФИЦИРОВАННОГО ответа API, не из тела вебхука.
+    # with_for_update() держит строку покупателя до commit: user.credits += ...
+    # это read-modify-write, две одновременные продажи одного покупателя без
+    # лока могли бы прочитать один стартовый баланс и потерять одно начисление.
+    user = (await db.execute(
+        select(User).where(User.email == sale["email"]).with_for_update()
+    )).scalar_one_or_none()
+    if user is None:
+        logger.warning("[BLACKSEA] no user with email %s for sale %s — manual review",
+                       sale["email"], sale_id)
+        background_tasks.add_task(
+            send_manual_review_alert, reason="email_not_found",
+            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount),
+        )
+        return JSONResponse({"status": "ok"})
+
+    logger.info("[BLACKSEA] sale %s verified for user %s", sale_id, user.id)
     return JSONResponse({"status": "ok"})
