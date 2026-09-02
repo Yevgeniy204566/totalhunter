@@ -116,6 +116,54 @@ async def _read_setting(db: AsyncSession, key: str) -> str | None:
     return row.value if row is not None else None
 
 
+def sale_matches_webhook(sale: dict, *, sale_id: str, email: str,
+                         price_kopecks: int, product_id: str) -> str | None:
+    """None — продажа верифицирована и совпадает с телом вебхука; иначе причина.
+
+    Тело вебхука BlackSea не подписано, поэтому источник истины — ответ API, а
+    тело только сверяется с ним. Fail-closed: любое отсутствующее поле или поле
+    не того типа — отказ, а не попытка угадать смысл нестандартного ответа.
+    """
+    paid        = sale.get("paid")
+    chargedback = sale.get("chargedback")
+    refunded    = sale.get("refunded")
+    if not isinstance(paid, bool) or not isinstance(chargedback, bool) \
+            or not isinstance(refunded, bool):
+        return "malformed_status_fields"
+
+    api_email = sale.get("email")
+    if not isinstance(api_email, str) or not api_email:
+        return "malformed_email"
+
+    api_price = sale.get("price")
+    # bool — подкласс int: price=true не должен пролезть как число
+    if not isinstance(api_price, int) or isinstance(api_price, bool):
+        return "malformed_price"
+
+    api_product = sale.get("product_id")
+    if not isinstance(api_product, str) or not api_product:
+        return "malformed_product_id"
+
+    api_id = sale.get("id")
+    if api_id is not None and api_id != sale_id:
+        return "sale_id_mismatch"
+
+    if paid is not True:
+        return "not_paid"
+    if chargedback:
+        return "chargedback"
+    if refunded:
+        return "refunded"
+
+    if api_email != email:
+        return "email_mismatch"
+    if api_price != price_kopecks:
+        return "price_mismatch"
+    if api_product != product_id:
+        return "product_id_mismatch"
+    return None
+
+
 def _form_str(form, key: str) -> str:
     """Значения form-данных в Starlette — str; всё остальное (например файл в
     multipart) считаем отсутствующим, а не приводим к строке."""

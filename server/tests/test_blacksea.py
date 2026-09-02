@@ -254,3 +254,74 @@ async def test_read_setting_returns_value_and_none(db_session):
 
     assert await blacksea._read_setting(db_session, blacksea.KEY_ACCESS_TOKEN) == "tok-access"
     assert await blacksea._read_setting(db_session, blacksea.KEY_REFRESH_TOKEN) is None
+
+
+def _api_sale(**overrides):
+    """Ответ GET /api/v2/sales/{id} — поля из реального живого вызова
+    (MEMORY/project_blacksea_sale_verification_recipe.md)."""
+    sale = {
+        "id":                 SALE_ID,
+        "email":              BUYER_EMAIL,
+        "paid":               True,
+        "price":              PRICE_KOP,
+        "product_id":         blacksea.PRODUCT_ID,
+        "order_id":           568433115,
+        "chargedback":        False,
+        "refunded":           False,
+        "partially_refunded": False,
+    }
+    sale.update(overrides)
+    return {k: v for k, v in sale.items() if v is not None}
+
+
+def _match(sale):
+    return blacksea.sale_matches_webhook(
+        sale, sale_id=SALE_ID, email=BUYER_EMAIL,
+        price_kopecks=PRICE_KOP, product_id=blacksea.PRODUCT_ID,
+    )
+
+
+def test_sale_matches_webhook_accepts_verified_sale():
+    assert _match(_api_sale()) is None
+
+
+def test_sale_matches_webhook_accepts_response_without_id_field():
+    """sale.id — defense-in-depth, а не обязательное поле: его отсутствие не отказ."""
+    assert _match(_api_sale(id=None)) is None
+
+
+@pytest.mark.parametrize("sale, expected", [
+    (_api_sale(paid=False),                    "not_paid"),
+    (_api_sale(chargedback=True),              "chargedback"),
+    (_api_sale(refunded=True),                 "refunded"),
+    (_api_sale(email="someone.else@test.com"), "email_mismatch"),
+    (_api_sale(price=100),                     "price_mismatch"),
+    (_api_sale(product_id="other-product"),    "product_id_mismatch"),
+    (_api_sale(id="another-sale-id"),          "sale_id_mismatch"),
+])
+def test_sale_matches_webhook_rejects_mismatch(sale, expected):
+    assert _match(sale) == expected
+
+
+@pytest.mark.parametrize("sale, expected", [
+    (_api_sale(paid=None),          "malformed_status_fields"),
+    (_api_sale(paid="true"),        "malformed_status_fields"),
+    (_api_sale(chargedback=None),   "malformed_status_fields"),
+    (_api_sale(refunded="false"),   "malformed_status_fields"),
+    (_api_sale(email=None),         "malformed_email"),
+    (_api_sale(email=123),          "malformed_email"),
+    (_api_sale(price=None),         "malformed_price"),
+    (_api_sale(price="41000"),      "malformed_price"),
+    (_api_sale(price=True),         "malformed_price"),
+    (_api_sale(product_id=None),    "malformed_product_id"),
+])
+def test_sale_matches_webhook_is_fail_closed_on_broken_fields(sale, expected):
+    """Отклонение ответа от ожидаемой формы трактуется как отказ, не как разрешение."""
+    assert _match(sale) == expected
+
+
+def test_sale_matches_webhook_rejects_string_price_even_if_digits_equal():
+    """'41000' == 41000 в Python всегда False — сверка обязана идти между int'ами,
+    иначе КАЖДАЯ покупка проваливала бы проверку (или, при небрежном приведении,
+    проходила бы любая)."""
+    assert _match(_api_sale(price=str(PRICE_KOP))) == "malformed_price"
