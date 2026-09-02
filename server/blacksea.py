@@ -46,19 +46,31 @@ RATE_LIMIT_SEC = 10   # минимальный интервал вебхуков
 _webhook_rate: dict[str, float] = {}
 _UNKNOWN_IP = "unknown"   # request.client бывает None у некоторых ASGI-транспортов
 
-CLIENT_ID     = os.environ.get("BLACKSEA_CLIENT_ID", "")
-CLIENT_SECRET = os.environ.get("BLACKSEA_CLIENT_SECRET", "")
-PRODUCT_ID    = os.environ.get("BLACKSEA_PRODUCT_ID", "")
+CLIENT_ID          = os.environ.get("BLACKSEA_CLIENT_ID", "")
+CLIENT_SECRET      = os.environ.get("BLACKSEA_CLIENT_SECRET", "")
+PRODUCT_ID         = os.environ.get("BLACKSEA_PRODUCT_ID", "")           # package "ultra"
+PRODUCT_ID_SCOUT   = os.environ.get("BLACKSEA_PRODUCT_ID_SCOUT", "")     # package "scout"
+PRODUCT_ID_HUNTER  = os.environ.get("BLACKSEA_PRODUCT_ID_HUNTER", "")    # package "hunter"
 
 for _name, _value in (
-    ("BLACKSEA_CLIENT_ID",     CLIENT_ID),
-    ("BLACKSEA_CLIENT_SECRET", CLIENT_SECRET),
-    ("BLACKSEA_PRODUCT_ID",    PRODUCT_ID),
+    ("BLACKSEA_CLIENT_ID",          CLIENT_ID),
+    ("BLACKSEA_CLIENT_SECRET",      CLIENT_SECRET),
+    ("BLACKSEA_PRODUCT_ID",         PRODUCT_ID),
+    ("BLACKSEA_PRODUCT_ID_SCOUT",   PRODUCT_ID_SCOUT),
+    ("BLACKSEA_PRODUCT_ID_HUNTER",  PRODUCT_ID_HUNTER),
 ):
     if not _value:
         raise ValueError(
             f"{_name} is not set in environment variables — server refuses to start without it"
         )
+
+# BlackSea хостит три отдельных товара (разные product_id), один вебхук-эндпоинт
+# на всех — пакет определяется по product_id из тела, а не зашит жёстко.
+PRODUCTS: dict[str, str] = {
+    PRODUCT_ID:        "ultra",
+    PRODUCT_ID_SCOUT:  "scout",
+    PRODUCT_ID_HUNTER: "hunter",
+}
 
 
 class BlackSeaApiError(Exception):
@@ -315,7 +327,8 @@ async def blacksea_webhook(
         logger.info("[BLACKSEA] sale %s already credited — no-op", sale_id)
         return JSONResponse({"status": "ok"})
 
-    if product_id != PRODUCT_ID:
+    package_key = PRODUCTS.get(product_id)
+    if package_key is None:
         logger.info("[BLACKSEA] webhook for foreign product %s — ignored", product_id)
         return JSONResponse({"status": "ok"})
 
@@ -372,7 +385,7 @@ async def blacksea_webhook(
         )
         return JSONResponse({"status": "ok"})
 
-    credits = PACKAGES["ultra"]["credits"]
+    credits = PACKAGES[package_key]["credits"]
 
     # Атомарная точка идемпотентности. db.begin() здесь НЕЛЬЗЯ: SELECT'ы выше уже
     # открыли транзакцию через autobegin (ANTI-PATTERNS.md:842-847). Savepoint
@@ -395,8 +408,8 @@ async def blacksea_webhook(
         user_id=user.id,
         type="purchase",
         amount=credits,
-        usd_amount=str(PACKAGES["ultra"]["usd"]),
-        package="ultra",
+        usd_amount=str(PACKAGES[package_key]["usd"]),
+        package=package_key,
         meta={"blacksea_sale_id": sale_id},
     ))
     await _apply_referral_cascade(db, user, credits)
@@ -412,8 +425,8 @@ async def blacksea_webhook(
     notify_balance_changed(user_hwid)   # разбудить long-poll бота, только после commit
     background_tasks.add_task(
         send_purchase_alert,
-        name=user_name, hwid=user_hwid, package="ultra",
-        usd_amount=str(PACKAGES["ultra"]["usd"]), credits=credits,
+        name=user_name, hwid=user_hwid, package=package_key,
+        usd_amount=str(PACKAGES[package_key]["usd"]), credits=credits,
         ip=user_ip, bot_version=bot_version,
     )
     logger.info("[BLACKSEA] sale %s credited %s to user %s", sale_id, credits, user.id)

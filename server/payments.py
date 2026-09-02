@@ -36,7 +36,9 @@ NP_SUCCESS_URL = "https://total-hunter.com/dashboard"
 NP_CANCEL_URL  = "https://total-hunter.com/dashboard"
 
 PACKAGES: dict[str, dict] = {
-    "ultra": {"usd": 10.00, "credits": 5000, "description": "Total Hunter — 5000 diamonds"},
+    "scout":  {"usd": 3.00,  "credits": 1000, "description": "Total Hunter — 1000 diamonds"},
+    "hunter": {"usd": 5.00,  "credits": 2000, "description": "Total Hunter — 2000 diamonds"},
+    "ultra":  {"usd": 10.00, "credits": 5000, "description": "Total Hunter — 5000 diamonds"},
 }
 
 

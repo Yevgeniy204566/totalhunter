@@ -10,7 +10,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # упадёт весь набор тестов, а не только тесты BlackSea.
 os.environ.setdefault("BLACKSEA_CLIENT_ID",     "test-blacksea-client-id")
 os.environ.setdefault("BLACKSEA_CLIENT_SECRET", "test-blacksea-client-secret")
-os.environ.setdefault("BLACKSEA_PRODUCT_ID",    "test-blacksea-product-id")
+os.environ.setdefault("BLACKSEA_PRODUCT_ID",         "test-blacksea-product-id-ultra")
+os.environ.setdefault("BLACKSEA_PRODUCT_ID_SCOUT",   "test-blacksea-product-id-scout")
+os.environ.setdefault("BLACKSEA_PRODUCT_ID_HUNTER",  "test-blacksea-product-id-hunter")
 
 from database import get_db
 from models import Base

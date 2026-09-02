@@ -154,13 +154,18 @@ async def test_webhook_wellformed_body_returns_200_without_side_effects(db_sessi
 
 
 @pytest.mark.asyncio
-async def test_module_refuses_to_import_without_env_var(monkeypatch):
+@pytest.mark.parametrize("var", [
+    "BLACKSEA_CLIENT_ID", "BLACKSEA_CLIENT_SECRET", "BLACKSEA_PRODUCT_ID",
+    "BLACKSEA_PRODUCT_ID_SCOUT", "BLACKSEA_PRODUCT_ID_HUNTER",
+])
+async def test_module_refuses_to_import_without_env_var(monkeypatch, var):
     """Отсутствие BLACKSEA_* роняет приложение на старте, а не тихо принимает
-    вебхуки, которые нечем обработать."""
+    вебхуки, которые нечем обработать. Три товара на BlackSea — три обязательных
+    product_id env var, ни один не опционален."""
     import importlib
 
     original = sys.modules["blacksea"]
-    monkeypatch.delenv("BLACKSEA_CLIENT_ID", raising=False)
+    monkeypatch.delenv(var, raising=False)
     del sys.modules["blacksea"]
     try:
         with pytest.raises(ValueError):
@@ -601,6 +606,66 @@ async def test_webhook_happy_path_credits_buyer(db_session, monkeypatch):
     assert len(sent["purchase"]) == 1
     assert sent["purchase"][0]["package"] == "ultra"
     assert sent["purchase"][0]["credits"] == 5000
+
+
+@pytest.mark.asyncio
+async def test_webhook_scout_product_credits_1000_diamonds(db_session, monkeypatch):
+    """Три товара на BlackSea делят один вебхук-эндпоинт — product_id из тела
+    определяет пакет (scout/hunter/ultra), а не единственный жёстко зашитый ID."""
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    sale_id = "scout-sale-1"
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale(
+        id=sale_id, product_id=blacksea.PRODUCT_ID_SCOUT, price=300,
+    )})])
+    sent = _stub_alerts(monkeypatch)
+
+    resp = await _post_webhook(_form(
+        sale_id=sale_id, product_id=blacksea.PRODUCT_ID_SCOUT, price="300",
+    ))
+
+    assert resp.status_code == 200
+    assert await _credits_of(BUYER_EMAIL) == 1000
+
+    async for db in app.dependency_overrides[get_db]():
+        txn = (await db.execute(
+            select(Transaction).where(Transaction.type == "purchase")
+        )).scalar_one()
+        assert txn.package == "scout"
+        assert txn.amount == 1000
+        assert float(txn.usd_amount) == 3.00
+
+    assert sent["purchase"][0]["package"] == "scout"
+    assert sent["purchase"][0]["credits"] == 1000
+
+
+@pytest.mark.asyncio
+async def test_webhook_hunter_product_credits_2000_diamonds(db_session, monkeypatch):
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    sale_id = "hunter-sale-1"
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale(
+        id=sale_id, product_id=blacksea.PRODUCT_ID_HUNTER, price=500,
+    )})])
+    sent = _stub_alerts(monkeypatch)
+
+    resp = await _post_webhook(_form(
+        sale_id=sale_id, product_id=blacksea.PRODUCT_ID_HUNTER, price="500",
+    ))
+
+    assert resp.status_code == 200
+    assert await _credits_of(BUYER_EMAIL) == 2000
+
+    async for db in app.dependency_overrides[get_db]():
+        txn = (await db.execute(
+            select(Transaction).where(Transaction.type == "purchase")
+        )).scalar_one()
+        assert txn.package == "hunter"
+        assert txn.amount == 2000
+        assert float(txn.usd_amount) == 5.00
+
+    assert sent["purchase"][0]["package"] == "hunter"
+    assert sent["purchase"][0]["credits"] == 2000
 
 
 @pytest.mark.asyncio
