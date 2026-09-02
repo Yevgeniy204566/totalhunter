@@ -359,6 +359,32 @@ class Order(Base):
 
 
 # ─────────────────────────────────────────────
+# BlackSeaSale — идемпотентность фиатных продаж BlackSea
+# ─────────────────────────────────────────────
+
+class BlackSeaSale(Base):
+    """
+    Одна строка на УСПЕШНО начисленную продажу BlackSea.
+
+    Стадии pending нет (в отличие от Order): заказ у нас заранее не создаётся —
+    покупатель уходит на фиксированную ссылку товара, единственный сигнал это
+    вебхук. Само наличие строки по sale_id и есть идемпотентность, а
+    UNIQUE(sale_id) — последний рубеж при двух конкурентных вебхуках.
+    """
+    __tablename__ = "blacksea_sales"
+
+    id            = Column(Integer, primary_key=True)
+    sale_id       = Column(String(50), unique=True, nullable=False, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    credits_total = Column(Integer, nullable=False)
+    uah_amount    = Column(Numeric(10, 2), nullable=False)
+    created_at    = Column(TIMESTAMP(timezone=True), nullable=False,
+                           server_default=func.now())
+
+    user = relationship("User", backref="blacksea_sales")
+
+
+# ─────────────────────────────────────────────
 # ClanMember — клан-ростер (Фаза 0 ERP)
 # ─────────────────────────────────────────────
 
