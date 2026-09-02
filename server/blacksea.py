@@ -170,6 +170,51 @@ def sale_matches_webhook(sale: dict, *, sale_id: str, email: str,
     return None
 
 
+async def _obtain_fresh_access_token(db: AsyncSession, stale_token: str) -> str:
+    """Обменять протухший токен, сериализовав обмен на строке app_settings.
+
+    Сравнить прочитанное значение до сетевого вызова недостаточно: гонка живёт в
+    промежутке между чтением и записью (round-trip к BlackSea). Поэтому строка
+    берётся FOR UPDATE и перечитывается уже под локом — конкурентный вебхук ждёт
+    и получает готовый результат вместо второго обмена тем же refresh_token,
+    который BlackSea уже ротировала.
+
+    Транзакция здесь своя и коммитится сразу: лок держится только на время
+    редкого refresh-пути, начисление кредитов идёт следующей транзакцией.
+    Сетевая ошибка обмена выходит наружу как есть — savepoint откатывается,
+    старая пара токенов остаётся нетронутой.
+    """
+    async with db.begin_nested():
+        access_row = (await db.execute(
+            select(AppSetting)
+            .where(AppSetting.key == KEY_ACCESS_TOKEN)
+            .with_for_update()
+        )).scalar_one_or_none()
+        if access_row is None:
+            raise BlackSeaApiError(f"app_settings['{KEY_ACCESS_TOKEN}'] is missing")
+
+        if access_row.value != stale_token:
+            # кто-то уже обменял, пока мы ждали лок — берём его результат,
+            # refresh_token в этой ветке не читается и не трогается
+            fresh_access = access_row.value
+        else:
+            refresh_row = (await db.execute(
+                select(AppSetting)
+                .where(AppSetting.key == KEY_REFRESH_TOKEN)
+                .with_for_update()
+            )).scalar_one_or_none()
+            if refresh_row is None:
+                raise BlackSeaApiError(f"app_settings['{KEY_REFRESH_TOKEN}'] is missing")
+
+            fresh_access, fresh_refresh = await refresh_blacksea_token(refresh_row.value)
+            access_row.value  = fresh_access
+            refresh_row.value = fresh_refresh
+            logger.info("[BLACKSEA] access token refreshed")
+
+    await db.commit()
+    return fresh_access
+
+
 async def _verify_sale(db: AsyncSession, sale_id: str) -> dict:
     """Запись продажи из BlackSea API либо BlackSeaApiError.
 
@@ -181,6 +226,12 @@ async def _verify_sale(db: AsyncSession, sale_id: str) -> dict:
         raise BlackSeaApiError(f"app_settings['{KEY_ACCESS_TOKEN}'] is missing")
 
     status, body = await fetch_blacksea_sale(sale_id, access_token)
+
+    if status == 401:
+        # Бюджет «один refresh + один повтор» обеспечен структурно: прямой код без
+        # цикла. Второй 401 сюда не возвращается — уходит в BlackSeaApiError ниже.
+        access_token = await _obtain_fresh_access_token(db, access_token)
+        status, body = await fetch_blacksea_sale(sale_id, access_token)
 
     if status != 200:
         raise BlackSeaApiError(f"sales API returned HTTP {status}")
