@@ -189,6 +189,7 @@ async def _obtain_fresh_access_token(db: AsyncSession, stale_token: str) -> str:
             select(AppSetting)
             .where(AppSetting.key == KEY_ACCESS_TOKEN)
             .with_for_update()
+            .execution_options(populate_existing=True)
         )).scalar_one_or_none()
         if access_row is None:
             raise BlackSeaApiError(f"app_settings['{KEY_ACCESS_TOKEN}'] is missing")
@@ -202,6 +203,7 @@ async def _obtain_fresh_access_token(db: AsyncSession, stale_token: str) -> str:
                 select(AppSetting)
                 .where(AppSetting.key == KEY_REFRESH_TOKEN)
                 .with_for_update()
+                .execution_options(populate_existing=True)
             )).scalar_one_or_none()
             if refresh_row is None:
                 raise BlackSeaApiError(f"app_settings['{KEY_REFRESH_TOKEN}'] is missing")

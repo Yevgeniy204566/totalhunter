@@ -813,6 +813,63 @@ async def test_obtain_fresh_token_fails_closed_when_refresh_setting_missing(db_s
             await blacksea._obtain_fresh_access_token(db, "stale-access")
 
 
+@pytest.mark.asyncio
+async def test_obtain_fresh_token_sees_rotation_when_row_already_loaded_on_same_session(
+    db_session, monkeypatch
+):
+    """Регресс на находку финального ревью ветки: в проде _obtain_fresh_access_token
+    вызывается из _verify_sale НА ТОЙ ЖЕ сессии, которая уже прочитала строку
+    app_settings через _read_setting раньше в этом же запросе — объект AppSetting уже
+    лежит в identity map сессии. test_obtain_fresh_token_reuses_value_rotated_by_someone_else
+    выше этого не ловит: там _obtain_fresh_access_token зовётся на девственной сессии,
+    которой нечего было кэшировать заранее. Без execution_options(populate_existing=True)
+    на FOR UPDATE re-select SQLAlchemy вернула бы устаревший Python-объект из identity
+    map, а не то, что реально пришло вторым SELECT'ом (лок на уровне БД при этом
+    берётся честно — протухает именно чтение в Python).
+
+    ВАЖНО про сам тест: простой вызов _read_setting() (как делает _verify_sale)
+    здесь НЕДОСТАТОЧЕН — его локальная переменная `row` теряет последнюю сильную
+    ссылку при выходе из функции, CPython немедленно собирает объект мусором,
+    identity map (WeakInstanceDict) сама вычищает запись — и тест «проходит»
+    даже БЕЗ фикса, той же случайностью GC, которую этот фикс должен упразднить
+    (проверено вручную: с временно отменённым populate_existing=True тест без
+    удержания ссылки зелёный). Поэтому ниже объект читается напрямую и
+    удерживается в `loaded_row` на всё время теста — детерминированно
+    воспроизводит «строка уже лежит в identity map с живой Python-ссылкой»,
+    вместо того чтобы полагаться на то, успеет ли GC её убрать."""
+    await _seed_tokens(db_session, access="stale-access", refresh="some-refresh")
+
+    # Мимикрируем _verify_sale: читаем ту же строку на ЭТОЙ ЖЕ сессии заранее.
+    # Ссылка удерживается явно (см. docstring) — иначе GC уберёт объект из
+    # identity map до повторного SELECT'а, и тест перестанет что-либо доказывать.
+    loaded_row = (await db_session.execute(
+        select(AppSetting).where(AppSetting.key == blacksea.KEY_ACCESS_TOKEN)
+    )).scalar_one()
+    assert loaded_row.value == "stale-access"
+    await db_session.commit()   # закрыть транзакцию чтения, не трогая identity map —
+                                 # expire_on_commit=False, атрибуты объекта не сбрасываются
+
+    # Конкурентный запрос на ОТДЕЛЬНОЙ сессии уже обменял токен и закоммитил.
+    async for other_db in app.dependency_overrides[get_db]():
+        row = (await other_db.execute(
+            select(AppSetting).where(AppSetting.key == blacksea.KEY_ACCESS_TOKEN)
+        )).scalar_one()
+        row.value = "already-rotated"
+        await other_db.commit()
+
+    async def _must_not_run(refresh_token):
+        raise AssertionError("refresh_blacksea_token не должна вызываться на этой ветке")
+
+    monkeypatch.setattr(blacksea, "refresh_blacksea_token", _must_not_run)
+
+    token = await blacksea._obtain_fresh_access_token(db_session, "stale-access")
+
+    assert token == "already-rotated"
+    # populate_existing=True обязан перезаписать атрибут уже загруженного объекта,
+    # а не просто вернуть правильную строку из другого источника.
+    assert loaded_row.value == "already-rotated"
+
+
 @pytest.mark.xfail(
     reason="StaticPool делит ОДНО физическое SQLite-соединение между обеими "
            "AsyncSession — тот же артефакт, что задокументирован у "
