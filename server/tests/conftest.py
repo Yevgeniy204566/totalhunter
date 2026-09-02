@@ -6,6 +6,12 @@ from sqlalchemy.pool import StaticPool
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+# blacksea.py валидирует эти переменные на импорте (см. спеку) — без них
+# упадёт весь набор тестов, а не только тесты BlackSea.
+os.environ.setdefault("BLACKSEA_CLIENT_ID",     "test-blacksea-client-id")
+os.environ.setdefault("BLACKSEA_CLIENT_SECRET", "test-blacksea-client-secret")
+os.environ.setdefault("BLACKSEA_PRODUCT_ID",    "test-blacksea-product-id")
+
 from database import get_db
 from models import Base
 from main import app

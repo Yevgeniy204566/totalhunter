@@ -47,6 +47,7 @@ from database import get_db
 from models import AppSetting, Broadcast, CrashReport, Feedback, Hunt, HwidHistory, LinkCode, Log, Transaction, User
 from web_routes import router as web_router
 from payments import router as payments_router
+from blacksea import router as blacksea_router
 from vault import router as vault_router
 from earn import router as earn_router
 from roy import router as roy_router
@@ -101,6 +102,7 @@ app.add_middleware(
 
 app.include_router(web_router)
 app.include_router(payments_router)
+app.include_router(blacksea_router)
 app.include_router(vault_router)
 app.include_router(earn_router)
 app.include_router(roy_router)

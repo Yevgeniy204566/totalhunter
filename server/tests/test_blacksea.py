@@ -15,9 +15,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import pytest
 from decimal import Decimal
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+import blacksea
 from main import app
 from database import get_db
 from models import AppSetting, BlackSeaSale, Transaction, User
@@ -63,3 +65,88 @@ async def test_blacksea_sale_sale_id_is_unique(db_session):
     with pytest.raises(IntegrityError):
         await db_session.commit()
     await db_session.rollback()
+
+
+SALE_ID     = "v1N13bcVloNleQc9iKMeTg=="
+BUYER_EMAIL = "blacksea_buyer@test.com"
+PRICE_KOP   = 41000            # 410.00 UAH ≈ $10 по курсу конвертации BlackSea
+
+
+def _form(**overrides):
+    """Тело вебхука BlackSea. Поля — из реального payload, зафиксированного живой
+    покупкой (MEMORY/project_blacksea_payment_gateway.md), не выдуманы."""
+    body = {
+        "seller_id":         "seller-1",
+        "product_id":        blacksea.PRODUCT_ID,
+        "product_name":      "Total Hunter — 5000 diamonds",
+        "permalink":         "abc123",
+        "product_permalink": "https://shop.blacksea.in.ua/l/abc123",
+        "short_product_id":  "abc123",
+        "email":             BUYER_EMAIL,
+        "price":             str(PRICE_KOP),
+        "fee":               "4100",
+        "currency":          "uah",
+        "quantity":          "1",
+        "order_number":      "568433115",
+        "sale_id":           SALE_ID,
+        "sale_timestamp":    "2026-09-01T15:04:05Z",
+        "purchaser_id":      "purchaser-1",
+        "test":              "true",
+        "refunded":          "false",
+        "resource_name":     "sale",
+        "disputed":          "false",
+        "dispute_won":       "false",
+    }
+    body.update(overrides)
+    return {k: v for k, v in body.items() if v is not None}
+
+
+async def _post_webhook(form: dict):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        return await client.post("/web/payment/blacksea/webhook", data=form)
+
+
+@pytest.mark.parametrize("missing", ["sale_id", "email", "price", "product_id"])
+@pytest.mark.asyncio
+async def test_webhook_missing_required_field_returns_400(missing):
+    """Синтаксически невалидное тело — единственная ветка, отвечающая не 200."""
+    resp = await _post_webhook(_form(**{missing: None}))
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_webhook_non_numeric_price_returns_400():
+    resp = await _post_webhook(_form(price="сто гривен"))
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_webhook_oversized_sale_id_returns_400():
+    """sale_id длиннее колонки String(50) — отбрасывать до БД, не ловить обрезкой."""
+    resp = await _post_webhook(_form(sale_id="x" * 51))
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_webhook_wellformed_body_returns_200_without_side_effects(db_session):
+    resp = await _post_webhook(_form())
+    assert resp.status_code == 200
+
+    async for db in app.dependency_overrides[get_db]():
+        assert (await db.execute(select(BlackSeaSale))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_module_refuses_to_import_without_env_var(monkeypatch):
+    """Отсутствие BLACKSEA_* роняет приложение на старте, а не тихо принимает
+    вебхуки, которые нечем обработать."""
+    import importlib
+
+    original = sys.modules["blacksea"]
+    monkeypatch.delenv("BLACKSEA_CLIENT_ID", raising=False)
+    del sys.modules["blacksea"]
+    try:
+        with pytest.raises(ValueError):
+            importlib.import_module("blacksea")
+    finally:
+        sys.modules["blacksea"] = original
