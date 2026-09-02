@@ -134,12 +134,21 @@ def sale_matches_webhook(sale: dict, *, sale_id: str, email: str,
     """None — продажа верифицирована и совпадает с телом вебхука; иначе причина.
 
     Тело вебхука BlackSea не подписано, поэтому источник истины — ответ API, а
-    тело только сверяется с ним. Fail-closed: любое отсутствующее поле или поле
-    не того типа — отказ, а не попытка угадать смысл нестандартного ответа.
+    тело только сверяется с ним. Fail-closed: отсутствующее поле или поле не
+    того типа — отказ, а не попытка угадать смысл нестандартного ответа.
+
+    Исключение — `refunded`: живой прод-инцидент 2026-09-02 (продажа
+    6aVjjdvmnBWaGnf2EE-apQ==) показал, что реальный API BlackSea вообще не
+    включает этот ключ в ответ, если возврата не было (есть только
+    `partially_refunded`), хотя более ранний ручной тест его возвращал.
+    Fail-closed на отсутствие `refunded` отклонял каждую настоящую продажу.
+    Отсутствие ключа трактуется как `False`; присутствие с неверным типом —
+    по-прежнему отказ. `paid`/`chargedback` в реальных ответах присутствуют
+    всегда, для них fail-closed на отсутствие не ослабляется.
     """
     paid        = sale.get("paid")
     chargedback = sale.get("chargedback")
-    refunded    = sale.get("refunded")
+    refunded    = sale.get("refunded", False)
     if not isinstance(paid, bool) or not isinstance(chargedback, bool) \
             or not isinstance(refunded, bool):
         return "malformed_status_fields"

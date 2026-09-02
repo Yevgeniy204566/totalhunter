@@ -337,6 +337,17 @@ def test_sale_matches_webhook_is_fail_closed_on_broken_fields(sale, expected):
     assert _match(sale) == expected
 
 
+def test_sale_matches_webhook_accepts_missing_refunded_as_not_refunded():
+    """Живой прод-инцидент 2026-09-02, продажа 6aVjjdvmnBWaGnf2EE-apQ==: реальный
+    ответ BlackSea API не содержит ключа `refunded` вовсе, когда возврата не было
+    — есть только `partially_refunded`. Fail-closed на отсутствие ЛЮБОГО поля
+    молча отклонял каждую настоящую продажу. `chargedback` в реальном ответе
+    присутствует всегда — для него fail-closed на отсутствие сохраняется."""
+    sale = _api_sale()
+    del sale["refunded"]
+    assert _match(sale) is None
+
+
 def test_sale_matches_webhook_rejects_string_price_even_if_digits_equal():
     """'41000' == 41000 в Python всегда False — сверка обязана идти между int'ами,
     иначе КАЖДАЯ покупка проваливала бы проверку (или, при небрежном приведении,
