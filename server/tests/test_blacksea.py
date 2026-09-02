@@ -150,3 +150,107 @@ async def test_module_refuses_to_import_without_env_var(monkeypatch):
             importlib.import_module("blacksea")
     finally:
         sys.modules["blacksea"] = original
+
+
+import httpx
+
+
+def _mock_client(handler):
+    """Подменяет blacksea._client на клиент поверх MockTransport."""
+    def _factory():
+        return httpx.AsyncClient(transport=httpx.MockTransport(handler), timeout=1)
+    return _factory
+
+
+@pytest.mark.asyncio
+async def test_fetch_sale_url_encodes_sale_id_and_passes_token(monkeypatch):
+    """sale_id вида 'v1N13...Tg==' обязан быть URL-encoded, иначе роутинг
+    BlackSea отдаёт не тот путь (MEMORY/project_blacksea_sale_verification_recipe.md)."""
+    seen = {}
+
+    def handler(request):
+        seen["path"]  = request.url.path
+        seen["token"] = request.url.params.get("access_token")
+        return httpx.Response(200, json={"success": True, "sale": {"id": SALE_ID}})
+
+    monkeypatch.setattr(blacksea, "_client", _mock_client(handler))
+
+    status, body = await blacksea.fetch_blacksea_sale(SALE_ID, "tok-access")
+
+    assert status == 200
+    assert body["sale"]["id"] == SALE_ID
+    assert seen["path"].endswith("/api/v2/sales/v1N13bcVloNleQc9iKMeTg%3D%3D")
+    assert seen["token"] == "tok-access"
+
+
+@pytest.mark.asyncio
+async def test_fetch_sale_returns_status_for_401(monkeypatch):
+    monkeypatch.setattr(blacksea, "_client",
+                        _mock_client(lambda request: httpx.Response(401, json={"error": "x"})))
+    status, body = await blacksea.fetch_blacksea_sale(SALE_ID, "stale")
+    assert status == 401
+
+
+@pytest.mark.asyncio
+async def test_fetch_sale_non_json_body_returns_empty_dict(monkeypatch):
+    monkeypatch.setattr(blacksea, "_client",
+                        _mock_client(lambda request: httpx.Response(200, text="<html>502</html>")))
+    status, body = await blacksea.fetch_blacksea_sale(SALE_ID, "tok")
+    assert (status, body) == (200, {})
+
+
+@pytest.mark.asyncio
+async def test_fetch_sale_propagates_network_error(monkeypatch):
+    def handler(request):
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(blacksea, "_client", _mock_client(handler))
+    with pytest.raises(httpx.HTTPError):
+        await blacksea.fetch_blacksea_sale(SALE_ID, "tok")
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_returns_new_pair(monkeypatch):
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["body"] = request.content.decode()
+        return httpx.Response(200, json={"access_token": "new-access",
+                                         "refresh_token": "new-refresh",
+                                         "scope": "view_sales"})
+
+    monkeypatch.setattr(blacksea, "_client", _mock_client(handler))
+
+    access, refresh = await blacksea.refresh_blacksea_token("old-refresh")
+
+    assert (access, refresh) == ("new-access", "new-refresh")
+    assert seen["path"] == "/oauth/token"
+    assert "grant_type=refresh_token" in seen["body"]
+    assert "refresh_token=old-refresh" in seen["body"]
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_raises_on_non_200(monkeypatch):
+    monkeypatch.setattr(blacksea, "_client",
+                        _mock_client(lambda request: httpx.Response(400, json={"error": "invalid_grant"})))
+    with pytest.raises(blacksea.BlackSeaApiError):
+        await blacksea.refresh_blacksea_token("old-refresh")
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_raises_when_pair_incomplete(monkeypatch):
+    """200 без refresh_token — не повод записать половину пары в app_settings."""
+    monkeypatch.setattr(blacksea, "_client",
+                        _mock_client(lambda request: httpx.Response(200, json={"access_token": "a"})))
+    with pytest.raises(blacksea.BlackSeaApiError):
+        await blacksea.refresh_blacksea_token("old-refresh")
+
+
+@pytest.mark.asyncio
+async def test_read_setting_returns_value_and_none(db_session):
+    db_session.add(AppSetting(key=blacksea.KEY_ACCESS_TOKEN, value="tok-access"))
+    await db_session.commit()
+
+    assert await blacksea._read_setting(db_session, blacksea.KEY_ACCESS_TOKEN) == "tok-access"
+    assert await blacksea._read_setting(db_session, blacksea.KEY_REFRESH_TOKEN) is None

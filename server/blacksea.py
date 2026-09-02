@@ -8,8 +8,10 @@ Route: POST /web/payment/blacksea/webhook
 sale_id через BlackSea API, а не тело запроса.
 """
 
+import httpx
 import logging
 import os
+import urllib.parse
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -17,7 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import BlackSeaSale
+from models import AppSetting, BlackSeaSale
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,69 @@ for _name, _value in (
 class BlackSeaApiError(Exception):
     """Продажу не удалось верифицировать: сеть, не-200 от API или неудачный
     обмен токена. Никогда не означает «не оплачено» — fail-closed, без начисления."""
+
+
+def _client() -> httpx.AsyncClient:
+    """Единственное место сборки HTTP-клиента — тесты подменяют его целиком."""
+    return httpx.AsyncClient(timeout=HTTP_TIMEOUT)
+
+
+async def fetch_blacksea_sale(sale_id: str, access_token: str) -> tuple[int, dict]:
+    """GET /api/v2/sales/{sale_id} → (HTTP-код, тело-словарь).
+
+    Тело, которое не разбирается как JSON-объект, отдаётся пустым словарём —
+    решение «верить или нет» принимает sale_matches_webhook, здесь только
+    транспорт. Сетевые ошибки НЕ глотаются: httpx.HTTPError уходит наверх.
+    """
+    quoted = urllib.parse.quote(sale_id, safe="")
+    async with _client() as client:
+        resp = await client.get(
+            f"{BLACKSEA_API_BASE}/api/v2/sales/{quoted}",
+            params={"access_token": access_token},
+        )
+    try:
+        body = resp.json()
+    except ValueError:
+        return resp.status_code, {}
+    return resp.status_code, body if isinstance(body, dict) else {}
+
+
+async def refresh_blacksea_token(refresh_token: str) -> tuple[str, str]:
+    """POST /oauth/token (grant_type=refresh_token) → (access_token, refresh_token).
+
+    BlackSea ротирует refresh_token при обмене, поэтому возвращаются оба
+    значения — записывать в app_settings обязательно оба или ни одного.
+    """
+    async with _client() as client:
+        resp = await client.post(
+            f"{BLACKSEA_API_BASE}/oauth/token",
+            data={
+                "client_id":     CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "refresh_token": refresh_token,
+                "grant_type":    "refresh_token",
+            },
+        )
+    if resp.status_code != 200:
+        raise BlackSeaApiError(f"token refresh failed with HTTP {resp.status_code}")
+    try:
+        body = resp.json()
+    except ValueError:
+        raise BlackSeaApiError("token refresh returned a non-JSON body")
+
+    new_access  = body.get("access_token")
+    new_refresh = body.get("refresh_token")
+    if not isinstance(new_access, str) or not new_access \
+            or not isinstance(new_refresh, str) or not new_refresh:
+        raise BlackSeaApiError("token refresh response has no usable token pair")
+    return new_access, new_refresh
+
+
+async def _read_setting(db: AsyncSession, key: str) -> str | None:
+    row = (await db.execute(
+        select(AppSetting).where(AppSetting.key == key)
+    )).scalar_one_or_none()
+    return row.value if row is not None else None
 
 
 def _form_str(form, key: str) -> str:
