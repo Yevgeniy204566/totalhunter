@@ -169,7 +169,7 @@ async def test_fetch_sale_url_encodes_sale_id_and_passes_token(monkeypatch):
     seen = {}
 
     def handler(request):
-        seen["path"]  = request.url.path
+        seen["path"]  = request.url.raw_path
         seen["token"] = request.url.params.get("access_token")
         return httpx.Response(200, json={"success": True, "sale": {"id": SALE_ID}})
 
@@ -179,7 +179,7 @@ async def test_fetch_sale_url_encodes_sale_id_and_passes_token(monkeypatch):
 
     assert status == 200
     assert body["sale"]["id"] == SALE_ID
-    assert seen["path"].endswith("/api/v2/sales/v1N13bcVloNleQc9iKMeTg%3D%3D")
+    assert b"/api/v2/sales/v1N13bcVloNleQc9iKMeTg%3D%3D" in seen["path"]
     assert seen["token"] == "tok-access"
 
 
