@@ -20,7 +20,7 @@ const PACKAGES = [
   {
     id: 'scout', name: 'SCOUT', price: '$3', usd: 3, credits: 1000, creditsDisplay: '1 000',
     topBadge: null, bonusLine: null,
-    usageHint: '100 Exchange hunts · 1000 Crypt hunts',
+    usageHint: '1,000 Crypt hunts (1 ◆ = 1 Crypt)',
     countColor: '#00FFA3', countGrad: 'linear-gradient(135deg, #00CC7A, #00FFA3)',
     countGlow: 'rgba(0,255,163,0.8)',
     diamondGlow: 'drop-shadow(0 0 20px rgba(0,255,163,0.9)) drop-shadow(0 0 40px rgba(0,180,110,0.5))',
@@ -34,7 +34,7 @@ const PACKAGES = [
   {
     id: 'hunter', name: 'HUNTER', price: '$5', usd: 5, credits: 2000, creditsDisplay: '2 000',
     topBadge: '🔥 POPULAR', bonusLine: '+20% MORE DIAMONDS',
-    usageHint: '200 Exchange hunts · 2000 Crypt hunts',
+    usageHint: '2,000 Crypt hunts (1 ◆ = 1 Crypt)',
     countColor: '#B060FF', countGrad: 'linear-gradient(135deg, #9933FF, #C080FF)',
     countGlow: 'rgba(176,96,255,0.8)',
     diamondGlow: 'drop-shadow(0 0 20px rgba(176,96,255,0.9)) drop-shadow(0 0 40px rgba(120,50,220,0.5))',
@@ -48,7 +48,7 @@ const PACKAGES = [
   {
     id: 'ultra', name: 'TOTAL HUNTER', price: '$10', usd: 10, credits: 5000, creditsDisplay: '5 000',
     topBadge: '★ BEST VALUE ★', bonusLine: '+50% MORE DIAMONDS',
-    usageHint: '500 Exchange hunts · 5000 Crypt hunts',
+    usageHint: '5,000 Crypt hunts (1 ◆ = 1 Crypt)',
     countColor: '#00CFFF', countGrad: 'linear-gradient(135deg, #00CFFF, #00EFFF)',
     countGlow: 'rgba(0,207,255,0.8)',
     diamondGlow: 'drop-shadow(0 0 20px rgba(0,207,255,0.9)) drop-shadow(0 0 40px rgba(0,100,255,0.5))',
