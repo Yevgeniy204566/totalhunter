@@ -25,14 +25,26 @@ from database import get_db
 from models import AppSetting, BlackSeaSale, Transaction, User
 
 
-async def _create_user(db, email, credits=0, invited_by_id=None):
+async def _create_user(db, email, credits=0, invited_by_id=None, is_banned=False):
     u = User(email=email, username=email.split("@")[0],
              ref_code=secrets.token_urlsafe(6), hwid=secrets.token_hex(8),
              credits=credits, invited_by_id=invited_by_id,
-             ip_address="1.2.3.4", bot_version="1.8.18")
+             ip_address="1.2.3.4", bot_version="1.8.18", is_banned=is_banned)
     db.add(u)
     await db.flush()
     return u
+
+
+@pytest.fixture(autouse=True)
+def clear_blacksea_webhook_rate_limit():
+    """_webhook_rate — модульный in-memory словарь (как _report_rate в roy.py),
+    живёт дольше одного теста. ASGITransport по умолчанию подставляет один и тот
+    же request.client=('127.0.0.1', 123) для КАЖДОГО запроса без явного ip=,
+    поэтому без сброса между тестами второй же тест в файле словил бы rate-limit
+    от первого (паттерн — tests/test_roy.py::clear_roy_rate_limits)."""
+    blacksea._webhook_rate.clear()
+    yield
+    blacksea._webhook_rate.clear()
 
 
 @pytest.mark.asyncio
@@ -101,8 +113,13 @@ def _form(**overrides):
     return {k: v for k, v in body.items() if v is not None}
 
 
-async def _post_webhook(form: dict):
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+async def _post_webhook(form: dict, ip: str | None = None):
+    """ip=None — поведение по умолчанию ASGITransport (request.client=('127.0.0.1', 123)).
+    ip='1.2.3.4' — ASGITransport(client=(ip, port)) кладёт в ASGI-scope реальный
+    (ip, port), который FastAPI Request.client отдаёт как есть — не мок функции
+    рейт-лимитера, а настоящий путь request.client.host."""
+    transport = ASGITransport(app=app) if ip is None else ASGITransport(app=app, client=(ip, 12345))
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         return await client.post("/web/payment/blacksea/webhook", data=form)
 
 
@@ -924,3 +941,112 @@ async def test_concurrent_401_webhooks_both_credit_and_leave_valid_tokens(db_ses
     assert await _settings_pair() == ("new-access", "new-refresh")
     assert len(await _sales_rows()) == 2
     assert await _credits_of(BUYER_EMAIL) == 10000
+
+
+# ── Rate limit по IP (10 сек), паттерн roy.py RATE_LIMIT_SEC ─────────────────
+
+SECOND_SALE_ID = "SECONDsale0000000000=="
+
+
+@pytest.mark.asyncio
+async def test_webhook_second_request_same_ip_is_rate_limited_without_second_api_call(
+    db_session, monkeypatch
+):
+    """Второй вебхук с того же IP в течение 10 сек короткого замыкается ДО вызова
+    fetch_blacksea_sale — стаб отдаёт ровно один ответ, второй вызов уронил бы
+    тест AssertionError'ом из _stub_fetch, если бы rate-limit не сработал."""
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale()})])
+    _stub_alerts(monkeypatch)
+
+    first  = await _post_webhook(_form(), ip="5.5.5.5")
+    second = await _post_webhook(_form(sale_id=SECOND_SALE_ID), ip="5.5.5.5")
+
+    assert (first.status_code, second.status_code) == (200, 200)
+    assert await _credits_of(BUYER_EMAIL) == 5000   # только первый вебхук начислил
+    assert len(await _sales_rows()) == 1
+
+
+@pytest.mark.asyncio
+async def test_webhook_request_after_rate_limit_window_is_not_limited(db_session, monkeypatch):
+    """Второй запрос с того же IP спустя >10 сек обрабатывается как обычно —
+    time.time() подменяется, а не реально ждётся 10 сек в тесте."""
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [
+        (200, {"success": True, "sale": _api_sale()}),
+        (200, {"success": True, "sale": _api_sale(id=SECOND_SALE_ID)}),
+    ])
+    _stub_alerts(monkeypatch)
+
+    # Значение, а не iterator: другой код в процессе запроса (anyio/httpx) тоже
+    # зовёт time.time() внутри теста, iterator с двумя значениями словил бы
+    # StopIteration на лишнем вызове. Фиксированное значение на весь запрос —
+    # переключается между двумя вызовами _post_webhook.
+    fake_now = {"ts": 1_000_000.0}
+    monkeypatch.setattr(blacksea.time, "time", lambda: fake_now["ts"])
+
+    first  = await _post_webhook(_form(), ip="6.6.6.6")
+    fake_now["ts"] = 1_000_011.0   # 11 сек разницы — больше окна в 10 сек
+    second = await _post_webhook(_form(sale_id=SECOND_SALE_ID), ip="6.6.6.6")
+
+    assert (first.status_code, second.status_code) == (200, 200)
+    assert await _credits_of(BUYER_EMAIL) == 10000   # оба вебхука начислили
+    assert len(await _sales_rows()) == 2
+
+
+@pytest.mark.asyncio
+async def test_webhook_different_ips_are_not_rate_limited_against_each_other(db_session, monkeypatch):
+    """Rate limit — per-IP, а не глобальный: два разных IP подряд оба проходят."""
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [
+        (200, {"success": True, "sale": _api_sale()}),
+        (200, {"success": True, "sale": _api_sale(id=SECOND_SALE_ID)}),
+    ])
+    _stub_alerts(monkeypatch)
+
+    first  = await _post_webhook(_form(), ip="1.1.1.1")
+    second = await _post_webhook(_form(sale_id=SECOND_SALE_ID), ip="2.2.2.2")
+
+    assert (first.status_code, second.status_code) == (200, 200)
+    assert await _credits_of(BUYER_EMAIL) == 10000
+    assert len(await _sales_rows()) == 2
+
+
+# ── is_banned — тот же путь ручного разбора, что и email_not_found ──────────
+
+@pytest.mark.asyncio
+async def test_webhook_banned_user_is_not_credited_and_goes_to_manual_review(db_session, monkeypatch):
+    await _create_user(db_session, BUYER_EMAIL, is_banned=True)
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale()})])
+    sent = _stub_alerts(monkeypatch)
+
+    resp = await _post_webhook(_form())
+
+    assert resp.status_code == 200
+    assert await _sales_rows() == []
+    assert await _credits_of(BUYER_EMAIL) == 0
+    assert len(sent["manual"]) == 1
+    assert sent["manual"][0]["reason"] == "user_banned"
+    assert sent["manual"][0]["email"] == BUYER_EMAIL
+    assert sent["manual"][0]["sale_id"] == SALE_ID
+    assert sent["purchase"] == []
+
+
+@pytest.mark.asyncio
+async def test_webhook_non_banned_user_happy_path_still_credits(db_session, monkeypatch):
+    """Регресс: is_banned=False (дефолт) не должен ничего менять в счастливом пути."""
+    await _create_user(db_session, BUYER_EMAIL, is_banned=False)
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale()})])
+    sent = _stub_alerts(monkeypatch)
+
+    resp = await _post_webhook(_form())
+
+    assert resp.status_code == 200
+    assert await _credits_of(BUYER_EMAIL) == 5000
+    assert sent["manual"] == []
+    assert len(sent["purchase"]) == 1

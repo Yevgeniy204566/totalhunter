@@ -11,6 +11,7 @@ sale_id через BlackSea API, а не тело запроса.
 import httpx
 import logging
 import os
+import time
 import urllib.parse
 
 from decimal import Decimal
@@ -38,6 +39,12 @@ KEY_ACCESS_TOKEN  = "blacksea_access_token"
 KEY_REFRESH_TOKEN = "blacksea_refresh_token"
 
 MAX_SALE_ID_LEN = 50   # == длина колонки BlackSeaSale.sale_id
+
+RATE_LIMIT_SEC = 10   # минимальный интервал вебхуков с одного IP (паттерн roy.py)
+
+# in-memory rate limiter: IP → unix timestamp последнего запроса
+_webhook_rate: dict[str, float] = {}
+_UNKNOWN_IP = "unknown"   # request.client бывает None у некоторых ASGI-транспортов
 
 CLIENT_ID     = os.environ.get("BLACKSEA_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("BLACKSEA_CLIENT_SECRET", "")
@@ -256,6 +263,17 @@ async def blacksea_webhook(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
+    # Вебхук публичный и без подписи (см. докстринг модуля) — флуд синтаксически
+    # валидными телами иначе дёргает fetch_blacksea_sale (реальный HTTP к API
+    # BlackSea) без ограничений. Rate limit — первым делом, до form(): нет смысла
+    # даже парсить тело запроса, который всё равно будет отброшен по IP.
+    client_ip = request.client.host if request.client else _UNKNOWN_IP
+    now_ts = time.time()
+    if now_ts - _webhook_rate.get(client_ip, 0) < RATE_LIMIT_SEC:
+        logger.warning("[BLACKSEA] webhook rate-limited for IP %s", client_ip)
+        return JSONResponse({"status": "ok"})
+    _webhook_rate[client_ip] = now_ts
+
     form = await request.form()
 
     sale_id    = _form_str(form, "sale_id")
@@ -329,6 +347,18 @@ async def blacksea_webhook(
                        sale["email"], sale_id)
         background_tasks.add_task(
             send_manual_review_alert, reason="email_not_found",
+            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount),
+        )
+        return JSONResponse({"status": "ok"})
+
+    if user.is_banned:
+        # Тот же путь ручного разбора, что и email_not_found выше — владелец
+        # видит обе ветки в одном Telegram-канале. Защищает от обхода бана через
+        # вторую платёжку: NOWPayments (payments.py) уже отказывает забаненным.
+        logger.warning("[BLACKSEA] user %s (email %s) is banned — manual review, sale %s",
+                       user.id, sale["email"], sale_id)
+        background_tasks.add_task(
+            send_manual_review_alert, reason="user_banned",
             sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount),
         )
         return JSONResponse({"status": "ok"})
