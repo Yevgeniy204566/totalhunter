@@ -25,9 +25,11 @@ try:
 except ImportError:
     _GAME_DEPS_AVAILABLE = False
 
-# Visual button detection (language-independent)
+# Координатная система (2-точечная калибровка). Цветовое распознавание
+# для кликов по игровым кнопкам не используется — только координаты
+# (см. ANTI-PATTERNS.md). Исключение — YOLO для поиска склепов в списке/на
+# карте, она живёт отдельно в _scroll_and_find/_detect_on_map.
 try:
-    from button_finder import find_colored_button
     from coord_manager import coord_manager as _cm
     scale_coord        = _cm.to_screen
     scale_region       = _cm.to_region
@@ -375,16 +377,18 @@ class CryptHunter:
         Два клика по «Арена» с паузой 1 сек между ними.
         """
         # self._status("Конец списка — кликаю Арену для сброса...")
-        self._click(*scale_ui_coord(*WT_ARENA_TAB), jitter=3, raw=True)
+        ox, oy = _cm.get_ui_offset("arena_reset") if _VISUAL_NAV_AVAILABLE else (0, 0)
+        ax, ay = scale_ui_coord(*WT_ARENA_TAB)
+        self._click(ax + ox, ay + oy, jitter=3, raw=True)
         self._interruptible_sleep(random.uniform(0.9, 1.1))
-        self._click(*scale_ui_coord(*WT_ARENA_TAB), jitter=3, raw=True)
+        self._click(ax + ox, ay + oy, jitter=3, raw=True)
         self._random_pause(0.5, 0.8)
 
     def _pre_skip(self):
         """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций)."""
         self._status("Пропускаю склеп (3 скролла вниз)...")
-        pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
-                         duration=random.uniform(0.3, 0.5))
+        _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
+        pyautogui.moveTo(_sx, _sy, duration=random.uniform(0.3, 0.5))
         self._interruptible_sleep(0.3)
         _sc = _cm.scroll_clicks if _VISUAL_NAV_AVAILABLE else 3
         for _ in range(3):
@@ -409,8 +413,8 @@ class CryptHunter:
         """
         # self._status("Ищу склеп в меню...")
         # Переводим мышь в зону списка — туда куда будет идти скролл
-        pyautogui.moveTo(WT_SCROLL_AREA[0], WT_SCROLL_AREA[1],
-                         duration=random.uniform(0.3, 0.5))
+        _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
+        pyautogui.moveTo(_sx, _sy, duration=random.uniform(0.3, 0.5))
         self._random_pause(0.3, 0.5)
 
         # Зона меню в экранных координатах (для фильтрации YOLO).
@@ -509,8 +513,15 @@ class CryptHunter:
                                 continue
                             break
 
+                    # +17 — вертикальный сдвиг от центра иконки склепа до кнопки
+                    # «Перейти» в той же строке, измерен на 1920x1080. cy сам по
+                    # себе уже в реальных экранных пикселях (взят с живого
+                    # скриншота) — маштабировать нужно только сам сдвиг, иначе
+                    # на 2K/4K клик всё сильнее промахивается мимо кнопки.
                     sc_x = scale_ui_coord(WT_GOTO_BTN_X, 0)[0]
-                    goto_pos = (sc_x, cy + 17)
+                    _row_dy = scale_ui_coord(0, 17)[1]
+                    ox, oy = _cm.get_ui_offset("crypt_select") if _VISUAL_NAV_AVAILABLE else (0, 0)
+                    goto_pos = (sc_x + ox, cy + _row_dy + oy)
 
                     # self._status(f"Найден: {gui_name} — кнопка «Перейти» → {goto_pos}")
                     self._click(*goto_pos, jitter=2, raw=True)
@@ -582,6 +593,15 @@ class CryptHunter:
 
 
 
+    def _open_rare_crypt(self) -> None:
+        """R-типы: пустой диалог с одной кнопкой «Открыть» — нажать её.
+        После клика появляется обычный диалог с маслом и временем марша."""
+        sc_open = scale_dialog(*CRYPT_OPEN_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_OPEN_BTN
+        ox, oy = _cm.get_ui_offset("crypt_open") if _VISUAL_NAV_AVAILABLE else (0, 0)
+        self._click(sc_open[0] + ox, sc_open[1] + oy, jitter=2, raw=True)
+        time.sleep(0.4)
+        pyautogui.moveTo(sc_open[0], sc_open[1] - random.randint(450, 550))
+
     def _send_captain(self, crypt_type: str) -> bool:
         """Нажать «Исследовать»."""
         self._random_pause()
@@ -604,13 +624,9 @@ class CryptHunter:
         # self._status("Кликаю по полосе Картера...")
         self._random_pause(1.5, 2.0)
         ox, oy = _cm.get_ui_offset("top_accel") if _VISUAL_NAV_AVAILABLE else (0, 0)
-        pos = self._find_button(
-                ref_region=(900, 85, 500, 60),
-                color='purple', pick='largest',
-                fallback=scale_ui_coord(*CARTER_EVENT_BAR),
-            )
-        cx = pos[0] + ox + random.randint(-6, 6)  # jitter только по X (полоса узкая)
-        self._click(cx, pos[1] + oy, jitter=0, raw=True)
+        bx, by = scale_ui_coord(*CARTER_EVENT_BAR)
+        cx = bx + ox + random.randint(-6, 6)  # jitter только по X (полоса узкая)
+        self._click(cx, by + oy, jitter=0, raw=True)
         self._interruptible_sleep(1.1)
         return True
 
@@ -650,33 +666,6 @@ class CryptHunter:
         """Окно закрывается автоматически когда Картер добирается до склепа — ничего не делаем."""
         pass
 
-    def _find_button(
-        self,
-        ref_region: tuple,
-        color: str,
-        pick: str,
-        fallback: tuple,
-    ) -> tuple[int, int]:
-        """
-        Try to find button by color in ref_region (1920×1080 coords).
-        Falls back to scale_coord(*fallback) if not found or visual nav unavailable.
-
-        ref_region: (x, y, w, h) in 1920×1080 reference coordinates
-        color:      'green' or 'purple'
-        pick:       'rightmost' | 'leftmost' | 'topmost' | 'largest'
-        fallback:   (x, y) hardcoded reference coordinates
-        """
-        if _VISUAL_NAV_AVAILABLE:
-            region = scale_region(*ref_region)
-            pos = find_colored_button(region, color, pick)
-            if pos:
-                pass
-                # self._status(f"  [visual] {color}/{pick} → {pos}")
-                return pos
-            # self._status(f"  [visual] не найдено — использую fallback")
-        if _VISUAL_NAV_AVAILABLE:
-            return scale_coord(*fallback)
-        return fallback
 
 
     # ─── Полный цикл ─────────────────────────────────────────
@@ -714,15 +703,8 @@ class CryptHunter:
             return  # РЕСТАРТ
 
         # [6.5] Для R-типов: открываем склеп (пустой диалог, только кнопка «Открыть»)
-        # После клика появляется обычный диалог с маслом и временем марша
         if crypt_type in RARE_CRYPT_TYPES:
-            pass
-            # self._status("Редкий склеп — нажимаю «Открыть»")
-            sc_open = scale_dialog(*CRYPT_OPEN_BTN) if _VISUAL_NAV_AVAILABLE else CRYPT_OPEN_BTN
-            ox, oy = _cm.get_ui_offset("carter") if _VISUAL_NAV_AVAILABLE else (0, 0)
-            self._click(sc_open[0] + ox, sc_open[1] + oy, jitter=2, raw=True)
-            time.sleep(0.4)
-            pyautogui.moveTo(sc_open[0], sc_open[1] - random.randint(450, 550))
+            self._open_rare_crypt()
 
         # [7] Отправляем Капитана
         if not self._send_captain(crypt_type):

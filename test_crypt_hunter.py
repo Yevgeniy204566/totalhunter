@@ -121,16 +121,93 @@ class TestWatchtowerMenu:
                    for x, y in clicks), f"Ожидал клик около {ch.WT_CRYPTS_TAB}, получил {clicks}"
 
     def test_reset_search_clicks_arena_twice(self):
+        """pyautogui.size() замокан на 1920x1080 (эталон), как в соседних тестах
+        этого класса — иначе scale_ui_coord() внутри _reset_search() масштабирует
+        WT_ARENA_TAB под реальное разрешение машины и сравнение с сырой
+        константой ложно падает на любом не-1080p окружении."""
         from unittest.mock import patch
         import crypt_hunter as ch
         hunter = self._make_hunter()
         clicks = []
-        with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
-            with patch.object(hunter, '_random_pause'):
-                with patch('crypt_hunter.time.sleep'):
-                    hunter._reset_search()
+        with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+            with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+                with patch.object(hunter, '_random_pause'):
+                    with patch('crypt_hunter.time.sleep'):
+                        hunter._reset_search()
         arena_clicks = [c for c in clicks if c == ch.WT_ARENA_TAB]
         assert len(arena_clicks) == 2
+
+    def test_reset_search_applies_arena_reset_offset(self):
+        """Кнопка «Арена» (сброс поиска) раньше не имела ручной подстройки
+        вообще — ни крестика в тюнинге, ни D-Pad, ни сохранения в профиль.
+        Теперь у неё есть ключ "arena_reset", как у остальных кликабельных
+        точек, и он должен реально применяться к обоим кликам."""
+        from unittest.mock import patch, MagicMock
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        clicks = []
+        fake_cm = MagicMock()
+        fake_cm.get_ui_offset = lambda name: (4, -6) if name == "arena_reset" else (0, 0)
+        fake_cm.scroll_clicks = 3
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', True):
+            with patch('crypt_hunter._cm', fake_cm):
+                with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                    with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+                        with patch.object(hunter, '_random_pause'):
+                            with patch('crypt_hunter.time.sleep'):
+                                hunter._reset_search()
+        expected = (ch.WT_ARENA_TAB[0] + 4, ch.WT_ARENA_TAB[1] - 6)
+        arena_clicks = [c for c in clicks if c == expected]
+        assert len(arena_clicks) == 2, f"Ожидал 2 клика {expected}, получил {clicks}"
+
+
+class TestPreSkip:
+    def _make_hunter(self):
+        from unittest.mock import patch, MagicMock
+        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
+            from crypt_hunter import CryptHunter
+            h = CryptHunter.__new__(CryptHunter)
+            h.is_running = True
+            h._model = MagicMock()
+            h.on_status_callback = None
+            return h
+
+    def test_pre_skip_moves_to_scaled_scroll_area(self):
+        """WT_SCROLL_AREA раньше двигал мышь в сырые 1920x1080 координаты
+        напрямую (без scale_ui_coord, в отличие от WT_ICON и других точек) —
+        на другом разрешении курсор улетал мимо списка склепов вместо
+        зоны прокрутки. pyautogui.size() замокан на 1920x1080, чтобы тест
+        не зависел от реального разрешения машины, где запущены тесты."""
+        from unittest.mock import patch
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                with patch('crypt_hunter.pyautogui.moveTo') as mock_move:
+                    with patch('crypt_hunter.pyautogui.scroll'):
+                        with patch.object(hunter, '_status'):
+                            with patch.object(hunter, '_interruptible_sleep'):
+                                hunter._pre_skip()
+        x, y = mock_move.call_args_list[0][0][:2]
+        assert (x, y) == ch.WT_SCROLL_AREA
+
+    def test_pre_skip_scales_scroll_area_on_other_resolution(self):
+        """На разрешении, отличном от эталонного 1920x1080, точка должна
+        масштабироваться пропорционально — это и есть суть фикса."""
+        from unittest.mock import patch
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(2560, 1440)):
+                with patch('crypt_hunter.pyautogui.moveTo') as mock_move:
+                    with patch('crypt_hunter.pyautogui.scroll'):
+                        with patch.object(hunter, '_status'):
+                            with patch.object(hunter, '_interruptible_sleep'):
+                                hunter._pre_skip()
+        x, y = mock_move.call_args_list[0][0][:2]
+        expected = (round(ch.WT_SCROLL_AREA[0] * 2560 / 1920),
+                    round(ch.WT_SCROLL_AREA[1] * 1440 / 1080))
+        assert abs(x - expected[0]) <= 1 and abs(y - expected[1]) <= 1
 
 
 class TestScrollAndFind:
@@ -182,6 +259,77 @@ class TestScrollAndFind:
                             with patch('crypt_hunter.time.sleep'):
                                 result = hunter._scroll_and_find(['Ordinary_1'], max_scrolls=3)
         assert result == 'Ordinary_1'
+
+    def test_goto_click_scales_row_offset_with_resolution(self):
+        """Раньше клик по «Перейти» брал cy (реальный пиксель со скриншота)
+        + сырые +17 без масштабирования — на разрешении отличном от 1920x1080
+        сдвиг между иконкой склепа и кнопкой был занижен/завышен, клик уходил
+        мимо. Теперь сдвиг масштабируется тем же способом что и другие точки."""
+        from unittest.mock import patch, MagicMock
+        import numpy as np
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        mock_box = MagicMock()
+        mock_box.cls.tolist.return_value = [0]
+        mock_box.xyxy.tolist.return_value = [[600, 300, 700, 340]]  # cy=320
+        mock_result = MagicMock()
+        mock_result.boxes = [mock_box]
+        mock_result.names = {0: 'crypt_0'}
+        hunter._model.return_value = [mock_result]
+        clicks = []
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(2560, 1440)):
+                with patch.object(hunter, '_screenshot', return_value=np.zeros((1080, 1920, 3), dtype=np.uint8)):
+                    with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+                        with patch.object(hunter, '_random_pause'):
+                            with patch('crypt_hunter.pyautogui.scroll'):
+                                with patch('crypt_hunter.time.sleep'):
+                                    hunter._scroll_and_find(['Ordinary_1'], max_scrolls=3)
+        expected_x = int(ch.WT_GOTO_BTN_X * 2560 / 1920)
+        expected_dy = int(17 * 1440 / 1080)
+        assert (expected_x, 320 + expected_dy) in clicks, \
+            f"Ожидал масштабированный сдвиг (dy={expected_dy}, не сырые +17), получил {clicks}"
+
+    def test_goto_click_applies_crypt_select_offset(self):
+        """Клик по «Перейти» теперь дополнительно принимает ручной офсет
+        ключа "crypt_select" — для точной подстройки поверх авто-масштаба."""
+        from unittest.mock import patch, MagicMock
+        import numpy as np
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        mock_box = MagicMock()
+        mock_box.cls.tolist.return_value = [0]
+        mock_box.xyxy.tolist.return_value = [[600, 300, 700, 340]]  # cy=320
+        mock_result = MagicMock()
+        mock_result.boxes = [mock_box]
+        mock_result.names = {0: 'crypt_0'}
+        hunter._model.return_value = [mock_result]
+
+        fake_cm = MagicMock()
+        fake_cm.to_region = lambda x, y, w, h: (x, y, w, h)  # identity — не мешает фильтру меню
+        fake_cm.get_ui_offset = lambda name: (5, -9) if name == "crypt_select" else (0, 0)
+        fake_cm.scroll_clicks = 3
+
+        clicks = []
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', True):
+            with patch('crypt_hunter._cm', fake_cm):
+                with patch('crypt_hunter.scale_region', fake_cm.to_region):
+                    with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                        with patch('crypt_hunter.pyautogui.moveTo'):
+                            with patch('crypt_hunter.pyautogui.scroll'):
+                                with patch.object(hunter, '_screenshot', return_value=np.zeros((1080, 1920, 3), dtype=np.uint8)):
+                                    with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+                                        with patch.object(hunter, '_random_pause'):
+                                            with patch('crypt_hunter.time.sleep'):
+                                                hunter._scroll_and_find(['Ordinary_1'], max_scrolls=3)
+                                            # sc_x/row_dy посчитаны ЗДЕСЬ, пока pyautogui.size ещё
+                                            # замокан на 1920x1080 — иначе они возьмут реальное
+                                            # разрешение машины и тест сам будет врать.
+                                            sc_x = ch.scale_ui_coord(ch.WT_GOTO_BTN_X, 0)[0]
+                                            row_dy = ch.scale_ui_coord(0, 17)[1]
+
+        expected = (sc_x + 5, 320 + row_dy - 9)
+        assert expected in clicks, f"Ожидал {expected} (с офсетом crypt_select), получил {clicks}"
 
 
 class TestMapDetection:
@@ -238,6 +386,40 @@ class TestMapDetection:
                         result = hunter._send_captain('R_1')
         assert ch.CRYPT_STUDY_BTN in clicks
         assert result is True
+
+    def test_open_rare_crypt_clicks_open_button(self):
+        from unittest.mock import patch
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        clicks = []
+        with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+            with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+                with patch('crypt_hunter.time.sleep'):
+                    with patch('crypt_hunter.pyautogui.moveTo'):
+                        hunter._open_rare_crypt()
+        assert ch.CRYPT_OPEN_BTN in clicks
+
+    def test_open_rare_crypt_uses_own_offset_not_carter(self):
+        """Раньше клик по «Открыть» редкого склепа брал офсет ключа "carter"
+        (общий с кнопкой «Исследовать») — тюнинг Картера незаметно двигал и эту
+        кнопку, а откалибровать «Открыть» отдельно было нельзя (слота не было).
+        Теперь у неё свой ключ "crypt_open"."""
+        from unittest.mock import patch, MagicMock
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        clicks = []
+        fake_cm = MagicMock()
+        fake_cm.to_screen_dialog = lambda x, y: (x, y)
+        fake_cm.get_ui_offset = lambda name: (100, 100) if name == "carter" else (7, -3)
+        with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+            with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', True):
+                with patch('crypt_hunter._cm', fake_cm):
+                    with patch('crypt_hunter.scale_dialog', fake_cm.to_screen_dialog):
+                        with patch('crypt_hunter.time.sleep'):
+                            with patch('crypt_hunter.pyautogui.moveTo'):
+                                hunter._open_rare_crypt()
+        expected = (ch.CRYPT_OPEN_BTN[0] + 7, ch.CRYPT_OPEN_BTN[1] - 3)
+        assert expected in clicks, f"Ожидал клик с офсетом crypt_open {expected}, получил {clicks}"
 
 
 class TestScrollAndFindEndOfList:
@@ -505,11 +687,72 @@ class TestSendCaptainVerification:
     def test_click_captain_event_returns_true_always(self):
         from unittest.mock import patch
         hunter = self._make_hunter()
-        with patch.object(hunter, '_find_button', return_value=(1239, 122)):
-            with patch.object(hunter, '_click'):
-                with patch.object(hunter, '_interruptible_sleep'):
-                    result = hunter._click_captain_event()
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                with patch.object(hunter, '_click'):
+                    with patch.object(hunter, '_interruptible_sleep'):
+                        result = hunter._click_captain_event()
         assert result is True
+
+    def test_click_captain_event_no_color_detection(self):
+        """Владелец явно запретил цветовое распознавание для кликов по игровым
+        кнопкам (только координаты; YOLO для поиска склепов — не считается).
+        find_colored_button/_find_button были единственным местом цветового
+        поиска для кликов и должны быть полностью убраны из crypt_hunter."""
+        import crypt_hunter as ch
+        assert not hasattr(ch, 'find_colored_button')
+        assert not hasattr(ch.CryptHunter, '_find_button')
+
+    def test_click_captain_event_clicks_scaled_carter_event_bar_directly(self):
+        """Раньше при неудаче цветового поиска клик уходил в _find_button(),
+        которая на fallback ещё раз прогоняла уже отмасштабированную
+        scale_ui_coord() координату через coord_manager.to_screen() (модульная
+        функция scale_coord = _cm.to_screen, связана при импорте) — двойное
+        преобразование, промах на значительное расстояние в браузерных
+        профилях (Chrome/Firefox). Теперь клик идёт единственным способом:
+        scale_ui_coord(*CARTER_EVENT_BAR) + ui_offset("top_accel"), без
+        второго масштабирования через scale_coord и без поиска цвета."""
+        from unittest.mock import patch, MagicMock
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        clicks = []
+        fake_cm = MagicMock()
+        fake_cm.get_ui_offset = lambda name: (0, 0)
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', True):
+            with patch('crypt_hunter._cm', fake_cm):
+                with patch('crypt_hunter.scale_coord') as mock_scale_coord:
+                    with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                        with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+                            with patch.object(hunter, '_interruptible_sleep'):
+                                with patch.object(hunter, '_random_pause'):
+                                    hunter._click_captain_event()
+        assert not mock_scale_coord.called, \
+            "клик не должен второй раз преобразовывать координату через coord_manager.to_screen()"
+        assert len(clicks) == 1
+        x, y = clicks[0]
+        assert abs(x - ch.CARTER_EVENT_BAR[0]) <= 6  # ±6 намеренный jitter только по X
+        assert y == ch.CARTER_EVENT_BAR[1]
+
+    def test_click_captain_event_applies_top_accel_offset(self):
+        """Ручная подстройка ключа "top_accel" из вкладки Тюнинг кликов
+        должна реально применяться к клику."""
+        from unittest.mock import patch, MagicMock
+        import crypt_hunter as ch
+        hunter = self._make_hunter()
+        clicks = []
+        fake_cm = MagicMock()
+        fake_cm.get_ui_offset = lambda name: (5, -9) if name == "top_accel" else (0, 0)
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', True):
+            with patch('crypt_hunter._cm', fake_cm):
+                with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                    with patch.object(hunter, '_click', side_effect=lambda x, y, **kw: clicks.append((x, y))):
+                        with patch.object(hunter, '_interruptible_sleep'):
+                            with patch.object(hunter, '_random_pause'):
+                                hunter._click_captain_event()
+        assert len(clicks) == 1
+        x, y = clicks[0]
+        assert abs(x - (ch.CARTER_EVENT_BAR[0] + 5)) <= 6
+        assert y == ch.CARTER_EVENT_BAR[1] - 9
 
 
 class TestTesseractSetup:

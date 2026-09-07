@@ -20,12 +20,19 @@ def _make_crypt_app(spend_result, current_credits=5):
     app.current_lang = "RU"
     app.current_credits = current_credits
     app._crypt_found_count = 0
+    app._crypt_autostop_count = None
+    app._crypt_autostop_seconds = None
+    app._crypt_session_start = None
     app.crypt_status_label = MagicMock()
+    app.crypt_count_countdown_label = MagicMock()
     app.after = lambda delay, fn=None, *a, **kw: fn() if fn else None
     app.toggle_crypt_bot = MagicMock()
     app._update_credits_display = MagicMock()
-    with patch("auth.spend_credit", return_value=spend_result):
+    with patch("auth.spend_credit", return_value=spend_result), \
+         patch("main.messagebox") as mock_box, \
+         patch("main.webbrowser"):
         app.on_crypt_found("Обычный")
+    app._mock_messagebox = mock_box
     return app
 
 

@@ -38,7 +38,7 @@ class CoordinateManager:
     """
 
     # Names of the UI buttons that support manual click tuning.
-    _UI_BUTTON_NAMES = ("wt_icon", "carter", "top_accel", "march_accel", "chest_sender", "chest_type", "chest_collect")
+    _UI_BUTTON_NAMES = ("wt_icon", "carter", "crypt_open", "crypt_select", "top_accel", "march_accel", "arena_reset", "chest_sender", "chest_type", "chest_collect")
 
     def __init__(self):
         self.scale_x: float = 1.0
@@ -77,7 +77,7 @@ class CoordinateManager:
     def to_region(self, x: int, y: int, w: int, h: int) -> tuple[int, int, int, int]:
         """Convert reference region (x, y, w, h) to actual screen region."""
         sx, sy = self.to_screen(x, y)
-        return (sx, sy, int(w * self.scale_x), int(h * abs(self.scale_y)))
+        return (sx, sy, round(w * self.scale_x), round(h * abs(self.scale_y)))
 
     def get_ui_offset(self, name: str) -> tuple[int, int]:
         """Return (dx, dy) tuning offset for a named UI button."""
