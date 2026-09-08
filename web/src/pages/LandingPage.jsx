@@ -205,6 +205,54 @@ function DemoVideo({ lang }) {
   )
 }
 
+const VIDEO_GUIDES = [
+  {
+    youtubeId: 'nM_4TzwgrlM',
+    titleRu: 'Total Hunter: калибровка бота и настройка сбора сундуков',
+    titleEn: 'Total Hunter Setup Guide: Bot Calibration & Chest Collection Settings',
+  },
+]
+
+function VideoGuides({ lang }) {
+  if (VIDEO_GUIDES.length === 0) return null
+  return (
+    <section style={{ padding: '88px 24px', background: 'var(--card)', borderTop: '1px solid var(--outline)' }}>
+      <div style={{ maxWidth: 920, margin: '0 auto' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '2.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14, textAlign: 'center' }}>
+          {lang === 'en' ? 'Video Guides' : 'Видео-инструкции'}
+        </p>
+        <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 48, textAlign: 'center' }}>
+          {lang === 'en' ? 'Learn Total Hunter step by step' : 'Пошаговые видео по настройке'}
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 28 }}>
+          {VIDEO_GUIDES.map(({ youtubeId, titleRu, titleEn }) => (
+            <div key={youtubeId}>
+              <div style={{
+                position: 'relative', width: '100%', aspectRatio: '16 / 9',
+                borderRadius: 16, overflow: 'hidden',
+                border: '1px solid rgba(61,127,255,0.25)',
+                boxShadow: '0 0 44px rgba(61,127,255,0.14), 0 20px 55px rgba(0,0,0,0.5)',
+              }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${youtubeId}`}
+                  title={lang === 'en' ? titleEn : titleRu}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+                />
+              </div>
+              <p style={{ marginTop: 16, fontSize: 15, color: '#C8D8F0', fontWeight: 600, textAlign: 'center' }}>
+                {lang === 'en' ? titleEn : titleRu}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
 
 const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
@@ -648,6 +696,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Video Guides ───────────────────────────────────────── */}
+      <VideoGuides lang={lang} />
 
       {/* ── CTA ────────────────────────────────────────────────── */}
       <section style={{
