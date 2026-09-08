@@ -2240,23 +2240,30 @@ class TotalHunterApp(ctk.CTk):
             font=ctk.CTkFont(size=13), text_color=MD3["on_surface2"])
         _autostop_count_lb.pack(anchor="w")
         self._i18n_labels.append((_autostop_count_lb, "crypt_autostop_count_lb"))
+        # Дропдаун + обратный отсчёт в одной строке — экономия места
+        # (раньше отсчёт был отдельной строкой под меню). Дропдаун сужен
+        # (фикс. ширина), отсчёт — справа от него. Строка без fill="x" —
+        # центрируется в колонке (default pack anchor="center"), симметрично
+        # с колонкой времени.
+        _count_selector_row = ctk.CTkFrame(count_col, fg_color="transparent")
+        _count_selector_row.pack(pady=(2, 0))
         self._crypt_autostop_count_var = ctk.StringVar(
             value=LANGS[self.current_lang]["crypt_autostop_off"])
         self._crypt_autostop_count_menu = ctk.CTkOptionMenu(
-            count_col,
+            _count_selector_row, width=76,
             values=[LANGS[self.current_lang]["crypt_autostop_off"]] + list(CRYPT_AUTOSTOP_COUNT_VALUES),
             variable=self._crypt_autostop_count_var,
             command=self._on_crypt_autostop_count_change,
             fg_color=MD3["card"], button_color=MD3["primary"],
             button_hover_color=MD3["primary_dim"], text_color=MD3["on_surface"],
             corner_radius=6)
-        self._crypt_autostop_count_menu.pack(fill="x", pady=(2, 0))
+        self._crypt_autostop_count_menu.pack(side="left", anchor="w")
         # Обратный отсчёт: сколько склепов осталось до лимита. Пусто, если
-        # лимит выключен — как обратный отсчёт марша Картера, тот же стиль.
+        # лимит выключен.
         self.crypt_count_countdown_label = ctk.CTkLabel(
-            count_col, text="",
-            font=ctk.CTkFont(size=24, weight="bold"), text_color="#FFB300")
-        self.crypt_count_countdown_label.pack(pady=(2, 0))
+            _count_selector_row, text="", width=32,
+            font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFB300")
+        self.crypt_count_countdown_label.pack(side="left", anchor="w", padx=(8, 0))
 
         time_col = ctk.CTkFrame(autostop_row, fg_color="transparent")
         time_col.grid(row=0, column=1, sticky="ew", padx=(4, 0))
@@ -2265,22 +2272,24 @@ class TotalHunterApp(ctk.CTk):
             font=ctk.CTkFont(size=13), text_color=MD3["on_surface2"])
         _autostop_time_lb.pack(anchor="w")
         self._i18n_labels.append((_autostop_time_lb, "crypt_autostop_time_lb"))
+        _time_selector_row = ctk.CTkFrame(time_col, fg_color="transparent")
+        _time_selector_row.pack(pady=(2, 0))
         self._crypt_autostop_time_var = ctk.StringVar(
             value=LANGS[self.current_lang]["crypt_autostop_off"])
         self._crypt_autostop_time_menu = ctk.CTkOptionMenu(
-            time_col,
+            _time_selector_row, width=76,
             values=[LANGS[self.current_lang]["crypt_autostop_off"]] + list(CRYPT_AUTOSTOP_TIME_VALUES),
             variable=self._crypt_autostop_time_var,
             command=self._on_crypt_autostop_time_change,
             fg_color=MD3["card"], button_color=MD3["primary"],
             button_hover_color=MD3["primary_dim"], text_color=MD3["on_surface"],
             corner_radius=6)
-        self._crypt_autostop_time_menu.pack(fill="x", pady=(2, 0))
+        self._crypt_autostop_time_menu.pack(side="left", anchor="w")
         # Обратный отсчёт времени до лимита. Пусто, если лимит выключен.
         self.crypt_time_countdown_label = ctk.CTkLabel(
-            time_col, text="",
-            font=ctk.CTkFont(size=24, weight="bold"), text_color="#FFB300")
-        self.crypt_time_countdown_label.pack(pady=(2, 0))
+            _time_selector_row, text="", width=32,
+            font=ctk.CTkFont(size=14, weight="bold"), text_color="#FFB300")
+        self.crypt_time_countdown_label.pack(side="left", anchor="w", padx=(8, 0))
 
         # ─── Сетка иконок склепов ────────────────────────────
         icons_label = ctk.CTkLabel(self.tab_crypt, text=LANGS[self.current_lang]["crypt_icons_title"],

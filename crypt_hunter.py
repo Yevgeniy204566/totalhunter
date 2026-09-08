@@ -385,17 +385,41 @@ class CryptHunter:
         self._random_pause(0.5, 0.8)
 
     def _pre_skip(self):
-        """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций)."""
+        """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций).
+
+        Если непризнанный склеп — последний в списке, скролл здесь превращается
+        в no-op (список уже упёрся в конец): _scroll_and_find() тут же находит
+        тот же самый склеп заново и бот зацикливается на нём (см. лог
+        crypt_20260908_092836.log). Проверяем это тем же способом, что и конец
+        списка в _scroll_and_find — сравниваем кроп MENU_SCAN_REGION до/после
+        скролла — и если список не сдвинулся, сразу сбрасываем поиск (Арена x2)
+        вместо повторного выбора того же склепа.
+        """
         self._status("Пропускаю склеп (3 скролла вниз)...")
         _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
         pyautogui.moveTo(_sx, _sy, duration=random.uniform(0.3, 0.5))
         self._interruptible_sleep(0.3)
+
+        ms_x, ms_y, ms_w, ms_h = scale_region(*MENU_SCAN_REGION) if _VISUAL_NAV_AVAILABLE else MENU_SCAN_REGION
+        before_img = self._screenshot()
+        before_crop = before_img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w]
+
         _sc = _cm.scroll_clicks if _VISUAL_NAV_AVAILABLE else 3
         for _ in range(3):
             pyautogui.scroll(-_sc); time.sleep(0.05)
             pyautogui.scroll(-_sc); time.sleep(0.05)
             pyautogui.scroll(-_sc)
             self._interruptible_sleep(0.25)
+
+        after_img = self._screenshot()
+        after_crop = after_img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w]
+        if (before_crop.size > 0 and after_crop.size > 0
+                and before_crop.shape == after_crop.shape
+                and cv2.absdiff(before_crop, after_crop).mean() < 2.0):
+            # Список не сдвинулся — мы уже были в конце. Тот же склеп иначе
+            # будет выбран снова на следующем _scroll_and_find().
+            self._reset_search()
+
         self._detect_fail_streak = 0
 
     # ─── YOLO режим 1: поиск в меню ──────────────────────────

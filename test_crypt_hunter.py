@@ -179,15 +179,18 @@ class TestPreSkip:
         зоны прокрутки. pyautogui.size() замокан на 1920x1080, чтобы тест
         не зависел от реального разрешения машины, где запущены тесты."""
         from unittest.mock import patch
+        import numpy as np
         import crypt_hunter as ch
         hunter = self._make_hunter()
         with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
             with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
                 with patch('crypt_hunter.pyautogui.moveTo') as mock_move:
                     with patch('crypt_hunter.pyautogui.scroll'):
-                        with patch.object(hunter, '_status'):
-                            with patch.object(hunter, '_interruptible_sleep'):
-                                hunter._pre_skip()
+                        with patch.object(hunter, '_screenshot', return_value=np.zeros((1080, 1920, 3), dtype=np.uint8)):
+                            with patch.object(hunter, '_status'):
+                                with patch.object(hunter, '_interruptible_sleep'):
+                                    with patch.object(hunter, '_reset_search'):
+                                        hunter._pre_skip()
         x, y = mock_move.call_args_list[0][0][:2]
         assert (x, y) == ch.WT_SCROLL_AREA
 
@@ -195,19 +198,66 @@ class TestPreSkip:
         """На разрешении, отличном от эталонного 1920x1080, точка должна
         масштабироваться пропорционально — это и есть суть фикса."""
         from unittest.mock import patch
+        import numpy as np
         import crypt_hunter as ch
         hunter = self._make_hunter()
         with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
             with patch('crypt_hunter.pyautogui.size', return_value=(2560, 1440)):
                 with patch('crypt_hunter.pyautogui.moveTo') as mock_move:
                     with patch('crypt_hunter.pyautogui.scroll'):
-                        with patch.object(hunter, '_status'):
-                            with patch.object(hunter, '_interruptible_sleep'):
-                                hunter._pre_skip()
+                        with patch.object(hunter, '_screenshot', return_value=np.zeros((1440, 2560, 3), dtype=np.uint8)):
+                            with patch.object(hunter, '_status'):
+                                with patch.object(hunter, '_interruptible_sleep'):
+                                    with patch.object(hunter, '_reset_search'):
+                                        hunter._pre_skip()
         x, y = mock_move.call_args_list[0][0][:2]
         expected = (round(ch.WT_SCROLL_AREA[0] * 2560 / 1920),
                     round(ch.WT_SCROLL_AREA[1] * 1440 / 1080))
         assert abs(x - expected[0]) <= 1 and abs(y - expected[1]) <= 1
+
+    def test_pre_skip_resets_search_when_list_did_not_move(self):
+        """Если непризнанный склеп — последний в списке, скролл в _pre_skip
+        не сдвигает список (no-op, уже упёрлись в конец). Раньше бот тогда
+        тут же находил тот же самый склеп заново через _scroll_and_find —
+        бесконечный цикл на одном складе (лог crypt_20260908_092836.log,
+        строки 11-14: 3 «Пропускаю склеп» подряд без единого «Carter»).
+        Теперь _pre_skip обязан заметить что список не сдвинулся и вызвать
+        _reset_search() (Арена x2), как при обычном конце списка."""
+        from unittest.mock import patch
+        import numpy as np
+        hunter = self._make_hunter()
+        same_crop = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                with patch('crypt_hunter.pyautogui.moveTo'):
+                    with patch('crypt_hunter.pyautogui.scroll'):
+                        with patch.object(hunter, '_screenshot', return_value=same_crop):
+                            with patch.object(hunter, '_status'):
+                                with patch.object(hunter, '_interruptible_sleep'):
+                                    with patch.object(hunter, '_reset_search') as mock_reset:
+                                        hunter._pre_skip()
+        mock_reset.assert_called_once()
+
+    def test_pre_skip_does_not_reset_when_list_moved(self):
+        """Штатный случай: скролл реально сдвинул список на другой склеп —
+        это обычный пропуск одной позиции, Арену дёргать не нужно."""
+        from unittest.mock import patch
+        import numpy as np
+        hunter = self._make_hunter()
+        crop_before = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        crop_after = np.full((1080, 1920, 3), 255, dtype=np.uint8)
+        screenshots = [crop_before, crop_after]
+        with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False):
+            with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+                with patch('crypt_hunter.pyautogui.moveTo'):
+                    with patch('crypt_hunter.pyautogui.scroll'):
+                        with patch.object(hunter, '_screenshot',
+                                           side_effect=lambda *a, **kw: screenshots.pop(0)):
+                            with patch.object(hunter, '_status'):
+                                with patch.object(hunter, '_interruptible_sleep'):
+                                    with patch.object(hunter, '_reset_search') as mock_reset:
+                                        hunter._pre_skip()
+        mock_reset.assert_not_called()
 
 
 class TestScrollAndFind:
