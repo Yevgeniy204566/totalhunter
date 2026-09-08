@@ -129,6 +129,19 @@ MD3 = _load_theme(MD3_NAME)
 
 TUNE_TARGET_NAMES = ("wt_icon", "crypt_select", "crypt_open", "carter", "top_accel", "march_accel", "arena_reset", "chest_sender", "chest_type", "chest_collect")
 
+# Группа калибровки сбора сундуков — последние 3 пункта меню тонкой
+# настройки. Подсвечиваются другим цветом в выпадающем списке, отдельно
+# от группы склепов/бирж выше по списку.
+TUNE_CHEST_GROUP = ("chest_sender", "chest_type", "chest_collect")
+TUNE_CHEST_HIGHLIGHT_COLOR = "#00FF88"
+
+
+def tune_chest_group_entry_indices(tune_names: "tuple[str, ...]") -> list[int]:
+    """Индексы пунктов dropdown-меню (1-based — entry 0 это заголовок
+    «Калибровка», entry i это i-й пронумерованный пункт), относящихся к
+    группе калибровки сбора сундуков (TUNE_CHEST_GROUP)."""
+    return [i for i, k in enumerate(tune_names, start=1) if k in TUNE_CHEST_GROUP]
+
 
 def crypt_autostop_reason(count: int, count_limit: int | None,
                            elapsed_sec: float, time_limit_sec: int | None) -> str | None:
@@ -1337,6 +1350,22 @@ LANGS = {
     },
 }
 
+def tune_menu_labels(lang: str, tune_names: "tuple[str, ...]") -> list[str]:
+    """Пункты меню «Тонкая настройка» (вкладка Калибровка), пронумерованные,
+    для указанного языка. Первый элемент — заголовок «Калибровка» (режим
+    без выбора, indices -1).
+
+    Единственный источник этой нумерации — раньше вкладка строилась своей
+    копией этой логики, а change_lang() при смене языка своей, и они
+    разошлись: вторая копия не добавляла префикс "N. ", из-за чего
+    _tune_on_select() переставал находить совпадение в списке пунктов
+    после смены языка и картинка калибровки застревала на прошлом пункте.
+    """
+    return [LANGS[lang]["tab_cal"]] + [
+        f"{i}. {LANGS[lang][f'cal_tune_{k}']}" for i, k in enumerate(tune_names, start=1)
+    ]
+
+
 LANG_LABELS = {
     "EN": "🇬🇧 EN", "UK": "🇺🇦 UA", "RU": "🇷🇺 RU",
     "DE": "🇩🇪 DE", "ES": "🇪🇸 ES", "FR": "🇫🇷 FR",
@@ -1891,7 +1920,7 @@ class TotalHunterApp(ctk.CTk):
                                    font=ctk.CTkFont(size=13),
                                    text_color=MD3["on_surface2"])
         self.acc_lb.pack(side="left")
-        self.acc_val_lb = ctk.CTkLabel(self.acc_frame, text="70%",
+        self.acc_val_lb = ctk.CTkLabel(self.acc_frame, text="80%",
                                        font=ctk.CTkFont(size=14, weight="bold"),
                                        text_color=MD3["value_text"])
         self.acc_val_lb.pack(side="right")
@@ -1900,7 +1929,7 @@ class TotalHunterApp(ctk.CTk):
                                          button_color=MD3["primary"],
                                          button_hover_color=MD3["primary_dim"],
                                          progress_color=MD3["primary"])
-        self.conf_slider.set(0.7)
+        self.conf_slider.set(0.8)
         self.conf_slider.pack(padx=12, pady=(2, 2), fill="x")
 
         # Скорость работы — второй ползунок в карточке Нейросеть
@@ -2389,13 +2418,13 @@ class TotalHunterApp(ctk.CTk):
             return val
 
         # Точность поиска
-        self.crypt_conf_val = _slider_row("crypt_conf_lb", "70%")
+        self.crypt_conf_val = _slider_row("crypt_conf_lb", "20%")
         self.crypt_conf_slider = ctk.CTkSlider(settings_frame, from_=0.1, to=0.9,
                                                command=self._update_crypt_labels,
                                                button_color=MD3["primary"],
                                                button_hover_color=MD3["primary_dim"],
                                                progress_color=MD3["primary"])
-        self.crypt_conf_slider.set(0.7)
+        self.crypt_conf_slider.set(0.2)
         self.crypt_conf_slider.pack(padx=10, pady=(2, 4), fill="x")
 
         # Ускорение марша
@@ -4328,14 +4357,15 @@ class TotalHunterApp(ctk.CTk):
 
         # Tune option menu — перестроить labels, сохранить выбранный индекс
         if hasattr(self, '_tune_option_menu'):
-            _tko = TUNE_TARGET_NAMES
-            _new_vals = [LANGS[val]["tab_cal"]] + [LANGS[val][f"cal_tune_{k}"] for k in _tko]
+            _new_vals = tune_menu_labels(val, TUNE_TARGET_NAMES)
             self._tune_option_menu.configure(values=_new_vals)
             _idx = getattr(self, '_tune_idx', -1)
             if _idx < 0:
                 self._ui_tune_btn_var.set(_new_vals[0])
             else:
                 self._ui_tune_btn_var.set(_new_vals[_idx + 1])
+            if hasattr(self, '_tune_apply_chest_highlight'):
+                self._tune_apply_chest_highlight()
 
         # Авто-стоп склепов — перевести «Выкл» + сохранить текущий выбор
         if hasattr(self, '_crypt_autostop_count_menu'):
@@ -4940,9 +4970,7 @@ class TotalHunterApp(ctk.CTk):
         }
 
         def _tune_labels():
-            calib = LANGS[self.current_lang]["tab_cal"]
-            return [calib] + [f"{i}. {LANGS[self.current_lang][f'cal_tune_{k}']}"
-                               for i, k in enumerate(_TUNE_INTERNAL, start=1)]
+            return tune_menu_labels(self.current_lang, _TUNE_INTERNAL)
 
         tune_card = ctk.CTkFrame(self._cal_frame, fg_color=MD3["card"],
                                   corner_radius=10, border_width=1,
@@ -4976,6 +5004,20 @@ class TotalHunterApp(ctk.CTk):
             command=_tune_on_select,
         )
         self._tune_option_menu.pack(fill="x", padx=12, pady=(0, 4))
+
+        def _tune_apply_chest_highlight():
+            # .configure(values=...) перестраивает пункты меню с нуля
+            # (delete + add_command) — подсветку нужно накладывать заново
+            # после КАЖДОЙ перестройки (первичное построение и смена языка).
+            try:
+                menu = self._tune_option_menu._dropdown_menu
+                for i in tune_chest_group_entry_indices(_TUNE_INTERNAL):
+                    menu.entryconfigure(i, foreground=TUNE_CHEST_HIGHLIGHT_COLOR)
+            except Exception:
+                pass
+
+        self._tune_apply_chest_highlight = _tune_apply_chest_highlight
+        _tune_apply_chest_highlight()
 
         self._tune_display_lb = ctk.CTkLabel(
             tune_card, text="",
