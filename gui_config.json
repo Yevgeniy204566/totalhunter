@@ -10,11 +10,12 @@
   "return_delta_px": 5,
   "smooth_alpha": 60,
   "last_calibration_profile": "Client",
-  "lang": "UK",
-  "roy_enabled": false,
+  "lang": "RU",
+  "roy_enabled": true,
   "roy_kingdom": 237,
   "theme": "Deep Night",
   "chest_kingdom": "229",
   "chest_clan": "BERS",
-  "chest_click_pause": 0.82
+  "chest_click_pause": 0.0,
+  "ancient_full_lang_ocr": false
 }

@@ -45,16 +45,24 @@ def _grab_region_live(cx: int, cy: int) -> "Image.Image":
     return img
 
 
+def _crosshair_size(root: tk.Tk) -> int:
+    """Scale the crosshair to the real screen resolution — a 16px mark on
+    1920px-wide reference looks half-size on a 2560/3840px-wide 2K/4K screen."""
+    return max(16, round(16 * root.winfo_screenwidth() / 1920))
+
+
 def _show_red_dot(root: tk.Tk, x: int, y: int) -> tk.Toplevel:
-    """16×16 red crosshair Toplevel at screen position (x, y)."""
+    """Red crosshair Toplevel at screen position (x, y), sized for the real resolution."""
+    size = _crosshair_size(root)
+    half = size // 2
     dot = tk.Toplevel(root)
     dot.overrideredirect(True)
     dot.attributes("-topmost", True)
-    dot.geometry(f"16x16+{x - 8}+{y - 8}")
-    c = tk.Canvas(dot, width=16, height=16, bg="red", highlightthickness=0)
+    dot.geometry(f"{size}x{size}+{x - half}+{y - half}")
+    c = tk.Canvas(dot, width=size, height=size, bg="red", highlightthickness=0)
     c.pack()
-    c.create_line(0, 8, 16, 8, fill="white", width=1)
-    c.create_line(8, 0, 8, 16, fill="white", width=1)
+    c.create_line(0, half, size, half, fill="white", width=1)
+    c.create_line(half, 0, half, size, fill="white", width=1)
     return dot
 
 

@@ -86,3 +86,10 @@ ocr_log.txt
 # Папка логів
 logs/
 .worktrees/
+
+# Claude local settings (содержит токены)
+.claude/settings.local.json
+
+# Бэкап глобального конфига Claude Code (settings.json/.claude.json/память трёх проектов)
+# перед переустановкой Windows 2026-08-04 — персональные данные, не для репозитория
+CLAUDE_USER_CONFIG_BACKUP/

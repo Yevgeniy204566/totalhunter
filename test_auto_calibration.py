@@ -139,22 +139,13 @@ def test_auto_detect_points_fallback_when_nothing_found():
 
 
 def test_auto_detect_points_returns_screen_coords_when_found():
-    """Point A detected via contour. Point B returns cursor position (scaled REF_B)."""
-    blank = np.zeros((300, 300, 3), dtype=np.uint8)
-
-    # Point A: white rectangle centered near (155, 150) in image
-    img_a = blank.copy()
-    cv2.rectangle(img_a, (130, 120), (180, 180), (255, 255, 255), 3)
-
-    # For 1920x1080: a_cx=90, a_cy=925 → x1=0, y1=775
-    with patch("auto_calibration._grab_region", return_value=(img_a, 0, 775)), \
-         patch("auto_calibration.pyautogui"), \
+    """auto_detect_point_a() больше не детектирует контур — осознанно упрощено
+    до scale_ref(REF_A) (см. коммент в auto_calibration.py: "no auto-detection
+    to avoid wrong placement", пользователь донастраивает точку в лупе сам).
+    Point B — курсор на scale_ref(REF_B)."""
+    with patch("auto_calibration.pyautogui"), \
          patch("auto_calibration.time"):
         pa, pb = auto_detect_points(1920, 1080)
 
-    # Point A: img cx≈155, cy≈150 → screen (0+155, 775+150) = (155, 925)
-    assert abs(pa[0] - 155) <= 10
-    assert abs(pa[1] - 925) <= 10
-
-    # Point B: cursor position = scaled REF_B = (1149, 88) on 1920x1080
+    assert pa == REF_A
     assert pb == REF_B

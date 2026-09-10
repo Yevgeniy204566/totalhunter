@@ -123,7 +123,11 @@ class TestSaveLoad:
         cm2.load(path)
         assert cm2.to_screen(689, 941) == cm.to_screen(689, 941)
 
-    def test_load_missing_file_raises(self):
+    def test_load_missing_file_keeps_defaults(self):
+        """load() перехватывает любую ошибку (см. коммент в coord_manager.py:
+        "Keep default REF_A/REF_B if profile is corrupted") — это осознанное
+        решение не падать на первом запуске без сохранённого профиля, а не баг."""
         cm = CoordinateManager()
-        with pytest.raises(FileNotFoundError):
-            cm.load("/nonexistent/path.json")
+        cm.load("/nonexistent/path.json")
+        assert cm.anchor_x == REF_A[0]
+        assert cm.anchor_y == REF_A[1]
