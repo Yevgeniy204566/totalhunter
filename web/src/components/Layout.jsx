@@ -6,11 +6,24 @@ import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
+function ChestIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 10.5C3 9.67157 3.67157 9 4.5 9H19.5C20.3284 9 21 9.67157 21 10.5V18.5C21 19.3284 20.3284 20 19.5 20H4.5C3.67157 20 3 19.3284 3 18.5V10.5Z"
+        stroke="currentColor" strokeWidth="1.6" fill="currentColor" fillOpacity="0.16"/>
+      <path d="M3 10.5C3 7.46243 6.13401 5 10 5H14C17.866 5 21 7.46243 21 10.5"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M3 12.5H21" stroke="currentColor" strokeWidth="1.4"/>
+      <circle cx="12" cy="14.5" r="1.6" fill="currentColor"/>
+    </svg>
+  )
+}
+
 const NAV_KEYS = [
   { to: '/dashboard',           icon: '◈', key: 'profile'   },
   { to: '/dashboard/balance',   icon: '◆', key: 'balance'   },
   { to: '/dashboard/referrals', icon: '⬡', key: 'referrals' },
-  { to: '/dashboard/chests',    icon: '⛁', key: 'chests'    },
+  { to: '/dashboard/chests',    icon: <ChestIcon />, key: 'chests', accent: 'chest' },
   { to: '/dashboard/ancients',  icon: '🐲', key: 'ancients'  },
   { to: '/dashboard/roy',       icon: '⬡', key: 'roy'       },
   { to: '/dashboard/feedback',  icon: '✦', key: 'feedback'  },
@@ -148,10 +161,10 @@ export default function Layout() {
         paddingTop: 12,
         zIndex: 50,
       }}>
-        {NAV.map(({ to, icon, label }) => (
+        {NAV.map(({ to, icon, label, accent }) => (
           <NavLink
             key={to} to={to} end
-            className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`}
+            className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}${accent ? ` nav-item--${accent}` : ''}`}
           >
             <span className="nav-icon">{icon}</span>
             {label}
@@ -166,10 +179,10 @@ export default function Layout() {
 
       {/* ── Bottom Navigation (mobile only) ──────────────────── */}
       <nav className="mobile-bottom-nav">
-        {NAV.slice(0, 6).map(({ to, icon, label }) => (
+        {NAV.slice(0, 6).map(({ to, icon, label, accent }) => (
           <NavLink
             key={to} to={to} end
-            className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
+            className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}${accent ? ` mobile-nav-item--${accent}` : ''}`}
           >
             <span className="nav-icon">{icon}</span>
             <span>{label}</span>

@@ -97,6 +97,10 @@ export default function ChestSummaryPage() {
 
   const targets = data.targets || { points: null, chests: null }
   const hasSeasonTargets = targets.points != null || targets.chests != null
+  const totalPoints = (data.players || []).reduce((sum, p) => sum + (p.points || 0), 0)
+  const totalQuotaChests = (data.players || []).reduce((sum, p) => sum + (p.quota_chests || 0), 0)
+  const pointsPct = targets.points ? Math.min(100, Math.round(totalPoints / targets.points * 100)) : null
+  const chestsPct = targets.chests ? Math.min(100, Math.round(totalQuotaChests / targets.chests * 100)) : null
 
   return (
     <div className="page-content">
@@ -143,8 +147,8 @@ export default function ChestSummaryPage() {
         )}
         {tab === 'current' && (
           <button
-            className="btn-secondary"
-            style={{ fontSize: 13, padding: '4px 12px', marginLeft: 'auto' }}
+            className="chest-pill-btn chest-pill-btn--sm"
+            style={{ marginLeft: 'auto' }}
             onClick={() => {
               if (editMode) { setEditMode(false); loadData() }
               else { setEditMode(true) }
@@ -156,17 +160,41 @@ export default function ChestSummaryPage() {
       </div>
 
       <div className="public-summary-updated">Последнее обновление: {updatedLabel}</div>
+
+      {tab === 'current' && (pointsPct != null || chestsPct != null) && (
+        <div className="public-progress-row">
+          {pointsPct != null && (
+            <div className="public-progress-card">
+              <div className="public-progress-label">Очки сезона</div>
+              <div className="public-progress-value">{totalPoints.toLocaleString('ru-RU')} / {targets.points.toLocaleString('ru-RU')}</div>
+              <div className="public-progress-track">
+                <div className="public-progress-fill" style={{ width: `${pointsPct}%` }} />
+              </div>
+            </div>
+          )}
+          {chestsPct != null && (
+            <div className="public-progress-card">
+              <div className="public-progress-label">Прогресс по сундукам</div>
+              <div className="public-progress-value">{totalQuotaChests.toLocaleString('ru-RU')} / {targets.chests.toLocaleString('ru-RU')}</div>
+              <div className="public-progress-track">
+                <div className="public-progress-fill" style={{ width: `${chestsPct}%` }} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="public-summary-divider" />
 
-      <div className="chest-tabs">
+      <div className="chest-tabs chest-tabs--pill">
         <button
-          className={`chest-tab ${tab === 'current' ? 'chest-tab--active' : ''}`}
+          className={`chest-tab chest-tab--pill ${tab === 'current' ? 'chest-tab--active' : ''}`}
           onClick={() => setTab('current')}
         >
           Текущий сезон
         </button>
         <button
-          className={`chest-tab ${tab === 'history' ? 'chest-tab--active' : ''}`}
+          className={`chest-tab chest-tab--pill ${tab === 'history' ? 'chest-tab--active' : ''}`}
           onClick={() => setTab('history')}
         >
           История

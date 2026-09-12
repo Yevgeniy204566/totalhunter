@@ -8,12 +8,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import pytest
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from main import app
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
-    ChestTypeAlias, ChestTypeCatalog, PlayerAlias, PlayerProfile, User,
+    ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, ClanRosterEntry, PlayerAlias,
+    PlayerProfile, User,
 )
 from web_routes import create_jwt
 
@@ -881,3 +882,84 @@ async def test_get_chests_player_alias_rows_include_profile_fields(db_session):
     alice = next(r for r in player_rows if r["raw_name"] == "alice_ocr")
     assert alice["rank"] == "Глава"
     assert alice["troop_level"] == "G9 S9 M9"
+
+
+@pytest.mark.asyncio
+async def test_delete_collector_removes_all_dependent_rows(db_session):
+    """Reproduces the P0 bug: deleting a collector with chest_configurations,
+    chest_type_aliases, player_aliases, clan_roster or chest_season_history rows
+    used to hit a FK violation (those tables had no ON DELETE CASCADE and were
+    never explicitly cleaned up) — the delete silently failed and the collector
+    stayed in the list.
+
+    SQLite (used in this test DB) doesn't enforce FK constraints by default —
+    turn it on so this test fails the same way production Postgres would if the
+    fix regresses, not just silently leave orphans behind."""
+    await db_session.execute(text("PRAGMA foreign_keys=ON"))
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="to-delete-slug")
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                         chest_type_raw="Raw1", chest_type_canonical="Raw1",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+    db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="Raw1",
+                                  catalog_id="Epic Arachne"))
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Arachne",
+                                      points=40, is_in_pattern=True))
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="alice_ocr",
+                               canonical_name="Alice"))
+    db_session.add(ClanRosterEntry(collector_id=collector.id, raw_name="alice_ocr",
+                                   canonical_name="Alice"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Alice",
+                                 rank="Глава", troop_level="G9 S9 M9"))
+    db_session.add(ChestSeasonHistory(
+        collector_id=collector.id,
+        period_start=datetime.fromisoformat("2026-06-01T00:00:00"),
+        period_end=datetime.fromisoformat("2026-06-15T00:00:00"),
+        target_points_snapshot=1000, target_chests_snapshot=10,
+        summary_json={"chest_types": [], "players": []},
+    ))
+    await db_session.commit()
+    collector_id = collector.id
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete("/web/dashboard/chests/to-delete-slug",
+                                   headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200, resp.text
+
+    assert (await db_session.execute(
+        select(ChestCollector).where(ChestCollector.id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(Chest).where(Chest.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(ChestConfiguration).where(ChestConfiguration.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(PlayerAlias).where(PlayerAlias.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(ClanRosterEntry).where(ClanRosterEntry.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(PlayerProfile).where(PlayerProfile.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(ChestSeasonHistory).where(ChestSeasonHistory.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+
+
+@pytest.mark.asyncio
+async def test_delete_collector_rejects_other_users_collector(db_session):
+    user, token = await _create_user_with_token(db_session)
+    other_user, _ = await _create_user_with_token(db_session, email="other3@example.com")
+    await _create_collector(db_session, other_user.id, slug="not-yours-slug")
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.delete("/web/dashboard/chests/not-yours-slug",
+                                   headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 403

@@ -13,6 +13,7 @@ os.environ.setdefault("BLACKSEA_CLIENT_SECRET", "test-blacksea-client-secret")
 os.environ.setdefault("BLACKSEA_PRODUCT_ID",         "test-blacksea-product-id-ultra")
 os.environ.setdefault("BLACKSEA_PRODUCT_ID_SCOUT",   "test-blacksea-product-id-scout")
 os.environ.setdefault("BLACKSEA_PRODUCT_ID_HUNTER",  "test-blacksea-product-id-hunter")
+os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-key")
 
 from database import get_db
 from models import Base

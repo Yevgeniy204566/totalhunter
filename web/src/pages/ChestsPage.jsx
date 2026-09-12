@@ -261,142 +261,159 @@ export default function ChestsPage() {
     <div className="page-content" style={{ maxWidth: 1600 }}>
 <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
 
-      <div className="card" style={{ marginBottom: 16, maxWidth: 600 }}>
-        <input
-          className="input-dark"
-          value={claimCode}
-          onChange={e => setClaimCode(e.target.value)}
-          placeholder={cx.claimPlaceholder}
-          style={{ marginBottom: 8 }}
-        />
-        <button className="btn-secondary" onClick={claim}>{cx.claimBtn}</button>
+      <div className="card" style={{ marginBottom: 24, maxWidth: 520, borderRadius: 16 }}>
+        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 10 }}>
+          {cx.claimBtn} — {cx.claimPlaceholder.toLowerCase()}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            className="input-dark"
+            value={claimCode}
+            onChange={e => setClaimCode(e.target.value)}
+            placeholder={cx.claimPlaceholder}
+            style={{ flex: '1 1 180px' }}
+          />
+          <button className="chest-pill-btn chest-pill-btn--primary" onClick={claim}>{cx.claimBtn}</button>
+        </div>
       </div>
 
       {collectors.length === 0 && <div className="text-muted" style={{ marginTop: 12 }}>{cx.noCollectors}</div>}
 
       {collectors.map(collector => (
-        <div className="card" key={collector.slug} style={{ marginBottom: 24 }}>
-          {/* Header: kingdom/clan left | links stacked right */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontWeight: 700, fontSize: 16 }}>{collector.kingdom} / {collector.clan}</span>
-              {confirmDeleteByCollector[collector.slug] ? (
-                <>
-                  <span style={{ fontSize: 12, color: '#F87171' }}>{cx.deleteCollectorConfirm}</span>
-                  <button
-                    className="btn-primary"
-                    style={{ fontSize: 12, padding: '3px 10px', background: '#DC2626', boxShadow: 'none' }}
-                    onClick={async () => {
-                      await api.dashboardChestsDelete(collector.slug)
-                      setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))
-                      refresh()
-                    }}
-                  >{cx.deleteCollectorYes}</button>
-                  <button
-                    className="btn-secondary"
-                    style={{ fontSize: 12, padding: '3px 10px' }}
-                    onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))}
-                  >{cx.closeSeasonNo}</button>
-                </>
-              ) : (
-                <button
-                  className="btn-secondary"
-                  style={{ fontSize: 12, padding: '3px 10px', color: '#F87171', borderColor: '#F8717144' }}
-                  onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: true }))}
-                >{cx.deleteCollectorBtn}</button>
-              )}
+        <div className="collector-card" key={collector.slug}>
+          {/* Header: identity left | links + destructive/transfer actions right */}
+          <div className="collector-header">
+            <div className="collector-identity">
+              <span className="collector-clan-name">{collector.clan}</span>
+              <span className="collector-kingdom-tag">{collector.kingdom}</span>
             </div>
-            <div style={{ textAlign: 'right' }}>
+
+            <div className="collector-links">
               {collector.short_url && (
-                <div>
-                  <a href={collector.short_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#60A5FA' }}>
-                    {collector.short_url.replace('https://', '')}
-                  </a>
-                </div>
-              )}
-              <div>
-                <a href={collector.public_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
-                  {cx.publicLink}
+                <a href={collector.short_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#60A5FA' }}>
+                  {collector.short_url.replace('https://', '')}
                 </a>
+              )}
+              <a href={collector.public_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
+                {cx.publicLink}
+              </a>
+
+              <div className="collector-actions-row" style={{ marginTop: 8 }}>
+                {cx.language}
+                <select
+                  className="input-dark"
+                  style={{ width: 'auto' }}
+                  value={collector.language || ''}
+                  onChange={e => changeLanguage(collector.slug, e.target.value)}
+                >
+                  <option value="ru">ru</option>
+                  <option value="en">en</option>
+                </select>
+                <button className="chest-pill-btn chest-pill-btn--sm" onClick={() => genToken(collector.slug)}>
+                  {cx.generateToken}
+                </button>
+
+                {confirmDeleteByCollector[collector.slug] ? (
+                  <>
+                    <span style={{ fontSize: 12, color: '#F87171' }}>{cx.deleteCollectorConfirm}</span>
+                    <button
+                      className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--solid-danger"
+                      onClick={async () => {
+                        try {
+                          await api.dashboardChestsDelete(collector.slug)
+                          setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))
+                          await refresh()
+                        } catch (e) {
+                          setMsg(e.message || cx.deleteCollectorBtn)
+                        }
+                      }}
+                    >{cx.deleteCollectorYes}</button>
+                    <button
+                      className="chest-pill-btn chest-pill-btn--sm"
+                      onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))}
+                    >{cx.closeSeasonNo}</button>
+                  </>
+                ) : (
+                  <button
+                    className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--danger"
+                    onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: true }))}
+                  >{cx.deleteCollectorBtn}</button>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Language + token */}
-          <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
-            {cx.language}:
-            <select
-              className="input-dark"
-              style={{ width: 'auto' }}
-              value={collector.language || ''}
-              onChange={e => changeLanguage(collector.slug, e.target.value)}
-            >
-              <option value="ru">ru</option>
-              <option value="en">en</option>
-            </select>
-            <button className="btn-secondary" onClick={() => genToken(collector.slug)}>
-              {cx.generateToken}
-            </button>
-          </div>
-
           {/* Season settings */}
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ marginBottom: 8, fontWeight: 600 }}>{cx.seasonTitle}</div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 8, overflowX: 'auto', paddingBottom: 2 }}>
-              <select
-                className="input-dark"
-                style={{ width: 120, flexShrink: 0 }}
-                value={seasonByCollector[collector.slug]?.timezone_offset_minutes ?? ''}
-                onChange={e => updateSeasonField(collector.slug, 'timezone_offset_minutes', e.target.value)}
-              >
-                <option value="">{cx.timezoneLabel}</option>
-                {[-720, -660, -600, -540, -480, -420, -360, -300, -240, -210, -180, -120, -60, 0,
-                  60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420, 480, 540, 570, 600,
-                  630, 660, 720, 765, 780, 840].map(m => (
-                  <option key={m} value={m}>
-                    UTC{m >= 0 ? '+' : '-'}{String(Math.floor(Math.abs(m) / 60)).padStart(2, '0')}:{String(Math.abs(m) % 60).padStart(2, '0')}
-                  </option>
-                ))}
-              </select>
-              <input className="input-dark" style={{ width: 170, flexShrink: 0 }} type="datetime-local"
-                value={seasonByCollector[collector.slug]?.period_start || ''}
-                onChange={e => updateSeasonField(collector.slug, 'period_start', e.target.value)}
-              />
-              <input className="input-dark" style={{ width: 170, flexShrink: 0 }} type="datetime-local"
-                value={seasonByCollector[collector.slug]?.period_end || ''}
-                onChange={e => updateSeasonField(collector.slug, 'period_end', e.target.value)}
-              />
-              <input className="input-dark" style={{ width: 100, flexShrink: 0 }} type="number"
-                placeholder={cx.targetPointsLabel}
-                value={seasonByCollector[collector.slug]?.target_points ?? ''}
-                onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
-              />
-              <input className="input-dark" style={{ width: 100, flexShrink: 0 }} type="number"
-                placeholder={cx.targetChestsLabel}
-                value={seasonByCollector[collector.slug]?.target_chests ?? ''}
-                onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
-              />
+          <div className="chest-season-card">
+            <div className="chest-season-title">{cx.seasonTitle}</div>
+            <div className="chest-field-grid">
+              <div className="chest-field">
+                <label>{cx.timezoneLabel}</label>
+                <select
+                  className="input-dark"
+                  style={{ width: 150 }}
+                  value={seasonByCollector[collector.slug]?.timezone_offset_minutes ?? ''}
+                  onChange={e => updateSeasonField(collector.slug, 'timezone_offset_minutes', e.target.value)}
+                >
+                  <option value="">—</option>
+                  {[-720, -660, -600, -540, -480, -420, -360, -300, -240, -210, -180, -120, -60, 0,
+                    60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420, 480, 540, 570, 600,
+                    630, 660, 720, 765, 780, 840].map(m => (
+                    <option key={m} value={m}>
+                      UTC{m >= 0 ? '+' : '-'}{String(Math.floor(Math.abs(m) / 60)).padStart(2, '0')}:{String(Math.abs(m) % 60).padStart(2, '0')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="chest-field">
+                <label>{cx.periodStartLabel}</label>
+                <input className="input-dark" style={{ width: 180 }} type="datetime-local"
+                  value={seasonByCollector[collector.slug]?.period_start || ''}
+                  onChange={e => updateSeasonField(collector.slug, 'period_start', e.target.value)}
+                />
+              </div>
+              <div className="chest-field">
+                <label>{cx.periodEndLabel}</label>
+                <input className="input-dark" style={{ width: 180 }} type="datetime-local"
+                  value={seasonByCollector[collector.slug]?.period_end || ''}
+                  onChange={e => updateSeasonField(collector.slug, 'period_end', e.target.value)}
+                />
+              </div>
+              <div className="chest-field">
+                <label>{cx.targetPointsLabel}</label>
+                <input className="input-dark" style={{ width: 120 }} type="number"
+                  value={seasonByCollector[collector.slug]?.target_points ?? ''}
+                  onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
+                />
+              </div>
+              <div className="chest-field">
+                <label>{cx.targetChestsLabel}</label>
+                <input className="input-dark" style={{ width: 120 }} type="number"
+                  value={seasonByCollector[collector.slug]?.target_chests ?? ''}
+                  onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
+                />
+              </div>
             </div>
             {/* Buttons: Save left, Close season far right */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button className="btn-green" onClick={() => saveSeason(collector.slug)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <button className="chest-pill-btn chest-pill-btn--green" onClick={() => saveSeason(collector.slug)}>
                 {cx.saveSeason}
               </button>
               {collector.period_end && (
                 confirmCloseByCollector[collector.slug] ? (
                   <>
                     <span style={{ fontSize: 13, color: '#F87171', marginLeft: 'auto' }}>{cx.closeSeasonConfirmText}</span>
-                    <button className="btn-primary" style={{ background: '#DC2626', boxShadow: 'none' }}
+                    <button className="chest-pill-btn chest-pill-btn--solid-danger"
                       onClick={() => closeSeason(collector.slug)}
                     >{cx.closeSeasonYes}</button>
-                    <button className="btn-secondary"
+                    <button className="chest-pill-btn"
                       onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: false }))}
                     >{cx.closeSeasonNo}</button>
                   </>
                 ) : (
                   <button
-                    className="btn-secondary"
-                    style={{ marginLeft: 'auto', color: '#F87171', borderColor: '#F8717144' }}
+                    className="chest-pill-btn chest-pill-btn--danger"
+                    style={{ marginLeft: 'auto' }}
                     onClick={() => setConfirmCloseByCollector(prev => ({ ...prev, [collector.slug]: true }))}
                   >{cx.closeSeasonBtn}</button>
                 )
@@ -404,12 +421,12 @@ export default function ChestsPage() {
             </div>
           </div>
 
-          <div className="chest-tabs">
-            <button className={`chest-tab ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
+          <div className="chest-tabs chest-tabs--pill">
+            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'chests')}>{cx.chestsTab}</button>
-            <button className={`chest-tab ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
+            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'players')}>{cx.playersTab}</button>
-            <button className={`chest-tab ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
+            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'history')}>{cx.historyTab}</button>
           </div>
 
@@ -427,12 +444,12 @@ export default function ChestsPage() {
                     >
                       {Object.keys(presets).map(name => <option key={name} value={name}>{name}</option>)}
                     </select>
-                    <button className="btn-secondary"
+                    <button className="chest-pill-btn chest-pill-btn--sm"
                       onClick={() => loadPreset(collector.slug, presetChoiceByCollector[collector.slug] || Object.keys(presets)[0])}
                     >{cx.loadPresetBtn}</button>
                   </>
                 )}
-                <button className="btn-primary" onClick={() => save(collector.slug)}>{cx.save}</button>
+                <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => save(collector.slug)}>{cx.save}</button>
                 <span style={{ fontWeight: 600, marginLeft: 8, color: 'var(--on-surface2)' }}>
                   {cx.grandTotalLabel} {(rowsByCollector[collector.slug] || []).reduce((sum, row) => sum + (row.total_ever ?? 0), 0)}
                 </span>
@@ -443,10 +460,16 @@ export default function ChestsPage() {
                   <tr>
                     <th style={{ minWidth: 220 }}>{cx.rawCol}</th>
                     <th style={{ minWidth: 240 }}>{cx.catalogCol}</th>
-                    <th style={{ minWidth: 150 }}>{cx.customNameCol}</th>
+                    <th className="chest-secondary-col" style={{ minWidth: 130 }}>{cx.customNameCol}</th>
                     <th style={{ minWidth: 70 }}>{cx.pointsCol}</th>
-                    <th style={{ minWidth: 90 }}>{cx.inPatternCol}</th>
-                    <th style={{ minWidth: 90 }}>{cx.quotaCol}</th>
+                    <th style={{ minWidth: 90 }}>
+                      {cx.inPatternCol}
+                      <span className="chest-col-help" title={cx.inPatternTooltip}>?</span>
+                    </th>
+                    <th style={{ minWidth: 90 }}>
+                      {cx.quotaCol}
+                      <span className="chest-col-help" title={cx.quotaTooltip}>?</span>
+                    </th>
                     <th style={{ minWidth: 60 }}>{cx.totalEverCol}</th>
                   </tr>
                 </thead>
@@ -466,7 +489,7 @@ export default function ChestsPage() {
                           ))}
                         </select>
                       </td>
-                      <td>
+                      <td className="chest-secondary-col">
                         <input
                           className="input-dark"
                           value={row.custom_name || ''}
@@ -509,10 +532,10 @@ export default function ChestsPage() {
                 </tbody>
               </table>
               </div>
-              <button className="btn-secondary" onClick={() => addRow(collector.slug)} style={{ marginTop: 12 }}>
+              <button className="chest-pill-btn" onClick={() => addRow(collector.slug)} style={{ marginTop: 12 }}>
                 {cx.addRow}
               </button>
-              <button className="btn-primary" onClick={() => save(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
+              <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => save(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
                 {cx.save}
               </button>
             </>
@@ -540,7 +563,7 @@ export default function ChestsPage() {
             return (
             <div style={{ overflowX: 'auto' }}>
               <div style={{ marginBottom: 8, textAlign: 'right' }}>
-                <button className="btn-primary" onClick={() => savePlayerAliases(collector.slug)}>
+                <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => savePlayerAliases(collector.slug)}>
                   {cx.savePlayerAliases}
                 </button>
               </div>
@@ -667,10 +690,10 @@ export default function ChestsPage() {
                 </tbody>
               </table>
 
-              <button className="btn-secondary" onClick={() => addPlayerRow(collector.slug)} style={{ marginTop: 12 }}>
+              <button className="chest-pill-btn" onClick={() => addPlayerRow(collector.slug)} style={{ marginTop: 12 }}>
                 {cx.addPlayerRow}
               </button>
-              <button className="btn-primary" onClick={() => savePlayerAliases(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
+              <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => savePlayerAliases(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
                 {cx.savePlayerAliases}
               </button>
             </div>
@@ -680,7 +703,7 @@ export default function ChestsPage() {
           {activeTab(collector.slug) === 'history' && (
             <div>
               {!historyByCollector[collector.slug] && (
-                <button className="btn-secondary" onClick={() => loadHistory(collector.slug)}>
+                <button className="chest-pill-btn" onClick={() => loadHistory(collector.slug)}>
                   {cx.loadHistoryBtn}
                 </button>
               )}
@@ -690,7 +713,7 @@ export default function ChestsPage() {
               {historyByCollector[collector.slug]?.map(s => (
                 <button
                   key={s.id}
-                  className="btn-secondary"
+                  className="chest-pill-btn"
                   style={{ display: 'block', marginBottom: 8 }}
                   onClick={() => loadSeasonDetail(collector.slug, s.id)}
                 >
