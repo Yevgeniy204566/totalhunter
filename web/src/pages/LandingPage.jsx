@@ -315,7 +315,7 @@ export default function LandingPage() {
         background: `
           radial-gradient(ellipse 80% 60% at 50% 40%, rgba(61,127,255,0.13) 0%, transparent 70%),
           radial-gradient(ellipse 40% 40% at 25% 75%, rgba(176,96,255,0.06) 0%, transparent 60%),
-          linear-gradient(rgba(5,8,16,0.3), rgba(5,8,16,0.3)),
+          linear-gradient(rgba(5,8,16,0.45), rgba(5,8,16,0.45)),
           radial-gradient(ellipse 74% 84% at 50% 42%, transparent 0%, var(--bg) 94%),
           url('/img/hero-bg.jpg') center 38% / cover no-repeat,
           var(--bg)
@@ -367,9 +367,10 @@ export default function LandingPage() {
             fontSize: 'clamp(42px, 7.5vw, 80px)',
             fontWeight: 800, color: '#FFFFFF',
             lineHeight: 1.1, marginBottom: 24, letterSpacing: '-1.5px',
+            textShadow: '0 2px 0 rgba(0,0,0,0.25), 0 6px 16px rgba(0,0,0,0.55), 0 12px 32px rgba(0,0,0,0.35)',
           }}>
             {LANDING.heroTitle}<br />
-            <span style={{ color: 'var(--accent)', textShadow: '0 0 48px rgba(61,127,255,0.55)' }}>
+            <span style={{ color: 'var(--accent)', textShadow: '0 0 48px rgba(61,127,255,0.55), 0 6px 16px rgba(0,0,0,0.55), 0 12px 32px rgba(0,0,0,0.35)' }}>
               {LANDING.heroAccent}
             </span>
           </h1>
