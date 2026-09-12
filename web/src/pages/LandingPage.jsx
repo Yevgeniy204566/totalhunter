@@ -368,18 +368,19 @@ export default function LandingPage() {
             fontWeight: 800, color: '#FFFFFF',
             lineHeight: 1.1, marginBottom: 24, letterSpacing: '-1.5px',
             textShadow: `
-              0 1px 0 #c4d4f0, 0 2px 0 #a8bfe8, 0 3px 0 #8caade, 0 4px 0 #7096d4,
-              0 5px 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.4),
-              0 8px 14px rgba(0,0,0,0.45), 0 14px 26px rgba(0,0,0,0.3)
+              0 1px 0 rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.5),
+              0 3px 0 rgba(0,0,0,0.45), 0 4px 0 rgba(0,0,0,0.4),
+              0 8px 14px rgba(0,0,0,0.55), 0 14px 26px rgba(0,0,0,0.4)
             `,
           }}>
             {LANDING.heroTitle}<br />
             <span style={{
               color: 'var(--accent)',
               textShadow: `
-                0 1px 0 #7aa8ff, 0 2px 0 #5c8ff5, 0 3px 0 #3d76e8, 0 4px 0 #2c5dd0,
-                0 5px 1px rgba(0,0,0,0.35), 0 0 32px rgba(61,127,255,0.6),
-                0 8px 14px rgba(0,0,0,0.5), 0 14px 26px rgba(0,0,0,0.3)
+                0 1px 0 rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.5),
+                0 3px 0 rgba(0,0,0,0.45), 0 4px 0 rgba(0,0,0,0.4),
+                0 0 32px rgba(61,127,255,0.6),
+                0 8px 14px rgba(0,0,0,0.55), 0 14px 26px rgba(0,0,0,0.4)
               `,
             }}>
               {LANDING.heroAccent}
