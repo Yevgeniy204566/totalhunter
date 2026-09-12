@@ -546,7 +546,10 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
 @router.delete("/{slug}")
 async def delete_collector(slug: str, user: User = Depends(get_web_user),
                            db: AsyncSession = Depends(get_db)):
-    from models import AncientRoster, AncientNameMapping, AncientEditor, AncientInviteCode, ClanRosterEntry
+    from models import (
+        AncientRoster, AncientNameMapping, AncientEditor, AncientInviteCode,
+        AncientCalculation, ClanRosterEntry,
+    )
     collector = await _get_own_collector(db, slug, user)
     # Cascades not guaranteed in all FK definitions — delete explicitly in order
     await db.execute(delete(Chest).where(Chest.collector_id == collector.id))
@@ -557,6 +560,7 @@ async def delete_collector(slug: str, user: User = Depends(get_web_user),
     await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id))
     await db.execute(delete(ChestSeasonHistory).where(ChestSeasonHistory.collector_id == collector.id))
     await db.execute(delete(AncientRoster).where(AncientRoster.collector_id == collector.id))
+    await db.execute(delete(AncientCalculation).where(AncientCalculation.collector_id == collector.id))
     await db.execute(delete(AncientNameMapping).where(AncientNameMapping.collector_id == collector.id))
     await db.execute(delete(AncientEditor).where(AncientEditor.collector_id == collector.id))
     await db.execute(delete(AncientInviteCode).where(AncientInviteCode.collector_id == collector.id))

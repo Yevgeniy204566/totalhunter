@@ -289,14 +289,20 @@ export default function ChestsPage() {
             </div>
 
             <div className="collector-links">
+              <a
+                href={collector.public_url}
+                target="_blank" rel="noreferrer"
+                className="chest-pill-btn chest-pill-btn--primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+              >
+                🔗 {cx.publicLink}
+              </a>
               {collector.short_url && (
-                <a href={collector.short_url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#60A5FA' }}>
+                <a href={collector.short_url} target="_blank" rel="noreferrer"
+                  style={{ fontSize: 13, color: '#60A5FA', marginTop: 6, display: 'block' }}>
                   {collector.short_url.replace('https://', '')}
                 </a>
               )}
-              <a href={collector.public_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
-                {cx.publicLink}
-              </a>
 
               <div className="collector-actions-row" style={{ marginTop: 8 }}>
                 {cx.language}

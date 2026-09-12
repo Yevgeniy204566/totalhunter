@@ -12,9 +12,9 @@ from sqlalchemy import select, text
 
 from main import app
 from models import (
-    Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
-    ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, ClanRosterEntry, PlayerAlias,
-    PlayerProfile, User,
+    AncientCalculation, Chest, ChestCatalogReference, ChestCollector, ChestConfiguration,
+    ChestLocalization, ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, ClanRosterEntry,
+    PlayerAlias, PlayerProfile, User,
 )
 from web_routes import create_jwt
 
@@ -918,6 +918,15 @@ async def test_delete_collector_removes_all_dependent_rows(db_session):
         target_points_snapshot=1000, target_chests_snapshot=10,
         summary_json={"chest_types": [], "players": []},
     ))
+    db_session.add(AncientCalculation(
+        collector_id=collector.id,
+        strategy="A", clan_preset="G8S8M8",
+        summon_levels={"g": 8, "s": 8, "m": 8},
+        amplification_coef=1.5,
+        officer_count=5, veteran_count=10,
+        total_quota_millions=42.0,
+        result_json={"days": 10},
+    ))
     await db_session.commit()
     collector_id = collector.id
 
@@ -949,6 +958,9 @@ async def test_delete_collector_removes_all_dependent_rows(db_session):
     )).scalar_one_or_none() is None
     assert (await db_session.execute(
         select(ChestSeasonHistory).where(ChestSeasonHistory.collector_id == collector_id)
+    )).scalar_one_or_none() is None
+    assert (await db_session.execute(
+        select(AncientCalculation).where(AncientCalculation.collector_id == collector_id)
     )).scalar_one_or_none() is None
 
 
