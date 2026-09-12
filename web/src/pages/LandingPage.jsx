@@ -315,6 +315,9 @@ export default function LandingPage() {
         background: `
           radial-gradient(ellipse 80% 60% at 50% 40%, rgba(61,127,255,0.13) 0%, transparent 70%),
           radial-gradient(ellipse 40% 40% at 25% 75%, rgba(176,96,255,0.06) 0%, transparent 60%),
+          linear-gradient(rgba(5,8,16,0.3), rgba(5,8,16,0.3)),
+          radial-gradient(ellipse 74% 84% at 50% 42%, transparent 0%, var(--bg) 94%),
+          url('/img/hero-bg.jpg') center 38% / cover no-repeat,
           var(--bg)
         `,
         position: 'relative', overflow: 'hidden',
