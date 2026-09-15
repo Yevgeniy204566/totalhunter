@@ -75,13 +75,12 @@
     "R_2"
   ],
   "crypt_conf": 0.21,
-  "crypt_accelerations": 3,
-  "crypt_break_sec": 10,
+  "crypt_accelerations": 1,
+  "crypt_break_sec": 3,
   "crypt_scroll_speed": 1.0,
-  "crypt_max_march_min": 1,
   "crypt_swing1": 0,
   "crypt_swing2": 0,
-  "crypt_speed_delta": 0.0,
+  "crypt_speed_delta": 0.5,
   "crypt_autostop_count": 10,
   "crypt_autostop_hours": 1,
   "step": 16,
@@ -93,5 +92,7 @@
   "diagonal_blind_coeff": 0.5,
   "nav_footprint_ttl": 120,
   "return_delta_px": 0,
-  "smooth_alpha": 100
+  "smooth_alpha": 100,
+  "crypt_max_march_sec": 43,
+  "crypt_periodic_reset_min": 10
 }

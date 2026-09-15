@@ -42,11 +42,21 @@
 
 --------------------------------------------------------------------------------
 3. CRYPTS
-   March range   — 7–15 min
-   March speed   — 0–5
-   Click speed   — 0.0 s
-   Swing 1       — Explore     — 0  (adjust if clicking misses)
-   Swing 2       — Speed-up    — 0  (adjust if clicking misses)
+   March range      — 10–600 s (optimal 120 s)
+   March speed      — 0–5
+   Click speed      — 0.0 s
+   Swing 1          — Explore     — 0  (adjust if clicking misses)
+   Swing 2          — Speed-up    — 0  (adjust if clicking misses)
+   Stop (count)     — auto-stop after N crypts collected
+                      (Off / 10 / 20 / 30 / 50 / 80 / 100 / 200)
+   Stop hours       — auto-stop after N hours (Off / 1 / 2 / 3 / 4 / 6 / 9 / 12)
+   Reset to start   — periodically re-opens the crypt list from the beginning
+                      (Off / 10 / 20 / 30 / 60 min). Over a long session the
+                      list gradually drifts to farther crypts, increasing
+                      march time — this brings it back to the top on a timer,
+                      independent of the normal end-of-list reset.
+   Collected: N     — live counter above the START button, resets every
+                      new session.
 
    Select crypt types -> scroll map to maximum zoom -> COLLECT CRYPTS
 
@@ -179,11 +189,23 @@ Support    : totalhunter.support@gmail.com
 
 --------------------------------------------------------------------------------
 3. СКЛЕПЫ
-   Дальность марша  — 7–15 мин
-   Ускорение марша  — 0–5
-   Скорость кликов  — 0.0 с
-   Swing 1          — Исследовать — 0  (настрой, если мажет)
-   Swing 2          — Ускорение   — 0  (настрой, если мажет)
+   Дальность марша    — 10–600 с (оптимум 120 с)
+   Ускорение марша    — 0–5
+   Скорость кликов    — 0.0 с
+   Swing 1            — Исследовать — 0  (настрой, если мажет)
+   Swing 2            — Ускорение   — 0  (настрой, если мажет)
+   Стоп (штуки)       — авто-остановка после N собранных склепов
+                        (Выкл / 10 / 20 / 30 / 50 / 80 / 100 / 200)
+   Стоп часы          — авто-остановка через N часов
+                        (Выкл / 1 / 2 / 3 / 4 / 6 / 9 / 12)
+   Сброс в начало     — периодически возвращает список склепов в начало
+                        (Выкл / 10 / 20 / 30 / 60 мин). За долгую сессию
+                        список постепенно "уезжает" на более дальние склепы,
+                        увеличивая время марша — эта настройка возвращает его
+                        в начало по таймеру, независимо от обычного сброса
+                        по концу списка.
+   Собрано склепов: N — живой счётчик над кнопкой СТАРТ, обнуляется в
+                        начале каждой новой сессии.
 
    Выбери типы склепов -> прокрути карту на максимум -> ЗАПУСТИТЬ СБОР СКЛЕПОВ
 

@@ -35,6 +35,201 @@ class TestCryptHunterInit:
             assert hunter.is_running is False
 
 
+class TestCryptHunterStartMarchSeconds:
+    """Контракт start(max_march_sec=...): секунды напрямую, диапазон 10-600."""
+
+    def _make_hunter(self):
+        from unittest.mock import patch, MagicMock
+        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
+            from crypt_hunter import CryptHunter
+            hunter = CryptHunter.__new__(CryptHunter)
+            hunter._model = MagicMock()
+            return hunter
+
+    def test_default_is_120_seconds(self):
+        from unittest.mock import patch, MagicMock
+        hunter = self._make_hunter()
+        with patch('crypt_hunter.threading.Thread', return_value=MagicMock()):
+            hunter.start(selected_crypts=['Ordinary_1'])
+        assert hunter._max_march_sec == 120.0
+
+    def test_accepts_seconds_directly_no_minute_conversion(self):
+        from unittest.mock import patch, MagicMock
+        hunter = self._make_hunter()
+        with patch('crypt_hunter.threading.Thread', return_value=MagicMock()):
+            hunter.start(selected_crypts=['Ordinary_1'], max_march_sec=250)
+        assert hunter._max_march_sec == 250.0
+
+    def test_clamps_below_new_minimum_10_seconds(self):
+        from unittest.mock import patch, MagicMock
+        hunter = self._make_hunter()
+        with patch('crypt_hunter.threading.Thread', return_value=MagicMock()):
+            hunter.start(selected_crypts=['Ordinary_1'], max_march_sec=1)
+        assert hunter._max_march_sec == 10.0
+
+    def test_clamps_above_new_maximum_600_seconds(self):
+        from unittest.mock import patch, MagicMock
+        hunter = self._make_hunter()
+        with patch('crypt_hunter.threading.Thread', return_value=MagicMock()):
+            hunter.start(selected_crypts=['Ordinary_1'], max_march_sec=9999)
+        assert hunter._max_march_sec == 600.0
+
+
+class TestPeriodicArenaResetScheduling:
+    """start(periodic_reset_sec=...): включение/выключение периодического
+    сброса списка склепов (Арена x2), независимого от конца списка."""
+
+    def _make_hunter(self):
+        from unittest.mock import patch, MagicMock
+        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
+            from crypt_hunter import CryptHunter
+            hunter = CryptHunter.__new__(CryptHunter)
+            hunter._model = MagicMock()
+            return hunter
+
+    def test_disabled_by_default(self):
+        from unittest.mock import patch, MagicMock
+        hunter = self._make_hunter()
+        with patch('crypt_hunter.threading.Thread', return_value=MagicMock()):
+            hunter.start(selected_crypts=['Ordinary_1'])
+        assert hunter._periodic_reset_sec is None
+        assert hunter._next_periodic_reset_at is None
+
+    def test_zero_treated_as_disabled(self):
+        from unittest.mock import patch, MagicMock
+        hunter = self._make_hunter()
+        with patch('crypt_hunter.threading.Thread', return_value=MagicMock()):
+            hunter.start(selected_crypts=['Ordinary_1'], periodic_reset_sec=0)
+        assert hunter._periodic_reset_sec is None
+        assert hunter._next_periodic_reset_at is None
+
+    def test_enabled_schedules_first_reset_one_interval_ahead(self):
+        from unittest.mock import patch, MagicMock
+        import time as time_mod
+        hunter = self._make_hunter()
+        before = time_mod.monotonic()
+        with patch('crypt_hunter.threading.Thread', return_value=MagicMock()):
+            hunter.start(selected_crypts=['Ordinary_1'], periodic_reset_sec=600)
+        after = time_mod.monotonic()
+        assert hunter._periodic_reset_sec == 600
+        assert before + 600 <= hunter._next_periodic_reset_at <= after + 600
+
+
+class TestResetSearchReschedulesPeriodicTimer:
+    """_reset_search() — единая точка, где бы её ни вызвали (конец списка,
+    pre_skip, периодика) — должна сама сдвигать таймер периодического сброса
+    вперёд, если он включён. Список уже в начале — повторный ранний сброс
+    не нужен."""
+
+    def _make_hunter(self):
+        from unittest.mock import patch, MagicMock
+        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
+            from crypt_hunter import CryptHunter
+            h = CryptHunter.__new__(CryptHunter)
+            h.is_running = True
+            h._conf = 0.7
+            h._model = MagicMock()
+            h._speed_delta = 0.0
+            return h
+
+    def test_reschedules_when_periodic_enabled(self):
+        from unittest.mock import patch
+        import time as time_mod
+        hunter = self._make_hunter()
+        hunter._periodic_reset_sec = 600
+        hunter._next_periodic_reset_at = time_mod.monotonic() - 5   # уже просрочен
+        with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+            with patch.object(hunter, '_click'):
+                with patch.object(hunter, '_random_pause'):
+                    with patch('crypt_hunter.time.sleep'):
+                        hunter._reset_search()
+        assert hunter._next_periodic_reset_at > time_mod.monotonic()
+
+    def test_does_not_touch_timer_when_periodic_disabled(self):
+        from unittest.mock import patch
+        hunter = self._make_hunter()
+        hunter._periodic_reset_sec = None
+        hunter._next_periodic_reset_at = None
+        with patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)):
+            with patch.object(hunter, '_click'):
+                with patch.object(hunter, '_random_pause'):
+                    with patch('crypt_hunter.time.sleep'):
+                        hunter._reset_search()
+        assert hunter._next_periodic_reset_at is None
+
+
+class TestRunCyclePeriodicReset:
+    """Периодический сброс (Арена x2) — независимый от механизма конца
+    списка. Должен срабатывать ДО поиска склепа в списке, сразу после
+    открытия башни, когда таймер истёк — и не мешать обычному потоку,
+    когда выключен или ещё не истёк."""
+
+    def _make_hunter(self, periodic_reset_sec=None, next_reset_at=None):
+        from unittest.mock import patch, MagicMock
+        with patch('crypt_hunter.YOLO', return_value=MagicMock()):
+            from crypt_hunter import CryptHunter
+            h = CryptHunter.__new__(CryptHunter)
+            h.is_running = True
+            h._conf = 0.7
+            h._selected = ['Ordinary_1']
+            h._accelerations = 3
+            h._max_march_sec = 900.0
+            h._break_sec = 3
+            h._model = MagicMock()
+            h.on_status_callback = None
+            h.on_found_callback = None
+            h.on_countdown_callback = None
+            h._detect_fail_streak = 0
+            h._log_file = None
+            h._periodic_reset_sec = periodic_reset_sec
+            h._next_periodic_reset_at = next_reset_at
+            return h
+
+    def _run_full_cycle(self, hunter, call_order=None):
+        from unittest.mock import patch
+
+        def fake_scroll_and_find(*a, **kw):
+            if call_order is not None:
+                call_order.append('search')
+            return 'Ordinary_1'
+
+        with patch.object(hunter, '_scroll_and_find', side_effect=fake_scroll_and_find):
+            with patch.object(hunter, '_reset_search',
+                              side_effect=(lambda: call_order.append('reset')) if call_order is not None else None) as mock_reset:
+                with patch.object(hunter, '_interruptible_sleep'):
+                    with patch.object(hunter, '_open_watchtower'):
+                        with patch.object(hunter, '_select_crypts_tab'):
+                            with patch.object(hunter, '_detect_on_map', return_value=True):
+                                with patch.object(hunter, '_send_captain', return_value=True):
+                                    with patch.object(hunter, '_click_captain_event'):
+                                        with patch.object(hunter, '_accelerate', return_value=0.0):
+                                            with patch.object(hunter, '_close_dialog'):
+                                                with patch.object(hunter, '_random_pause'):
+                                                    hunter._run_cycle()
+        return mock_reset
+
+    def test_triggers_reset_before_search_when_due(self):
+        import time as time_mod
+        hunter = self._make_hunter(periodic_reset_sec=600,
+                                    next_reset_at=time_mod.monotonic() - 1)
+        call_order = []
+        mock_reset = self._run_full_cycle(hunter, call_order)
+        mock_reset.assert_called_once()
+        assert call_order == ['reset', 'search'], f"Ожидал сброс до поиска: {call_order}"
+
+    def test_does_not_trigger_when_not_due(self):
+        import time as time_mod
+        hunter = self._make_hunter(periodic_reset_sec=600,
+                                    next_reset_at=time_mod.monotonic() + 600)
+        mock_reset = self._run_full_cycle(hunter)
+        mock_reset.assert_not_called()
+
+    def test_disabled_never_triggers(self):
+        hunter = self._make_hunter(periodic_reset_sec=None, next_reset_at=None)
+        mock_reset = self._run_full_cycle(hunter)
+        mock_reset.assert_not_called()
+
+
 class TestCryptHunterHelpers:
     def _make_hunter(self):
         from unittest.mock import patch, MagicMock
@@ -45,6 +240,8 @@ class TestCryptHunterHelpers:
             h._conf = 0.7
             h._model = MagicMock()
             h._speed_delta = 0.0
+            h._periodic_reset_sec = None
+            h._next_periodic_reset_at = None
             return h
 
     def test_click_calls_pyautogui(self):
@@ -87,6 +284,8 @@ class TestWatchtowerMenu:
             h.is_running = True
             h._model = MagicMock()
             h.on_status_callback = None
+            h._periodic_reset_sec = None
+            h._next_periodic_reset_at = None
             return h
 
     def test_open_watchtower_clicks_wt_icon(self):
@@ -616,6 +815,8 @@ class TestRunCycleEndOfList:
             h.on_countdown_callback = None
             h._detect_fail_streak = 0
             h._log_file = None
+            h._periodic_reset_sec = None
+            h._next_periodic_reset_at = None
             return h
 
     def test_resets_and_waits_when_no_crypt_found(self):

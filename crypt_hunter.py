@@ -148,10 +148,15 @@ class CryptHunter:
         self._accelerations:  int       = 3
         self._break_sec:      int       = 10
         self._scroll_speed:   float     = 0.5
-        self._max_march_sec:  float     = 900.0
+        self._max_march_sec:  float     = 120.0
         self._swing1:         int       = 0
         self._swing2:         int       = 0
         self._speed_delta:    float     = 0.0
+
+        # Периодический сброс списка склепов (Арена x2), независимо от конца
+        # списка — см. _reset_search(). None = выключено.
+        self._periodic_reset_sec:     float | None = None
+        self._next_periodic_reset_at: float | None = None
 
         # Регион, исключённый из YOLO-поиска (координаты окна бота при always-on-top)
         self._exclusion_region: tuple | None = None
@@ -166,10 +171,11 @@ class CryptHunter:
         accelerations:      int   = 3,
         break_sec:          int   = 10,
         scroll_speed:       float = 0.5,
-        max_march_min:      float = 15.0,
+        max_march_sec:      float = 120.0,
         swing1:             int   = 0,
         swing2:             int   = 0,
         speed_delta:        float = 0.0,
+        periodic_reset_sec: int | None = None,
         on_found_callback         = None,
         on_status_callback        = None,
         on_stop_callback          = None,
@@ -181,10 +187,16 @@ class CryptHunter:
         self._accelerations  = accelerations
         self._break_sec      = max(3, int(break_sec))
         self._scroll_speed   = max(0.0, float(scroll_speed))
-        self._max_march_sec  = max(60.0, float(max_march_min) * 60.0)
+        # Пол/потолок должны совпадать со слайдером UI (10-600 сек) — см. ANTI-PATTERNS.md
+        # про молчаливое зажимание значений вне диапазона слайдера.
+        self._max_march_sec  = max(10.0, min(600.0, float(max_march_sec)))
         self._swing1         = int(swing1)
         self._swing2         = int(swing2)
         self._speed_delta    = float(speed_delta)
+        self._periodic_reset_sec = int(periodic_reset_sec) if periodic_reset_sec else None
+        self._next_periodic_reset_at = (
+            time.monotonic() + self._periodic_reset_sec if self._periodic_reset_sec else None
+        )
         self.on_found_callback      = on_found_callback
         self.on_status_callback     = on_status_callback
         self.on_stop_callback       = on_stop_callback
@@ -383,6 +395,11 @@ class CryptHunter:
         self._interruptible_sleep(random.uniform(0.9, 1.1))
         self._click(ax + ox, ay + oy, jitter=3, raw=True)
         self._random_pause(0.5, 0.8)
+        # Список уже в начале — независимо от причины сброса (конец списка,
+        # pre_skip, периодика), откладываем следующий периодический сброс
+        # на полный интервал вперёд, а не оставляем его "просроченным".
+        if self._periodic_reset_sec:
+            self._next_periodic_reset_at = time.monotonic() + self._periodic_reset_sec
 
     def _pre_skip(self):
         """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций).
@@ -698,6 +715,15 @@ class CryptHunter:
         """Один полный цикл: открыть башню → найти → отправить → ждать."""
         # [1] Открываем башню (вкладку «Склепы и арены» пользователь открывает вручную)
         self._open_watchtower()
+
+        # [1.5] Периодический сброс списка (Арена x2) — независимо от конца
+        # списка. Срабатывает ДО поиска, чтобы каждый цикл начинался с уже
+        # актуального (не уехавшего вниз) списка. Точность таймера не
+        # критична — проверяется раз за цикл, поэтому реальный интервал
+        # может быть чуть больше заданного.
+        if self._next_periodic_reset_at is not None and time.monotonic() >= self._next_periodic_reset_at:
+            self._status("Periodic reset (Arena ×2)...")
+            self._reset_search()
 
         # Если предыдущий цикл провалил детекцию на карте — пропустить проблемный склеп
         if self._detect_fail_streak > 0:
