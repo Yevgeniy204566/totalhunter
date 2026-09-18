@@ -28,7 +28,7 @@
 | [`…-monetization-04-tests-gate.md`](2026-09-18-exchange-scout-monetization-04-tests-gate-7.md) | Стадия 6: T-22…T-28 (T-25…T-27 ⛔ заменены); Стадии 7-9, открытый вопрос ОВ-2 |
 
 Файловый цикл, GUI, `scout_results.jsonl` — [Часть A](2026-09-17-exchange-scout-part-a-lifecycle-design-3.md).
-Публикация на сайт (контракты P-01…P-13, тесты PT-01…PT-16) —
+Публикация на сайт (контракты P-01…P-13, тесты PT-01…PT-17) —
 [спека публикации](2026-09-18-exchange-scout-roy-publication-design-1.md).
 Часть B (конкурентность) — не написана; переданные в неё места помечены **[→ Часть B]**.
 
