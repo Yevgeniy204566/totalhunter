@@ -1,6 +1,6 @@
 # Биржа 2.0 (Exchange Scout) — ЧАСТЬ A: файловый жизненный цикл, контракты, GUI-интеграция — ИНДЕКС
 
-> **Статус:** ЧЕРНОВИК. **Спека №03 из 3** — ждёт своей очереди на внешнее ревью (GPT, Gemini): не пройдено. К реализации НЕ готова. Общий индекс: [`00-INDEX-exchange-scout.md`](00-INDEX-exchange-scout.md).
+> **Статус:** ЧЕРНОВИК. **Спека №3 из 3** — ждёт своей очереди на внешнее ревью (GPT, Gemini): не пройдено. К реализации НЕ готова. Общий индекс: [`exchange-scout-index-16.md`](exchange-scout-index-16.md).
 > **Тип:** SPEC (не PLAN, не код).
 > **Протокол:** `docs/РАБОТА-С-ДОКУМЕНТАМИ.md`. Стадии 1-7 и 9 пройдены и перепройдены в раунде 2;
 > решение по Stage 8 после разделения **не закрыто** (файл 04, Стадия 8).
@@ -20,13 +20,13 @@
 
 | Файл | Что внутри |
 |---|---|
-| [`…-part-a-01-context.md`](03-2026-09-17-exchange-scout-part-a-01-context.md) | Стадия 1 (Context), Стадия 2 (Code Archaeology): `PositionReader`, `CoastalSnakeNavigator`, `PacmanEngine`, GUI `main.py`, честная фиксация отсутствия прямого аналога файлового цикла |
-| [`…-part-a-02-contracts-design.md`](03-2026-09-17-exchange-scout-part-a-02-contracts-design.md) | Стадия 3 (контракты **C-01…C-16**), Стадия 4 (структура на диске, владение ресурсами, отказы внешних вызовов, сигнатура `ExchangeScoutEngine`, переиспользование компонентов, схема `scout_results.jsonl`, GUI-интеграция, non-goals) |
-| [`…-part-a-03-adversarial.md`](03-2026-09-17-exchange-scout-part-a-03-adversarial.md) | Стадия 5 (Adversarial Review, находки **A-1…A-13**) |
-| [`…-part-a-04-tests-gate.md`](03-2026-09-17-exchange-scout-part-a-04-tests-gate.md) | Стадия 6 (тесты **T-01…T-21**), Стадия 7 (Self-Audit + state matrix), Стадия 8 (External Agent Review), Стадия 9 (Final Gate) |
+| [`…-part-a-01-context.md`](2026-09-17-exchange-scout-part-a-01-context-8.md) | Стадия 1 (Context), Стадия 2 (Code Archaeology): `PositionReader`, `CoastalSnakeNavigator`, `PacmanEngine`, GUI `main.py`, честная фиксация отсутствия прямого аналога файлового цикла |
+| [`…-part-a-02-contracts-design.md`](2026-09-17-exchange-scout-part-a-02-contracts-design-9.md) | Стадия 3 (контракты **C-01…C-16**), Стадия 4 (структура на диске, владение ресурсами, отказы внешних вызовов, сигнатура `ExchangeScoutEngine`, переиспользование компонентов, схема `scout_results.jsonl`, GUI-интеграция, non-goals) |
+| [`…-part-a-03-adversarial.md`](2026-09-17-exchange-scout-part-a-03-adversarial-10.md) | Стадия 5 (Adversarial Review, находки **A-1…A-13**) |
+| [`…-part-a-04-tests-gate.md`](2026-09-17-exchange-scout-part-a-04-tests-gate-11.md) | Стадия 6 (тесты **T-01…T-21**), Стадия 7 (Self-Audit + state matrix), Стадия 8 (External Agent Review), Стадия 9 (Final Gate) |
 
 **Спека монетизации — отдельный документ, [→ Часть A-М]:**
-[`02-2026-09-18-exchange-scout-monetization-design.md`](02-2026-09-18-exchange-scout-monetization-design.md)
+[`2026-09-18-exchange-scout-monetization-design-2.md`](2026-09-18-exchange-scout-monetization-design-2.md)
 (кредиты 2.0 — C-17; debug-Telegram — C-18, C-19; находки A-14…A-19; тесты T-22…T-28).
 
 **Часть B (конкурентность: очередь, треды, graceful shutdown, race conditions)** — ещё не написана.
