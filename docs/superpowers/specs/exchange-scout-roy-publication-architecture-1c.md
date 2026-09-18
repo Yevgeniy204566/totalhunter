@@ -16,7 +16,7 @@
 
 **4.2 Серверные эндпоинты (в `server/roy.py`, router `/roy`).**
 - `POST /roy/scout-find` — тело `{hwid, kingdom, x, y}`. Шаги: найти пользователя → 404/403 (P-05) → удалить строки
-  с `found_at <= now − 20 мин` (P-13) → вставка строки → `commit` → `{"success": True}`. Одна транзакция, `async with db.begin()` как в остальном файле.
+  с `found_at <= now − 20 мин` (P-13; `now` — только `datetime.now(timezone.utc)`, aware UTC) → вставка строки → `commit` → `{"success": True}`. Одна транзакция, `async with db.begin()` как в остальном файле.
   SSE не трогается.
   **Ограничение реализации (ANTI-PATTERNS, Хангоф #70):** любой SELECT до входа в `async with db.begin()` (в т. ч. в dependency) запускает autobegin и даёт `InvalidRequestError`. У `scout-find` единственная dependency — `get_db` (открывает сессию, SQL не выполняет: `database.py:35-44`); поиск пользователя, удаление и вставка выполняются ВНУТРИ одного блока `async with db.begin()` — как в `/roy/report` (`roy.py:265`) и `/use_credit` (`main.py:315`). `begin_nested()` не нужен.
 - `GET /roy/scout-finds` — публичный список (P-09).
