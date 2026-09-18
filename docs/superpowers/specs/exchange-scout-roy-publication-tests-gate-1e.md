@@ -19,7 +19,7 @@
 | PT-05 `scout_find_does_not_touch_roy_pool` | P-03, P-12 | `roy_pool` count не меняется | — | — | — | — |
 | PT-06 `scout_find_allows_repeated_identical_posts` | P-04 | 2 запроса подряд с одинаковыми K/X/Y → 2 строки | <1 с между запросами | — | — (для P-04 конкурентная проверка не требуется: отсутствие лимита и `UNIQUE` проверяется последовательными вызовами) | — |
 | PT-07 `scout_find_unknown_hwid_404` / `banned_403` / `hwid_longer_than_16_404` | P-05, 2.6a | существующий → 200 | hwid длиннее 16 символов → 404, вставки нет | 404, 403 | — | — |
-| PT-08 `scout_find_kingdom_lt_1_rejected` | P-05 | K=1 → 200 | K=0, K=-1 → 422 | `"1"`, `1.0`, `true` → 422 (строгий int) | — | — |
+| PT-08 `scout_find_kingdom_lt_1_rejected` | P-05 | K=1 → 200 | K=0, K=-1 → 422; K=2147483647 → 200, K=2147483648 → 422 | `"1"`, `1.0`, `true` → 422 (строгий int) | — | — |
 | PT-09 `client_skips_publish_when_kingdom_zero` | P-06 | K>0 → запрос | K=0 → нет запроса | — | — | лог пишется |
 | PT-10 `client_publish_does_not_block_consumer` | P-07 | — | сервер отвечает 5 с | сервер висит | — | consumer не ждёт завершения HTTP-вызова; при штатном завершении `requests` тред завершается после ответа, исключения или timeout (жёсткого предела в 5 с нет — PA-7) |
 | PT-11 `client_publish_failure_is_swallowed` | P-08 | — | — | ConnectionError, 500, таймаут | — | consumer продолжает |
@@ -28,9 +28,9 @@
 | PT-14 `roy_report_and_pool_unchanged` | P-12, PA-9 | регрессия существующих `test_roy.py` зелёные | — | — | — | — |
 | PT-15 `scout_finds_excludes_older_than_ttl` | P-13 | запись 19 мин 59 с видна | ровно 20 мин 00 с и 20 мин 01 с — не видны; часы `roy.datetime` зафиксированы (frozen clock, образец `test_roy.py`), граница детерминирована | — | — | — |
 | PT-16 `scout_find_insert_deletes_expired` | P-13, PA-6 | запись возрастом ≥ 20 мин удалена при вставке | — | — | — | — |
-| PT-19 `scout_endpoints_use_timezone_aware_utc_now` | P-13 | `roy.datetime.now` в POST и GET вызывается с `timezone.utc` | наивный `datetime.now()` → тест падает (SQLite наивное время не отвергает, прод отвергнет) | — | — | — |
 | PT-17 `consumer_writes_journal_before_publish` (план consumer'а, Часть A/B) | P-08 | строка журнала записана до вызова `report_scout_find` | до вызова `report_scout_find` строка журнала уже зафиксирована с `fsync`; отсутствие записи журнала исключает публикацию | — | — | — |
 | PT-18 `consumer_publishes_kingdom_captured_at_find` (план consumer'а, Часть A/B) | P-06, PA-8 | опубликован K, зафиксированный при создании результата | GUI сменили на другой K между находкой и публикацией → публикуется прежний K | — | — | — |
+| PT-19 `scout_endpoints_use_timezone_aware_utc_now` | P-13 | `roy.datetime.now` в POST и GET вызывается с `timezone.utc` | наивный `datetime.now()` → тест падает (SQLite наивное время не отвергает, прод отвергнет) | — | — | — |
 
 ## Стадия 7. Self-Audit
 
