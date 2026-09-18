@@ -1,9 +1,9 @@
 # Биржа 2.0 (Exchange Scout) — ЧАСТЬ A, файл 03/4: Adversarial Review
 
 > Фрагмент одного документа, разрезанного на файлы ≤300 строк по решению владельца (2026-09-18).
-> **Индекс, статус и раунды → [`2026-09-17-exchange-scout-part-a-lifecycle-design.md`](2026-09-17-exchange-scout-part-a-lifecycle-design.md).**
-> Файлы Части A: [01](2026-09-17-exchange-scout-part-a-01-context.md) · [02](2026-09-17-exchange-scout-part-a-02-contracts-design.md) · **03 (этот файл)** · [04](2026-09-17-exchange-scout-part-a-04-tests-gate.md)
-> Деньги и debug-Telegram — **[→ Часть A-М]**: [`2026-09-18-exchange-scout-monetization-design.md`](2026-09-18-exchange-scout-monetization-design.md).
+> **Индекс, статус и раунды → [`03-2026-09-17-exchange-scout-part-a-lifecycle-design.md`](03-2026-09-17-exchange-scout-part-a-lifecycle-design.md).**
+> Файлы Части A: [01](03-2026-09-17-exchange-scout-part-a-01-context.md) · [02](03-2026-09-17-exchange-scout-part-a-02-contracts-design.md) · **03 (этот файл)** · [04](03-2026-09-17-exchange-scout-part-a-04-tests-gate.md)
+> Деньги и debug-Telegram — **[→ Часть A-М]**: [`02-2026-09-18-exchange-scout-monetization-design.md`](02-2026-09-18-exchange-scout-monetization-design.md).
 > Нумерация секций, контрактов C-*, находок A-* и тестов T-* сквозная по всем файлам и при нарезке
 > не менялась.
 
