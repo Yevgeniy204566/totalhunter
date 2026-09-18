@@ -23,7 +23,7 @@
 | PT-09 `client_skips_publish_when_kingdom_zero` | P-06 | K>0 → запрос | K=0 → нет запроса | — | — | лог пишется |
 | PT-10 `client_publish_does_not_block_consumer` | P-07 | — | сервер отвечает 5 с | сервер висит | — | consumer не ждёт завершения HTTP-вызова; при штатном завершении `requests` тред завершается после ответа, исключения или timeout (жёсткого предела в 5 с нет — PA-7) |
 | PT-11 `client_publish_failure_is_swallowed` | P-08 | — | — | ConnectionError, 500, таймаут | — | consumer продолжает |
-| PT-12 `scout_finds_lists_newest_first` | P-09 | порядок по `found_at` desc | 0 записей | — | — | — |
+| PT-12 `scout_finds_lists_newest_first` / `returns_at_most_limit_newest` / `query_orders_by_found_at_and_id_desc` | P-09 | порядок по `found_at` desc | 0 записей; строк больше лимита → возвращаются только самые новые (тест с малым лимитом); порядок `found_at` desc, `id` desc проверяется по тексту SQL (в SQLite порядок равных ключей не отличается) | — | — | — |
 | PT-13 ручная проверка страницы | P-10, P-11 | блок виден, тексты RU/EN | пустой список | сервер недоступен | — | «Обновить» перечитывает |
 | PT-14 `roy_report_and_pool_unchanged` | P-12, PA-9 | регрессия существующих `test_roy.py` зелёные | — | — | — | — |
 | PT-15 `scout_finds_excludes_older_than_ttl` | P-13 | запись 19 мин 59 с видна | ровно 20 мин 00 с и 20 мин 01 с — не видны; часы `roy.datetime` зафиксированы (frozen clock, образец `test_roy.py`), граница детерминирована | — | — | — |
@@ -31,6 +31,7 @@
 | PT-17 `consumer_writes_journal_before_publish` (план consumer'а, Часть A/B) | P-08 | строка журнала записана до вызова `report_scout_find` | до вызова `report_scout_find` строка журнала уже зафиксирована с `fsync`; отсутствие записи журнала исключает публикацию | — | — | — |
 | PT-18 `consumer_publishes_kingdom_captured_at_find` (план consumer'а, Часть A/B) | P-06, PA-8 | опубликован K, зафиксированный при создании результата | GUI сменили на другой K между находкой и публикацией → публикуется прежний K | — | — | — |
 | PT-19 `scout_endpoints_use_timezone_aware_utc_now` | P-13 | `roy.datetime.now` в POST и GET вызывается с `timezone.utc` | наивный `datetime.now()` → тест падает (SQLite наивное время не отвергает, прод отвергнет) | — | — | — |
+| PT-20 `scout_find_found_at_is_indexed` | P-13 | в метаданных модели есть индекс по `found_at` (и `kingdom`) | — | — | — | — |
 
 ## Стадия 7. Self-Audit
 

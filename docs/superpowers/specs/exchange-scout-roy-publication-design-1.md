@@ -22,7 +22,7 @@
 | 1b | [`exchange-scout-roy-publication-contracts-1b.md`](exchange-scout-roy-publication-contracts-1b.md) | Контракты P-01…P-13 (Стадия 3) |
 | 1c | [`exchange-scout-roy-publication-architecture-1c.md`](exchange-scout-roy-publication-architecture-1c.md) | Дизайн: порядок обработки, данные, эндпоинты, клиент, сайт, отказы, non-goals (Стадия 4) |
 | 1d | [`exchange-scout-roy-publication-adversarial-1d.md`](exchange-scout-roy-publication-adversarial-1d.md) | Adversarial Review PA-1…PA-13 (Стадия 5) |
-| 1e | [`exchange-scout-roy-publication-tests-gate-1e.md`](exchange-scout-roy-publication-tests-gate-1e.md) | Матрица тестов PT-01…PT-19, самоаудит, Final Gate (Стадии 6, 7, 9) |
+| 1e | [`exchange-scout-roy-publication-tests-gate-1e.md`](exchange-scout-roy-publication-tests-gate-1e.md) | Матрица тестов PT-01…PT-20, самоаудит, Final Gate (Стадии 6, 7, 9) |
 
 ---
 

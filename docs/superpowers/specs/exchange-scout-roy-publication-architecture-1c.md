@@ -19,7 +19,7 @@
   с `found_at <= now − 20 мин` (P-13; `now` — только `datetime.now(timezone.utc)`, aware UTC) → вставка строки → `commit` → `{"success": True}`. Одна транзакция, `async with db.begin()` как в остальном файле.
   SSE не трогается.
   **Ограничение реализации (ANTI-PATTERNS, Хангоф #70):** любой SELECT до входа в `async with db.begin()` (в т. ч. в dependency) запускает autobegin и даёт `InvalidRequestError`. У `scout-find` единственная dependency — `get_db` (открывает сессию, SQL не выполняет: `database.py:35-44`); поиск пользователя, удаление и вставка выполняются ВНУТРИ одного блока `async with db.begin()` — как в `/roy/report` (`roy.py:265`) и `/use_credit` (`main.py:315`). `begin_nested()` не нужен.
-- `GET /roy/scout-finds` — публичный список (P-09).
+- `GET /roy/scout-finds` — публичный список, не более 500 самых новых (P-09).
 
 **4.3 Клиент.** В `roy/roy_client.py` — новый метод `report_scout_find(kingdom, x, y)`; существующие методы не
 меняются. Вызывается consumer'ом 2.0 после OCR (Часть B определит точку вызова).
