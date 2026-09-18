@@ -20,13 +20,13 @@
 
 | Файл | Что внутри |
 |---|---|
-| [`…-part-a-01-context.md`](2026-09-17-exchange-scout-part-a-01-context-8.md) | Стадия 1 (Context), Стадия 2 (Code Archaeology): `PositionReader`, `CoastalSnakeNavigator`, `PacmanEngine`, GUI `main.py`, честная фиксация отсутствия прямого аналога файлового цикла |
-| [`…-part-a-02-contracts-design.md`](2026-09-17-exchange-scout-part-a-02-contracts-design-9.md) | Стадия 3 (контракты **C-01…C-16**), Стадия 4 (структура на диске, владение ресурсами, отказы внешних вызовов, сигнатура `ExchangeScoutEngine`, переиспользование компонентов, схема `scout_results.jsonl`, GUI-интеграция, non-goals) |
-| [`…-part-a-03-adversarial.md`](2026-09-17-exchange-scout-part-a-03-adversarial-10.md) | Стадия 5 (Adversarial Review, находки **A-1…A-13**) |
-| [`…-part-a-04-tests-gate.md`](2026-09-17-exchange-scout-part-a-04-tests-gate-11.md) | Стадия 6 (тесты **T-01…T-21**), Стадия 7 (Self-Audit + state matrix), Стадия 8 (External Agent Review), Стадия 9 (Final Gate) |
+| [`exchange-scout-part-a-context-8.md`](exchange-scout-part-a-context-8.md) | Стадия 1 (Context), Стадия 2 (Code Archaeology): `PositionReader`, `CoastalSnakeNavigator`, `PacmanEngine`, GUI `main.py`, честная фиксация отсутствия прямого аналога файлового цикла |
+| [`exchange-scout-part-a-contracts-design-9.md`](exchange-scout-part-a-contracts-design-9.md) | Стадия 3 (контракты **C-01…C-16**), Стадия 4 (структура на диске, владение ресурсами, отказы внешних вызовов, сигнатура `ExchangeScoutEngine`, переиспользование компонентов, схема `scout_results.jsonl`, GUI-интеграция, non-goals) |
+| [`exchange-scout-part-a-adversarial-10.md`](exchange-scout-part-a-adversarial-10.md) | Стадия 5 (Adversarial Review, находки **A-1…A-13**) |
+| [`exchange-scout-part-a-tests-gate-11.md`](exchange-scout-part-a-tests-gate-11.md) | Стадия 6 (тесты **T-01…T-21**), Стадия 7 (Self-Audit + state matrix), Стадия 8 (External Agent Review), Стадия 9 (Final Gate) |
 
 **Спека монетизации — отдельный документ, [→ Часть A-М]:**
-[`2026-09-18-exchange-scout-monetization-design-2.md`](2026-09-18-exchange-scout-monetization-design-2.md)
+[`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md)
 (кредиты 2.0 — C-17; debug-Telegram — C-18, C-19; находки A-14…A-19; тесты T-22…T-28).
 
 **Часть B (конкурентность: очередь, треды, graceful shutdown, race conditions)** — ещё не написана.

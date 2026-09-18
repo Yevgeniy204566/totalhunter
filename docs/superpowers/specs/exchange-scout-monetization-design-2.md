@@ -8,7 +8,7 @@
 > **Раунд правок: 5** (раунды 2–3 — закрытие ОВ-1, ОВ-3, снятие Telegram; 4–5 — замечания внешнего ревью GPT по спеке №2, проверены по коду). Лимит раундов отменён 2026-09-18: правим до одобрения GPT/Gemini.
 > **Происхождение:** выделено из Части A по решению владельца от 2026-09-18.
 > **Scope:** только деньги — списание 10◆ за находку Биржи 2.0. Публикация на сайт — отдельная спека:
-> [`2026-09-18-exchange-scout-roy-publication-design-1.md`](2026-09-18-exchange-scout-roy-publication-design-1.md).
+> [`exchange-scout-roy-publication-design-1.md`](exchange-scout-roy-publication-design-1.md).
 
 ## Цепочка 2.0 (решение владельца)
 
@@ -21,14 +21,14 @@
 
 | Файл | Что внутри |
 |---|---|
-| [`…-monetization-01-context.md`](2026-09-18-exchange-scout-monetization-01-context-4.md) | Стадии 1-2: цепочка списания 1.0 (2.7), серверные `/use_credit`, rate limit и long-poll баланса (2.8); 2.6 — `debug_reporter.py` (⛔ заменено публикацией на сайт) |
-| [`…-monetization-02-contracts-design.md`](2026-09-18-exchange-scout-monetization-02-contracts-design-5.md) | Стадия 3: **C-17**, **C-20**, **C-21**; C-18/C-19 ⛔ заменены. Стадия 4: 4.3-М, 4.8, 4.9-М (снятие лимита для 2.0), 4.10 ⛔ заменена, 4.11 non-goals |
-| [`…-monetization-03-adversarial.md`](2026-09-18-exchange-scout-monetization-03-adversarial-6.md) | Стадия 5: A-14…A-19 (A-17, A-18 ⛔ заменены) |
-| [`…-monetization-04-tests-gate.md`](2026-09-18-exchange-scout-monetization-04-tests-gate-7.md) | Стадия 6: T-22…T-34 (T-25…T-27 ⛔ заменены); Стадии 7-9, открытый вопрос ОВ-2 |
+| [`exchange-scout-monetization-context-4.md`](exchange-scout-monetization-context-4.md) | Стадии 1-2: цепочка списания 1.0 (2.7), серверные `/use_credit`, rate limit и long-poll баланса (2.8); 2.6 — `debug_reporter.py` (⛔ заменено публикацией на сайт) |
+| [`exchange-scout-monetization-contracts-design-5.md`](exchange-scout-monetization-contracts-design-5.md) | Стадия 3: **C-17**, **C-20**, **C-21**; C-18/C-19 ⛔ заменены. Стадия 4: 4.3-М, 4.8, 4.9-М (снятие лимита для 2.0), 4.10 ⛔ заменена, 4.11 non-goals |
+| [`exchange-scout-monetization-adversarial-6.md`](exchange-scout-monetization-adversarial-6.md) | Стадия 5: A-14…A-19 (A-17, A-18 ⛔ заменены) |
+| [`exchange-scout-monetization-tests-gate-7.md`](exchange-scout-monetization-tests-gate-7.md) | Стадия 6: T-22…T-34 (T-25…T-27 ⛔ заменены); Стадии 7-9, открытый вопрос ОВ-2 |
 
-Файловый цикл, GUI, `scout_results.jsonl` — [Часть A](2026-09-17-exchange-scout-part-a-lifecycle-design-3.md).
+Файловый цикл, GUI, `scout_results.jsonl` — [Часть A](exchange-scout-part-a-lifecycle-design-3.md).
 Публикация на сайт (контракты P-01…P-13, тесты PT-01…PT-18) —
-[спека публикации](2026-09-18-exchange-scout-roy-publication-design-1.md).
+[спека публикации](exchange-scout-roy-publication-design-1.md).
 Часть B (конкурентность) — не написана; переданные в неё места помечены **[→ Часть B]**.
 
 ## Закрытые решения владельца (не предмет обсуждения)

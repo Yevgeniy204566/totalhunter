@@ -6,9 +6,9 @@
 
 | № | Спека (главный файл) | Что внутри | Ревью GPT/Gemini | Части | План |
 |---|---|---|---|---|---|
-| 1 | [`2026-09-18-exchange-scout-roy-publication-design-1.md`](2026-09-18-exchange-scout-roy-publication-design-1.md) | публикация находки на сайт в «Рой», срок 20 мин | ⏳ первая в очереди | один файл | №12–15 (написан, не одобрен) |
-| 2 | [`2026-09-18-exchange-scout-monetization-design-2.md`](2026-09-18-exchange-scout-monetization-design-2.md) | списание 10◆, отдельный `hunt_type`, статистика | не пройдено | №4–7 | не написан |
-| 3 | [`2026-09-17-exchange-scout-part-a-lifecycle-design-3.md`](2026-09-17-exchange-scout-part-a-lifecycle-design-3.md) | файловый цикл, контракты, GUI | не пройдено | №8–11 | не написан |
+| 1 | [`exchange-scout-roy-publication-design-1.md`](exchange-scout-roy-publication-design-1.md) | публикация находки на сайт в «Рой», срок 20 мин | ⏳ первая в очереди | один файл | №12–15 (написан, не одобрен) |
+| 2 | [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md) | списание 10◆, отдельный `hunt_type`, статистика | не пройдено | №4–7 | не написан |
+| 3 | [`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md) | файловый цикл, контракты, GUI | не пройдено | №8–11 | не написан |
 | — | Часть B (конкурентность producer/consumer) | не написана | — | — | — |
 
 Планы (`docs/superpowers/plans/`): №12 индекс плана публикации, №13–15 его части.

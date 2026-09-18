@@ -1,10 +1,10 @@
 # Биржа 2.0 (Exchange Scout) — ЧАСТЬ A-М (монетизация), файл 02/4: Contract Extraction (C-17…C-19) и Design (4.3-М, 4.8, 4.10, 4.11)
 
 > Фрагмент одного документа, разрезанного на файлы ≤300 строк по решению владельца (2026-09-18).
-> **Индекс, статус и раунды → [`2026-09-18-exchange-scout-monetization-design-2.md`](2026-09-18-exchange-scout-monetization-design-2.md).**
-> Файлы Части A-М: [01](2026-09-18-exchange-scout-monetization-01-context-4.md) · **02 (этот файл)** · [03](2026-09-18-exchange-scout-monetization-03-adversarial-6.md) · [04](2026-09-18-exchange-scout-monetization-04-tests-gate-7.md)
+> **Индекс, статус и раунды → [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md).**
+> Файлы Части A-М: [01](exchange-scout-monetization-context-4.md) · **02 (этот файл)** · [03](exchange-scout-monetization-adversarial-6.md) · [04](exchange-scout-monetization-tests-gate-7.md)
 > Файловый жизненный цикл, GUI-каркас и `scout_results.jsonl` — **[→ Часть A]**:
-> [`2026-09-17-exchange-scout-part-a-lifecycle-design-3.md`](2026-09-17-exchange-scout-part-a-lifecycle-design-3.md).
+> [`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md).
 > Нумерация секций, контрактов C-*, находок A-* и тестов T-* унаследована от Части A и при нарезке
 > не менялась.
 
@@ -151,7 +151,7 @@ Telegram (C-18, C-19).
 
 ### 4.10 Канал контроля качества — debug-Telegram (C-18, C-19)
 
-> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `2026-09-18-exchange-scout-roy-publication-design-1.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается.
+> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `exchange-scout-roy-publication-design-1.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается.
 
 Мотив владельца зафиксирован дословно, чтобы позже не выдать его за продуктовое решение: доверия к
 YOLO/OCR на новом кадровом материале 2.0 пока нет, поэтому на первом этапе результаты 2.0 идут **владельцу

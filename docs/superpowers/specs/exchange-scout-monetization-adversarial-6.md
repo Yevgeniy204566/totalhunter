@@ -1,10 +1,10 @@
 # Биржа 2.0 (Exchange Scout) — ЧАСТЬ A-М (монетизация), файл 03/4: Adversarial Review (A-14…A-19)
 
 > Фрагмент одного документа, разрезанного на файлы ≤300 строк по решению владельца (2026-09-18).
-> **Индекс, статус и раунды → [`2026-09-18-exchange-scout-monetization-design-2.md`](2026-09-18-exchange-scout-monetization-design-2.md).**
-> Файлы Части A-М: [01](2026-09-18-exchange-scout-monetization-01-context-4.md) · [02](2026-09-18-exchange-scout-monetization-02-contracts-design-5.md) · **03 (этот файл)** · [04](2026-09-18-exchange-scout-monetization-04-tests-gate-7.md)
+> **Индекс, статус и раунды → [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md).**
+> Файлы Части A-М: [01](exchange-scout-monetization-context-4.md) · [02](exchange-scout-monetization-contracts-design-5.md) · **03 (этот файл)** · [04](exchange-scout-monetization-tests-gate-7.md)
 > Файловый жизненный цикл, GUI-каркас и `scout_results.jsonl` — **[→ Часть A]**:
-> [`2026-09-17-exchange-scout-part-a-lifecycle-design-3.md`](2026-09-17-exchange-scout-part-a-lifecycle-design-3.md).
+> [`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md).
 > Нумерация секций, контрактов C-*, находок A-* и тестов T-* унаследована от Части A и при нарезке
 > не менялась.
 
@@ -69,7 +69,7 @@ A-19 найдена при написании этого документа.
 
 **A-17. «Владелец увидит каждую находку в Telegram» (C-18, C-19).**
 
-> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `2026-09-18-exchange-scout-roy-publication-design-1.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается.
+> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `exchange-scout-roy-publication-design-1.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается.
 Механизм: две отправки на находку. Обход первый: сервер недоступен/таймаут. Результат: **сообщение
 теряется молча** — это подтверждено кодом, а не предположением: `_send` целиком обёрнут в
 `except Exception: pass` (`debug_reporter.py:23-24`), а серверная сторона при ошибке Telegram возвращает
@@ -98,7 +98,7 @@ best-effort, и опираться на него как на полный ауд
 
 **A-18. «Отправка в Telegram не тормозит consumer» (C-18, C-19).**
 
-> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `2026-09-18-exchange-scout-roy-publication-design-1.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается.
+> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `exchange-scout-roy-publication-design-1.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается.
 Механизм: fire-and-forget. Обход: «fire-and-forget» — неточное описание `report_find`. Синхронно, в треде
 вызывающего, исполняются `frame_bgr.copy()` (`debug_reporter.py:29`), отрисовка (30-41) и DPI-замер,
 который **создаёт живой `mss()` и зовёт `pyautogui.size()`** (`debug_reporter.py:42-54`); в фон уходит

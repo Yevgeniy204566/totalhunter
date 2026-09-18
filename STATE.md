@@ -1175,7 +1175,7 @@
 находки логирует в `found/<sid>/scout_results.jsonl` + шлёт в debug Telegram через уже существующий
 `debug_reporter.py`. Биржа 1.0 не тронута ни строкой.
 
-**Статус документа:** `docs/superpowers/specs/2026-09-17-exchange-scout-part-a-lifecycle-design-3.md`,
+**Статус документа:** `docs/superpowers/specs/exchange-scout-part-a-lifecycle-design-3.md`,
 раунд правок **2 из 2** (протокольный лимит), Часть A. Владелец подтвердил: кредиты 2.0 списывает по
 логике 1.0 (гейт баланса на старте + `spend_credit` по факту находки, включая случай `coords_ok:false`);
 X/Y из OCR — координаты позиции экрана в момент кадра, не самой биржи (осознанно, для визуального поиска
