@@ -6,7 +6,7 @@
 
 | № | Спека (главный файл) | Что внутри | Ревью GPT/Gemini | Части | План |
 |---|---|---|---|---|---|
-| 1 | [`exchange-scout-roy-publication-design-1.md`](exchange-scout-roy-publication-design-1.md) | публикация находки на сайт в «Рой», срок 20 мин | ⏳ первая в очереди | один файл | №12–15 (написан, не одобрен) |
+| 1 | [`exchange-scout-roy-publication-design-1.md`](exchange-scout-roy-publication-design-1.md) | публикация находки на сайт в «Рой», срок 20 мин | ⏳ первая в очереди | индекс и части 1a–1e (буква после цифры — номер части) | №12–15 (написан, не одобрен) |
 | 2 | [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md) | списание 10◆, отдельный `hunt_type`, статистика | не пройдено | №4–7 | не написан |
 | 3 | [`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md) | файловый цикл, контракты, GUI | не пройдено | №8–11 | не написан |
 | — | Часть B (конкурентность producer/consumer) | не написана | — | — | — |
