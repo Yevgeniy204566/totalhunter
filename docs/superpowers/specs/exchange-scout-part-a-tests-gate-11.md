@@ -17,14 +17,14 @@
 
 | # | Invariant | Normal | Boundary | Failure | Concurrent | Recovery | Test |
 |---|---|---|---|---|---|---|---|
-| T-01 | C-02 | старт чистит `pending/` | пустой `pending/` — не падает | — | — | — | `test_start_wipes_pending_tree` |
-| T-02 | C-02 | — | — | — | — | осиротевшая папка после краша снесена | `test_start_wipes_orphan_session_dirs` |
-| T-03 | C-03 | старт не трогает `found/` | `found/` с 2 сессиями | — | — | — | `test_start_does_not_touch_found` |
+| T-01 ⚠ ПЕРЕСМОТРЕН (концепт 17) | C-02 | старт чистит `pending/` | пустой `pending/` — не падает | — | — | — | `test_start_wipes_pending_tree` |
+| T-02 ⚠ ПЕРЕСМОТРЕН (концепт 17) | C-02 | — | — | — | — | осиротевшая папка после краша снесена | `test_start_wipes_orphan_session_dirs` |
+| T-03 ⚠ ПЕРЕСМОТРЕН (концепт 17) | C-03 | старт не трогает `found/` | `found/` с 2 сессиями | — | — | — | `test_start_does_not_touch_found` |
 | T-04 | C-01 | три ветки созданы | `sid` уникален при двух стартах в одну секунду | — | — | — | `test_session_dirs_created_with_unique_sid` |
 | T-05 | C-04 | jsonl открыт до старта тредов | — | нет прав на запись → `raise`, тредов нет | — | `is_running == False` после сбоя | `test_start_refuses_when_not_writable` |
 | T-06 | C-04 | — | — | сбой `rmtree` → `raise` | — | `found/` не тронут | `test_start_aborts_on_pending_wipe_failure` |
 | T-07 | C-05 | `stop()` возвращается | — | — | — | второй `stop()` — no-op | `test_stop_is_idempotent` |
-| T-08 | C-03 | — | — | — | — | `stop()` не удаляет `found/` | `test_stop_does_not_delete_found` |
+| T-08 ⚠ ПЕРЕСМОТРЕН (концепт 17) | C-03 | — | — | — | — | `stop()` не удаляет `found/` | `test_stop_does_not_delete_found` |
 | T-09 | C-08 | кадр перенесён | — | `os.replace` бросает → `errors/` + запись в журнал | — | — | `test_found_frame_moved_not_copied` |
 | T-10 | C-07 | пустой кадр удалён | — | `os.remove` бросает → не роняет сессию | — | — | `test_empty_frame_deleted` |
 | T-11 | C-09, C-10 | схема записи | `x/y` = 0 — валидны | — | — | — | `test_result_record_schema_has_no_kingdom` |
@@ -55,8 +55,8 @@ T-27 отправки не мешают персистентности) живу
 
 | Формулировка | Кат. | Механизм / разбор |
 |---|---|---|
-| «`pending/` очищается при КАЖДОМ старте» | (a) | C-02, `shutil.rmtree` всего корня; T-01, T-02 |
-| «`found/` НЕ чистится автоматически НИКОГДА» | (a) | C-03, отсутствие вызовов удаления + grep-тест T-18/T-03 |
+| ⚠ ПЕРЕСМОТРЕНО: «`pending/` очищается при КАЖДОМ старте» | (a) | C-02, `shutil.rmtree` всего корня; T-01, T-02 |
+| ⚠ ПЕРЕСМОТРЕНО: «`found/` НЕ чистится автоматически НИКОГДА» | (a) | C-03, отсутствие вызовов удаления + grep-тест T-18/T-03 |
 | «`start()` атомарен по факту» | (a) | C-04, порядок шагов 1-5 с `raise` до создания тредов; T-05, T-06 |
 | «перенос кадра атомарен» | (a) | C-08, `os.replace` в пределах тома; T-09 |
 | «id кадра уникален» | (a) | C-06, один писатель + изоляция папкой сессии; T-14, T-15 |
