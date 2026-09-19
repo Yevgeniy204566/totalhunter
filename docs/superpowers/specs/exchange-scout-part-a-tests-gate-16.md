@@ -25,7 +25,7 @@
 | T-06 | C-04 | — | — | сбой на шаге открытия jsonl → `raise`, треды не созданы (нет `shutil.rmtree` — шаг снят вместе с C-02) | — | файлы других сессий/`sid` в `pending/` не тронуты ни при успехе, ни при сбое `start()` | `test_start_failure_does_not_touch_other_sessions_pending` |
 | T-07 | C-05 | `stop()` возвращается | — | — | — | второй `stop()` — no-op | `test_stop_is_idempotent` |
 | T-08 | C-03 | — | — | — | — | `stop()`, ESC и автопауза не удаляют кадр ни из `pending/`, ни из `found/` — только consumer, только после полной обработки (C-03) | `test_stop_esc_autopause_do_not_delete_frames` |
-| T-09 | C-08 | кадр перенесён | — | `os.replace` бросает → `errors/` + запись в журнал | — | — | `test_found_frame_moved_not_copied` |
+| T-09 | C-08 | кадр перенесён | — | `os.replace` бросает `OSError` → кадр остаётся в `pending/<sid>/` нетронутым, запись в журнал по этой находке НЕ делается, сессия останавливается по C-15 с видимой ошибкой (без повторной попытки переноса) | — | — | `test_found_frame_moved_not_copied` |
 | T-10 | C-07 | пустой кадр удалён | — | `os.remove` бросает → не роняет сессию | — | — | `test_empty_frame_deleted` |
 | T-11 | C-09, C-10 | схема записи | `x/y` = 0 — валидны | — | — | — | `test_result_record_schema_has_no_kingdom` |
 | T-12 | C-12 | — | — | `read()` → `None` → `coords_ok:false`, кадр в `found/` | — | — | `test_record_written_when_ocr_fails` |
