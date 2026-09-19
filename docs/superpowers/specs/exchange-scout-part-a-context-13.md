@@ -112,7 +112,7 @@ class CoastalSnakeNavigator:
 
 - Конструктор присваивает значение напрямую: `self.max_inland_steps = max_inland_steps`
   (`navigator.py:465`). **Клэмпа к `DIVE_DEPTH_CAP` в конструкторе нет.**
-- `DIVE_DEPTH_CAP` фигурирует ровно в одном месте — `_maybe_grow_dive_depth` (`navigator.py:629`):
+- `DIVE_DEPTH_CAP` используется как ограничение роста только в `_maybe_grow_dive_depth` (`navigator.py:629`):
   `while now >= self._dive_growth_next_at and self.max_inland_steps < self.DIVE_DEPTH_CAP:`.
   При `max_inland_steps=50` второе условие ложно с первой итерации → тело цикла не исполняется,
   значение **не понижается** и бесконечного цикла не возникает (условие короткозамкнуто по `and`).
