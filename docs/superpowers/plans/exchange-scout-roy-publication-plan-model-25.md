@@ -33,6 +33,11 @@ from main import app
 from models import RoyPool, RoyScoutFind, User
 
 
+# _make_user/_post/_get и импорты RoyPool/User/app/timedelta ниже Task 1 сам НЕ использует —
+# они здесь заранее, потому что Task 2 (файл 26) и Task 3 (файл 27) дописывают тесты В ЭТОТ ЖЕ
+# файл (`server/tests/test_roy_scout.py`) и полагаются на эти хелперы как на общий scaffold,
+# без повторного редактирования шапки файла в каждой следующей части. Это одна общая точка
+# определения, не забытый после Task 1 мусор.
 async def _make_user(db, hwid="SCOUTUSER00001", banned=False):
     db.add(User(hwid=hwid, credits=10, ref_code=hwid[-8:], is_banned=banned))
     await db.commit()
@@ -106,8 +111,8 @@ async def test_scout_find_migration_creates_expected_schema():
         assert "roy_scout_finds" not in inspect(conn).get_table_names()
 ```
 
-- [ ] **Step 2: Run** `cd server && python -m pytest tests/test_roy_scout.py::test_scout_find_model_roundtrip -v` → FAIL
-  (`ImportError: cannot import name 'RoyScoutFind'`).
+- [ ] **Step 2: Run** `cd server && python -m pytest tests/test_roy_scout.py::test_scout_find_model_roundtrip -v` → FAIL,
+  RED ожидаем (`RoyScoutFind` ещё не существует в `models.py`; точный текст ошибки — деталь интерпретатора, не проверяется).
 
 - [ ] **Step 3: Model** — вставить в `server/models.py` после `RoyKingdomMember`:
 
