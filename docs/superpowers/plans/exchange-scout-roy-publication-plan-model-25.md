@@ -62,19 +62,18 @@ async def test_scout_find_model_roundtrip(db_session):
     assert row.found_at is not None
 
 
-@pytest.mark.asyncio
-async def test_scout_find_found_at_is_indexed():
+def test_scout_find_found_at_is_indexed():
     """PT-20, P-13: DELETE/SELECT по found_at не должны сканировать всю таблицу.
     Design (architecture-04.md:12,14) прямо требует: found_at — ЕДИНСТВЕННЫЙ индекс таблицы
     (kingdom явно БЕЗ индекса — GET /roy/scout-finds не фильтрует по kingdom). Проверяем обе
     стороны контракта, не только наличие found_at, иначе случайный index=True на другой колонке
-    пройдёт тест незамеченным."""
+    пройдёт тест незамеченным. Синхронный тест (нет await) — обычный def, без
+    @pytest.mark.asyncio, по образцу test_next_trade_routes_end_during_*_window в test_roy.py:270,286."""
     indexed = {c.name for idx in RoyScoutFind.__table__.indexes for c in idx.columns}
     assert indexed == {"found_at"}
 
 
-@pytest.mark.asyncio
-async def test_scout_find_migration_creates_expected_schema():
+def test_scout_find_migration_creates_expected_schema():
     """Реальный migration runtime-тест (Alembic Operations.context — официальный способ юнит-
     тестировать миграцию без полного env.py), а не только ORM-roundtrip через
     Base.metadata.create_all. Проверяет СТРУКТУРУ (колонки, единственный индекс found_at,
@@ -184,7 +183,11 @@ def downgrade() -> None:
 - [ ] **Step 5: Run** `cd server && python -m pytest tests/test_roy_scout.py -v` → все 3 теста PASS (roundtrip,
   found_at_is_indexed, migration_creates_expected_schema — последний реально применяет `upgrade()`/`downgrade()`
   из файла миграции на SQLite in-memory через `Operations.context()`, не только ORM `Base.metadata.create_all`).
-  Проверить единственный head миграций: выполнить из `C:\BattleBot`:
+  Проверить единственный head миграций: `cd server && python -m alembic heads` (канонический способ,
+  работает без `DATABASE_URL` — read-only, файлового чтения истории ревизий достаточно; отличается от
+  `alembic upgrade`, которому реальное соединение с БД нужно) → ровно одна строка,
+  `s3c4o5u6t7f8 (head)`. Дополнительно (defensive, на случай другого окружения) — тот же скрипт-регекс,
+  выполнить из `C:\BattleBot`:
 
 ```bash
 python - <<'PY'
