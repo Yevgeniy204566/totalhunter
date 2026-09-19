@@ -59,9 +59,51 @@ async def test_scout_find_model_roundtrip(db_session):
 
 @pytest.mark.asyncio
 async def test_scout_find_found_at_is_indexed():
-    """PT-20, P-13: DELETE/SELECT по found_at не должны сканировать всю таблицу."""
+    """PT-20, P-13: DELETE/SELECT по found_at не должны сканировать всю таблицу.
+    Design (architecture-04.md:12,14) прямо требует: found_at — ЕДИНСТВЕННЫЙ индекс таблицы
+    (kingdom явно БЕЗ индекса — GET /roy/scout-finds не фильтрует по kingdom). Проверяем обе
+    стороны контракта, не только наличие found_at, иначе случайный index=True на другой колонке
+    пройдёт тест незамеченным."""
     indexed = {c.name for idx in RoyScoutFind.__table__.indexes for c in idx.columns}
-    assert {"found_at", "kingdom"} <= indexed
+    assert indexed == {"found_at"}
+
+
+@pytest.mark.asyncio
+async def test_scout_find_migration_creates_expected_schema():
+    """Реальный migration runtime-тест (Alembic Operations.context — официальный способ юнит-
+    тестировать миграцию без полного env.py), а не только ORM-roundtrip через
+    Base.metadata.create_all. Проверяет СТРУКТУРУ (колонки, единственный индекс found_at,
+    downgrade убирает таблицу) на SQLite — НЕ проверяет server_default=sa.text('now()')
+    (Postgres-специфичная функция, SQLite её не знает): приложение всегда передаёт found_at
+    явно (architecture-04.md:14, P-13), server_default — только fallback, который в реальной
+    вставке не участвует, поэтому его недоступность на SQLite не имитирует прод-поведение
+    и намеренно не тестируется здесь."""
+    import importlib.util
+    from pathlib import Path
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    from sqlalchemy import create_engine, inspect
+
+    mig_path = (Path(__file__).parent.parent / "alembic" / "versions"
+                / "s3c4o5u6t7f8_add_roy_scout_finds.py")
+    spec = importlib.util.spec_from_file_location("_mig_scout_finds", mig_path)
+    mig = importlib.util.module_from_spec(spec)
+    engine = create_engine("sqlite://")
+    with engine.connect() as conn:
+        ctx = MigrationContext.configure(conn)
+        with Operations.context(ctx):
+            spec.loader.exec_module(mig)
+            mig.upgrade()
+        insp = inspect(conn)
+        assert {c["name"] for c in insp.get_columns("roy_scout_finds")} == \
+            {"id", "kingdom", "x", "y", "reporter_hwid", "found_at"}
+        idx_names = {i["name"] for i in insp.get_indexes("roy_scout_finds")}
+        idx_cols = {c for i in insp.get_indexes("roy_scout_finds") for c in i["column_names"]}
+        assert idx_names == {"ix_roy_scout_finds_found_at"}
+        assert idx_cols == {"found_at"}
+        with Operations.context(ctx):
+            mig.downgrade()
+        assert "roy_scout_finds" not in inspect(conn).get_table_names()
 ```
 
 - [ ] **Step 2: Run** `cd server && python -m pytest tests/test_roy_scout.py::test_scout_find_model_roundtrip -v` → FAIL
@@ -76,11 +118,16 @@ class RoyScoutFind(Base):
     x, y — позиция экрана бота в момент кадра (OCR), НЕ точные координаты биржи.
     kingdom вводит участник добровольно. Живёт SCOUT_FIND_TTL_MIN минут (roy.py).
     reporter_hwid наружу не отдаётся. Без UNIQUE: дедупликация не нужна (решение владельца).
+    reporter_hwid: String(16) — тот же тип/размер, что User.hwid (models.py:65) и одноимённое
+    поле RoyPool.reporter_hwid (models.py:284, образец этой модели).
+    found_at — ЕДИНСТВЕННЫЙ индекс таблицы (architecture-04.md:12,14): kingdom БЕЗ индекса,
+    т.к. GET /roy/scout-finds не фильтрует по kingdom — индексировать нечего, только лишняя
+    запись при INSERT/DELETE.
     """
     __tablename__ = "roy_scout_finds"
 
     id            = Column(Integer, primary_key=True)
-    kingdom       = Column(Integer, nullable=False, index=True)
+    kingdom       = Column(Integer, nullable=False)
     x             = Column(Integer, nullable=False)
     y             = Column(Integer, nullable=False)
     reporter_hwid = Column(String(16), nullable=False)
@@ -119,18 +166,20 @@ def upgrade() -> None:
                   server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('id', name=op.f('pk_roy_scout_finds')),
     )
-    op.create_index(op.f('ix_roy_scout_finds_kingdom'), 'roy_scout_finds', ['kingdom'])
+    # Единственный индекс таблицы — found_at (architecture-04.md:12,14). kingdom БЕЗ индекса:
+    # GET /roy/scout-finds не фильтрует по kingdom, индексировать нечего.
     op.create_index(op.f('ix_roy_scout_finds_found_at'), 'roy_scout_finds', ['found_at'])
 
 
 def downgrade() -> None:
     op.drop_index(op.f('ix_roy_scout_finds_found_at'), table_name='roy_scout_finds')
-    op.drop_index(op.f('ix_roy_scout_finds_kingdom'), table_name='roy_scout_finds')
     op.drop_table('roy_scout_finds')
 ```
 
-- [ ] **Step 5: Run** тест из шага 2 → PASS. Проверить единственный head миграций:
-  выполнить из `C:\BattleBot`:
+- [ ] **Step 5: Run** `cd server && python -m pytest tests/test_roy_scout.py -v` → все 3 теста PASS (roundtrip,
+  found_at_is_indexed, migration_creates_expected_schema — последний реально применяет `upgrade()`/`downgrade()`
+  из файла миграции на SQLite in-memory через `Operations.context()`, не только ORM `Base.metadata.create_all`).
+  Проверить единственный head миграций: выполнить из `C:\BattleBot`:
 
 ```bash
 python - <<'PY'
