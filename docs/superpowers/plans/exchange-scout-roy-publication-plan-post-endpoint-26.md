@@ -12,7 +12,7 @@
 
 **Files:** Modify `server/roy.py`; Test `server/tests/test_roy_scout.py`.
 **Consumes:** `RoyScoutFind` (Task 1). **Produces:** `POST /roy/scout-find` тело `{hwid:str, kingdom:int>=1, x:int, y:int}`
-→ `{"success": true}`; 404 `User not found`, 403 `Banned`, 422 при неверных типах; константа `roy.SCOUT_FIND_TTL_MIN = 20`.
+→ `{"success": true}`; 404 `User not found`, 403 `Banned`, 422 при неверных типах; константа `roy.SCOUT_FIND_TTL_MIN = 30`.
 
 - [ ] **Step 1: Failing tests** — дописать в `server/tests/test_roy_scout.py`:
 
@@ -106,7 +106,7 @@ async def test_scout_find_insert_deletes_expired(db_session):
     """P-13: вставка удаляет находки старше срока жизни, свежие остаются."""
     await _make_user(db_session)
     now = datetime.now(timezone.utc)
-    db_session.add(RoyScoutFind(kingdom=1, x=1, y=1, reporter_hwid="OLD", found_at=now - timedelta(minutes=21)))
+    db_session.add(RoyScoutFind(kingdom=1, x=1, y=1, reporter_hwid="OLD", found_at=now - timedelta(minutes=31)))
     db_session.add(RoyScoutFind(kingdom=2, x=2, y=2, reporter_hwid="FRESH", found_at=now - timedelta(minutes=5)))
     await db_session.commit()
     assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=3, y=3)).status_code == 200
@@ -121,7 +121,7 @@ async def test_scout_find_insert_deletes_expired(db_session):
   `from pydantic import BaseModel, Field, StrictInt`; `from sqlalchemy import delete, select`;
   `from models import RoyBalance, RoyKingdomMember, RoyKingdomStatus, RoyPool, RoyScoutFind, User`.
   (б) после строки `SESSION_TTL_SEC   = 300 ...` добавить:
-  `SCOUT_FIND_TTL_MIN = 20   # находка Биржи 2.0 живёт на сайте 20 минут (своя константа, не POOL_TTL_MIN)`.
+  `SCOUT_FIND_TTL_MIN = 30   # находка Биржи 2.0 живёт на сайте 30 минут (своя константа, не POOL_TTL_MIN)`.
   Рядом добавить `SCOUT_FINDS_LIMIT = 500   # не более 500 самых новых находок в GET /roy/scout-finds (P-09)`.
   (в) после класса `RegisterRequest` добавить:
 

@@ -7,7 +7,7 @@
 
 ### Task 3: `GET /roy/scout-finds`
 
-**Invariant:** P-09 (публичный список без hwid, новые первыми), P-13 (только свежие, ≤20 мин).
+**Invariant:** P-09 (публичный список без hwid, новые первыми), P-13 (только свежие, ≤30 мин).
 **Files:** Modify `server/roy.py`; Test `server/tests/test_roy_scout.py`.
 **Produces:** `GET /roy/scout-finds` → `{"finds": [{"kingdom","x","y","found_at"}, ...]}`, новые первыми.
 
@@ -51,12 +51,12 @@ async def test_scout_finds_excludes_older_than_ttl(db_session, monkeypatch):
             return frozen
 
     monkeypatch.setattr(roy, "datetime", FixedDatetime)
-    for k, age in ((1, timedelta(minutes=19, seconds=59)),
-                   (2, timedelta(minutes=20)),
-                   (3, timedelta(minutes=20, seconds=1))):
+    for k, age in ((1, timedelta(minutes=29, seconds=59)),
+                   (2, timedelta(minutes=30)),
+                   (3, timedelta(minutes=30, seconds=1))):
         db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid="H", found_at=frozen - age))
     await db_session.commit()
-    # видна только запись младше 20:00; ровно 20:00 и старше — нет (found_at > now - 20 мин)
+    # видна только запись младше 30:00; ровно 30:00 и старше — нет (found_at > now - 30 мин)
     assert [f["kingdom"] for f in (await _get()).json()["finds"]] == [1]
 
 

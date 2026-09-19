@@ -46,8 +46,8 @@
         </div>
         <p style={{ fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.55, margin: '8px 0 12px' }}>
           {isRu
-            ? 'Примерное расположение: позиция экрана бота в момент кадра, не точные координаты биржи. Запись показывается 20 минут после публикации.'
-            : 'Approximate location: the bot screen position at the moment of the frame, not the exact exchange coordinates. An entry is shown for 20 minutes after publication.'}
+            ? 'Примерное расположение: позиция экрана бота в момент кадра, не точные координаты биржи. Запись показывается 30 минут после публикации.'
+            : 'Approximate location: the bot screen position at the moment of the frame, not the exact exchange coordinates. An entry is shown for 30 minutes after publication.'}
         </p>
         {findsError ? (
           <div style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
@@ -113,7 +113,7 @@
 | P-09 публичный список без hwid | T3 | PT-04, PT-12 |
 | P-10, P-11 сайт, тексты | T5 | PT-13 (ручной) |
 | P-12 1.0 не тронута | T2–T4 (только добавления) | PT-14: `tests/test_roy.py` в шагах T2/T3 |
-| P-13 срок 20 мин | T2 (очистка), T3 (фильтр) | PT-15, PT-16 |
+| P-13 срок 30 мин | T2 (очистка), T3 (фильтр) | PT-15, PT-16 |
 
 Отклонение от спеки: Concurrent-колонка PT-06 не проверяется (см. таблицу) — ограничение тестовой среды (SQLite `StaticPool`), не изменение контракта. PT-15 проверяет границы точно (19:59 видна; 20:00 и 20:01 нет) через зафиксированные часы `roy.datetime`.
 
