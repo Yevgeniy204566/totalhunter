@@ -9,7 +9,7 @@
 |---|---|---|---|
 | 01–06 | №1 — публикация находки в «Рой» (главный + context/contracts/architecture/adversarial/tests-gate) | срок показа находки 20 мин | ✅ Final Gate пройден 2026-09-19 |
 | 07–11 | №2 — монетизация (главный + context/contracts-design/adversarial/tests-gate) | списание 10◆, отдельный `hunt_type`, статистика | ✅ Final Gate пройден 2026-09-19 |
-| 12–16 | №3 — Часть A: файловый цикл, GUI (главный + context/contracts-design/adversarial/tests-gate) | файловый жизненный цикл, контракты, GUI-интеграция | ⏳ следующая в очереди |
+| 12–16 | №3 — Часть A: файловый цикл, GUI (главный + context/contracts-design/adversarial/tests-gate) | файловый жизненный цикл, контракты, GUI-интеграция | ✅ Final Gate пройден 2026-09-19 (A-3/A-4/A-12 — обязательные незакрытые зависимости Части B, не блокеры Части A) |
 | — | Часть B — конкурентность (producer/consumer, очередь, треды) | ещё не написана | — |
 
 **Планы** (`docs/superpowers/plans/`): 24–28 — план публикации (главный + model/post-endpoint/read-client/web-deploy-check); написан, не одобрен — сверить с финальной версией 01–06 перед стартом кода.
