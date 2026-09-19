@@ -14,7 +14,7 @@
 |---|---|---|---|---|---|---|
 | PT-01 `publish_not_called_when_charge_failed` | P-01 | — | ответ `low_credits` | 402/сеть | — | — |
 | PT-02 `publish_not_called_without_coords` | P-01 | — | `coords_ok=false` | — | — | — |
-| PT-03 `scout_find_validates_xy_type_and_integer_range` | P-02, PA-2, PA-11 | int → 200 | `0`, отрицательные, `2147483647` и `-2147483648` → 200; `2147483648` и `-2147483649` → 422 | строка (в т. ч. `"123"`), float, bool → 422 | — | — |
+| PT-03 `scout_find_validates_xy_type_and_integer_range` | P-02 (только `x`/`y`: тип и 32-битный диапазон — `kingdom` в PT-08, состав GET-ответа в PT-04), PA-2, PA-11 | int → 200 | `0`, отрицательные, `2147483647` и `-2147483648` → 200; `2147483648` и `-2147483649` → 422 | строка (в т. ч. `"123"`), float, bool → 422 | — | — |
 | PT-04 `scout_finds_response_has_no_hwid` | P-02, PA-1 | поля ровно {kingdom,x,y,found_at} | пустой список | — | — | — |
 | PT-05 `scout_find_does_not_touch_roy_pool` | P-03, P-12 | `roy_pool` count не меняется | — | — | — | — |
 | PT-06 `scout_find_allows_repeated_identical_posts` | P-04 | 2 запроса подряд с одинаковыми K/X/Y → 2 строки | <1 с между запросами | — | — (для P-04 конкурентная проверка не требуется: отсутствие лимита и `UNIQUE` проверяется последовательными вызовами) | — |
@@ -23,7 +23,7 @@
 | PT-09 `client_skips_publish_when_kingdom_zero` | P-06 | K>0 → запрос | K=0 → нет запроса | — | — | лог пишется |
 | PT-10 `client_publish_does_not_block_consumer` | P-07 | — | сервер отвечает 5 с | сервер висит | — | consumer не ждёт завершения HTTP-вызова; при штатном завершении `requests` тред завершается после ответа, исключения или timeout (жёсткого предела в 5 с нет — PA-7) |
 | PT-11 `client_publish_failure_is_swallowed_and_logged` | P-08 | — | — | ConnectionError, 500, таймаут → ошибка записана в лог сессии, исключение не выходит в consumer | — | consumer продолжает |
-| PT-12 `scout_finds_lists_newest_first` / `returns_at_most_limit_newest` / `query_orders_by_found_at_and_id_desc` | P-09 | порядок по `found_at` desc | 0 записей; строк больше лимита → возвращаются только самые новые (тест с малым лимитом); две записи с одинаковым `found_at` → запись с большим `id` возвращается первой (поведенческая проверка tie-break, не текст SQL) | — | — | — |
+| PT-12 `scout_finds_lists_newest_first` / `returns_at_most_limit_newest` / `query_orders_by_found_at_and_id_desc` | P-09 | порядок по `found_at` desc | 0 записей; **501 запись** (реальный `SCOUT_FINDS_LIMIT=500`, без подмены лимита) → `GET` возвращает ровно 500 самых новых; две записи с одинаковым `found_at` → запись с большим `id` возвращается первой (поведенческая проверка tie-break, не текст SQL) | — | — | — |
 | PT-13 ручная проверка страницы | P-10, P-11 | блок виден, тексты RU/EN | пустой список | сервер недоступен | — | «Обновить» перечитывает |
 | PT-14 `roy_report_and_pool_unchanged` | P-12, PA-9 | регрессия существующих `test_roy.py` зелёные | — | — | — | — |
 | PT-15 `scout_finds_excludes_older_than_ttl` | P-13 | запись 29 мин 59 с видна | ровно 30 мин 00 с и 30 мин 01 с — не видны; часы `roy.datetime` зафиксированы (frozen clock, образец `test_roy.py`), граница детерминирована | — | — | — |
