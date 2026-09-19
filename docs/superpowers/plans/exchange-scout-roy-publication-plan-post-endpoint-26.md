@@ -94,11 +94,15 @@ async def test_scout_find_does_not_touch_roy_pool(db_session, monkeypatch):
     def _boom(*a, **k):
         raise AssertionError("send_telegram_alert must not be called")
     monkeypatch.setattr(roy, "send_telegram_alert", _boom)
+    # Sentinel вместо clear(): доказываем не только "пусто после", а "содержимое НЕ ТРОНУТО" —
+    # иначе тест доказывал бы только "scout-find ничего не добавил в уже пустой dict", а не
+    # "scout-find не трогает существующие записи _report_rate чужого hwid".
     roy._report_rate.clear()
+    roy._report_rate["SENTINEL_OTHER_HWID"] = 123.0
     await _make_user(db_session)
     assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=1, y=1)).status_code == 200
     assert (await db_session.execute(select(func.count(RoyPool.id)))).scalar_one() == 0
-    assert roy._report_rate == {}
+    assert roy._report_rate == {"SENTINEL_OTHER_HWID": 123.0}
 
 
 @pytest.mark.asyncio
