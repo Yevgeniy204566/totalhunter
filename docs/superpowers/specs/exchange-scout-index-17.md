@@ -8,8 +8,8 @@
 | Файлы | Спека | Что внутри | Ревью GPT/Gemini |
 |---|---|---|---|
 | 01–06 | №1 — публикация находки в «Рой» (главный + context/contracts/architecture/adversarial/tests-gate) | срок показа находки 20 мин | ✅ Final Gate пройден 2026-09-19 |
-| 07–11 | №2 — монетизация (главный + context/contracts-design/adversarial/tests-gate) | списание 10◆, отдельный `hunt_type`, статистика | 07 ✅ пройдено; 08 ✅ пройдено (2026-09-19); 09–11 ⏳ на очереди |
-| 12–16 | №3 — Часть A: файловый цикл, GUI (главный + context/contracts-design/adversarial/tests-gate) | файловый жизненный цикл, контракты, GUI-интеграция | не начато |
+| 07–11 | №2 — монетизация (главный + context/contracts-design/adversarial/tests-gate) | списание 10◆, отдельный `hunt_type`, статистика | ✅ Final Gate пройден 2026-09-19 |
+| 12–16 | №3 — Часть A: файловый цикл, GUI (главный + context/contracts-design/adversarial/tests-gate) | файловый жизненный цикл, контракты, GUI-интеграция | ⏳ следующая в очереди |
 | — | Часть B — конкурентность (producer/consumer, очередь, треды) | ещё не написана | — |
 
 **Планы** (`docs/superpowers/plans/`): 24–28 — план публикации (главный + model/post-endpoint/read-client/web-deploy-check); написан, не одобрен — сверить с финальной версией 01–06 перед стартом кода.
