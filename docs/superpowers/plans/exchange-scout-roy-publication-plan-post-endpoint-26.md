@@ -103,7 +103,8 @@ async def test_scout_find_does_not_touch_roy_pool(db_session, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_scout_find_insert_deletes_expired(db_session):
-    """P-13: вставка удаляет находки старше срока жизни, свежие остаются."""
+    """P-13: вставка удаляет находки старше срока жизни, свежие остаются (не граница — общий случай,
+    точная граница 30:00 — отдельный тест ниже)."""
     await _make_user(db_session)
     now = datetime.now(timezone.utc)
     db_session.add(RoyScoutFind(kingdom=1, x=1, y=1, reporter_hwid="OLD", found_at=now - timedelta(minutes=31)))
@@ -112,14 +113,45 @@ async def test_scout_find_insert_deletes_expired(db_session):
     assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=3, y=3)).status_code == 200
     hwids = sorted((await db_session.execute(select(RoyScoutFind.reporter_hwid))).scalars().all())
     assert hwids == ["FRESH", "SCOUTUSER00001"]
+
+
+@pytest.mark.asyncio
+async def test_scout_find_insert_deletes_expired_at_exact_boundary(db_session, monkeypatch):
+    """P-13: удаление на вставке — `found_at <= cutoff` (не `<`), граница ровно 30:00 удаляется, а не
+    только «старше». Отдельно от test_scout_finds_excludes_older_than_ttl (файл 27, читающая сторона,
+    `>` в SELECT) — здесь ДРУГОЙ код (delete на INSERT), с собственным `<=`, и его границу ничего кроме
+    этого теста не защищает: смена `<=` на `<` в реализации прошла бы мимо test_scout_find_insert_deletes_expired
+    (31 мин / 5 мин — не граница) незамеченной. Часы roy.datetime зафиксированы (frozen clock, образец
+    test_scout_finds_excludes_older_than_ttl, файл 27) — иначе `now` теста и `now` внутри эндпоинта
+    разойдутся на миллисекунды и граница 30:00 станет случайной (flaky)."""
+    import roy
+    await _make_user(db_session)
+    frozen = datetime(2026, 9, 18, 12, 0, 0, tzinfo=timezone.utc)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return frozen
+
+    monkeypatch.setattr(roy, "datetime", FixedDatetime)
+    for k, age in ((1, timedelta(minutes=29, seconds=59)),   # остаётся
+                   (2, timedelta(minutes=30)),                # удаляется (P-13: "≥ 30 мин удалена")
+                   (3, timedelta(minutes=30, seconds=1))):     # удаляется
+        db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid=f"H{k}", found_at=frozen - age))
+    await db_session.commit()
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=9, y=9)).status_code == 200
+    hwids = sorted((await db_session.execute(select(RoyScoutFind.reporter_hwid))).scalars().all())
+    assert hwids == ["H1", "SCOUTUSER00001"]
 ```
 
 - [ ] **Step 2: Run** `cd server && python -m pytest tests/test_roy_scout.py -v` → новые тесты FAIL (404 на `/roy/scout-find`).
 
-- [ ] **Step 3: Implement** в `server/roy.py`:
-  (а) импорты: `from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException`;
-  `from pydantic import BaseModel, Field, StrictInt`; `from sqlalchemy import delete, select`;
-  `from models import RoyBalance, RoyKingdomMember, RoyKingdomStatus, RoyPool, RoyScoutFind, User`.
+- [ ] **Step 3: Implement** в `server/roy.py`: (а) **дополнить существующие import-строки** (не добавлять
+  новые — дубли уже импортированных имён): `roy.py:20` `from fastapi import APIRouter, BackgroundTasks,
+  Depends` → добавить `HTTPException`; `roy.py:22` `from pydantic import BaseModel` → добавить
+  `Field, StrictInt`; `roy.py:23` `from sqlalchemy import select` → добавить `delete`; `roy.py:28`
+  `from models import RoyBalance, RoyKingdomMember, RoyKingdomStatus, RoyPool` → добавить
+  `RoyScoutFind, User`.
   (б) после строки `SESSION_TTL_SEC   = 300 ...` добавить:
   `SCOUT_FIND_TTL_MIN = 30   # находка Биржи 2.0 живёт на сайте 30 минут (своя константа, не POOL_TTL_MIN)`.
   Рядом добавить `SCOUT_FINDS_LIMIT = 500   # не более 500 самых новых находок в GET /roy/scout-finds (P-09)`.
