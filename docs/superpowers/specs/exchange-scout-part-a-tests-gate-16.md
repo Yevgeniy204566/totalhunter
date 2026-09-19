@@ -20,7 +20,7 @@
 | T-01 | C-02 | старт/возобновление НЕ трогает существующие файлы в `pending/` вне своей `<sid>/` | пустой `pending/` — не падает | — | — | — | `test_start_does_not_wipe_pending` |
 | T-02 | C-02 | — | кадр старше 30 минут по `mtime` (момент сохранения JPEG на диск) удаляется TTL-механизмом без обработки | — | — | осиротевшая папка после краша (без `stop()`) остаётся в `pending/` невредимой после следующего `start()`, если её кадрам ещё нет 30 минут по `mtime` | `test_pending_orphans_survive_restart_young_frames_kept` |
 | T-03 | C-03 | consumer удаляет кадр из `found/<sid>/` после полной передачи результата (журнал+списание+публикация) | `found/` с 2 сессиями — изоляция по `<sid>/` не нарушена | сбой публикации не блокирует удаление (P-08 спеки №1) | — | — | `test_consumer_deletes_found_frame_after_full_processing` |
-| T-04 | C-01 | три ветки созданы | `sid` уникален при двух стартах в одну секунду | — | — | — | `test_session_dirs_created_with_unique_sid` |
+| T-04 | C-01 | три ветки созданы | `sid` уникален при двух стартах в одну секунду (коллизия суффикса → `makedirs(exist_ok=False)` бросает, генерируется новый `xxxx`, повтор до успеха) | — | — | — | `test_session_dirs_created_with_unique_sid` |
 | T-05 | C-04 | jsonl открыт до старта тредов | — | нет прав на запись → `raise`, тредов нет | — | `is_running == False` после сбоя | `test_start_refuses_when_not_writable` |
 | T-06 | C-04 | — | — | сбой на шаге открытия jsonl → `raise`, треды не созданы (нет `shutil.rmtree` — шаг снят вместе с C-02) | — | файлы других сессий/`sid` в `pending/` не тронуты ни при успехе, ни при сбое `start()` | `test_start_failure_does_not_touch_other_sessions_pending` |
 | T-07 | C-05 | `stop()` возвращается | — | — | — | второй `stop()` — no-op | `test_stop_is_idempotent` |
@@ -36,7 +36,7 @@
 | T-17 | C-15 | — | — | `imwrite` → `False` → сессия остановлена + `on_error_callback` | — | — | `test_write_failure_aborts_session` |
 | T-18 | C-16 | — | — | — | — | grep: нет `_exchange_detected`, нет импорта `PacmanEngine` | `test_scout_does_not_touch_pacman` |
 | T-19 | C-13 | 2.0 не стартует при активном 1.0 и наоборот | `active_mode` меняется ровно один раз | — | попытка старта из программного пути → `RuntimeError` | — | `test_mode_mutual_exclusion` |
-| T-20 | C-14 | ESC глушит 2.0 | — | — | — | `active_mode` сброшен в `None` | `test_emergency_stop_stops_scout` |
+| T-20 | C-14 | ESC вызывает `scout.stop()` (глушит producer/навигацию, не consumer) | — | — | — | `active_mode` сброшен в `None` | `test_emergency_stop_stops_scout` |
 | T-21 | C-11 | `read()` получает то же представление каналов, что даёт `np.array(sct.grab(...))` | — | — | — | — | `test_ocr_input_channel_order_matches_calibration` |
 
 **T-22…T-27 — [→ Часть A-М].** Шесть тестов денежного контракта и Telegram-канала (T-22 гейт баланса,
