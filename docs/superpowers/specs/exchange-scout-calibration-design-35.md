@@ -10,19 +10,37 @@
 
 ---
 
-## 4.1 Единая структура данных (реализует C-02, C-08)
+## 4.1 Единая структура данных (реализует C-02)
 
 Заменяет три сегодняшние разрозненные структуры (`TUNE_TARGET_NAMES`, `_TUNE_POINT_TARGETS`,
 `_CHEST_TUNE_RECTS`) и отдельное хранение `REF_A`/`REF_B` одним упорядоченным списком из 12 записей.
 Поле `kind` — ровно три значения из C-02 (`точка`/`OCR-область`/`смещение-к-YOLO`); `REF_A`/`REF_B`
-относятся к `kind="точка"` — они рисуются тем же крестиком, что и остальные точки (C-03), различие с
-7 офсетными точками — не в типе, а в способе хранения (см. 4.2).
+относятся к `kind="точка"` — они рисуются тем же крестиком, что и остальные точки (C-03). Полная
+классификация всех 12 (устраняет любую двусмысленность в подсчёте по типам):
+
+| `id` | `kind` | `storage` |
+|---|---|---|
+| `ref_a` | точка | absolute |
+| `ref_b` | точка | absolute |
+| `wt_icon` | точка | offset |
+| `carter` | точка | offset |
+| `crypt_open` | точка | offset |
+| `top_accel` | точка | offset |
+| `march_accel` | точка | offset |
+| `arena_reset` | точка | offset |
+| `chest_collect` | точка | offset |
+| `chest_sender` | OCR-область | offset |
+| `chest_type` | OCR-область | offset |
+| `crypt_select` | смещение-к-YOLO | offset |
+
+Итого: 2 точки/absolute (`ref_a`/`ref_b`) + 7 точек/offset (`wt_icon`…`chest_collect` включительно) +
+2 OCR-области/offset + 1 смещение-к-YOLO/offset = 12. Совпадает построчно с таблицей файла 33 (2.2).
 
 | Поле | Смысл |
 |---|---|
-| `id` | техническое имя (`ref_a`, `ref_b`, `wt_icon`, `carter`, `crypt_open`, `crypt_select`, `top_accel`, `march_accel`, `arena_reset`, `chest_sender`, `chest_type`, `chest_collect`) |
+| `id` | техническое имя — см. таблицу выше |
 | `kind` | `точка` \| `OCR-область` \| `смещение-к-YOLO` (C-02) |
-| `storage` | `absolute` (только `ref_a`, `ref_b` — `coord_manager._point_a/_point_b`) или `offset` (остальные 10 — `coord_manager.ui_offsets`, без изменения формата, C-05) |
+| `storage` | `absolute` (`coord_manager._point_a/_point_b`) или `offset` (`coord_manager.ui_offsets`, без изменения формата, C-05) — см. таблицу выше |
 | `theme` | необязательный тег группировки, независимый от `kind` (сегодня единственная тема — `сундуки` для `chest_sender`/`chest_type`/`chest_collect`; C-04) |
 | `label_key` | ключ `LANGS` для подписи на экране |
 | `ref_rect` | только для `kind="OCR-область"` — `chest_reader.SENDER_REF_RECT`/`SOURCE_REF_RECT` |
