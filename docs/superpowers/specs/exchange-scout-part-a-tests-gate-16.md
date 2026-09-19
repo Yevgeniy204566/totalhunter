@@ -18,7 +18,7 @@
 | # | Invariant | Normal | Boundary | Failure | Concurrent | Recovery | Test |
 |---|---|---|---|---|---|---|---|
 | T-01 | C-02 | старт/возобновление НЕ трогает существующие файлы в `pending/` вне своей `<sid>/` | пустой `pending/` — не падает | — | — | — | `test_start_does_not_wipe_pending` |
-| T-02 | C-02 | — | кадр старше 30 минут с момента создания скриншота удаляется TTL-механизмом без обработки | — | — | осиротевшая папка после краша (без `stop()`) остаётся в `pending/` невредимой после следующего `start()`, если её кадрам ещё нет 30 минут | `test_pending_orphans_survive_restart_young_frames_kept` |
+| T-02 | C-02 | — | кадр старше 30 минут по `mtime` (момент сохранения JPEG на диск) удаляется TTL-механизмом без обработки | — | — | осиротевшая папка после краша (без `stop()`) остаётся в `pending/` невредимой после следующего `start()`, если её кадрам ещё нет 30 минут по `mtime` | `test_pending_orphans_survive_restart_young_frames_kept` |
 | T-03 | C-03 | consumer удаляет кадр из `found/<sid>/` после полной передачи результата (журнал+списание+публикация) | `found/` с 2 сессиями — изоляция по `<sid>/` не нарушена | сбой публикации не блокирует удаление (P-08 спеки №1) | — | — | `test_consumer_deletes_found_frame_after_full_processing` |
 | T-04 | C-01 | три ветки созданы | `sid` уникален при двух стартах в одну секунду | — | — | — | `test_session_dirs_created_with_unique_sid` |
 | T-05 | C-04 | jsonl открыт до старта тредов | — | нет прав на запись → `raise`, тредов нет | — | `is_running == False` после сбоя | `test_start_refuses_when_not_writable` |
