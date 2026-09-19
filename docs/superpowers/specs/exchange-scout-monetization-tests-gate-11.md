@@ -1,10 +1,10 @@
-# Биржа 2.0 (Exchange Scout) — ЧАСТЬ A-М (монетизация), файл 04/4: Test Matrix (T-22…T-28), Self-Audit, Stage 8, Final Gate
+# Биржа 2.0 (Exchange Scout) — ЧАСТЬ A-М (монетизация), файл 11: Test Matrix (T-22…T-28), Self-Audit, Stage 8, Final Gate
 
 > Фрагмент одного документа, разрезанного на файлы ≤300 строк по решению владельца (2026-09-18).
-> **Индекс, статус и раунды → [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md).**
-> Файлы Части A-М: [01](exchange-scout-monetization-context-4.md) · [02](exchange-scout-monetization-contracts-design-5.md) · [03](exchange-scout-monetization-adversarial-6.md) · **04 (этот файл)**
+> **Индекс, статус и раунды → [`exchange-scout-monetization-design-07.md`](exchange-scout-monetization-design-07.md).**
+> Файлы Части A-М: [08](exchange-scout-monetization-context-08.md) · [09](exchange-scout-monetization-contracts-design-09.md) · [10](exchange-scout-monetization-adversarial-10.md) · **11 (этот файл)**
 > Файловый жизненный цикл, GUI-каркас и `scout_results.jsonl` — **[→ Часть A]**:
-> [`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md).
+> [`exchange-scout-part-a-lifecycle-design-12.md`](exchange-scout-part-a-lifecycle-design-12.md).
 > Нумерация секций, контрактов C-*, находок A-* и тестов T-* унаследована от Части A и при нарезке
 > не менялась.
 
@@ -150,4 +150,4 @@ C-20 не применяется вовсе** — потолка частоты 
 
 ---
 
-**Что осталось непроверенным** — единым списком в индексе: [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md).
+**Что осталось непроверенным** — единым списком в индексе: [`exchange-scout-monetization-design-07.md`](exchange-scout-monetization-design-07.md).

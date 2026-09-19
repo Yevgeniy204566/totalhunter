@@ -1,6 +1,6 @@
-# Спека №1 (публикация находок в «Рой»), часть 1a — Контекст и археология кода (Стадии 1–2)
+# Спека №1 (публикация находок в «Рой»), часть 02 — Контекст и археология кода (Стадии 1–2)
 
-> Индекс и статус спеки: [`exchange-scout-roy-publication-design-1.md`](exchange-scout-roy-publication-design-1.md). Части: [1a](exchange-scout-roy-publication-context-1a.md) · [1b](exchange-scout-roy-publication-contracts-1b.md) · [1c](exchange-scout-roy-publication-architecture-1c.md) · [1d](exchange-scout-roy-publication-adversarial-1d.md) · [1e](exchange-scout-roy-publication-tests-gate-1e.md).
+> Индекс и статус спеки: [`exchange-scout-roy-publication-design-01.md`](exchange-scout-roy-publication-design-01.md). Части: [02](exchange-scout-roy-publication-context-02.md) · [03](exchange-scout-roy-publication-contracts-03.md) · [04](exchange-scout-roy-publication-architecture-04.md) · [05](exchange-scout-roy-publication-adversarial-05.md) · [06](exchange-scout-roy-publication-tests-gate-06.md).
 > Нумерация контрактов P-, находок PA-, тестов PT- сквозная по всей спеке №1; ссылки вида «4.0», «2.6a», «PA-5» — на разделы других частей.
 
 ---
@@ -36,7 +36,7 @@
 (`isRu`), других языков нет.
 
 **2.2 `POST /roy/report` — существующий канал координат 1.0 (`server/roy.py:244-294`).**
-- Схема `ReportRequest`: `hwid, kingdom, x, y, percent` — `percent: int` **обязателен** (:192-197). У 2.0 `percent` не формируется: параметр относится к сценарию 1.0 (открытый диалог биржи), а 2.0 биржу не кликает и диалог не открывает (Часть A: `exchange-scout-part-a-contracts-design-9.md` §4.9 п. 1, `exchange-scout-part-a-context-8.md:58`), поэтому в контракт публикации 2.0 он не входит.
+- Схема `ReportRequest`: `hwid, kingdom, x, y, percent` — `percent: int` **обязателен** (:192-197). У 2.0 `percent` не формируется: параметр относится к сценарию 1.0 (открытый диалог биржи), а 2.0 биржу не кликает и диалог не открывает (Часть A: `exchange-scout-part-a-contracts-design-14.md` §4.9 п. 1, `exchange-scout-part-a-context-13.md:58`), поэтому в контракт публикации 2.0 он не входит.
 - Rate limit `RATE_LIMIT_SEC = 10` с одного hwid (:39, :256-258): при превышении возвращает
   `{"success": True, "note": "rate_limited"}` — **молча отбрасывает** запись, клиент видит «успех».
 - Дедуп по (kingdom, x, y) с продлением TTL (:266-278); `UniqueConstraint` в `models.py:274-277`.
@@ -49,11 +49,11 @@
 → Запись примерных координат 2.0 в `roy_pool` сделала бы их доступными потребителям 1.0 и могла бы изменить поведение 1.0, поскольку X/Y 2.0 — приблизительная позиция экрана, а не точные координаты биржи. **Переиспользовать `/roy/report` и `roy_pool` для 2.0 нельзя** (вывод из 2.1-2.3).
 
 **2.4 Источник номера королевства.** `PositionReader` K не читает; в `scout_results.jsonl` поля `kingdom` нет
-(Часть A, C-10, `exchange-scout-part-a-contracts-design-9.md` §4.6). В GUI есть поле номера королевства:
+(Часть A, C-10, `exchange-scout-part-a-contracts-design-14.md` §4.6). В GUI есть поле номера королевства:
 `self._roy_kingdom_entry` (`main.py:3955-3970`), `_get_roy_kingdom()` возвращает `0`, если поле пустое или не
 число (`main.py:4141-4145`). Сервер показывает только королевства с `k > 0` (`roy.py:130`).
 Решение владельца: номер королевства берётся от участников, исследующих это королевство, — они вносят его
-**сами и добровольно** в это поле; бот его не определяет и не проверяет. Для 2.0 источником K также является это GUI-поле; способ захвата и фиксации значения при создании результата определён в P-06 (часть 1b).
+**сами и добровольно** в это поле; бот его не определяет и не проверяет. Для 2.0 источником K также является это GUI-поле; способ захвата и фиксации значения при создании результата определён в P-06 (часть 03).
 **Номер королевства (со слов участника) и X/Y (прочитаны OCR с сохранённого скрина, где YOLO нашёл биржу)
 независимы друг от друга** — из одного источника они не выводятся и друг с другом не сверяются.
 

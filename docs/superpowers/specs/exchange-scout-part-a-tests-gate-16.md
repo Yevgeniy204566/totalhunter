@@ -1,9 +1,9 @@
-# Биржа 2.0 (Exchange Scout) — ЧАСТЬ A, файл 04/4: Test Matrix, Self-Audit, Stage 8, Final Gate
+# Биржа 2.0 (Exchange Scout) — ЧАСТЬ A, файл 16: Test Matrix, Self-Audit, Stage 8, Final Gate
 
 > Фрагмент одного документа, разрезанного на файлы ≤300 строк по решению владельца (2026-09-18).
-> **Индекс, статус и раунды → [`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md).**
-> Файлы Части A: [01](exchange-scout-part-a-context-8.md) · [02](exchange-scout-part-a-contracts-design-9.md) · [03](exchange-scout-part-a-adversarial-10.md) · **04 (этот файл)**
-> Деньги и debug-Telegram — **[→ Часть A-М]**: [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md).
+> **Индекс, статус и раунды → [`exchange-scout-part-a-lifecycle-design-12.md`](exchange-scout-part-a-lifecycle-design-12.md).**
+> Файлы Части A: [13](exchange-scout-part-a-context-13.md) · [14](exchange-scout-part-a-contracts-design-14.md) · [15](exchange-scout-part-a-adversarial-15.md) · **16 (этот файл)**
+> Деньги и debug-Telegram — **[→ Часть A-М]**: [`exchange-scout-monetization-design-07.md`](exchange-scout-monetization-design-07.md).
 > Нумерация секций, контрактов C-*, находок A-* и тестов T-* сквозная по всем файлам и при нарезке
 > не менялась.
 
@@ -178,4 +178,4 @@ writer'ов, shutdown). Внешнее ревью Части B обязано п
 ---
 
 **Что осталось непроверенным** — единым списком в индексе:
-[`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md), раздел «Что осталось непроверенным».
+[`exchange-scout-part-a-lifecycle-design-12.md`](exchange-scout-part-a-lifecycle-design-12.md), раздел «Что осталось непроверенным».

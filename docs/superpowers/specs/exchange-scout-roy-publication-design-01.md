@@ -1,13 +1,13 @@
 # Биржа 2.0 (Exchange Scout) — ПУБЛИКАЦИЯ НАХОДОК НА САЙТ В РАЗДЕЛЕ «РОЙ»
 
-> **Статус:** ГОТОВА. **Спека №1 из 3** — внешнее ревью (GPT, Gemini) пройдено 2026-09-19 (Final Gate, части 1c/1d/1e). К реализации готова (код не начат — ждёт «да» владельца на старт кодирования). Общий индекс: [`exchange-scout-index-16.md`](exchange-scout-index-16.md).
-> **Тип:** SPEC (не PLAN, не код). **Дата:** 2026-09-18, ревью закрыто 2026-09-19. **Раунд правок: 9** (раунд 2 — закрытие ОВ-1; 3–9 — замечания внешних ревьюеров (GPT, Gemini) и самоаудит, каждое проверено по коду; лимит раундов отменён 2026-09-18, правим до одобрения GPT/Gemini) + отдельные раунды правок частей 1c/1d/1e (2026-09-19) до Final Gate.
+> **Статус:** ГОТОВА. **Спека №1 из 3** — внешнее ревью (GPT, Gemini) пройдено 2026-09-19 (Final Gate, файлы 04/05/06). К реализации готова (код не начат — ждёт «да» владельца на старт кодирования). Общий индекс: [`exchange-scout-index-17.md`](exchange-scout-index-17.md).
+> **Тип:** SPEC (не PLAN, не код). **Дата:** 2026-09-18, ревью закрыто 2026-09-19. **Раунд правок: 9** (раунд 2 — закрытие ОВ-1; 3–9 — замечания внешних ревьюеров (GPT, Gemini) и самоаудит, каждое проверено по коду; лимит раундов отменён 2026-09-18, правим до одобрения GPT/Gemini) + отдельные раунды правок файлов 04/05/06 (2026-09-19) до Final Gate.
 > **Протокол:** `docs/РАБОТА-С-ДОКУМЕНТАМИ.md` (прочитан целиком в этой сессии). Стадии 1-7, 9 пройдены.
 > **Stage 8:** не запрошен владельцем (золотое правило 2026-09-18: агенты только с явного «да»). Вместо него
 > сделан второй самостоятельный адверсариальный проход по коду (стадия 5, блок PA-*).
 > **Автор:** Claude лично, в основном диалоге, без субагентов.
 > **Соседние спеки:** Часть A (файловый цикл, GUI) и монетизация (списание 10◆) —
-> `exchange-scout-part-a-lifecycle-design-3.md`, `exchange-scout-monetization-design-2.md`.
+> `exchange-scout-part-a-lifecycle-design-12.md`, `exchange-scout-monetization-design-07.md`.
 > Для канала публикации 2.0 эта спека определяет сайт как единственный целевой канал; **Telegram для 2.0 не используется как канал публикации** (временный админский debug-шаг — кроп зоны OCR — описан в концепте, 17d). Положения C-18/C-19 в спеке №2 помечены «⛔ заменено» в соответствии с этим решением; упоминания debug-Telegram в спеке №3 остаются ссылками на спеку №2 и подлежат согласованию при её ревью.
 
 **Scope:** основной предмет — публикация обработанного результата на сайте в разделе РОЙ («обработанный скрин дал координаты → находка выложена в разделе РОЙ»). Списание, файловый цикл, очередь и GUI здесь не проектируются, но необходимые межспековые предпосылки и точки интеграции (порядок обработки — 4.0; P-01, P-06, P-08) фиксируются явно.
@@ -18,11 +18,11 @@
 
 | Часть | Файл | Что внутри |
 |---|---|---|
-| 1a | [`exchange-scout-roy-publication-context-1a.md`](exchange-scout-roy-publication-context-1a.md) | Контекст и археология кода (Стадии 1–2) |
-| 1b | [`exchange-scout-roy-publication-contracts-1b.md`](exchange-scout-roy-publication-contracts-1b.md) | Контракты P-01…P-13 (Стадия 3) |
-| 1c | [`exchange-scout-roy-publication-architecture-1c.md`](exchange-scout-roy-publication-architecture-1c.md) | Дизайн: порядок обработки, данные, эндпоинты, клиент, сайт, отказы, non-goals (Стадия 4) |
-| 1d | [`exchange-scout-roy-publication-adversarial-1d.md`](exchange-scout-roy-publication-adversarial-1d.md) | Adversarial Review PA-1…PA-13 (Стадия 5) |
-| 1e | [`exchange-scout-roy-publication-tests-gate-1e.md`](exchange-scout-roy-publication-tests-gate-1e.md) | Матрица тестов PT-01…PT-20, самоаудит, Final Gate (Стадии 6, 7, 9) |
+| 02 | [`exchange-scout-roy-publication-context-02.md`](exchange-scout-roy-publication-context-02.md) | Контекст и археология кода (Стадии 1–2) |
+| 03 | [`exchange-scout-roy-publication-contracts-03.md`](exchange-scout-roy-publication-contracts-03.md) | Контракты P-01…P-13 (Стадия 3) |
+| 04 | [`exchange-scout-roy-publication-architecture-04.md`](exchange-scout-roy-publication-architecture-04.md) | Дизайн: порядок обработки, данные, эндпоинты, клиент, сайт, отказы, non-goals (Стадия 4) |
+| 05 | [`exchange-scout-roy-publication-adversarial-05.md`](exchange-scout-roy-publication-adversarial-05.md) | Adversarial Review PA-1…PA-13 (Стадия 5) |
+| 06 | [`exchange-scout-roy-publication-tests-gate-06.md`](exchange-scout-roy-publication-tests-gate-06.md) | Матрица тестов PT-01…PT-20, самоаудит, Final Gate (Стадии 6, 7, 9) |
 
 ---
 

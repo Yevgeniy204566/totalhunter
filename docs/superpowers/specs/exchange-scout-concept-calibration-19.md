@@ -1,6 +1,6 @@
-# Концепт, часть 17a — Калибровка и рекомендуемые значения ползунков (разделы 1–2 входящих)
+# Концепт, часть 19 — Калибровка и рекомендуемые значения ползунков (разделы 1–2 входящих)
 
-> Индекс концепта: [`exchange-scout-concept-17.md`](exchange-scout-concept-17.md). Части: [17a](exchange-scout-concept-calibration-17a.md) · [17b](exchange-scout-concept-snake-settings-17b.md) · [17c](exchange-scout-concept-queue-17c.md) · [17d](exchange-scout-concept-finding-status-17d.md) · [17e](exchange-scout-concept-compatibility-17e.md).
+> Индекс концепта: [`exchange-scout-concept-18.md`](exchange-scout-concept-18.md). Части: [19](exchange-scout-concept-calibration-19.md) · [20](exchange-scout-concept-snake-settings-20.md) · [21](exchange-scout-concept-queue-21.md) · [22](exchange-scout-concept-finding-status-22.md) · [23](exchange-scout-concept-compatibility-23.md).
 
 ---
 

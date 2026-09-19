@@ -1,7 +1,7 @@
-# Публикация находок Биржи 2.0 в РОЙ — План, часть 12b: POST /roy/scout-find
+# Публикация находок Биржи 2.0 в РОЙ — План, часть 26: POST /roy/scout-find
 
-> Индекс, цель, архитектура, Global Constraints и карта файлов — в [`exchange-scout-roy-publication-plan-12.md`](exchange-scout-roy-publication-plan-12.md). Исполнять inline, **без субагентов** (золотое правило `CLAUDE.md` §4); код — только после одобрения плана владельцем.
-> Задачи этой части: Task 2. Части плана: [12a](exchange-scout-roy-publication-plan-model-12a.md) · [12b](exchange-scout-roy-publication-plan-post-endpoint-12b.md) · [12c](exchange-scout-roy-publication-plan-read-client-12c.md) · [12d](exchange-scout-roy-publication-plan-web-deploy-check-12d.md). Спека: `docs/superpowers/specs/exchange-scout-roy-publication-design-1.md` (части 1a–1e).
+> Индекс, цель, архитектура, Global Constraints и карта файлов — в [`exchange-scout-roy-publication-plan-24.md`](exchange-scout-roy-publication-plan-24.md). Исполнять inline, **без субагентов** (золотое правило `CLAUDE.md` §4); код — только после одобрения плана владельцем.
+> Задачи этой части: Task 2. Части плана: [25](exchange-scout-roy-publication-plan-model-25.md) · [26](exchange-scout-roy-publication-plan-post-endpoint-26.md) · [27](exchange-scout-roy-publication-plan-read-client-27.md) · [28](exchange-scout-roy-publication-plan-web-deploy-check-28.md). Спека: `docs/superpowers/specs/exchange-scout-roy-publication-design-01.md` (файлы 01–06).
 
 ---
 

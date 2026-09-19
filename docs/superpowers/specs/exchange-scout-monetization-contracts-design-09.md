@@ -1,10 +1,10 @@
-# Биржа 2.0 (Exchange Scout) — ЧАСТЬ A-М (монетизация), файл 02/4: Contract Extraction (C-17…C-19) и Design (4.3-М, 4.8, 4.10, 4.11)
+# Биржа 2.0 (Exchange Scout) — ЧАСТЬ A-М (монетизация), файл 09: Contract Extraction (C-17…C-19) и Design (4.3-М, 4.8, 4.10, 4.11)
 
 > Фрагмент одного документа, разрезанного на файлы ≤300 строк по решению владельца (2026-09-18).
-> **Индекс, статус и раунды → [`exchange-scout-monetization-design-2.md`](exchange-scout-monetization-design-2.md).**
-> Файлы Части A-М: [01](exchange-scout-monetization-context-4.md) · **02 (этот файл)** · [03](exchange-scout-monetization-adversarial-6.md) · [04](exchange-scout-monetization-tests-gate-7.md)
+> **Индекс, статус и раунды → [`exchange-scout-monetization-design-07.md`](exchange-scout-monetization-design-07.md).**
+> Файлы Части A-М: [08](exchange-scout-monetization-context-08.md) · **09 (этот файл)** · [10](exchange-scout-monetization-adversarial-10.md) · [11](exchange-scout-monetization-tests-gate-11.md)
 > Файловый жизненный цикл, GUI-каркас и `scout_results.jsonl` — **[→ Часть A]**:
-> [`exchange-scout-part-a-lifecycle-design-3.md`](exchange-scout-part-a-lifecycle-design-3.md).
+> [`exchange-scout-part-a-lifecycle-design-12.md`](exchange-scout-part-a-lifecycle-design-12.md).
 > Нумерация секций, контрактов C-*, находок A-* и тестов T-* унаследована от Части A и при нарезке
 > не менялась.
 
@@ -151,7 +151,7 @@
 
 ### 4.10 Канал контроля качества — debug-Telegram (C-18, C-19)
 
-> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `exchange-scout-roy-publication-design-1.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается. Уточнение 2026-09-19: Telegram не используется как канал публикации; временный админский debug-шаг (кроп зоны OCR) описан в концепте (17d) и требует отдельного контракта.
+> ⛔ **ЗАМЕНЕНО в раунде 3 (2026-09-18).** Владелец отменил канал debug-Telegram для 2.0: находка выкладывается на сайт в разделе «Рой» — см. `exchange-scout-roy-publication-design-01.md` (контракты P-01…P-12). Текст ниже сохранён только ради нумерации и истории, к реализации не принимается. Уточнение 2026-09-19: Telegram не используется как канал публикации; временный админский debug-шаг (кроп зоны OCR) описан в концепте (17d) и требует отдельного контракта.
 
 Мотив владельца зафиксирован дословно, чтобы позже не выдать его за продуктовое решение: доверия к
 YOLO/OCR на новом кадровом материале 2.0 пока нет, поэтому на первом этапе результаты 2.0 идут **владельцу

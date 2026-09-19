@@ -1,6 +1,6 @@
-# Спека №1 (публикация находок в «Рой»), часть 1c — Дизайн: порядок обработки, данные, эндпоинты, клиент, сайт, отказы, non-goals (Стадия 4)
+# Спека №1 (публикация находок в «Рой»), часть 04 — Дизайн: порядок обработки, данные, эндпоинты, клиент, сайт, отказы, non-goals (Стадия 4)
 
-> Индекс и статус спеки: [`exchange-scout-roy-publication-design-1.md`](exchange-scout-roy-publication-design-1.md). Части: [1a](exchange-scout-roy-publication-context-1a.md) · [1b](exchange-scout-roy-publication-contracts-1b.md) · [1c](exchange-scout-roy-publication-architecture-1c.md) · [1d](exchange-scout-roy-publication-adversarial-1d.md) · [1e](exchange-scout-roy-publication-tests-gate-1e.md).
+> Индекс и статус спеки: [`exchange-scout-roy-publication-design-01.md`](exchange-scout-roy-publication-design-01.md). Части: [02](exchange-scout-roy-publication-context-02.md) · [03](exchange-scout-roy-publication-contracts-03.md) · [04](exchange-scout-roy-publication-architecture-04.md) · [05](exchange-scout-roy-publication-adversarial-05.md) · [06](exchange-scout-roy-publication-tests-gate-06.md).
 > Нумерация контрактов P-, находок PA-, тестов PT- сквозная по всей спеке №1; ссылки вида «4.0», «2.6a», «PA-5» — на разделы других частей.
 
 ---

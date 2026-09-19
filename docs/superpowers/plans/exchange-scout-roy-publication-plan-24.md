@@ -13,7 +13,7 @@
 **Стек:** FastAPI + SQLAlchemy async + Alembic (server), pytest-asyncio + httpx + SQLite in-memory (тесты),
 `requests` (клиент бота), React + Vite (сайт).
 
-**Спека:** `docs/superpowers/specs/exchange-scout-roy-publication-design-1.md` (P-01…P-13, PT-01…PT-20).
+**Спека:** `docs/superpowers/specs/exchange-scout-roy-publication-design-01.md` (P-01…P-13, PT-01…PT-20).
 
 ## Global Constraints
 
@@ -52,7 +52,7 @@
 
 | Часть | Файл | Задачи |
 |---|---|---|
-| 12a | [`exchange-scout-roy-publication-plan-model-12a.md`](exchange-scout-roy-publication-plan-model-12a.md) | Task 1 модель + миграция |
-| 12b | [`exchange-scout-roy-publication-plan-post-endpoint-12b.md`](exchange-scout-roy-publication-plan-post-endpoint-12b.md) | Task 2 `POST /roy/scout-find` |
-| 12c | [`exchange-scout-roy-publication-plan-read-client-12c.md`](exchange-scout-roy-publication-plan-read-client-12c.md) | Task 3 `GET /roy/scout-finds`, Task 4 клиент `report_scout_find` |
-| 12d | [`exchange-scout-roy-publication-plan-web-deploy-check-12d.md`](exchange-scout-roy-publication-plan-web-deploy-check-12d.md) | Task 5 сайт, Task 6 деплой (ГЕЙТ), SPEC→PLAN check, самопроверка |
+| 25 | [`exchange-scout-roy-publication-plan-model-25.md`](exchange-scout-roy-publication-plan-model-25.md) | Task 1 модель + миграция |
+| 26 | [`exchange-scout-roy-publication-plan-post-endpoint-26.md`](exchange-scout-roy-publication-plan-post-endpoint-26.md) | Task 2 `POST /roy/scout-find` |
+| 27 | [`exchange-scout-roy-publication-plan-read-client-27.md`](exchange-scout-roy-publication-plan-read-client-27.md) | Task 3 `GET /roy/scout-finds`, Task 4 клиент `report_scout_find` |
+| 28 | [`exchange-scout-roy-publication-plan-web-deploy-check-28.md`](exchange-scout-roy-publication-plan-web-deploy-check-28.md) | Task 5 сайт, Task 6 деплой (ГЕЙТ), SPEC→PLAN check, самопроверка |
