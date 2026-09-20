@@ -13,6 +13,8 @@ function plural(n, one, few, many) {
 export default function RoyPage() {
   const [kingdoms, setKingdoms]   = useState([])
   const [connected, setConnected] = useState(false)
+  const [finds, setFinds]         = useState(null)
+  const [findsError, setFindsError] = useState(false)
   const { lang } = useLang()
   useMeta({
     title:       lang === 'ru' ? 'Total Hunter — Система РОЙ' : 'Total Hunter — SWARM System',
@@ -39,6 +41,14 @@ export default function RoyPage() {
     }
     return () => { es.close(); esRef.current = null }
   }, [])
+
+  const loadFinds = () => {
+    fetch(`${API_BASE}/roy/scout-finds`)
+      .then(r => { if (!r.ok) throw new Error('http'); return r.json() })
+      .then(d => { setFinds(d.finds || []); setFindsError(false) })
+      .catch(() => setFindsError(true))
+  }
+  useEffect(() => { loadFinds() }, [])
 
   return (
     <div style={{ padding: '24px 20px', maxWidth: 560, margin: '0 auto' }}>
@@ -171,6 +181,47 @@ export default function RoyPage() {
           }} />
           {isRu ? 'Сканирует во время ивента' : 'Scanning during event'}
         </div>
+      </div>
+
+      {/* ── Scout finds (Exchange 2.0) ── */}
+      <div style={{
+        background: 'var(--card)', borderRadius: 14, border: '1px solid var(--outline)',
+        padding: '16px 20px', marginBottom: 16,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--on-surface)' }}>
+            {isRu ? 'Находки Биржи 2.0' : 'Exchange 2.0 finds'}
+          </span>
+          <button onClick={loadFinds} style={{
+            background: 'transparent', border: '1px solid var(--outline)', color: 'var(--on-surface2)',
+            borderRadius: 8, padding: '4px 12px', fontSize: 12, cursor: 'pointer',
+          }}>{isRu ? 'Обновить' : 'Refresh'}</button>
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.55, margin: '8px 0 12px' }}>
+          {isRu
+            ? 'Примерное расположение: позиция экрана бота в момент кадра, не точные координаты биржи. Запись показывается 30 минут после публикации.'
+            : 'Approximate location: the bot screen position at the moment of the frame, not the exact exchange coordinates. An entry is shown for 30 minutes after publication.'}
+        </p>
+        {findsError ? (
+          <div style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
+            {isRu ? 'Не удалось загрузить находки.' : 'Failed to load finds.'}
+          </div>
+        ) : finds === null ? null : finds.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
+            {isRu ? 'Сейчас находок нет.' : 'No finds right now.'}
+          </div>
+        ) : finds.map((f, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 14, padding: '8px 0', fontSize: 13,
+            borderTop: i === 0 ? 'none' : '1px solid var(--outline)', color: 'var(--on-surface)',
+          }}>
+            <span style={{ fontWeight: 700 }}>K {f.kingdom}</span>
+            <span>X {f.x} · Y {f.y}</span>
+            <span style={{ marginLeft: 'auto', color: 'var(--on-surface2)' }}>
+              {new Date(f.found_at).toLocaleTimeString()}
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* ── Hint ── */}
