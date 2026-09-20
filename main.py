@@ -224,6 +224,17 @@ def cal_video_link_click_url():
     return CALIBRATION_VIDEO_URL if CALIBRATION_VIDEO_URL else None
 
 
+def cal_merge_calibration_point(target_id, new_point, current_a, current_b):
+    """Калибровка ОДНОЙ точки (ref_a или ref_b) — вторая берётся из уже сохранённой
+    калибровки, не пересчитывается и не подменяется. Баг, найденный владельцем при живой
+    проверке: клик по строке ref_b запускал комбинированный run_calibration(), который
+    ВСЕГДА показывал «Точка А» первой — здесь именно target_id, не порядок вызова,
+    определяет, какая из двух точек новая."""
+    point_a = new_point if target_id == "ref_a" else current_a
+    point_b = new_point if target_id == "ref_b" else current_b
+    return point_a, point_b
+
+
 def cal_apply_offset_delta(target_id, dx, dy):
     """D-Pad: применяет сдвиг (dx, dy) к текущему офсету target_id. Анти-паттерн Стадии 1
     (файл 38)/находка Self-Audit (файл 42): явный 0 обязан дойти до coord_manager.set_ui_offset
@@ -5070,21 +5081,33 @@ class TotalHunterApp(ctk.CTk):
             coord_manager.calibrate(point_a, point_b)
             _update_status()
 
-        def _calibrate():
-            from calibration_ui import run_calibration
-            self.iconify()  # minimize (not withdraw) — withdraw breaks child Toplevels
-            # Стартовые точки лупы — пропорционально реальному разрешению, иначе
-            # сырые REF_A/REF_B (1920×1080) на 2K/4K оказываются далеко от цели.
+        def _calibrate_single_point(target_id):
+            """Клик по СТРОКЕ ref_a или ref_b калибрует ТОЛЬКО эту точку — не запускает
+            комбинированный поток run_calibration() (который всегда показывает «Точка А»
+            первой независимо от того, что кликнули; баг, найденный владельцем при живой
+            проверке). calibrate_one_point() — та же функция, что run_calibration() вызывает
+            внутри себя дважды, здесь вызывается один раз с нужным label. coord_manager.
+            calibrate() требует обе точки — вторая берётся из уже сохранённой калибровки
+            (self._point_a/self._point_b), не пересчитывается."""
+            from calibration_ui import calibrate_one_point
             sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
-            start_a = (round(REF_A[0] * sw / 1920), round(REF_A[1] * sh / 1080))
-            start_b = (round(REF_B[0] * sw / 1920), round(REF_B[1] * sh / 1080))
+            if target_id == "ref_a":
+                start = (round(REF_A[0] * sw / 1920), round(REF_A[1] * sh / 1080))
+                label = "Точка А — центр мини-карты (лево-низ)"
+            else:
+                start = (round(REF_B[0] * sw / 1920), round(REF_B[1] * sh / 1080))
+                label = "Точка Б — крестик серебра (право-верх)"
+            self.iconify()  # minimize (not withdraw) — withdraw breaks child Toplevels
             try:
-                point_a, point_b = run_calibration(parent=self, start_a=start_a, start_b=start_b)
+                point = calibrate_one_point(self, start, label)
             finally:
                 self.deiconify()
-            if point_a and point_b:
-                coord_manager.calibrate(point_a, point_b)
-                _update_status()
+            if point is None:
+                return
+            point_a, point_b = cal_merge_calibration_point(
+                target_id, point, coord_manager._point_a, coord_manager._point_b)
+            coord_manager.calibrate(point_a, point_b)
+            _update_status()
 
         def _save_profile():
             coord_manager.dialog_offset_y = self._dialog_offset_y_var.get()
@@ -5107,9 +5130,15 @@ class TotalHunterApp(ctk.CTk):
         _target_list_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
         _target_list_frame.pack(fill="x", padx=16, pady=(4, 4))
 
+        _CAL_SELECTED_COLOR = "#FFB300"  # жёлтый — тот же акцент, что уже используется в
+        # проекте для видимых статус-меток (cal_not_calibrated и т. п.), не синий/elevated —
+        # владелец явно попросил лучшую видимость после живой проверки.
+
         def _refresh_target_row_highlight():
             for tid, (row, _icon_lb, _text_lb) in self._cal_target_rows.items():
-                row.configure(fg_color=MD3["elevated"] if tid == self._cal_selected_id else "transparent")
+                selected = tid == self._cal_selected_id
+                row.configure(border_width=2 if selected else 0,
+                              border_color=_CAL_SELECTED_COLOR)
 
         def _on_target_row_click(target_id):
             t = cal_target_by_id(target_id)
@@ -5117,22 +5146,22 @@ class TotalHunterApp(ctk.CTk):
             _refresh_target_row_highlight()
             _update_tune_card_visibility()
             if t["storage"] == "absolute":
-                # Design 4.3: клик по ref_a/ref_b сразу запускает существующий комбинированный
-                # магнифайер-поток (А затем Б за один вызов) — независимого редактирования
-                # «только Б» не было и не появляется. tune_card уже скрыт выше.
+                # Клик по ref_a/ref_b калибрует ТОЛЬКО эту точку (исправлено после живой
+                # проверки — комбинированный run_calibration() всегда показывал «Точка А»
+                # первой, даже при клике по Б). tune_card уже скрыт выше.
                 _show_cal_images()
-                _calibrate()
+                _calibrate_single_point(target_id)
             else:
                 _tune_refresh_display()
 
-        for _t in CALIBRATION_TARGETS:
+        for _n, _t in enumerate(CALIBRATION_TARGETS, start=1):
             _row = ctk.CTkFrame(_target_list_frame, fg_color="transparent", corner_radius=8)
             _row.pack(fill="x", pady=1)
             _icon_lb = ctk.CTkLabel(_row, text=_CAL_KIND_ICON[_t["kind"]], width=20,
                                      text_color=MD3["on_surface2"], font=ctk.CTkFont(size=13))
             _icon_lb.pack(side="left", padx=(6, 2), pady=3)
             _label_color = TUNE_CHEST_HIGHLIGHT_COLOR if _t["theme"] == "chest" else MD3["on_surface"]
-            _text_lb = ctk.CTkLabel(_row, text=LANGS[self.current_lang][_t["label_key"]],
+            _text_lb = ctk.CTkLabel(_row, text=f"{_n}. {LANGS[self.current_lang][_t['label_key']]}",
                                      text_color=_label_color, font=ctk.CTkFont(size=12), anchor="w")
             _text_lb.pack(side="left", fill="x", expand=True, pady=3)
             for _w in (_row, _icon_lb, _text_lb):
@@ -5140,11 +5169,11 @@ class TotalHunterApp(ctk.CTk):
             self._cal_target_rows[_t["id"]] = (_row, _icon_lb, _text_lb)
 
         def _cal_refresh_target_labels():
-            """change_lang(): перестроить ТОЛЬКО текст подписей строк — идентичность выбора
-            (self._cal_selected_id) не пересчитывается, PC-03."""
-            for _t in CALIBRATION_TARGETS:
+            """change_lang(): перестроить ТОЛЬКО текст подписей строк (номер + перевод) —
+            идентичность выбора (self._cal_selected_id) не пересчитывается, PC-03."""
+            for _n, _t in enumerate(CALIBRATION_TARGETS, start=1):
                 _, _icon_lb, _text_lb = self._cal_target_rows[_t["id"]]
-                _text_lb.configure(text=LANGS[self.current_lang][_t["label_key"]])
+                _text_lb.configure(text=f"{_n}. {LANGS[self.current_lang][_t['label_key']]}")
         self._cal_refresh_target_labels = _cal_refresh_target_labels
 
         # ── Сохранить / Загрузить — в одну строку ────────────────────────

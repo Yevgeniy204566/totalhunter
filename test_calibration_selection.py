@@ -19,6 +19,7 @@ cal_tune_card_visible = _main_module.cal_tune_card_visible
 cal_visual_dispatch_for_kind = _main_module.cal_visual_dispatch_for_kind
 cal_resolve_point_position = _main_module.cal_resolve_point_position
 cal_apply_offset_delta = _main_module.cal_apply_offset_delta
+cal_merge_calibration_point = _main_module.cal_merge_calibration_point
 
 
 class TestCalTargetById:
@@ -162,6 +163,20 @@ class TestApplyOffsetDelta:
 
 def patch_set_ui_offset():
     return patch.object(coord_manager, "set_ui_offset", wraps=coord_manager.set_ui_offset)
+
+
+class TestMergeCalibrationPoint:
+    """Баг, найденный владельцем при живой проверке: клик по ref_b показывал калибровку
+    Точки А. Корень — run_calibration() всегда стартует с А; cal_merge_calibration_point
+    проверяет, что вторая точка берётся из ТЕКУЩЕЙ калибровки, не путается местами."""
+
+    def test_ref_a_replaces_only_point_a(self):
+        new_a, new_b = cal_merge_calibration_point("ref_a", (111, 222), (1, 1), (999, 999))
+        assert (new_a, new_b) == ((111, 222), (999, 999))
+
+    def test_ref_b_replaces_only_point_b(self):
+        new_a, new_b = cal_merge_calibration_point("ref_b", (111, 222), (777, 777), (1, 1))
+        assert (new_a, new_b) == ((777, 777), (111, 222))
 
 
 class TestVideoLink:
