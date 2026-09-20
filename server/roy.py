@@ -328,6 +328,24 @@ async def scout_find(req: ScoutFindRequest, db: AsyncSession = Depends(get_db)):
     return {"success": True}
 
 
+# ── GET /roy/scout-finds ──────────────────────────────────────────────────────
+
+@router.get("/scout-finds")
+async def scout_finds(db: AsyncSession = Depends(get_db)):
+    """Публичный список находок Биржи 2.0 не старше SCOUT_FIND_TTL_MIN. hwid не отдаём."""
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=SCOUT_FIND_TTL_MIN)
+    rows = (await db.execute(
+        select(RoyScoutFind.kingdom, RoyScoutFind.x, RoyScoutFind.y, RoyScoutFind.found_at)
+        .where(RoyScoutFind.found_at > cutoff)
+        .order_by(RoyScoutFind.found_at.desc(), RoyScoutFind.id.desc())
+        .limit(SCOUT_FINDS_LIMIT)
+    )).all()
+    return {"finds": [
+        {"kingdom": r.kingdom, "x": r.x, "y": r.y, "found_at": r.found_at.isoformat()}
+        for r in rows
+    ]}
+
+
 # ── POST /roy/scan ────────────────────────────────────────────────────────────
 
 @router.post("/scan")

@@ -217,3 +217,95 @@ async def test_scout_find_insert_deletes_expired_at_exact_boundary(db_session, m
     assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=9, y=9)).status_code == 200
     hwids = sorted((await db_session.execute(select(RoyScoutFind.reporter_hwid))).scalars().all())
     assert hwids == ["H1", "SCOUTUSER00001"]
+
+
+@pytest.mark.asyncio
+async def test_scout_finds_empty():
+    r = await _get()
+    assert r.status_code == 200 and r.json() == {"finds": []}
+
+
+@pytest.mark.asyncio
+async def test_scout_finds_response_has_no_hwid(db_session):
+    db_session.add(RoyScoutFind(kingdom=7, x=1, y=2, reporter_hwid="SECRETHWID0001"))
+    await db_session.commit()
+    body = (await _get()).json()
+    assert list(body["finds"][0].keys()) == ["kingdom", "x", "y", "found_at"]
+    assert "SECRETHWID0001" not in (await _get()).text
+
+
+@pytest.mark.asyncio
+async def test_scout_finds_newest_first(db_session):
+    now = datetime.now(timezone.utc)
+    for k, mins in ((1, 10), (2, 1), (3, 5)):
+        db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid="H",
+                                    found_at=now - timedelta(minutes=mins)))
+    await db_session.commit()
+    assert [f["kingdom"] for f in (await _get()).json()["finds"]] == [2, 3, 1]
+
+
+@pytest.mark.asyncio
+async def test_scout_finds_excludes_older_than_ttl(db_session, monkeypatch):
+    """P-13, PT-15: граница детерминирована — часы roy.datetime зафиксированы (образец test_roy.py)."""
+    import roy
+    frozen = datetime(2026, 9, 18, 12, 0, 0, tzinfo=timezone.utc)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return frozen
+
+    monkeypatch.setattr(roy, "datetime", FixedDatetime)
+    for k, age in ((1, timedelta(minutes=29, seconds=59)),
+                   (2, timedelta(minutes=30)),
+                   (3, timedelta(minutes=30, seconds=1))):
+        db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid="H", found_at=frozen - age))
+    await db_session.commit()
+    # видна только запись младше 30:00; ровно 30:00 и старше — нет (found_at > now - 30 мин)
+    assert [f["kingdom"] for f in (await _get()).json()["finds"]] == [1]
+
+
+@pytest.mark.asyncio
+async def test_scout_endpoints_use_timezone_aware_utc_now(db_session, monkeypatch):
+    """P-13, PT-19: now — строго aware UTC. SQLite наивное время не отвергает, прод (timestamptz) отвергнет."""
+    import roy
+    frozen = datetime(2026, 9, 18, 12, 0, 0, tzinfo=timezone.utc)
+    seen = []
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            seen.append(tz)
+            return frozen
+
+    monkeypatch.setattr(roy, "datetime", FixedDatetime)
+    await _make_user(db_session)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=1, y=1)).status_code == 200
+    assert (await _get()).status_code == 200
+    assert seen and all(tz is timezone.utc for tz in seen)
+
+
+@pytest.mark.asyncio
+async def test_scout_finds_returns_at_most_limit_newest(db_session, monkeypatch):
+    """P-09, PT-12: не более SCOUT_FINDS_LIMIT самых новых (малый лимит подставлен для теста)."""
+    import roy
+    monkeypatch.setattr(roy, "SCOUT_FINDS_LIMIT", 3)
+    now = datetime.now(timezone.utc)
+    for k in range(1, 6):  # k=5 — самая новая
+        db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid="H",
+                                    found_at=now - timedelta(minutes=10 - k)))
+    await db_session.commit()
+    assert [f["kingdom"] for f in (await _get()).json()["finds"]] == [5, 4, 3]
+
+
+@pytest.mark.asyncio
+async def test_scout_finds_tie_break_by_id_desc(db_session):
+    """P-09, PT-12: при равном found_at более новая запись (больший id) идёт первой.
+    Проверено эмпирически (sqlite3, in-memory): без ORDER BY id DESC ties отдаются в порядке
+    вставки (id ASC) детерминированно, не «случайно» — поэтому поведенческий тест здесь надёжен
+    и не привязан к тексту сгенерированного SQLAlchemy SQL (который ломается от рефакторинга/алиасов)."""
+    now = datetime.now(timezone.utc)
+    for k in (1, 2, 3):
+        db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid="H", found_at=now))
+    await db_session.commit()
+    assert [f["kingdom"] for f in (await _get()).json()["finds"]] == [3, 2, 1]
