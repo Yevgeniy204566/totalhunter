@@ -178,6 +178,46 @@ CALIBRATION_TARGETS = [
 ]
 
 
+def cal_target_by_id(target_id):
+    """PC-03: identity выбора цели — по стабильному id, не по индексу/переведённой строке."""
+    for t in CALIBRATION_TARGETS:
+        if t["id"] == target_id:
+            return t
+    return None
+
+
+def cal_tune_card_visible(selected_id):
+    """Design 4.4 (файл 40) — три состояния видимости панели редактирования:
+    None -> скрыта; storage="offset" -> показана; storage="absolute" -> скрыта
+    (переход offset->absolute обязан прятать панель предыдущей offset-цели,
+    находка ревью Stage 5)."""
+    if selected_id is None:
+        return False
+    t = cal_target_by_id(selected_id)
+    return t is not None and t["storage"] == "offset"
+
+
+def cal_visual_dispatch_for_kind(kind):
+    """PC-06: единый визуальный путь на kind."""
+    return {
+        "точка": "crosshair",
+        "OCR-область": "chest_overlay",
+        "смещение-к-YOLO": "unavailable_text",
+    }[kind]
+
+
+def cal_resolve_point_position(target_id):
+    """PC-05: base_pos_fn вызывается заново при КАЖДОМ вызове (не кэшируется как число) —
+    координата зависит от текущей калибровки ref_a/ref_b. Возвращает экранные координаты
+    клика (база + текущий ui_offset) для kind="точка"+storage="offset"; None для остальных."""
+    t = cal_target_by_id(target_id)
+    if t is None or not callable(t.get("base_pos_fn")):
+        return None
+    bx, by = t["base_pos_fn"]()
+    ox, oy = coord_manager.get_ui_offset(target_id)
+    return bx + ox, by + oy
+
+
 def tune_chest_group_entry_indices(tune_names: "tuple[str, ...]") -> list[int]:
     """Индексы пунктов dropdown-меню (1-based — entry 0 это заголовок
     «Калибровка», entry i это i-й пронумерованный пункт), относящихся к
