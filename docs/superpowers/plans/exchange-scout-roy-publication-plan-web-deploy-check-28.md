@@ -20,7 +20,7 @@
 ```jsx
   const loadFinds = () => {
     fetch(`${API_BASE}/roy/scout-finds`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error('http'); return r.json() })
       .then(d => { setFinds(d.finds || []); setFindsError(false) })
       .catch(() => setFindsError(true))
   }
@@ -83,7 +83,9 @@
 
 Деплой необратим и внешний — выполняется по карте деплоя `CLAUDE.md`, порядок: сервер → сайт.
 
-- [ ] **Step 1: Полный прогон** `cd server && python -m pytest -q` и `python -m pytest test_roy_scout_client.py -q` — всё зелёное.
+- [ ] **Step 1: Полный прогон** (два отдельных запуска, разные рабочие директории — `test_roy_scout_client.py`
+  лежит в корне `C:\BattleBot`, не в `server/`):
+  `cd server && python -m pytest -q`; затем `cd .. && python -m pytest test_roy_scout_client.py -q` — оба зелёные.
 - [ ] **Step 2: Сервер (GCP).** `git push origin main`; на сервере: `cd /opt/totalhunter && sudo git clean -fd server/alembic/versions/ &&
   sudo git pull origin main`. Миграция — **вручную** (Alembic на GCP падает без `DATABASE_URL`, память `project_server_architecture`):
   создать таблицу через `sudo -u postgres psql -d totalhunter` теми же DDL, что в миграции (id SERIAL PK, kingdom/x/y INTEGER NOT NULL,
