@@ -127,17 +127,14 @@ MD3_NAME = _read_saved_theme()
 MD3 = _load_theme(MD3_NAME)
 
 
-TUNE_TARGET_NAMES = ("wt_icon", "crypt_select", "crypt_open", "carter", "top_accel", "march_accel", "arena_reset", "chest_sender", "chest_type", "chest_collect")
-
-# Группа калибровки сбора сундуков — последние 3 пункта меню тонкой
-# настройки. Подсвечиваются другим цветом в выпадающем списке, отдельно
-# от группы склепов/бирж выше по списку.
-TUNE_CHEST_GROUP = ("chest_sender", "chest_type", "chest_collect")
+# Цвет подписи для темы «сундуки» (canal theme, независимый от kind — C-04).
 TUNE_CHEST_HIGHLIGHT_COLOR = "#00FF88"
 
 # Единый реестр 12 целей калибровки (PLAN-A, docs/superpowers/plans/
-# exchange-scout-calibration-plan-a-*.md, файлы 38-43). Заменяет TUNE_TARGET_NAMES,
-# _TUNE_POINT_TARGETS, _CHEST_TUNE_RECTS (PC-04) одним источником метаданных.
+# exchange-scout-calibration-plan-a-*.md, файлы 38-43). Заменяет три прежние
+# разрозненные структуры — список имён целей, словарь позиций точек и словарь
+# OCR-прямоугольников (PC-04, атомарно удалены вместе со старым UI-дропдауном
+# в этом же коммите) — одним источником метаданных.
 # Порядок — Design 4.8: калибровка -> Склепы -> общие/биржи -> Сундуки.
 # base_pos_fn обязан оставаться вызываемым (не кэшировать результат как число, PC-05) —
 # координата зависит от текущей калибровки ref_a/ref_b и пересчитывается на каждый рендер.
@@ -216,13 +213,6 @@ def cal_resolve_point_position(target_id):
     bx, by = t["base_pos_fn"]()
     ox, oy = coord_manager.get_ui_offset(target_id)
     return bx + ox, by + oy
-
-
-def tune_chest_group_entry_indices(tune_names: "tuple[str, ...]") -> list[int]:
-    """Индексы пунктов dropdown-меню (1-based — entry 0 это заголовок
-    «Калибровка», entry i это i-й пронумерованный пункт), относящихся к
-    группе калибровки сбора сундуков (TUNE_CHEST_GROUP)."""
-    return [i for i, k in enumerate(tune_names, start=1) if k in TUNE_CHEST_GROUP]
 
 
 def crypt_autostop_reason(count: int, count_limit: int | None,
@@ -322,7 +312,7 @@ LANGS = {
         "cal_profile_lb": "Профиль:", "cal_not_calibrated": "Не откалиброван",
         "cal_auto_btn": "АВТОКАЛИБРОВАТЬ", "cal_manual_btn": "КАЛИБРОВАТЬ",
         "cal_save_btn": "💾  Сохранить", "cal_load_btn": "📂  Загрузить",
-        "cal_tune_title": "Тюнинг кликов", "cal_tune_wt_icon": "Дозорная башня", "cal_tune_carter": "Отправка Картера", "cal_tune_crypt_open": "Открыть редкий склеп", "cal_tune_crypt_select": "Выбор склепа в списке", "cal_tune_top_accel": "Ускорить (Картер)", "cal_tune_march_accel": "Использовать ускорение", "cal_tune_arena_reset": "Арена (сброс поиска)", "crypt_autostop_count_lb": "Стоп", "crypt_autostop_time_lb": "Стоп часы", "crypt_autostop_off": "Выкл", "crypt_session_time_lb": "Время", "crypt_found_count_lb": "Собрано склепов:", "cal_tune_reset": "Сброс", "cal_tune_chest_sender": "Имя игрока (сундуки)", "cal_tune_chest_type": "Источник (сундуки)", "cal_tune_chest_collect": "Открыть (сундуки)",
+        "cal_tune_title": "Тюнинг кликов", "cal_tune_wt_icon": "Дозорная башня", "cal_tune_carter": "Отправка Картера", "cal_tune_crypt_open": "Открыть редкий склеп", "cal_tune_crypt_select": "Выбор склепа в списке", "cal_tune_top_accel": "Ускорить (Картер)", "cal_tune_march_accel": "Использовать ускорение", "cal_tune_arena_reset": "Арена (сброс поиска)", "crypt_autostop_count_lb": "Стоп", "crypt_autostop_time_lb": "Стоп часы", "crypt_autostop_off": "Выкл", "crypt_session_time_lb": "Время", "crypt_found_count_lb": "Собрано склепов:", "cal_tune_reset": "Сброс", "cal_tune_preview_unavailable": "Статичное превью недоступно", "cal_tune_chest_sender": "Имя игрока (сундуки)", "cal_tune_chest_type": "Источник (сундуки)", "cal_tune_chest_collect": "Открыть (сундуки)",
         # --- ref tab additions ---
         "ref_bal_title": "Реферальный баланс", "ref_transfer_btn": "💸  Перевести на баланс  →",
         "ref_link_title": "Ваша реферальная ссылка:", "ref_code_prefix": "Код: ",
@@ -395,7 +385,7 @@ LANGS = {
         "cal_profile_lb": "Profile:", "cal_not_calibrated": "Not calibrated",
         "cal_auto_btn": "AUTO CALIBRATE", "cal_manual_btn": "CALIBRATE",
         "cal_save_btn": "💾  Save", "cal_load_btn": "📂  Load",
-        "cal_tune_title": "Click Tuning", "cal_tune_wt_icon": "Watchtower", "cal_tune_carter": "Send Carter", "cal_tune_crypt_open": "Open Rare Crypt", "cal_tune_crypt_select": "Crypt Selection in List", "cal_tune_top_accel": "Speed Up (Carter)", "cal_tune_march_accel": "Use Acceleration", "cal_tune_arena_reset": "Arena (Reset Search)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop hours", "crypt_autostop_off": "Off", "crypt_session_time_lb": "Time", "crypt_found_count_lb": "Collected:", "cal_tune_reset": "Reset", "cal_tune_chest_sender": "Player Name (Chests)", "cal_tune_chest_type": "Source (Chests)", "cal_tune_chest_collect": "Open (Chests)",
+        "cal_tune_title": "Click Tuning", "cal_tune_wt_icon": "Watchtower", "cal_tune_carter": "Send Carter", "cal_tune_crypt_open": "Open Rare Crypt", "cal_tune_crypt_select": "Crypt Selection in List", "cal_tune_top_accel": "Speed Up (Carter)", "cal_tune_march_accel": "Use Acceleration", "cal_tune_arena_reset": "Arena (Reset Search)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop hours", "crypt_autostop_off": "Off", "crypt_session_time_lb": "Time", "crypt_found_count_lb": "Collected:", "cal_tune_reset": "Reset", "cal_tune_preview_unavailable": "Static preview unavailable", "cal_tune_chest_sender": "Player Name (Chests)", "cal_tune_chest_type": "Source (Chests)", "cal_tune_chest_collect": "Open (Chests)",
         # --- ref tab additions ---
         "ref_bal_title": "Referral Balance", "ref_transfer_btn": "💸  Transfer to balance  →",
         "ref_link_title": "Your referral link:", "ref_code_prefix": "Code: ",
@@ -458,7 +448,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nicht kalibriert",
         "cal_auto_btn": "AUTO KALIBRIEREN", "cal_manual_btn": "KALIBRIEREN",
         "cal_save_btn": "💾  Speichern", "cal_load_btn": "📂  Laden",
-        "cal_tune_title": "Klick-Tuning", "cal_tune_wt_icon": "Wachturm", "cal_tune_carter": "Carter senden", "cal_tune_crypt_open": "Seltene Krypta öffnen", "cal_tune_crypt_select": "Kryptaauswahl in der Liste", "cal_tune_top_accel": "Beschleunigen (Carter)", "cal_tune_march_accel": "Beschleunigung verwenden", "cal_tune_arena_reset": "Arena (Suche zurücksetzen)", "crypt_autostop_count_lb": "Stopp", "crypt_autostop_time_lb": "Stopp Std", "crypt_autostop_off": "Aus", "crypt_session_time_lb": "Zeit", "crypt_found_count_lb": "Gesammelt:", "cal_tune_reset": "Zurücksetzen", "cal_tune_chest_sender": "Spielername (Truhen)", "cal_tune_chest_type": "Quelle (Truhen)", "cal_tune_chest_collect": "Öffnen (Truhen)",
+        "cal_tune_title": "Klick-Tuning", "cal_tune_wt_icon": "Wachturm", "cal_tune_carter": "Carter senden", "cal_tune_crypt_open": "Seltene Krypta öffnen", "cal_tune_crypt_select": "Kryptaauswahl in der Liste", "cal_tune_top_accel": "Beschleunigen (Carter)", "cal_tune_march_accel": "Beschleunigung verwenden", "cal_tune_arena_reset": "Arena (Suche zurücksetzen)", "crypt_autostop_count_lb": "Stopp", "crypt_autostop_time_lb": "Stopp Std", "crypt_autostop_off": "Aus", "crypt_session_time_lb": "Zeit", "crypt_found_count_lb": "Gesammelt:", "cal_tune_reset": "Zurücksetzen", "cal_tune_preview_unavailable": "Statische Vorschau nicht verfügbar", "cal_tune_chest_sender": "Spielername (Truhen)", "cal_tune_chest_type": "Quelle (Truhen)", "cal_tune_chest_collect": "Öffnen (Truhen)",
         "ref_bal_title": "Partner-Guthaben", "ref_transfer_btn": "💸  Auf Guthaben übertragen  →",
         "ref_link_title": "Dein Empfehlungslink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Partner",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -518,7 +508,7 @@ LANGS = {
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "No calibrado",
         "cal_auto_btn": "AUTO CALIBRAR", "cal_manual_btn": "CALIBRAR",
         "cal_save_btn": "💾  Guardar", "cal_load_btn": "📂  Cargar",
-        "cal_tune_title": "Ajuste de clics", "cal_tune_wt_icon": "Torre de guardia", "cal_tune_carter": "Enviar Carter", "cal_tune_crypt_open": "Abrir cripta rara", "cal_tune_crypt_select": "Selección de cripta en la lista", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleración", "cal_tune_arena_reset": "Arena (reiniciar búsqueda)", "crypt_autostop_count_lb": "Parar", "crypt_autostop_time_lb": "Parar horas", "crypt_autostop_off": "Apagado", "crypt_session_time_lb": "Tiempo", "crypt_found_count_lb": "Recolectado:", "cal_tune_reset": "Restablecer", "cal_tune_chest_sender": "Nombre del jugador (Cofres)", "cal_tune_chest_type": "Fuente (Cofres)", "cal_tune_chest_collect": "Abrir (Cofres)",
+        "cal_tune_title": "Ajuste de clics", "cal_tune_wt_icon": "Torre de guardia", "cal_tune_carter": "Enviar Carter", "cal_tune_crypt_open": "Abrir cripta rara", "cal_tune_crypt_select": "Selección de cripta en la lista", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleración", "cal_tune_arena_reset": "Arena (reiniciar búsqueda)", "crypt_autostop_count_lb": "Parar", "crypt_autostop_time_lb": "Parar horas", "crypt_autostop_off": "Apagado", "crypt_session_time_lb": "Tiempo", "crypt_found_count_lb": "Recolectado:", "cal_tune_reset": "Restablecer", "cal_tune_preview_unavailable": "Vista previa estática no disponible", "cal_tune_chest_sender": "Nombre del jugador (Cofres)", "cal_tune_chest_type": "Fuente (Cofres)", "cal_tune_chest_collect": "Abrir (Cofres)",
         "ref_bal_title": "Saldo de referidos", "ref_transfer_btn": "💸  Transferir al saldo  →",
         "ref_link_title": "Tu enlace de referido:", "ref_code_prefix": "Código: ", "ref_stats_title": "Referidos",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -578,7 +568,7 @@ LANGS = {
         "cal_profile_lb": "Profil :", "cal_not_calibrated": "Non calibré",
         "cal_auto_btn": "AUTO CALIBRER", "cal_manual_btn": "CALIBRER",
         "cal_save_btn": "💾  Sauvegarder", "cal_load_btn": "📂  Charger",
-        "cal_tune_title": "Réglage des clics", "cal_tune_wt_icon": "Tour de guet", "cal_tune_carter": "Envoyer Carter", "cal_tune_crypt_open": "Ouvrir la crypte rare", "cal_tune_crypt_select": "Sélection de crypte dans la liste", "cal_tune_top_accel": "Accélérer (Carter)", "cal_tune_march_accel": "Utiliser l'accélération", "cal_tune_arena_reset": "Arène (réinitialiser la recherche)", "crypt_autostop_count_lb": "Arrêt", "crypt_autostop_time_lb": "Arrêt heures", "crypt_autostop_off": "Désactivé", "crypt_session_time_lb": "Temps", "crypt_found_count_lb": "Collecté :", "cal_tune_reset": "Réinitialiser", "cal_tune_chest_sender": "Nom du joueur (Coffres)", "cal_tune_chest_type": "Source (Coffres)", "cal_tune_chest_collect": "Ouvrir (Coffres)",
+        "cal_tune_title": "Réglage des clics", "cal_tune_wt_icon": "Tour de guet", "cal_tune_carter": "Envoyer Carter", "cal_tune_crypt_open": "Ouvrir la crypte rare", "cal_tune_crypt_select": "Sélection de crypte dans la liste", "cal_tune_top_accel": "Accélérer (Carter)", "cal_tune_march_accel": "Utiliser l'accélération", "cal_tune_arena_reset": "Arène (réinitialiser la recherche)", "crypt_autostop_count_lb": "Arrêt", "crypt_autostop_time_lb": "Arrêt heures", "crypt_autostop_off": "Désactivé", "crypt_session_time_lb": "Temps", "crypt_found_count_lb": "Collecté :", "cal_tune_reset": "Réinitialiser", "cal_tune_preview_unavailable": "Aperçu statique indisponible", "cal_tune_chest_sender": "Nom du joueur (Coffres)", "cal_tune_chest_type": "Source (Coffres)", "cal_tune_chest_collect": "Ouvrir (Coffres)",
         "ref_bal_title": "Solde parrainage", "ref_transfer_btn": "💸  Transférer au solde  →",
         "ref_link_title": "Votre lien de parrainage :", "ref_code_prefix": "Code : ", "ref_stats_title": "Parrainages",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -638,7 +628,7 @@ LANGS = {
         "cal_profile_lb": "Profilo:", "cal_not_calibrated": "Non calibrato",
         "cal_auto_btn": "AUTO CALIBRA", "cal_manual_btn": "CALIBRA",
         "cal_save_btn": "💾  Salva", "cal_load_btn": "📂  Carica",
-        "cal_tune_title": "Regolazione clic", "cal_tune_wt_icon": "Torre di guardia", "cal_tune_carter": "Invia Carter", "cal_tune_crypt_open": "Apri cripta rara", "cal_tune_crypt_select": "Selezione cripta nell'elenco", "cal_tune_top_accel": "Accelera (Carter)", "cal_tune_march_accel": "Usa accelerazione", "cal_tune_arena_reset": "Arena (reimposta ricerca)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop ore", "crypt_autostop_off": "Disattivato", "crypt_session_time_lb": "Tempo", "crypt_found_count_lb": "Raccolto:", "cal_tune_reset": "Ripristina", "cal_tune_chest_sender": "Nome giocatore (Forzieri)", "cal_tune_chest_type": "Fonte (Forzieri)", "cal_tune_chest_collect": "Apri (Forzieri)",
+        "cal_tune_title": "Regolazione clic", "cal_tune_wt_icon": "Torre di guardia", "cal_tune_carter": "Invia Carter", "cal_tune_crypt_open": "Apri cripta rara", "cal_tune_crypt_select": "Selezione cripta nell'elenco", "cal_tune_top_accel": "Accelera (Carter)", "cal_tune_march_accel": "Usa accelerazione", "cal_tune_arena_reset": "Arena (reimposta ricerca)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop ore", "crypt_autostop_off": "Disattivato", "crypt_session_time_lb": "Tempo", "crypt_found_count_lb": "Raccolto:", "cal_tune_reset": "Ripristina", "cal_tune_preview_unavailable": "Anteprima statica non disponibile", "cal_tune_chest_sender": "Nome giocatore (Forzieri)", "cal_tune_chest_type": "Fonte (Forzieri)", "cal_tune_chest_collect": "Apri (Forzieri)",
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Trasferisci al saldo  →",
         "ref_link_title": "Il tuo link referral:", "ref_code_prefix": "Codice: ", "ref_stats_title": "Referral",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -698,7 +688,7 @@ LANGS = {
         "cal_profile_lb": "Profiel:", "cal_not_calibrated": "Niet gekalibreerd",
         "cal_auto_btn": "AUTO KALIBREREN", "cal_manual_btn": "KALIBREREN",
         "cal_save_btn": "💾  Opslaan", "cal_load_btn": "📂  Laden",
-        "cal_tune_title": "Klik-tuning", "cal_tune_wt_icon": "Wachttoren", "cal_tune_carter": "Carter sturen", "cal_tune_crypt_open": "Zeldzame crypte openen", "cal_tune_crypt_select": "Cryptekeuze in de lijst", "cal_tune_top_accel": "Versnellen (Carter)", "cal_tune_march_accel": "Versnelling gebruiken", "cal_tune_arena_reset": "Arena (zoeken resetten)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop uur", "crypt_autostop_off": "Uit", "crypt_session_time_lb": "Tijd", "crypt_found_count_lb": "Verzameld:", "cal_tune_reset": "Herstellen", "cal_tune_chest_sender": "Spelersnaam (Kisten)", "cal_tune_chest_type": "Bron (Kisten)", "cal_tune_chest_collect": "Openen (Kisten)",
+        "cal_tune_title": "Klik-tuning", "cal_tune_wt_icon": "Wachttoren", "cal_tune_carter": "Carter sturen", "cal_tune_crypt_open": "Zeldzame crypte openen", "cal_tune_crypt_select": "Cryptekeuze in de lijst", "cal_tune_top_accel": "Versnellen (Carter)", "cal_tune_march_accel": "Versnelling gebruiken", "cal_tune_arena_reset": "Arena (zoeken resetten)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop uur", "crypt_autostop_off": "Uit", "crypt_session_time_lb": "Tijd", "crypt_found_count_lb": "Verzameld:", "cal_tune_reset": "Herstellen", "cal_tune_preview_unavailable": "Statische voorbeeld niet beschikbaar", "cal_tune_chest_sender": "Spelersnaam (Kisten)", "cal_tune_chest_type": "Bron (Kisten)", "cal_tune_chest_collect": "Openen (Kisten)",
         "ref_bal_title": "Referralsaldo", "ref_transfer_btn": "💸  Overzetten naar saldo  →",
         "ref_link_title": "Jouw referrallink:", "ref_code_prefix": "Code: ", "ref_stats_title": "Referrals",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -758,7 +748,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Ikke kalibrert",
         "cal_auto_btn": "AUTO KALIBRER", "cal_manual_btn": "KALIBRER",
         "cal_save_btn": "💾  Lagre", "cal_load_btn": "📂  Last",
-        "cal_tune_title": "Klikk-tuning", "cal_tune_wt_icon": "Vakttårn", "cal_tune_carter": "Send Carter", "cal_tune_crypt_open": "Åpne sjelden krypt", "cal_tune_crypt_select": "Kryptvalg i listen", "cal_tune_top_accel": "Accel. (Carter)", "cal_tune_march_accel": "Bruk akselerasjon", "cal_tune_arena_reset": "Arena (tilbakestill søk)", "crypt_autostop_count_lb": "Stopp", "crypt_autostop_time_lb": "Stopp timer", "crypt_autostop_off": "Av", "crypt_session_time_lb": "Tid", "crypt_found_count_lb": "Samlet:", "cal_tune_reset": "Tilbakestill", "cal_tune_chest_sender": "Spillernavn (Kister)", "cal_tune_chest_type": "Kilde (Kister)", "cal_tune_chest_collect": "Åpne (Kister)",
+        "cal_tune_title": "Klikk-tuning", "cal_tune_wt_icon": "Vakttårn", "cal_tune_carter": "Send Carter", "cal_tune_crypt_open": "Åpne sjelden krypt", "cal_tune_crypt_select": "Kryptvalg i listen", "cal_tune_top_accel": "Accel. (Carter)", "cal_tune_march_accel": "Bruk akselerasjon", "cal_tune_arena_reset": "Arena (tilbakestill søk)", "crypt_autostop_count_lb": "Stopp", "crypt_autostop_time_lb": "Stopp timer", "crypt_autostop_off": "Av", "crypt_session_time_lb": "Tid", "crypt_found_count_lb": "Samlet:", "cal_tune_reset": "Tilbakestill", "cal_tune_preview_unavailable": "Statisk forhåndsvisning ikke tilgjengelig", "cal_tune_chest_sender": "Spillernavn (Kister)", "cal_tune_chest_type": "Kilde (Kister)", "cal_tune_chest_collect": "Åpne (Kister)",
         "ref_bal_title": "Referansesaldo", "ref_transfer_btn": "💸  Overfør til saldo  →",
         "ref_link_title": "Din referanselink:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referanser",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -818,7 +808,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nieskalibrowany",
         "cal_auto_btn": "AUTO KALIBRUJ", "cal_manual_btn": "KALIBRUJ",
         "cal_save_btn": "💾  Zapisz", "cal_load_btn": "📂  Wczytaj",
-        "cal_tune_title": "Strojenie kliknięć", "cal_tune_wt_icon": "Wieża strażnicza", "cal_tune_carter": "Wyślij Cartera", "cal_tune_crypt_open": "Otwórz rzadką kryptę", "cal_tune_crypt_select": "Wybór krypty z listy", "cal_tune_top_accel": "Przyspiesz (Carter)", "cal_tune_march_accel": "Użyj przyspieszenia", "cal_tune_arena_reset": "Arena (reset wyszukiwania)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop godz", "crypt_autostop_off": "Wyłączone", "crypt_session_time_lb": "Czas", "crypt_found_count_lb": "Zebrano:", "cal_tune_reset": "Resetuj", "cal_tune_chest_sender": "Nazwa gracza (Skrzynie)", "cal_tune_chest_type": "Źródło (Skrzynie)", "cal_tune_chest_collect": "Otwórz (Skrzynie)",
+        "cal_tune_title": "Strojenie kliknięć", "cal_tune_wt_icon": "Wieża strażnicza", "cal_tune_carter": "Wyślij Cartera", "cal_tune_crypt_open": "Otwórz rzadką kryptę", "cal_tune_crypt_select": "Wybór krypty z listy", "cal_tune_top_accel": "Przyspiesz (Carter)", "cal_tune_march_accel": "Użyj przyspieszenia", "cal_tune_arena_reset": "Arena (reset wyszukiwania)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop godz", "crypt_autostop_off": "Wyłączone", "crypt_session_time_lb": "Czas", "crypt_found_count_lb": "Zebrano:", "cal_tune_reset": "Resetuj", "cal_tune_preview_unavailable": "Podgląd statyczny niedostępny", "cal_tune_chest_sender": "Nazwa gracza (Skrzynie)", "cal_tune_chest_type": "Źródło (Skrzynie)", "cal_tune_chest_collect": "Otwórz (Skrzynie)",
         "ref_bal_title": "Saldo polecień", "ref_transfer_btn": "💸  Przenieś na saldo  →",
         "ref_link_title": "Twój link polecający:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Polecenia",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "skan",
@@ -878,7 +868,7 @@ LANGS = {
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "Não calibrado",
         "cal_auto_btn": "AUTO CALIBRAR", "cal_manual_btn": "CALIBRAR",
         "cal_save_btn": "💾  Salvar", "cal_load_btn": "📂  Carregar",
-        "cal_tune_title": "Ajuste de cliques", "cal_tune_wt_icon": "Torre de vigia", "cal_tune_carter": "Enviar Carter", "cal_tune_crypt_open": "Abrir cripta rara", "cal_tune_crypt_select": "Seleção de cripta na lista", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleração", "cal_tune_arena_reset": "Arena (redefinir busca)", "crypt_autostop_count_lb": "Parar", "crypt_autostop_time_lb": "Parar horas", "crypt_autostop_off": "Desativado", "crypt_session_time_lb": "Tempo", "crypt_found_count_lb": "Coletado:", "cal_tune_reset": "Redefinir", "cal_tune_chest_sender": "Nome do jogador (Baús)", "cal_tune_chest_type": "Fonte (Baús)", "cal_tune_chest_collect": "Abrir (Baús)",
+        "cal_tune_title": "Ajuste de cliques", "cal_tune_wt_icon": "Torre de vigia", "cal_tune_carter": "Enviar Carter", "cal_tune_crypt_open": "Abrir cripta rara", "cal_tune_crypt_select": "Seleção de cripta na lista", "cal_tune_top_accel": "Acelerar (Carter)", "cal_tune_march_accel": "Usar aceleração", "cal_tune_arena_reset": "Arena (redefinir busca)", "crypt_autostop_count_lb": "Parar", "crypt_autostop_time_lb": "Parar horas", "crypt_autostop_off": "Desativado", "crypt_session_time_lb": "Tempo", "crypt_found_count_lb": "Coletado:", "cal_tune_reset": "Redefinir", "cal_tune_preview_unavailable": "Pré-visualização estática indisponível", "cal_tune_chest_sender": "Nome do jogador (Baús)", "cal_tune_chest_type": "Fonte (Baús)", "cal_tune_chest_collect": "Abrir (Baús)",
         "ref_bal_title": "Saldo de indicações", "ref_transfer_btn": "💸  Transferir para saldo  →",
         "ref_link_title": "Seu link de indicação:", "ref_code_prefix": "Código: ", "ref_stats_title": "Indicações",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -938,7 +928,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Inte kalibrerad",
         "cal_auto_btn": "AUTO KALIBRERA", "cal_manual_btn": "KALIBRERA",
         "cal_save_btn": "💾  Spara", "cal_load_btn": "📂  Ladda",
-        "cal_tune_title": "Klick-justering", "cal_tune_wt_icon": "Vakttorn", "cal_tune_carter": "Skicka Carter", "cal_tune_crypt_open": "Öppna sällsynt krypta", "cal_tune_crypt_select": "Kryptval i listan", "cal_tune_top_accel": "Accelerera (Carter)", "cal_tune_march_accel": "Använd acceleration", "cal_tune_arena_reset": "Arena (återställ sökning)", "crypt_autostop_count_lb": "Stopp", "crypt_autostop_time_lb": "Stopp tim", "crypt_autostop_off": "Av", "crypt_session_time_lb": "Tid", "crypt_found_count_lb": "Insamlat:", "cal_tune_reset": "Återställ", "cal_tune_chest_sender": "Spelarnamn (Kistor)", "cal_tune_chest_type": "Källa (Kistor)", "cal_tune_chest_collect": "Öppna (Kistor)",
+        "cal_tune_title": "Klick-justering", "cal_tune_wt_icon": "Vakttorn", "cal_tune_carter": "Skicka Carter", "cal_tune_crypt_open": "Öppna sällsynt krypta", "cal_tune_crypt_select": "Kryptval i listan", "cal_tune_top_accel": "Accelerera (Carter)", "cal_tune_march_accel": "Använd acceleration", "cal_tune_arena_reset": "Arena (återställ sökning)", "crypt_autostop_count_lb": "Stopp", "crypt_autostop_time_lb": "Stopp tim", "crypt_autostop_off": "Av", "crypt_session_time_lb": "Tid", "crypt_found_count_lb": "Insamlat:", "cal_tune_reset": "Återställ", "cal_tune_preview_unavailable": "Statisk förhandsvisning ej tillgänglig", "cal_tune_chest_sender": "Spelarnamn (Kistor)", "cal_tune_chest_type": "Källa (Kistor)", "cal_tune_chest_collect": "Öppna (Kistor)",
         "ref_bal_title": "Hänvisningssaldo", "ref_transfer_btn": "💸  Överför till saldo  →",
         "ref_link_title": "Din hänvisningslänk:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Hänvisningar",
         "unit_sec": "s", "unit_min": "min", "unit_scan": "scan",
@@ -998,7 +988,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Kalibre edilmedi",
         "cal_auto_btn": "OTOMATİK KALİBRE", "cal_manual_btn": "KALİBRE ET",
         "cal_save_btn": "💾  Kaydet", "cal_load_btn": "📂  Yükle",
-        "cal_tune_title": "Tıklama ayarı", "cal_tune_wt_icon": "Gözetleme kulesi", "cal_tune_carter": "Carter gönder", "cal_tune_crypt_open": "Nadir kripti aç", "cal_tune_crypt_select": "Listede kript seçimi", "cal_tune_top_accel": "Hızlan (Carter)", "cal_tune_march_accel": "İvmelenmeyi kullan", "cal_tune_arena_reset": "Arena (aramayı sıfırla)", "crypt_autostop_count_lb": "Dur", "crypt_autostop_time_lb": "Dur saat", "crypt_autostop_off": "Kapalı", "crypt_session_time_lb": "Süre", "crypt_found_count_lb": "Toplanan:", "cal_tune_reset": "Sıfırla", "cal_tune_chest_sender": "Oyuncu adı (Sandıklar)", "cal_tune_chest_type": "Kaynak (Sandıklar)", "cal_tune_chest_collect": "Aç (Sandıklar)",
+        "cal_tune_title": "Tıklama ayarı", "cal_tune_wt_icon": "Gözetleme kulesi", "cal_tune_carter": "Carter gönder", "cal_tune_crypt_open": "Nadir kripti aç", "cal_tune_crypt_select": "Listede kript seçimi", "cal_tune_top_accel": "Hızlan (Carter)", "cal_tune_march_accel": "İvmelenmeyi kullan", "cal_tune_arena_reset": "Arena (aramayı sıfırla)", "crypt_autostop_count_lb": "Dur", "crypt_autostop_time_lb": "Dur saat", "crypt_autostop_off": "Kapalı", "crypt_session_time_lb": "Süre", "crypt_found_count_lb": "Toplanan:", "cal_tune_reset": "Sıfırla", "cal_tune_preview_unavailable": "Statik önizleme kullanılamıyor", "cal_tune_chest_sender": "Oyuncu adı (Sandıklar)", "cal_tune_chest_type": "Kaynak (Sandıklar)", "cal_tune_chest_collect": "Aç (Sandıklar)",
         "ref_bal_title": "Referans bakiyesi", "ref_transfer_btn": "💸  Bakiyeye aktar  →",
         "ref_link_title": "Referans linkiniz:", "ref_code_prefix": "Kod: ", "ref_stats_title": "Referanslar",
         "unit_sec": "s", "unit_min": "dk", "unit_scan": "scan",
@@ -1058,7 +1048,7 @@ LANGS = {
         "cal_profile_lb": "الملف:", "cal_not_calibrated": "غير معاير",
         "cal_auto_btn": "معايرة تلقائية", "cal_manual_btn": "معايرة",
         "cal_save_btn": "💾  حفظ", "cal_load_btn": "📂  تحميل",
-        "cal_tune_title": "ضبط النقرات", "cal_tune_wt_icon": "برج المراقبة", "cal_tune_carter": "إرسال كارتر", "cal_tune_crypt_open": "فتح القبو النادر", "cal_tune_crypt_select": "اختيار القبو من القائمة", "cal_tune_top_accel": "تسريع (كارتر)", "cal_tune_march_accel": "استخدام التسريع", "cal_tune_arena_reset": "الأرينا (إعادة تعيين البحث)", "crypt_autostop_count_lb": "توقف", "crypt_autostop_time_lb": "توقف ساعات", "crypt_autostop_off": "إيقاف", "crypt_session_time_lb": "الوقت", "crypt_found_count_lb": "تم جمعها:", "cal_tune_reset": "إعادة تعيين", "cal_tune_chest_sender": "اسم اللاعب (الصناديق)", "cal_tune_chest_type": "المصدر (الصناديق)", "cal_tune_chest_collect": "فتح (الصناديق)",
+        "cal_tune_title": "ضبط النقرات", "cal_tune_wt_icon": "برج المراقبة", "cal_tune_carter": "إرسال كارتر", "cal_tune_crypt_open": "فتح القبو النادر", "cal_tune_crypt_select": "اختيار القبو من القائمة", "cal_tune_top_accel": "تسريع (كارتر)", "cal_tune_march_accel": "استخدام التسريع", "cal_tune_arena_reset": "الأرينا (إعادة تعيين البحث)", "crypt_autostop_count_lb": "توقف", "crypt_autostop_time_lb": "توقف ساعات", "crypt_autostop_off": "إيقاف", "crypt_session_time_lb": "الوقت", "crypt_found_count_lb": "تم جمعها:", "cal_tune_reset": "إعادة تعيين", "cal_tune_preview_unavailable": "المعاينة الثابتة غير متوفرة", "cal_tune_chest_sender": "اسم اللاعب (الصناديق)", "cal_tune_chest_type": "المصدر (الصناديق)", "cal_tune_chest_collect": "فتح (الصناديق)",
         "ref_bal_title": "رصيد الإحالات", "ref_transfer_btn": "💸  تحويل إلى الرصيد  →",
         "ref_link_title": "رابط إحالتك:", "ref_code_prefix": "الرمز: ", "ref_stats_title": "الإحالات",
         "unit_sec": "ث", "unit_min": "د", "unit_scan": "مسح",
@@ -1118,7 +1108,7 @@ LANGS = {
         "cal_profile_lb": "プロファイル:", "cal_not_calibrated": "未キャリブレーション",
         "cal_auto_btn": "自動キャリブレーション", "cal_manual_btn": "キャリブレーション",
         "cal_save_btn": "💾  保存", "cal_load_btn": "📂  読込",
-        "cal_tune_title": "クリック調整", "cal_tune_wt_icon": "見張り塔", "cal_tune_carter": "カーター派遣", "cal_tune_crypt_open": "レア納骨堂を開く", "cal_tune_crypt_select": "リスト内の納骨堂選択", "cal_tune_top_accel": "加速 (カーター)", "cal_tune_march_accel": "加速使用", "cal_tune_arena_reset": "アリーナ（検索リセット）", "crypt_autostop_count_lb": "停止", "crypt_autostop_time_lb": "停止(時間)", "crypt_autostop_off": "オフ", "crypt_session_time_lb": "時間", "crypt_found_count_lb": "収集済み:", "cal_tune_reset": "リセット", "cal_tune_chest_sender": "プレイヤー名（チェスト）", "cal_tune_chest_type": "ソース（チェスト）", "cal_tune_chest_collect": "開く（チェスト）",
+        "cal_tune_title": "クリック調整", "cal_tune_wt_icon": "見張り塔", "cal_tune_carter": "カーター派遣", "cal_tune_crypt_open": "レア納骨堂を開く", "cal_tune_crypt_select": "リスト内の納骨堂選択", "cal_tune_top_accel": "加速 (カーター)", "cal_tune_march_accel": "加速使用", "cal_tune_arena_reset": "アリーナ（検索リセット）", "crypt_autostop_count_lb": "停止", "crypt_autostop_time_lb": "停止(時間)", "crypt_autostop_off": "オフ", "crypt_session_time_lb": "時間", "crypt_found_count_lb": "収集済み:", "cal_tune_reset": "リセット", "cal_tune_preview_unavailable": "静的プレビューは利用できません", "cal_tune_chest_sender": "プレイヤー名（チェスト）", "cal_tune_chest_type": "ソース（チェスト）", "cal_tune_chest_collect": "開く（チェスト）",
         "ref_bal_title": "紹介残高", "ref_transfer_btn": "💸  残高に転送  →",
         "ref_link_title": "あなたの紹介リンク:", "ref_code_prefix": "コード: ", "ref_stats_title": "紹介",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "スキャン",
@@ -1178,7 +1168,7 @@ LANGS = {
         "cal_profile_lb": "配置文件:", "cal_not_calibrated": "未校准",
         "cal_auto_btn": "自动校准", "cal_manual_btn": "校准",
         "cal_save_btn": "💾  保存", "cal_load_btn": "📂  加载",
-        "cal_tune_title": "点击调整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_crypt_open": "打开稀有墓穴", "cal_tune_crypt_select": "列表中的墓穴选择", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_arena_reset": "竞技场（重置搜索）", "crypt_autostop_count_lb": "停止", "crypt_autostop_time_lb": "停止（小时）", "crypt_autostop_off": "关闭", "crypt_session_time_lb": "时间", "crypt_found_count_lb": "已收集：", "cal_tune_reset": "重置", "cal_tune_chest_sender": "玩家名称（宝箱）", "cal_tune_chest_type": "来源（宝箱）", "cal_tune_chest_collect": "打开（宝箱）",
+        "cal_tune_title": "点击调整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_crypt_open": "打开稀有墓穴", "cal_tune_crypt_select": "列表中的墓穴选择", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_arena_reset": "竞技场（重置搜索）", "crypt_autostop_count_lb": "停止", "crypt_autostop_time_lb": "停止（小时）", "crypt_autostop_off": "关闭", "crypt_session_time_lb": "时间", "crypt_found_count_lb": "已收集：", "cal_tune_reset": "重置", "cal_tune_preview_unavailable": "静态预览不可用", "cal_tune_chest_sender": "玩家名称（宝箱）", "cal_tune_chest_type": "来源（宝箱）", "cal_tune_chest_collect": "打开（宝箱）",
         "ref_bal_title": "推荐余额", "ref_transfer_btn": "💸  转入余额  →",
         "ref_link_title": "您的推荐链接:", "ref_code_prefix": "代码: ", "ref_stats_title": "推荐",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "扫描",
@@ -1238,7 +1228,7 @@ LANGS = {
         "cal_profile_lb": "設定檔:", "cal_not_calibrated": "未校準",
         "cal_auto_btn": "自動校準", "cal_manual_btn": "校準",
         "cal_save_btn": "💾  儲存", "cal_load_btn": "📂  載入",
-        "cal_tune_title": "點擊調整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_crypt_open": "打開稀有墓穴", "cal_tune_crypt_select": "列表中的墓穴選擇", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_arena_reset": "競技場（重置搜索）", "crypt_autostop_count_lb": "停止", "crypt_autostop_time_lb": "停止（小時）", "crypt_autostop_off": "關閉", "crypt_session_time_lb": "時間", "crypt_found_count_lb": "已收集：", "cal_tune_reset": "重置", "cal_tune_chest_sender": "玩家名稱（寶箱）", "cal_tune_chest_type": "來源（寶箱）", "cal_tune_chest_collect": "打開（寶箱）",
+        "cal_tune_title": "點擊調整", "cal_tune_wt_icon": "瞭望塔", "cal_tune_carter": "派遣卡特", "cal_tune_crypt_open": "打開稀有墓穴", "cal_tune_crypt_select": "列表中的墓穴選擇", "cal_tune_top_accel": "加速 (卡特)", "cal_tune_march_accel": "使用加速", "cal_tune_arena_reset": "競技場（重置搜索）", "crypt_autostop_count_lb": "停止", "crypt_autostop_time_lb": "停止（小時）", "crypt_autostop_off": "關閉", "crypt_session_time_lb": "時間", "crypt_found_count_lb": "已收集：", "cal_tune_reset": "重置", "cal_tune_preview_unavailable": "靜態預覽不可用", "cal_tune_chest_sender": "玩家名稱（寶箱）", "cal_tune_chest_type": "來源（寶箱）", "cal_tune_chest_collect": "打開（寶箱）",
         "ref_bal_title": "推薦餘額", "ref_transfer_btn": "💸  轉入餘額  →",
         "ref_link_title": "您的推薦連結:", "ref_code_prefix": "代碼: ", "ref_stats_title": "推薦",
         "unit_sec": "秒", "unit_min": "分", "unit_scan": "掃描",
@@ -1298,7 +1288,7 @@ LANGS = {
         "cal_profile_lb": "프로파일:", "cal_not_calibrated": "보정 안 됨",
         "cal_auto_btn": "자동 보정", "cal_manual_btn": "보정",
         "cal_save_btn": "💾  저장", "cal_load_btn": "📂  불러오기",
-        "cal_tune_title": "클릭 조정", "cal_tune_wt_icon": "감시탑", "cal_tune_carter": "카터 파견", "cal_tune_crypt_open": "희귀 납골당 열기", "cal_tune_crypt_select": "목록에서 납골당 선택", "cal_tune_top_accel": "가속 (카터)", "cal_tune_march_accel": "가속 사용", "cal_tune_arena_reset": "아레나(검색 초기화)", "crypt_autostop_count_lb": "정지", "crypt_autostop_time_lb": "정지 시간", "crypt_autostop_off": "끄기", "crypt_session_time_lb": "시간", "crypt_found_count_lb": "수집됨:", "cal_tune_reset": "초기화", "cal_tune_chest_sender": "플레이어 이름(상자)", "cal_tune_chest_type": "출처(상자)", "cal_tune_chest_collect": "열기(상자)",
+        "cal_tune_title": "클릭 조정", "cal_tune_wt_icon": "감시탑", "cal_tune_carter": "카터 파견", "cal_tune_crypt_open": "희귀 납골당 열기", "cal_tune_crypt_select": "목록에서 납골당 선택", "cal_tune_top_accel": "가속 (카터)", "cal_tune_march_accel": "가속 사용", "cal_tune_arena_reset": "아레나(검색 초기화)", "crypt_autostop_count_lb": "정지", "crypt_autostop_time_lb": "정지 시간", "crypt_autostop_off": "끄기", "crypt_session_time_lb": "시간", "crypt_found_count_lb": "수집됨:", "cal_tune_reset": "초기화", "cal_tune_preview_unavailable": "정적 미리보기를 사용할 수 없습니다", "cal_tune_chest_sender": "플레이어 이름(상자)", "cal_tune_chest_type": "출처(상자)", "cal_tune_chest_collect": "열기(상자)",
         "ref_bal_title": "추천 잔액", "ref_transfer_btn": "💸  잔액으로 이전  →",
         "ref_link_title": "추천 링크:", "ref_code_prefix": "코드: ", "ref_stats_title": "추천",
         "unit_sec": "초", "unit_min": "분", "unit_scan": "스캔",
@@ -1358,7 +1348,7 @@ LANGS = {
         "cal_profile_lb": "Профіль:", "cal_not_calibrated": "Не відкалібровано",
         "cal_auto_btn": "АВТОКАЛІБРУВАТИ", "cal_manual_btn": "КАЛІБРУВАТИ",
         "cal_save_btn": "💾  Зберегти", "cal_load_btn": "📂  Завантажити",
-        "cal_tune_title": "Тюнінг кліків", "cal_tune_wt_icon": "Дозорна вежа", "cal_tune_carter": "Відправка Картера", "cal_tune_crypt_open": "Відкрити рідкісний склеп", "cal_tune_crypt_select": "Вибір склепу у списку", "cal_tune_top_accel": "Прискорити (Картер)", "cal_tune_march_accel": "Використати прискорення", "cal_tune_arena_reset": "Арена (скидання пошуку)", "crypt_autostop_count_lb": "Стоп", "crypt_autostop_time_lb": "Стоп годин", "crypt_autostop_off": "Вимк", "crypt_session_time_lb": "Час", "crypt_found_count_lb": "Зібрано:", "cal_tune_reset": "Скинути", "cal_tune_chest_sender": "Ім'я гравця (скрині)", "cal_tune_chest_type": "Джерело (скрині)", "cal_tune_chest_collect": "Відкрити (скрині)",
+        "cal_tune_title": "Тюнінг кліків", "cal_tune_wt_icon": "Дозорна вежа", "cal_tune_carter": "Відправка Картера", "cal_tune_crypt_open": "Відкрити рідкісний склеп", "cal_tune_crypt_select": "Вибір склепу у списку", "cal_tune_top_accel": "Прискорити (Картер)", "cal_tune_march_accel": "Використати прискорення", "cal_tune_arena_reset": "Арена (скидання пошуку)", "crypt_autostop_count_lb": "Стоп", "crypt_autostop_time_lb": "Стоп годин", "crypt_autostop_off": "Вимк", "crypt_session_time_lb": "Час", "crypt_found_count_lb": "Зібрано:", "cal_tune_reset": "Скинути", "cal_tune_preview_unavailable": "Статичний перегляд недоступний", "cal_tune_chest_sender": "Ім'я гравця (скрині)", "cal_tune_chest_type": "Джерело (скрині)", "cal_tune_chest_collect": "Відкрити (скрині)",
         "ref_bal_title": "Реферальний баланс", "ref_transfer_btn": "💸  Перевести на баланс  →",
         "ref_link_title": "Ваше реферальне посилання:", "ref_code_prefix": "Код: ", "ref_stats_title": "Реферали",
         "unit_sec": "с", "unit_min": "хв", "unit_scan": "скан",
@@ -1418,7 +1408,7 @@ LANGS = {
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Belum dikalibrasi",
         "cal_auto_btn": "KALIBRASI OTOMATIS", "cal_manual_btn": "KALIBRASI",
         "cal_save_btn": "💾  Simpan", "cal_load_btn": "📂  Muat",
-        "cal_tune_title": "Penyetelan klik", "cal_tune_wt_icon": "Menara pengawas", "cal_tune_carter": "Kirim Carter", "cal_tune_crypt_open": "Buka crypt langka", "cal_tune_crypt_select": "Pemilihan crypt di daftar", "cal_tune_top_accel": "Percepat (Carter)", "cal_tune_march_accel": "Gunakan percepatan", "cal_tune_arena_reset": "Arena (reset pencarian)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop jam", "crypt_autostop_off": "Nonaktif", "crypt_session_time_lb": "Waktu", "crypt_found_count_lb": "Terkumpul:", "cal_tune_reset": "Reset", "cal_tune_chest_sender": "Nama pemain (Peti)", "cal_tune_chest_type": "Sumber (Peti)", "cal_tune_chest_collect": "Buka (Peti)",
+        "cal_tune_title": "Penyetelan klik", "cal_tune_wt_icon": "Menara pengawas", "cal_tune_carter": "Kirim Carter", "cal_tune_crypt_open": "Buka crypt langka", "cal_tune_crypt_select": "Pemilihan crypt di daftar", "cal_tune_top_accel": "Percepat (Carter)", "cal_tune_march_accel": "Gunakan percepatan", "cal_tune_arena_reset": "Arena (reset pencarian)", "crypt_autostop_count_lb": "Stop", "crypt_autostop_time_lb": "Stop jam", "crypt_autostop_off": "Nonaktif", "crypt_session_time_lb": "Waktu", "crypt_found_count_lb": "Terkumpul:", "cal_tune_reset": "Reset", "cal_tune_preview_unavailable": "Pratinjau statis tidak tersedia", "cal_tune_chest_sender": "Nama pemain (Peti)", "cal_tune_chest_type": "Sumber (Peti)", "cal_tune_chest_collect": "Buka (Peti)",
         "ref_bal_title": "Saldo referral", "ref_transfer_btn": "💸  Transfer ke saldo  →",
         "ref_link_title": "Tautan referral Anda:", "ref_code_prefix": "Kode: ", "ref_stats_title": "Referral",
         "unit_sec": "d", "unit_min": "mnt", "unit_scan": "scan",
@@ -1432,22 +1422,6 @@ LANGS = {
         "roy_pool_empty": "Pool kosong", "roy_pool_count": "Koordinat dalam pool",
     },
 }
-
-def tune_menu_labels(lang: str, tune_names: "tuple[str, ...]") -> list[str]:
-    """Пункты меню «Тонкая настройка» (вкладка Калибровка), пронумерованные,
-    для указанного языка. Первый элемент — заголовок «Калибровка» (режим
-    без выбора, indices -1).
-
-    Единственный источник этой нумерации — раньше вкладка строилась своей
-    копией этой логики, а change_lang() при смене языка своей, и они
-    разошлись: вторая копия не добавляла префикс "N. ", из-за чего
-    _tune_on_select() переставал находить совпадение в списке пунктов
-    после смены языка и картинка калибровки застревала на прошлом пункте.
-    """
-    return [LANGS[lang]["tab_cal"]] + [
-        f"{i}. {LANGS[lang][f'cal_tune_{k}']}" for i, k in enumerate(tune_names, start=1)
-    ]
-
 
 LANG_LABELS = {
     "EN": "🇬🇧 EN", "UK": "🇺🇦 UA", "RU": "🇷🇺 RU",
@@ -4504,17 +4478,12 @@ class TotalHunterApp(ctk.CTk):
             pt_lb.configure(text=LANGS[val][lb_key])
             pt_desc_lb.configure(text=LANGS[val][desc_key])
 
-        # Tune option menu — перестроить labels, сохранить выбранный индекс
-        if hasattr(self, '_tune_option_menu'):
-            _new_vals = tune_menu_labels(val, TUNE_TARGET_NAMES)
-            self._tune_option_menu.configure(values=_new_vals)
-            _idx = getattr(self, '_tune_idx', -1)
-            if _idx < 0:
-                self._ui_tune_btn_var.set(_new_vals[0])
-            else:
-                self._ui_tune_btn_var.set(_new_vals[_idx + 1])
-            if hasattr(self, '_tune_apply_chest_highlight'):
-                self._tune_apply_chest_highlight()
+        # Список целей калибровки — перестроить ТОЛЬКО текст подписей строк, identity
+        # выбора остаётся self._cal_selected_id (PC-03, не индекс/переведённая строка).
+        if hasattr(self, '_cal_refresh_target_labels'):
+            self._cal_refresh_target_labels()
+            if getattr(self, '_cal_tune_refresh_display', None):
+                self._cal_tune_refresh_display()
 
         # Авто-стоп склепов — перевести «Выкл» + сохранить текущий выбор
         if hasattr(self, '_crypt_autostop_count_menu'):
@@ -4926,12 +4895,21 @@ class TotalHunterApp(ctk.CTk):
         _tune_img_label = ctk.CTkLabel(_img_area, text="", image=None)
         self._tune_screen_images = {}
 
+        # Design 4.3 (файл 40): kind="смещение-к-YOLO" (crypt_select) — вместо тишины
+        # (сегодня ничего не показывается) явный видимый текст «статичное превью недоступно»,
+        # не молчаливое отсутствие.
+        _tune_unavailable_lb = ctk.CTkLabel(
+            _img_area, text="", font=ctk.CTkFont(size=13),
+            text_color=MD3["on_surface2"], justify="center")
+
         def _show_cal_images():
             _tune_img_label.pack_forget()
+            _tune_unavailable_lb.pack_forget()
             _cal_imgs_frame.pack(fill="x")
 
         def _show_tune_image(key):
             _cal_imgs_frame.pack_forget()
+            _tune_unavailable_lb.pack_forget()
             if key not in self._tune_screen_images:
                 fname = _TUNE_SCREEN_MAP.get(key)
                 img = None
@@ -4949,6 +4927,13 @@ class TotalHunterApp(ctk.CTk):
             ctk_img = self._tune_screen_images[key]
             _tune_img_label.configure(image=ctk_img if ctk_img else None)
             _tune_img_label.pack(padx=8, pady=4)
+
+        def _show_unavailable_preview():
+            _cal_imgs_frame.pack_forget()
+            _tune_img_label.pack_forget()
+            _tune_unavailable_lb.configure(
+                text=LANGS[self.current_lang]["cal_tune_preview_unavailable"])
+            _tune_unavailable_lb.pack(pady=20)
 
         # ── Profile dropdown ──────────────────────────────────────────────
         profile_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
@@ -5078,20 +5063,55 @@ class TotalHunterApp(ctk.CTk):
             messagebox.showinfo("Сохранено", f"Профиль сохранён:\n{path}")
 
 
-        # ── Кнопка Калибровать — главная (error tonal) ───────────────────
-        self._cal_manual_btn = ctk.CTkButton(
-            self._cal_frame,
-            text=LANGS[self.current_lang]["cal_manual_btn"],
-            command=_calibrate,
-            fg_color=MD3["error"],
-            hover_color=MD3["error_hover"],
-            text_color=MD3["on_surface"],
-            height=56,
-            corner_radius=16,
-            font=ctk.CTkFont(size=18, weight="bold"),
-        )
-        self._cal_manual_btn.pack(fill="x", padx=40, pady=(8, 6))
-        self._i18n_labels.append((self._cal_manual_btn, "cal_manual_btn"))
+        # ── Список 12 целей калибровки — единая точка входа (C-01, PC-01) ─
+        # Заменяет прежние ДВА независимых входа (кнопка «Калибровать» + дропдаун тюнинга).
+        # None -> ничего не выбрано; выбор хранится по id (PC-03), не по индексу строки.
+        self._cal_selected_id = None
+        self._cal_target_rows = {}
+        _CAL_KIND_ICON = {"точка": "•", "OCR-область": "▭", "смещение-к-YOLO": "↝"}
+
+        _target_list_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
+        _target_list_frame.pack(fill="x", padx=16, pady=(4, 4))
+
+        def _refresh_target_row_highlight():
+            for tid, (row, _icon_lb, _text_lb) in self._cal_target_rows.items():
+                row.configure(fg_color=MD3["elevated"] if tid == self._cal_selected_id else "transparent")
+
+        def _on_target_row_click(target_id):
+            t = cal_target_by_id(target_id)
+            self._cal_selected_id = target_id
+            _refresh_target_row_highlight()
+            _update_tune_card_visibility()
+            if t["storage"] == "absolute":
+                # Design 4.3: клик по ref_a/ref_b сразу запускает существующий комбинированный
+                # магнифайер-поток (А затем Б за один вызов) — независимого редактирования
+                # «только Б» не было и не появляется. tune_card уже скрыт выше.
+                _show_cal_images()
+                _calibrate()
+            else:
+                _tune_refresh_display()
+
+        for _t in CALIBRATION_TARGETS:
+            _row = ctk.CTkFrame(_target_list_frame, fg_color="transparent", corner_radius=8)
+            _row.pack(fill="x", pady=1)
+            _icon_lb = ctk.CTkLabel(_row, text=_CAL_KIND_ICON[_t["kind"]], width=20,
+                                     text_color=MD3["on_surface2"], font=ctk.CTkFont(size=13))
+            _icon_lb.pack(side="left", padx=(6, 2), pady=3)
+            _label_color = TUNE_CHEST_HIGHLIGHT_COLOR if _t["theme"] == "chest" else MD3["on_surface"]
+            _text_lb = ctk.CTkLabel(_row, text=LANGS[self.current_lang][_t["label_key"]],
+                                     text_color=_label_color, font=ctk.CTkFont(size=12), anchor="w")
+            _text_lb.pack(side="left", fill="x", expand=True, pady=3)
+            for _w in (_row, _icon_lb, _text_lb):
+                _w.bind("<Button-1>", lambda _e, _tid=_t["id"]: _on_target_row_click(_tid))
+            self._cal_target_rows[_t["id"]] = (_row, _icon_lb, _text_lb)
+
+        def _cal_refresh_target_labels():
+            """change_lang(): перестроить ТОЛЬКО текст подписей строк — идентичность выбора
+            (self._cal_selected_id) не пересчитывается, PC-03."""
+            for _t in CALIBRATION_TARGETS:
+                _, _icon_lb, _text_lb = self._cal_target_rows[_t["id"]]
+                _text_lb.configure(text=LANGS[self.current_lang][_t["label_key"]])
+        self._cal_refresh_target_labels = _cal_refresh_target_labels
 
         # ── Сохранить / Загрузить — в одну строку ────────────────────────
         save_load_row = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
@@ -5111,11 +5131,10 @@ class TotalHunterApp(ctk.CTk):
         self._cal_load_btn.pack(side="left", expand=True, fill="x", padx=(4, 0))
         self._i18n_labels.append((self._cal_load_btn, "cal_load_btn"))
 
-        # ── Тюнинг кликов (D-Pad) ────────────────────────────────────────
+        # ── Панель редактирования offset-целей (D-Pad) ───────────────────
         # Порядок = реальная последовательность действий бота за один цикл
         # склепа (см. CryptHunter._run_cycle): открыть башню → выбрать склеп
         # в списке → открыть (если редкий) → отправить Картера → ускорить.
-        _TUNE_INTERNAL = TUNE_TARGET_NAMES
         _TUNE_SCREEN_MAP = {
             "wt_icon":       "tune_wt_icon.png",
             "carter":        "tune_carter.png",
@@ -5126,13 +5145,17 @@ class TotalHunterApp(ctk.CTk):
             "chest_collect": "tune_chest_collect.png",
         }
 
-        def _tune_labels():
-            return tune_menu_labels(self.current_lang, _TUNE_INTERNAL)
-
         tune_card = ctk.CTkFrame(self._cal_frame, fg_color=MD3["card"],
                                   corner_radius=10, border_width=1,
                                   border_color=MD3["outline"])
-        tune_card.pack(fill="x", padx=16, pady=(10, 4))
+        # НЕ packится сразу — видимость управляется _update_tune_card_visibility()
+        # (Design 4.4, файл 40: 3 состояния — None/absolute -> скрыта, offset -> показана).
+
+        def _update_tune_card_visibility():
+            if cal_tune_card_visible(self._cal_selected_id):
+                tune_card.pack(fill="x", padx=16, pady=(10, 4))
+            else:
+                tune_card.pack_forget()
 
         _tune_title_lb = ctk.CTkLabel(tune_card, text=LANGS[self.current_lang]["cal_tune_title"],
                      font=ctk.CTkFont(size=13, weight="bold"),
@@ -5140,103 +5163,42 @@ class TotalHunterApp(ctk.CTk):
         _tune_title_lb.pack(pady=(8, 4))
         self._i18n_labels.append((_tune_title_lb, "cal_tune_title"))
 
-        # idx = -1 означает режим «Калибровка» (показываем скрины точек А/Б)
-        self._tune_idx = -1
-        self._ui_tune_btn_var = ctk.StringVar(value=_tune_labels()[0])
-
-        def _tune_on_select(display_val):
-            labels = _tune_labels()
-            if display_val == labels[0]:       # первый пункт — «Калибровка»
-                self._tune_idx = -1
-            elif display_val in labels[1:]:
-                self._tune_idx = labels[1:].index(display_val)
-            _tune_refresh_display()
-
-        self._tune_option_menu = ctk.CTkOptionMenu(
-            tune_card, values=_tune_labels(),
-            variable=self._ui_tune_btn_var,
-            fg_color=MD3["elevated"], button_color=MD3["primary"],
-            button_hover_color=MD3["primary_dim"],
-            text_color=MD3["on_surface"], corner_radius=8,
-            command=_tune_on_select,
-        )
-        self._tune_option_menu.pack(fill="x", padx=12, pady=(0, 4))
-
-        def _tune_apply_chest_highlight():
-            # .configure(values=...) перестраивает пункты меню с нуля
-            # (delete + add_command) — подсветку нужно накладывать заново
-            # после КАЖДОЙ перестройки (первичное построение и смена языка).
-            try:
-                menu = self._tune_option_menu._dropdown_menu
-                for i in tune_chest_group_entry_indices(_TUNE_INTERNAL):
-                    menu.entryconfigure(i, foreground=TUNE_CHEST_HIGHLIGHT_COLOR)
-            except Exception:
-                pass
-
-        self._tune_apply_chest_highlight = _tune_apply_chest_highlight
-        _tune_apply_chest_highlight()
-
         self._tune_display_lb = ctk.CTkLabel(
             tune_card, text="",
             font=ctk.CTkFont(size=13), text_color=MD3["on_surface"])
         self._tune_display_lb.pack(pady=(0, 2))
 
-        _CHEST_TUNE_RECTS = {
-            "chest_sender": chest_reader.SENDER_REF_RECT,
-            "chest_type": chest_reader.SOURCE_REF_RECT,
-        }
-
-        def _tune_get_key():
-            if self._tune_idx < 0:
-                return None
-            return _TUNE_INTERNAL[self._tune_idx]
-
         def _tune_show_chest_overlay_if_relevant():
-            key = _tune_get_key()
-            if key and key in _CHEST_TUNE_RECTS:
-                self._show_chest_rect_overlay(_CHEST_TUNE_RECTS[key], key)
-
-        # Точечные цели (не OCR-области) — показываем живой крестик прямо на
-        # экране игры, в точке где реально произойдёт клик с учётом офсета,
-        # ДОПОЛНИТЕЛЬНО к статичной иллюстрации, а не вместо неё.
-        _TUNE_POINT_TARGETS = {
-            "wt_icon":       lambda: scale_ui_coord(*WT_ICON),
-            "carter":        lambda: coord_manager.to_screen_dialog(*CRYPT_STUDY_BTN),
-            "crypt_open":    lambda: coord_manager.to_screen_dialog(*CRYPT_OPEN_BTN),
-            # crypt_select НЕ включён сюда намеренно: Y этой кнопки всегда
-            # разный — определяется живым YOLO-детектом склепа в списке, а не
-            # фиксированной точкой. Статический крестик тут был бы враньём —
-            # он показывал бы точку, где склепа в данный момент может и не
-            # быть. Офсет X/Y для crypt_select по-прежнему настраивается через
-            # D-Pad (см. TUNE_TARGET_NAMES) — он складывается с живой позицией
-            # в crypt_hunter.py:_scroll_and_find, просто без crosshair-превью.
-            "top_accel":     lambda: scale_ui_coord(*CARTER_EVENT_BAR),
-            "march_accel":   lambda: scale_ui_coord(*ACCEL_USE_BTN),
-            "arena_reset":   lambda: scale_ui_coord(*WT_ARENA_TAB),
-            "chest_collect": lambda: coord_manager.to_screen_dialog(*chest_reader.OPEN_BUTTON_REF_POS),
-        }
+            t = cal_target_by_id(self._cal_selected_id)
+            if t and t.get("ref_rect"):
+                self._show_chest_rect_overlay(t["ref_rect"], t["id"])
 
         def _tune_show_point_crosshair_if_relevant():
-            key = _tune_get_key()
-            if key and key in _TUNE_POINT_TARGETS:
-                bx, by = _TUNE_POINT_TARGETS[key]()
-                ox, oy = coord_manager.get_ui_offset(key)
-                self._show_crosshair_at(bx + ox, by + oy)
+            pos = cal_resolve_point_position(self._cal_selected_id)
+            if pos:
+                self._show_crosshair_at(*pos)
 
         def _tune_refresh_display():
-            key = _tune_get_key()
-            if key is None:
+            key = self._cal_selected_id
+            t = cal_target_by_id(key)
+            if t is None or t["storage"] != "offset":
                 _show_cal_images()
                 self._tune_display_lb.configure(text="")
                 return
             ox, oy = coord_manager.get_ui_offset(key)
             self._tune_display_lb.configure(text=f"X: {ox:+d}px   Y: {oy:+d}px")
-            _tune_show_chest_overlay_if_relevant()
-            _tune_show_point_crosshair_if_relevant()
-            _show_tune_image(key)
+            dispatch = cal_visual_dispatch_for_kind(t["kind"])
+            if dispatch == "chest_overlay":
+                _tune_show_chest_overlay_if_relevant()
+            elif dispatch == "crosshair":
+                _tune_show_point_crosshair_if_relevant()
+            if dispatch == "unavailable_text":
+                _show_unavailable_preview()
+            else:
+                _show_tune_image(key)
 
         def _tune_apply(dx, dy):
-            key = _tune_get_key()
+            key = self._cal_selected_id
             if key is None:
                 return
             ox, oy = coord_manager.get_ui_offset(key)
@@ -5283,7 +5245,8 @@ class TotalHunterApp(ctk.CTk):
         # Reset button
         _tune_reset_btn = ctk.CTkButton(tune_card, text=LANGS[self.current_lang]["cal_tune_reset"],
                       command=lambda: (
-                          coord_manager.set_ui_offset(_tune_get_key(), 0, 0) if _tune_get_key() else None,
+                          coord_manager.set_ui_offset(self._cal_selected_id, 0, 0)
+                          if self._cal_selected_id else None,
                           _tune_refresh_display(),
                       ),
                       fg_color=MD3["card"], hover_color=MD3["elevated"],
@@ -5292,6 +5255,8 @@ class TotalHunterApp(ctk.CTk):
         _tune_reset_btn.pack(pady=(0, 10))
         self._i18n_labels.append((_tune_reset_btn, "cal_tune_reset"))
 
+        self._cal_tune_refresh_display = _tune_refresh_display
+        _update_tune_card_visibility()
         _tune_refresh_display()
 
         # ── REF info ──────────────────────────────────────────────────────

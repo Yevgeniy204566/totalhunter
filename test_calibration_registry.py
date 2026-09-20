@@ -85,3 +85,26 @@ class TestRegistryBidirectionalWithUiButtonNames:
     def test_registry_offset_ids_match_ui_button_names_bidirectionally(self):
         registry_offset_ids = {t["id"] for t in CALIBRATION_TARGETS if t["storage"] == "offset"}
         assert registry_offset_ids == set(_UI_BUTTON_NAMES)
+
+
+class TestNoLegacyTuneStructuresRemain:
+    """PC-04 (файл 39): TUNE_TARGET_NAMES/_TUNE_POINT_TARGETS/_CHEST_TUNE_RECTS удалены
+    атомарно вместе с реестром — grep по всему проекту, по образцу правила AP-DUP-HARDCODE
+    («grep по всему файлу перед тем как считать задачу завершённой»)."""
+
+    LEGACY_NAMES = ("TUNE_TARGET_NAMES", "_TUNE_POINT_TARGETS", "_CHEST_TUNE_RECTS",
+                     "_tune_option_menu", "_ui_tune_btn_var", "tune_menu_labels",
+                     "tune_chest_group_entry_indices")
+
+    def test_no_legacy_tune_structures_remain(self):
+        import pathlib
+        root = pathlib.Path(__file__).parent
+        hits = []
+        for py_file in root.glob("*.py"):
+            if py_file.name == "test_calibration_registry.py":
+                continue  # этот файл сам перечисляет имена в LEGACY_NAMES — не self-match
+            text = py_file.read_text(encoding="utf-8")
+            for name in self.LEGACY_NAMES:
+                if name in text:
+                    hits.append(f"{py_file.name}: {name}")
+        assert hits == [], f"найдены литералы старых структур: {hits}"

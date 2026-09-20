@@ -13,6 +13,7 @@ import main as _main_module
 from coord_manager import coord_manager
 
 CALIBRATION_TARGETS = _main_module.CALIBRATION_TARGETS
+LANGS = _main_module.LANGS
 cal_target_by_id = _main_module.cal_target_by_id
 cal_tune_card_visible = _main_module.cal_tune_card_visible
 cal_visual_dispatch_for_kind = _main_module.cal_visual_dispatch_for_kind
@@ -77,6 +78,12 @@ class TestVisualDispatchForKind:
         for t in CALIBRATION_TARGETS:
             # не бросает KeyError ни для одной реальной записи реестра
             cal_visual_dispatch_for_kind(t["kind"])
+
+    def test_unavailable_text_key_exists_in_every_language(self):
+        """Design 4.3 (файл 40): текст «статичное превью недоступно» для смещение-к-YOLO
+        (crypt_select) — видимый UI-элемент, не молчание, во всех 19 языках."""
+        for lang in LANGS:
+            assert "cal_tune_preview_unavailable" in LANGS[lang]
 
 
 class TestResolvePointPosition:
