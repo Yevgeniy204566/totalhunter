@@ -7,7 +7,8 @@
 
 ### Task 3: `GET /roy/scout-finds`
 
-**Invariant:** P-09 (публичный список без hwid, новые первыми), P-13 (только свежие, ≤30 мин).
+**Invariant:** P-09 (публичный список без hwid, новые первыми), P-13 (только находки младше 30 минут;
+ровно 30:00 уже не показывается — `found_at > now − 30 мин`, contracts-03.md P-09).
 **Files:** Modify `server/roy.py`; Test `server/tests/test_roy_scout.py`.
 **Produces:** `GET /roy/scout-finds` → `{"finds": [{"kingdom","x","y","found_at"}, ...]}`, новые первыми.
 
@@ -139,7 +140,9 @@ async def scout_finds(db: AsyncSession = Depends(get_db)):
 ### Task 4: Клиент `RoyClient.report_scout_find`
 
 **Invariant:** P-06 (kingdom<=0 -> без запроса, лог), P-07 (отдельный тред, timeout 5, не блокирует), P-08 (сбой
-проглатывается). **Existing:** `RoyClient.report` (`roy/roy_client.py:27-48`, не меняем) — образец треда.
+проглатывается). **Existing:** `RoyClient.report` (`roy/roy_client.py:27-48`, не меняем) — образец треда;
+`_TIMEOUT = 5` (`roy/roy_client.py:9`) — существующая константа клиента, используется во всех текущих методах
+(`report`, `scan`, `idle`, `balance` и др.); Task 4 переиспользует её как есть, отдельную константу не вводит.
 
 **Files:** Modify `roy/roy_client.py` (метод добавить после `report`); Create `test_roy_scout_client.py` (корень).
 **Produces:** `RoyClient(hwid).report_scout_find(kingdom:int, x:int, y:int) -> bool` — `True`, если тред запущен;
