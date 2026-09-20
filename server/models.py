@@ -331,6 +331,29 @@ class RoyKingdomMember(Base):
                         server_default=func.now())
 
 
+class RoyScoutFind(Base):
+    """
+    Находка Биржи 2.0 (Exchange Scout), выложенная на сайт в разделе РОЙ.
+    x, y — позиция экрана бота в момент кадра (OCR), НЕ точные координаты биржи.
+    kingdom вводит участник добровольно. Живёт SCOUT_FIND_TTL_MIN минут (roy.py).
+    reporter_hwid наружу не отдаётся. Без UNIQUE: дедупликация не нужна (решение владельца).
+    reporter_hwid: String(16) — тот же тип/размер, что User.hwid (models.py:65) и одноимённое
+    поле RoyPool.reporter_hwid (models.py:284, образец этой модели).
+    found_at — ЕДИНСТВЕННЫЙ индекс таблицы (architecture-04.md:12,14): kingdom БЕЗ индекса,
+    т.к. GET /roy/scout-finds не фильтрует по kingdom — индексировать нечего, только лишняя
+    запись при INSERT/DELETE.
+    """
+    __tablename__ = "roy_scout_finds"
+
+    id            = Column(Integer, primary_key=True)
+    kingdom       = Column(Integer, nullable=False)
+    x             = Column(Integer, nullable=False)
+    y             = Column(Integer, nullable=False)
+    reporter_hwid = Column(String(16), nullable=False)
+    found_at      = Column(TIMESTAMP(timezone=True), nullable=False,
+                           server_default=func.now(), index=True)
+
+
 # ─────────────────────────────────────────────
 # Orders — payment records
 # ─────────────────────────────────────────────
