@@ -47,6 +47,28 @@ class RoyClient:
         t.daemon = False  # ждём завершения HTTP-запроса перед выходом процесса
         t.start()
 
+    def report_scout_find(self, kingdom: int, x: int, y: int) -> bool:
+        """Публикует находку Биржи 2.0 на сайт (раздел РОЙ). Fire-and-forget в отдельном треде,
+        consumer не ждёт ответа. kingdom<=0 (поле в GUI пусто) — сервер такое не показывает,
+        запрос не шлём. Возвращает True, если тред запущен."""
+        if kingdom <= 0:
+            print(f"[ROY] scout-find skipped: kingdom={kingdom}")
+            return False
+
+        def _send():
+            try:
+                r = requests.post(f"{SERVER_URL}/roy/scout-find", json={
+                    "hwid": self.hwid, "kingdom": kingdom, "x": x, "y": y,
+                }, timeout=_TIMEOUT)
+                if not r.json().get("success"):
+                    print(f"[ROY] scout-find rejected: HTTP {r.status_code}")
+            except Exception as e:
+                print(f"[ROY] scout-find ERROR: {e!r}")
+        t = threading.Thread(target=_send)
+        t.daemon = False  # как в report(): запрос должен завершиться до выхода процесса; timeout requests — 5 с на подключение и на чтение отдельно, суммарного лимита нет
+        t.start()
+        return True
+
     def scan(self, kingdom: int | None = None) -> bool:
         """Фиксирует 30 сек активного сканирования (+45 сек баланса).
         Если передан kingdom — обновляет live-счётчик ГОСа на сервере.
