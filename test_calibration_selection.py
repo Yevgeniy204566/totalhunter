@@ -7,7 +7,7 @@ docs/superpowers/plans/exchange-scout-calibration-plan-a-*.md, файлы 39-41)
 поэтому логика выбора/диспетчеризации/видимости тестируется отдельно от самой отрисовки
 виджетов (та проверяется вручную владельцем в игре, как PT-13 в плане РОЙ).
 """
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import main as _main_module
 from coord_manager import coord_manager
@@ -18,6 +18,7 @@ cal_target_by_id = _main_module.cal_target_by_id
 cal_tune_card_visible = _main_module.cal_tune_card_visible
 cal_visual_dispatch_for_kind = _main_module.cal_visual_dispatch_for_kind
 cal_resolve_point_position = _main_module.cal_resolve_point_position
+cal_apply_offset_delta = _main_module.cal_apply_offset_delta
 
 
 class TestCalTargetById:
@@ -121,3 +122,43 @@ class TestResolvePointPosition:
         finally:
             target["base_pos_fn"] = original_fn
             coord_manager.set_ui_offset("wt_icon", *original_offset)
+
+
+class TestApplyOffsetDelta:
+    """Self-Audit (файл 42): явный 0 обязан доходить до coord_manager.set_ui_offset как есть,
+    не считаться «не задано»; вызов не пропускается ни при каком dx/dy, включая (0, 0)."""
+
+    def test_none_target_id_is_noop(self):
+        with patch_set_ui_offset() as spy:
+            cal_apply_offset_delta(None, 5, 5)
+            spy.assert_not_called()
+
+    def test_zero_delta_still_calls_set_ui_offset(self):
+        """Находка ревью: код, который пропускает вызов при dx=dy=0 (`if dx or dy:`),
+        внешне неотличим по чтению get_ui_offset() — тест обязан проверять сам вызов."""
+        with patch_set_ui_offset() as spy:
+            cal_apply_offset_delta("wt_icon", 0, 0)
+            spy.assert_called_once()
+
+    def test_delta_added_to_current_offset(self):
+        original_offset = coord_manager.get_ui_offset("wt_icon")
+        try:
+            coord_manager.set_ui_offset("wt_icon", 10, 10)
+            cal_apply_offset_delta("wt_icon", -10, -10)
+            assert coord_manager.get_ui_offset("wt_icon") == (0, 0)
+            cal_apply_offset_delta("wt_icon", -1, 0)
+            assert coord_manager.get_ui_offset("wt_icon") == (-1, 0)
+        finally:
+            coord_manager.set_ui_offset("wt_icon", *original_offset)
+
+    def test_does_not_write_profile_to_disk(self):
+        """Анти-паттерн Стадии 1 (файл 38): D-Pad не пишет файл на каждый клик — только
+        coord_manager.save() пишет на диск (main.py:_save_profile), cal_apply_offset_delta
+        его не вызывает и не может вызывать (не знает о профилях/путях вообще). Проверяются
+        реально используемые имена в байт-коде (co_names), не текст докстринга."""
+        used_names = cal_apply_offset_delta.__code__.co_names
+        assert "save" not in used_names and "os" not in used_names
+
+
+def patch_set_ui_offset():
+    return patch.object(coord_manager, "set_ui_offset", wraps=coord_manager.set_ui_offset)

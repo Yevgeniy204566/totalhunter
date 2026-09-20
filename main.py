@@ -215,6 +215,17 @@ def cal_resolve_point_position(target_id):
     return bx + ox, by + oy
 
 
+def cal_apply_offset_delta(target_id, dx, dy):
+    """D-Pad: применяет сдвиг (dx, dy) к текущему офсету target_id. Анти-паттерн Стадии 1
+    (файл 38)/находка Self-Audit (файл 42): явный 0 обязан дойти до coord_manager.set_ui_offset
+    как есть, без условной проверки на truthiness (0 != "не задано") — set_ui_offset вызывается
+    безусловно, не пропускается при dx=dy=0. Не пишет профиль на диск (никакой autosave)."""
+    if target_id is None:
+        return
+    ox, oy = coord_manager.get_ui_offset(target_id)
+    coord_manager.set_ui_offset(target_id, ox + dx, oy + dy)
+
+
 def crypt_autostop_reason(count: int, count_limit: int | None,
                            elapsed_sec: float, time_limit_sec: int | None) -> str | None:
     """Возвращает 'count' / 'time', если соответствующий лимит авто-стопа
@@ -5198,11 +5209,7 @@ class TotalHunterApp(ctk.CTk):
                 _show_tune_image(key)
 
         def _tune_apply(dx, dy):
-            key = self._cal_selected_id
-            if key is None:
-                return
-            ox, oy = coord_manager.get_ui_offset(key)
-            coord_manager.set_ui_offset(key, ox + dx, oy + dy)
+            cal_apply_offset_delta(self._cal_selected_id, dx, dy)
             _tune_refresh_display()
 
         # Step size toggle
