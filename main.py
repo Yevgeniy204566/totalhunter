@@ -135,6 +135,48 @@ TUNE_TARGET_NAMES = ("wt_icon", "crypt_select", "crypt_open", "carter", "top_acc
 TUNE_CHEST_GROUP = ("chest_sender", "chest_type", "chest_collect")
 TUNE_CHEST_HIGHLIGHT_COLOR = "#00FF88"
 
+# Единый реестр 12 целей калибровки (PLAN-A, docs/superpowers/plans/
+# exchange-scout-calibration-plan-a-*.md, файлы 38-43). Заменяет TUNE_TARGET_NAMES,
+# _TUNE_POINT_TARGETS, _CHEST_TUNE_RECTS (PC-04) одним источником метаданных.
+# Порядок — Design 4.8: калибровка -> Склепы -> общие/биржи -> Сундуки.
+# base_pos_fn обязан оставаться вызываемым (не кэшировать результат как число, PC-05) —
+# координата зависит от текущей калибровки ref_a/ref_b и пересчитывается на каждый рендер.
+CALIBRATION_TARGETS = [
+    {"id": "ref_a", "kind": "точка", "storage": "absolute",
+     "theme": None, "label_key": "cal_pt_a_lb"},
+    {"id": "ref_b", "kind": "точка", "storage": "absolute",
+     "theme": None, "label_key": "cal_pt_b_lb"},
+    {"id": "crypt_select", "kind": "смещение-к-YOLO", "storage": "offset",
+     "theme": None, "label_key": "cal_tune_crypt_select"},
+    {"id": "crypt_open", "kind": "точка", "storage": "offset",
+     "theme": None, "label_key": "cal_tune_crypt_open",
+     "base_pos_fn": lambda: coord_manager.to_screen_dialog(*CRYPT_OPEN_BTN)},
+    {"id": "carter", "kind": "точка", "storage": "offset",
+     "theme": None, "label_key": "cal_tune_carter",
+     "base_pos_fn": lambda: coord_manager.to_screen_dialog(*CRYPT_STUDY_BTN)},
+    {"id": "wt_icon", "kind": "точка", "storage": "offset",
+     "theme": None, "label_key": "cal_tune_wt_icon",
+     "base_pos_fn": lambda: scale_ui_coord(*WT_ICON)},
+    {"id": "top_accel", "kind": "точка", "storage": "offset",
+     "theme": None, "label_key": "cal_tune_top_accel",
+     "base_pos_fn": lambda: scale_ui_coord(*CARTER_EVENT_BAR)},
+    {"id": "march_accel", "kind": "точка", "storage": "offset",
+     "theme": None, "label_key": "cal_tune_march_accel",
+     "base_pos_fn": lambda: scale_ui_coord(*ACCEL_USE_BTN)},
+    {"id": "arena_reset", "kind": "точка", "storage": "offset",
+     "theme": None, "label_key": "cal_tune_arena_reset",
+     "base_pos_fn": lambda: scale_ui_coord(*WT_ARENA_TAB)},
+    {"id": "chest_sender", "kind": "OCR-область", "storage": "offset",
+     "theme": "chest", "label_key": "cal_tune_chest_sender",
+     "ref_rect": chest_reader.SENDER_REF_RECT},
+    {"id": "chest_type", "kind": "OCR-область", "storage": "offset",
+     "theme": "chest", "label_key": "cal_tune_chest_type",
+     "ref_rect": chest_reader.SOURCE_REF_RECT},
+    {"id": "chest_collect", "kind": "точка", "storage": "offset",
+     "theme": "chest", "label_key": "cal_tune_chest_collect",
+     "base_pos_fn": lambda: coord_manager.to_screen_dialog(*chest_reader.OPEN_BUTTON_REF_POS)},
+]
+
 
 def tune_chest_group_entry_indices(tune_names: "tuple[str, ...]") -> list[int]:
     """Индексы пунктов dropdown-меню (1-based — entry 0 это заголовок
