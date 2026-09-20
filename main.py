@@ -215,6 +215,15 @@ def cal_resolve_point_position(target_id):
     return bx + ox, by + oy
 
 
+CALIBRATION_VIDEO_URL = ""  # PC-07: заглушка, реальный адрес подставляется владельцем позже
+
+
+def cal_video_link_click_url():
+    """PC-07: клик по видео-ссылке открывает URL только если он задан — пустая заглушка
+    неактивна (не битая ссылка, не молчаливое отсутствие)."""
+    return CALIBRATION_VIDEO_URL if CALIBRATION_VIDEO_URL else None
+
+
 def cal_apply_offset_delta(target_id, dx, dy):
     """D-Pad: применяет сдвиг (dx, dy) к текущему офсету target_id. Анти-паттерн Стадии 1
     (файл 38)/находка Self-Audit (файл 42): явный 0 обязан дойти до coord_manager.set_ui_offset
@@ -315,7 +324,7 @@ LANGS = {
         "crypt_collected": "Собрано", "crypt_last": "последний",
         # --- calibration tab ---
         "cal_title": "Калибровка экрана",
-        "cal_desc": "Откройте игру в привычном режиме, затем установите две точки.",
+        "cal_desc": "Откройте игру в привычном режиме, затем установите две точки.", "cal_video_link": "Видео-инструкция (YouTube)",
         "cal_pt_a_lb": "Точка A — мини-карта",
         "cal_pt_a_desc": "Уменьшите зум\nмини-карты до мин.\nКликните по центру.",
         "cal_pt_b_lb": "Точка B — Серебро",
@@ -388,7 +397,7 @@ LANGS = {
         "crypt_collected": "Collected", "crypt_last": "last",
         # --- calibration tab ---
         "cal_title": "Screen Calibration",
-        "cal_desc": "Open the game normally, then set two anchor points.",
+        "cal_desc": "Open the game normally, then set two anchor points.", "cal_video_link": "Video Tutorial (YouTube)",
         "cal_pt_a_lb": "Point A — minimap",
         "cal_pt_a_desc": "Set minimap zoom\nto minimum.\nClick center.",
         "cal_pt_b_lb": "Point B — Silver",
@@ -453,7 +462,7 @@ LANGS = {
         "crypt_ready": "BEREIT", "crypt_stopped": "Gestoppt",
         "crypt_select_warn": "Mind. einen Typ wählen!", "crypt_searching": "STATUS: SUCHE...",
         "crypt_collected": "Gesammelt", "crypt_last": "letztes",
-        "cal_title": "Bildschirmkalibrierung", "cal_desc": "Spiel öffnen, dann zwei Ankerpunkte setzen.",
+        "cal_title": "Bildschirmkalibrierung", "cal_desc": "Spiel öffnen, dann zwei Ankerpunkte setzen.", "cal_video_link": "Video-Anleitung (YouTube)",
         "cal_pt_a_lb": "Punkt A — Minikarte", "cal_pt_a_desc": "Minikarte-Zoom\nauf Minimum.\nMitte klicken.",
         "cal_pt_b_lb": "Punkt B — Silber", "cal_pt_b_desc": "Silber-Symbol hover\nbis «+» erscheint.\nAuf «+» klicken.",
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nicht kalibriert",
@@ -513,7 +522,7 @@ LANGS = {
         "crypt_ready": "LISTO", "crypt_stopped": "Detenido",
         "crypt_select_warn": "¡Selecciona al menos un tipo!", "crypt_searching": "ESTADO: BUSCANDO...",
         "crypt_collected": "Recolectado", "crypt_last": "último",
-        "cal_title": "Calibración de pantalla", "cal_desc": "Abre el juego normalmente, luego establece dos puntos de anclaje.",
+        "cal_title": "Calibración de pantalla", "cal_desc": "Abre el juego normalmente, luego establece dos puntos de anclaje.", "cal_video_link": "Tutorial en video (YouTube)",
         "cal_pt_a_lb": "Punto A — minimapa", "cal_pt_a_desc": "Zoom del minimapa\nal mínimo.\nClic en el centro.",
         "cal_pt_b_lb": "Punto B — Plata", "cal_pt_b_desc": "Hover sobre ícono Plata\nhasta que aparezca «+».\nClic en «+».",
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "No calibrado",
@@ -573,7 +582,7 @@ LANGS = {
         "crypt_ready": "PRÊT", "crypt_stopped": "Arrêté",
         "crypt_select_warn": "Sélectionnez au moins un type !", "crypt_searching": "STATUT : RECHERCHE...",
         "crypt_collected": "Collecté", "crypt_last": "dernier",
-        "cal_title": "Calibration de l'écran", "cal_desc": "Ouvrez le jeu normalement, puis définissez deux points d'ancrage.",
+        "cal_title": "Calibration de l'écran", "cal_desc": "Ouvrez le jeu normalement, puis définissez deux points d'ancrage.", "cal_video_link": "Tutoriel vidéo (YouTube)",
         "cal_pt_a_lb": "Point A — minimap", "cal_pt_a_desc": "Zoom minimap\nau minimum.\nCliquer au centre.",
         "cal_pt_b_lb": "Point B — Argent", "cal_pt_b_desc": "Survoler icône Argent\njusqu'à «+».\nCliquer sur «+».",
         "cal_profile_lb": "Profil :", "cal_not_calibrated": "Non calibré",
@@ -633,7 +642,7 @@ LANGS = {
         "crypt_ready": "PRONTO", "crypt_stopped": "Fermato",
         "crypt_select_warn": "Seleziona almeno un tipo!", "crypt_searching": "STATO: RICERCA...",
         "crypt_collected": "Raccolto", "crypt_last": "ultimo",
-        "cal_title": "Calibrazione schermo", "cal_desc": "Apri il gioco normalmente, poi imposta due punti di ancoraggio.",
+        "cal_title": "Calibrazione schermo", "cal_desc": "Apri il gioco normalmente, poi imposta due punti di ancoraggio.", "cal_video_link": "Tutorial video (YouTube)",
         "cal_pt_a_lb": "Punto A — minimappa", "cal_pt_a_desc": "Zoom minimappa\nal minimo.\nClicca al centro.",
         "cal_pt_b_lb": "Punto B — Argento", "cal_pt_b_desc": "Passa su icona Argento\nfinché appare «+».\nClicca su «+».",
         "cal_profile_lb": "Profilo:", "cal_not_calibrated": "Non calibrato",
@@ -693,7 +702,7 @@ LANGS = {
         "crypt_ready": "KLAAR", "crypt_stopped": "Gestopt",
         "crypt_select_warn": "Selecteer minstens één type!", "crypt_searching": "STATUS: ZOEKEN...",
         "crypt_collected": "Verzameld", "crypt_last": "laatste",
-        "cal_title": "Schermkalibratie", "cal_desc": "Open het spel normaal, stel dan twee ankerpunten in.",
+        "cal_title": "Schermkalibratie", "cal_desc": "Open het spel normaal, stel dan twee ankerpunten in.", "cal_video_link": "Video-instructie (YouTube)",
         "cal_pt_a_lb": "Punt A — minikaart", "cal_pt_a_desc": "Minikaart-zoom\nnaar minimum.\nKlik in midden.",
         "cal_pt_b_lb": "Punt B — Zilver", "cal_pt_b_desc": "Hover over Zilver-icoon\ntot «+» verschijnt.\nKlik op «+».",
         "cal_profile_lb": "Profiel:", "cal_not_calibrated": "Niet gekalibreerd",
@@ -753,7 +762,7 @@ LANGS = {
         "crypt_ready": "KLAR", "crypt_stopped": "Stoppet",
         "crypt_select_warn": "Velg minst én type!", "crypt_searching": "STATUS: SØKER...",
         "crypt_collected": "Samlet", "crypt_last": "siste",
-        "cal_title": "Skjermkalibrering", "cal_desc": "Åpne spillet normalt, sett deretter to ankerpunkter.",
+        "cal_title": "Skjermkalibrering", "cal_desc": "Åpne spillet normalt, sett deretter to ankerpunkter.", "cal_video_link": "Videoveiledning (YouTube)",
         "cal_pt_a_lb": "Punkt A — minikart", "cal_pt_a_desc": "Sett minikart-zoom\ntil minimum.\nKlikk senter.",
         "cal_pt_b_lb": "Punkt B — Sølv", "cal_pt_b_desc": "Hold over Sølv-ikon\ntil «+» vises.\nKlikk «+».",
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Ikke kalibrert",
@@ -813,7 +822,7 @@ LANGS = {
         "crypt_ready": "GOTOWY", "crypt_stopped": "Zatrzymano",
         "crypt_select_warn": "Wybierz co najmniej jeden typ!", "crypt_searching": "STATUS: SZUKAM...",
         "crypt_collected": "Zebrano", "crypt_last": "ostatni",
-        "cal_title": "Kalibracja ekranu", "cal_desc": "Otwórz grę normalnie, następnie ustaw dwa punkty zakotwiczenia.",
+        "cal_title": "Kalibracja ekranu", "cal_desc": "Otwórz grę normalnie, następnie ustaw dwa punkty zakotwiczenia.", "cal_video_link": "Instrukcja wideo (YouTube)",
         "cal_pt_a_lb": "Punkt A — minimapa", "cal_pt_a_desc": "Zoom minimapy\ndo minimum.\nKliknij centrum.",
         "cal_pt_b_lb": "Punkt B — Srebro", "cal_pt_b_desc": "Najedź na ikonę Srebra\naż pojawi się «+».\nKliknij «+».",
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Nieskalibrowany",
@@ -873,7 +882,7 @@ LANGS = {
         "crypt_ready": "PRONTO", "crypt_stopped": "Parado",
         "crypt_select_warn": "Selecione pelo menos um tipo!", "crypt_searching": "STATUS: BUSCANDO...",
         "crypt_collected": "Coletado", "crypt_last": "último",
-        "cal_title": "Calibração de tela", "cal_desc": "Abra o jogo normalmente, depois defina dois pontos de ancoragem.",
+        "cal_title": "Calibração de tela", "cal_desc": "Abra o jogo normalmente, depois defina dois pontos de ancoragem.", "cal_video_link": "Tutorial em vídeo (YouTube)",
         "cal_pt_a_lb": "Ponto A — minimapa", "cal_pt_a_desc": "Zoom do minimapa\nao mínimo.\nClique no centro.",
         "cal_pt_b_lb": "Ponto B — Prata", "cal_pt_b_desc": "Passe sobre ícone Prata\naté aparecer «+».\nClique em «+».",
         "cal_profile_lb": "Perfil:", "cal_not_calibrated": "Não calibrado",
@@ -933,7 +942,7 @@ LANGS = {
         "crypt_ready": "REDO", "crypt_stopped": "Stoppad",
         "crypt_select_warn": "Välj minst en typ!", "crypt_searching": "STATUS: SÖKER...",
         "crypt_collected": "Samlat", "crypt_last": "senaste",
-        "cal_title": "Skärmkalibrering", "cal_desc": "Öppna spelet normalt, ställ sedan in två ankarpunkter.",
+        "cal_title": "Skärmkalibrering", "cal_desc": "Öppna spelet normalt, ställ sedan in två ankarpunkter.", "cal_video_link": "Videoguide (YouTube)",
         "cal_pt_a_lb": "Punkt A — minikarta", "cal_pt_a_desc": "Minikarta-zoom\ntill minimum.\nKlicka mitten.",
         "cal_pt_b_lb": "Punkt B — Silver", "cal_pt_b_desc": "Hover över Silver-ikon\ntills «+» syns.\nKlicka «+».",
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Inte kalibrerad",
@@ -993,7 +1002,7 @@ LANGS = {
         "crypt_ready": "HAZIR", "crypt_stopped": "Durduruldu",
         "crypt_select_warn": "En az bir tür seçin!", "crypt_searching": "DURUM: ARIYOR...",
         "crypt_collected": "Toplandı", "crypt_last": "son",
-        "cal_title": "Ekran kalibrasyonu", "cal_desc": "Oyunu normal açın, ardından iki çapa noktası belirleyin.",
+        "cal_title": "Ekran kalibrasyonu", "cal_desc": "Oyunu normal açın, ardından iki çapa noktası belirleyin.", "cal_video_link": "Video eğitimi (YouTube)",
         "cal_pt_a_lb": "Nokta A — mini harita", "cal_pt_a_desc": "Mini harita zoom'u\nminimuma alın.\nMerkeze tıklayın.",
         "cal_pt_b_lb": "Nokta B — Gümüş", "cal_pt_b_desc": "Gümüş simgesinin üzerine\ngelin «+» görene dek.\n«+» üzerine tıklayın.",
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Kalibre edilmedi",
@@ -1053,7 +1062,7 @@ LANGS = {
         "crypt_ready": "جاهز", "crypt_stopped": "متوقف",
         "crypt_select_warn": "اختر نوعاً واحداً على الأقل!", "crypt_searching": "الحالة: يبحث...",
         "crypt_collected": "تم جمعه", "crypt_last": "الأخير",
-        "cal_title": "معايرة الشاشة", "cal_desc": "افتح اللعبة ثم حدد نقطتي إرساء.",
+        "cal_title": "معايرة الشاشة", "cal_desc": "افتح اللعبة ثم حدد نقطتي إرساء.", "cal_video_link": "فيديو تعليمي (YouTube)",
         "cal_pt_a_lb": "النقطة A — الخريطة الصغيرة", "cal_pt_a_desc": "اضبط تكبير\nالخريطة للحد الأدنى.\nانقر في المركز.",
         "cal_pt_b_lb": "النقطة B — الفضة", "cal_pt_b_desc": "مرر على أيقونة الفضة\nحتى «+» يظهر.\nانقر على «+».",
         "cal_profile_lb": "الملف:", "cal_not_calibrated": "غير معاير",
@@ -1113,7 +1122,7 @@ LANGS = {
         "crypt_ready": "準備完了", "crypt_stopped": "停止しました",
         "crypt_select_warn": "最低1つのタイプを選択！", "crypt_searching": "ステータス: 検索中...",
         "crypt_collected": "収集済", "crypt_last": "最後",
-        "cal_title": "画面キャリブレーション", "cal_desc": "ゲームを開き、2つのアンカーポイントを設定します。",
+        "cal_title": "画面キャリブレーション", "cal_desc": "ゲームを開き、2つのアンカーポイントを設定します。", "cal_video_link": "動画チュートリアル（YouTube）",
         "cal_pt_a_lb": "ポイントA — ミニマップ", "cal_pt_a_desc": "ミニマップのズームを\n最小に設定。\n中央をクリック。",
         "cal_pt_b_lb": "ポイントB — シルバー", "cal_pt_b_desc": "シルバーアイコンを\n«+»が現れるまでホバー。\n«+»をクリック。",
         "cal_profile_lb": "プロファイル:", "cal_not_calibrated": "未キャリブレーション",
@@ -1173,7 +1182,7 @@ LANGS = {
         "crypt_ready": "准备就绪", "crypt_stopped": "已停止",
         "crypt_select_warn": "请至少选择一种类型！", "crypt_searching": "状态: 搜索中...",
         "crypt_collected": "已收集", "crypt_last": "最后",
-        "cal_title": "屏幕校准", "cal_desc": "正常打开游戏，然后设置两个锚点。",
+        "cal_title": "屏幕校准", "cal_desc": "正常打开游戏，然后设置两个锚点。", "cal_video_link": "视频教程（YouTube）",
         "cal_pt_a_lb": "点A — 小地图", "cal_pt_a_desc": "将小地图缩放\n调至最小。\n点击中心。",
         "cal_pt_b_lb": "点B — 白银", "cal_pt_b_desc": "悬停在白银图标\n直到«+»出现。\n点击«+»。",
         "cal_profile_lb": "配置文件:", "cal_not_calibrated": "未校准",
@@ -1233,7 +1242,7 @@ LANGS = {
         "crypt_ready": "準備就緒", "crypt_stopped": "已停止",
         "crypt_select_warn": "請至少選擇一種類型！", "crypt_searching": "狀態: 搜尋中...",
         "crypt_collected": "已收集", "crypt_last": "最後",
-        "cal_title": "螢幕校準", "cal_desc": "正常開啟遊戲，然後設定兩個錨點。",
+        "cal_title": "螢幕校準", "cal_desc": "正常開啟遊戲，然後設定兩個錨點。", "cal_video_link": "影片教學（YouTube）",
         "cal_pt_a_lb": "點A — 小地圖", "cal_pt_a_desc": "將小地圖縮放\n調至最小。\n點擊中心。",
         "cal_pt_b_lb": "點B — 白銀", "cal_pt_b_desc": "將滑鼠懸停在白銀圖示\n直到«+»出現。\n點擊«+»。",
         "cal_profile_lb": "設定檔:", "cal_not_calibrated": "未校準",
@@ -1293,7 +1302,7 @@ LANGS = {
         "crypt_ready": "준비 완료", "crypt_stopped": "정지됨",
         "crypt_select_warn": "최소 한 가지 유형 선택!", "crypt_searching": "상태: 검색 중...",
         "crypt_collected": "수집됨", "crypt_last": "마지막",
-        "cal_title": "화면 보정", "cal_desc": "게임을 정상적으로 열고 두 개의 앵커 포인트를 설정합니다.",
+        "cal_title": "화면 보정", "cal_desc": "게임을 정상적으로 열고 두 개의 앵커 포인트를 설정합니다.", "cal_video_link": "동영상 튜토리얼(YouTube)",
         "cal_pt_a_lb": "포인트 A — 미니맵", "cal_pt_a_desc": "미니맵 줌을\n최소로 설정.\n중앙 클릭.",
         "cal_pt_b_lb": "포인트 B — 실버", "cal_pt_b_desc": "실버 아이콘에\n«+»가 나타날 때까지 호버.\n«+» 클릭.",
         "cal_profile_lb": "프로파일:", "cal_not_calibrated": "보정 안 됨",
@@ -1353,7 +1362,7 @@ LANGS = {
         "crypt_ready": "ГОТОВО", "crypt_stopped": "Зупинено",
         "crypt_select_warn": "Виберіть хоча б один тип!", "crypt_searching": "СТАТУС: У ПОШУКУ...",
         "crypt_collected": "Зібрано", "crypt_last": "останній",
-        "cal_title": "Калібрування екрана", "cal_desc": "Відкрийте гру у звичному режимі, потім встановіть дві точки.",
+        "cal_title": "Калібрування екрана", "cal_desc": "Відкрийте гру у звичному режимі, потім встановіть дві точки.", "cal_video_link": "Відеоінструкція (YouTube)",
         "cal_pt_a_lb": "Точка A — міні-карта", "cal_pt_a_desc": "Зменшіть зум\nміні-карти до мін.\nКлікніть по центру.",
         "cal_pt_b_lb": "Точка B — Срібло", "cal_pt_b_desc": "Наведіть на іконку\nСрібла до появи «+».\nКлікніть по «+».",
         "cal_profile_lb": "Профіль:", "cal_not_calibrated": "Не відкалібровано",
@@ -1413,7 +1422,7 @@ LANGS = {
         "crypt_ready": "SIAP", "crypt_stopped": "Berhenti",
         "crypt_select_warn": "Pilih setidaknya satu jenis!", "crypt_searching": "STATUS: MENCARI...",
         "crypt_collected": "Dikumpulkan", "crypt_last": "terakhir",
-        "cal_title": "Kalibrasi layar", "cal_desc": "Buka game secara normal, lalu tetapkan dua titik jangkar.",
+        "cal_title": "Kalibrasi layar", "cal_desc": "Buka game secara normal, lalu tetapkan dua titik jangkar.", "cal_video_link": "Tutorial video (YouTube)",
         "cal_pt_a_lb": "Titik A — peta mini", "cal_pt_a_desc": "Atur zoom peta mini\nke minimum.\nKlik tengah.",
         "cal_pt_b_lb": "Titik B — Perak", "cal_pt_b_desc": "Arahkan ke ikon Perak\nhingga «+» muncul.\nKlik «+».",
         "cal_profile_lb": "Profil:", "cal_not_calibrated": "Belum dikalibrasi",
@@ -4856,6 +4865,20 @@ class TotalHunterApp(ctk.CTk):
         )
         _cal_desc_lb.pack(pady=(0, 6))
         self._i18n_labels.append((_cal_desc_lb, "cal_desc"))
+
+        # ── Видео-ссылка (заглушка, PC-07) ────────────────────────────────
+        _cal_video_link_lb = ctk.CTkLabel(
+            self._cal_frame,
+            text=LANGS[self.current_lang]["cal_video_link"],
+            font=ctk.CTkFont(size=12, underline=bool(CALIBRATION_VIDEO_URL)),
+            text_color=MD3["primary"] if CALIBRATION_VIDEO_URL else MD3["outline"],
+            cursor="hand2" if CALIBRATION_VIDEO_URL else "arrow",
+        )
+        _cal_video_link_lb.pack(pady=(0, 6))
+        self._i18n_labels.append((_cal_video_link_lb, "cal_video_link"))
+        if CALIBRATION_VIDEO_URL:
+            _cal_video_link_lb.bind(
+                "<Button-1>", lambda _e: webbrowser.open(cal_video_link_click_url()))
 
         # ── Область изображений — калибровка ↔ тюнинг ────────────────────
         # _img_area — обёртка; внутри переключаются два фрейма пак/забытьпак

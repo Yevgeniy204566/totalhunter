@@ -162,3 +162,26 @@ class TestApplyOffsetDelta:
 
 def patch_set_ui_offset():
     return patch.object(coord_manager, "set_ui_offset", wraps=coord_manager.set_ui_offset)
+
+
+class TestVideoLink:
+    """PC-07 (файл 39): CALIBRATION_VIDEO_URL="" — заглушка, неактивна пока пустая, не
+    битая ссылка. webbrowser.open(url) при непустом url."""
+
+    def test_video_link_url_is_empty_placeholder(self):
+        assert _main_module.CALIBRATION_VIDEO_URL == ""
+
+    def test_video_link_label_key_exists_in_every_language(self):
+        for lang in LANGS:
+            assert "cal_video_link" in LANGS[lang]
+
+    def test_click_returns_none_when_url_empty(self):
+        assert _main_module.cal_video_link_click_url() is None
+
+    def test_click_returns_url_when_set(self):
+        original = _main_module.CALIBRATION_VIDEO_URL
+        _main_module.CALIBRATION_VIDEO_URL = "https://www.youtube.com/watch?v=placeholder"
+        try:
+            assert _main_module.cal_video_link_click_url() == "https://www.youtube.com/watch?v=placeholder"
+        finally:
+            _main_module.CALIBRATION_VIDEO_URL = original
