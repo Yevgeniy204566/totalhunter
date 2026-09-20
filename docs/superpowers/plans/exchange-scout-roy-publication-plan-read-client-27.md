@@ -94,23 +94,16 @@ async def test_scout_finds_returns_at_most_limit_newest(db_session, monkeypatch)
 
 
 @pytest.mark.asyncio
-async def test_scout_finds_query_orders_by_found_at_and_id_desc(db_session):
-    """P-09, PT-12: порядок детерминирован. В SQLite порядок равных found_at случайно совпадает с id desc,
-    поэтому проверяется текст выполняемого SQL, а не данные."""
-    from sqlalchemy import event
-    engine = db_session.bind.sync_engine
-    seen = []
-
-    def grab(conn, cursor, statement, parameters, context, executemany):
-        seen.append(statement)
-
-    event.listen(engine, "before_cursor_execute", grab)
-    try:
-        assert (await _get()).status_code == 200
-    finally:
-        event.remove(engine, "before_cursor_execute", grab)
-    sql = " ".join(s for s in seen if "roy_scout_finds" in s)
-    assert "ORDER BY roy_scout_finds.found_at DESC, roy_scout_finds.id DESC" in sql
+async def test_scout_finds_tie_break_by_id_desc(db_session):
+    """P-09, PT-12: при равном found_at более новая запись (больший id) идёт первой.
+    Проверено эмпирически (sqlite3, in-memory): без ORDER BY id DESC ties отдаются в порядке
+    вставки (id ASC) детерминированно, не «случайно» — поэтому поведенческий тест здесь надёжен
+    и не привязан к тексту сгенерированного SQLAlchemy SQL (который ломается от рефакторинга/алиасов)."""
+    now = datetime.now(timezone.utc)
+    for k in (1, 2, 3):
+        db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid="H", found_at=now))
+    await db_session.commit()
+    assert [f["kingdom"] for f in (await _get()).json()["finds"]] == [3, 2, 1]
 ```
 
 - [ ] **Step 2: Run** → FAIL (404/405 на `GET /roy/scout-finds`).
@@ -213,10 +206,26 @@ def test_publish_does_not_block_caller():
 
 
 def test_publish_failure_is_swallowed():
-    """P-08: сеть/5xx/таймаут не выбрасывают исключение из треда."""
+    """P-08: сеть (ConnectionError, тот же except Exception что Timeout/битый JSON) не выбрасывает
+    исключение из треда."""
     created, fake_threading = _spy_threads()
     with patch("roy.roy_client.threading", fake_threading), \
          patch("roy.roy_client.requests.post", side_effect=ConnectionError("down")), \
+         patch("threading.excepthook") as hook:
+        assert RoyClient("HW").report_scout_find(7, 1, 2) is True
+        for t in created:
+            t.join(5)
+    hook.assert_not_called()
+
+
+def test_publish_rejected_response_does_not_raise():
+    """P-08: сервер ответил без исключения (HTTP 500 + валидный JSON success=false) — это ДРУГАЯ ветка
+    кода (не except, а `if not r.json().get("success")`), её ConnectionError-тест не покрывает."""
+    created, fake_threading = _spy_threads()
+    resp = MagicMock(status_code=500)
+    resp.json.return_value = {"success": False}
+    with patch("roy.roy_client.threading", fake_threading), \
+         patch("roy.roy_client.requests.post", return_value=resp), \
          patch("threading.excepthook") as hook:
         assert RoyClient("HW").report_scout_find(7, 1, 2) is True
         for t in created:
@@ -251,7 +260,7 @@ def test_publish_failure_is_swallowed():
         return True
 ```
 
-- [ ] **Step 4: Run** `python -m pytest test_roy_scout_client.py -v` → 4 PASS.
+- [ ] **Step 4: Run** `python -m pytest test_roy_scout_client.py -v` → 5 PASS.
 - [ ] **Step 5: Commit** `git add roy/roy_client.py test_roy_scout_client.py` →
   `git commit -m "feat(roy): RoyClient.report_scout_find — клиентская публикация находки 2.0"`.
 
