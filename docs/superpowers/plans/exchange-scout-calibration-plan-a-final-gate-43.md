@@ -36,7 +36,7 @@
 
 **Каждый контракт C-01…C-06 и релевантный adversarial finding имеет implementation/test path:**
 
-| Спека | PLAN-контракт | Файл |
+| Спека | PLAN-покрытие | Файл |
 |---|---|---|
 | C-01 | Design 4.2/4.3 + `test_single_calibration_entry_point` (T-01) | 40, 41 |
 | C-02 | PC-01 (+ T-02, см. статус ниже) | 39 |
