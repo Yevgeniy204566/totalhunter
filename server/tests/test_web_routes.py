@@ -1,6 +1,7 @@
 """Tests for /web/* endpoints."""
 import pytest
 import pytest_asyncio
+from datetime import timedelta
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import patch
 
@@ -71,7 +72,9 @@ async def test_link_generate_creates_code():
     data = resp.json()
     assert len(data["code"]) == 6
     assert data["code"].isdigit()
-    assert data["expires_in_seconds"] == 600
+    # 10-мин истечение убрано намеренно (779f5ad, 2026-08-18): новые пользователи не успевали
+    # привязать код за 10 минут — код живёт практически бессрочно (timedelta(days=3650), web_routes.py:361).
+    assert data["expires_in_seconds"] == int(timedelta(days=3650).total_seconds())
 
 
 @pytest.mark.asyncio
