@@ -86,3 +86,134 @@ def test_scout_find_migration_creates_expected_schema():
         with Operations.context(ctx):
             mig.downgrade()
         assert "roy_scout_finds" not in inspect(conn).get_table_names()
+
+
+@pytest.mark.asyncio
+async def test_scout_find_creates_row(db_session):
+    await _make_user(db_session)
+    r = await _post(hwid="SCOUTUSER00001", kingdom=7, x=512, y=318)
+    assert r.status_code == 200 and r.json()["success"] is True
+    row = (await db_session.execute(select(RoyScoutFind))).scalar_one()
+    assert (row.kingdom, row.x, row.y, row.reporter_hwid) == (7, 512, 318, "SCOUTUSER00001")
+
+
+@pytest.mark.asyncio
+async def test_scout_find_validates_xy_type_and_integer_range(db_session):
+    await _make_user(db_session)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x="abc", y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=1, y="<b>")).status_code == 422
+    # StrictInt: приведение типов запрещено (P-02, PA-2)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x="123", y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=True, y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=1.5, y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom="7", x=1, y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=-5, y=0)).status_code == 200
+    # P-02/PA-11: границы 32-битного Integer колонки
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=2147483647, y=-2147483648)).status_code == 200
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=2147483648, y=0)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=0, y=-2147483649)).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_scout_find_kingdom_lt_1_rejected(db_session):
+    await _make_user(db_session)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=0, x=1, y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=-1, x=1, y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=1, x=1, y=1)).status_code == 200
+    # верхняя граница 32-битного Integer колонки (P-02, PA-11)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=2147483647, x=1, y=1)).status_code == 200
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=2147483648, x=1, y=1)).status_code == 422
+    # строгий int для kingdom (P-05, PT-08)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom="1", x=1, y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=1.0, x=1, y=1)).status_code == 422
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=True, x=1, y=1)).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_scout_find_unknown_hwid_404():
+    assert (await _post(hwid="NOSUCHHWID00001", kingdom=7, x=1, y=1)).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_scout_find_hwid_longer_than_16_404(db_session):
+    """PT-07/2.6a: hwid длиннее колонки не найден среди users -> 404, вставки нет."""
+    await _make_user(db_session)
+    assert (await _post(hwid="SCOUTUSER00001EXTRA", kingdom=7, x=1, y=1)).status_code == 404
+    assert (await db_session.execute(select(func.count(RoyScoutFind.id)))).scalar_one() == 0
+
+
+@pytest.mark.asyncio
+async def test_scout_find_banned_403(db_session):
+    await _make_user(db_session, banned=True)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=1, y=1)).status_code == 403
+    assert (await db_session.execute(select(func.count(RoyScoutFind.id)))).scalar_one() == 0
+
+
+@pytest.mark.asyncio
+async def test_scout_find_allows_repeated_identical_posts(db_session):
+    """P-04: два одинаковых вызова подряд без паузы -> две строки (ни лимита, ни дедупа)."""
+    await _make_user(db_session)
+    for _ in range(2):
+        assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=10, y=20)).status_code == 200
+    assert (await db_session.execute(select(func.count(RoyScoutFind.id)))).scalar_one() == 2
+
+
+@pytest.mark.asyncio
+async def test_scout_find_does_not_touch_roy_pool(db_session, monkeypatch):
+    """P-03/P-12: /roy/report, roy_pool, _report_rate и Telegram не задействованы."""
+    import roy
+    def _boom(*a, **k):
+        raise AssertionError("send_telegram_alert must not be called")
+    monkeypatch.setattr(roy, "send_telegram_alert", _boom)
+    # Sentinel вместо clear(): доказываем не только "пусто после", а "содержимое НЕ ТРОНУТО" —
+    # иначе тест доказывал бы только "scout-find ничего не добавил в уже пустой dict", а не
+    # "scout-find не трогает существующие записи _report_rate чужого hwid".
+    roy._report_rate.clear()
+    roy._report_rate["SENTINEL_OTHER_HWID"] = 123.0
+    await _make_user(db_session)
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=1, y=1)).status_code == 200
+    assert (await db_session.execute(select(func.count(RoyPool.id)))).scalar_one() == 0
+    assert roy._report_rate == {"SENTINEL_OTHER_HWID": 123.0}
+
+
+@pytest.mark.asyncio
+async def test_scout_find_insert_deletes_expired(db_session):
+    """P-13: вставка удаляет находки старше срока жизни, свежие остаются (не граница — общий случай,
+    точная граница 30:00 — отдельный тест ниже)."""
+    await _make_user(db_session)
+    now = datetime.now(timezone.utc)
+    db_session.add(RoyScoutFind(kingdom=1, x=1, y=1, reporter_hwid="OLD", found_at=now - timedelta(minutes=31)))
+    db_session.add(RoyScoutFind(kingdom=2, x=2, y=2, reporter_hwid="FRESH", found_at=now - timedelta(minutes=5)))
+    await db_session.commit()
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=3, y=3)).status_code == 200
+    hwids = sorted((await db_session.execute(select(RoyScoutFind.reporter_hwid))).scalars().all())
+    assert hwids == ["FRESH", "SCOUTUSER00001"]
+
+
+@pytest.mark.asyncio
+async def test_scout_find_insert_deletes_expired_at_exact_boundary(db_session, monkeypatch):
+    """P-13: удаление на вставке — `found_at <= cutoff` (не `<`), граница ровно 30:00 удаляется, а не
+    только «старше». Отдельно от test_scout_finds_excludes_older_than_ttl (файл 27, читающая сторона,
+    `>` в SELECT) — здесь ДРУГОЙ код (delete на INSERT), с собственным `<=`, и его границу ничего кроме
+    этого теста не защищает: смена `<=` на `<` в реализации прошла бы мимо test_scout_find_insert_deletes_expired
+    (31 мин / 5 мин — не граница) незамеченной. Часы roy.datetime зафиксированы (frozen clock, образец
+    test_scout_finds_excludes_older_than_ttl, файл 27) — иначе `now` теста и `now` внутри эндпоинта
+    разойдутся на миллисекунды и граница 30:00 станет случайной (flaky)."""
+    import roy
+    await _make_user(db_session)
+    frozen = datetime(2026, 9, 18, 12, 0, 0, tzinfo=timezone.utc)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return frozen
+
+    monkeypatch.setattr(roy, "datetime", FixedDatetime)
+    for k, age in ((1, timedelta(minutes=29, seconds=59)),   # остаётся
+                   (2, timedelta(minutes=30)),                # удаляется (P-13: "≥ 30 мин удалена")
+                   (3, timedelta(minutes=30, seconds=1))):     # удаляется
+        db_session.add(RoyScoutFind(kingdom=k, x=k, y=k, reporter_hwid=f"H{k}", found_at=frozen - age))
+    await db_session.commit()
+    assert (await _post(hwid="SCOUTUSER00001", kingdom=7, x=9, y=9)).status_code == 200
+    hwids = sorted((await db_session.execute(select(RoyScoutFind.reporter_hwid))).scalars().all())
+    assert hwids == ["H1", "SCOUTUSER00001"]

@@ -17,15 +17,15 @@ import json
 import time
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from sqlalchemy import select
+from pydantic import BaseModel, Field, StrictInt
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import AsyncSessionLocal, get_db
-from models import RoyBalance, RoyKingdomMember, RoyKingdomStatus, RoyPool
+from models import RoyBalance, RoyKingdomMember, RoyKingdomStatus, RoyPool, RoyScoutFind, User
 from tg_channel import send_telegram_alert
 
 router = APIRouter(prefix="/roy", tags=["roy"])
@@ -39,6 +39,8 @@ PERCENT_THRESHOLD = 90    # >= 90% — биржа выкуплена, не по�
 RATE_LIMIT_SEC    = 10    # минимальный интервал репортов с одного hwid
 SCAN_RATE_SEC     = 28    # минимальный интервал /scan с одного hwid (клиент шлёт раз в 30с)
 SESSION_TTL_SEC   = 300   # 5 минут без пинга = сессия считается мёртвой
+SCOUT_FIND_TTL_MIN = 30   # находка Биржи 2.0 живёт на сайте 30 минут (своя константа, не POOL_TTL_MIN)
+SCOUT_FINDS_LIMIT  = 500  # не более 500 самых новых находок в GET /roy/scout-finds (P-09)
 
 # in-memory rate limiters: hwid → unix timestamp последнего запроса
 _report_rate:  dict[str, float]             = {}
@@ -216,6 +218,13 @@ class RegisterRequest(BaseModel):
     kingdom: int
 
 
+class ScoutFindRequest(BaseModel):
+    hwid:    str
+    kingdom: StrictInt = Field(ge=1, le=2147483647)   # сервер показывает только k > 0 (см. _kingdoms_payload)
+    x:       StrictInt = Field(ge=-2147483648, le=2147483647)   # диапазон 32-битного Integer колонки (P-02, PA-11)
+    y:       StrictInt = Field(ge=-2147483648, le=2147483647)
+
+
 # ── POST /roy/register ───────────────────────────────────────────────────────
 
 @router.post("/register")
@@ -291,6 +300,31 @@ async def report_exchange(
     if is_new and is_trade_routes_active():
         background_tasks.add_task(send_telegram_alert, req.percent)
 
+    return {"success": True}
+
+
+# ── POST /roy/scout-find ──────────────────────────────────────────────────────
+
+@router.post("/scout-find")
+async def scout_find(req: ScoutFindRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Находка Биржи 2.0 (Exchange Scout). Отдельно от /report и roy_pool: боты 1.0 эти
+    данные не видят. Без rate limit и без дедупа (решение владельца). Каждая вставка
+    удаляет находки старше SCOUT_FIND_TTL_MIN — общий _cleanup_loop не трогаем.
+    """
+    now    = datetime.now(timezone.utc)
+    cutoff = now - timedelta(minutes=SCOUT_FIND_TTL_MIN)
+    async with db.begin():
+        user = (await db.execute(
+            select(User).where(User.hwid == req.hwid)
+        )).scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="Banned")
+        await db.execute(delete(RoyScoutFind).where(RoyScoutFind.found_at <= cutoff))
+        db.add(RoyScoutFind(kingdom=req.kingdom, x=req.x, y=req.y,
+                            reporter_hwid=req.hwid, found_at=now))
     return {"success": True}
 
 
