@@ -1,0 +1,47 @@
+# Калибровка — Implementation Plan A (единый реестр 12 целей), часть 41: Стадия 6 (Test Matrix)
+
+> Спека-источник: [`exchange-scout-calibration-design-35.md`](../specs/exchange-scout-calibration-design-35.md)
+> (+ [context-32](../specs/exchange-scout-calibration-context-32.md) ·
+> [archaeology-33](../specs/exchange-scout-calibration-archaeology-33.md) ·
+> [contracts-34](../specs/exchange-scout-calibration-contracts-34.md) ·
+> [adversarial-36](../specs/exchange-scout-calibration-adversarial-36.md) ·
+> [tests-gate-37](../specs/exchange-scout-calibration-tests-gate-37.md), Final Gate пройден 2026-09-19,
+> коммит `06c2e13`). Протокол: `docs/РАБОТА-С-ДОКУМЕНТАМИ.md` (10 стадий).
+> Части плана: [38](exchange-scout-calibration-plan-a-context-38.md) (Стадия 0+1) ·
+> [39](exchange-scout-calibration-plan-a-contracts-39.md) (Стадия 2+3, PC-01…PC-07) ·
+> [40](exchange-scout-calibration-plan-a-design-40.md) (Стадия 4+5) ·
+> [41](exchange-scout-calibration-plan-a-tests-41.md) (этот файл, Стадия 6).
+> Раунд правок: 1.
+
+---
+
+## Стадия 6 — Test Matrix
+
+Формат (протокол, раздел 6): `Invariant | Normal | Boundary | Failure | Concurrent | Recovery | Test`.
+Concurrent в этом PLAN почти всегда N/A по одной и той же структурной причине — Tk-приложение
+однопоточное, GUI-состояние (`self._cal_selected_id`, видимость `tune_card`) не имеет фонового
+воркера/сетевого вызова, конкурентно его меняющего (подтверждено Stage 5, файл 40: `run_calibration`
+модален, окно свёрнуто на время absolute-сеанса). Recovery в большинстве строк также N/A — реестр
+статические данные кода, а не персистентное состояние с восстановлением после сбоя/рестарта; сохранение
+на диск (`_save_profile`) не входит в PLAN-A и не меняется.
+
+| Invariant | Normal | Boundary | Failure | Concurrent | Recovery | Test |
+|---|---|---|---|---|---|---|
+| PC-01: реестр — ровно 12 записей, обязательные/запрещённые поля по kind/storage | 12 записей, состав совпадает с Design 4.1 построчно | Запись на стыке типов (например `chest_collect` — точка/offset, а не OCR-область, хотя тематически «сундуки») классифицирована верно | `ref_rect` отсутствует у `chest_sender`/`chest_type`; `base_pos_fn` отсутствует у одной из 7 offset-точек; лишнее поле там, где запрещено | N/A (статические данные) | N/A | `test_registry_has_exactly_12_entries_matching_design_table`, `test_registry_optional_fields_present_only_for_matching_kind` |
+| PC-01 (доп.): `label_key` существует во всех 19 `LANGS` | Все 12 `label_key` найдены в каждом из 19 языковых блоков | Ключ есть в 18 языках, отсутствует в одном (реалистичный дрейф — добавили цель, забыли один перевод) | `KeyError` при выборе цели на языке с отсутствующим ключом | N/A | N/A | `test_registry_has_exactly_12_entries_matching_design_table` (расширенная проверка, Стадия 5 файла 40, находка 6) |
+| PC-02: `registry[storage=offset].id` == `_UI_BUTTON_NAMES` (двустороннее) | Множества идентичны, 10 элементов с каждой стороны | Один и тот же элемент представлен разным регистром/опечаткой (латиница/кириллица визуально похожи) — сравнение строгое `==`, не case-insensitive | Имя в реестре без пары в `_UI_BUTTON_NAMES` (офсет недоступен для правки); имя в `_UI_BUTTON_NAMES` без пары в реестре (`set_ui_offset()` молча no-op, `coord_manager.py:87-90`) | N/A | N/A | `test_registry_offset_ids_match_ui_button_names_bidirectionally` |
+| PC-03: identity выбора по `id`, не по индексу/переводу | Выбрана `wt_icon` → смена языка (RU→EN) → выбор остаётся `wt_icon` | Выбор `None` (ничего не выбрано) при смене языка — обновляются только подписи списка, панель не появляется | N/A (структурно исключено — `id` не пересчитывается из индекса, сравнение по строке) | N/A | N/A | `test_change_lang_preserves_selection_by_id_not_index` |
+| PC-04: `TUNE_TARGET_NAMES`/`_TUNE_POINT_TARGETS`/`_CHEST_TUNE_RECTS` полностью удалены | `grep` по всему проекту после реализации — 0 совпадений | N/A (бинарное условие — есть/нет) | Забытая ссылка на одну из трёх структур в недописанном месте (тот же класс, что AP-DUP-HARDCODE) | N/A | N/A | `test_no_legacy_tune_structures_remain` |
+| PC-05: `base_pos_fn` вызывается заново на каждый рендер, не кэшируется | Выбрана `wt_icon` → крестик в правильной точке | Пере-калибровка `ref_a`/`ref_b` (новые точки A/Б) во время открытой панели `wt_icon` → крестик СРАЗУ отражает новую калибровку при следующем показе, без перезапуска бота | `base_pos_fn` заменена на предвычисленное число при реализации (регрессия анти-кэша A-3) — тест ловит несовпадение до/после пере-калибровки | N/A | N/A | `test_base_pos_fn_reflects_new_calibration_after_recalibrate` |
+| PC-06: единый визуальный путь на `kind` | `точка` → `_show_crosshair_at`; `OCR-область` → `_show_chest_rect_overlay`; `смещение-к-YOLO` → текст «недоступно» | `ref_a`/`ref_b` (точка/absolute) используют тот же `_show_crosshair_at`, что и точки/offset — не `_show_red_dot` | Вызван `_show_red_dot` из нового списка для `ref_a`/`ref_b` (регрессия на старый путь, C-03 нарушен) | N/A | N/A | `test_ref_a_ref_b_use_crosshair_not_red_dot_in_new_list` |
+| PC-07: видео-ссылка — заглушка, не битая ссылка | `CALIBRATION_VIDEO_URL` непустой → клик вызывает `webbrowser.open(url)` | Ровно пустая строка `""` — элемент неактивен | N/A (нет сетевого вызова, `webbrowser.open` не бросает при недоступном браузере в этом контексте — не проверяется, вне scope) | N/A | N/A | `test_video_link_inactive_when_url_empty`, `test_video_link_calls_webbrowser_open_when_url_set` |
+| Видимость `tune_card` — 3 состояния (Design 4.4, файл 40) | `selected_id=None` → скрыт; `storage=offset` → показан | Переход `offset → absolute`: `wt_icon` выбран (панель видна) → клик `ref_a` → панель скрыта ДО вызова `_calibrate()` и остаётся скрытой ПОСЛЕ (оба исхода: подтверждено/отменено) | Панель осталась видимой для `ref_a`/`ref_b` — пользователь видит D-Pad от `wt_icon`, потенциально кликабельный для цели без `ui_offsets`-записи (PC-02) | N/A (Tk single-thread, `_calibrate()` модален — переход не может прерваться на середине кликом) | N/A | `test_selecting_absolute_target_hides_offset_editor` |
+| Быстрая последовательность кликов по РАЗНЫМ строкам (уточнение ревью, не было отдельным тестом до этого раунда) | Один клик → одно применение состояния | Быстрая последовательность `offset A → offset B → offset C → ref_a` за короткий промежуток (не гонка потоков — Tk обрабатывает события строго по очереди, но нужно доказать, что финальное состояние определяется ПОСЛЕДНИМ событием, а не смешивается с промежуточными) | Финальное состояние не совпадает с последним кликом (например панель `offset C` осталась видна после `ref_a`) — означало бы, что 4.4 применяется не на каждое событие, а с накоплением/гонкой | N/A (структурно невозможно при однопоточном `bind`, но контрпример стоит доказать тестом, не только рассуждением — правило протокола Stage 5 «после каждого найденного защитного механизма — контрпример») | N/A | `test_rapid_sequence_of_row_clicks_final_state_wins` — эмитировать 4 события `<Button-1>` подряд без ожидания между ними (`event_generate` синхронно в тесте), проверить `self._cal_selected_id == "ref_a"` и `tune_card` скрыт |
+
+## Что дальше
+
+Следующий шаг — Стадия 7 (Self-Audit): отдельный проход (не продолжение написания) — грепнуть текст
+файлов 38-41 на `MUST/ОБЯЗАН/РОВНО/ВСЕГДА/НИКОГДА/максимум/минимум/unique/exactly/at
+most/at least/atomic/idempotent`, для каждого найденного места подтвердить конкретный enforcement-
+механизм; отдельно — requirements coverage (каждый C-01…C-06 спеки покрыт PC-01…PC-07 плана), scope
+creep (не протащено ли что-то из PositionReader/OCR-geometry/PLAN-B за 6 раундов правок).
