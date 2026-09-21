@@ -35,7 +35,10 @@ def run_cycle(hunter, order, send_ok=True, detect_ok=True):
         return 'Ordinary_1'
 
     def fake_skip():
-        order.append('skip')
+        order.append('skip3')       # старая логика после неудачи: три прокрутки
+
+    def fake_skip_one():
+        order.append('skip1')       # новая: одна прокрутка после отправки
 
     def fake_send(*a, **k):
         order.append('send')
@@ -43,6 +46,7 @@ def run_cycle(hunter, order, send_ok=True, detect_ok=True):
 
     with patch.object(hunter, '_scroll_and_find', side_effect=fake_find), \
             patch.object(hunter, '_pre_skip', side_effect=fake_skip), \
+            patch.object(hunter, '_skip_one_scroll', side_effect=fake_skip_one), \
             patch.object(hunter, '_reset_search'), \
             patch.object(hunter, '_interruptible_sleep'), \
             patch.object(hunter, '_open_watchtower'), \
@@ -70,23 +74,25 @@ class TestSkipAfterSend:
         run_cycle(h, order)          # 1-й капитан отправлен
         order.clear()
         run_cycle(h, order)          # 2-й капитан
-        assert order == ['skip', 'search', 'send']
+        assert order == ['skip1', 'search', 'send']
 
     def test_every_following_captain_skips_once(self):
         h = make_hunter()
         order = []
         for _ in range(3):
             run_cycle(h, order)
-        assert order == ['search', 'send', 'skip', 'search', 'send', 'skip', 'search', 'send']
+        assert order == ['search', 'send', 'skip1', 'search', 'send', 'skip1', 'search', 'send']
 
-    def test_skip_is_once_per_cycle_not_twice(self):
+    def test_after_a_failed_detection_the_old_three_scroll_skip_runs_and_no_extra_scroll(self):
+        """Старая логика не тронута: после неудачи — _pre_skip (3 шага), а новая одна прокрутка не добавляется."""
         h = make_hunter()
         order = []
         run_cycle(h, order)
         order.clear()
-        h._detect_fail_streak = 2      # и провал детекции, и отправка — прокрутка всё равно одна
+        h._detect_fail_streak = 2
         run_cycle(h, order)
-        assert order.count('skip') == 1
+        assert order == ['skip3', 'search', 'send']
+        assert 'skip1' not in order
 
     def test_failed_send_does_not_request_a_skip(self):
         """Капитан не отправлен — склеп не занят, повторно брать его можно."""
@@ -104,7 +110,7 @@ class TestSkipAfterSend:
         assert h._detect_fail_streak == 1
         order.clear()
         run_cycle(h, order)
-        assert order == ['skip', 'search', 'send']
+        assert order == ['skip3', 'search', 'send']
 
     def test_flag_is_consumed_by_the_skip(self):
         h = make_hunter()
@@ -114,11 +120,11 @@ class TestSkipAfterSend:
         assert h._skip_next_search is False
 
 
-class TestPreSkipIsExactlyOneScroll:
-    """Владелец 2026-09-21: «после неудачи идут три прокрутки, а нам надо одну прокрутку каждый раз».
-    Одна прокрутка = тот же шаг (три вызова колеса подряд), что делает поиск склепа в _scroll_and_find."""
+class TestScrollAmounts:
+    """Владелец 2026-09-21: после неудачи прокрутка остаётся прежней (три шага), а для повседневной работы —
+    новая: ровно ОДНА прокрутка (один шаг = три вызова колеса подряд, как в поиске)."""
 
-    def _run_pre_skip(self):
+    def _run(self, method_name):
         import numpy as np
         h = make_hunter()
         with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False), \
@@ -128,28 +134,41 @@ class TestPreSkipIsExactlyOneScroll:
                 patch.object(h, '_screenshot', return_value=np.zeros((1080, 1920, 3), dtype=np.uint8)), \
                 patch.object(h, '_status') as status, \
                 patch.object(h, '_interruptible_sleep'), \
-                patch.object(h, '_reset_search'):
-            h._pre_skip()
-        return scroll, status
+                patch.object(h, '_reset_search') as reset:
+            getattr(h, method_name)()
+        return scroll, status, reset
 
-    def test_one_scroll_step_is_three_wheel_calls_not_nine(self):
-        scroll, _status = self._run_pre_skip()
+    def test_old_pre_skip_is_untouched_three_steps_nine_wheel_calls(self):
+        scroll, status, _reset = self._run('_pre_skip')
+        assert scroll.call_count == 9
+        assert "3 скролла" in status.call_args_list[0][0][0]
+
+    def test_new_skip_is_exactly_one_step_three_wheel_calls(self):
+        scroll, _status, _reset = self._run('_skip_one_scroll')
         assert scroll.call_count == 3
 
-    def test_status_text_says_one_scroll(self):
-        _scroll, status = self._run_pre_skip()
-        assert "3 скролла" not in status.call_args_list[0][0][0]
+    def test_new_skip_resets_the_search_when_the_list_did_not_move(self):
+        _scroll, _status, reset = self._run('_skip_one_scroll')
+        reset.assert_called_once()          # кадры до/после одинаковые — список уже в конце
 
-    def test_still_resets_the_search_when_the_list_did_not_move(self):
+    def test_new_skip_does_not_reset_when_the_list_moved(self):
         import numpy as np
         h = make_hunter()
+        shots = [np.zeros((1080, 1920, 3), dtype=np.uint8), np.full((1080, 1920, 3), 200, dtype=np.uint8)]
         with patch('crypt_hunter._VISUAL_NAV_AVAILABLE', False), \
                 patch('crypt_hunter.pyautogui.size', return_value=(1920, 1080)), \
                 patch('crypt_hunter.pyautogui.moveTo'), \
                 patch('crypt_hunter.pyautogui.scroll'), \
-                patch.object(h, '_screenshot', return_value=np.zeros((1080, 1920, 3), dtype=np.uint8)), \
+                patch.object(h, '_screenshot', side_effect=shots), \
                 patch.object(h, '_status'), \
                 patch.object(h, '_interruptible_sleep'), \
                 patch.object(h, '_reset_search') as reset:
-            h._pre_skip()
-        reset.assert_called_once()          # кадры до/после одинаковые — список уже в конце
+            h._skip_one_scroll()
+        reset.assert_not_called()
+
+    def test_new_skip_clears_nothing_about_failed_detection(self):
+        """_skip_one_scroll не трогает счётчик неудач — он принадлежит старой логике."""
+        h = make_hunter()
+        h._detect_fail_streak = 0
+        self._run('_skip_one_scroll')
+        assert h._detect_fail_streak == 0
