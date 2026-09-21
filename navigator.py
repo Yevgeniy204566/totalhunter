@@ -453,7 +453,9 @@ class CoastalSnakeNavigator:
         diagonal_blind_coeff: float = 0.5,  # 0=no reduction, 1=fully blind at 45°
         coast_detect_radius: int = 50,  # конус детекции берега при возврате (px на мини-карте)
         return_delta_px: int    = 0,   # pixels of rightward bias added to every RETURNING click
+        auto_grow_depth: bool   = True,  # False (Биржа 2.0): глубина нырка = ровно значение ползунка
     ):
+        self.auto_grow_depth  = auto_grow_depth
         self.center_x         = center_x
         self.center_y         = center_y
 
@@ -620,7 +622,7 @@ class CoastalSnakeNavigator:
         глубины лишь продлевает текущий нырок — переход в RETURNING и расчёт
         return_steps происходят от уже актуального (выросшего) значения.
         """
-        if self._footprint_ttl <= 0:
+        if not self.auto_grow_depth or self._footprint_ttl <= 0:
             return
         now = time.time()
         if self._dive_growth_next_at is None:

@@ -158,6 +158,7 @@ def scout_queue_state(snake_running: bool, queue_size: int, paused: bool = False
 _TEXTS = {
     'RU': {
         'debug_tg': 'Находки в debug-Telegram',
+        'roy_publish': 'Публиковать в РОЙ',
         'limit_label': 'Лимит очереди:', 'st_paused': 'Пауза: ожидание обработки очереди',
         'st_paused_nn_off': 'Пауза: очередь заполнена, нейросеть выключена',
         'queue_title': 'Очередь скриншотов', 'snake_cycle': 'Цикл змейки (мин. = быстрее всего):',
@@ -168,6 +169,7 @@ _TEXTS = {
     },
     'UK': {
         'debug_tg': 'Знахідки в debug-Telegram',
+        'roy_publish': 'Публікувати в РОЙ',
         'limit_label': 'Ліміт черги:', 'st_paused': 'Пауза: очікування обробки черги',
         'st_paused_nn_off': 'Пауза: черга заповнена, нейромережа вимкнена',
         'queue_title': 'Черга скриншотів', 'snake_cycle': 'Цикл змійки (мін. = найшвидше):',
@@ -178,6 +180,7 @@ _TEXTS = {
     },
     'EN': {
         'debug_tg': 'Send finds to debug Telegram',
+        'roy_publish': 'Publish to ROY',
         'limit_label': 'Queue limit:', 'st_paused': 'Paused: waiting for the queue',
         'st_paused_nn_off': 'Paused: queue is full, neural net is off',
         'queue_title': 'Screenshot queue', 'snake_cycle': 'Snake cycle (min = fastest):',
@@ -199,3 +202,10 @@ def scout_debug_default(frozen: bool) -> bool:
     упакованной релизной сборке — кадры игры клиентов не должны уходить владельцу без их ведома. Явное
     значение из gui_config.json (переключатель в панели очереди) всегда важнее."""
     return not frozen
+
+
+def scout_roy_publish_default(frozen: bool) -> bool:
+    """Публикация находок в РОЙ по умолчанию: при запуске из исходников ВЫКЛ (владелец 2026-09-21: «для
+    теста достаточно Telegram»), в упакованной релизной сборке ВКЛ — игроки ждут публикации. Явное значение
+    из gui_config.json (переключатель в панели очереди) важнее."""
+    return bool(frozen)

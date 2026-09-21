@@ -262,7 +262,8 @@ def panel_crop_image(frame, crop_box, margin: int = 4):
     return frame[y1:y2, x1:x2].copy()
 
 
-def process_found_frame(frame, crop_box, kingdom: int, hunt_type: str, spend_fn, roy_client) -> dict:
+def process_found_frame(frame, crop_box, kingdom: int, hunt_type: str, spend_fn, roy_client,
+                        publish: bool = True) -> dict:
     """Этап 3 — склейка: OCR → существующий механизм списания → существующий RoyClient. Ни списание,
     ни публикация не переизобретаются — `spend_fn`/`roy_client` инжектируются вызывающим кодом (сейчас
     это `auth.spend_credit` и `roy.roy_client.RoyClient`, уже реализованы и работают в 1.0/проде).
@@ -278,7 +279,7 @@ def process_found_frame(frame, crop_box, kingdom: int, hunt_type: str, spend_fn,
     charged = bool(spend_result and spend_result.get("success"))
 
     published = False
-    if charged and coords_ok:
+    if publish and charged and coords_ok:
         published = bool(roy_client.report_scout_find(kingdom=found_kingdom, x=x, y=y))
 
     return {"coords_ok": coords_ok, "kingdom": found_kingdom, "x": x, "y": y,
@@ -330,6 +331,7 @@ class ExchangeScoutEngine:
 
         self.is_running = False
         self.paused_by_queue = False
+        self.producer_error = None      # текст ошибки, если поток змейки умер; None — всё в порядке
         self.sid = None
         self._producer_thread = None
         self._consumer_thread = None
@@ -366,6 +368,7 @@ class ExchangeScoutEngine:
         self._frame_counter = 0
         self._cycle_samples = []
         self.paused_by_queue = False
+        self.producer_error = None
         self.is_running = True
 
         self._producer_thread = threading.Thread(target=self._producer_loop, daemon=True)
@@ -408,6 +411,12 @@ class ExchangeScoutEngine:
                 self._cycle_samples.append(time.monotonic() - t0)
                 del self._cycle_samples[:-self.NATURAL_CYCLE_WINDOW]
                 time.sleep(self._speed_pause())
+        except Exception as e:
+            # Раньше исключение молча убивало поток, а GUI продолжал показывать «работает».
+            import traceback
+            traceback.print_exc()
+            self.producer_error = f"{type(e).__name__}: {e}"
+            self.is_running = False
         finally:
             self.paused_by_queue = False
 
@@ -488,7 +497,7 @@ class ExchangeScoutEngine:
 
 def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,
                         spend_fn=None, roy_client=None, screen_size=None, on_sound=None, on_result=None,
-                        on_debug_frame=None, on_debug_result=None, on_debug_crop=None):
+                        on_debug_frame=None, on_debug_result=None, on_debug_crop=None, publish_fn=None):
     """Единственная точка, где Этап 3 подключается к Этапам 1+2 — собирает `on_found_callback`
     для `ExchangeScoutEngine`. По умолчанию использует уже существующие, реальные `auth.spend_credit`
     и `roy.roy_client.RoyClient` (не новые) — `spend_fn`/`roy_client` можно переопределить только
@@ -521,7 +530,8 @@ def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,
             except Exception:
                 pass
         crop = scale_crop_box(crop_box, screen_size, frame.shape)
-        result = process_found_frame(frame, crop, kingdom, hunt_type, spend_fn, roy_client)
+        publish = True if publish_fn is None else bool(publish_fn())
+        result = process_found_frame(frame, crop, kingdom, hunt_type, spend_fn, roy_client, publish=publish)
         if on_debug_crop is not None:
             try:
                 on_debug_crop(panel_crop_image(frame, crop))

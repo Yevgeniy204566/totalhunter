@@ -38,7 +38,8 @@ from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
                                      exchange_cfg_from_values, SCOUT_DEFAULT_INLAND, SPEED_FACTOR_RANGE, SPEED_FACTOR_STEPS,
                                      SCOUT_DEFAULT_SPEED_FACTOR, SCOUT_QUEUE_PAUSE_THRESHOLD,
                                      queue_fraction, scout_queue_state, scout_text,
-                                     SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for, scout_debug_default)
+                                     SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for, scout_debug_default,
+                                     scout_roy_publish_default)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
 # from combiner import CombinerEngine  # Combo заморожен — импорт отключён
@@ -333,23 +334,25 @@ def build_scout_navigator(center_x: int, center_y: int, step: int, gui_config: d
         return_delta_px=gui_config['return_delta_px'],
         smooth_alpha=gui_config['smooth_alpha'],
         pixels_per_step=gui_config['pixels_per_step'],
+        auto_grow_depth=False,   # 2.0: глубина = ровно ползунок, не растёт от «Памяти следов»
     )
 
 
 def build_scout_capture_fn():
-    """capture_fn для ExchangeScoutEngine — тот же mss/BGRA->BGR паттерн, что и
-    в _run() PacmanEngine (navigator.py:1009-1012), но с ленивым созданием mss()
-    внутри треда-потребителя, чтобы не делить хэндл между GUI- и producer-тредами."""
-    state = {}
+    """capture_fn для ExchangeScoutEngine — тот же mss/BGRA->BGR паттерн, что и в _run() PacmanEngine
+    (navigator.py:1009-1012). mss на Windows хранит дескрипторы захвата отдельно для каждого потока, а
+    движок общий на всё приложение и каждый запуск змейки — новый поток: экземпляр mss создаётся лениво
+    ОТДЕЛЬНО В КАЖДОМ потоке (иначе второй запуск умирал с AttributeError про `srcdc`)."""
+    local = threading.local()
 
     def _capture():
         import numpy as np
         import cv2
-        if 'sct' not in state:
+        if not hasattr(local, 'sct'):
             from mss import mss
-            state['sct'] = mss()
-            state['monitor'] = state['sct'].monitors[1]
-        screen = np.array(state['sct'].grab(state['monitor']))
+            local.sct = mss()
+            local.monitor = local.sct.monitors[1]
+        screen = np.array(local.sct.grab(local.monitor))
         return cv2.cvtColor(screen, cv2.COLOR_BGRA2BGR)
 
     return _capture
@@ -3809,6 +3812,15 @@ class TotalHunterApp(ctk.CTk):
                                              button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
                                              progress_color=MD3["primary"])
         self._scout_debug_sw.pack(anchor="w", padx=12, pady=(2, 0))
+        self._scout_roy_on = bool(self._load_gui_config().get(
+            'scout_roy_publish', scout_roy_publish_default(bool(getattr(sys, 'frozen', False)))))
+        self._scout_roy_var = ctk.BooleanVar(value=self._scout_roy_on)
+        self._scout_roy_sw = ctk.CTkSwitch(card, text=scout_text(lang, 'roy_publish'),
+                                           variable=self._scout_roy_var, command=self._on_scout_roy_toggle,
+                                           font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"],
+                                           button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
+                                           progress_color=MD3["primary"])
+        self._scout_roy_sw.pack(anchor="w", padx=12, pady=(2, 0))
         self._scout_nn_btn = ctk.CTkButton(card, text=scout_text(lang, 'nn_start'), height=32,
                                            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
                                            text_color=MD3["on_surface"], corner_radius=8,
@@ -3869,7 +3881,12 @@ class TotalHunterApp(ctk.CTk):
         return make_found_handler(resolve_exchange_crop_box(), self._get_roy_kingdom(), "exchange",
                                   get_hwid(), on_sound=_sound, on_result=_result,
                                   on_debug_frame=_debug_frame, on_debug_result=_debug_result,
-                                  on_debug_crop=_debug_crop)
+                                  on_debug_crop=_debug_crop, publish_fn=lambda: self._scout_roy_on)
+
+    def _on_scout_roy_toggle(self) -> None:
+        """Переключатель «Публиковать в РОЙ». Списание ◆ и звук от него не зависят."""
+        self._scout_roy_on = bool(self._scout_roy_var.get())
+        self._save_gui_config_key("scout_roy_publish", self._scout_roy_on)
 
     def _on_scout_debug_toggle(self) -> None:
         """Переключатель «находки в debug-Telegram». По умолчанию ВЫКЛЮЧЕН и запоминается: в релизной
@@ -3916,6 +3933,7 @@ class TotalHunterApp(ctk.CTk):
         nn_alive = bool(eng is not None and eng.consumer_alive)
         state = scout_queue_state(snake_running, size, paused)
         color = self._SCOUT_STATE_COLORS[state]
+        snake_error = getattr(eng, 'producer_error', None) if eng is not None else None
         frac = queue_fraction(size, limit)
         self._scout_queue_bar.set(frac)
         self._scout_queue_bar.configure(progress_color=color)
@@ -3927,6 +3945,8 @@ class TotalHunterApp(ctk.CTk):
         else:
             status = scout_text(lang, {'active': 'st_active', 'brown': 'st_brown',
                                        'green': 'st_green'}[state])
+        if snake_error and not snake_running:
+            status, color = f"⚠ {snake_error}", MD3["error_text"]
         self._scout_queue_status.configure(text=status, text_color=color)
         cycle = eng.natural_cycle if eng is not None else 0.0
         self._scout_cycle_lb.configure(
@@ -3943,6 +3963,14 @@ class TotalHunterApp(ctk.CTk):
         тике после запуска приложения) удаляет всё старше 30 минут — даже если бота не запускали
         неделю, старые скрины не копятся."""
         try:
+            eng = self._scout_engine
+            if self.active_mode == 'v2' and eng is not None and not eng.is_running:
+                # Поток змейки умер (ошибка) — кнопка не должна продолжать показывать «Стоп».
+                self.active_mode = None
+                label = LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')
+                self._scout_button.configure(
+                    text=f"{label}\n{LANGS[self.current_lang]['start']}",
+                    fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
             now = time.time()
             if now - getattr(self, '_scout_last_cleanup', 0.0) >= 60.0:
                 self._scout_last_cleanup = now
@@ -3968,6 +3996,7 @@ class TotalHunterApp(ctk.CTk):
         self._scout_queue_title.configure(text=scout_text(self.current_lang, 'queue_title'))
         self._scout_limit_lb.configure(text=scout_text(self.current_lang, 'limit_label'))
         self._scout_debug_sw.configure(text=scout_text(self.current_lang, 'debug_tg'))
+        self._scout_roy_sw.configure(text=scout_text(self.current_lang, 'roy_publish'))
         self._refresh_scout_queue()
 
     def _update_nav_labels(self, _=None):
