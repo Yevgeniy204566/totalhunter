@@ -38,7 +38,7 @@ class CoordinateManager:
     """
 
     # Names of the UI buttons that support manual click tuning.
-    _UI_BUTTON_NAMES = ("wt_icon", "carter", "crypt_open", "crypt_select", "top_accel", "march_accel", "arena_reset", "chest_sender", "chest_type", "chest_collect")
+    _UI_BUTTON_NAMES = ("wt_icon", "carter", "crypt_open", "crypt_select", "top_accel", "march_accel", "arena_reset", "chest_sender", "chest_type", "chest_collect", "exchange_coord_roi")
 
     def __init__(self):
         self.scale_x: float = 1.0
@@ -80,14 +80,35 @@ class CoordinateManager:
         return (sx, sy, round(w * self.scale_x), round(h * abs(self.scale_y)))
 
     def get_ui_offset(self, name: str) -> tuple[int, int]:
-        """Return (dx, dy) tuning offset for a named UI button."""
-        ox, oy = self.ui_offsets.get(name, [0, 0])
-        return int(ox), int(oy)
+        """Return (dx, dy) tuning offset for a named UI button. Reads only the first two
+        elements — the stored list may be length 4 ([dx, dy, dw, dh]) for ROI targets that
+        also have a calibrated size (see get_roi_size_delta)."""
+        pair = self.ui_offsets.get(name, [0, 0])
+        return int(pair[0]), int(pair[1])
 
     def set_ui_offset(self, name: str, dx: int, dy: int) -> None:
-        """Store (dx, dy) tuning offset for a named UI button. Unknown names ignored."""
+        """Store (dx, dy) tuning offset for a named UI button. Unknown names ignored.
+        Preserves an existing width/height delta (elements 2/3) if present."""
         if name in self.ui_offsets:
-            self.ui_offsets[name] = [int(dx), int(dy)]
+            rest = self.ui_offsets[name][2:]
+            self.ui_offsets[name] = [int(dx), int(dy), *rest]
+
+    def get_roi_size_delta(self, name: str) -> tuple[int, int]:
+        """Return (dw, dh) size delta for a resizable ROI target — stored in the SAME
+        ui_offsets[name] list as (dx, dy), not a separate structure (задел на будущее
+        использование, потребитель геометрии реализуется отдельно, не сейчас). Missing
+        elements (unset, or an old 2-element [dx, dy] entry) default to 0."""
+        pair = self.ui_offsets.get(name, [0, 0])
+        dw = pair[2] if len(pair) > 2 else 0
+        dh = pair[3] if len(pair) > 3 else 0
+        return int(dw), int(dh)
+
+    def set_roi_size_delta(self, name: str, dw: int, dh: int) -> None:
+        """Store (dw, dh) size delta for a resizable ROI target. Unknown names ignored.
+        Preserves the existing (dx, dy) position offset."""
+        if name in self.ui_offsets:
+            dx, dy = self.get_ui_offset(name)
+            self.ui_offsets[name] = [dx, dy, int(dw), int(dh)]
 
     def to_screen_dialog(self, x: int, y: int) -> tuple[int, int]:
         """Like to_screen but adds dialog_offset for in-game dialog windows."""
@@ -128,8 +149,7 @@ class CoordinateManager:
             saved = data.get("ui_offsets", {})
             for name in self._UI_BUTTON_NAMES:
                 if name in saved:
-                    pair = saved[name]
-                    self.ui_offsets[name] = [int(pair[0]), int(pair[1])]
+                    self.ui_offsets[name] = [int(v) for v in saved[name]]
         except Exception:
             pass  # Keep default REF_A/REF_B if profile is corrupted
 

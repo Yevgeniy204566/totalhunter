@@ -19,6 +19,7 @@ cal_tune_card_visible = _main_module.cal_tune_card_visible
 cal_visual_dispatch_for_kind = _main_module.cal_visual_dispatch_for_kind
 cal_resolve_point_position = _main_module.cal_resolve_point_position
 cal_apply_offset_delta = _main_module.cal_apply_offset_delta
+cal_apply_roi_size_delta = _main_module.cal_apply_roi_size_delta
 cal_merge_calibration_point = _main_module.cal_merge_calibration_point
 
 
@@ -163,6 +164,50 @@ class TestApplyOffsetDelta:
 
 def patch_set_ui_offset():
     return patch.object(coord_manager, "set_ui_offset", wraps=coord_manager.set_ui_offset)
+
+
+class TestApplyRoiSizeDelta:
+    """Кнопки ширины/высоты (задел на будущее использование, потребитель геометрии не
+    реализуется сейчас). Хранение — coord_manager.set_roi_size_delta (тот же ui_offsets),
+    не отдельная система. Защитный минимум — не даёт кнопке схлопнуть ROI в 0/отрицательный
+    размер (не игровое число, а предохранитель от вырожденного прямоугольника)."""
+
+    def test_none_target_id_is_noop(self):
+        with patch.object(coord_manager, "set_roi_size_delta",
+                           wraps=coord_manager.set_roi_size_delta) as spy:
+            cal_apply_roi_size_delta(None, 5, 5)
+            spy.assert_not_called()
+
+    def test_non_resizable_target_is_noop(self):
+        """wt_icon — kind="точка", не resizable: у кнопок ширины/высоты нет смысла."""
+        with patch.object(coord_manager, "set_roi_size_delta",
+                           wraps=coord_manager.set_roi_size_delta) as spy:
+            cal_apply_roi_size_delta("wt_icon", 5, 5)
+            spy.assert_not_called()
+
+    def test_delta_added_to_current_size(self):
+        original = coord_manager.get_roi_size_delta("chest_sender")
+        try:
+            cal_apply_roi_size_delta("chest_sender", 10, 5)
+            assert coord_manager.get_roi_size_delta("chest_sender") == (10, 5)
+            cal_apply_roi_size_delta("chest_sender", -3, -3)
+            assert coord_manager.get_roi_size_delta("chest_sender") == (7, 2)
+        finally:
+            coord_manager.set_roi_size_delta("chest_sender", *original)
+
+    def test_does_not_shrink_below_minimum_absolute_size(self):
+        """chest_sender ref_rect w/h = (361, 24) — гигантский отрицательный dh не должен
+        увести итоговую высоту ниже защитного минимума (1px, только против 0/отрицательного)."""
+        original = coord_manager.get_roi_size_delta("chest_sender")
+        try:
+            cal_apply_roi_size_delta("chest_sender", -10000, -10000)
+            dw, dh = coord_manager.get_roi_size_delta("chest_sender")
+            t = cal_target_by_id("chest_sender")
+            base_w, base_h = t["ref_rect"][2], t["ref_rect"][3]
+            assert base_w + dw >= 1
+            assert base_h + dh >= 1
+        finally:
+            coord_manager.set_roi_size_delta("chest_sender", *original)
 
 
 class TestMergeCalibrationPoint:

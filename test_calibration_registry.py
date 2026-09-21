@@ -28,17 +28,22 @@ EXPECTED_TABLE = [
     ("chest_sender", "OCR-область",   "offset"),
     ("chest_type",   "OCR-область",   "offset"),
     ("chest_collect", "точка",        "offset"),
+    ("exchange_coord_roi", "OCR-область", "offset"),
 ]
 
 # PC-01 (файл 39): ровно 7 записей kind="точка"+storage="offset" обязаны иметь base_pos_fn.
 POINT_OFFSET_IDS = {"wt_icon", "carter", "crypt_open", "top_accel", "march_accel",
                      "arena_reset", "chest_collect"}
-OCR_AREA_IDS = {"chest_sender", "chest_type"}
+OCR_AREA_IDS = {"chest_sender", "chest_type", "exchange_coord_roi"}
+
+# Задел на будущее использование (потребитель геометрии реализуется отдельно, не сейчас) —
+# цели, у которых калибруется не только положение, но и ширина/высота ROI (кнопки в tune_card).
+RESIZABLE_IDS = {"chest_sender", "chest_type", "exchange_coord_roi"}
 
 
 class TestRegistryMatchesDesignTable:
-    def test_registry_has_exactly_12_entries_matching_design_table(self):
-        assert len(CALIBRATION_TARGETS) == 12
+    def test_registry_has_exactly_13_entries_matching_design_table(self):
+        assert len(CALIBRATION_TARGETS) == 13
         actual = [(t["id"], t["kind"], t["storage"]) for t in CALIBRATION_TARGETS]
         assert actual == EXPECTED_TABLE
 
@@ -85,6 +90,22 @@ class TestRegistryBidirectionalWithUiButtonNames:
     def test_registry_offset_ids_match_ui_button_names_bidirectionally(self):
         registry_offset_ids = {t["id"] for t in CALIBRATION_TARGETS if t["storage"] == "offset"}
         assert registry_offset_ids == set(_UI_BUTTON_NAMES)
+
+
+class TestRegistryResizable:
+    """Задел на будущее использование (не подключено ни к какому потребителю сейчас) —
+    цели с калибруемой шириной/высотой, не только положением. Хранение — в том же
+    ui_offsets[name], том же whitelist _UI_BUTTON_NAMES (см. coord_manager.get_roi_size_delta),
+    не отдельная система."""
+
+    def test_resizable_flag_present_only_for_resizable_ids(self):
+        for t in CALIBRATION_TARGETS:
+            assert bool(t.get("resizable")) == (t["id"] in RESIZABLE_IDS)
+
+    def test_resizable_ids_are_subset_of_ocr_area_ids(self):
+        for t in CALIBRATION_TARGETS:
+            if t.get("resizable"):
+                assert t["kind"] == "OCR-область", f"{t['id']}: resizable без OCR-область"
 
 
 class TestNoLegacyTuneStructuresRemain:
