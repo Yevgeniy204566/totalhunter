@@ -84,10 +84,30 @@ export default function DownloadPage() {
 
           <p style={{
             fontSize: 'clamp(15px, 2.2vw, 18px)', color: '#C8D8F0',
-            lineHeight: 1.7, maxWidth: 500, margin: '0 auto 48px',
+            lineHeight: 1.7, maxWidth: 500, margin: '0 auto 32px',
           }}>
             {T.subtitle}
           </p>
+
+          {/* Defender + calibration warning */}
+          <div style={{
+            maxWidth: 560, margin: '0 auto 32px', textAlign: 'left',
+            background: 'rgba(255,176,32,0.10)', border: '1px solid rgba(255,176,32,0.35)',
+            borderRadius: 14, padding: '20px 24px',
+          }}>
+            <div style={{
+              fontSize: 14, fontWeight: 800, color: '#FFB020', marginBottom: 8,
+              textTransform: 'uppercase', letterSpacing: '0.5px',
+            }}>
+              {T.warning.title}
+            </div>
+            <p style={{ fontSize: 14, color: '#E8DCC8', lineHeight: 1.6, margin: '0 0 10px' }}>
+              {T.warning.defenderText}
+            </p>
+            <p style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 1.6, margin: 0, fontWeight: 700 }}>
+              {T.warning.calibrationText}
+            </p>
+          </div>
 
           {/* Download button */}
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
