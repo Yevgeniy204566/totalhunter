@@ -26,6 +26,15 @@ SCOUT_DEFAULT_SPEED_FACTOR = 1.0
 # Очередь скриншотов: 100% индикатора = порог автопаузы змейки, ~300 кадров (решение владельца
 # 2026-09-18, число подтверждается измерением). Сама автопауза — Часть B, ещё не реализована.
 SCOUT_QUEUE_PAUSE_THRESHOLD = 300
+# Змейка продолжает, когда очередь спала до 10% (~30 кадров) — решение владельца 2026-09-18/21.
+SCOUT_QUEUE_RESUME_THRESHOLD = SCOUT_QUEUE_PAUSE_THRESHOLD // 10
+# Лимит очереди выбирается в выпадающем списке (предложение владельца 2026-09-21): по умолчанию 300.
+SCOUT_QUEUE_LIMIT_OPTIONS = (300, 600, 999)
+
+
+def queue_resume_for(limit: int) -> int:
+    """Порог возобновления змейки — 10% от выбранного лимита (300 -> 30, 600 -> 60, 999 -> 99)."""
+    return limit // 10
 
 
 def _clamp_inland(mode, value):
@@ -135,9 +144,12 @@ def queue_fraction(size: int, threshold: int = SCOUT_QUEUE_PAUSE_THRESHOLD) -> f
     return max(0.0, min(1.0, size / threshold))
 
 
-def scout_queue_state(snake_running: bool, queue_size: int) -> str:
-    """Состояние индикатора (решение владельца 2026-09-18): 'active' — змейка работает; 'brown' —
-    змейка остановлена, очередь не пуста (идёт разбор накопленного); 'green' — очередь пуста."""
+def scout_queue_state(snake_running: bool, queue_size: int, paused: bool = False) -> str:
+    """Состояние индикатора (решение владельца 2026-09-18): 'active' — змейка работает; 'paused' — змейка
+    сама встала на паузу из-за заполнения очереди; 'brown' — змейка остановлена, очередь не пуста (идёт
+    разбор накопленного); 'green' — очередь пуста."""
+    if snake_running and paused:
+        return 'paused'
     if snake_running:
         return 'active'
     return 'brown' if queue_size > 0 else 'green'
@@ -145,6 +157,8 @@ def scout_queue_state(snake_running: bool, queue_size: int) -> str:
 
 _TEXTS = {
     'RU': {
+        'limit_label': 'Лимит очереди:', 'st_paused': 'Пауза: ожидание обработки очереди',
+        'st_paused_nn_off': 'Пауза: очередь заполнена, нейросеть выключена',
         'queue_title': 'Очередь скриншотов', 'snake_cycle': 'Цикл змейки (мин. = быстрее всего):',
         'st_active': 'Змейка работает', 'st_brown': 'Змейка остановлена — идёт разбор очереди',
         'st_brown_nn_off': 'Змейка остановлена, нейросеть выключена — очередь ждёт',
@@ -152,6 +166,8 @@ _TEXTS = {
         'nn_on': 'Нейросеть работает', 'nn_off': 'Нейросеть остановлена', 'cycle_pc': 'цикл ПК',
     },
     'UK': {
+        'limit_label': 'Ліміт черги:', 'st_paused': 'Пауза: очікування обробки черги',
+        'st_paused_nn_off': 'Пауза: черга заповнена, нейромережа вимкнена',
         'queue_title': 'Черга скриншотів', 'snake_cycle': 'Цикл змійки (мін. = найшвидше):',
         'st_active': 'Змійка працює', 'st_brown': 'Змійка зупинена — триває розбір черги',
         'st_brown_nn_off': 'Змійка зупинена, нейромережа вимкнена — черга чекає',
@@ -159,6 +175,8 @@ _TEXTS = {
         'nn_on': 'Нейромережа працює', 'nn_off': 'Нейромережа зупинена', 'cycle_pc': 'цикл ПК',
     },
     'EN': {
+        'limit_label': 'Queue limit:', 'st_paused': 'Paused: waiting for the queue',
+        'st_paused_nn_off': 'Paused: queue is full, neural net is off',
         'queue_title': 'Screenshot queue', 'snake_cycle': 'Snake cycle (min = fastest):',
         'st_active': 'Snake is running', 'st_brown': 'Snake stopped — processing the queue',
         'st_brown_nn_off': 'Snake stopped, neural net off — queue is waiting',

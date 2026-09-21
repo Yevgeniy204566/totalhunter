@@ -2,7 +2,7 @@
 exchange_scout.py — Биржа 2.0 (Exchange Scout).
 
 Три этапа (решение владельца 2026-09-21, сессия #147):
-  1. ЗМЕЙКА    — навигация по карте + полные screenshots → pending/<sid>/*.jpg
+  1. ЗМЕЙКА    — навигация по карте + полные screenshots → pending/ (ЕДИНАЯ очередь, без папок сессий)
   2. YOLO      — фоновый consumer: pending → YOLO → found (только кадры с биржей)
   3. КООРДИНАТЫ — found → ROI #13 (exchange_coord_roi) → OCR → X/Y → spend_credit → RoyClient
 
@@ -16,6 +16,15 @@ import threading
 import time
 
 import cv2
+
+from exchange_mode_settings import SCOUT_QUEUE_PAUSE_THRESHOLD, SCOUT_QUEUE_RESUME_THRESHOLD
+
+# Всё в очереди и в found старше 30 минут удаляется (решение владельца 2026-09-18/21: биржи живут
+# 30–40 минут, старые кадры бессмысленны, мусор копить нельзя).
+QUEUE_TTL_SEC = 30 * 60
+# Скрины, которые пользователь кладёт в очередь руками (PNG из Windows и т. п.), тоже принимаются.
+IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
+_SWEPT_ROOTS = ("pending", "found", "errors")   # errors — остаток прежней схемы «папка на сессию»
 
 SESSION_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_[0-9a-f]{4}$")
 
@@ -32,22 +41,62 @@ def generate_session_id() -> str:
     return f"{timestamp}_{suffix}"
 
 
-def create_session_dirs(sessions_root: str) -> str:
-    """Резервирует уникальный sid и создаёт pending/<sid>/, found/<sid>/, errors/<sid>/ под указанным
-    корнем. Не трогает существующее содержимое pending/ (никакого rmtree/очистки чужих сессий).
-    Уникальность sid гарантируется retry на FileExistsError — не только случайностью суффикса."""
-    pending_root = os.path.join(sessions_root, "pending")
-    while True:
-        sid = generate_session_id()
-        try:
-            os.makedirs(os.path.join(pending_root, sid), exist_ok=False)
-            break
-        except FileExistsError:
-            continue
+def frame_added_time(path: str) -> float:
+    """Когда файл появился в папке: время создания (на Windows — момент копирования/записи), а не
+    время изменения — скрин, который пользователь скопировал в очередь, считается добавленным сейчас."""
+    st = os.stat(path)
+    return getattr(st, "st_birthtime", None) or st.st_ctime
 
-    os.makedirs(os.path.join(sessions_root, "found", sid), exist_ok=True)
-    os.makedirs(os.path.join(sessions_root, "errors", sid), exist_ok=True)
-    return sid
+
+def list_queue(directory: str) -> list:
+    """Полные пути изображений очереди (включая подпапки), старые первыми по времени добавления.
+    `.tmp` и прочее, что не картинка, в очередь не попадает."""
+    found = []
+    if not os.path.isdir(directory):
+        return found
+    for root, _dirs, files in os.walk(directory):
+        for name in files:
+            if os.path.splitext(name)[1].lower() in IMAGE_EXTS:
+                path = os.path.join(root, name)
+                try:
+                    found.append((frame_added_time(path), path))
+                except OSError:
+                    continue           # файл исчез между листингом и stat — гонка с другим удалением
+    found.sort()
+    return [path for _t, path in found]
+
+
+def count_queue(directory: str) -> int:
+    return len(list_queue(directory))
+
+
+def cleanup_expired(sessions_root: str, ttl_sec: float = QUEUE_TTL_SEC, now=None) -> tuple:
+    """Удаляет всё старше `ttl_sec` в pending/found/errors и опустевшие старые папки. Корневые папки
+    остаются. Папка с ещё свежим файлом не удаляется. Возвращает (удалено файлов, удалено папок)."""
+    now = time.time() if now is None else now
+    files_removed = dirs_removed = 0
+    for sub in _SWEPT_ROOTS:
+        base = os.path.join(sessions_root, sub)
+        if not os.path.isdir(base):
+            continue
+        for root, dirs, files in os.walk(base, topdown=False):
+            for name in files:
+                path = os.path.join(root, name)
+                try:
+                    if now - frame_added_time(path) > ttl_sec:
+                        os.remove(path)
+                        files_removed += 1
+                except OSError:
+                    continue
+            if root == base:
+                continue
+            try:
+                if not os.listdir(root) and now - frame_added_time(root) > ttl_sec:
+                    os.rmdir(root)
+                    dirs_removed += 1
+            except OSError:
+                continue
+    return files_removed, dirs_removed
 
 
 def save_frame_atomic(frame, final_path: str) -> bool:
@@ -77,7 +126,8 @@ def save_frame_atomic(frame, final_path: str) -> bool:
     return True
 
 
-def producer_step(navigator, frame, is_water: bool, pending_dir: str, frame_id: int) -> None:
+def producer_step(navigator, frame, is_water: bool, pending_dir: str, frame_id: int,
+                  name_prefix: str = "") -> None:
     """Одна итерация Этапа 1 (ЗМЕЙКА). Тот же паттерн, что уже работает в 1.0 (`PacmanEngine._run`,
     navigator.py:1006-1040), БЕЗ YOLO — producer только двигается и сохраняет полный кадр, нейросеть
     (Этап 2) читает эти кадры отдельно, фоново, с диска. `navigator` — уже существующий
@@ -86,7 +136,7 @@ def producer_step(navigator, frame, is_water: bool, pending_dir: str, frame_id: 
     Сбой сохранения кадра (диск и т. п.) не останавливает навигацию — движение и запись независимы,
     как и в 1.0 (там сбой записи отдельного кадра тоже не останавливает бота)."""
     navigator.step(is_water=is_water, frame=frame)
-    frame_path = os.path.join(pending_dir, f"{frame_id:06d}.jpg")
+    frame_path = os.path.join(pending_dir, f"{name_prefix}{frame_id:06d}.jpg")
     save_frame_atomic(frame, frame_path)
 
 
@@ -179,15 +229,22 @@ class ExchangeScoutEngine:
     `CoastalSnakeNavigator`, `model` — уже существующая YOLO-модель (`engine.py`) — ни то, ни другое
     не переписывается.
 
+    Очередь — ОДНА папка `pending/` на всё приложение (решение владельца 2026-09-21): кадры всех
+    запусков и скрины, которые пользователь кладёт руками, лежат вместе и разбираются по времени
+    добавления. Нейросеть (consumer) одна и не зависит от змейки; змейка (producer) сама встаёт на
+    паузу, когда очередь дошла до `pause_threshold`, и продолжает при спаде до `resume_threshold`.
+
     `capture_fn` — источник кадров (в проде — `mss.grab` + перевод в BGR, инжектируется параметром,
     чтобы этот класс не был завязан на конкретное железо и был тестируем без экрана)."""
 
     JOIN_TIMEOUT = 3.0  # то же число, что уже принято в проекте для сопоставимого цикла (PacmanEngine)
-
     NATURAL_CYCLE_WINDOW = 20  # замеров в медиане естественного цикла
 
     def __init__(self, navigator, capture_fn, model, conf: float, sessions_root: str,
-                 move_wait: float = 0.5, on_found_callback=None, speed_factor: float = 1.0):
+                 move_wait: float = 0.5, on_found_callback=None, speed_factor: float = 1.0,
+                 pause_threshold: int = SCOUT_QUEUE_PAUSE_THRESHOLD,
+                 resume_threshold: int = SCOUT_QUEUE_RESUME_THRESHOLD,
+                 ttl_sec: float = QUEUE_TTL_SEC):
         self.navigator = navigator
         self.capture_fn = capture_fn
         self.model = model
@@ -197,16 +254,24 @@ class ExchangeScoutEngine:
         # Скорость змейки как множитель от минимального цикла ЭТОГО ПК (решение владельца
         # 2026-09-21): 1.0 — без паузы, 4.0 — цикл в четыре раза длиннее минимального.
         self.speed_factor = speed_factor
+        self.pause_threshold = pause_threshold
+        self.resume_threshold = resume_threshold
+        self.ttl_sec = ttl_sec
         self._cycle_samples = []
         self.on_found_callback = on_found_callback
 
+        self.pending_dir = os.path.join(sessions_root, "pending")
+        self.found_dir = os.path.join(sessions_root, "found")
+        os.makedirs(self.pending_dir, exist_ok=True)
+        os.makedirs(self.found_dir, exist_ok=True)
+
         self.is_running = False
+        self.paused_by_queue = False
         self.sid = None
-        self.pending_dir = None
-        self.found_dir = None
         self._producer_thread = None
         self._consumer_thread = None
         self._consumer_stop_event = None
+        self._nn_user_stopped = False
         self._frame_counter = 0
 
     @property
@@ -222,32 +287,73 @@ class ExchangeScoutEngine:
     def _speed_pause(self) -> float:
         return self.move_wait + max(0.0, self.speed_factor - 1.0) * self.natural_cycle
 
+    def queue_size(self) -> int:
+        """Число кадров в единой очереди (включая скрины, положенные вручную) — источник прогресс-бара."""
+        return count_queue(self.pending_dir)
+
+    # ── змейка (producer) ────────────────────────────────────────────────────────────────────────
     def start(self) -> None:
-        """C-04 (Часть A): повторный start() без stop() на том же экземпляре — RuntimeError, новая
-        сессия не создаётся."""
+        """Запускает змейку. C-04: повторный start() без stop() — RuntimeError. Очередь не сбрасывается;
+        нейросеть поднимается вместе со змейкой, если её не остановили кнопкой."""
         if self.is_running:
             raise RuntimeError("ExchangeScoutEngine уже запущен — сначала stop()")
 
-        self.sid = create_session_dirs(self.sessions_root)
-        self.pending_dir = os.path.join(self.sessions_root, "pending", self.sid)
-        self.found_dir = os.path.join(self.sessions_root, "found", self.sid)
+        cleanup_expired(self.sessions_root, self.ttl_sec)
+        self.sid = generate_session_id()
         self._frame_counter = 0
         self._cycle_samples = []
+        self.paused_by_queue = False
         self.is_running = True
 
         self._producer_thread = threading.Thread(target=self._producer_loop, daemon=True)
         self._producer_thread.start()
-        self._spawn_consumer()
+        if not self._nn_user_stopped and not self.consumer_alive:
+            self._spawn_consumer()
 
+    def stop(self) -> None:
+        """C-05: bounded join ТОЛЬКО на producer-треде (только он двигает джойстик/мышь). Consumer НЕ
+        останавливается — он дообрабатывает очередь и сам завершается, когда она опустеет (инвариант
+        конвейера — ESC/Стоп не отменяют уже захваченные кадры)."""
+        self.is_running = False
+        if self._producer_thread is not None:
+            self._producer_thread.join(timeout=self.JOIN_TIMEOUT)
+
+    def _wait_for_queue_room(self) -> None:
+        """Автопауза: очередь дошла до порога — змейка стоит (состояние навигатора сохраняется, цикл
+        нырок→сдвиг→возврат→сдвиг не рвётся), пока очередь не спадёт до порога возобновления."""
+        if not self.paused_by_queue and self.queue_size() >= self.pause_threshold:
+            self.paused_by_queue = True
+        while self.paused_by_queue and self.is_running:
+            if self.queue_size() <= self.resume_threshold:
+                self.paused_by_queue = False
+                break
+            time.sleep(0.2)
+
+    def _producer_loop(self) -> None:
+        try:
+            while self.is_running:
+                self._wait_for_queue_room()
+                if not self.is_running:
+                    break
+                t0 = time.monotonic()
+                frame = self.capture_fn()
+                from navigator import is_water_center_screen
+                is_water = is_water_center_screen(frame)
+                self._frame_counter += 1
+                producer_step(self.navigator, frame, is_water, self.pending_dir, self._frame_counter,
+                              name_prefix=f"{self.sid}_")
+                self._cycle_samples.append(time.monotonic() - t0)
+                del self._cycle_samples[:-self.NATURAL_CYCLE_WINDOW]
+                time.sleep(self._speed_pause())
+        finally:
+            self.paused_by_queue = False
+
+    # ── нейросеть (consumer) ─────────────────────────────────────────────────────────────────────
     def _spawn_consumer(self) -> None:
-        """Каждый consumer получает СВОИ папки и СВОЙ флаг остановки: раньше он читал self.pending_dir
-        на каждой итерации, и после нового start() старый consumer переключался на новую очередь — два
-        consumer'а на одной папке."""
         stop_event = threading.Event()
         self._consumer_stop_event = stop_event
-        self._consumer_thread = threading.Thread(
-            target=self._consumer_loop,
-            args=(self.pending_dir, self.found_dir, stop_event, self._producer_thread), daemon=True)
+        self._consumer_thread = threading.Thread(target=self._consumer_loop, args=(stop_event,),
+                                                 daemon=True)
         self._consumer_thread.start()
 
     @property
@@ -258,70 +364,55 @@ class ExchangeScoutEngine:
 
     def stop_consumer(self) -> None:
         """Кнопка «остановить нейросеть» (решение владельца 2026-09-18): consumer заканчивает кадр, с
-        которым работает, и останавливается; кадры остаются в очереди, змейка продолжает работать."""
+        которым работает, и останавливается; кадры остаются в очереди, змейка продолжает работать;
+        запуск змейки нейросеть сам не поднимает, пока её не запустят кнопкой."""
+        self._nn_user_stopped = True
         if self._consumer_stop_event is not None:
             self._consumer_stop_event.set()
 
     def start_consumer(self) -> None:
-        """Кнопка «запустить нейросеть»: новый consumer на очереди текущей сессии. Пока consumer уже
-        работает или сессии ещё не было — ничего не делает."""
-        if self.pending_dir is None or self.consumer_alive:
+        """Кнопка «запустить нейросеть»: работает и без змейки (разбор скринов, положенных вручную).
+        Обработав очередь до конца (и если змейка стоит), сама останавливается."""
+        self._nn_user_stopped = False
+        if self.consumer_alive:
             return
         old = self._consumer_thread
         if old is not None and old.is_alive():
             old.join(timeout=self.JOIN_TIMEOUT)   # предыдущий доделывает кадр после stop_consumer()
+        cleanup_expired(self.sessions_root, self.ttl_sec)
         self._spawn_consumer()
 
-    def queue_size(self) -> int:
-        """Число необработанных кадров в очереди текущей сессии — источник прогресс-бара GUI."""
-        return len(self._list_jpgs(self.pending_dir)) if self.pending_dir else 0
+    def _producing(self) -> bool:
+        return self._producer_thread is not None and self._producer_thread.is_alive()
 
-    def stop(self) -> None:
-        """C-05: bounded join ТОЛЬКО на producer-треде (файл 46 §4.2 — только producer двигает
-        джойстик/мышь, consumer работает с уже снятыми файлами и не создаёт риска «двух навигаторов»).
-        Consumer НЕ join'ится — он продолжает дренировать уже записанные кадры и останавливается сам,
-        когда pending опустеет (инвариант конвейера — ESC/Стоп не отменяют уже захваченные кадры)."""
-        self.is_running = False
-        if self._producer_thread is not None:
-            self._producer_thread.join(timeout=self.JOIN_TIMEOUT)
-
-    def _producer_loop(self) -> None:
-        while self.is_running:
-            t0 = time.monotonic()
-            frame = self.capture_fn()
-            from navigator import is_water_center_screen
-            is_water = is_water_center_screen(frame)
-            self._frame_counter += 1
-            producer_step(self.navigator, frame, is_water, self.pending_dir, self._frame_counter)
-            self._cycle_samples.append(time.monotonic() - t0)
-            del self._cycle_samples[:-self.NATURAL_CYCLE_WINDOW]
-            time.sleep(self._speed_pause())
-
-    def _consumer_loop(self, pending_dir: str, found_dir: str, stop_event, producer_thread) -> None:
-        # Ждём завершения именно потока-производителя своей сессии, а не флага is_running: после
-        # stop() производитель может дописывать кадр (первый шаг медленный — импорт навигатора), и
-        # consumer, увидевший «пусто + флаг снят», ушёл бы раньше этого кадра, оставив его в очереди.
-        while not stop_event.is_set() and (producer_thread.is_alive()
-                                           or self._has_pending_files(pending_dir)):
-            names = sorted(self._list_jpgs(pending_dir))
-            if not names:
+    def _consumer_loop(self, stop_event) -> None:
+        while not stop_event.is_set():
+            # Порядок важен: сначала «змейка ещё пишет?», потом листинг. Если змейка уже мертва, листинг
+            # окончательный; если наоборот — кадр, дописанный после stop(), остался бы в очереди.
+            producing = self._producing()
+            queue = list_queue(self.pending_dir)
+            if not queue:
+                if not producing:
+                    break
                 time.sleep(0.05)
                 continue
-            src = os.path.join(pending_dir, names[0])
-            was_found = consumer_step(self.model, self.conf, src, found_dir)
+            src = queue[0]
+            try:
+                expired = time.time() - frame_added_time(src) > self.ttl_sec
+            except OSError:
+                continue
+            if expired:      # устаревший кадр в нейросеть не идёт, просто удаляется
+                try:
+                    os.remove(src)
+                except OSError:
+                    pass
+                continue
+            was_found = consumer_step(self.model, self.conf, src, self.found_dir)
             if was_found and self.on_found_callback:
-                found_path = os.path.join(found_dir, names[0])
+                found_path = os.path.join(self.found_dir, os.path.basename(src))
                 frame = cv2.imread(found_path)
                 if frame is not None:
                     self.on_found_callback(frame, found_path)
-
-    def _list_jpgs(self, directory: str) -> list:
-        if not os.path.isdir(directory):
-            return []
-        return [n for n in os.listdir(directory) if n.endswith(".jpg")]
-
-    def _has_pending_files(self, pending_dir=None) -> bool:
-        return len(self._list_jpgs(pending_dir or self.pending_dir)) > 0
 
 
 def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,

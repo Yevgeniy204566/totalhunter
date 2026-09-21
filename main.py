@@ -25,6 +25,7 @@ if getattr(sys, 'frozen', False):
 # ─────────────────────────────────────────────────────────────────────────────
 
 import json
+import time
 import threading
 import customtkinter as ctk
 from auth import (get_hwid, check_license, get_free_trial, spend_credit,
@@ -36,7 +37,8 @@ from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
                                      scout_settings_for_profile, mode_label,
                                      exchange_cfg_from_values, SCOUT_DEFAULT_INLAND, SPEED_FACTOR_RANGE, SPEED_FACTOR_STEPS,
                                      SCOUT_DEFAULT_SPEED_FACTOR, SCOUT_QUEUE_PAUSE_THRESHOLD,
-                                     queue_fraction, scout_queue_state, scout_text)
+                                     queue_fraction, scout_queue_state, scout_text,
+                                     SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
 # from combiner import CombinerEngine  # Combo заморожен — импорт отключён
@@ -3751,7 +3753,8 @@ class TotalHunterApp(ctk.CTk):
             self._scout_queue_card.pack_forget()
             self.start_button.pack(pady=5, padx=40, fill="x", before=self.status_label)
 
-    _SCOUT_STATE_COLORS = {'active': "#3D7FFF", 'brown': "#B07A3C", 'green': "#4ADE80"}
+    _SCOUT_STATE_COLORS = {'active': "#3D7FFF", 'paused': "#B07A3C", 'brown': "#B07A3C",
+                           'green': "#4ADE80"}
 
     def _build_scout_queue_card(self) -> None:
         """Панель Биржи 2.0: прогресс-бар очереди скриншотов + кнопка нейросети. Не показана в виде 1.0.
@@ -3767,7 +3770,7 @@ class TotalHunterApp(ctk.CTk):
                                                font=ctk.CTkFont(size=14, weight="bold"),
                                                text_color=MD3["on_surface"])
         self._scout_queue_title.pack(side="left")
-        self._scout_queue_count = ctk.CTkLabel(head, text="0 / %d" % SCOUT_QUEUE_PAUSE_THRESHOLD,
+        self._scout_queue_count = ctk.CTkLabel(head, text="0",
                                                font=ctk.CTkFont(size=14, weight="bold"),
                                                text_color=MD3["value_text"])
         self._scout_queue_count.pack(side="right")
@@ -3776,10 +3779,23 @@ class TotalHunterApp(ctk.CTk):
                                                    progress_color=self._SCOUT_STATE_COLORS['green'])
         self._scout_queue_bar.set(0)
         self._scout_queue_bar.pack(fill="x", padx=12, pady=(2, 4))
+        limit_row = ctk.CTkFrame(card, fg_color="transparent")
+        limit_row.pack(fill="x", padx=12, pady=(0, 2))
+        self._scout_limit_lb = ctk.CTkLabel(limit_row, text=scout_text(lang, 'limit_label'),
+                                            font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"])
+        self._scout_limit_lb.pack(side="left")
+        saved = self._load_gui_config().get('scout_queue_limit')
+        self._scout_queue_limit = saved if saved in SCOUT_QUEUE_LIMIT_OPTIONS else SCOUT_QUEUE_LIMIT_OPTIONS[0]
+        self._scout_limit_menu = ctk.CTkOptionMenu(
+            limit_row, values=[str(v) for v in SCOUT_QUEUE_LIMIT_OPTIONS], width=90, height=26,
+            command=self._on_scout_limit_change, fg_color=MD3["card"], button_color=MD3["primary"],
+            button_hover_color=MD3["primary_dim"], text_color=MD3["on_surface"])
+        self._scout_limit_menu.set(str(self._scout_queue_limit))
+        self._scout_limit_menu.pack(side="right")
         self._scout_queue_status = ctk.CTkLabel(card, text=scout_text(lang, 'st_green'),
                                                 font=ctk.CTkFont(size=13, weight="bold"),
                                                 text_color=self._SCOUT_STATE_COLORS['green'],
-                                                wraplength=380, justify="left")
+                                                wraplength=340, justify="left")
         self._scout_queue_status.pack(anchor="w", padx=12)
         self._scout_cycle_lb = ctk.CTkLabel(card, text="", font=ctk.CTkFont(size=12),
                                             text_color=MD3["on_surface2"])
@@ -3787,14 +3803,47 @@ class TotalHunterApp(ctk.CTk):
         self._scout_nn_btn = ctk.CTkButton(card, text=scout_text(lang, 'nn_start'), height=32,
                                            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
                                            text_color=MD3["on_surface"], corner_radius=8,
-                                           state="disabled", command=self._toggle_scout_nn)
+                                           command=self._toggle_scout_nn)
         self._scout_nn_btn.pack(fill="x", padx=12, pady=(4, 8))
+
+    def _scout_sessions_root(self) -> str:
+        return os.path.join(_config_dir, "scout_sessions")
+
+    def _ensure_scout_engine(self):
+        """Один движок Биржи 2.0 на всё приложение: нейросеть и очередь живут независимо от запусков
+        змейки (решение владельца 2026-09-21), поэтому «запустить нейросеть» работает и без змейки —
+        можно разобрать скрины, положенные в очередь вручную. Навигатор/скорость подставляются при
+        запуске змейки (_toggle_scout)."""
+        if self._scout_engine is None:
+            from exchange_scout import ExchangeScoutEngine, make_found_handler
+            limit = self._scout_queue_limit
+            self._scout_engine = ExchangeScoutEngine(
+                navigator=None, capture_fn=build_scout_capture_fn(),
+                model=self.engine.model, conf=self.conf_slider.get(),
+                sessions_root=self._scout_sessions_root(), move_wait=0.0,
+                on_found_callback=make_found_handler(resolve_exchange_crop_box(),
+                                                     self._get_roy_kingdom(), "exchange", get_hwid()),
+                pause_threshold=limit, resume_threshold=queue_resume_for(limit))
+        return self._scout_engine
+
+    def _on_scout_limit_change(self, value: str) -> None:
+        """Лимит очереди: 100% бара и порог автопаузы; змейка продолжает при 10% от лимита."""
+        self._scout_queue_limit = int(value)
+        self._save_gui_config_key("scout_queue_limit", self._scout_queue_limit)
+        eng = self._scout_engine
+        if eng is not None:
+            eng.pause_threshold = self._scout_queue_limit
+            eng.resume_threshold = queue_resume_for(self._scout_queue_limit)
+        self._refresh_scout_queue()
 
     def _toggle_scout_nn(self) -> None:
         """Кнопка «остановить/запустить нейросеть» (решение владельца 2026-09-18): останавливает
-        только consumer, кадры остаются в очереди, змейка не затрагивается."""
-        eng = self._scout_engine
-        if eng is None:
+        только consumer, кадры остаются в очереди, змейка не затрагивается. Запуск работает и без
+        змейки — нейросеть разбирает очередь до конца и сама останавливается."""
+        try:
+            eng = self._ensure_scout_engine()
+        except Exception as e:
+            messagebox.showerror("Error", f"Scout engine failed: {e}")
             return
         if eng.consumer_alive:
             eng.stop_consumer()
@@ -3805,17 +3854,24 @@ class TotalHunterApp(ctk.CTk):
     def _refresh_scout_queue(self) -> None:
         eng = self._scout_engine
         lang = self.current_lang
-        size = eng.queue_size() if eng is not None else 0
+        limit = self._scout_queue_limit
+        if eng is not None:
+            size = eng.queue_size()
+        else:
+            from exchange_scout import count_queue
+            size = count_queue(os.path.join(self._scout_sessions_root(), "pending"))
         snake_running = bool(eng is not None and eng.is_running)
+        paused = bool(eng is not None and eng.paused_by_queue)
         nn_alive = bool(eng is not None and eng.consumer_alive)
-        state = scout_queue_state(snake_running, size)
+        state = scout_queue_state(snake_running, size, paused)
         color = self._SCOUT_STATE_COLORS[state]
-        frac = queue_fraction(size)
+        frac = queue_fraction(size, limit)
         self._scout_queue_bar.set(frac)
         self._scout_queue_bar.configure(progress_color=color)
-        self._scout_queue_count.configure(
-            text=f"{size} / {SCOUT_QUEUE_PAUSE_THRESHOLD}  ·  {int(round(frac * 100))}%")
-        if state == 'brown' and not nn_alive:
+        self._scout_queue_count.configure(text=f"{size} / {limit}  ·  {int(round(frac * 100))}%")
+        if state == 'paused':
+            status = scout_text(lang, 'st_paused' if nn_alive else 'st_paused_nn_off')
+        elif state == 'brown' and not nn_alive:
             status = scout_text(lang, 'st_brown_nn_off')
         else:
             status = scout_text(lang, {'active': 'st_active', 'brown': 'st_brown',
@@ -3824,19 +3880,23 @@ class TotalHunterApp(ctk.CTk):
         cycle = eng.natural_cycle if eng is not None else 0.0
         self._scout_cycle_lb.configure(
             text=f"{scout_text(lang, 'cycle_pc')}: {cycle:.2f} s" if cycle > 0 else "")
-        if eng is None:
-            self._scout_nn_btn.configure(state="disabled", text=scout_text(lang, 'nn_start'),
-                                         fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
-        elif nn_alive:
-            self._scout_nn_btn.configure(state="normal", text=scout_text(lang, 'nn_stop'),
+        if nn_alive:
+            self._scout_nn_btn.configure(text=scout_text(lang, 'nn_stop'),
                                          fg_color=MD3["error"], hover_color=MD3["error_hover"])
         else:
-            self._scout_nn_btn.configure(state="normal", text=scout_text(lang, 'nn_start'),
+            self._scout_nn_btn.configure(text=scout_text(lang, 'nn_start'),
                                          fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
 
     def _tick_scout_queue(self) -> None:
-        """Раз в 0.5 с обновляет панель очереди, пока она показана (вид 2.0); в виде 1.0 ничего не делает."""
+        """Раз в 0.5 с обновляет панель очереди, пока она показана (вид 2.0). Раз в минуту (и при первом
+        тике после запуска приложения) удаляет всё старше 30 минут — даже если бота не запускали
+        неделю, старые скрины не копятся."""
         try:
+            now = time.time()
+            if now - getattr(self, '_scout_last_cleanup', 0.0) >= 60.0:
+                self._scout_last_cleanup = now
+                from exchange_scout import cleanup_expired
+                cleanup_expired(self._scout_sessions_root())
             if self._exchange_mode == MODE_V2:
                 self._refresh_scout_queue()
         except Exception:
@@ -3855,6 +3915,7 @@ class TotalHunterApp(ctk.CTk):
         self._scout_button.configure(text=f"{scout_lbl}\n{state}")
         self._nav_wait_v2_lb.configure(text=scout_text(self.current_lang, 'snake_cycle'))
         self._scout_queue_title.configure(text=scout_text(self.current_lang, 'queue_title'))
+        self._scout_limit_lb.configure(text=scout_text(self.current_lang, 'limit_label'))
         self._refresh_scout_queue()
 
     def _update_nav_labels(self, _=None):
@@ -4077,8 +4138,9 @@ class TotalHunterApp(ctk.CTk):
             except ValueError:
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
             try:
-                from exchange_scout import ExchangeScoutEngine, make_found_handler
-                navigator = build_scout_navigator(
+                from exchange_scout import make_found_handler
+                eng = self._ensure_scout_engine()
+                eng.navigator = build_scout_navigator(
                     center_x=cx, center_y=cy, step=step,
                     gui_config={
                         'max_inland_steps': int(self.nav_inland_slider.get()),
@@ -4091,19 +4153,13 @@ class TotalHunterApp(ctk.CTk):
                         'pixels_per_step': int(self._load_gui_config().get('nav_pps', 20)),
                     },
                 )
-                capture_fn = build_scout_capture_fn()
-                crop_box = resolve_exchange_crop_box()
-                kingdom = self._get_roy_kingdom()
-                hwid = get_hwid()
-                on_found = make_found_handler(crop_box, kingdom, "exchange", hwid)
-                sessions_root = os.path.join(_config_dir, "scout_sessions")
-                self._scout_engine = ExchangeScoutEngine(
-                    navigator=navigator, capture_fn=capture_fn,
-                    model=self.engine.model, conf=self.conf_slider.get(),
-                    sessions_root=sessions_root, move_wait=0.0, speed_factor=speed_factor,
-                    on_found_callback=on_found,
-                )
-                self._scout_engine.start()
+                eng.speed_factor = speed_factor
+                eng.conf = self.conf_slider.get()
+                eng.pause_threshold = self._scout_queue_limit
+                eng.resume_threshold = queue_resume_for(self._scout_queue_limit)
+                eng.on_found_callback = make_found_handler(
+                    resolve_exchange_crop_box(), self._get_roy_kingdom(), "exchange", get_hwid())
+                eng.start()
                 self.active_mode = 'v2'
                 self._scout_button.configure(
                     text=f"{scout_label}\n{LANGS[self.current_lang]['stop']}",

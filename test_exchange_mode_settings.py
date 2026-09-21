@@ -13,6 +13,7 @@ from exchange_mode_settings import (
     ExchangeModeSettings, MODE_V1, MODE_V2, NAV_KEYS, INLAND_RANGE, SCOUT_DEFAULT_INLAND,
     mode_label, scout_settings_for_profile, SCOUT_DEFAULT_SPEED_FACTOR, SPEED_FACTOR_RANGE,
     SCOUT_QUEUE_PAUSE_THRESHOLD, queue_fraction, scout_queue_state, scout_text,
+    SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for,
 )
 
 
@@ -355,3 +356,28 @@ class TestQueueIndicatorLogic:
     def test_every_language_has_the_same_keys(self):
         from exchange_mode_settings import _TEXTS
         assert set(_TEXTS['RU']) == set(_TEXTS['UK']) == set(_TEXTS['EN'])
+
+
+class TestQueueLimitDropdown:
+    """Выпадающий список лимита очереди (предложение владельца 2026-09-21): 300 по умолчанию, 600, 999."""
+
+    def test_options_are_300_600_999_with_300_first(self):
+        assert SCOUT_QUEUE_LIMIT_OPTIONS == (300, 600, 999)
+        assert SCOUT_QUEUE_LIMIT_OPTIONS[0] == SCOUT_QUEUE_PAUSE_THRESHOLD
+
+    def test_resume_is_ten_percent_of_the_chosen_limit(self):
+        assert [queue_resume_for(v) for v in SCOUT_QUEUE_LIMIT_OPTIONS] == [30, 60, 99]
+
+    def test_bar_scales_to_the_chosen_limit(self):
+        assert queue_fraction(300, 600) == 0.5
+        assert queue_fraction(999, 999) == 1.0
+        assert queue_fraction(1500, 999) == 1.0
+
+    def test_state_paused_when_snake_runs_but_waits_for_the_queue(self):
+        assert scout_queue_state(True, 300, paused=True) == 'paused'
+        assert scout_queue_state(True, 300, paused=False) == 'active'
+
+    def test_pause_texts_exist_in_every_language(self):
+        for lang in ('RU', 'UK', 'EN'):
+            for key in ('st_paused', 'st_paused_nn_off', 'limit_label'):
+                assert scout_text(lang, key)

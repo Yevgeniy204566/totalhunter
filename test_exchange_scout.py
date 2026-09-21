@@ -19,7 +19,6 @@ import pytest
 
 from exchange_scout import (
     generate_session_id,
-    create_session_dirs,
     save_frame_atomic,
     producer_step,
     frame_has_exchange,
@@ -50,56 +49,6 @@ class TestGenerateSessionId:
         проверка, что суффикс не захардкожен/константа."""
         sids = {generate_session_id() for _ in range(20)}
         assert len(sids) > 1
-
-
-class TestCreateSessionDirs:
-    """C-01/C-04 шаг 2: pending/<sid>/, found/<sid>/, errors/<sid>/ — уникальность гарантируется
-    retry на FileExistsError, не только случайностью суффикса."""
-
-    def test_creates_all_three_branches(self, tmp_path):
-        sid = create_session_dirs(str(tmp_path))
-        assert os.path.isdir(os.path.join(tmp_path, "pending", sid))
-        assert os.path.isdir(os.path.join(tmp_path, "found", sid))
-        assert os.path.isdir(os.path.join(tmp_path, "errors", sid))
-
-    def test_does_not_touch_existing_pending_content(self, tmp_path):
-        """C-02: pending/ не очищается — существующие файлы других сессий не трогаются."""
-        old_sid_dir = tmp_path / "pending" / "2020-01-01_00-00-00_dead"
-        old_sid_dir.mkdir(parents=True)
-        marker = old_sid_dir / "000001.jpg"
-        marker.write_bytes(b"old frame")
-
-        create_session_dirs(str(tmp_path))
-
-        assert marker.exists()
-        assert marker.read_bytes() == b"old frame"
-
-    def test_retries_on_sid_collision(self, tmp_path, monkeypatch):
-        """C-01: 'уникален контрактно, не только вероятностно' — os.makedirs(exist_ok=False) +
-        retry на FileExistsError, не просто полагается на случайный суффикс."""
-        calls = {"n": 0}
-        fixed_sid = "2026-01-01_00-00-00_aaaa"
-        second_sid = "2026-01-01_00-00-00_bbbb"
-
-        def fake_generate():
-            calls["n"] += 1
-            return fixed_sid if calls["n"] == 1 else second_sid
-
-        monkeypatch.setattr("exchange_scout.generate_session_id", fake_generate)
-
-        # Первый вызов сам "занимает" fixed_sid извне — эмулирует коллизию.
-        os.makedirs(os.path.join(tmp_path, "pending", fixed_sid))
-
-        sid = create_session_dirs(str(tmp_path))
-
-        assert sid == second_sid, "должен был повторить попытку с новым sid после коллизии"
-        assert os.path.isdir(os.path.join(tmp_path, "found", second_sid))
-
-    def test_two_calls_never_collide_in_practice(self, tmp_path):
-        """Не строгое доказательство (то даёт retry-тест выше), но живая проверка на реальном
-        os.urandom — 50 последовательных сессий не должны столкнуться."""
-        sids = {create_session_dirs(str(tmp_path)) for _ in range(50)}
-        assert len(sids) == 50
 
 
 class TestSaveFrameAtomic:
@@ -810,11 +759,6 @@ class TestQueueAndNeuralControl:
         assert engine._consumer_thread is first
         engine.stop()
 
-    def test_start_consumer_before_any_session_does_nothing(self, tmp_path):
-        engine = self._engine(tmp_path)
-        engine.start_consumer()
-        assert engine.consumer_alive is False
-
     def test_snake_stop_does_not_stop_consumer_while_queue_not_empty(self, tmp_path):
         """Инвариант конвейера (C-05) не сломан: ESC/Стоп змейки не трогают consumer."""
         engine = self._engine(tmp_path)
@@ -825,25 +769,6 @@ class TestQueueAndNeuralControl:
         self._put_frames(engine, 3)
         engine.start_consumer()
         assert self._wait(lambda: engine.queue_size() == 0)
-
-    def test_second_session_consumer_reads_its_own_dir_not_the_old_one(self, tmp_path):
-        """Раньше consumer читал self.pending_dir на каждой итерации: после нового start() он
-        переключался на новую папку. Теперь очередь старой сессии остаётся нетронутой, а счётчик и
-        consumer работают с очередью текущей сессии (что делать с остатками старых сессий — Часть B)."""
-        engine = self._engine(tmp_path)
-        engine.start()
-        old_dir = engine.pending_dir
-        engine.stop_consumer()
-        assert self._wait(lambda: not engine.consumer_alive)
-        engine.stop()
-        self._put_frames(engine, 2)
-        old_count = len([n for n in os.listdir(old_dir) if n.endswith(".jpg")])
-        assert old_count >= 2
-        engine.start()
-        assert engine.pending_dir != old_dir
-        time.sleep(0.4)
-        assert len([n for n in os.listdir(old_dir) if n.endswith(".jpg")]) == old_count
-        engine.stop()
 
 
 class TestSnakeSpeedFactor:
