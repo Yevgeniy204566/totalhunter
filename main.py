@@ -3855,6 +3855,11 @@ class TotalHunterApp(ctk.CTk):
                 import debug_reporter
                 debug_reporter.report_scout_frame(get_hwid(), frame)
 
+        def _debug_crop(crop):
+            if self._scout_debug_on:
+                import debug_reporter
+                debug_reporter.report_scout_crop(get_hwid(), crop)
+
         def _debug_result(file_name, result):
             if self._scout_debug_on:
                 import debug_reporter
@@ -3862,7 +3867,8 @@ class TotalHunterApp(ctk.CTk):
 
         return make_found_handler(resolve_exchange_crop_box(), self._get_roy_kingdom(), "exchange",
                                   get_hwid(), on_sound=_sound, on_result=_result,
-                                  on_debug_frame=_debug_frame, on_debug_result=_debug_result)
+                                  on_debug_frame=_debug_frame, on_debug_result=_debug_result,
+                                  on_debug_crop=_debug_crop)
 
     def _on_scout_debug_toggle(self) -> None:
         """Переключатель «находки в debug-Telegram». По умолчанию ВЫКЛЮЧЕН и запоминается: в релизной

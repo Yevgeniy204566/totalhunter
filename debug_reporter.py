@@ -91,12 +91,19 @@ def scout_result_message(file_name: str, result: dict) -> str:
     if result.get("error"):
         return f"🏰 Биржа 2.0 · {file_name}\n⚠️ Ошибка обработки: {result['error']}"
     if result.get("coords_ok"):
-        coords = f"✅ координаты: X:{result.get('x')} Y:{result.get('y')}"
+        coords = f"✅ координаты: K:{result.get('kingdom')} X:{result.get('x')} Y:{result.get('y')}"
     else:
         coords = "❌ координаты не прочитаны"
     charged = "✅ списано 10◆" if result.get("charged") else "❌ не списано"
     published = "✅ отправлено в РОЙ" if result.get("published") else "❌ в РОЙ не отправлено"
     return f"🏰 Биржа 2.0 · {file_name}\n{coords}\n{charged} · {published}"
+
+
+def report_scout_crop(hwid: str, crop_bgr: np.ndarray) -> None:
+    """Маленькая вырезка панели координат (то, что читал OCR) -> debug-Telegram картинкой, увеличена в 3
+    раза, чтобы цифры читались глазами. Фон, все сбои глушатся."""
+    big = cv2.resize(crop_bgr, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+    threading.Thread(target=_send, args=(big, hwid, "OCR-CROP", "—"), daemon=True).start()
 
 
 def report_scout_frame(hwid: str, frame_bgr: np.ndarray) -> None:

@@ -56,9 +56,9 @@ class TestFoundHandler:
 
         def fake_read(frame, crop_box):
             seen["crop"] = crop_box
-            return coords
+            return None if coords is None else (7, coords[0], coords[1])
 
-        monkeypatch.setattr(exchange_scout, "read_exchange_coords", fake_read)
+        monkeypatch.setattr(exchange_scout, "read_exchange_position", fake_read)
         spend = MagicMock(return_value={"success": True, "credits": 90})
         roy = MagicMock()
         roy.report_scout_find.return_value = True
@@ -96,7 +96,7 @@ class TestFoundHandler:
     def test_returns_the_result_dict(self, monkeypatch):
         h, _seen, _s, _r = self._handler(monkeypatch)
         r = h(np.zeros((1080, 1920, 3), np.uint8), "x.png")
-        assert r == {"coords_ok": True, "x": 512, "y": 318, "charged": True, "published": True}
+        assert r == {"coords_ok": True, "kingdom": 7, "x": 512, "y": 318, "charged": True, "published": True}
 
 
 class TestResultJournalAndConsumerSafety:
@@ -155,7 +155,7 @@ class TestDebugTelegramHooks:
     10◆ идут как обычно. Хуки необязательны и их сбои цепочку не ломают."""
 
     def _handler(self, monkeypatch, **kw):
-        monkeypatch.setattr(exchange_scout, "read_exchange_coords", lambda f, c: (512, 318))
+        monkeypatch.setattr(exchange_scout, "read_exchange_position", lambda f, c: (7, 512, 318))
         spend = MagicMock(return_value={"success": True})
         roy = MagicMock()
         roy.report_scout_find.return_value = True
@@ -190,6 +190,19 @@ class TestDebugTelegramHooks:
         assert played == [1] and r["published"] is True
         spend.assert_called_once_with("exchange")
 
+    def test_panel_crop_goes_to_debug_hook_and_is_inside_the_frame(self, monkeypatch):
+        crops = []
+        h, _s, _r = self._handler(monkeypatch, on_debug_crop=lambda c: crops.append(c))
+        h(np.zeros((1080, 1920, 3), np.uint8), "x.png")
+        assert len(crops) == 1 and crops[0].shape[0] > 0 and crops[0].shape[1] > 0
+
+    def test_broken_crop_hook_does_not_break_the_chain(self, monkeypatch):
+        def boom(c):
+            raise RuntimeError("x")
+
+        h, _s, _r = self._handler(monkeypatch, on_debug_crop=boom)
+        assert h(np.zeros((1080, 1920, 3), np.uint8), "x.png")["published"] is True
+
     def test_hooks_are_optional(self, monkeypatch):
         h, _s, _r = self._handler(monkeypatch)
         assert h(np.zeros((1080, 1920, 3), np.uint8), "s.png")["published"] is True
@@ -198,9 +211,9 @@ class TestDebugTelegramHooks:
 class TestDebugReporterMessage:
     def test_message_for_full_success(self):
         from debug_reporter import scout_result_message
-        msg = scout_result_message("a.png", {"coords_ok": True, "x": 316, "y": 924,
+        msg = scout_result_message("a.png", {"coords_ok": True, "kingdom": 265, "x": 316, "y": 924,
                                              "charged": True, "published": True})
-        assert "a.png" in msg and "X:316" in msg and "Y:924" in msg
+        assert "a.png" in msg and "K:265" in msg and "X:316" in msg and "Y:924" in msg
         assert "списано 10◆" in msg and "отправлено в РОЙ" in msg
 
     def test_message_when_coordinates_not_read(self):
@@ -220,3 +233,29 @@ class TestDebugReporterMessage:
                             lambda *a, **k: (_ for _ in ()).throw(ConnectionError("offline")))
         debug_reporter.report_scout_frame("hw", np.zeros((10, 10, 3), np.uint8))
         debug_reporter.report_scout_result("hw", "a.png", {"coords_ok": False})
+
+
+class TestPanelCropAndKxyReading:
+    def test_crop_is_the_panel_region_with_margin_inside_the_frame(self):
+        from exchange_scout import panel_crop_image
+        crop = panel_crop_image(np.zeros((1080, 1920, 3), np.uint8), (4, 1024, 176, 1053))
+        assert crop.shape[:2] == (37, 180)
+
+    def test_crop_never_leaves_the_frame(self):
+        from exchange_scout import panel_crop_image
+        crop = panel_crop_image(np.zeros((100, 100, 3), np.uint8), (0, 90, 300, 300))
+        assert crop.shape[0] <= 100 and crop.shape[1] <= 100
+
+    def test_pattern_reads_three_numbers(self):
+        from exchange_scout import _KXY_PATTERN
+        assert _KXY_PATTERN.search("K: 233  X: 898  Y: 548").groups() == ("233", "898", "548")
+
+    def test_two_digit_x_is_a_valid_game_coordinate(self):
+        from exchange_scout import _KXY_PATTERN
+        assert _KXY_PATTERN.search("K: 242 X: 99 Y: 331").groups() == ("242", "99", "331")
+
+    def test_report_scout_crop_never_raises_offline(self, monkeypatch):
+        import debug_reporter
+        monkeypatch.setattr(debug_reporter.requests, "post",
+                            lambda *a, **k: (_ for _ in ()).throw(ConnectionError("offline")))
+        debug_reporter.report_scout_crop("hw", np.zeros((20, 40, 3), np.uint8))

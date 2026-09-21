@@ -330,7 +330,7 @@ class TestProcessFoundFrame:
 
     def test_publishes_when_charged_and_coords_ok(self, monkeypatch):
         monkeypatch.setattr(
-            "exchange_scout.read_exchange_coords", lambda frame, crop_box: (512, 318)
+            "exchange_scout.read_exchange_position", lambda frame, crop_box: (7, 512, 318)
         )
         spend_fn = MagicMock(return_value={"success": True, "credits": 90})
         roy_client = MagicMock()
@@ -343,12 +343,13 @@ class TestProcessFoundFrame:
 
         spend_fn.assert_called_once_with("exchange")
         roy_client.report_scout_find.assert_called_once_with(kingdom=7, x=512, y=318)
-        assert result == {"coords_ok": True, "x": 512, "y": 318, "charged": True, "published": True}
+        assert result == {"coords_ok": True, "kingdom": 7, "x": 512, "y": 318, "charged": True,
+                          "published": True}
 
     def test_does_not_publish_when_ocr_fails(self, monkeypatch):
         """C-12: провал OCR не теряет находку (списание всё равно происходит — цена не зависит от
         coords_ok, монетизация спека С-17), но публикации быть не должно (P-01)."""
-        monkeypatch.setattr("exchange_scout.read_exchange_coords", lambda frame, crop_box: None)
+        monkeypatch.setattr("exchange_scout.read_exchange_position", lambda frame, crop_box: None)
         spend_fn = MagicMock(return_value={"success": True, "credits": 90})
         roy_client = MagicMock()
 
@@ -359,13 +360,14 @@ class TestProcessFoundFrame:
 
         spend_fn.assert_called_once_with("exchange")
         roy_client.report_scout_find.assert_not_called()
-        assert result == {"coords_ok": False, "x": None, "y": None, "charged": True, "published": False}
+        assert result == {"coords_ok": False, "kingdom": None, "x": None, "y": None, "charged": True,
+                          "published": False}
 
     def test_does_not_publish_when_payment_fails(self, monkeypatch):
         """P-01: даже с успешным OCR публикации не будет, если списание не подтверждено (402/403/
         сетевой сбой и т. п. — spend_fn вернул success!=True)."""
         monkeypatch.setattr(
-            "exchange_scout.read_exchange_coords", lambda frame, crop_box: (512, 318)
+            "exchange_scout.read_exchange_position", lambda frame, crop_box: (7, 512, 318)
         )
         spend_fn = MagicMock(return_value={"success": False, "low_credits": True})
         roy_client = MagicMock()
@@ -376,7 +378,32 @@ class TestProcessFoundFrame:
         )
 
         roy_client.report_scout_find.assert_not_called()
-        assert result == {"coords_ok": True, "x": 512, "y": 318, "charged": False, "published": False}
+        assert result == {"coords_ok": True, "kingdom": 7, "x": 512, "y": 318, "charged": False,
+                          "published": False}
+
+    def test_kingdom_comes_from_the_screen_when_it_was_read(self, monkeypatch):
+        """На панели три числа K/X/Y: публикуется королевство с экрана, а не из настроек РОЙ."""
+        monkeypatch.setattr("exchange_scout.read_exchange_position",
+                            lambda frame, crop_box: (233, 898, 548))
+        spend_fn = MagicMock(return_value={"success": True})
+        roy_client = MagicMock()
+        roy_client.report_scout_find.return_value = True
+        process_found_frame(self._frame(), crop_box=(0, 0, 5, 5), kingdom=7, hunt_type="exchange",
+                            spend_fn=spend_fn, roy_client=roy_client)
+        roy_client.report_scout_find.assert_called_once_with(kingdom=233, x=898, y=548)
+
+    def test_only_x_y_without_kingdom_is_not_a_reading(self):
+        """Нужны все три числа: строка без K не разбирается (иначе королевство пришлось бы гадать)."""
+        from exchange_scout import _KXY_PATTERN
+        assert _KXY_PATTERN.search("X: 898 Y: 548") is None
+
+    def test_result_is_json_serializable_for_the_journal(self, monkeypatch):
+        import json
+        monkeypatch.setattr("exchange_scout.read_exchange_position", lambda frame, crop_box: (7, 512, 318))
+        result = process_found_frame(self._frame(), crop_box=(0, 0, 5, 5), kingdom=7, hunt_type="exchange",
+                                     spend_fn=MagicMock(return_value={"success": True}),
+                                     roy_client=MagicMock(**{"report_scout_find.return_value": True}))
+        json.dumps(result)
 
 
 class TestExchangeScoutEngine:
@@ -517,7 +544,7 @@ class TestEndToEndPipeline:
 
         # OCR подменена на уровне exchange_scout (уже отдельно протестирована в TestReadExchangeCoords)
         # - здесь проверяется склейка, не точность распознавания текста на пустом кадре.
-        monkeypatch.setattr("exchange_scout.read_exchange_coords", lambda frame, crop_box: (512, 318))
+        monkeypatch.setattr("exchange_scout.read_exchange_position", lambda frame, crop_box: (7, 512, 318))
 
         spend_fn = MagicMock(return_value={"success": True, "credits": 90})
         roy_client = MagicMock()

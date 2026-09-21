@@ -230,6 +230,38 @@ def read_exchange_coords(frame, crop_box):
     return reader.read(frame)
 
 
+_KXY_PATTERN = re.compile(r'K\s*[:.]?\s*(\d+)\s+X\s*[:.]?\s*(\d+)\s+Y\s*[:.]?\s*(\d+)', re.IGNORECASE)
+
+
+def read_exchange_position(frame, crop_box):
+    """То же ОДНО распознавание, что и раньше (`PositionReader`, первая попытка, давшая результат), но
+    шаблон требует ВСЕ ТРИ числа: панель показывает `K: 233  X: 898  Y: 548`, королевство берётся с
+    экрана (а не из настроек — иначе экран с другим королевством ушёл бы на сайт под чужим номером).
+    Возвращает (K, X, Y) либо None, если все три числа не прочитались."""
+    from navigator import PositionReader
+
+    reader = PositionReader(crop_box=crop_box)
+
+    def _parse(text):
+        m = _KXY_PATTERN.search(text)
+        if not m:
+            return None
+        return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+
+    reader._parse_ocr = _parse
+    return reader.read(frame)
+
+
+def panel_crop_image(frame, crop_box, margin: int = 4):
+    """Вырезка панели координат — ровно та область, из которой читался текст (с небольшим полем),
+    не выходит за кадр. Уходит в debug-Telegram рядом с распознанными цифрами."""
+    h, w = frame.shape[:2]
+    x1, y1, x2, y2 = crop_box
+    x1, y1 = max(0, x1 - margin), max(0, y1 - margin)
+    x2, y2 = min(w, x2 + margin), min(h, y2 + margin)
+    return frame[y1:y2, x1:x2].copy()
+
+
 def process_found_frame(frame, crop_box, kingdom: int, hunt_type: str, spend_fn, roy_client) -> dict:
     """Этап 3 — склейка: OCR → существующий механизм списания → существующий RoyClient. Ни списание,
     ни публикация не переизобретаются — `spend_fn`/`roy_client` инжектируются вызывающим кодом (сейчас
@@ -238,18 +270,19 @@ def process_found_frame(frame, crop_box, kingdom: int, hunt_type: str, spend_fn,
     Порядок по контракту Части A/A-М: списание происходит ВСЕГДА (цена не зависит от результата OCR,
     C-17 монетизации), публикация — только если списание подтверждено успешным И координаты прочитаны
     (P-01, спека №1)."""
-    coords = read_exchange_coords(frame, crop_box)
-    coords_ok = coords is not None
-    x, y = coords if coords_ok else (None, None)
+    position = read_exchange_position(frame, crop_box)
+    coords_ok = position is not None
+    found_kingdom, x, y = position if coords_ok else (None, None, None)
 
     spend_result = spend_fn(hunt_type)
     charged = bool(spend_result and spend_result.get("success"))
 
     published = False
     if charged and coords_ok:
-        published = bool(roy_client.report_scout_find(kingdom=kingdom, x=x, y=y))
+        published = bool(roy_client.report_scout_find(kingdom=found_kingdom, x=x, y=y))
 
-    return {"coords_ok": coords_ok, "x": x, "y": y, "charged": charged, "published": published}
+    return {"coords_ok": coords_ok, "kingdom": found_kingdom, "x": x, "y": y,
+            "charged": charged, "published": published}
 
 
 class ExchangeScoutEngine:
@@ -455,7 +488,7 @@ class ExchangeScoutEngine:
 
 def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,
                         spend_fn=None, roy_client=None, screen_size=None, on_sound=None, on_result=None,
-                        on_debug_frame=None, on_debug_result=None):
+                        on_debug_frame=None, on_debug_result=None, on_debug_crop=None):
     """Единственная точка, где Этап 3 подключается к Этапам 1+2 — собирает `on_found_callback`
     для `ExchangeScoutEngine`. По умолчанию использует уже существующие, реальные `auth.spend_credit`
     и `roy.roy_client.RoyClient` (не новые) — `spend_fn`/`roy_client` можно переопределить только
@@ -489,6 +522,11 @@ def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,
                 pass
         crop = scale_crop_box(crop_box, screen_size, frame.shape)
         result = process_found_frame(frame, crop, kingdom, hunt_type, spend_fn, roy_client)
+        if on_debug_crop is not None:
+            try:
+                on_debug_crop(panel_crop_image(frame, crop))
+            except Exception:
+                pass
         if on_debug_result is not None:
             try:
                 on_debug_result(os.path.basename(found_path), result)
@@ -496,7 +534,7 @@ def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,
                 pass
         if on_result is not None:
             try:
-                on_result(kingdom, result)
+                on_result(result.get("kingdom") or kingdom, result)
             except Exception:
                 pass
         return result
