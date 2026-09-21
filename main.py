@@ -38,7 +38,7 @@ from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
                                      exchange_cfg_from_values, SCOUT_DEFAULT_INLAND, SPEED_FACTOR_RANGE, SPEED_FACTOR_STEPS,
                                      SCOUT_DEFAULT_SPEED_FACTOR, SCOUT_QUEUE_PAUSE_THRESHOLD,
                                      queue_fraction, scout_queue_state, scout_text,
-                                     SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for)
+                                     SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for, scout_debug_default)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
 # from combiner import CombinerEngine  # Combo заморожен — импорт отключён
@@ -3800,7 +3800,8 @@ class TotalHunterApp(ctk.CTk):
         self._scout_cycle_lb = ctk.CTkLabel(card, text="", font=ctk.CTkFont(size=12),
                                             text_color=MD3["on_surface2"])
         self._scout_cycle_lb.pack(anchor="w", padx=12)
-        self._scout_debug_on = bool(self._load_gui_config().get('scout_debug_send', False))
+        self._scout_debug_on = bool(self._load_gui_config().get(
+            'scout_debug_send', scout_debug_default(bool(getattr(sys, 'frozen', False)))))
         self._scout_debug_var = ctk.BooleanVar(value=self._scout_debug_on)
         self._scout_debug_sw = ctk.CTkSwitch(card, text=scout_text(lang, 'debug_tg'),
                                              variable=self._scout_debug_var, command=self._on_scout_debug_toggle,

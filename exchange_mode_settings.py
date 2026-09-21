@@ -192,3 +192,10 @@ _TEXTS = {
 def scout_text(lang: str, key: str) -> str:
     """Подписи панели 2.0: RU/UK/EN, остальные языки пока показывают английский."""
     return _TEXTS.get(lang, _TEXTS['EN']).get(key, _TEXTS['EN'][key])
+
+
+def scout_debug_default(frozen: bool) -> bool:
+    """Отправка находок в debug-Telegram по умолчанию: ВКЛ при запуске из исходников (владелец), ВЫКЛ в
+    упакованной релизной сборке — кадры игры клиентов не должны уходить владельцу без их ведома. Явное
+    значение из gui_config.json (переключатель в панели очереди) всегда важнее."""
+    return not frozen
