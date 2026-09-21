@@ -592,3 +592,107 @@ class TestEndToEndPipeline:
         spend_fn.assert_called_with("exchange")
         roy_client.report_scout_find.assert_called_with(kingdom=7, x=512, y=318)
         assert len(os.listdir(engine.found_dir)) > 0
+
+
+class TestResolveExchangeCropBox:
+    """GUI-wiring (сессия #147, пункт 4): main.resolve_exchange_crop_box() — реальный
+    crop_box из калибровочной цели #13 (exchange_coord_roi), тем же способом что
+    _show_chest_rect_overlay считает свой оверлей-прямоугольник."""
+
+    def _reset_coord_manager(self):
+        from coord_manager import coord_manager, REF_A, REF_B
+        coord_manager.calibrate(REF_A, REF_B)  # scale=1.0, anchor=REF_A — детерминированная база
+        coord_manager.dialog_offset_x = 0
+        coord_manager.dialog_offset_y = 0
+        coord_manager.ui_offsets["exchange_coord_roi"] = [0, 0]
+        return coord_manager
+
+    def test_matches_ref_rect_when_no_offsets_calibrated(self):
+        import main as _main_module
+        coord_manager = self._reset_coord_manager()
+        try:
+            x1, y1, x2, y2 = _main_module.resolve_exchange_crop_box()
+            ref_x, ref_y, ref_w, ref_h = _main_module.cal_target_by_id("exchange_coord_roi")["ref_rect"]
+            assert (x1, y1) == coord_manager.to_screen(ref_x, ref_y)
+            assert (x2 - x1, y2 - y1) == (ref_w, ref_h)
+        finally:
+            self._reset_coord_manager()
+
+    def test_applies_position_and_size_offsets(self):
+        import main as _main_module
+        coord_manager = self._reset_coord_manager()
+        try:
+            coord_manager.set_ui_offset("exchange_coord_roi", 5, -3)
+            coord_manager.set_roi_size_delta("exchange_coord_roi", 20, 10)
+            x1, y1, x2, y2 = _main_module.resolve_exchange_crop_box()
+            ref_x, ref_y, ref_w, ref_h = _main_module.cal_target_by_id("exchange_coord_roi")["ref_rect"]
+            base_x, base_y = coord_manager.to_screen(ref_x, ref_y)
+            assert (x1, y1) == (base_x + 5, base_y - 3)
+            assert (x2 - x1, y2 - y1) == (ref_w + 20, ref_h + 10)
+        finally:
+            self._reset_coord_manager()
+
+    def test_returned_box_is_directly_usable_by_position_reader(self):
+        """Контракт из комментария main.py:180-199: (x1,y1,x2,y2) применяется НАПРЯМУЮ
+        к исходному full-screenshot кадру, без доп. scaling — здесь просто проверяем,
+        что PositionReader принимает выход resolve_exchange_crop_box() без ошибок."""
+        import main as _main_module
+        self._reset_coord_manager()
+        try:
+            crop_box = _main_module.resolve_exchange_crop_box()
+            frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
+            coords = read_exchange_coords(frame, crop_box)
+            assert coords is None  # пустой чёрный кадр — OCR не находит X/Y, но и не падает
+        finally:
+            self._reset_coord_manager()
+
+
+class TestBuildScoutCaptureFn:
+    """GUI-wiring (сессия #147, пункт 3): main.build_scout_capture_fn() — реальный
+    mss.grab + BGRA->BGR, тем же паттерном что _run() в navigator.py (PacmanEngine)."""
+
+    def test_returns_bgr_frame_from_mocked_mss(self, monkeypatch):
+        import main as _main_module
+
+        fake_shot = np.zeros((100, 200, 4), dtype=np.uint8)
+        fake_shot[:, :, 0] = 10  # B
+        fake_shot[:, :, 1] = 20  # G
+        fake_shot[:, :, 2] = 30  # R
+
+        class FakeSct:
+            monitors = [None, {"left": 0, "top": 0, "width": 200, "height": 100}]
+
+            def grab(self, monitor):
+                return fake_shot
+
+        monkeypatch.setattr("mss.mss", lambda: FakeSct())
+
+        capture_fn = _main_module.build_scout_capture_fn()
+        frame = capture_fn()
+
+        assert frame.shape == (100, 200, 3)
+        assert tuple(frame[0, 0]) == (10, 20, 30)  # BGRA->BGR: alpha dropped, order preserved
+
+    def test_reuses_same_mss_instance_across_calls(self, monkeypatch):
+        import main as _main_module
+
+        fake_shot = np.zeros((10, 10, 4), dtype=np.uint8)
+        created = []
+
+        class FakeSct:
+            monitors = [None, {"left": 0, "top": 0, "width": 10, "height": 10}]
+
+            def grab(self, monitor):
+                return fake_shot
+
+        def _factory():
+            created.append(1)
+            return FakeSct()
+
+        monkeypatch.setattr("mss.mss", _factory)
+
+        capture_fn = _main_module.build_scout_capture_fn()
+        capture_fn()
+        capture_fn()
+
+        assert len(created) == 1  # mss() создаётся один раз на весь producer-тред, не на кадр
