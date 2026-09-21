@@ -131,3 +131,40 @@ def consumer_step(model, conf: float, src_path: str, found_dir: str) -> bool:
     except FileNotFoundError:
         return False
     return True
+
+
+def read_exchange_coords(frame, crop_box):
+    """Этап 3 — координаты. Тонкая обёртка над уже существующим `PositionReader` (navigator.py:30,
+    не переписывается и не заменяется). `crop_box` приходит снаружи — источник значения (калибровка
+    #13 `exchange_coord_roi`) резолвится вызывающим кодом (GUI, у которого есть `coord_manager` и
+    реестр целей), не этим модулем — так же, как `position_crop_box` уже специфицирован параметром
+    конструктора движка в Части A (файл 14, §4.4), а не вычисляется внутри него.
+
+    Возвращает (x, y) или None, если OCR не смог прочитать координаты (C-12 — это не сбой, просто
+    находка без координат)."""
+    from navigator import PositionReader
+
+    reader = PositionReader(crop_box=crop_box)
+    return reader.read(frame)
+
+
+def process_found_frame(frame, crop_box, kingdom: int, hunt_type: str, spend_fn, roy_client) -> dict:
+    """Этап 3 — склейка: OCR → существующий механизм списания → существующий RoyClient. Ни списание,
+    ни публикация не переизобретаются — `spend_fn`/`roy_client` инжектируются вызывающим кодом (сейчас
+    это `auth.spend_credit` и `roy.roy_client.RoyClient`, уже реализованы и работают в 1.0/проде).
+
+    Порядок по контракту Части A/A-М: списание происходит ВСЕГДА (цена не зависит от результата OCR,
+    C-17 монетизации), публикация — только если списание подтверждено успешным И координаты прочитаны
+    (P-01, спека №1)."""
+    coords = read_exchange_coords(frame, crop_box)
+    coords_ok = coords is not None
+    x, y = coords if coords_ok else (None, None)
+
+    spend_result = spend_fn(hunt_type)
+    charged = bool(spend_result and spend_result.get("success"))
+
+    published = False
+    if charged and coords_ok:
+        published = bool(roy_client.report_scout_find(kingdom=kingdom, x=x, y=y))
+
+    return {"coords_ok": coords_ok, "x": x, "y": y, "charged": charged, "published": published}

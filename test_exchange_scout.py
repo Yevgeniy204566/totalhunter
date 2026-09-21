@@ -24,6 +24,8 @@ from exchange_scout import (
     producer_step,
     frame_has_exchange,
     consumer_step,
+    read_exchange_coords,
+    process_found_frame,
     SESSION_ID_RE,
 )
 
@@ -315,3 +317,112 @@ class TestConsumerStep:
 
         assert result is False
         model.predict.assert_not_called()
+
+
+class TestReadExchangeCoords:
+    """Этап 3 — координаты. Тонкая обёртка над уже существующим `PositionReader` (navigator.py:30,
+    не переписывается) — единственное, что меняется относительно старого использования: `crop_box`
+    приходит СНАРУЖИ (параметр), а не хардкодится литералом внутри. Источник значения — калибровка #13
+    `exchange_coord_roi` (main.py), резолвится вызывающим кодом (GUI), не этим модулем — избегает
+    циклического импорта exchange_scout↔main и совпадает с уже принятым контрактом Части A
+    (`position_crop_box` — параметр конструктора движка, файл 14 §4.4)."""
+
+    def test_delegates_to_position_reader_with_given_crop_box(self, monkeypatch):
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        crop_box = (10, 20, 310, 110)
+        captured = {}
+
+        class FakePositionReader:
+            def __init__(self, crop_box):
+                captured["crop_box"] = crop_box
+
+            def read(self, screenshot_np):
+                captured["frame"] = screenshot_np
+                return (512, 318)
+
+        monkeypatch.setattr("navigator.PositionReader", FakePositionReader)
+
+        result = read_exchange_coords(frame, crop_box)
+
+        assert result == (512, 318)
+        assert captured["crop_box"] == crop_box
+        assert captured["frame"] is frame
+
+    def test_returns_none_when_ocr_fails(self, monkeypatch):
+        """C-12 (Часть A): провал OCR не должен бросать исключение — вызывающий код (журнал) сам
+        решает, что делать с `coords_ok=False`."""
+        class FakePositionReader:
+            def __init__(self, crop_box):
+                pass
+
+            def read(self, screenshot_np):
+                return None
+
+        monkeypatch.setattr("navigator.PositionReader", FakePositionReader)
+
+        result = read_exchange_coords(np.zeros((5, 5, 3), dtype=np.uint8), (0, 0, 5, 5))
+
+        assert result is None
+
+
+class TestProcessFoundFrame:
+    """Этап 3 — склейка: OCR → существующий spend_credit (уже реализован, auth.py:106, только
+    вызывается) → существующий RoyClient.report_scout_find (уже реализован и живёт в проде,
+    roy/roy_client.py). Обе внешние функции инжектируются параметрами — эта функция не решает,
+    какой hunt_type использовать (ждёт решения владельца), только описывает порядок вызовов.
+
+    Порядок по контракту Части A/A-М (C-03, C-12, P-01): OCR → списание (всегда, независимо от
+    OCR) → публикация (только если списание успешно И OCR успешен)."""
+
+    def _frame(self):
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+    def test_publishes_when_charged_and_coords_ok(self, monkeypatch):
+        monkeypatch.setattr(
+            "exchange_scout.read_exchange_coords", lambda frame, crop_box: (512, 318)
+        )
+        spend_fn = MagicMock(return_value={"success": True, "credits": 90})
+        roy_client = MagicMock()
+        roy_client.report_scout_find.return_value = True
+
+        result = process_found_frame(
+            self._frame(), crop_box=(0, 0, 5, 5), kingdom=7,
+            hunt_type="exchange", spend_fn=spend_fn, roy_client=roy_client,
+        )
+
+        spend_fn.assert_called_once_with("exchange")
+        roy_client.report_scout_find.assert_called_once_with(kingdom=7, x=512, y=318)
+        assert result == {"coords_ok": True, "x": 512, "y": 318, "charged": True, "published": True}
+
+    def test_does_not_publish_when_ocr_fails(self, monkeypatch):
+        """C-12: провал OCR не теряет находку (списание всё равно происходит — цена не зависит от
+        coords_ok, монетизация спека С-17), но публикации быть не должно (P-01)."""
+        monkeypatch.setattr("exchange_scout.read_exchange_coords", lambda frame, crop_box: None)
+        spend_fn = MagicMock(return_value={"success": True, "credits": 90})
+        roy_client = MagicMock()
+
+        result = process_found_frame(
+            self._frame(), crop_box=(0, 0, 5, 5), kingdom=7,
+            hunt_type="exchange", spend_fn=spend_fn, roy_client=roy_client,
+        )
+
+        spend_fn.assert_called_once_with("exchange")
+        roy_client.report_scout_find.assert_not_called()
+        assert result == {"coords_ok": False, "x": None, "y": None, "charged": True, "published": False}
+
+    def test_does_not_publish_when_payment_fails(self, monkeypatch):
+        """P-01: даже с успешным OCR публикации не будет, если списание не подтверждено (402/403/
+        сетевой сбой и т. п. — spend_fn вернул success!=True)."""
+        monkeypatch.setattr(
+            "exchange_scout.read_exchange_coords", lambda frame, crop_box: (512, 318)
+        )
+        spend_fn = MagicMock(return_value={"success": False, "low_credits": True})
+        roy_client = MagicMock()
+
+        result = process_found_frame(
+            self._frame(), crop_box=(0, 0, 5, 5), kingdom=7,
+            hunt_type="exchange", spend_fn=spend_fn, roy_client=roy_client,
+        )
+
+        roy_client.report_scout_find.assert_not_called()
+        assert result == {"coords_ok": True, "x": 512, "y": 318, "charged": False, "published": False}
