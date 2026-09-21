@@ -317,7 +317,7 @@ export default function LandingPage() {
           radial-gradient(ellipse 40% 40% at 25% 75%, rgba(176,96,255,0.06) 0%, transparent 60%),
           linear-gradient(rgba(5,8,16,0.55), rgba(5,8,16,0.55)),
           radial-gradient(ellipse 74% 84% at 50% 42%, transparent 0%, var(--bg) 94%),
-          url('/img/hero-bg.webp') center 38% / cover no-repeat,
+          url('/img/hero-bg-mono.webp') center 38% / cover no-repeat,
           var(--bg)
         `,
         position: 'relative', overflow: 'hidden',
