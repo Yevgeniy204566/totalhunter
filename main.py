@@ -305,6 +305,28 @@ def resolve_exchange_crop_box() -> tuple[int, int, int, int]:
     return (x, y, x + w, y + h)
 
 
+SCOUT_MAX_INLAND_STEPS = 50  # владелец: "до 50 шагов вглубь" (сессия #142/143,
+# feedback_no_drama_on_bounded_number_changes) — НЕ тот же слайдер что Биржа 1.0
+# (nav_inland_slider, потолок 10 в GUI) — Биржа 2.0 использует своё жёстко заданное число.
+
+
+def build_scout_navigator(center_x: int, center_y: int, step: int, gui_config: dict):
+    """CoastalSnakeNavigator для Биржи 2.0. max_inland_steps — SCOUT_MAX_INLAND_STEPS,
+    не значение nav_inland_slider (тот слайдер и его потолок 10 — только для Биржи 1.0)."""
+    from navigator import CoastalSnakeNavigator
+    return CoastalSnakeNavigator(
+        center_x=center_x, center_y=center_y, step=step,
+        max_inland_steps=SCOUT_MAX_INLAND_STEPS,
+        ocean_land_ratio=gui_config['ocean_land_ratio'],
+        min_water_px=gui_config['min_water_px'],
+        diagonal_blind_coeff=gui_config['diagonal_blind_coeff'],
+        footprint_ttl=gui_config['footprint_ttl'],
+        return_delta_px=gui_config['return_delta_px'],
+        smooth_alpha=gui_config['smooth_alpha'],
+        pixels_per_step=gui_config['pixels_per_step'],
+    )
+
+
 def build_scout_capture_fn():
     """capture_fn для ExchangeScoutEngine — тот же mss/BGRA->BGR паттерн, что и
     в _run() PacmanEngine (navigator.py:1009-1012), но с ленивым созданием mss()
@@ -3827,18 +3849,18 @@ class TotalHunterApp(ctk.CTk):
             except ValueError:
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
             try:
-                from navigator import CoastalSnakeNavigator
                 from exchange_scout import ExchangeScoutEngine, make_found_handler
-                navigator = CoastalSnakeNavigator(
+                navigator = build_scout_navigator(
                     center_x=cx, center_y=cy, step=step,
-                    max_inland_steps=int(self.nav_inland_slider.get()),
-                    ocean_land_ratio=int(self.nav_ocean_slider.get()) / 100.0,
-                    min_water_px=int(self.nav_waterpx_slider.get()),
-                    diagonal_blind_coeff=round(self.nav_diagblind_slider.get(), 2),
-                    footprint_ttl=float(self.nav_footprint_slider.get()),
-                    return_delta_px=int(self.nav_delta_slider.get()),
-                    smooth_alpha=float(self.nav_pitch_slider.get()) / 100.0,
-                    pixels_per_step=int(self._load_gui_config().get('nav_pps', 20)),
+                    gui_config={
+                        'ocean_land_ratio': int(self.nav_ocean_slider.get()) / 100.0,
+                        'min_water_px': int(self.nav_waterpx_slider.get()),
+                        'diagonal_blind_coeff': round(self.nav_diagblind_slider.get(), 2),
+                        'footprint_ttl': float(self.nav_footprint_slider.get()),
+                        'return_delta_px': int(self.nav_delta_slider.get()),
+                        'smooth_alpha': float(self.nav_pitch_slider.get()) / 100.0,
+                        'pixels_per_step': int(self._load_gui_config().get('nav_pps', 20)),
+                    },
                 )
                 capture_fn = build_scout_capture_fn()
                 crop_box = resolve_exchange_crop_box()

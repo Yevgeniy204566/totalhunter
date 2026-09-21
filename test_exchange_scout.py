@@ -647,6 +647,47 @@ class TestResolveExchangeCropBox:
             self._reset_coord_manager()
 
 
+class TestBuildScoutNavigator:
+    """Живой баг (сессия #147): _toggle_scout передавал max_inland_steps из
+    nav_inland_slider (потолок 10, Биржа 1.0), хотя владелец явно решил — до 50 шагов
+    вглубь для Биржи 2.0 (feedback_no_drama_on_bounded_number_changes). 38/38 тестов
+    были зелёными, потому что ни один тест не вызывал реальную функцию сборки
+    navigator'а из production-пути (main._toggle_scout) — тесты проверяли только
+    exchange_scout.py напрямую с фейковым navigator. Эти тесты закрывают именно
+    этот разрыв test-wiring/production-wiring: вызывают ТУ ЖЕ функцию, что и GUI."""
+
+    _GUI_CONFIG = {
+        'ocean_land_ratio': 0.03,
+        'min_water_px': 500,
+        'diagonal_blind_coeff': 0.5,
+        'footprint_ttl': 120.0,
+        'return_delta_px': 0,
+        'smooth_alpha': 0.5,
+        'pixels_per_step': 20,
+    }
+
+    def test_max_inland_steps_is_50_not_the_bot1_slider_ceiling(self):
+        import main as _main_module
+        navigator = _main_module.build_scout_navigator(
+            center_x=90, center_y=925, step=13, gui_config=self._GUI_CONFIG,
+        )
+        assert navigator.max_inland_steps == 50
+        assert _main_module.SCOUT_MAX_INLAND_STEPS == 50
+
+    def test_passes_through_remaining_gui_config_values(self):
+        import main as _main_module
+        navigator = _main_module.build_scout_navigator(
+            center_x=90, center_y=925, step=13, gui_config=self._GUI_CONFIG,
+        )
+        assert navigator.center_x == 90
+        assert navigator.center_y == 925
+        assert navigator.ocean_land_ratio == 0.03
+        assert navigator.min_water_px == 500
+        assert navigator.diagonal_blind_coeff == 0.5
+        assert navigator.return_delta_px == 0
+        assert navigator.smooth_alpha == 0.5
+
+
 class TestBuildScoutCaptureFn:
     """GUI-wiring (сессия #147, пункт 3): main.build_scout_capture_fn() — реальный
     mss.grab + BGRA->BGR, тем же паттерном что _run() в navigator.py (PacmanEngine)."""
