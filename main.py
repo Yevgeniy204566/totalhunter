@@ -174,21 +174,28 @@ CALIBRATION_TARGETS = [
     {"id": "chest_collect", "kind": "точка", "storage": "offset",
      "theme": "chest", "label_key": "cal_tune_chest_collect",
      "base_pos_fn": lambda: coord_manager.to_screen_dialog(*chest_reader.OPEN_BUTTON_REF_POS)},
-    # 🔒 ОСОБАЯ цель — архитектурный инвариант, НЕ путать с обычной игровой OCR-областью
-    # (задел на будущее, потребитель Exchange Scout реализуется отдельно, не сейчас):
+    # 🔒 ОСОБАЯ цель — архитектурный инвариант (задел на будущее использование, runtime
+    # pipeline/consumer/OCR/YOLO НЕ реализованы — только геометрия калибруется и хранится):
     #
-    # exchange_coord_roi — SCREEN-SPACE ROI, не игровая координата. Будущий pipeline:
-    #   full screenshot монитора -> YOLO находит биржу на кадре -> ТОТ ЖЕ full screenshot
-    #   вырезается по геометрии этой цели -> OCR координат X/Y -> дальше по pipeline.
-    # Итоговый (x, y, w, h), который получит потребитель — coord_manager.to_region_dialog(
-    # *ref_rect) + ui_offset + roi_size_delta — уже в пикселях ЭКРАНА (та же система, что и
-    # у chest_sender/chest_type), готов резать full-screen screenshot БЕЗ дополнительного
-    # пересчёта/resize/DPI-преобразования. ref_rect хранится в ref-1920x1080-пространстве
-    # ТОЛЬКО как внутренний формат (чтобы одна калибровка работала на любом разрешении через
-    # уже существующую 2-точечную систему REF_A/REF_B) — это деталь реализации, не часть
-    # контракта потребителя. При проектировании consumer'а: source полного скриншота обязан
-    # совпадать по системе координат/origin с тем, что использовалось при калибровке ref_a/
-    # ref_b (тот же монитор/область захвата) — иначе пиксель-в-пиксель соответствие сломается.
+    # exchange_coord_roi — SCREEN-SPACE ROI для будущего Exchange Scout, семантически НЕ
+    # игровая OCR-область (даже несмотря на то что технически переиспользует тот же
+    # rect-калибровочный механизм, что chest_sender/chest_type — 10/11 это игровые OCR-зоны
+    # с уже работающим consumer'ом, #13 — сокет без consumer'а).
+    #
+    # 🔴 ref-1920x1080 — ЭТО НЕ РАЗМЕР МОНИТОРА, а только внутренний формат ХРАНЕНИЯ
+    # калибровки (та же 2-точечная система REF_A/REF_B, что у всех 12 других целей).
+    # Фактическое разрешение full-screen screenshot может быть любым (1768x..., 1920x1080,
+    # 2560x1440, 3840x2160, 7680x4320...) — coord_manager.to_region_dialog(*ref_rect) уже
+    # преобразует ref-хранилище в фактические пиксели ТЕКУЩЕГО разрешения захвата.
+    #
+    # Контракт будущего consumer'а (Part B), когда он будет спроектирован:
+    #   full screenshot (любое разрешение) -> YOLO находит биржу на кадре ->
+    #   coord_manager даёт фактический screen-space rect для ЭТОГО же разрешения ->
+    #   crop ТОГО ЖЕ full screenshot этим rect'ом БЕЗ доп. scaling/translation -> OCR X/Y.
+    # Итоговый (x, y, w, h) = to_region_dialog(*ref_rect) + ui_offset + roi_size_delta —
+    # обязан применяться НАПРЯМУЮ к исходному кадру. Source полного скриншота обязан
+    # совпадать по системе координат/origin с тем, что использовалось при калибровке
+    # ref_a/ref_b (тот же монитор/область захвата) — иначе пиксель-в-пиксель ломается.
     # Не путать с игровой камерой/окном браузера — вообще не про это.
     {"id": "exchange_coord_roi", "kind": "OCR-область", "storage": "offset",
      "theme": "exchange", "label_key": "cal_tune_exchange_coord_roi", "resizable": True,
