@@ -22,6 +22,8 @@ from exchange_scout import (
     create_session_dirs,
     save_frame_atomic,
     producer_step,
+    frame_has_exchange,
+    consumer_step,
     SESSION_ID_RE,
 )
 
@@ -209,3 +211,107 @@ class TestProducerStep:
         # Не должно бросить исключение.
         producer_step(navigator, self._frame(), is_water=True, pending_dir=str(tmp_path), frame_id=1)
         navigator.step.assert_called_once()
+
+
+def _boxes(n):
+    """Фейковый результат YOLO .predict() — только то, что читает frame_has_exchange
+    (len(r.boxes) > 0), точная форма как в navigator.py:1028-1032."""
+    result = MagicMock()
+    result.boxes = [MagicMock() for _ in range(n)]
+    return [result]
+
+
+class TestFrameHasExchange:
+    """Этап 2 — фильтр YOLO. Тот же вызов, что уже работает в 1.0 (navigator.py:1025-1032):
+    `model.predict(frame, conf=conf, imgsz=1280, verbose=False)`, наличие — `len(r.boxes) > 0`.
+    Модель не переписывается и не заменяется — только вызывается тем же способом."""
+
+    def _frame(self):
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+    def test_true_when_boxes_found(self):
+        model = MagicMock()
+        model.predict.return_value = _boxes(1)
+
+        assert frame_has_exchange(model, self._frame(), conf=0.8) is True
+
+    def test_false_when_no_boxes(self):
+        model = MagicMock()
+        model.predict.return_value = _boxes(0)
+
+        assert frame_has_exchange(model, self._frame(), conf=0.8) is False
+
+    def test_calls_predict_with_same_parameters_as_1_0(self):
+        """imgsz=1280 — золотое правило YOLO FULLSCREEN (CLAUDE.md), verbose=False как в 1.0."""
+        model = MagicMock()
+        model.predict.return_value = _boxes(0)
+        frame = self._frame()
+
+        frame_has_exchange(model, frame, conf=0.77)
+
+        model.predict.assert_called_once_with(frame, conf=0.77, imgsz=1280, verbose=False)
+
+
+class TestConsumerStep:
+    """Этап 2 — одна итерация фонового consumer'а: читает кадр из pending, гоняет YOLO, либо удаляет
+    (нет биржи), либо переносит в found (есть биржа). Работает независимо от Этапа 1 (змейка не ждёт
+    результат) — это и есть «разнести змейку от нейросети», ничего сверх этого сейчас не нужно."""
+
+    def _write_frame(self, path):
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        ok, encoded = cv2.imencode(".jpg", frame)
+        assert ok
+        with open(path, "wb") as f:
+            f.write(encoded.tobytes())
+        return frame
+
+    def test_removes_frame_when_no_exchange(self, tmp_path):
+        pending_dir = tmp_path / "pending"
+        found_dir = tmp_path / "found"
+        pending_dir.mkdir()
+        found_dir.mkdir()
+        src = pending_dir / "000001.jpg"
+        self._write_frame(src)
+
+        model = MagicMock()
+        model.predict.return_value = _boxes(0)
+
+        result = consumer_step(model, conf=0.8, src_path=str(src), found_dir=str(found_dir))
+
+        assert result is False
+        assert not src.exists()
+        assert list(found_dir.iterdir()) == []
+
+    def test_moves_frame_to_found_when_exchange_present(self, tmp_path):
+        pending_dir = tmp_path / "pending"
+        found_dir = tmp_path / "found"
+        pending_dir.mkdir()
+        found_dir.mkdir()
+        src = pending_dir / "000002.jpg"
+        self._write_frame(src)
+
+        model = MagicMock()
+        model.predict.return_value = _boxes(1)
+
+        result = consumer_step(model, conf=0.8, src_path=str(src), found_dir=str(found_dir))
+
+        assert result is True
+        assert not src.exists()
+        moved = found_dir / "000002.jpg"
+        assert moved.exists()
+
+    def test_missing_source_file_is_not_an_error(self, tmp_path):
+        """Гонка с другим consumer'ом/TTL (Часть B) — файл мог уже исчезнуть до чтения. Это легитимный
+        случай, не крах: consumer просто пропускает кандидата."""
+        pending_dir = tmp_path / "pending"
+        found_dir = tmp_path / "found"
+        pending_dir.mkdir()
+        found_dir.mkdir()
+        src = pending_dir / "000003.jpg"  # никогда не создавался
+
+        model = MagicMock()
+
+        result = consumer_step(model, conf=0.8, src_path=str(src), found_dir=str(found_dir))
+
+        assert result is False
+        model.predict.assert_not_called()

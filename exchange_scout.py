@@ -86,3 +86,48 @@ def producer_step(navigator, frame, is_water: bool, pending_dir: str, frame_id: 
     navigator.step(is_water=is_water, frame=frame)
     frame_path = os.path.join(pending_dir, f"{frame_id:06d}.jpg")
     save_frame_atomic(frame, frame_path)
+
+
+def frame_has_exchange(model, frame, conf: float) -> bool:
+    """Этап 2 (YOLO) — тот же вызов, что уже работает в 1.0 (navigator.py:1025-1032):
+    imgsz=1280 (золотое правило YOLO FULLSCREEN, CLAUDE.md), наличие — len(r.boxes) > 0.
+    Модель не переписывается и не заменяется — только вызывается тем же способом."""
+    results = model.predict(frame, conf=conf, imgsz=1280, verbose=False)
+    for r in results:
+        if len(r.boxes) > 0:
+            return True
+    return False
+
+
+def consumer_step(model, conf: float, src_path: str, found_dir: str) -> bool:
+    """Одна итерация Этапа 2 — фонового consumer'а, полностью независимого от Этапа 1 (змейка не
+    ждёт результат YOLO, поэтому её скорость не зависит от инференса). Читает кадр из `pending`,
+    прогоняет через YOLO: нет биржи — кадр удаляется, есть биржа — атомарно переносится в `found`
+    под тем же именем. Возвращает True, если кадр перенесён (найдена биржа), False иначе.
+
+    Отсутствующий src_path (гонка с TTL/другим consumer'ом — механизм Части B, не нужен для самой
+    работы этой функции) — не сбой, а легитимный пропуск кандидата. **Найдено тестами:** ванильный
+    `cv2.imread` на отсутствующем файле молча возвращает `None`, но `ultralytics` (используется этим же
+    процессом для YOLO) глобально патчит `cv2.imread` на чтение через `np.fromfile`, которое на
+    отсутствующем файле бросает `FileNotFoundError` вместо `None` — оба случая обязаны трактоваться
+    одинаково."""
+    try:
+        frame = cv2.imread(src_path)
+    except (FileNotFoundError, OSError):
+        return False
+    if frame is None:
+        return False
+
+    if not frame_has_exchange(model, frame, conf):
+        try:
+            os.remove(src_path)
+        except FileNotFoundError:
+            pass
+        return False
+
+    dst_path = os.path.join(found_dir, os.path.basename(src_path))
+    try:
+        os.replace(src_path, dst_path)
+    except FileNotFoundError:
+        return False
+    return True
