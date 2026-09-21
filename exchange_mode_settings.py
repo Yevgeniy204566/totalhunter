@@ -157,6 +157,7 @@ def scout_queue_state(snake_running: bool, queue_size: int, paused: bool = False
 
 _TEXTS = {
     'RU': {
+        'debug_tg': 'Находки в debug-Telegram',
         'limit_label': 'Лимит очереди:', 'st_paused': 'Пауза: ожидание обработки очереди',
         'st_paused_nn_off': 'Пауза: очередь заполнена, нейросеть выключена',
         'queue_title': 'Очередь скриншотов', 'snake_cycle': 'Цикл змейки (мин. = быстрее всего):',
@@ -166,6 +167,7 @@ _TEXTS = {
         'nn_on': 'Нейросеть работает', 'nn_off': 'Нейросеть остановлена', 'cycle_pc': 'цикл ПК',
     },
     'UK': {
+        'debug_tg': 'Знахідки в debug-Telegram',
         'limit_label': 'Ліміт черги:', 'st_paused': 'Пауза: очікування обробки черги',
         'st_paused_nn_off': 'Пауза: черга заповнена, нейромережа вимкнена',
         'queue_title': 'Черга скриншотів', 'snake_cycle': 'Цикл змійки (мін. = найшвидше):',
@@ -175,6 +177,7 @@ _TEXTS = {
         'nn_on': 'Нейромережа працює', 'nn_off': 'Нейромережа зупинена', 'cycle_pc': 'цикл ПК',
     },
     'EN': {
+        'debug_tg': 'Send finds to debug Telegram',
         'limit_label': 'Queue limit:', 'st_paused': 'Paused: waiting for the queue',
         'st_paused_nn_off': 'Paused: queue is full, neural net is off',
         'queue_title': 'Screenshot queue', 'snake_cycle': 'Snake cycle (min = fastest):',

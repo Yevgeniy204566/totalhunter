@@ -10,6 +10,7 @@ exchange_scout.py — Биржа 2.0 (Exchange Scout).
 подпапки) и атомарная запись кадра (cv2.imencode → .tmp → os.replace) — внутренний механизм надёжности
 Этапа 1, чтобы Этап 2 никогда не читал недописанный JPEG.
 """
+import json
 import os
 import re
 import threading
@@ -183,6 +184,35 @@ def consumer_step(model, conf: float, src_path: str, found_dir: str) -> bool:
     except FileNotFoundError:
         return False
     return True
+
+
+def scale_crop_box(crop_box, screen_size, frame_shape):
+    """Область чтения координат (calibration #13) задана в ЭКРАННЫХ пикселях — для кадра того же
+    размера, что экран, это то, что нужно. Скрин другого разрешения (например 1920x1080 при экране
+    2560x1440) пересчитывается линейно: раньше область оказывалась за пределами картинки, координаты не
+    читались и в РОЙ ничего не попадало. Результат всегда внутри кадра."""
+    screen_w, screen_h = screen_size
+    frame_h, frame_w = frame_shape[:2]
+    x1, y1, x2, y2 = crop_box
+    if screen_w > 0 and screen_h > 0:
+        kx, ky = frame_w / screen_w, frame_h / screen_h
+        x1, x2 = round(x1 * kx), round(x2 * kx)
+        y1, y2 = round(y1 * ky), round(y2 * ky)
+    x1, x2 = max(0, min(frame_w, x1)), max(0, min(frame_w, x2))
+    y1, y2 = max(0, min(frame_h, y1)), max(0, min(frame_h, y2))
+    return (x1, y1, x2, y2)
+
+
+def append_result_journal(sessions_root: str, entry: dict) -> None:
+    """Журнал результатов находок `scout_results.jsonl` (по строке на кадр): что нашла нейросеть,
+    прочитаны ли координаты, списаны ли ◆, ушло ли в РОЙ, либо текст ошибки. Без него результат обработки
+    нигде не виден. Не входит в чистку по TTL. Сбой записи журнала цепочку не ломает."""
+    try:
+        row = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), **entry}
+        with open(os.path.join(sessions_root, "scout_results.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
 
 
 def read_exchange_coords(frame, crop_box):
@@ -412,23 +442,63 @@ class ExchangeScoutEngine:
                 found_path = os.path.join(self.found_dir, os.path.basename(src))
                 frame = cv2.imread(found_path)
                 if frame is not None:
-                    self.on_found_callback(frame, found_path)
+                    # Исключение в обработчике (OCR, списание, сеть) не должно молча убивать нейросеть —
+                    # результат или ошибка каждого кадра пишутся в журнал.
+                    try:
+                        result = self.on_found_callback(frame, found_path)
+                        entry = dict(result) if isinstance(result, dict) else {}
+                    except Exception as e:
+                        entry = {"error": f"{type(e).__name__}: {e}"}
+                    append_result_journal(self.sessions_root,
+                                          {"file": os.path.basename(src), **entry})
 
 
 def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,
-                        spend_fn=None, roy_client=None):
+                        spend_fn=None, roy_client=None, screen_size=None, on_sound=None, on_result=None,
+                        on_debug_frame=None, on_debug_result=None):
     """Единственная точка, где Этап 3 подключается к Этапам 1+2 — собирает `on_found_callback`
     для `ExchangeScoutEngine`. По умолчанию использует уже существующие, реальные `auth.spend_credit`
     и `roy.roy_client.RoyClient` (не новые) — `spend_fn`/`roy_client` можно переопределить только
-    для тестов."""
+    для тестов.
+
+    Порядок на находке: звуковой сигнал (сразу, сбой звука цепочку не ломает) -> область координат
+    пересчитывается под размер кадра -> OCR -> списание -> публикация -> `on_result(kingdom, result)`
+    (GUI: карточка «последняя биржа», защита РОЙ от собственного звука). `on_debug_frame(frame)` —
+    кадр находки уходит в debug-Telegram сразу, параллельно с обработкой; `on_debug_result(file, result)` —
+    результат отдельным сообщением. Оба необязательны, их сбои цепочку не ломают."""
     if spend_fn is None:
         from auth import spend_credit
         spend_fn = spend_credit
     if roy_client is None:
         from roy.roy_client import RoyClient
         roy_client = RoyClient(hwid)
+    if screen_size is None:
+        import pyautogui
+        screen_size = tuple(pyautogui.size())
 
     def _on_found(frame, found_path):
-        return process_found_frame(frame, crop_box, kingdom, hunt_type, spend_fn, roy_client)
+        if on_sound is not None:
+            try:
+                on_sound()
+            except Exception:
+                pass
+        if on_debug_frame is not None:
+            try:
+                on_debug_frame(frame)
+            except Exception:
+                pass
+        crop = scale_crop_box(crop_box, screen_size, frame.shape)
+        result = process_found_frame(frame, crop, kingdom, hunt_type, spend_fn, roy_client)
+        if on_debug_result is not None:
+            try:
+                on_debug_result(os.path.basename(found_path), result)
+            except Exception:
+                pass
+        if on_result is not None:
+            try:
+                on_result(kingdom, result)
+            except Exception:
+                pass
+        return result
 
     return _on_found

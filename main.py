@@ -3800,6 +3800,14 @@ class TotalHunterApp(ctk.CTk):
         self._scout_cycle_lb = ctk.CTkLabel(card, text="", font=ctk.CTkFont(size=12),
                                             text_color=MD3["on_surface2"])
         self._scout_cycle_lb.pack(anchor="w", padx=12)
+        self._scout_debug_on = bool(self._load_gui_config().get('scout_debug_send', False))
+        self._scout_debug_var = ctk.BooleanVar(value=self._scout_debug_on)
+        self._scout_debug_sw = ctk.CTkSwitch(card, text=scout_text(lang, 'debug_tg'),
+                                             variable=self._scout_debug_var, command=self._on_scout_debug_toggle,
+                                             font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"],
+                                             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
+                                             progress_color=MD3["primary"])
+        self._scout_debug_sw.pack(anchor="w", padx=12, pady=(2, 0))
         self._scout_nn_btn = ctk.CTkButton(card, text=scout_text(lang, 'nn_start'), height=32,
                                            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
                                            text_color=MD3["on_surface"], corner_radius=8,
@@ -3815,16 +3823,52 @@ class TotalHunterApp(ctk.CTk):
         можно разобрать скрины, положенные в очередь вручную. Навигатор/скорость подставляются при
         запуске змейки (_toggle_scout)."""
         if self._scout_engine is None:
-            from exchange_scout import ExchangeScoutEngine, make_found_handler
+            from exchange_scout import ExchangeScoutEngine
             limit = self._scout_queue_limit
             self._scout_engine = ExchangeScoutEngine(
                 navigator=None, capture_fn=build_scout_capture_fn(),
                 model=self.engine.model, conf=self.conf_slider.get(),
                 sessions_root=self._scout_sessions_root(), move_wait=0.0,
-                on_found_callback=make_found_handler(resolve_exchange_crop_box(),
-                                                     self._get_roy_kingdom(), "exchange", get_hwid()),
+                on_found_callback=self._make_scout_found_handler(),
                 pause_threshold=limit, resume_threshold=queue_resume_for(limit))
         return self._scout_engine
+
+    def _make_scout_found_handler(self):
+        """Обработчик находки 2.0: звук, чтение координат, списание, публикация в РОЙ — те же
+        `spend_credit` и `RoyClient`, что и в 1.0; звук — тот же файл, что играет 1.0."""
+        from exchange_scout import make_found_handler
+
+        def _sound():
+            import winsound
+            path = getattr(self.engine, 'sound_path', None)
+            if path:
+                winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+            else:
+                winsound.Beep(1000, 500)
+
+        def _result(kingdom, result):
+            if result.get('coords_ok'):
+                self._on_last_exchange_found({'kingdom': kingdom, 'x': result['x'], 'y': result['y']})
+
+        def _debug_frame(frame):
+            if self._scout_debug_on:
+                import debug_reporter
+                debug_reporter.report_scout_frame(get_hwid(), frame)
+
+        def _debug_result(file_name, result):
+            if self._scout_debug_on:
+                import debug_reporter
+                debug_reporter.report_scout_result(get_hwid(), file_name, result)
+
+        return make_found_handler(resolve_exchange_crop_box(), self._get_roy_kingdom(), "exchange",
+                                  get_hwid(), on_sound=_sound, on_result=_result,
+                                  on_debug_frame=_debug_frame, on_debug_result=_debug_result)
+
+    def _on_scout_debug_toggle(self) -> None:
+        """Переключатель «находки в debug-Telegram». По умолчанию ВЫКЛЮЧЕН и запоминается: в релизной
+        сборке кадры игры пользователей не должны уходить владельцу без явного включения."""
+        self._scout_debug_on = bool(self._scout_debug_var.get())
+        self._save_gui_config_key("scout_debug_send", self._scout_debug_on)
 
     def _on_scout_limit_change(self, value: str) -> None:
         """Лимит очереди: 100% бара и порог автопаузы; змейка продолжает при 10% от лимита."""
@@ -3916,6 +3960,7 @@ class TotalHunterApp(ctk.CTk):
         self._nav_wait_v2_lb.configure(text=scout_text(self.current_lang, 'snake_cycle'))
         self._scout_queue_title.configure(text=scout_text(self.current_lang, 'queue_title'))
         self._scout_limit_lb.configure(text=scout_text(self.current_lang, 'limit_label'))
+        self._scout_debug_sw.configure(text=scout_text(self.current_lang, 'debug_tg'))
         self._refresh_scout_queue()
 
     def _update_nav_labels(self, _=None):
@@ -4138,7 +4183,6 @@ class TotalHunterApp(ctk.CTk):
             except ValueError:
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
             try:
-                from exchange_scout import make_found_handler
                 eng = self._ensure_scout_engine()
                 eng.navigator = build_scout_navigator(
                     center_x=cx, center_y=cy, step=step,
@@ -4157,8 +4201,7 @@ class TotalHunterApp(ctk.CTk):
                 eng.conf = self.conf_slider.get()
                 eng.pause_threshold = self._scout_queue_limit
                 eng.resume_threshold = queue_resume_for(self._scout_queue_limit)
-                eng.on_found_callback = make_found_handler(
-                    resolve_exchange_crop_box(), self._get_roy_kingdom(), "exchange", get_hwid())
+                eng.on_found_callback = self._make_scout_found_handler()
                 eng.start()
                 self.active_mode = 'v2'
                 self._scout_button.configure(

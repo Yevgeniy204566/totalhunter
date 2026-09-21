@@ -84,3 +84,34 @@ def report_dialog(hwid: str) -> None:
         threading.Thread(target=_send, args=(frame, hwid, "DIALOG", "—"), daemon=True).start()
     except Exception:
         pass
+
+
+def scout_result_message(file_name: str, result: dict) -> str:
+    """Текст отчёта о находке Биржи 2.0: что прочитано и что произошло со списанием и публикацией."""
+    if result.get("error"):
+        return f"🏰 Биржа 2.0 · {file_name}\n⚠️ Ошибка обработки: {result['error']}"
+    if result.get("coords_ok"):
+        coords = f"✅ координаты: X:{result.get('x')} Y:{result.get('y')}"
+    else:
+        coords = "❌ координаты не прочитаны"
+    charged = "✅ списано 10◆" if result.get("charged") else "❌ не списано"
+    published = "✅ отправлено в РОЙ" if result.get("published") else "❌ в РОЙ не отправлено"
+    return f"🏰 Биржа 2.0 · {file_name}\n{coords}\n{charged} · {published}"
+
+
+def report_scout_frame(hwid: str, frame_bgr: np.ndarray) -> None:
+    """Кадр находки Биржи 2.0 → debug-Telegram. Фон, без блокировки, все сбои глушатся."""
+    threading.Thread(target=_send, args=(frame_bgr.copy(), hwid, "FIND", "—"), daemon=True).start()
+
+
+def report_scout_result(hwid: str, file_name: str, result: dict) -> None:
+    """Результат обработки находки Биржи 2.0 → debug-Telegram отдельным сообщением. Фон."""
+    msg = scout_result_message(file_name, result)
+
+    def _send_text():
+        try:
+            requests.post(f"{SERVER_URL}/api/debug/send-text",
+                          data={"hwid": hwid, "message": msg}, timeout=_TIMEOUT)
+        except Exception:
+            pass
+    threading.Thread(target=_send_text, daemon=True).start()
