@@ -38,7 +38,7 @@ from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
                                      exchange_cfg_from_values, SCOUT_DEFAULT_INLAND, SPEED_FACTOR_RANGE, SPEED_FACTOR_STEPS,
                                      SCOUT_DEFAULT_SPEED_FACTOR, SCOUT_QUEUE_PAUSE_THRESHOLD,
                                      queue_fraction, scout_queue_state, scout_text,
-                                     SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for, scout_debug_default,
+                                     SCOUT_QUEUE_LIMIT_OPTIONS, format_pause_left, scout_debug_default,
                                      scout_roy_publish_default)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
@@ -2270,11 +2270,20 @@ class TotalHunterApp(ctk.CTk):
         # Заголовок + переключатель навигации в одной строке
         self.nav_header_frame = ctk.CTkFrame(self.nav_frame, fg_color="transparent")
         self.nav_header_frame.pack(fill="x", padx=10, pady=(4, 2))
+        # Сворачиваемый раздел: по умолчанию скрыт (владелец 2026-09-21) — раскрывается стрелкой или
+        # щелчком по заголовку. Кнопка «Сохранить настройки» остаётся на виду: она сохраняет ВСЕ настройки.
+        self._adv_open = False
+        self._adv_btn = ctk.CTkButton(self.nav_header_frame, text="▸", width=26, height=24,
+                                      fg_color="transparent", hover_color=MD3["card"],
+                                      text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
+                                      command=self._toggle_advanced)
+        self._adv_btn.pack(side="left", padx=(0, 2))
         self.nav_lb = ctk.CTkLabel(self.nav_header_frame,
                                    text=LANGS[self.current_lang]["nav_extra_title"],
                                    font=ctk.CTkFont(size=14, weight="bold"),
-                                   text_color=MD3["on_surface"])
+                                   text_color=MD3["on_surface"], cursor="hand2")
         self.nav_lb.pack(side="left")
+        self.nav_lb.bind("<Button-1>", lambda _e: self._toggle_advanced())
         self._i18n_labels.append((self.nav_lb, "nav_extra_title"))
         self.nav_enabled_var = ctk.BooleanVar(value=True)
         self.nav_toggle = ctk.CTkSwitch(
@@ -2299,7 +2308,7 @@ class TotalHunterApp(ctk.CTk):
         self.nav_cy_entry = ctk.CTkEntry(self.nav_xy_frame)
 
         # ── Coastal Snake parameters ──────────────────────────────────────
-        nav_sliders_frame = ctk.CTkScrollableFrame(self.nav_frame,
+        nav_sliders_frame = self.nav_sliders_frame = ctk.CTkScrollableFrame(self.nav_frame,
                                                     fg_color="transparent",
                                                     scrollbar_button_color=MD3["primary_dim"],
                                                     scrollbar_button_hover_color=MD3["primary"],
@@ -2443,6 +2452,7 @@ class TotalHunterApp(ctk.CTk):
                                       command=self._save_settings)
         self.save_btn.pack(padx=10, pady=(2, 4), fill="x")
         self._i18n_labels.append((self.save_btn, "save_settings"))
+        self._apply_advanced_view()   # по умолчанию раздел свёрнут
 
         # Загружаем сохранённые настройки если есть
         self._load_settings()
@@ -3696,6 +3706,22 @@ class TotalHunterApp(ctk.CTk):
         else:
             self._show_calibration_tab()
 
+    def _toggle_advanced(self) -> None:
+        self._adv_open = not self._adv_open
+        self._apply_advanced_view()
+
+    def _apply_advanced_view(self) -> None:
+        """Показывает/прячет ползунки раздела «Дополнительно»; в свёрнутом виде раздел не занимает лишнего
+        места и не выталкивает кнопку запуска за нижний край окна."""
+        if self._adv_open:
+            self.nav_sliders_frame.pack(fill="both", expand=True, padx=0, pady=(0, 0), before=self.save_btn)
+            self._adv_btn.configure(text="▾")
+            self.nav_frame.pack_configure(expand=True)
+        else:
+            self.nav_sliders_frame.pack_forget()
+            self._adv_btn.configure(text="▸")
+            self.nav_frame.pack_configure(expand=False)
+
     def _on_nav_toggle(self):
         """Dim nav controls when auto-navigation is disabled."""
         enabled = self.nav_enabled_var.get()
@@ -3843,7 +3869,7 @@ class TotalHunterApp(ctk.CTk):
                 model=self.engine.model, conf=self.conf_slider.get(),
                 sessions_root=self._scout_sessions_root(), move_wait=0.0,
                 on_found_callback=self._make_scout_found_handler(),
-                pause_threshold=limit, resume_threshold=queue_resume_for(limit))
+                pause_threshold=limit)
         return self._scout_engine
 
     def _make_scout_found_handler(self):
@@ -3895,13 +3921,12 @@ class TotalHunterApp(ctk.CTk):
         self._save_gui_config_key("scout_debug_send", self._scout_debug_on)
 
     def _on_scout_limit_change(self, value: str) -> None:
-        """Лимит очереди: 100% бара и порог автопаузы; змейка продолжает при 10% от лимита."""
+        """Лимит очереди: 100% бара и порог автопаузы (пауза по времени, см. SCOUT_PAUSE_MINUTES)."""
         self._scout_queue_limit = int(value)
         self._save_gui_config_key("scout_queue_limit", self._scout_queue_limit)
         eng = self._scout_engine
         if eng is not None:
             eng.pause_threshold = self._scout_queue_limit
-            eng.resume_threshold = queue_resume_for(self._scout_queue_limit)
         self._refresh_scout_queue()
 
     def _toggle_scout_nn(self) -> None:
@@ -3939,7 +3964,7 @@ class TotalHunterApp(ctk.CTk):
         self._scout_queue_bar.configure(progress_color=color)
         self._scout_queue_count.configure(text=f"{size} / {limit}  ·  {int(round(frac * 100))}%")
         if state == 'paused':
-            status = scout_text(lang, 'st_paused' if nn_alive else 'st_paused_nn_off')
+            status = scout_text(lang, 'st_paused').format(t=format_pause_left(eng.pause_remaining()))
         elif state == 'brown' and not nn_alive:
             status = scout_text(lang, 'st_brown_nn_off')
         else:
@@ -4236,7 +4261,6 @@ class TotalHunterApp(ctk.CTk):
                 eng.speed_factor = speed_factor
                 eng.conf = self.conf_slider.get()
                 eng.pause_threshold = self._scout_queue_limit
-                eng.resume_threshold = queue_resume_for(self._scout_queue_limit)
                 eng.on_found_callback = self._make_scout_found_handler()
                 eng.start()
                 self.active_mode = 'v2'

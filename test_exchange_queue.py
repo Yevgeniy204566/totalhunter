@@ -19,7 +19,7 @@ from exchange_scout import (
     ExchangeScoutEngine, list_queue, count_queue, cleanup_expired,
     QUEUE_TTL_SEC, IMAGE_EXTS, generate_session_id,
 )
-from exchange_mode_settings import SCOUT_QUEUE_PAUSE_THRESHOLD, SCOUT_QUEUE_RESUME_THRESHOLD
+from exchange_mode_settings import SCOUT_QUEUE_PAUSE_THRESHOLD, SCOUT_PAUSE_MINUTES
 
 
 def write_img(path, size=10, ext=None):
@@ -55,9 +55,9 @@ def wait_for(cond, timeout=4.0):
 
 
 class TestConstants:
-    def test_pause_at_300_resume_at_10_percent(self):
+    def test_pause_at_300_and_resume_by_time_not_by_queue(self):
         assert SCOUT_QUEUE_PAUSE_THRESHOLD == 300
-        assert SCOUT_QUEUE_RESUME_THRESHOLD == 30
+        assert 0 < SCOUT_PAUSE_MINUTES < 4      # игра уходит в режим рекламы после 4 минут без движения
 
     def test_ttl_is_30_minutes(self):
         assert QUEUE_TTL_SEC == 30 * 60
@@ -287,47 +287,79 @@ class TestNeuralButtonSemantics:
 
 
 class TestAutoPause:
-    def _paused_engine(self, tmp_path, pause=6, resume=2):
-        engine = make_engine(tmp_path, pause_threshold=pause, resume_threshold=resume)
+    """Автопауза (владелец 2026-09-21): змейка встаёт, когда очередь дошла до лимита. Продолжает по
+    любому из двух условий, что наступит раньше: очередь спала до 10% лимита ИЛИ прошло заданное время
+    (3 минуты: игра без движения 4+ минут уходит в режим рекламы). После запуска змейка РАБОТАЕТ, а не
+    делает один шаг: пауза снова только когда очередь вырастет до лимита (а если она и так полна — когда
+    вырастет ещё на 10% лимита)."""
+
+    def _full_engine(self, tmp_path, pause=20, seconds=30):
+        engine = make_engine(tmp_path, pause_threshold=pause, pause_seconds=seconds)
         engine.start()
         engine.stop_consumer()                       # очередь только растёт
         return engine
 
-    def test_snake_pauses_itself_when_queue_reaches_threshold(self, tmp_path):
-        engine = self._paused_engine(tmp_path)
+    def test_snake_pauses_itself_when_queue_reaches_the_limit(self, tmp_path):
+        engine = self._full_engine(tmp_path, pause=6)
         assert wait_for(lambda: engine.paused_by_queue)
-        size = engine.queue_size()
-        assert 6 <= size <= 7
+        assert 6 <= engine.queue_size() <= 7
         counter = engine._frame_counter
-        time.sleep(0.6)
-        assert engine._frame_counter == counter      # змейка стоит: новых кадров нет
-        assert engine.is_running is True             # сессия жива — это пауза, не остановка
+        time.sleep(0.5)
+        assert engine._frame_counter == counter      # змейка стоит
+        assert engine.is_running is True             # сессия жива — это пауза, а не остановка
         engine.stop()
 
-    def test_stays_paused_between_thresholds_and_resumes_at_low_mark(self, tmp_path):
-        engine = self._paused_engine(tmp_path, pause=6, resume=2)
+    def test_resume_threshold_is_ten_percent_of_the_limit(self, tmp_path):
+        assert make_engine(tmp_path, pause_threshold=300).resume_threshold == 30
+        assert make_engine(tmp_path, pause_threshold=600).resume_threshold == 60
+        assert make_engine(tmp_path, pause_threshold=999).resume_threshold == 99
+
+    def test_resumes_early_when_the_queue_drops_to_ten_percent(self, tmp_path):
+        engine = self._full_engine(tmp_path, pause=20, seconds=60)      # время далеко — ждём именно спада
         assert wait_for(lambda: engine.paused_by_queue)
         files = list_queue(engine.pending_dir)
-        for p in files[: len(files) - 4]:            # оставляем 4: выше порога возобновления (2)
+        for p in files[: len(files) - 5]:            # осталось 5: выше 10% (2) — ещё пауза
             os.remove(p)
         time.sleep(0.6)
-        assert engine.paused_by_queue is True        # гистерезис: 4 > 2 — ещё пауза
-        for p in list_queue(engine.pending_dir)[:3]:  # остаётся 1 <= 2
+        assert engine.paused_by_queue is True
+        for p in list_queue(engine.pending_dir)[:4]:  # осталось 1 <= 2
             os.remove(p)
-        assert wait_for(lambda: not engine.paused_by_queue)
+        assert wait_for(lambda: not engine.paused_by_queue, timeout=2)
         counter = engine._frame_counter
-        assert wait_for(lambda: engine._frame_counter > counter)   # снова пишет кадры
+        assert wait_for(lambda: engine._frame_counter > counter)        # снова пишет кадры
         engine.stop()
 
-    def test_resumes_when_the_network_is_started_and_drains_the_queue(self, tmp_path):
-        engine = self._paused_engine(tmp_path)
+    def test_resumes_by_time_when_the_queue_never_drains(self, tmp_path):
+        engine = self._full_engine(tmp_path, pause=20, seconds=0.6)
         assert wait_for(lambda: engine.paused_by_queue)
-        engine.start_consumer()
-        assert wait_for(lambda: not engine.paused_by_queue)
+        assert wait_for(lambda: not engine.paused_by_queue, timeout=3)  # по таймеру, очередь не менялась
         engine.stop()
+
+    def test_after_timed_resume_the_snake_really_runs_not_one_step(self, tmp_path):
+        """Замечание владельца: змейка после запуска обязана двигаться. Очередь всё ещё полна — снова пауза
+        не сразу, а когда очередь вырастет ещё на 10% лимита (при лимите 50 это +5 кадров)."""
+        engine = self._full_engine(tmp_path, pause=50, seconds=0.6)
+        assert wait_for(lambda: engine.paused_by_queue)
+        size_at_pause = engine.queue_size()
+        assert wait_for(lambda: not engine.paused_by_queue, timeout=3)
+        assert wait_for(lambda: engine.queue_size() >= size_at_pause + 5)      # реальное движение
+        assert wait_for(lambda: engine.paused_by_queue, timeout=3)             # и только потом пауза
+        engine.stop()
+
+    def test_remaining_time_counts_down_while_paused(self, tmp_path):
+        engine = self._full_engine(tmp_path, pause=6, seconds=30)
+        assert wait_for(lambda: engine.paused_by_queue)
+        first = engine.pause_remaining()
+        time.sleep(0.5)
+        second = engine.pause_remaining()
+        assert 0 < second < first <= 30
+        engine.stop()
+
+    def test_remaining_is_zero_when_not_paused(self, tmp_path):
+        assert make_engine(tmp_path).pause_remaining() == 0.0
 
     def test_stop_during_pause_returns_promptly(self, tmp_path):
-        engine = self._paused_engine(tmp_path)
+        engine = self._full_engine(tmp_path, pause=6, seconds=60)
         assert wait_for(lambda: engine.paused_by_queue)
         t0 = time.time()
         engine.stop()
@@ -335,10 +367,10 @@ class TestAutoPause:
         assert not engine._producer_thread.is_alive()
         assert engine.paused_by_queue is False
 
-    def test_default_thresholds_come_from_the_owner_decision(self, tmp_path):
+    def test_default_time_is_three_minutes_from_the_constant(self, tmp_path):
         engine = make_engine(tmp_path)
         assert engine.pause_threshold == 300
-        assert engine.resume_threshold == 30
+        assert engine.pause_seconds == SCOUT_PAUSE_MINUTES * 60 == 180
 
 
 class TestStaleFramesAfterLongPause:

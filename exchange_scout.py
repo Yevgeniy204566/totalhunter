@@ -18,7 +18,7 @@ import time
 
 import cv2
 
-from exchange_mode_settings import SCOUT_QUEUE_PAUSE_THRESHOLD, SCOUT_QUEUE_RESUME_THRESHOLD
+from exchange_mode_settings import SCOUT_QUEUE_PAUSE_THRESHOLD, SCOUT_PAUSE_MINUTES
 
 # Всё в очереди и в found старше 30 минут удаляется (решение владельца 2026-09-18/21: биржи живут
 # 30–40 минут, старые кадры бессмысленны, мусор копить нельзя).
@@ -296,7 +296,8 @@ class ExchangeScoutEngine:
     Очередь — ОДНА папка `pending/` на всё приложение (решение владельца 2026-09-21): кадры всех
     запусков и скрины, которые пользователь кладёт руками, лежат вместе и разбираются по времени
     добавления. Нейросеть (consumer) одна и не зависит от змейки; змейка (producer) сама встаёт на
-    паузу, когда очередь дошла до `pause_threshold`, и продолжает при спаде до `resume_threshold`.
+    паузу, когда очередь дошла до `pause_threshold`, и продолжает при спаде до 10% ИЛИ через `pause_seconds`
+    (игра без движения 4+ минут уходит в режим рекламы).
 
     `capture_fn` — источник кадров (в проде — `mss.grab` + перевод в BGR, инжектируется параметром,
     чтобы этот класс не был завязан на конкретное железо и был тестируем без экрана)."""
@@ -307,7 +308,7 @@ class ExchangeScoutEngine:
     def __init__(self, navigator, capture_fn, model, conf: float, sessions_root: str,
                  move_wait: float = 0.5, on_found_callback=None, speed_factor: float = 1.0,
                  pause_threshold: int = SCOUT_QUEUE_PAUSE_THRESHOLD,
-                 resume_threshold: int = SCOUT_QUEUE_RESUME_THRESHOLD,
+                 pause_seconds: float = SCOUT_PAUSE_MINUTES * 60,
                  ttl_sec: float = QUEUE_TTL_SEC):
         self.navigator = navigator
         self.capture_fn = capture_fn
@@ -319,7 +320,9 @@ class ExchangeScoutEngine:
         # 2026-09-21): 1.0 — без паузы, 4.0 — цикл в четыре раза длиннее минимального.
         self.speed_factor = speed_factor
         self.pause_threshold = pause_threshold
-        self.resume_threshold = resume_threshold
+        self.pause_seconds = pause_seconds
+        self._pause_until = 0.0
+        self._run_ceiling = 0   # после запуска по таймеру: до какого размера очереди змейка идёт без паузы
         self.ttl_sec = ttl_sec
         self._cycle_samples = []
         self.on_found_callback = on_found_callback
@@ -384,16 +387,43 @@ class ExchangeScoutEngine:
         if self._producer_thread is not None:
             self._producer_thread.join(timeout=self.JOIN_TIMEOUT)
 
+    @property
+    def resume_threshold(self) -> int:
+        """Порог раннего продолжения: 10% текущего лимита (300 -> 30, 600 -> 60, 999 -> 99)."""
+        return self.pause_threshold // 10
+
     def _wait_for_queue_room(self) -> None:
-        """Автопауза: очередь дошла до порога — змейка стоит (состояние навигатора сохраняется, цикл
-        нырок→сдвиг→возврат→сдвиг не рвётся), пока очередь не спадёт до порога возобновления."""
-        if not self.paused_by_queue and self.queue_size() >= self.pause_threshold:
-            self.paused_by_queue = True
-        while self.paused_by_queue and self.is_running:
+        """Автопауза. Очередь дошла до лимита — змейка стоит (состояние навигатора сохраняется, цикл
+        нырок→сдвиг→возврат→сдвиг не рвётся) и продолжает по ЛЮБОМУ из двух условий, что наступит раньше:
+        очередь спала до 10% лимита ИЛИ прошло `pause_seconds` (игра без движения 4+ минут уходит в режим
+        рекламы). После запуска по таймеру змейка работает, а не делает один шаг: снова пауза, только когда
+        очередь вырастет до лимита (если она и так полна — ещё на 10% лимита)."""
+        size = self.queue_size()
+        if size < self.pause_threshold:
+            self._run_ceiling = 0
+            return
+        if self._run_ceiling and size < self._run_ceiling:
+            return                                   # идёт «окно движения» после запуска по таймеру
+        self.paused_by_queue = True
+        self._pause_until = time.monotonic() + self.pause_seconds
+        drained = False
+        while self.is_running and time.monotonic() < self._pause_until:
             if self.queue_size() <= self.resume_threshold:
-                self.paused_by_queue = False
+                drained = True
                 break
             time.sleep(0.2)
+        self.paused_by_queue = False
+        self._pause_until = 0.0
+        if self.is_running and not drained:
+            self._run_ceiling = self.queue_size() + max(1, self.pause_threshold // 10)
+        else:
+            self._run_ceiling = 0
+
+    def pause_remaining(self) -> float:
+        """Сколько секунд осталось до конца паузы (0.0 — змейка не на паузе)."""
+        if not self.paused_by_queue:
+            return 0.0
+        return max(0.0, self._pause_until - time.monotonic())
 
     def _producer_loop(self) -> None:
         try:

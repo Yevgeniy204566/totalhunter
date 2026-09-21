@@ -13,7 +13,7 @@ from exchange_mode_settings import (
     ExchangeModeSettings, MODE_V1, MODE_V2, NAV_KEYS, INLAND_RANGE, SCOUT_DEFAULT_INLAND,
     mode_label, scout_settings_for_profile, SCOUT_DEFAULT_SPEED_FACTOR, SPEED_FACTOR_RANGE,
     SCOUT_QUEUE_PAUSE_THRESHOLD, queue_fraction, scout_queue_state, scout_text,
-    SCOUT_QUEUE_LIMIT_OPTIONS, queue_resume_for,
+    SCOUT_QUEUE_LIMIT_OPTIONS, format_pause_left,
 )
 
 
@@ -365,8 +365,16 @@ class TestQueueLimitDropdown:
         assert SCOUT_QUEUE_LIMIT_OPTIONS == (300, 600, 999)
         assert SCOUT_QUEUE_LIMIT_OPTIONS[0] == SCOUT_QUEUE_PAUSE_THRESHOLD
 
-    def test_resume_is_ten_percent_of_the_chosen_limit(self):
-        assert [queue_resume_for(v) for v in SCOUT_QUEUE_LIMIT_OPTIONS] == [30, 60, 99]
+    def test_pause_time_is_formatted_as_minutes_and_seconds(self):
+        assert format_pause_left(161) == "2:41"
+        assert format_pause_left(59.2) == "0:59"
+        assert format_pause_left(0) == "0:00"
+        assert format_pause_left(-5) == "0:00"
+
+    def test_exploration_speed_label_is_short(self):
+        assert scout_text('RU', 'snake_cycle') == "Скорость исследования"
+        assert scout_text('UK', 'snake_cycle') == "Швидкість дослідження"
+        assert scout_text('EN', 'snake_cycle') == "Exploration speed"
 
     def test_bar_scales_to_the_chosen_limit(self):
         assert queue_fraction(300, 600) == 0.5
@@ -379,8 +387,9 @@ class TestQueueLimitDropdown:
 
     def test_pause_texts_exist_in_every_language(self):
         for lang in ('RU', 'UK', 'EN'):
-            for key in ('st_paused', 'st_paused_nn_off', 'limit_label'):
+            for key in ('st_paused', 'limit_label'):
                 assert scout_text(lang, key)
+        assert "{t}" in scout_text('RU', 'st_paused')
 
 
 class TestDebugTelegramDefault:

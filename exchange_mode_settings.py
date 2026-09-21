@@ -24,17 +24,15 @@ SPEED_FACTOR_STEPS = 12          # шаг ползунка 0.25x
 SCOUT_DEFAULT_SPEED_FACTOR = 1.0
 
 # Очередь скриншотов: 100% индикатора = порог автопаузы змейки, ~300 кадров (решение владельца
-# 2026-09-18, число подтверждается измерением). Сама автопауза — Часть B, ещё не реализована.
+# 2026-09-18, число подтверждается измерением). На нём змейка встаёт на паузу (см. SCOUT_PAUSE_MINUTES).
 SCOUT_QUEUE_PAUSE_THRESHOLD = 300
-# Змейка продолжает, когда очередь спала до 10% (~30 кадров) — решение владельца 2026-09-18/21.
-SCOUT_QUEUE_RESUME_THRESHOLD = SCOUT_QUEUE_PAUSE_THRESHOLD // 10
+# Змейка встаёт на паузу при полной очереди и продолжает при спаде до 10% лимита ИЛИ через 3 минуты — что
+# раньше (приказ владельца 2026-09-21): игра, простоявшая больше 4 минут без движения, уходит в режим рекламы,
+# и змейка больше не сможет исследовать королевство.
+SCOUT_PAUSE_MINUTES = 3
 # Лимит очереди выбирается в выпадающем списке (предложение владельца 2026-09-21): по умолчанию 300.
 SCOUT_QUEUE_LIMIT_OPTIONS = (300, 600, 999)
 
-
-def queue_resume_for(limit: int) -> int:
-    """Порог возобновления змейки — 10% от выбранного лимита (300 -> 30, 600 -> 60, 999 -> 99)."""
-    return limit // 10
 
 
 def _clamp_inland(mode, value):
@@ -159,9 +157,8 @@ _TEXTS = {
     'RU': {
         'debug_tg': 'Находки в debug-Telegram',
         'roy_publish': 'Публиковать в РОЙ',
-        'limit_label': 'Лимит очереди:', 'st_paused': 'Пауза: ожидание обработки очереди',
-        'st_paused_nn_off': 'Пауза: очередь заполнена, нейросеть выключена',
-        'queue_title': 'Очередь скриншотов', 'snake_cycle': 'Цикл змейки (мин. = быстрее всего):',
+        'limit_label': 'Лимит очереди:', 'st_paused': 'Пауза: очередь полна — продолжу через {t} или при спаде до 10%',
+        'queue_title': 'Очередь скриншотов', 'snake_cycle': 'Скорость исследования',
         'st_active': 'Змейка работает', 'st_brown': 'Змейка остановлена — идёт разбор очереди',
         'st_brown_nn_off': 'Змейка остановлена, нейросеть выключена — очередь ждёт',
         'st_green': 'Очередь пуста', 'nn_stop': 'Остановить нейросеть', 'nn_start': 'Запустить нейросеть',
@@ -170,9 +167,8 @@ _TEXTS = {
     'UK': {
         'debug_tg': 'Знахідки в debug-Telegram',
         'roy_publish': 'Публікувати в РОЙ',
-        'limit_label': 'Ліміт черги:', 'st_paused': 'Пауза: очікування обробки черги',
-        'st_paused_nn_off': 'Пауза: черга заповнена, нейромережа вимкнена',
-        'queue_title': 'Черга скриншотів', 'snake_cycle': 'Цикл змійки (мін. = найшвидше):',
+        'limit_label': 'Ліміт черги:', 'st_paused': 'Пауза: черга повна — продовжу через {t} або при спаді до 10%',
+        'queue_title': 'Черга скриншотів', 'snake_cycle': 'Швидкість дослідження',
         'st_active': 'Змійка працює', 'st_brown': 'Змійка зупинена — триває розбір черги',
         'st_brown_nn_off': 'Змійка зупинена, нейромережа вимкнена — черга чекає',
         'st_green': 'Черга порожня', 'nn_stop': 'Зупинити нейромережу', 'nn_start': 'Запустити нейромережу',
@@ -181,9 +177,8 @@ _TEXTS = {
     'EN': {
         'debug_tg': 'Send finds to debug Telegram',
         'roy_publish': 'Publish to ROY',
-        'limit_label': 'Queue limit:', 'st_paused': 'Paused: waiting for the queue',
-        'st_paused_nn_off': 'Paused: queue is full, neural net is off',
-        'queue_title': 'Screenshot queue', 'snake_cycle': 'Snake cycle (min = fastest):',
+        'limit_label': 'Queue limit:', 'st_paused': 'Paused: queue is full — resuming in {t} or at 10%',
+        'queue_title': 'Screenshot queue', 'snake_cycle': 'Exploration speed',
         'st_active': 'Snake is running', 'st_brown': 'Snake stopped — processing the queue',
         'st_brown_nn_off': 'Snake stopped, neural net off — queue is waiting',
         'st_green': 'Queue is empty', 'nn_stop': 'Stop neural net', 'nn_start': 'Start neural net',
@@ -209,3 +204,9 @@ def scout_roy_publish_default(frozen: bool) -> bool:
     теста достаточно Telegram»), в упакованной релизной сборке ВКЛ — игроки ждут публикации. Явное значение
     из gui_config.json (переключатель в панели очереди) важнее."""
     return bool(frozen)
+
+
+def format_pause_left(seconds: float) -> str:
+    """Оставшееся время паузы в виде м:сс (в панели очереди)."""
+    total = max(0, int(seconds))
+    return f"{total // 60}:{total % 60:02d}"
