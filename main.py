@@ -32,6 +32,9 @@ from auth import (get_hwid, check_license, get_free_trial, spend_credit,
                   transfer_referral_balance, generate_link_code, get_balance_update,
                   seconds_since_last_contact, HEARTBEAT_TIMEOUT)
 from engine import HuntEngine
+from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
+                                     scout_settings_for_profile, mode_label,
+                                     exchange_cfg_from_values)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
 # from combiner import CombinerEngine  # Combo заморожен — импорт отключён
@@ -311,12 +314,14 @@ SCOUT_MAX_INLAND_STEPS = 50  # владелец: "до 50 шагов вглуб�
 
 
 def build_scout_navigator(center_x: int, center_y: int, step: int, gui_config: dict):
-    """CoastalSnakeNavigator для Биржи 2.0. max_inland_steps — SCOUT_MAX_INLAND_STEPS,
-    не значение nav_inland_slider (тот слайдер и его потолок 10 — только для Биржи 1.0)."""
+    """CoastalSnakeNavigator для Биржи 2.0. Глубина нырка — из gui_config['max_inland_steps'] (ползунок
+    показан в виде 2.0 с диапазоном до SCOUT_MAX_INLAND_STEPS); без ключа — SCOUT_MAX_INLAND_STEPS.
+    Значение ползунка 1.0 (потолок 10) сюда не попадает: в виде 1.0 кнопка 2.0 не запускается."""
     from navigator import CoastalSnakeNavigator
     return CoastalSnakeNavigator(
         center_x=center_x, center_y=center_y, step=step,
-        max_inland_steps=SCOUT_MAX_INLAND_STEPS,
+        max_inland_steps=max(1, min(SCOUT_MAX_INLAND_STEPS,
+                                    int(gui_config.get('max_inland_steps', SCOUT_MAX_INLAND_STEPS)))),
         ocean_land_ratio=gui_config['ocean_land_ratio'],
         min_water_px=gui_config['min_water_px'],
         diagonal_blind_coeff=gui_config['diagonal_blind_coeff'],
@@ -1819,6 +1824,10 @@ class TotalHunterApp(ctk.CTk):
         # None -> ничего не запущено, 'v1' -> Биржа 1.0, 'v2' -> Биржа 2.0.
         self.active_mode = None
         self._scout_engine = None
+        # Какой режим показан на вкладке БИРЖИ (значения ползунков и кнопка Старт) — это ВИД, не
+        # запуск: запущенный режим — active_mode. Ползунки общие, значения по режимам — здесь.
+        self._exchange_mode = MODE_V1
+        self._mode_settings = ExchangeModeSettings()
         self._i18n_labels = []  # (widget, lang_key)
        
         self.title(f"Total Hunter v{VERSION}")
@@ -2094,6 +2103,28 @@ class TotalHunterApp(ctk.CTk):
                       command=lambda: webbrowser.open("https://total-hunter.com/dashboard/balance"),
                       ).pack(side="left", padx=(8, 0))
 
+        # ─── Переключатель режима: Биржа 1.0 / Биржа 2.0 ─────────────────
+        # Меняет значения и диапазон ползунков навигации ниже (глубина нырка 1.0: до 10, 2.0: до 50)
+        # и то, какая кнопка Старт показана. Пока режим запущен — переключать нельзя.
+        _scout_lbl = LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')
+        self._exchange_mode_labels = {MODE_V1: mode_label(MODE_V1, _scout_lbl),
+                                      MODE_V2: mode_label(MODE_V2, _scout_lbl)}
+        self._exchange_mode_seg = ctk.CTkSegmentedButton(
+            self.tab_hunt,
+            values=[self._exchange_mode_labels[MODE_V1], self._exchange_mode_labels[MODE_V2]],
+            command=self._on_exchange_mode_select,
+            height=32,
+            fg_color=MD3["elevated"],
+            selected_color=MD3["tab_selected"],
+            selected_hover_color=MD3["tab_selected_hover"],
+            unselected_color=MD3["elevated"],
+            unselected_hover_color=MD3["card"],
+            text_color=MD3["on_surface"],
+            corner_radius=6,
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        self._exchange_mode_seg.pack(fill="x", padx=20, pady=(2, 4))
+        self._exchange_mode_seg.set(self._exchange_mode_labels[MODE_V1])
 
         # ─── Карточка «Нейросеть» ────────────────────────────────────────
         nn_frame = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
@@ -2198,6 +2229,27 @@ class TotalHunterApp(ctk.CTk):
         )
         self.nav_inland_slider.set(5)
         self.nav_inland_slider.pack(padx=12, pady=(2, 4), fill="x")
+
+        # Скорость змейки для режима «Биржа 2.0» — в 2.0 нейросеть работает отдельно и не входит в цикл
+        # шага, поэтому эта настройка живёт в «Навигации», а не в карточке «Нейросеть». Показывается
+        # только в виде 2.0 (см. _apply_exchange_view); значение хранит ExchangeModeSettings.
+        self.nav_wait_v2_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
+        _nav_wait_v2_lb = ctk.CTkLabel(self.nav_wait_v2_frame, text=LANGS[self.current_lang]["nav_wait"],
+                                       font=ctk.CTkFont(size=13, weight="bold"),
+                                       text_color="#FFC83C")
+        _nav_wait_v2_lb.pack(side="left")
+        self._i18n_labels.append((_nav_wait_v2_lb, "nav_wait"))
+        self.nav_wait_v2_val = ctk.CTkLabel(self.nav_wait_v2_frame, text="1.5 сек",
+                                            font=ctk.CTkFont(size=14, weight="bold"),
+                                            text_color=MD3["value_text"])
+        self.nav_wait_v2_val.pack(side="right")
+        self.nav_wait_v2_slider = ctk.CTkSlider(nav_main_frame, from_=0.4, to=2.0,
+                                                number_of_steps=16,
+                                                command=self._update_nav_labels,
+                                                button_color=MD3["primary"],
+                                                button_hover_color=MD3["primary_dim"],
+                                                progress_color=MD3["primary"])
+        self.nav_wait_v2_slider.set(1.5)
 
 
         # Калибровка джойстика (мини-карта)
@@ -2413,13 +2465,14 @@ class TotalHunterApp(ctk.CTk):
         self.status_label.pack()
 
         # ─── Биржа 2.0 (Exchange Scout) — отдельный движок, C-13 active_mode ────
+        # Показывается вместо кнопки 1.0, когда на вкладке выбран режим «Биржа 2.0» (_apply_exchange_view).
         self._scout_button = ctk.CTkButton(
             self.tab_hunt, text=f"{LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')}: "
                                  f"{LANGS[self.current_lang]['start']}",
-            height=32, fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
-            text_color=MD3["on_surface"], corner_radius=10,
+            height=56, font=ctk.CTkFont(size=20, weight="bold"),
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], corner_radius=14,
             command=self._toggle_scout)
-        self._scout_button.pack(pady=(2, 6), padx=40, fill="x")
 
         # ─── Торговые Пути — обратный отсчёт ────────────────────────────────────
         _tr_card = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"], corner_radius=10)
@@ -3158,17 +3211,11 @@ class TotalHunterApp(ctk.CTk):
             sc_clicks = int(self.scroll_clicks_slider.get())
             cfg['scroll_clicks']       = sc_clicks
             coord_manager.scroll_clicks = sc_clicks
-            # Настройки Бирж
-            cfg['step']                = int(self.nav_step_slider.get())
-            cfg['conf']                = round(self.conf_slider.get(), 2)
-            cfg['bot_speed']           = round(self.nav_wait_slider.get(), 1)
-            cfg['max_inland_steps']    = int(self.nav_inland_slider.get())
-            cfg['ocean_land_ratio']    = int(self.nav_ocean_slider.get()) / 100.0
-            cfg['min_water_px']        = int(self.nav_waterpx_slider.get())
-            cfg['diagonal_blind_coeff'] = round(self.nav_diagblind_slider.get(), 2)
-            cfg['nav_footprint_ttl']   = int(self.nav_footprint_slider.get())
-            cfg['return_delta_px']     = int(self.nav_delta_slider.get())
-            cfg['smooth_alpha']        = int(self.nav_pitch_slider.get())
+            # Настройки Бирж. Значения 1.0 берём из хранилища режимов: в виде 2.0 на ползунках стоят
+            # значения 2.0 (глубина до 50) и в ключи 1.0 они попасть не должны.
+            v1 = self._mode_settings.values_for(MODE_V1, self._exchange_mode, self._nav_sliders())
+            scout = scout_settings_for_profile(self._mode_settings, self._exchange_mode, self._nav_sliders())
+            cfg.update(exchange_cfg_from_values(v1, self.conf_slider.get(), scout))
             with open(path, 'w') as f:
                 json.dump(cfg, f, indent=2)
         except Exception:
@@ -3194,6 +3241,7 @@ class TotalHunterApp(ctk.CTk):
         try:
             with open(path, 'r') as f:
                 cfg = json.load(f)
+            self._mode_settings.load_v2(cfg.get('scout_settings'))
             # Если в профиле нет crypt-настроек — не трогаем UI
             if 'crypt_selected' not in cfg and 'crypt_conf' not in cfg:
                 return
@@ -3257,6 +3305,12 @@ class TotalHunterApp(ctk.CTk):
                 self.nav_delta_slider.set(int(cfg['return_delta_px']))
             if 'smooth_alpha' in cfg:
                 self.nav_pitch_slider.set(int(cfg['smooth_alpha']))
+            if self._exchange_mode == MODE_V2:
+                # Загрузчик 1.0 выше записал значения 1.0 в общие ползунки — сохраняем их как 1.0 и
+                # возвращаем на экран значения 2.0.
+                self._mode_settings.capture(MODE_V1, self._nav_sliders(MODE_V1))
+                self._mode_settings.ensure_seeded(MODE_V2, MODE_V1)
+                self._mode_settings.apply(MODE_V2, self._nav_sliders(MODE_V2))
             self._update_nav_labels()
             self.update_slider_labels()
         except Exception:
@@ -3636,11 +3690,73 @@ class TotalHunterApp(ctk.CTk):
         for w in (self.nav_step_slider,):
             w.configure(state=state)
 
+    def _nav_sliders(self, mode=None) -> dict:
+        """Ползунки змейки режима `mode` (по умолчанию — показанного). Все общие, кроме скорости: в 1.0
+        она в карточке «Нейросеть», в 2.0 — в «Навигации»."""
+        mode = mode or self._exchange_mode
+        return {
+            'step': self.nav_step_slider,
+            'wait': self.nav_wait_v2_slider if mode == MODE_V2 else self.nav_wait_slider,
+            'inland': self.nav_inland_slider, 'ocean': self.nav_ocean_slider,
+            'waterpx': self.nav_waterpx_slider, 'diagblind': self.nav_diagblind_slider,
+            'footprint': self.nav_footprint_slider, 'delta': self.nav_delta_slider,
+            'pitch': self.nav_pitch_slider,
+        }
+
+    def _on_exchange_mode_select(self, label: str) -> None:
+        mode = MODE_V2 if label == self._exchange_mode_labels[MODE_V2] else MODE_V1
+        self._set_exchange_mode(mode)
+
+    def _set_exchange_mode(self, mode: str) -> None:
+        """Переключает вид вкладки БИРЖИ: значения/диапазон ползунков, кнопка Старт. Пока какой-то
+        режим запущен — не переключает (значения под рукой бота менять нельзя)."""
+        if mode == self._exchange_mode:
+            return
+        if self.active_mode is not None:
+            self._exchange_mode_seg.set(self._exchange_mode_labels[self._exchange_mode])
+            return
+        prev = self._exchange_mode
+        self._mode_settings.switch(prev, mode, self._nav_sliders(prev), self._nav_sliders(mode))
+        self._exchange_mode = mode
+        self._exchange_mode_seg.set(self._exchange_mode_labels[mode])
+        self._apply_exchange_view(mode)
+        self._update_nav_labels()
+
+    def _apply_exchange_view(self, mode: str) -> None:
+        """Раскладка вкладки под режим: 2.0 — скорость змейки в «Навигации» вместо «Нейросети» и своя
+        кнопка Старт; 1.0 — как всегда."""
+        if mode == MODE_V2:
+            self.nav_wait_frame.pack_forget()
+            self.nav_wait_slider.pack_forget()
+            self.nav_wait_v2_frame.pack(fill="x", padx=12, pady=(2, 0), before=self.nav_step_frame)
+            self.nav_wait_v2_slider.pack(padx=12, pady=(2, 2), fill="x", before=self.nav_step_frame)
+            self.start_button.pack_forget()
+            self._scout_button.pack(pady=5, padx=40, fill="x", before=self.status_label)
+        else:
+            self.nav_wait_v2_frame.pack_forget()
+            self.nav_wait_v2_slider.pack_forget()
+            self.nav_wait_frame.pack(fill="x", padx=12, pady=(4, 0))
+            self.nav_wait_slider.pack(padx=12, pady=(2, 8), fill="x")
+            self._scout_button.pack_forget()
+            self.start_button.pack(pady=5, padx=40, fill="x", before=self.status_label)
+
+    def _refresh_exchange_mode_labels(self) -> None:
+        """Смена языка: подписи переключателя режимов и кнопки Старт 2.0."""
+        scout_lbl = LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')
+        self._exchange_mode_labels = {MODE_V1: mode_label(MODE_V1, scout_lbl),
+                                      MODE_V2: mode_label(MODE_V2, scout_lbl)}
+        self._exchange_mode_seg.configure(values=[self._exchange_mode_labels[MODE_V1],
+                                                  self._exchange_mode_labels[MODE_V2]])
+        self._exchange_mode_seg.set(self._exchange_mode_labels[self._exchange_mode])
+        state = LANGS[self.current_lang]['stop' if self.active_mode == 'v2' else 'start']
+        self._scout_button.configure(text=f"{scout_lbl}: {state}")
+
     def _update_nav_labels(self, _=None):
         sec = LANGS[self.current_lang]["unit_sec"]
         min_ = LANGS[self.current_lang]["unit_min"]
         self.nav_step_val.configure(text=f"{int(self.nav_step_slider.get())} px")
         self.nav_wait_val.configure(text=f"{self.nav_wait_slider.get():.1f} {sec}")
+        self.nav_wait_v2_val.configure(text=f"{self.nav_wait_v2_slider.get():.1f} {sec}")
         self.nav_inland_val.configure(text=f"{int(self.nav_inland_slider.get())}")
         self.nav_ocean_val.configure(text=f"{int(self.nav_ocean_slider.get())}%")
         self.nav_waterpx_val.configure(text=f"{int(self.nav_waterpx_slider.get())}")
@@ -3771,6 +3887,10 @@ class TotalHunterApp(ctk.CTk):
         if self.active_mode == 'v2':
             return  # C-13: Биржа 2.0 уже работает — 1.0 не может стартовать поверх неё
         if not self.is_running:
+            if self._exchange_mode != MODE_V1:
+                # Кнопка 1.0 есть и на вкладке РОЙ — она читает те же ползунки, поэтому вернуть на них
+                # значения 1.0 до чтения параметров запуска.
+                self._set_exchange_mode(MODE_V1)
             # Отключаем On Top — бот должен видеть весь экран без перекрытия
             if self.always_on_top_var.get():
                 self.always_on_top_var.set(False)
@@ -3840,12 +3960,14 @@ class TotalHunterApp(ctk.CTk):
             return  # Биржа 1.0 уже работает — 2.0 не может стартовать поверх неё
         scout_label = LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')
         if self.active_mode != 'v2':
+            if self._exchange_mode != MODE_V2:
+                return  # кнопка 2.0 показана только в виде 2.0; ползунки сейчас держат значения 1.0
             if self.current_credits <= 0:
                 messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
             try:
                 cx, cy = int(coord_manager.anchor_x), int(coord_manager.anchor_y)
                 step = int(self.nav_step_slider.get())
-                bot_speed = float(self.nav_wait_slider.get())
+                bot_speed = float(self.nav_wait_v2_slider.get())
             except ValueError:
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
             try:
@@ -3853,6 +3975,7 @@ class TotalHunterApp(ctk.CTk):
                 navigator = build_scout_navigator(
                     center_x=cx, center_y=cy, step=step,
                     gui_config={
+                        'max_inland_steps': int(self.nav_inland_slider.get()),
                         'ocean_land_ratio': int(self.nav_ocean_slider.get()) / 100.0,
                         'min_water_px': int(self.nav_waterpx_slider.get()),
                         'diagonal_blind_coeff': round(self.nav_diagblind_slider.get(), 2),
@@ -4666,6 +4789,7 @@ class TotalHunterApp(ctk.CTk):
             self._roy_hunt_btn.configure(
                 text=LANGS[val]["stop"] if self.is_running else LANGS[val]["start"]
             )
+        self._refresh_exchange_mode_labels()
 
         # ROY static labels
         if hasattr(self, '_roy_title_lb'):
