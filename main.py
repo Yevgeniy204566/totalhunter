@@ -38,8 +38,7 @@ from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
                                      exchange_cfg_from_values, SCOUT_DEFAULT_INLAND, SPEED_FACTOR_RANGE, SPEED_FACTOR_STEPS,
                                      SCOUT_DEFAULT_SPEED_FACTOR, SCOUT_QUEUE_PAUSE_THRESHOLD,
                                      queue_fraction, scout_queue_state, scout_text,
-                                     SCOUT_QUEUE_LIMIT_OPTIONS, format_pause_left, scout_debug_default,
-                                     scout_roy_publish_default)
+                                     SCOUT_QUEUE_LIMIT_OPTIONS, format_pause_left, SCOUT_PUBLISH_TO_ROY)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
 # from combiner import CombinerEngine  # Combo заморожен — импорт отключён
@@ -3829,29 +3828,20 @@ class TotalHunterApp(ctk.CTk):
         self._scout_cycle_lb = ctk.CTkLabel(card, text="", font=ctk.CTkFont(size=12),
                                             text_color=MD3["on_surface2"])
         self._scout_cycle_lb.pack(anchor="w", padx=12)
-        self._scout_debug_on = bool(self._load_gui_config().get(
-            'scout_debug_send', scout_debug_default(bool(getattr(sys, 'frozen', False)))))
-        self._scout_debug_var = ctk.BooleanVar(value=self._scout_debug_on)
-        self._scout_debug_sw = ctk.CTkSwitch(card, text=scout_text(lang, 'debug_tg'),
-                                             variable=self._scout_debug_var, command=self._on_scout_debug_toggle,
-                                             font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"],
-                                             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
-                                             progress_color=MD3["primary"])
-        self._scout_debug_sw.pack(anchor="w", padx=12, pady=(2, 0))
-        self._scout_roy_on = bool(self._load_gui_config().get(
-            'scout_roy_publish', scout_roy_publish_default(bool(getattr(sys, 'frozen', False)))))
-        self._scout_roy_var = ctk.BooleanVar(value=self._scout_roy_on)
-        self._scout_roy_sw = ctk.CTkSwitch(card, text=scout_text(lang, 'roy_publish'),
-                                           variable=self._scout_roy_var, command=self._on_scout_roy_toggle,
-                                           font=ctk.CTkFont(size=12), text_color=MD3["on_surface2"],
-                                           button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
-                                           progress_color=MD3["primary"])
-        self._scout_roy_sw.pack(anchor="w", padx=12, pady=(2, 0))
-        self._scout_nn_btn = ctk.CTkButton(card, text=scout_text(lang, 'nn_start'), height=32,
+        btn_row = ctk.CTkFrame(card, fg_color="transparent")
+        btn_row.pack(fill="x", padx=12, pady=(6, 8))
+        btn_row.grid_columnconfigure((0, 1), weight=1, uniform="scoutbtn")
+        self._scout_nn_btn = ctk.CTkButton(btn_row, text=scout_text(lang, 'nn_start'), height=32,
                                            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
                                            text_color=MD3["on_surface"], corner_radius=8,
                                            command=self._toggle_scout_nn)
-        self._scout_nn_btn.pack(fill="x", padx=12, pady=(4, 8))
+        self._scout_nn_btn.grid(row=0, column=0, sticky="ew", padx=(0, 3))
+        self._scout_clear_btn = ctk.CTkButton(btn_row, text=scout_text(lang, 'clear_queue'), height=32,
+                                              fg_color=MD3["card"], hover_color=MD3["outline"],
+                                              text_color=MD3["on_surface"], corner_radius=8,
+                                              border_width=1, border_color=MD3["outline"],
+                                              command=self._clear_scout_queue)
+        self._scout_clear_btn.grid(row=0, column=1, sticky="ew", padx=(3, 0))
 
     def _scout_sessions_root(self) -> str:
         return os.path.join(_config_dir, "scout_sessions")
@@ -3889,36 +3879,34 @@ class TotalHunterApp(ctk.CTk):
             if result.get('coords_ok'):
                 self._on_last_exchange_found({'kingdom': kingdom, 'x': result['x'], 'y': result['y']})
 
+        # Находки ВСЕГДА дублируются в debug-Telegram владельца — для отладки и статистики (решение
+        # владельца 2026-09-21, переключателя нет).
         def _debug_frame(frame):
-            if self._scout_debug_on:
-                import debug_reporter
-                debug_reporter.report_scout_frame(get_hwid(), frame)
+            import debug_reporter
+            debug_reporter.report_scout_frame(get_hwid(), frame)
 
         def _debug_crop(crop):
-            if self._scout_debug_on:
-                import debug_reporter
-                debug_reporter.report_scout_crop(get_hwid(), crop)
+            import debug_reporter
+            debug_reporter.report_scout_crop(get_hwid(), crop)
 
         def _debug_result(file_name, result):
-            if self._scout_debug_on:
-                import debug_reporter
-                debug_reporter.report_scout_result(get_hwid(), file_name, result)
+            import debug_reporter
+            debug_reporter.report_scout_result(get_hwid(), file_name, result)
 
         return make_found_handler(resolve_exchange_crop_box(), self._get_roy_kingdom(), "exchange",
                                   get_hwid(), on_sound=_sound, on_result=_result,
                                   on_debug_frame=_debug_frame, on_debug_result=_debug_result,
-                                  on_debug_crop=_debug_crop, publish_fn=lambda: self._scout_roy_on)
+                                  on_debug_crop=_debug_crop, publish_fn=lambda: SCOUT_PUBLISH_TO_ROY)
 
-    def _on_scout_roy_toggle(self) -> None:
-        """Переключатель «Публиковать в РОЙ». Списание ◆ и звук от него не зависят."""
-        self._scout_roy_on = bool(self._scout_roy_var.get())
-        self._save_gui_config_key("scout_roy_publish", self._scout_roy_on)
-
-    def _on_scout_debug_toggle(self) -> None:
-        """Переключатель «находки в debug-Telegram». По умолчанию ВЫКЛЮЧЕН и запоминается: в релизной
-        сборке кадры игры пользователей не должны уходить владельцу без явного включения."""
-        self._scout_debug_on = bool(self._scout_debug_var.get())
-        self._save_gui_config_key("scout_debug_send", self._scout_debug_on)
+    def _clear_scout_queue(self) -> None:
+        """Кнопка «Очистить очередь»: удаляет все скрины из очереди (папка pending, с подпапками)."""
+        from exchange_scout import clear_queue_dir
+        eng = self._scout_engine
+        if eng is not None:
+            eng.clear_queue()
+        else:
+            clear_queue_dir(os.path.join(self._scout_sessions_root(), "pending"))
+        self._refresh_scout_queue()
 
     def _on_scout_limit_change(self, value: str) -> None:
         """Лимит очереди: 100% бара и порог автопаузы (пауза по времени, см. SCOUT_PAUSE_MINUTES)."""
@@ -4020,8 +4008,7 @@ class TotalHunterApp(ctk.CTk):
         self._nav_wait_v2_lb.configure(text=scout_text(self.current_lang, 'snake_cycle'))
         self._scout_queue_title.configure(text=scout_text(self.current_lang, 'queue_title'))
         self._scout_limit_lb.configure(text=scout_text(self.current_lang, 'limit_label'))
-        self._scout_debug_sw.configure(text=scout_text(self.current_lang, 'debug_tg'))
-        self._scout_roy_sw.configure(text=scout_text(self.current_lang, 'roy_publish'))
+        self._scout_clear_btn.configure(text=scout_text(self.current_lang, 'clear_queue'))
         self._refresh_scout_queue()
 
     def _update_nav_labels(self, _=None):

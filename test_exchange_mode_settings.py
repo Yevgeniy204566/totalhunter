@@ -390,13 +390,3 @@ class TestQueueLimitDropdown:
             for key in ('st_paused', 'limit_label'):
                 assert scout_text(lang, key)
         assert "{t}" in scout_text('RU', 'st_paused')
-
-
-class TestDebugTelegramDefault:
-    def test_on_when_running_from_source(self):
-        from exchange_mode_settings import scout_debug_default
-        assert scout_debug_default(frozen=False) is True
-
-    def test_off_in_packaged_release(self):
-        from exchange_mode_settings import scout_debug_default
-        assert scout_debug_default(frozen=True) is False

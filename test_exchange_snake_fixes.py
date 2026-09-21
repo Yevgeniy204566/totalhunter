@@ -194,13 +194,3 @@ class TestRoyPublishSwitch:
             state["on"] = True
             h(np.zeros((10, 10, 3), np.uint8), "b.png")
             assert roy.report_scout_find.call_count == 1
-
-    def test_default_when_running_from_source_is_off_and_release_is_on(self):
-        from exchange_mode_settings import scout_roy_publish_default
-        assert scout_roy_publish_default(frozen=False) is False     # тест владельца: только Telegram
-        assert scout_roy_publish_default(frozen=True) is True       # релиз: игроки ждут публикации
-
-    def test_texts_exist(self):
-        from exchange_mode_settings import scout_text
-        for lang in ("RU", "UK", "EN"):
-            assert scout_text(lang, "roy_publish")

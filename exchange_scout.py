@@ -71,6 +71,27 @@ def count_queue(directory: str) -> int:
     return len(list_queue(directory))
 
 
+def clear_queue_dir(pending_dir: str) -> int:
+    """Кнопка «Очистить очередь»: удаляет ВСЕ файлы очереди (включая подпапки и недописанные .tmp) и
+    опустевшие подпапки; сама папка pending остаётся. Возвращает число удалённых файлов."""
+    removed = 0
+    if not os.path.isdir(pending_dir):
+        return removed
+    for root, _dirs, files in os.walk(pending_dir, topdown=False):
+        for name in files:
+            try:
+                os.remove(os.path.join(root, name))
+                removed += 1
+            except OSError:
+                continue
+        if root != pending_dir:
+            try:
+                os.rmdir(root)
+            except OSError:
+                pass
+    return removed
+
+
 def cleanup_expired(sessions_root: str, ttl_sec: float = QUEUE_TTL_SEC, now=None) -> tuple:
     """Удаляет всё старше `ttl_sec` в pending/found/errors и опустевшие старые папки. Корневые папки
     остаются. Папка с ещё свежим файлом не удаляется. Возвращает (удалено файлов, удалено папок)."""
@@ -354,6 +375,12 @@ class ExchangeScoutEngine:
 
     def _speed_pause(self) -> float:
         return self.move_wait + max(0.0, self.speed_factor - 1.0) * self.natural_cycle
+
+    def clear_queue(self) -> int:
+        """Удаляет все скрины из очереди. Нейросеть, уже взявшая кадр, переживает его исчезновение
+        (consumer_step трактует отсутствующий файл как пропуск); змейка на паузе по заполнению очереди
+        продолжит сразу — очередь пуста, ждать 3 минуты не нужно."""
+        return clear_queue_dir(self.pending_dir)
 
     def queue_size(self) -> int:
         """Число кадров в единой очереди (включая скрины, положенные вручную) — источник прогресс-бара."""

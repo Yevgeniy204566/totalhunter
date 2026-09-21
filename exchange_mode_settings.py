@@ -155,8 +155,7 @@ def scout_queue_state(snake_running: bool, queue_size: int, paused: bool = False
 
 _TEXTS = {
     'RU': {
-        'debug_tg': 'Находки в debug-Telegram',
-        'roy_publish': 'Публиковать в РОЙ',
+        'clear_queue': 'Очистить очередь',
         'limit_label': 'Лимит очереди:', 'st_paused': 'Пауза: очередь полна — продолжу через {t} или при спаде до 10%',
         'queue_title': 'Очередь скриншотов', 'snake_cycle': 'Скорость исследования',
         'st_active': 'Змейка работает', 'st_brown': 'Змейка остановлена — идёт разбор очереди',
@@ -165,8 +164,7 @@ _TEXTS = {
         'nn_on': 'Нейросеть работает', 'nn_off': 'Нейросеть остановлена', 'cycle_pc': 'цикл ПК',
     },
     'UK': {
-        'debug_tg': 'Знахідки в debug-Telegram',
-        'roy_publish': 'Публікувати в РОЙ',
+        'clear_queue': 'Очистити чергу',
         'limit_label': 'Ліміт черги:', 'st_paused': 'Пауза: черга повна — продовжу через {t} або при спаді до 10%',
         'queue_title': 'Черга скриншотів', 'snake_cycle': 'Швидкість дослідження',
         'st_active': 'Змійка працює', 'st_brown': 'Змійка зупинена — триває розбір черги',
@@ -175,8 +173,7 @@ _TEXTS = {
         'nn_on': 'Нейромережа працює', 'nn_off': 'Нейромережа зупинена', 'cycle_pc': 'цикл ПК',
     },
     'EN': {
-        'debug_tg': 'Send finds to debug Telegram',
-        'roy_publish': 'Publish to ROY',
+        'clear_queue': 'Clear queue',
         'limit_label': 'Queue limit:', 'st_paused': 'Paused: queue is full — resuming in {t} or at 10%',
         'queue_title': 'Screenshot queue', 'snake_cycle': 'Exploration speed',
         'st_active': 'Snake is running', 'st_brown': 'Snake stopped — processing the queue',
@@ -192,18 +189,9 @@ def scout_text(lang: str, key: str) -> str:
     return _TEXTS.get(lang, _TEXTS['EN']).get(key, _TEXTS['EN'][key])
 
 
-def scout_debug_default(frozen: bool) -> bool:
-    """Отправка находок в debug-Telegram по умолчанию: ВКЛ при запуске из исходников (владелец), ВЫКЛ в
-    упакованной релизной сборке — кадры игры клиентов не должны уходить владельцу без их ведома. Явное
-    значение из gui_config.json (переключатель в панели очереди) всегда важнее."""
-    return not frozen
-
-
-def scout_roy_publish_default(frozen: bool) -> bool:
-    """Публикация находок в РОЙ по умолчанию: при запуске из исходников ВЫКЛ (владелец 2026-09-21: «для
-    теста достаточно Telegram»), в упакованной релизной сборке ВКЛ — игроки ждут публикации. Явное значение
-    из gui_config.json (переключатель в панели очереди) важнее."""
-    return bool(frozen)
+# Публикация находок 2.0 в РОЙ. Пока ВЫКЛ (владелец 2026-09-21: сегодня ничего не выпускаем, под РОЙ нужны новые
+# таблицы) — находки идут только в debug-Telegram. При выпуске версии — True одной правкой.
+SCOUT_PUBLISH_TO_ROY = False
 
 
 def format_pause_left(seconds: float) -> str:
