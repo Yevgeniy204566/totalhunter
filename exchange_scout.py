@@ -258,3 +258,22 @@ class ExchangeScoutEngine:
 
     def _has_pending_files(self) -> bool:
         return len(self._list_jpgs(self.pending_dir)) > 0
+
+
+def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,
+                        spend_fn=None, roy_client=None):
+    """Единственная точка, где Этап 3 подключается к Этапам 1+2 — собирает `on_found_callback`
+    для `ExchangeScoutEngine`. По умолчанию использует уже существующие, реальные `auth.spend_credit`
+    и `roy.roy_client.RoyClient` (не новые) — `spend_fn`/`roy_client` можно переопределить только
+    для тестов."""
+    if spend_fn is None:
+        from auth import spend_credit
+        spend_fn = spend_credit
+    if roy_client is None:
+        from roy.roy_client import RoyClient
+        roy_client = RoyClient(hwid)
+
+    def _on_found(frame, found_path):
+        return process_found_frame(frame, crop_box, kingdom, hunt_type, spend_fn, roy_client)
+
+    return _on_found

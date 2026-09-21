@@ -27,6 +27,7 @@ from exchange_scout import (
     read_exchange_coords,
     process_found_frame,
     ExchangeScoutEngine,
+    make_found_handler,
     SESSION_ID_RE,
 )
 
@@ -542,3 +543,52 @@ class TestExchangeScoutEngine:
 
         assert os.listdir(pending_dir) == []
         assert os.listdir(engine.found_dir) == []
+
+
+class TestEndToEndPipeline:
+    """Полный проход, как просил владелец: змейка → pending → фоновый YOLO → found → calibration
+    #13-style crop_box → OCR X/Y → spend_credit("exchange") → RoyClient.report_scout_find(). Внешние
+    сети/платежи подменены fake-объектами (та же дисциплина, что и в TestProcessFoundFrame) — сама
+    склейка и порядок вызовов — реальные, не мокнутые."""
+
+    def test_full_pipeline_charges_and_publishes_on_successful_find(self, tmp_path, monkeypatch):
+        navigator = MagicMock()
+        frames = [np.zeros((10, 10, 3), dtype=np.uint8) for _ in range(3)]
+        state = {"i": 0}
+
+        def capture_fn():
+            f = frames[state["i"] % len(frames)]
+            state["i"] += 1
+            return f
+
+        model = MagicMock()
+        result = MagicMock()
+        result.boxes = [MagicMock()]
+        model.predict.return_value = [result]
+
+        # OCR подменена на уровне exchange_scout (уже отдельно протестирована в TestReadExchangeCoords)
+        # - здесь проверяется склейка, не точность распознавания текста на пустом кадре.
+        monkeypatch.setattr("exchange_scout.read_exchange_coords", lambda frame, crop_box: (512, 318))
+
+        spend_fn = MagicMock(return_value={"success": True, "credits": 90})
+        roy_client = MagicMock()
+        roy_client.report_scout_find.return_value = True
+
+        on_found = make_found_handler(
+            crop_box=(0, 990, 300, 1080), kingdom=7, hunt_type="exchange", hwid="test-hwid",
+            spend_fn=spend_fn, roy_client=roy_client,
+        )
+
+        engine = ExchangeScoutEngine(
+            navigator=navigator, capture_fn=capture_fn, model=model, conf=0.8,
+            sessions_root=str(tmp_path), move_wait=0.01, on_found_callback=on_found,
+        )
+        engine.start()
+        deadline = time.time() + 2.0
+        while time.time() < deadline and spend_fn.call_count == 0:
+            time.sleep(0.05)
+        engine.stop()
+
+        spend_fn.assert_called_with("exchange")
+        roy_client.report_scout_find.assert_called_with(kingdom=7, x=512, y=318)
+        assert len(os.listdir(engine.found_dir)) > 0
