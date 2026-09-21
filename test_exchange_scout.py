@@ -10,7 +10,7 @@ TDD: Биржа 2.0 — три этапа (решение владельца 202
 """
 import os
 import re
-
+import time
 from unittest.mock import MagicMock
 
 import cv2
@@ -26,6 +26,7 @@ from exchange_scout import (
     consumer_step,
     read_exchange_coords,
     process_found_frame,
+    ExchangeScoutEngine,
     SESSION_ID_RE,
 )
 
@@ -426,3 +427,118 @@ class TestProcessFoundFrame:
 
         roy_client.report_scout_find.assert_not_called()
         assert result == {"coords_ok": True, "x": 512, "y": 318, "charged": False, "published": False}
+
+
+class TestExchangeScoutEngine:
+    """Собирает Этапы 1+2 в реальные потоки (тот же паттерн, что уже работает в 1.0 —
+    `PacmanEngine`, navigator.py:988-1000): producer двигается и пишет кадры, consumer фоново читает
+    их и гоняет YOLO — независимо, без ожидания друг друга. `stop()` — bounded join ТОЛЬКО на
+    producer'е (3.0 сек, то же число, что уже принято в проекте для сопоставимого цикла); consumer
+    доигрывает то, что уже лежит в pending, и останавливается сам."""
+
+    def _fake_navigator(self):
+        return MagicMock()
+
+    def _fake_capture(self, n_frames=5):
+        frames = [np.zeros((10, 10, 3), dtype=np.uint8) for _ in range(n_frames)]
+        state = {"i": 0}
+
+        def _capture():
+            frame = frames[state["i"] % len(frames)]
+            state["i"] += 1
+            return frame
+
+        return _capture
+
+    def _fake_model_always_finds(self):
+        model = MagicMock()
+        result = MagicMock()
+        result.boxes = [MagicMock()]
+        model.predict.return_value = [result]
+        return model
+
+    def _fake_model_never_finds(self):
+        model = MagicMock()
+        result = MagicMock()
+        result.boxes = []
+        model.predict.return_value = [result]
+        return model
+
+    def test_start_creates_session_dirs_and_sets_is_running(self, tmp_path):
+        engine = ExchangeScoutEngine(
+            navigator=self._fake_navigator(), capture_fn=self._fake_capture(),
+            model=self._fake_model_never_finds(), conf=0.8,
+            sessions_root=str(tmp_path), move_wait=0.01,
+        )
+        engine.start()
+        try:
+            assert engine.is_running is True
+            assert os.path.isdir(engine.pending_dir)
+            assert os.path.isdir(engine.found_dir)
+        finally:
+            engine.stop()
+
+    def test_repeated_start_without_stop_raises(self, tmp_path):
+        """C-04.7 (Часть A): повторный start() без stop() на том же экземпляре — RuntimeError."""
+        engine = ExchangeScoutEngine(
+            navigator=self._fake_navigator(), capture_fn=self._fake_capture(),
+            model=self._fake_model_never_finds(), conf=0.8,
+            sessions_root=str(tmp_path), move_wait=0.01,
+        )
+        engine.start()
+        try:
+            with pytest.raises(RuntimeError):
+                engine.start()
+        finally:
+            engine.stop()
+
+    def test_stop_returns_promptly_bounded_by_join_timeout(self, tmp_path):
+        engine = ExchangeScoutEngine(
+            navigator=self._fake_navigator(), capture_fn=self._fake_capture(),
+            model=self._fake_model_never_finds(), conf=0.8,
+            sessions_root=str(tmp_path), move_wait=0.01,
+        )
+        engine.start()
+        time.sleep(0.05)
+        t0 = time.time()
+        engine.stop()
+        elapsed = time.time() - t0
+        assert elapsed < 3.5, "stop() обязан вернуться в пределах bounded join (3.0 сек) + запас"
+
+    def test_end_to_end_frame_with_exchange_ends_up_in_found(self, tmp_path):
+        """Полный проход Этапов 1+2: змейка пишет кадры, YOLO (всегда находит биржу в этом тесте)
+        переносит их в found. Координаты/РОЙ (Этап 3) здесь не участвуют — отдельная, уже
+        протестированная функция (process_found_frame)."""
+        engine = ExchangeScoutEngine(
+            navigator=self._fake_navigator(), capture_fn=self._fake_capture(n_frames=3),
+            model=self._fake_model_always_finds(), conf=0.8,
+            sessions_root=str(tmp_path), move_wait=0.01,
+        )
+        engine.start()
+        deadline = time.time() + 2.0
+        found_dir = engine.found_dir
+        while time.time() < deadline and len(os.listdir(found_dir)) == 0:
+            time.sleep(0.05)
+        engine.stop()
+
+        assert len(os.listdir(found_dir)) > 0, "хотя бы один кадр должен был дойти до found"
+
+    def test_no_exchange_frames_are_discarded_not_left_in_pending(self, tmp_path):
+        """Этап 2: если биржи нет ни на одном кадре — pending пустеет (кадры удаляются), found
+        остаётся пустым."""
+        engine = ExchangeScoutEngine(
+            navigator=self._fake_navigator(), capture_fn=self._fake_capture(n_frames=3),
+            model=self._fake_model_never_finds(), conf=0.8,
+            sessions_root=str(tmp_path), move_wait=0.01,
+        )
+        engine.start()
+        time.sleep(0.3)
+        engine.stop()
+        # Дать consumer'у время доиграть то, что producer успел написать до stop().
+        deadline = time.time() + 2.0
+        pending_dir = engine.pending_dir
+        while time.time() < deadline and len(os.listdir(pending_dir)) > 0:
+            time.sleep(0.05)
+
+        assert os.listdir(pending_dir) == []
+        assert os.listdir(engine.found_dir) == []

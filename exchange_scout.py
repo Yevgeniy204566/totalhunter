@@ -12,6 +12,8 @@ exchange_scout.py — Биржа 2.0 (Exchange Scout).
 """
 import os
 import re
+import threading
+import time
 
 import cv2
 
@@ -168,3 +170,91 @@ def process_found_frame(frame, crop_box, kingdom: int, hunt_type: str, spend_fn,
         published = bool(roy_client.report_scout_find(kingdom=kingdom, x=x, y=y))
 
     return {"coords_ok": coords_ok, "x": x, "y": y, "charged": charged, "published": published}
+
+
+class ExchangeScoutEngine:
+    """Собирает Этапы 1 (ЗМЕЙКА) и 2 (фоновый YOLO) в реальные потоки — тот же паттерн, что уже
+    работает в 1.0 (`PacmanEngine`, `navigator.py:988-1000`): producer двигается и пишет кадры,
+    consumer фоново читает их и гоняет YOLO, не дожидаясь друг друга. `navigator` — уже существующий
+    `CoastalSnakeNavigator`, `model` — уже существующая YOLO-модель (`engine.py`) — ни то, ни другое
+    не переписывается.
+
+    `capture_fn` — источник кадров (в проде — `mss.grab` + перевод в BGR, инжектируется параметром,
+    чтобы этот класс не был завязан на конкретное железо и был тестируем без экрана)."""
+
+    JOIN_TIMEOUT = 3.0  # то же число, что уже принято в проекте для сопоставимого цикла (PacmanEngine)
+
+    def __init__(self, navigator, capture_fn, model, conf: float, sessions_root: str,
+                 move_wait: float = 0.5, on_found_callback=None):
+        self.navigator = navigator
+        self.capture_fn = capture_fn
+        self.model = model
+        self.conf = conf
+        self.sessions_root = sessions_root
+        self.move_wait = move_wait
+        self.on_found_callback = on_found_callback
+
+        self.is_running = False
+        self.sid = None
+        self.pending_dir = None
+        self.found_dir = None
+        self._producer_thread = None
+        self._consumer_thread = None
+        self._frame_counter = 0
+
+    def start(self) -> None:
+        """C-04 (Часть A): повторный start() без stop() на том же экземпляре — RuntimeError, новая
+        сессия не создаётся."""
+        if self.is_running:
+            raise RuntimeError("ExchangeScoutEngine уже запущен — сначала stop()")
+
+        self.sid = create_session_dirs(self.sessions_root)
+        self.pending_dir = os.path.join(self.sessions_root, "pending", self.sid)
+        self.found_dir = os.path.join(self.sessions_root, "found", self.sid)
+        self._frame_counter = 0
+        self.is_running = True
+
+        self._producer_thread = threading.Thread(target=self._producer_loop, daemon=True)
+        self._consumer_thread = threading.Thread(target=self._consumer_loop, daemon=True)
+        self._producer_thread.start()
+        self._consumer_thread.start()
+
+    def stop(self) -> None:
+        """C-05: bounded join ТОЛЬКО на producer-треде (файл 46 §4.2 — только producer двигает
+        джойстик/мышь, consumer работает с уже снятыми файлами и не создаёт риска «двух навигаторов»).
+        Consumer НЕ join'ится — он продолжает дренировать уже записанные кадры и останавливается сам,
+        когда pending опустеет (инвариант конвейера — ESC/Стоп не отменяют уже захваченные кадры)."""
+        self.is_running = False
+        if self._producer_thread is not None:
+            self._producer_thread.join(timeout=self.JOIN_TIMEOUT)
+
+    def _producer_loop(self) -> None:
+        while self.is_running:
+            frame = self.capture_fn()
+            from navigator import is_water_center_screen
+            is_water = is_water_center_screen(frame)
+            self._frame_counter += 1
+            producer_step(self.navigator, frame, is_water, self.pending_dir, self._frame_counter)
+            time.sleep(self.move_wait)
+
+    def _consumer_loop(self) -> None:
+        while self.is_running or self._has_pending_files():
+            names = sorted(self._list_jpgs(self.pending_dir))
+            if not names:
+                time.sleep(0.05)
+                continue
+            src = os.path.join(self.pending_dir, names[0])
+            was_found = consumer_step(self.model, self.conf, src, self.found_dir)
+            if was_found and self.on_found_callback:
+                found_path = os.path.join(self.found_dir, names[0])
+                frame = cv2.imread(found_path)
+                if frame is not None:
+                    self.on_found_callback(frame, found_path)
+
+    def _list_jpgs(self, directory: str) -> list:
+        if not os.path.isdir(directory):
+            return []
+        return [n for n in os.listdir(directory) if n.endswith(".jpg")]
+
+    def _has_pending_files(self) -> bool:
+        return len(self._list_jpgs(self.pending_dir)) > 0
