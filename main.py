@@ -34,7 +34,9 @@ from auth import (get_hwid, check_license, get_free_trial, spend_credit,
 from engine import HuntEngine
 from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
                                      scout_settings_for_profile, mode_label,
-                                     exchange_cfg_from_values)
+                                     exchange_cfg_from_values, SCOUT_DEFAULT_INLAND, SPEED_FACTOR_RANGE, SPEED_FACTOR_STEPS,
+                                     SCOUT_DEFAULT_SPEED_FACTOR, SCOUT_QUEUE_PAUSE_THRESHOLD,
+                                     queue_fraction, scout_queue_state, scout_text)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
 # from combiner import CombinerEngine  # Combo заморожен — импорт отключён
@@ -315,13 +317,13 @@ SCOUT_MAX_INLAND_STEPS = 50  # владелец: "до 50 шагов вглуб�
 
 def build_scout_navigator(center_x: int, center_y: int, step: int, gui_config: dict):
     """CoastalSnakeNavigator для Биржи 2.0. Глубина нырка — из gui_config['max_inland_steps'] (ползунок
-    показан в виде 2.0 с диапазоном до SCOUT_MAX_INLAND_STEPS); без ключа — SCOUT_MAX_INLAND_STEPS.
+    показан в виде 2.0 с диапазоном до SCOUT_MAX_INLAND_STEPS); без ключа — SCOUT_DEFAULT_INLAND (13).
     Значение ползунка 1.0 (потолок 10) сюда не попадает: в виде 1.0 кнопка 2.0 не запускается."""
     from navigator import CoastalSnakeNavigator
     return CoastalSnakeNavigator(
         center_x=center_x, center_y=center_y, step=step,
         max_inland_steps=max(1, min(SCOUT_MAX_INLAND_STEPS,
-                                    int(gui_config.get('max_inland_steps', SCOUT_MAX_INLAND_STEPS)))),
+                                    int(gui_config.get('max_inland_steps', SCOUT_DEFAULT_INLAND)))),
         ocean_land_ratio=gui_config['ocean_land_ratio'],
         min_water_px=gui_config['min_water_px'],
         diagonal_blind_coeff=gui_config['diagonal_blind_coeff'],
@@ -2071,6 +2073,7 @@ class TotalHunterApp(ctk.CTk):
         self.update_license_info()
         self.after(1000, self._start_balance_sync)
         self.after(500, self._tick_trade_routes)
+        self.after(700, self._tick_scout_queue)
         self.after(60_000, self._tick_roy_drain)
         # On Top включён по умолчанию (см. CLAUDE.md: snap вправо, always-on-top) —
         # отложенный вызов, чтобы winfo_width()/winfo_height() в _on_always_on_top
@@ -2234,22 +2237,25 @@ class TotalHunterApp(ctk.CTk):
         # шага, поэтому эта настройка живёт в «Навигации», а не в карточке «Нейросеть». Показывается
         # только в виде 2.0 (см. _apply_exchange_view); значение хранит ExchangeModeSettings.
         self.nav_wait_v2_frame = ctk.CTkFrame(nav_main_frame, fg_color="transparent")
-        _nav_wait_v2_lb = ctk.CTkLabel(self.nav_wait_v2_frame, text=LANGS[self.current_lang]["nav_wait"],
-                                       font=ctk.CTkFont(size=13, weight="bold"),
-                                       text_color="#FFC83C")
-        _nav_wait_v2_lb.pack(side="left")
-        self._i18n_labels.append((_nav_wait_v2_lb, "nav_wait"))
-        self.nav_wait_v2_val = ctk.CTkLabel(self.nav_wait_v2_frame, text="1.5 сек",
+        # В 2.0 скорость змейки — множитель от минимального цикла ЭТОГО ПК (×1 = быстрее всего,
+        # ×4 = в четыре раза медленнее), а не секунды — решение владельца 2026-09-21.
+        self._nav_wait_v2_lb = ctk.CTkLabel(self.nav_wait_v2_frame,
+                                            text=scout_text(self.current_lang, 'snake_cycle'),
+                                            font=ctk.CTkFont(size=13, weight="bold"),
+                                            text_color="#FFC83C")
+        self._nav_wait_v2_lb.pack(side="left")
+        self.nav_wait_v2_val = ctk.CTkLabel(self.nav_wait_v2_frame, text="×1.00",
                                             font=ctk.CTkFont(size=14, weight="bold"),
                                             text_color=MD3["value_text"])
         self.nav_wait_v2_val.pack(side="right")
-        self.nav_wait_v2_slider = ctk.CTkSlider(nav_main_frame, from_=0.4, to=2.0,
-                                                number_of_steps=16,
+        self.nav_wait_v2_slider = ctk.CTkSlider(nav_main_frame, from_=SPEED_FACTOR_RANGE[0],
+                                                to=SPEED_FACTOR_RANGE[1],
+                                                number_of_steps=SPEED_FACTOR_STEPS,
                                                 command=self._update_nav_labels,
                                                 button_color=MD3["primary"],
                                                 button_hover_color=MD3["primary_dim"],
                                                 progress_color=MD3["primary"])
-        self.nav_wait_v2_slider.set(1.5)
+        self.nav_wait_v2_slider.set(SCOUT_DEFAULT_SPEED_FACTOR)
 
 
         # Калибровка джойстика (мини-карта)
@@ -2437,9 +2443,9 @@ class TotalHunterApp(ctk.CTk):
         self._load_settings()
 
         # ─── Карточка «Последняя найденная биржа» ───────────────────────
-        _last_ex_card = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
-                                     corner_radius=10, border_width=1,
-                                     border_color=MD3["outline"])
+        _last_ex_card = self._last_ex_card = ctk.CTkFrame(
+            self.tab_hunt, fg_color=MD3["elevated"], corner_radius=10, border_width=1,
+            border_color=MD3["outline"])
         _last_ex_card.pack(fill="x", padx=20, pady=(4, 2))
         ctk.CTkLabel(_last_ex_card, text="Последняя биржа:",
                      font=ctk.CTkFont(size=12),
@@ -2465,11 +2471,13 @@ class TotalHunterApp(ctk.CTk):
         self.status_label.pack()
 
         # ─── Биржа 2.0 (Exchange Scout) — отдельный движок, C-13 active_mode ────
+        self._build_scout_queue_card()
+
         # Показывается вместо кнопки 1.0, когда на вкладке выбран режим «Биржа 2.0» (_apply_exchange_view).
         self._scout_button = ctk.CTkButton(
-            self.tab_hunt, text=f"{LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')}: "
+            self.tab_hunt, text=f"{LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')}\n"
                                  f"{LANGS[self.current_lang]['start']}",
-            height=56, font=ctk.CTkFont(size=20, weight="bold"),
+            height=56, font=ctk.CTkFont(size=16, weight="bold"),
             fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
             text_color=MD3["on_surface"], corner_radius=14,
             command=self._toggle_scout)
@@ -3731,14 +3739,109 @@ class TotalHunterApp(ctk.CTk):
             self.nav_wait_v2_frame.pack(fill="x", padx=12, pady=(2, 0), before=self.nav_step_frame)
             self.nav_wait_v2_slider.pack(padx=12, pady=(2, 2), fill="x", before=self.nav_step_frame)
             self.start_button.pack_forget()
+            self._scout_queue_card.pack(fill="x", padx=20, pady=(4, 2), before=self._last_ex_card)
             self._scout_button.pack(pady=5, padx=40, fill="x", before=self.status_label)
+            self._refresh_scout_queue()
         else:
             self.nav_wait_v2_frame.pack_forget()
             self.nav_wait_v2_slider.pack_forget()
             self.nav_wait_frame.pack(fill="x", padx=12, pady=(4, 0))
             self.nav_wait_slider.pack(padx=12, pady=(2, 8), fill="x")
             self._scout_button.pack_forget()
+            self._scout_queue_card.pack_forget()
             self.start_button.pack(pady=5, padx=40, fill="x", before=self.status_label)
+
+    _SCOUT_STATE_COLORS = {'active': "#3D7FFF", 'brown': "#B07A3C", 'green': "#4ADE80"}
+
+    def _build_scout_queue_card(self) -> None:
+        """Панель Биржи 2.0: прогресс-бар очереди скриншотов + кнопка нейросети. Не показана в виде 1.0.
+        100% бара = порог автопаузы (~300 кадров, решение владельца); цвет — статус (коричневый:
+        змейка остановлена, очередь не пуста; зелёный: очередь пуста)."""
+        lang = self.current_lang
+        card = self._scout_queue_card = ctk.CTkFrame(self.tab_hunt, fg_color=MD3["elevated"],
+                                                     corner_radius=12, border_width=1,
+                                                     border_color=MD3["outline"])
+        head = ctk.CTkFrame(card, fg_color="transparent")
+        head.pack(fill="x", padx=12, pady=(6, 2))
+        self._scout_queue_title = ctk.CTkLabel(head, text=scout_text(lang, 'queue_title'),
+                                               font=ctk.CTkFont(size=14, weight="bold"),
+                                               text_color=MD3["on_surface"])
+        self._scout_queue_title.pack(side="left")
+        self._scout_queue_count = ctk.CTkLabel(head, text="0 / %d" % SCOUT_QUEUE_PAUSE_THRESHOLD,
+                                               font=ctk.CTkFont(size=14, weight="bold"),
+                                               text_color=MD3["value_text"])
+        self._scout_queue_count.pack(side="right")
+        self._scout_queue_bar = ctk.CTkProgressBar(card, height=14, corner_radius=7,
+                                                   fg_color=MD3["card"],
+                                                   progress_color=self._SCOUT_STATE_COLORS['green'])
+        self._scout_queue_bar.set(0)
+        self._scout_queue_bar.pack(fill="x", padx=12, pady=(2, 4))
+        self._scout_queue_status = ctk.CTkLabel(card, text=scout_text(lang, 'st_green'),
+                                                font=ctk.CTkFont(size=13, weight="bold"),
+                                                text_color=self._SCOUT_STATE_COLORS['green'],
+                                                wraplength=380, justify="left")
+        self._scout_queue_status.pack(anchor="w", padx=12)
+        self._scout_cycle_lb = ctk.CTkLabel(card, text="", font=ctk.CTkFont(size=12),
+                                            text_color=MD3["on_surface2"])
+        self._scout_cycle_lb.pack(anchor="w", padx=12)
+        self._scout_nn_btn = ctk.CTkButton(card, text=scout_text(lang, 'nn_start'), height=32,
+                                           fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+                                           text_color=MD3["on_surface"], corner_radius=8,
+                                           state="disabled", command=self._toggle_scout_nn)
+        self._scout_nn_btn.pack(fill="x", padx=12, pady=(4, 8))
+
+    def _toggle_scout_nn(self) -> None:
+        """Кнопка «остановить/запустить нейросеть» (решение владельца 2026-09-18): останавливает
+        только consumer, кадры остаются в очереди, змейка не затрагивается."""
+        eng = self._scout_engine
+        if eng is None:
+            return
+        if eng.consumer_alive:
+            eng.stop_consumer()
+        else:
+            eng.start_consumer()
+        self._refresh_scout_queue()
+
+    def _refresh_scout_queue(self) -> None:
+        eng = self._scout_engine
+        lang = self.current_lang
+        size = eng.queue_size() if eng is not None else 0
+        snake_running = bool(eng is not None and eng.is_running)
+        nn_alive = bool(eng is not None and eng.consumer_alive)
+        state = scout_queue_state(snake_running, size)
+        color = self._SCOUT_STATE_COLORS[state]
+        frac = queue_fraction(size)
+        self._scout_queue_bar.set(frac)
+        self._scout_queue_bar.configure(progress_color=color)
+        self._scout_queue_count.configure(
+            text=f"{size} / {SCOUT_QUEUE_PAUSE_THRESHOLD}  ·  {int(round(frac * 100))}%")
+        if state == 'brown' and not nn_alive:
+            status = scout_text(lang, 'st_brown_nn_off')
+        else:
+            status = scout_text(lang, {'active': 'st_active', 'brown': 'st_brown',
+                                       'green': 'st_green'}[state])
+        self._scout_queue_status.configure(text=status, text_color=color)
+        cycle = eng.natural_cycle if eng is not None else 0.0
+        self._scout_cycle_lb.configure(
+            text=f"{scout_text(lang, 'cycle_pc')}: {cycle:.2f} s" if cycle > 0 else "")
+        if eng is None:
+            self._scout_nn_btn.configure(state="disabled", text=scout_text(lang, 'nn_start'),
+                                         fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
+        elif nn_alive:
+            self._scout_nn_btn.configure(state="normal", text=scout_text(lang, 'nn_stop'),
+                                         fg_color=MD3["error"], hover_color=MD3["error_hover"])
+        else:
+            self._scout_nn_btn.configure(state="normal", text=scout_text(lang, 'nn_start'),
+                                         fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
+
+    def _tick_scout_queue(self) -> None:
+        """Раз в 0.5 с обновляет панель очереди, пока она показана (вид 2.0); в виде 1.0 ничего не делает."""
+        try:
+            if self._exchange_mode == MODE_V2:
+                self._refresh_scout_queue()
+        except Exception:
+            pass
+        self.after(500, self._tick_scout_queue)
 
     def _refresh_exchange_mode_labels(self) -> None:
         """Смена языка: подписи переключателя режимов и кнопки Старт 2.0."""
@@ -3749,14 +3852,17 @@ class TotalHunterApp(ctk.CTk):
                                                   self._exchange_mode_labels[MODE_V2]])
         self._exchange_mode_seg.set(self._exchange_mode_labels[self._exchange_mode])
         state = LANGS[self.current_lang]['stop' if self.active_mode == 'v2' else 'start']
-        self._scout_button.configure(text=f"{scout_lbl}: {state}")
+        self._scout_button.configure(text=f"{scout_lbl}\n{state}")
+        self._nav_wait_v2_lb.configure(text=scout_text(self.current_lang, 'snake_cycle'))
+        self._scout_queue_title.configure(text=scout_text(self.current_lang, 'queue_title'))
+        self._refresh_scout_queue()
 
     def _update_nav_labels(self, _=None):
         sec = LANGS[self.current_lang]["unit_sec"]
         min_ = LANGS[self.current_lang]["unit_min"]
         self.nav_step_val.configure(text=f"{int(self.nav_step_slider.get())} px")
         self.nav_wait_val.configure(text=f"{self.nav_wait_slider.get():.1f} {sec}")
-        self.nav_wait_v2_val.configure(text=f"{self.nav_wait_v2_slider.get():.1f} {sec}")
+        self.nav_wait_v2_val.configure(text=f"×{self.nav_wait_v2_slider.get():.2f}")
         self.nav_inland_val.configure(text=f"{int(self.nav_inland_slider.get())}")
         self.nav_ocean_val.configure(text=f"{int(self.nav_ocean_slider.get())}%")
         self.nav_waterpx_val.configure(text=f"{int(self.nav_waterpx_slider.get())}")
@@ -3967,7 +4073,7 @@ class TotalHunterApp(ctk.CTk):
             try:
                 cx, cy = int(coord_manager.anchor_x), int(coord_manager.anchor_y)
                 step = int(self.nav_step_slider.get())
-                bot_speed = float(self.nav_wait_v2_slider.get())
+                speed_factor = float(self.nav_wait_v2_slider.get())
             except ValueError:
                 messagebox.showerror("Error", "Неверные параметры навигации"); return
             try:
@@ -3994,13 +4100,13 @@ class TotalHunterApp(ctk.CTk):
                 self._scout_engine = ExchangeScoutEngine(
                     navigator=navigator, capture_fn=capture_fn,
                     model=self.engine.model, conf=self.conf_slider.get(),
-                    sessions_root=sessions_root, move_wait=bot_speed,
+                    sessions_root=sessions_root, move_wait=0.0, speed_factor=speed_factor,
                     on_found_callback=on_found,
                 )
                 self._scout_engine.start()
                 self.active_mode = 'v2'
                 self._scout_button.configure(
-                    text=f"{scout_label}: {LANGS[self.current_lang]['stop']}",
+                    text=f"{scout_label}\n{LANGS[self.current_lang]['stop']}",
                     fg_color=MD3["error"], hover_color=MD3["error_hover"])
             except Exception as e:
                 messagebox.showerror("Error", f"Scout engine failed: {e}")
@@ -4009,7 +4115,7 @@ class TotalHunterApp(ctk.CTk):
                 self._scout_engine.stop()
             self.active_mode = None
             self._scout_button.configure(
-                text=f"{scout_label}: {LANGS[self.current_lang]['start']}",
+                text=f"{scout_label}\n{LANGS[self.current_lang]['start']}",
                 fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
 
     def _on_pool_auto_refresh(self, pool: list) -> None:
@@ -4123,7 +4229,7 @@ class TotalHunterApp(ctk.CTk):
             if hasattr(self, '_scout_button'):
                 scout_label = LANGS[self.current_lang].get('scout_label', 'Биржа 2.0')
                 self._scout_button.configure(
-                    text=f"{scout_label}: {LANGS[self.current_lang]['start']}",
+                    text=f"{scout_label}\n{LANGS[self.current_lang]['start']}",
                     fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
         # Склепы
         if self.is_crypt_running:

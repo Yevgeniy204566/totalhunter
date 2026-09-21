@@ -666,13 +666,13 @@ class TestBuildScoutNavigator:
         'pixels_per_step': 20,
     }
 
-    def test_max_inland_steps_is_50_not_the_bot1_slider_ceiling(self):
+    def test_default_depth_is_13_and_ceiling_is_50_not_the_bot1_slider_ceiling(self):
         import main as _main_module
         navigator = _main_module.build_scout_navigator(
             center_x=90, center_y=925, step=13, gui_config=self._GUI_CONFIG,
         )
-        assert navigator.max_inland_steps == 50
-        assert _main_module.SCOUT_MAX_INLAND_STEPS == 50
+        assert navigator.max_inland_steps == 13     # по умолчанию 13 (владелец 2026-09-21)
+        assert _main_module.SCOUT_MAX_INLAND_STEPS == 50    # потолок 2.0
 
     def test_passes_through_remaining_gui_config_values(self):
         import main as _main_module
@@ -737,3 +737,159 @@ class TestBuildScoutCaptureFn:
         capture_fn()
 
         assert len(created) == 1  # mss() создаётся один раз на весь producer-тред, не на кадр
+
+
+class TestQueueAndNeuralControl:
+    """Сессия #148 (пункт 3): счётчик очереди для прогресс-бара и отдельная кнопка «остановить/
+    запустить нейросеть» (решение владельца 2026-09-18: ESC/Стоп останавливают змейку, но не consumer;
+    для остановки нейросети — отдельная кнопка, кадры при этом остаются в очереди)."""
+
+    def _engine(self, tmp_path, model=None, move_wait=0.01):
+        frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        frame[:, :] = (30, 60, 90)
+        navigator = MagicMock()
+        if model is None:
+            model = MagicMock()
+            model.predict.return_value = [MagicMock(boxes=[])]   # биржи нет
+        return ExchangeScoutEngine(
+            navigator=navigator, capture_fn=lambda: frame, model=model, conf=0.8,
+            sessions_root=str(tmp_path), move_wait=move_wait,
+        )
+
+    def _wait(self, cond, timeout=3.0):
+        deadline = time.time() + timeout
+        while time.time() < deadline and not cond():
+            time.sleep(0.02)
+        return cond()
+
+    def _put_frames(self, engine, n):
+        for i in range(n):
+            save_frame_atomic(np.zeros((40, 40, 3), dtype=np.uint8),
+                              os.path.join(engine.pending_dir, f"{9000 + i:06d}.jpg"))
+
+    def test_queue_size_zero_before_start(self, tmp_path):
+        assert self._engine(tmp_path).queue_size() == 0
+
+    def test_queue_size_counts_pending_jpgs(self, tmp_path):
+        engine = self._engine(tmp_path)
+        engine.start()
+        engine.stop_consumer()
+        assert self._wait(lambda: not engine.consumer_alive)
+        engine.stop()
+        before = engine.queue_size()          # змейка успела записать сколько-то кадров сама
+        self._put_frames(engine, 5)
+        assert engine.queue_size() == before + 5
+
+    def test_stop_consumer_leaves_frames_in_queue_and_snake_keeps_producing(self, tmp_path):
+        engine = self._engine(tmp_path)
+        engine.start()
+        engine.stop_consumer()
+        assert self._wait(lambda: not engine.consumer_alive)
+        before = engine.queue_size()
+        assert self._wait(lambda: engine.queue_size() >= before + 3)   # змейка пишет, никто не читает
+        assert engine.is_running is True
+        engine.stop()
+
+    def test_start_consumer_drains_queue_after_stop(self, tmp_path):
+        engine = self._engine(tmp_path)
+        engine.start()
+        engine.stop_consumer()
+        assert self._wait(lambda: not engine.consumer_alive)
+        engine.stop()
+        self._put_frames(engine, 4)
+        assert engine.queue_size() >= 4
+        engine.start_consumer()
+        assert self._wait(lambda: engine.queue_size() == 0)
+        assert self._wait(lambda: not engine.consumer_alive)   # очередь пуста, змейка стоит — сам завершился
+
+    def test_start_consumer_is_noop_when_already_alive(self, tmp_path):
+        engine = self._engine(tmp_path)
+        engine.start()
+        first = engine._consumer_thread
+        engine.start_consumer()
+        assert engine._consumer_thread is first
+        engine.stop()
+
+    def test_start_consumer_before_any_session_does_nothing(self, tmp_path):
+        engine = self._engine(tmp_path)
+        engine.start_consumer()
+        assert engine.consumer_alive is False
+
+    def test_snake_stop_does_not_stop_consumer_while_queue_not_empty(self, tmp_path):
+        """Инвариант конвейера (C-05) не сломан: ESC/Стоп змейки не трогают consumer."""
+        engine = self._engine(tmp_path)
+        engine.start()
+        engine.stop_consumer()
+        assert self._wait(lambda: not engine.consumer_alive)
+        engine.stop()
+        self._put_frames(engine, 3)
+        engine.start_consumer()
+        assert self._wait(lambda: engine.queue_size() == 0)
+
+    def test_second_session_consumer_reads_its_own_dir_not_the_old_one(self, tmp_path):
+        """Раньше consumer читал self.pending_dir на каждой итерации: после нового start() он
+        переключался на новую папку. Теперь очередь старой сессии остаётся нетронутой, а счётчик и
+        consumer работают с очередью текущей сессии (что делать с остатками старых сессий — Часть B)."""
+        engine = self._engine(tmp_path)
+        engine.start()
+        old_dir = engine.pending_dir
+        engine.stop_consumer()
+        assert self._wait(lambda: not engine.consumer_alive)
+        engine.stop()
+        self._put_frames(engine, 2)
+        old_count = len([n for n in os.listdir(old_dir) if n.endswith(".jpg")])
+        assert old_count >= 2
+        engine.start()
+        assert engine.pending_dir != old_dir
+        time.sleep(0.4)
+        assert len([n for n in os.listdir(old_dir) if n.endswith(".jpg")]) == old_count
+        engine.stop()
+
+
+class TestSnakeSpeedFactor:
+    """Владелец 2026-09-21: скорость змейки в 2.0 — не секунды, а множитель от МИНИМАЛЬНОГО цикла
+    именно этого ПК (1× = быстрее всего, максимум = 4× от минимума). Пауза после шага =
+    (множитель − 1) × измеренный естественный цикл (захват + шаг + запись кадра)."""
+
+    def _engine(self, tmp_path, step_sec, factor, move_wait=0.0):
+        frame = np.zeros((40, 40, 3), dtype=np.uint8)
+        navigator = MagicMock()
+        navigator.step.side_effect = lambda *a, **k: time.sleep(step_sec)
+        model = MagicMock()
+        model.predict.return_value = [MagicMock(boxes=[])]
+        return ExchangeScoutEngine(
+            navigator=navigator, capture_fn=lambda: frame, model=model, conf=0.8,
+            sessions_root=str(tmp_path), move_wait=move_wait, speed_factor=factor,
+        )
+
+    def _cycles(self, engine, seconds):
+        engine.start()
+        time.sleep(seconds)
+        engine.stop()
+        return engine._frame_counter
+
+    def test_factor_1_adds_no_pause(self, tmp_path):
+        engine = self._engine(tmp_path, step_sec=0.05, factor=1.0)
+        n = self._cycles(engine, 1.0)
+        assert n >= 10                      # ~ 1.0 / (0.05 + накладные) — без паузы
+
+    def test_factor_4_is_about_four_times_slower(self, tmp_path):
+        fast = self._engine(tmp_path / "a", step_sec=0.05, factor=1.0)
+        slow = self._engine(tmp_path / "b", step_sec=0.05, factor=4.0)
+        n_fast = self._cycles(fast, 1.5)
+        n_slow = self._cycles(slow, 1.5)
+        assert n_fast / n_slow > 2.5        # ≈4×, запас на дрожание таймеров
+
+    def test_natural_cycle_is_measured_from_real_work(self, tmp_path):
+        engine = self._engine(tmp_path, step_sec=0.06, factor=1.0)
+        self._cycles(engine, 0.8)
+        assert 0.05 <= engine.natural_cycle <= 0.2
+
+    def test_natural_cycle_zero_before_any_step(self, tmp_path):
+        assert self._engine(tmp_path, 0.01, 1.0).natural_cycle == 0.0
+
+    def test_default_factor_is_1(self, tmp_path):
+        frame = np.zeros((40, 40, 3), dtype=np.uint8)
+        engine = ExchangeScoutEngine(navigator=MagicMock(), capture_fn=lambda: frame, model=MagicMock(),
+                                     conf=0.8, sessions_root=str(tmp_path))
+        assert engine.speed_factor == 1.0

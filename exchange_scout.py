@@ -184,14 +184,20 @@ class ExchangeScoutEngine:
 
     JOIN_TIMEOUT = 3.0  # то же число, что уже принято в проекте для сопоставимого цикла (PacmanEngine)
 
+    NATURAL_CYCLE_WINDOW = 20  # замеров в медиане естественного цикла
+
     def __init__(self, navigator, capture_fn, model, conf: float, sessions_root: str,
-                 move_wait: float = 0.5, on_found_callback=None):
+                 move_wait: float = 0.5, on_found_callback=None, speed_factor: float = 1.0):
         self.navigator = navigator
         self.capture_fn = capture_fn
         self.model = model
         self.conf = conf
         self.sessions_root = sessions_root
         self.move_wait = move_wait
+        # Скорость змейки как множитель от минимального цикла ЭТОГО ПК (решение владельца
+        # 2026-09-21): 1.0 — без паузы, 4.0 — цикл в четыре раза длиннее минимального.
+        self.speed_factor = speed_factor
+        self._cycle_samples = []
         self.on_found_callback = on_found_callback
 
         self.is_running = False
@@ -200,7 +206,21 @@ class ExchangeScoutEngine:
         self.found_dir = None
         self._producer_thread = None
         self._consumer_thread = None
+        self._consumer_stop_event = None
         self._frame_counter = 0
+
+    @property
+    def natural_cycle(self) -> float:
+        """Естественный цикл змейки на этом ПК, с: медиана последних замеров «захват + шаг + запись
+        кадра» без паузы. 0.0 — ещё не измерен."""
+        samples = self._cycle_samples
+        if not samples:
+            return 0.0
+        ordered = sorted(samples)
+        return ordered[len(ordered) // 2]
+
+    def _speed_pause(self) -> float:
+        return self.move_wait + max(0.0, self.speed_factor - 1.0) * self.natural_cycle
 
     def start(self) -> None:
         """C-04 (Часть A): повторный start() без stop() на том же экземпляре — RuntimeError, новая
@@ -212,12 +232,49 @@ class ExchangeScoutEngine:
         self.pending_dir = os.path.join(self.sessions_root, "pending", self.sid)
         self.found_dir = os.path.join(self.sessions_root, "found", self.sid)
         self._frame_counter = 0
+        self._cycle_samples = []
         self.is_running = True
 
         self._producer_thread = threading.Thread(target=self._producer_loop, daemon=True)
-        self._consumer_thread = threading.Thread(target=self._consumer_loop, daemon=True)
         self._producer_thread.start()
+        self._spawn_consumer()
+
+    def _spawn_consumer(self) -> None:
+        """Каждый consumer получает СВОИ папки и СВОЙ флаг остановки: раньше он читал self.pending_dir
+        на каждой итерации, и после нового start() старый consumer переключался на новую очередь — два
+        consumer'а на одной папке."""
+        stop_event = threading.Event()
+        self._consumer_stop_event = stop_event
+        self._consumer_thread = threading.Thread(
+            target=self._consumer_loop,
+            args=(self.pending_dir, self.found_dir, stop_event, self._producer_thread), daemon=True)
         self._consumer_thread.start()
+
+    @property
+    def consumer_alive(self) -> bool:
+        """Нейросеть работает (с точки зрения пользователя): поток жив и её не остановили кнопкой."""
+        return (self._consumer_thread is not None and self._consumer_thread.is_alive()
+                and not (self._consumer_stop_event is not None and self._consumer_stop_event.is_set()))
+
+    def stop_consumer(self) -> None:
+        """Кнопка «остановить нейросеть» (решение владельца 2026-09-18): consumer заканчивает кадр, с
+        которым работает, и останавливается; кадры остаются в очереди, змейка продолжает работать."""
+        if self._consumer_stop_event is not None:
+            self._consumer_stop_event.set()
+
+    def start_consumer(self) -> None:
+        """Кнопка «запустить нейросеть»: новый consumer на очереди текущей сессии. Пока consumer уже
+        работает или сессии ещё не было — ничего не делает."""
+        if self.pending_dir is None or self.consumer_alive:
+            return
+        old = self._consumer_thread
+        if old is not None and old.is_alive():
+            old.join(timeout=self.JOIN_TIMEOUT)   # предыдущий доделывает кадр после stop_consumer()
+        self._spawn_consumer()
+
+    def queue_size(self) -> int:
+        """Число необработанных кадров в очереди текущей сессии — источник прогресс-бара GUI."""
+        return len(self._list_jpgs(self.pending_dir)) if self.pending_dir else 0
 
     def stop(self) -> None:
         """C-05: bounded join ТОЛЬКО на producer-треде (файл 46 §4.2 — только producer двигает
@@ -230,23 +287,30 @@ class ExchangeScoutEngine:
 
     def _producer_loop(self) -> None:
         while self.is_running:
+            t0 = time.monotonic()
             frame = self.capture_fn()
             from navigator import is_water_center_screen
             is_water = is_water_center_screen(frame)
             self._frame_counter += 1
             producer_step(self.navigator, frame, is_water, self.pending_dir, self._frame_counter)
-            time.sleep(self.move_wait)
+            self._cycle_samples.append(time.monotonic() - t0)
+            del self._cycle_samples[:-self.NATURAL_CYCLE_WINDOW]
+            time.sleep(self._speed_pause())
 
-    def _consumer_loop(self) -> None:
-        while self.is_running or self._has_pending_files():
-            names = sorted(self._list_jpgs(self.pending_dir))
+    def _consumer_loop(self, pending_dir: str, found_dir: str, stop_event, producer_thread) -> None:
+        # Ждём завершения именно потока-производителя своей сессии, а не флага is_running: после
+        # stop() производитель может дописывать кадр (первый шаг медленный — импорт навигатора), и
+        # consumer, увидевший «пусто + флаг снят», ушёл бы раньше этого кадра, оставив его в очереди.
+        while not stop_event.is_set() and (producer_thread.is_alive()
+                                           or self._has_pending_files(pending_dir)):
+            names = sorted(self._list_jpgs(pending_dir))
             if not names:
                 time.sleep(0.05)
                 continue
-            src = os.path.join(self.pending_dir, names[0])
-            was_found = consumer_step(self.model, self.conf, src, self.found_dir)
+            src = os.path.join(pending_dir, names[0])
+            was_found = consumer_step(self.model, self.conf, src, found_dir)
             if was_found and self.on_found_callback:
-                found_path = os.path.join(self.found_dir, names[0])
+                found_path = os.path.join(found_dir, names[0])
                 frame = cv2.imread(found_path)
                 if frame is not None:
                     self.on_found_callback(frame, found_path)
@@ -256,8 +320,8 @@ class ExchangeScoutEngine:
             return []
         return [n for n in os.listdir(directory) if n.endswith(".jpg")]
 
-    def _has_pending_files(self) -> bool:
-        return len(self._list_jpgs(self.pending_dir)) > 0
+    def _has_pending_files(self, pending_dir=None) -> bool:
+        return len(self._list_jpgs(pending_dir or self.pending_dir)) > 0
 
 
 def make_found_handler(crop_box, kingdom: int, hunt_type: str, hwid: str,

@@ -11,7 +11,8 @@ import pytest
 
 from exchange_mode_settings import (
     ExchangeModeSettings, MODE_V1, MODE_V2, NAV_KEYS, INLAND_RANGE, SCOUT_DEFAULT_INLAND,
-    mode_label, scout_settings_for_profile,
+    mode_label, scout_settings_for_profile, SCOUT_DEFAULT_SPEED_FACTOR, SPEED_FACTOR_RANGE,
+    SCOUT_QUEUE_PAUSE_THRESHOLD, queue_fraction, scout_queue_state, scout_text,
 )
 
 
@@ -52,7 +53,7 @@ def make_sliders():
 class TestConstants:
     def test_v2_inland_range_goes_up_to_50(self):
         assert INLAND_RANGE[MODE_V2][1] == 50
-        assert SCOUT_DEFAULT_INLAND == 50
+        assert SCOUT_DEFAULT_INLAND == 13
 
     def test_v1_inland_range_unchanged(self):
         assert INLAND_RANGE[MODE_V1] == (1, 10)
@@ -62,29 +63,37 @@ class TestConstants:
 
 
 class TestSwitchToV2:
-    def test_inland_becomes_50_and_range_widens_on_first_switch(self):
+    def test_inland_defaults_to_13_and_range_widens_to_50_on_first_switch(self):
         s = make_sliders()
         st = ExchangeModeSettings()
         st.switch(MODE_V1, MODE_V2, s)
-        assert s['inland'].get() == 50
+        assert s['inland'].get() == 13
         assert (s['inland'].from_, s['inland'].to) == (1, 50)
         assert s['inland'].steps == 49
 
     def test_other_sliders_inherit_v1_values_on_first_switch(self):
         s = make_sliders()
         s['step'].set(15)
-        s['wait'].set(0.8)
+        s['ocean'].set(7)
         st = ExchangeModeSettings()
         st.switch(MODE_V1, MODE_V2, s)
         assert s['step'].get() == 15
-        assert s['wait'].get() == 0.8
+        assert s['ocean'].get() == 7
+
+    def test_speed_starts_at_minimum_multiplier_not_v1_seconds(self):
+        """Секунды 1.0 (0.4-2.0) в множитель не переносятся: 2.0 стартует с x1 - быстрее всего."""
+        s = make_sliders()
+        s['wait'].set(1.8)
+        st = ExchangeModeSettings()
+        st.switch(MODE_V1, MODE_V2, s)
+        assert s['wait'].get() == SCOUT_DEFAULT_SPEED_FACTOR == 1.0
 
     def test_v2_edits_are_remembered_and_do_not_leak_into_v1(self):
         s = make_sliders()
         st = ExchangeModeSettings()
         st.switch(MODE_V1, MODE_V2, s)
         s['inland'].set(30)
-        s['wait'].set(0.4)
+        s['wait'].set(2.5)
         st.switch(MODE_V2, MODE_V1, s)
         assert s['inland'].get() == 5           # значение 1.0 вернулось
         assert s['wait'].get() == 1.5
@@ -92,7 +101,7 @@ class TestSwitchToV2:
         assert s['inland'].steps == 9
         st.switch(MODE_V1, MODE_V2, s)
         assert s['inland'].get() == 30          # значение 2.0 вспомнилось
-        assert s['wait'].get() == 0.4
+        assert s['wait'].get() == 2.5
 
 
 class TestSeparateSliderSets:
@@ -105,13 +114,13 @@ class TestSeparateSliderSets:
         v1['wait'].set(1.2)
         st = ExchangeModeSettings()
         st.switch(MODE_V1, MODE_V2, v1, v2)
-        assert v2['wait'].get() == 1.2          # унаследовано от 1.0
-        v2['wait'].set(0.4)
+        assert v2['wait'].get() == 1.0          # 2.0 стартует с x1, секунды 1.0 не переносятся
+        v2['wait'].set(3.0)
         assert v1['wait'].get() == 1.2          # виджет 1.0 не тронут
         st.switch(MODE_V2, MODE_V1, v2, v1)
         assert v1['wait'].get() == 1.2
         st.switch(MODE_V1, MODE_V2, v1, v2)
-        assert v2['wait'].get() == 0.4
+        assert v2['wait'].get() == 3.0
 
 
 class TestValuesForSave:
@@ -150,16 +159,26 @@ class TestProfileRoundTrip:
         st.switch(MODE_V1, MODE_V2, s)
         d = scout_settings_for_profile(st, MODE_V2, s)
         assert set(d) == set(NAV_KEYS)
-        assert d['inland'] == 50
+        assert d['inland'] == 13
 
     def test_load_v2_from_profile_applies_when_view_is_v2(self):
         s = make_sliders()
         st = ExchangeModeSettings()
         st.switch(MODE_V1, MODE_V2, s)
-        st.load_v2({'inland': 35, 'wait': 0.5, 'step': 12})
+        st.load_v2({'inland': 35, 'wait': 2.5, 'step': 12})
         st.apply(MODE_V2, s)
         assert s['inland'].get() == 35
-        assert s['wait'].get() == 0.5
+        assert s['wait'].get() == 2.5
+
+    def test_old_seconds_style_speed_in_profile_is_clamped_to_multiplier_range(self):
+        st = ExchangeModeSettings()
+        st.load_v2({'wait': 0.4})
+        s = make_sliders()
+        st.apply(MODE_V2, s)
+        assert s['wait'].get() == 1.0
+        st.load_v2({'wait': 9})
+        st.apply(MODE_V2, s)
+        assert s['wait'].get() == 4.0
 
     def test_load_v2_ignores_garbage_and_clamps_inland(self):
         st = ExchangeModeSettings()
@@ -202,7 +221,9 @@ class TestRealCtkSlider:
             sliders['inland'] = sl
             st = ExchangeModeSettings()
             st.switch(MODE_V1, MODE_V2, sliders)
-            assert int(round(sl.get())) == 50
+            assert int(round(sl.get())) == 13        # по умолчанию 13 (число не искажено переходом диапазона)
+            sl.set(50)
+            assert int(round(sl.get())) == 50        # потолок 2.0 достижим на настоящем виджете
             st.switch(MODE_V2, MODE_V1, sliders)
             assert int(round(sl.get())) == 5
         finally:
@@ -254,7 +275,7 @@ class TestRealAppMethods:
         app = self._fake_app()
         m.TotalHunterApp._set_exchange_mode(app, MODE_V2)
         assert app._exchange_mode == MODE_V2
-        assert app._sliders[MODE_V2]['inland'].get() == 50
+        assert app._sliders[MODE_V2]['inland'].get() == 13
         app._apply_exchange_view.assert_called_once_with(MODE_V2)
         app._exchange_mode_seg.set.assert_called_with("Биржа 2.0")
 
@@ -303,3 +324,34 @@ class TestBuildScoutNavigatorDepth:
         import main as m
         nav = m.build_scout_navigator(90, 925, 13, {**self._CFG, 'max_inland_steps': 999})
         assert nav.max_inland_steps == m.SCOUT_MAX_INLAND_STEPS == INLAND_RANGE[MODE_V2][1]
+
+
+class TestQueueIndicatorLogic:
+    def test_speed_range_is_1_to_4(self):
+        assert SPEED_FACTOR_RANGE == (1.0, 4.0)
+
+    def test_fraction_scales_to_pause_threshold(self):
+        assert queue_fraction(0) == 0.0
+        assert queue_fraction(SCOUT_QUEUE_PAUSE_THRESHOLD // 2) == 0.5
+        assert queue_fraction(SCOUT_QUEUE_PAUSE_THRESHOLD) == 1.0
+
+    def test_fraction_capped_at_100_percent(self):
+        assert queue_fraction(SCOUT_QUEUE_PAUSE_THRESHOLD * 5) == 1.0
+
+    def test_state_active_while_snake_runs_regardless_of_queue(self):
+        assert scout_queue_state(True, 0) == 'active'
+        assert scout_queue_state(True, 250) == 'active'
+
+    def test_state_brown_when_snake_stopped_and_queue_not_empty(self):
+        assert scout_queue_state(False, 1) == 'brown'
+
+    def test_state_green_when_queue_empty_and_snake_stopped(self):
+        assert scout_queue_state(False, 0) == 'green'
+
+    def test_texts_fallback_to_english_for_unlisted_language(self):
+        assert scout_text('DE', 'nn_stop') == scout_text('EN', 'nn_stop')
+        assert scout_text('UK', 'nn_start') != scout_text('EN', 'nn_start')
+
+    def test_every_language_has_the_same_keys(self):
+        from exchange_mode_settings import _TEXTS
+        assert set(_TEXTS['RU']) == set(_TEXTS['UK']) == set(_TEXTS['EN'])
