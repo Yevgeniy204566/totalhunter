@@ -163,6 +163,9 @@ class CryptHunter:
 
         # Счётчик провалов детекции на карте — для пропуска проблемного склепа
         self._detect_fail_streak: int = 0
+        # Между отправками капитанов список склепов всегда прокручивается один раз (_pre_skip): иначе поиск
+        # начинается там, где только что отправленный склеп ещё виден, и следующий капитан берёт тот же склеп.
+        self._skip_next_search: bool = False
 
     def start(
         self,
@@ -402,7 +405,9 @@ class CryptHunter:
             self._next_periodic_reset_at = time.monotonic() + self._periodic_reset_sec
 
     def _pre_skip(self):
-        """Прокрутить список вниз на 3 тика — пропустить проблемный склеп (~5 позиций).
+        """Прокрутить список вниз ОДИН раз (шаг = три вызова колеса подряд, как в поиске) — пропустить склеп.
+        Вызывается после неудачной детекции и после каждой успешной отправки капитана (владелец 2026-09-21:
+        «одну прокрутку каждый раз», раньше было три шага подряд, ~5 позиций).
 
         Если непризнанный склеп — последний в списке, скролл здесь превращается
         в no-op (список уже упёрся в конец): _scroll_and_find() тут же находит
@@ -412,7 +417,7 @@ class CryptHunter:
         скролла — и если список не сдвинулся, сразу сбрасываем поиск (Арена x2)
         вместо повторного выбора того же склепа.
         """
-        self._status("Пропускаю склеп (3 скролла вниз)...")
+        self._status("Пропускаю склеп (1 скролл вниз)...")
         _sx, _sy = scale_ui_coord(*WT_SCROLL_AREA)
         pyautogui.moveTo(_sx, _sy, duration=random.uniform(0.3, 0.5))
         self._interruptible_sleep(0.3)
@@ -422,11 +427,10 @@ class CryptHunter:
         before_crop = before_img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w]
 
         _sc = _cm.scroll_clicks if _VISUAL_NAV_AVAILABLE else 3
-        for _ in range(3):
-            pyautogui.scroll(-_sc); time.sleep(0.05)
-            pyautogui.scroll(-_sc); time.sleep(0.05)
-            pyautogui.scroll(-_sc)
-            self._interruptible_sleep(0.25)
+        pyautogui.scroll(-_sc); time.sleep(0.05)
+        pyautogui.scroll(-_sc); time.sleep(0.05)
+        pyautogui.scroll(-_sc)
+        self._interruptible_sleep(0.25)
 
         after_img = self._screenshot()
         after_crop = after_img[ms_y:ms_y + ms_h, ms_x:ms_x + ms_w]
@@ -725,8 +729,10 @@ class CryptHunter:
             self._status("Periodic reset (Arena ×2)...")
             self._reset_search()
 
-        # Если предыдущий цикл провалил детекцию на карте — пропустить проблемный склеп
-        if self._detect_fail_streak > 0:
+        # Пропустить склеп перед поиском: после провала детекции (проблемный склеп) ИЛИ после успешной
+        # отправки капитана (склеп уже занят — следующий капитан должен взять другой). Один раз за цикл.
+        if self._detect_fail_streak > 0 or getattr(self, '_skip_next_search', False):
+            self._skip_next_search = False
             self._pre_skip()
 
         # [3-4] Ищем нужный склеп (с ресетами если нужно)
@@ -762,6 +768,7 @@ class CryptHunter:
             # self._status("Капитан не отправлен — перезапуск цикла")
             return
         self._detect_fail_streak = 0   # склеп найден и отправлен — сбрасываем счётчик
+        self._skip_next_search = True  # следующий капитан не должен взять этот же склеп
 
         if not self.is_running:
             return
