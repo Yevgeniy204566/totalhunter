@@ -1847,6 +1847,54 @@ class LangPopupButton(ctk.CTkFrame):
             pass
 
 
+# ── Ограничение размера окна (входящие, п.A; владелец 2026-09-25) ──────────────
+# Жалоба: у части пользователей окно бота разворачивается на весь экран — перекрывает
+# игру, бот перестаёт видеть её элементы. Инвариант владельца: окно ≤30% ширины рабочей
+# области монитора (жёсткий потолок), обычный размер — как сейчас (460px, ~24% на 1920px).
+WINDOW_MAX_WIDTH_FRACTION = 0.30
+WINDOW_PREFERRED_WIDTH = 460
+# Владелец 2026-09-25: игроки заходят с чего угодно — от древних/слабых ТВ-разрешений
+# (ноутбук выводит игру на телевизор) до 2K/4K/8K мониторов. Чистые 30% на экране
+# 800-1024px дают 240-307px — интерфейс, свёрстанный под 460px, там может налезать
+# друг на друга. Абсолютный пол — окно не ужимается ниже него, даже если это чуть
+# больше 30% на экзотично маленьких экранах (владелец подтвердил именно это значение).
+WINDOW_MIN_WIDTH_FLOOR = 360
+
+
+def compute_window_width(work_area_width: int,
+                         preferred_width: int = WINDOW_PREFERRED_WIDTH,
+                         max_fraction: float = WINDOW_MAX_WIDTH_FRACTION,
+                         min_floor: int = WINDOW_MIN_WIDTH_FLOOR) -> int:
+    """Ширина окна: обычно preferred_width (460px — как сейчас на FHD/2K/4K/8K, потолок
+    сверху не даёт ей когда-либо вырасти больше), но не больше max_fraction (30%)
+    реальной рабочей области монитора — на небольших экранах (1366×768 и меньше)
+    ужимается вместо превышения потолка. min_floor — нижняя граница ужимания: на
+    экзотично маленьких/старых экранах (800px и меньше) интерфейс не сжимается ниже
+    этого значения, даже если формально это больше 30% — иначе элементы налезают
+    друг на друга (свёрстаны под 460px)."""
+    if work_area_width <= 0:
+        return preferred_width
+    cap = int(work_area_width * max_fraction)
+    if cap <= 0:
+        return preferred_width
+    return max(min_floor, min(preferred_width, cap))
+
+
+def enforce_no_maximize(win, geometry: str) -> bool:
+    """Обработчик <Configure>: если окно всё же оказалось развёрнуто (Win+Up, двойной
+    клик по заголовку — resizable(False,...) не всегда блокирует это на всех сборках
+    Windows), немедленно возвращает его к заданной геометрии. Возвращает True, если
+    пришлось откатывать (для тестов/диагностики), False — окно и так было в норме."""
+    try:
+        if win.state() == "zoomed":
+            win.state("normal")
+            win.geometry(geometry)
+            return True
+    except Exception:
+        pass
+    return False
+
+
 class TotalHunterApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -1894,21 +1942,30 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels = []  # (widget, lang_key)
        
         self.title(f"Total Hunter v{VERSION}")
-        # Динамический размер и позиция: высота = рабочая область экрана, прижато вправо
+        # Динамический размер и позиция: высота = рабочая область экрана, прижато вправо.
+        # Ширина считается от РЕАЛЬНОЙ рабочей области (входящие, п.A) — не всегда 460px:
+        # на маленьких экранах (1366×768 и меньше) ужимается, чтобы не превышать 30%.
         try:
             import ctypes, ctypes.wintypes
             _rect = ctypes.wintypes.RECT()
             ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(_rect), 0)
             _work_y = _rect.top
             _work_h = _rect.bottom - _rect.top - 35
-            _snap_x = _rect.right - 460 - 10
+            _work_right = _rect.right
+            _work_w = _rect.right - _rect.left
         except Exception:
             _work_y = 0
             _work_h = self.winfo_screenheight() - 90
-            _snap_x = self.winfo_screenwidth() - 460 - 10
-        self.geometry(f"460x{_work_h}+{_snap_x}+{_work_y}")
+            _work_right = self.winfo_screenwidth()
+            _work_w = self.winfo_screenwidth()
+        _win_w = compute_window_width(_work_w)
+        _snap_x = _work_right - _win_w - 10
+        self._window_geometry = f"{_win_w}x{_work_h}+{_snap_x}+{_work_y}"
+        self.geometry(self._window_geometry)
         self.resizable(False, True)
-        self.minsize(460, 400)
+        self.minsize(_win_w, 400)
+        self.maxsize(_win_w, self.winfo_screenheight())  # входящие п.A: жёсткий потолок ширины
+        self.bind("<Configure>", lambda e: enforce_no_maximize(self, self._window_geometry))
         self.configure(fg_color=MD3["bg"])
 
         self._outer = ctk.CTkScrollableFrame(
@@ -3354,6 +3411,7 @@ class TotalHunterApp(ctk.CTk):
             snap_y = work_y
 
             self.geometry(f"{win_w}x{work_h}+{snap_x}+{snap_y}")
+            self._window_geometry = f"{win_w}x{work_h}+{snap_x}+{snap_y}"  # для enforce_no_maximize
             self.update_idletasks()
             x = self.winfo_x()
             y = self.winfo_y()
