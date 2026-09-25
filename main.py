@@ -3059,19 +3059,84 @@ class TotalHunterApp(ctk.CTk):
         self.chest_send_btn.configure(state="disabled")
 
         stop_event = self._chest_stop_event
+        # Владелец 2026-09-25: батч уходит на сервер сам — по концу списка сундуков в игре
+        # ИЛИ по лимиту BATCH_LIMIT (chest_reader.py; CHEST_IMPORT_COST списывает 10◆ флэтом
+        # за батч целиком, лимит защищает от неограниченного объёма за одну оплату). При
+        # остановке по лимиту, если отправка прошла успешно, сбор сам продолжается следующей
+        # порцией — пользователю нажимать «Старт» заново не нужно.
+        continue_after_send = {"value": False}
 
         def _on_update(counts):
             self.after(0, lambda c=dict(counts): self._update_chest_counts_display(c))
 
+        def _on_batch_ready(reason):
+            kingdom = self.chest_kingdom_entry.get().strip()
+            clan = self.chest_clan_entry.get().strip()
+            if not kingdom or not clan:
+                continue_after_send["value"] = False
+                self.after(0, lambda: self.chest_status_label.configure(
+                    text=L["chest_missing_fields"], text_color=MD3["error_text"]))
+                return
+
+            send_result = self._send_chest_batch(kingdom, clan)
+            continue_after_send["value"] = reason == "batch_full" and bool(send_result.get("success"))
+
+            def _update():
+                if send_result.get("empty"):
+                    return
+                if send_result.get("success"):
+                    self.chest_status_label.configure(text=L["chest_send_success"],
+                                                      text_color=MD3["secondary"])
+                    self._update_chest_counts_display({})
+                elif send_result.get("low_credits"):
+                    messagebox.showwarning("Hunter", L["no_credits"])
+                    self.chest_status_label.configure(text=L["chest_status_stopped"],
+                                                      text_color=MD3["on_surface2"])
+                else:
+                    self.chest_status_label.configure(text=L["chest_send_failed"],
+                                                      text_color=MD3["error_text"])
+            self.after(0, _update)
+
         def _worker():
-            try:
-                result = chest_reader.collect_chests(stop_event.is_set, on_update=_on_update,
-                                                      pause_range=pause_range, full_lang=full_lang)
-            except Exception as exc:
-                result = {"counts": {}, "error": str(exc)}
+            result = {"counts": {}, "items": []}
+            while True:
+                try:
+                    result = chest_reader.collect_chests(
+                        stop_event.is_set, on_update=_on_update,
+                        pause_range=pause_range, full_lang=full_lang,
+                        on_batch_ready=_on_batch_ready,
+                    )
+                except Exception as exc:
+                    result = {"counts": {}, "error": str(exc)}
+                    break
+                if result.get("batch_full") and continue_after_send["value"] and not stop_event.is_set():
+                    continue_after_send["value"] = False
+                    continue   # лимит батча, отправка удалась — собираем следующую порцию
+                break
             self.after(0, lambda: self._on_chest_collection_done(result))
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    def _send_chest_batch(self, kingdom, clan):
+        """Общая логика отправки батча — переиспользуется и ручной кнопкой
+        (send_chests_to_server), и авто-отправкой (toggle_chest_bot._on_batch_ready).
+        Сетевой вызов и запись в БД не переизобретаются — export_to_api/mark_synced уже
+        реализованы и работают в проде. {'success': True, 'empty': True} — нечего отправлять
+        (батч уже пуст), отличается от настоящего успешного 'success' для текста статуса."""
+        import chest_reader
+        conn = chest_reader.init_db()
+        rows = chest_reader.get_unsynced(conn)
+        if not rows:
+            conn.close()
+            return {"success": True, "empty": True}
+
+        items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
+        ids = [r[0] for r in rows]
+        result = chest_reader.export_to_api(kingdom, clan, items)
+        if result.get("success"):
+            chest_reader.mark_synced(conn, ids)
+        conn.close()
+        return result
 
     def _on_chest_collection_done(self, result):
         L = LANGS[self.current_lang]
@@ -3095,28 +3160,14 @@ class TotalHunterApp(ctk.CTk):
         self.chest_send_btn.configure(state="disabled")
 
         def _worker():
-            import chest_reader
-            conn = chest_reader.init_db()
-            rows = chest_reader.get_unsynced(conn)
-            if not rows:
-                conn.close()
-                self.after(0, lambda: (
-                    self.chest_send_btn.configure(state="normal"),
-                    self.chest_status_label.configure(
-                        text=L["chest_status_stopped"], text_color=MD3["on_surface2"]),
-                ))
-                return
-
-            items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
-            ids = [r[0] for r in rows]
-            result = chest_reader.export_to_api(kingdom, clan, items)
-            if result.get("success"):
-                chest_reader.mark_synced(conn, ids)
-            conn.close()
+            result = self._send_chest_batch(kingdom, clan)
 
             def _update():
                 self.chest_send_btn.configure(state="normal")
-                if result.get("success"):
+                if result.get("empty"):
+                    self.chest_status_label.configure(text=L["chest_status_stopped"],
+                                                       text_color=MD3["on_surface2"])
+                elif result.get("success"):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                        text_color=MD3["secondary"])
                     self._update_chest_counts_display({})
