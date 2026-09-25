@@ -3103,6 +3103,13 @@ class TotalHunterApp(ctk.CTk):
         # остановке по лимиту, если отправка прошла успешно, сбор сам продолжается следующей
         # порцией — пользователю нажимать «Старт» заново не нужно.
         continue_after_send = {"value": False}
+        # Баг сессии #149 (живая проверка владельца): _on_chest_collection_done затирал
+        # текст статуса отправки жёстким «Остановлено» сразу после (оба вызова идут через
+        # self.after(0,...) в очередь Tkinter, второй планируется позже первого, но выполняется
+        # практически сразу следом) — успех/провал отправки был не видно, хотя данные реально
+        # уходили на сервер. last_send_status — последнее слово теперь за ним, не за
+        # безусловным «Остановлено».
+        last_send_status = {}
 
         def _on_update(counts):
             self.after(0, lambda c=dict(counts): (
@@ -3115,6 +3122,7 @@ class TotalHunterApp(ctk.CTk):
             clan = self.chest_clan_entry.get().strip()
             if not kingdom or not clan:
                 continue_after_send["value"] = False
+                last_send_status.update(text=L["chest_missing_fields"], color=MD3["error_text"])
                 self.after(0, lambda: self.chest_status_label.configure(
                     text=L["chest_missing_fields"], text_color=MD3["error_text"]))
                 return
@@ -3130,20 +3138,19 @@ class TotalHunterApp(ctk.CTk):
                 if send_result.get("empty"):
                     return
                 if send_result.get("partial"):
-                    self.chest_status_label.configure(
-                        text=f"{L['chest_send_failed']} ({send_result.get('accepted')}/{send_result.get('submitted')})",
-                        text_color=MD3["error_text"])
+                    text = (f"{L['chest_send_failed']} "
+                           f"({send_result.get('accepted')}/{send_result.get('submitted')})")
+                    color = MD3["error_text"]
                 elif send_result.get("success"):
-                    self.chest_status_label.configure(text=L["chest_send_success"],
-                                                      text_color=MD3["secondary"])
+                    text, color = L["chest_send_success"], MD3["secondary"]
                     self._update_chest_counts_display({})
                 elif send_result.get("low_credits"):
                     messagebox.showwarning("Hunter", L["no_credits"])
-                    self.chest_status_label.configure(text=L["chest_status_stopped"],
-                                                      text_color=MD3["on_surface2"])
+                    text, color = L["chest_status_stopped"], MD3["on_surface2"]
                 else:
-                    self.chest_status_label.configure(text=L["chest_send_failed"],
-                                                      text_color=MD3["error_text"])
+                    text, color = L["chest_send_failed"], MD3["error_text"]
+                last_send_status.update(text=text, color=color)
+                self.chest_status_label.configure(text=text, text_color=color)
             self.after(0, _update)
 
         def _worker():
@@ -3162,7 +3169,7 @@ class TotalHunterApp(ctk.CTk):
                     continue_after_send["value"] = False
                     continue   # лимит батча, отправка удалась — собираем следующую порцию
                 break
-            self.after(0, lambda: self._on_chest_collection_done(result))
+            self.after(0, lambda: self._on_chest_collection_done(result, last_send_status))
 
         threading.Thread(target=_worker, daemon=True).start()
 
@@ -3200,13 +3207,21 @@ class TotalHunterApp(ctk.CTk):
         conn.close()
         return result
 
-    def _on_chest_collection_done(self, result):
+    def _on_chest_collection_done(self, result, last_send_status=None):
         L = LANGS[self.current_lang]
         self._chest_running = False
         self.chest_start_btn.configure(text=L["chest_start_btn"],
                                        fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
-        self.chest_status_label.configure(text=L["chest_status_stopped"],
-                                          text_color=MD3["on_surface2"])
+        # Баг сессии #149: раньше это ВСЕГДА писало «Остановлено», затирая сообщение
+        # об успешной/частичной авто-отправке, показанное секундами раньше (_on_batch_ready) —
+        # владелец не видел, что данные реально ушли на сервер. Показываем финальный
+        # результат отправки, если она была; иначе — обычное «Остановлено».
+        if last_send_status and last_send_status.get("text"):
+            self.chest_status_label.configure(text=last_send_status["text"],
+                                              text_color=last_send_status["color"])
+        else:
+            self.chest_status_label.configure(text=L["chest_status_stopped"],
+                                              text_color=MD3["on_surface2"])
         self.chest_send_btn.configure(state="normal")
         self._update_chest_counts_display(result.get("counts", {}))
         self._refresh_chest_queue()
