@@ -8,12 +8,7 @@ Phase 4: replaces the Google Sheets + ADMIN_TOKEN workflow for chest_type_aliase
 chest_configurations with a UI any clan can use without owner involvement. Player Aliases
 and the global Chest Catalog/Localizations Sheets are untouched (see design doc).
 """
-import re
 import secrets
-
-
-def _clan_to_slug(clan: str) -> str:
-    return re.sub(r'[^a-z0-9]+', '-', clan.lower()).strip('-')
 from datetime import datetime
 from typing import List, Optional
 
@@ -23,6 +18,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
+from chest_slug import clan_to_slug
 from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
@@ -247,11 +243,17 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
 
     result = []
     for collector in collectors:
+        # Регрессия владельца 2026-09-25: клан на кириллице ("Феникс") давал ПУСТОЙ слаг
+        # (/c/229/ без хвоста) — clan_to_slug теперь транслитерирует, но для языков вне
+        # таблицы (например иероглифы) результат всё ещё может быть пустым — тогда красивую
+        # ссылку не показываем вовсе (short_url: None), вместо битой с пустым хвостом.
+        _nice_slug = collector.custom_slug or clan_to_slug(collector.clan)
         result.append({
             "slug": collector.slug, "kingdom": collector.kingdom, "clan": collector.clan,
             "language": collector.language,
             "public_url": f"https://total-hunter.com/chests/{collector.slug}",
-            "short_url": f"https://total-hunter.com/c/{collector.kingdom}/{_clan_to_slug(collector.clan)}",
+            "short_url": (f"https://total-hunter.com/c/{collector.kingdom}/{_nice_slug}"
+                         if _nice_slug else None),
             "rows": await _collector_rows(db, collector),
             "player_alias_rows": await _player_alias_rows(db, collector, global_alias_map),
             "catalog_options": await _load_catalog_options(db),

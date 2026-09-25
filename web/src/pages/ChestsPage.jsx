@@ -318,33 +318,6 @@ export default function ChestsPage() {
                 <button className="chest-pill-btn chest-pill-btn--sm" onClick={() => genToken(collector.slug)}>
                   {cx.generateToken}
                 </button>
-
-                {confirmDeleteByCollector[collector.slug] ? (
-                  <>
-                    <span style={{ fontSize: 12, color: '#F87171' }}>{cx.deleteCollectorConfirm}</span>
-                    <button
-                      className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--solid-danger"
-                      onClick={async () => {
-                        try {
-                          await api.dashboardChestsDelete(collector.slug)
-                          setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))
-                          await refresh()
-                        } catch (e) {
-                          setMsg(e.message || cx.deleteCollectorBtn)
-                        }
-                      }}
-                    >{cx.deleteCollectorYes}</button>
-                    <button
-                      className="chest-pill-btn chest-pill-btn--sm"
-                      onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))}
-                    >{cx.closeSeasonNo}</button>
-                  </>
-                ) : (
-                  <button
-                    className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--danger"
-                    onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: true }))}
-                  >{cx.deleteCollectorBtn}</button>
-                )}
               </div>
             </div>
           </div>
@@ -387,17 +360,27 @@ export default function ChestsPage() {
               </div>
               <div className="chest-field">
                 <label>{cx.targetPointsLabel}</label>
-                <input className="input-dark" style={{ width: 120 }} type="number"
-                  value={seasonByCollector[collector.slug]?.target_points ?? ''}
-                  onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
-                />
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input className="input-dark" style={{ width: 120 }} type="number"
+                    value={seasonByCollector[collector.slug]?.target_points ?? ''}
+                    onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
+                  />
+                  <button className="chest-pill-btn chest-pill-btn--green chest-pill-btn--sm"
+                    onClick={() => saveSeason(collector.slug)}
+                  >{cx.saveSeason}</button>
+                </div>
               </div>
               <div className="chest-field">
                 <label>{cx.targetChestsLabel}</label>
-                <input className="input-dark" style={{ width: 120 }} type="number"
-                  value={seasonByCollector[collector.slug]?.target_chests ?? ''}
-                  onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
-                />
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input className="input-dark" style={{ width: 120 }} type="number"
+                    value={seasonByCollector[collector.slug]?.target_chests ?? ''}
+                    onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
+                  />
+                  <button className="chest-pill-btn chest-pill-btn--green chest-pill-btn--sm"
+                    onClick={() => saveSeason(collector.slug)}
+                  >{cx.saveSeason}</button>
+                </div>
               </div>
             </div>
             {/* Buttons: Save left, Close season far right */}
@@ -735,6 +718,38 @@ export default function ChestsPage() {
               )}
             </div>
           )}
+
+          {/* Удалить коллектор — намеренно отдельно внизу карточки, подальше от ссылок
+              наверху (владелец 2026-09-25: рядом с публичной ссылкой легко нажать случайно) */}
+          <div style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--outline)',
+                       display: 'flex', justifyContent: 'flex-end', gap: 8, alignItems: 'center' }}>
+            {confirmDeleteByCollector[collector.slug] ? (
+              <>
+                <span style={{ fontSize: 12, color: '#F87171' }}>{cx.deleteCollectorConfirm}</span>
+                <button
+                  className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--solid-danger"
+                  onClick={async () => {
+                    try {
+                      await api.dashboardChestsDelete(collector.slug)
+                      setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))
+                      await refresh()
+                    } catch (e) {
+                      setMsg(e.message || cx.deleteCollectorBtn)
+                    }
+                  }}
+                >{cx.deleteCollectorYes}</button>
+                <button
+                  className="chest-pill-btn chest-pill-btn--sm"
+                  onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: false }))}
+                >{cx.closeSeasonNo}</button>
+              </>
+            ) : (
+              <button
+                className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--danger"
+                onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: true }))}
+              >{cx.deleteCollectorBtn}</button>
+            )}
+          </div>
         </div>
       ))}
 

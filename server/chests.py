@@ -22,6 +22,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
+from chest_slug import clan_to_slug
 from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
@@ -264,11 +265,6 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     return result
 
 
-def _clan_to_slug(clan: str) -> str:
-    import re
-    return re.sub(r'[^a-z0-9]+', '-', clan.lower()).strip('-')
-
-
 _PUBLIC_PROFILE_COOLDOWN = timedelta(minutes=15)
 
 _VALID_RANKS = {"Глава", "Старший", "Офицер", "Ветеран", "Рядовой"}
@@ -349,7 +345,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
     collector = next(
         (c for c in collectors if
          (c.custom_slug and c.custom_slug.lower() == custom_slug.lower()) or
-         _clan_to_slug(c.clan) == custom_slug.lower()),
+         clan_to_slug(c.clan) == custom_slug.lower()),
         None
     )
     if not collector:
