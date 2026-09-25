@@ -249,11 +249,68 @@ def test_get_unsynced_counts_empty_after_full_sync(tmp_path):
     assert counts == {}
 
 
+def test_detect_row_pitch_matches_reference_fixture():
+    """Sanity/parity check: on the original calibration screenshot, the dynamically
+    measured pitch must equal the old hardcoded ROW_PITCH=100 — proves the dynamic
+    method is a safe drop-in, not a behaviour change, at the resolution it was
+    originally tuned for."""
+    frame = _load_fixture()
+    bbox = cr.detect_dialog_bbox(frame)
+    dialog = cr.crop_dialog(frame, bbox)
+    assert cr.detect_row_pitch(dialog) == (100, 1)
+
+
+def _synthetic_scaled_dialog():
+    """A dialog rendered at a bigger real pixel size than the reference monitor
+    (e.g. a 2K screen where the game draws everything ~1.33x larger) — three
+    horizontal bands 133px tall each, giving detect_row_pitch two clean edges to
+    measure, exactly like tournament_reader's own fixture-based test does with a
+    real screenshot. Reproduces the bug class without needing a real 2K capture."""
+    h, w = 399, 600
+    dialog = np.zeros((h, w, 3), dtype=np.uint8)
+    dialog[0:133] = 60
+    dialog[133:266] = 180
+    dialog[266:399] = 60
+    return dialog
+
+
+def test_find_open_button_scales_search_band_to_measured_pitch_not_hardcoded_100():
+    """Reproduces the 2K bug: chest_reader used to search a band computed from the
+    hardcoded ROW_PITCH=100 (correct only at the original calibration resolution).
+    On a dialog whose real on-screen row height is bigger (measured pitch=133 here,
+    simulating a 2K monitor), the search band must scale with the MEASURED pitch —
+    otherwise it lands above the real row content and the button is never found,
+    which is read as "list empty" and stops collection early."""
+    dialog = _synthetic_scaled_dialog()
+    measured_pitch, measured_row_top = cr.detect_row_pitch(dialog)
+    assert (measured_pitch, measured_row_top) == (133, 132)  # sanity on the fixture itself
+
+    captured = {}
+
+    def fake_find_colored_button(region, color, pick):
+        captured['region'] = region
+        captured['color'] = color
+        return None
+
+    import chest_reader as cr_mod
+    monkey_target = cr_mod.find_colored_button
+    cr_mod.find_colored_button = fake_find_colored_button
+    try:
+        bbox = (671, 340, 600, 399)
+        cr.find_open_button(bbox, dialog)
+        x, y, w, h = captured['region']
+        assert (x, y, w, h) == (1139, 531, 131, 73)
+    finally:
+        cr_mod.find_colored_button = monkey_target
+
+
 def test_find_open_button_region_is_top_row_right_side():
     """find_open_button must restrict the color search to the top-row band,
     not the whole dialog (avoids matching unrelated green UI elsewhere). Its
     return value is only a presence signal for collect_chests's stop check —
-    the position itself is never used for clicking, see click_open_button."""
+    the position itself is never used for clicking, see click_open_button.
+    Uses the real fixture's own dialog crop so detect_row_pitch has real row
+    boundaries to measure (row_top=1, see test_detect_row_pitch_matches_reference_fixture)."""
     captured = {}
 
     def fake_find_colored_button(region, color, pick):
@@ -265,12 +322,15 @@ def test_find_open_button_region_is_top_row_right_side():
     monkey_target = cr_mod.find_colored_button
     cr_mod.find_colored_button = fake_find_colored_button
     try:
-        bbox = (671, 340, 764, 475)
-        pos = cr.find_open_button(bbox)
-        assert pos == (1276, 395)
+        frame = _load_fixture()
+        bbox = cr.detect_dialog_bbox(frame)
+        dialog = cr.crop_dialog(frame, bbox)
+        assert bbox == (671, 340, 764, 475)
+        pos = cr.find_open_button(bbox, dialog)
+        assert pos == (1276, 396)
         x, y, w, h = captured['region']
         assert x == 671 + int(764 * 0.78)
-        assert y == 340 + int(100 * 0.45)
+        assert y == 340 + 1 + int(100 * 0.45)
         assert captured['color'] == 'green'
     finally:
         cr_mod.find_colored_button = monkey_target
@@ -306,7 +366,7 @@ def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
     monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
     monkeypatch.setattr(cr, "find_open_button",
-                        lambda bbox: (10, 10) if state['n'] < len(sequence) else None)
+                        lambda bbox, dialog: (10, 10) if state['n'] < len(sequence) else None)
 
     def fake_read_top_row(frame, **kwargs):
         chest_type, sender = sequence[state['n']]
@@ -340,7 +400,7 @@ def test_collect_chests_tolerates_single_transient_button_miss(tmp_path, monkeyp
     monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
     monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
-    monkeypatch.setattr(cr, "find_open_button", lambda bbox: next(responses))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: next(responses))
     monkeypatch.setattr(cr.time, "sleep", lambda s: None)
     monkeypatch.setattr(cr, "read_top_row", lambda frame, **kwargs: ("Сундук", "Alice"))
     monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
@@ -358,7 +418,7 @@ def test_collect_chests_stops_after_limit_consecutive_button_misses(tmp_path, mo
     genuinely empty list)."""
     calls = {"n": 0}
 
-    def fake_find_open_button(bbox):
+    def fake_find_open_button(bbox, dialog):
         calls["n"] += 1
         return None
 
@@ -393,7 +453,7 @@ def test_collect_chests_counts_are_cumulative_from_db(tmp_path, monkeypatch):
 
     calls = {"n": 0}
 
-    def fake_find_open_button(bbox):
+    def fake_find_open_button(bbox, dialog):
         return (10, 10) if calls["n"] < 1 else None
 
     def fake_read_top_row(frame, **kwargs):
@@ -604,7 +664,7 @@ def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
 
     calls = {"n": 0}
 
-    def fake_find_open_button(bbox):
+    def fake_find_open_button(bbox, dialog):
         return (10, 10) if calls["n"] < 1 else None
 
     def fake_read_top_row(frame, **kwargs):
@@ -729,7 +789,7 @@ def test_collect_chests_forwards_full_lang_to_read_top_row(tmp_path, monkeypatch
 
     calls = {"n": 0}
 
-    def fake_find_open_button(bbox):
+    def fake_find_open_button(bbox, dialog):
         return (10, 10) if calls["n"] < 1 else None
     monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
 

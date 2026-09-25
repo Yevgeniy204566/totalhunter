@@ -33,7 +33,17 @@ DIALOG_HSV_UPPER = (40, 120, 255)
 MIN_DIALOG_DIM = 200  # guard against a 1-2px degenerate bbox on a glitched frame
 
 # --- Row geometry — no scroll, only the top row is ever read --------------
-ROW_PITCH = 100
+# Row height used to be a hardcoded raw-pixel constant (ROW_PITCH=100), correct only
+# at the resolution it was calibrated on. Broke on a 2K monitor (found live, castle
+# view): the game renders the dialog at a bigger real pixel size there, so a fixed
+# 100px search band lands above the actual row content and the «Открыть» button is
+# never found — read as "list empty", collection stops early even though chests
+# remain. Same problem tournament_reader.py already solved for the same tan/gold
+# dialog family — reused verbatim (brightness-gradient row-boundary detection on the
+# actual captured dialog) instead of inventing a second fix for one architecture.
+PEAK_GRADIENT_THRESHOLD = 30
+PEAK_MERGE_DIST = 3
+PEAK_EDGE_MARGIN = 5
 
 # --- Sender name and chest source: fixed coordinates, not a relative crop.
 # The dialog's render/composition never changes (always the same UI, same
@@ -88,6 +98,35 @@ def detect_dialog_bbox(frame):
 def crop_dialog(frame, bbox):
     x, y, w, h = bbox
     return frame[y:y + h, x:x + w]
+
+
+def detect_row_pitch(dialog):
+    """Measures the real on-screen row height from the captured dialog itself
+    (brightness-gradient peaks between rows), instead of assuming a fixed pixel
+    value — same algorithm as tournament_reader.py's detect_row_pitch for the
+    same dialog family. Returns (None, None) if fewer than two row boundaries
+    are found (e.g. the list is genuinely empty, or a transient capture glitch)."""
+    gray = cv2.cvtColor(dialog, cv2.COLOR_BGR2GRAY)
+    row_means = gray.mean(axis=1)
+    diffs = np.abs(np.diff(row_means))
+    raw_peaks = np.where(diffs > PEAK_GRADIENT_THRESHOLD)[0]
+
+    merged = []
+    for p in raw_peaks:
+        if p < PEAK_EDGE_MARGIN:
+            continue
+        if merged and p - merged[-1] <= PEAK_MERGE_DIST:
+            continue
+        merged.append(int(p))
+
+    if len(merged) < 2:
+        return None, None
+
+    pitch = int(np.median(np.diff(merged)))
+    row_top = int(merged[0] - pitch)
+    if row_top < 0:
+        row_top = merged[0]
+    return pitch, row_top
 
 
 def grab_fullscreen():
@@ -207,16 +246,23 @@ def mark_synced(conn, ids):
     conn.commit()
 
 
-def find_open_button(bbox):
+def find_open_button(bbox, dialog):
     """Presence-only check: does a green «Открыть» button exist in the top row
     right now? Used solely as the "list is empty, stop" signal — the returned
-    position is intentionally NOT used for clicking, see click_open_button."""
+    position is intentionally NOT used for clicking, see click_open_button.
+    Row height comes from detect_row_pitch(dialog) — measured on the actual
+    captured frame, not a fixed pixel constant — so the search band lands on
+    the real row content at any resolution/scene. If no row boundary can be
+    measured (dialog has no visible row), that itself counts as "no button"."""
     x, y, w, h = bbox
+    pitch, row_top = detect_row_pitch(dialog)
+    if pitch is None:
+        return None
     region = (
         x + int(w * BUTTON_X_FRAC[0]),
-        y + int(ROW_PITCH * BUTTON_Y_FRAC[0]),
+        y + row_top + int(pitch * BUTTON_Y_FRAC[0]),
         int(w * (BUTTON_X_FRAC[1] - BUTTON_X_FRAC[0])),
-        int(ROW_PITCH * (BUTTON_Y_FRAC[1] - BUTTON_Y_FRAC[0])),
+        int(pitch * (BUTTON_Y_FRAC[1] - BUTTON_Y_FRAC[0])),
     )
     return find_colored_button(region, color='green', pick='largest')
 
@@ -262,7 +308,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                 time.sleep(0.2)
                 continue
 
-            if find_open_button(bbox) is None:
+            if find_open_button(bbox, dialog) is None:
                 empty_streak += 1
                 if empty_streak >= EMPTY_BUTTON_RETRY_LIMIT:
                     break
