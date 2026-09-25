@@ -93,6 +93,7 @@ class TestOnCryptFoundAutostopCount:
         app._crypt_session_start = session_start
         app.crypt_status_label = MagicMock()
         app.crypt_count_countdown_label = MagicMock()
+        app.crypt_found_count_label = MagicMock()
         app.after = lambda delay, fn=None, *a, **kw: fn() if fn else None
         app.toggle_crypt_bot = MagicMock()
         app._update_credits_display = MagicMock()
