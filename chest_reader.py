@@ -411,6 +411,27 @@ def count_pending(pending_dir: str = PENDING_DIR) -> int:
     return len(_pending_queue(pending_dir))
 
 
+def delete_unsynced_batch(db_path: str = DB_PATH, pending_dir: str = PENDING_DIR) -> int:
+    """Кнопка «Удалить батч» (владелец 2026-09-25): безвозвратно убирает ещё не
+    отправленные сундуки — и уже прочитанные (is_synced=0 в БД), и ещё необработанные
+    кропы в очереди OCR — чтобы _batch_size() снова стал 0 и сбор мог продолжиться без
+    отправки на сервер. Возвращает число удалённых строк БД (кропы не считаются —
+    для прогресс-бара очереди достаточно count_pending() сразу после)."""
+    conn = init_db(db_path)
+    try:
+        cur = conn.execute("DELETE FROM local_chests WHERE is_synced = 0")
+        conn.commit()
+        removed = cur.rowcount
+    finally:
+        conn.close()
+    for path in _pending_queue(pending_dir):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    return removed
+
+
 def _batch_size(pending_dir: str, db_path: str) -> int:
     """Сколько сундуков сейчас 'в этом батче' — уже в БД (is_synced=0) плюс ещё необработанные
     кропы в очереди. Считать нужно ОБА, иначе producer может проскочить лимит, пока consumer

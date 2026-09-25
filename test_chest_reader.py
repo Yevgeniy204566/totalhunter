@@ -695,6 +695,32 @@ def test_count_pending_reflects_queue_size(tmp_path):
     assert cr.count_pending(pending_dir) == 2
 
 
+def test_delete_unsynced_batch_clears_db_rows_and_pending_crops(tmp_path):
+    """Кнопка «Удалить батч» (владелец 2026-09-25): убирает и непринятые строки в БД
+    (is_synced=0), и необработанные кропы очереди — уже отправленные (is_synced=1)
+    строки не трогает, _batch_size() должен вернуться к 0."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    os.makedirs(pending_dir, exist_ok=True)
+    cv2.imwrite(os.path.join(pending_dir, "000001.png"), np.zeros((10, 10, 3), dtype=np.uint8))
+
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Тип", "Игрок1", "2026-09-25T21:00:00")
+    conn.execute("UPDATE local_chests SET is_synced = 1 WHERE id = 1")  # уже отправлен раньше
+    cr.insert_chest(conn, "Тип", "Игрок2", "2026-09-25T21:00:01")       # ещё не отправлен
+    conn.commit()
+    conn.close()
+
+    removed = cr.delete_unsynced_batch(db_path, pending_dir)
+
+    assert removed == 1
+    assert cr.count_pending(pending_dir) == 0
+    conn = cr.init_db(db_path)
+    rows = conn.execute("SELECT raw_player_name, is_synced FROM local_chests").fetchall()
+    conn.close()
+    assert rows == [("Игрок1", 1)]  # уже отправленная запись осталась нетронутой
+
+
 def test_collect_chests_calls_on_batch_ready_when_list_ends(tmp_path, monkeypatch):
     db_path = str(tmp_path / "chest_buffer.db")
     pending_dir = str(tmp_path / "chest_pending")

@@ -421,6 +421,7 @@ LANGS = {
         "chest_send_failed": "Сервер недоступен. Данные сохранены локально.",
         "chest_auto_send_lb": "Авто-отправка на сервер",
         "chest_queue_title": "Очередь OCR",
+        "chest_delete_batch_btn": "🗑 Удалить батч",
         "tab_ancient": "ДРЕВНИЙ", "ancient_status_running": "Сбор турнирной таблицы...", "ancient_status_sent": "Отправлено на сервер", "ancient_status_failed": "Сервер недоступен. Данные сохранены локально.",
         "ancient_desc": "Откройте диалог «Статистика» в игре перед запуском.",
         "chest_total_lb": "Всего открыто:",
@@ -496,6 +497,7 @@ LANGS = {
         "chest_send_failed": "Server unavailable. Data saved locally.",
         "chest_auto_send_lb": "Auto-send to server",
         "chest_queue_title": "OCR queue",
+        "chest_delete_batch_btn": "🗑 Delete batch",
         "tab_ancient": "ANCIENT", "ancient_status_running": "Collecting tournament data...", "ancient_status_sent": "Sent to server", "ancient_status_failed": "Server unavailable. Data saved locally.",
         "ancient_desc": "Open the in-game «Statistics» dialog before starting.",
         "chest_total_lb": "Total opened:",
@@ -569,6 +571,7 @@ LANGS = {
         "chest_send_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "chest_auto_send_lb": "Automatisch an Server senden",
         "chest_queue_title": "OCR-Warteschlange",
+        "chest_delete_batch_btn": "🗑 Batch löschen",
         "tab_ancient": "URALTER", "ancient_status_running": "Turnierdaten werden gesammelt...", "ancient_status_sent": "An Server gesendet", "ancient_status_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "ancient_desc": "Öffne den Dialog «Statistik» im Spiel, bevor du startest.",
         "chest_total_lb": "Insgesamt geöffnet:",
@@ -631,6 +634,7 @@ LANGS = {
         "chest_send_failed": "Servidor no disponible. Datos guardados localmente.",
         "chest_auto_send_lb": "Envío automático al servidor",
         "chest_queue_title": "Cola de OCR",
+        "chest_delete_batch_btn": "🗑 Eliminar lote",
         "tab_ancient": "ANTIGUO", "ancient_status_running": "Recolectando datos del torneo...", "ancient_status_sent": "Enviado al servidor", "ancient_status_failed": "Servidor no disponible. Datos guardados localmente.",
         "ancient_desc": "Abre el diálogo «Estadísticas» en el juego antes de empezar.",
         "chest_total_lb": "Total abiertos:",
@@ -693,6 +697,7 @@ LANGS = {
         "chest_send_failed": "Serveur indisponible. Données enregistrées localement.",
         "chest_auto_send_lb": "Envoi automatique au serveur",
         "chest_queue_title": "File OCR",
+        "chest_delete_batch_btn": "🗑 Supprimer le lot",
         "tab_ancient": "ANCIEN", "ancient_status_running": "Collecte des données du tournoi...", "ancient_status_sent": "Envoyé au serveur", "ancient_status_failed": "Serveur indisponible. Données enregistrées localement.",
         "ancient_desc": "Ouvrez la boîte de dialogue «Statistiques» dans le jeu avant de démarrer.",
         "chest_total_lb": "Total ouverts :",
@@ -755,6 +760,7 @@ LANGS = {
         "chest_send_failed": "Server non disponibile. Dati salvati localmente.",
         "chest_auto_send_lb": "Invio automatico al server",
         "chest_queue_title": "Coda OCR",
+        "chest_delete_batch_btn": "🗑 Elimina il batch",
         "tab_ancient": "ANTICO", "ancient_status_running": "Raccolta dati del torneo...", "ancient_status_sent": "Inviato al server", "ancient_status_failed": "Server non disponibile. Dati salvati localmente.",
         "ancient_desc": "Apri la finestra «Statistiche» nel gioco prima di avviare.",
         "chest_total_lb": "Totale aperti:",
@@ -817,6 +823,7 @@ LANGS = {
         "chest_send_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "chest_auto_send_lb": "Automatisch verzenden naar server",
         "chest_queue_title": "OCR-wachtrij",
+        "chest_delete_batch_btn": "🗑 Batch verwijderen",
         "tab_ancient": "ALOUDE", "ancient_status_running": "Toernooigegevens verzamelen...", "ancient_status_sent": "Verzonden naar server", "ancient_status_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "ancient_desc": "Open het «Statistieken»-dialoogvenster in de game voordat je start.",
         "chest_total_lb": "Totaal geopend:",
@@ -879,6 +886,7 @@ LANGS = {
         "chest_send_failed": "Server utilgjengelig. Data lagret lokalt.",
         "chest_auto_send_lb": "Automatisk sending til server",
         "chest_queue_title": "OCR-kø",
+        "chest_delete_batch_btn": "🗑 Slett batch",
         "tab_ancient": "URGAMMEL", "ancient_status_running": "Samler turneringsdata...", "ancient_status_sent": "Sendt til server", "ancient_status_failed": "Server utilgjengelig. Data lagret lokalt.",
         "ancient_desc": "Åpne «Statistikk»-dialogen i spillet før du starter.",
         "chest_total_lb": "Totalt åpnet:",
@@ -941,6 +949,7 @@ LANGS = {
         "chest_send_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "chest_auto_send_lb": "Automatyczne wysyłanie na serwer",
         "chest_queue_title": "Kolejka OCR",
+        "chest_delete_batch_btn": "🗑 Usuń partię",
         "tab_ancient": "STARODAWNY", "ancient_status_running": "Zbieranie danych turniejowych...", "ancient_status_sent": "Wysłano na serwer", "ancient_status_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "ancient_desc": "Otwórz okno «Statystyki» w grze przed uruchomieniem.",
         "chest_total_lb": "Łącznie otwarto:",
@@ -1003,6 +1012,7 @@ LANGS = {
         "chest_send_failed": "Servidor indisponível. Dados salvos localmente.",
         "chest_auto_send_lb": "Envio automático para o servidor",
         "chest_queue_title": "Fila OCR",
+        "chest_delete_batch_btn": "🗑 Excluir lote",
         "tab_ancient": "ANCIÃO", "ancient_status_running": "Coletando dados do torneio...", "ancient_status_sent": "Enviado ao servidor", "ancient_status_failed": "Servidor indisponível. Dados salvos localmente.",
         "ancient_desc": "Abra a caixa de diálogo «Estatísticas» no jogo antes de iniciar.",
         "chest_total_lb": "Total aberto:",
@@ -1065,6 +1075,7 @@ LANGS = {
         "chest_send_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "chest_auto_send_lb": "Automatisk sändning till server",
         "chest_queue_title": "OCR-kö",
+        "chest_delete_batch_btn": "🗑 Ta bort batch",
         "tab_ancient": "FORNTIDA", "ancient_status_running": "Samlar turneringsdata...", "ancient_status_sent": "Skickat till server", "ancient_status_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "ancient_desc": "Öppna dialogrutan «Statistik» i spelet innan du startar.",
         "chest_total_lb": "Totalt öppnade:",
@@ -1127,6 +1138,7 @@ LANGS = {
         "chest_send_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "chest_auto_send_lb": "Sunucuya otomatik gönderim",
         "chest_queue_title": "OCR kuyruğu",
+        "chest_delete_batch_btn": "🗑 Toplu işi sil",
         "tab_ancient": "KADİM", "ancient_status_running": "Turnuva verileri toplanıyor...", "ancient_status_sent": "Sunucuya gönderildi", "ancient_status_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "ancient_desc": "Başlamadan önce oyundaki «İstatistik» penceresini açın.",
         "chest_total_lb": "Toplam açılan:",
@@ -1189,6 +1201,7 @@ LANGS = {
         "chest_send_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "chest_auto_send_lb": "إرسال تلقائي إلى الخادم",
         "chest_queue_title": "طابور التعرف الضوئي",
+        "chest_delete_batch_btn": "🗑 حذف الدفعة",
         "tab_ancient": "القديم", "ancient_status_running": "جمع بيانات البطولة...", "ancient_status_sent": "تم الإرسال إلى الخادم", "ancient_status_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "ancient_desc": "افتح نافذة «الإحصائيات» في اللعبة قبل البدء.",
         "chest_total_lb": "الإجمالي المفتوح:",
@@ -1251,6 +1264,7 @@ LANGS = {
         "chest_send_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "chest_auto_send_lb": "サーバーへ自動送信",
         "chest_queue_title": "OCRキュー",
+        "chest_delete_batch_btn": "🗑 バッチを削除",
         "tab_ancient": "古代の者", "ancient_status_running": "トーナメントデータを収集中...", "ancient_status_sent": "サーバーに送信しました", "ancient_status_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "ancient_desc": "開始する前にゲーム内の「統計」ダイアログを開いてください。",
         "chest_total_lb": "開封総数:",
@@ -1313,6 +1327,7 @@ LANGS = {
         "chest_send_failed": "服务器不可用，数据已保存到本地。",
         "chest_auto_send_lb": "自动发送到服务器",
         "chest_queue_title": "OCR队列",
+        "chest_delete_batch_btn": "🗑 删除批次",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集锦标赛数据...", "ancient_status_sent": "已发送到服务器", "ancient_status_failed": "服务器不可用，数据已保存到本地。",
         "ancient_desc": "开始前请打开游戏内的「统计」对话框。",
         "chest_total_lb": "已开启总数:",
@@ -1375,6 +1390,7 @@ LANGS = {
         "chest_send_failed": "伺服器無法連線，資料已儲存在本機。",
         "chest_auto_send_lb": "自動發送到伺服器",
         "chest_queue_title": "OCR隊列",
+        "chest_delete_batch_btn": "🗑 刪除批次",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集錦標賽資料...", "ancient_status_sent": "已發送到伺服器", "ancient_status_failed": "伺服器無法連線，資料已儲存在本機。",
         "ancient_desc": "開始前請打開遊戲內的「統計」對話框。",
         "chest_total_lb": "已開啟總數:",
@@ -1437,6 +1453,7 @@ LANGS = {
         "chest_send_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "chest_auto_send_lb": "서버로 자동 전송",
         "chest_queue_title": "OCR 대기열",
+        "chest_delete_batch_btn": "🗑 배치 삭제",
         "tab_ancient": "고대의 존재", "ancient_status_running": "토너먼트 데이터 수집 중...", "ancient_status_sent": "서버로 전송됨", "ancient_status_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "ancient_desc": "시작하기 전에 게임 내 「통계」 대화상자를 여세요.",
         "chest_total_lb": "총 개봉:",
@@ -1499,6 +1516,7 @@ LANGS = {
         "chest_send_failed": "Сервер недоступний. Дані збережено локально.",
         "chest_auto_send_lb": "Авто-відправка на сервер",
         "chest_queue_title": "Черга OCR",
+        "chest_delete_batch_btn": "🗑 Видалити батч",
         "tab_ancient": "ДАВНІЙ", "ancient_status_running": "Збір турнірної таблиці...", "ancient_status_sent": "Відправлено на сервер", "ancient_status_failed": "Сервер недоступний. Дані збережено локально.",
         "ancient_desc": "Відкрийте діалог «Статистика» в грі перед запуском.",
         "chest_total_lb": "Всього відкрито:",
@@ -1561,6 +1579,7 @@ LANGS = {
         "chest_send_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "chest_auto_send_lb": "Kirim otomatis ke server",
         "chest_queue_title": "Antrean OCR",
+        "chest_delete_batch_btn": "🗑 Hapus batch",
         "tab_ancient": "KUNO", "ancient_status_running": "Mengumpulkan data turnamen...", "ancient_status_sent": "Terkirim ke server", "ancient_status_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "ancient_desc": "Buka dialog «Statistik» dalam game sebelum memulai.",
         "chest_total_lb": "Total dibuka:",
@@ -3095,6 +3114,7 @@ class TotalHunterApp(ctk.CTk):
         self.chest_status_label.configure(text=L["chest_status_running"],
                                           text_color=MD3["secondary"])
         self.chest_send_btn.configure(state="disabled")
+        self._chest_delete_batch_btn.configure(state="disabled")
 
         stop_event = self._chest_stop_event
         # Владелец 2026-09-25: батч уходит на сервер сам — по концу списка сундуков в игре
@@ -3219,10 +3239,18 @@ class TotalHunterApp(ctk.CTk):
         if last_send_status and last_send_status.get("text"):
             self.chest_status_label.configure(text=last_send_status["text"],
                                               text_color=last_send_status["color"])
+        elif result.get("batch_full"):
+            # Лимит батча (chest_reader.BATCH_LIMIT) достигнут, но авто-отправка выключена
+            # (или её ход не удался ДО отправки, напр. пустые поля) — сбор дальше не
+            # продолжится, пока батч не отправлен ИЛИ не удалён (владелец 2026-09-25).
+            self.chest_status_label.configure(
+                text=f"{L['chest_send_btn']} / {L['chest_delete_batch_btn']}",
+                text_color=MD3["error_text"])
         else:
             self.chest_status_label.configure(text=L["chest_status_stopped"],
                                               text_color=MD3["on_surface2"])
         self.chest_send_btn.configure(state="normal")
+        self._chest_delete_batch_btn.configure(state="normal")
         self._update_chest_counts_display(result.get("counts", {}))
         self._refresh_chest_queue()
 
@@ -5327,26 +5355,46 @@ class TotalHunterApp(ctk.CTk):
         # ── Сохранённые пары Королевство+Клан (входящие, п.C; владелец 2026-09-25) ──
         # Вписал номер+клан вручную -> «💾» сохраняет пару в список -> в любой день
         # достаточно выбрать нужную пару из списка вместо повторного набора руками.
+        # Кнопки крупные и цветные (владелец 2026-09-25: сохранить зелёная, удалить
+        # красная) — здесь же, наверху, кнопка «Удалить батч» (см. ниже), чтобы её было
+        # видно, но не путали с сохранением/удалением пары.
         pairs_row = ctk.CTkFrame(id_card, fg_color="transparent")
-        pairs_row.pack(padx=10, pady=(0, 10), fill="x")
+        pairs_row.pack(padx=10, pady=(0, 6), fill="x")
         self._chest_saved_pairs = self._load_gui_config().get("chest_saved_pairs", [])
         self._chest_pairs_menu = ctk.CTkOptionMenu(
-            pairs_row, values=["—"], height=28,
+            pairs_row, values=["—"], height=36,
             command=self._on_chest_pair_selected, fg_color=MD3["card"],
             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
             text_color=MD3["on_surface"])
         self._chest_pairs_menu.pack(side="left", fill="x", expand=True, padx=(0, 4))
         self._chest_pair_save_btn = ctk.CTkButton(
-            pairs_row, text="💾", width=32, height=28, corner_radius=8,
-            fg_color=MD3["card"], hover_color=MD3["outline"], text_color=MD3["on_surface"],
-            border_width=1, border_color=MD3["outline"], command=self._save_chest_pair)
+            pairs_row, text="💾", width=48, height=36, corner_radius=8,
+            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+            text_color=MD3["on_surface"], font=ctk.CTkFont(size=16),
+            command=self._save_chest_pair)
         self._chest_pair_save_btn.pack(side="left", padx=(0, 4))
         self._chest_pair_delete_btn = ctk.CTkButton(
-            pairs_row, text="🗑", width=32, height=28, corner_radius=8,
-            fg_color=MD3["card"], hover_color=MD3["outline"], text_color=MD3["on_surface"],
-            border_width=1, border_color=MD3["outline"], command=self._delete_chest_pair)
+            pairs_row, text="🗑", width=48, height=36, corner_radius=8,
+            fg_color=MD3["error"], hover_color=MD3["error_hover"],
+            text_color=MD3["on_surface"], font=ctk.CTkFont(size=16),
+            command=self._delete_chest_pair)
         self._chest_pair_delete_btn.pack(side="left")
         self._refresh_chest_pairs_menu()
+
+        # ── Удалить батч (владелец 2026-09-25) — безвозвратно очищает ещё не
+        # отправленные сундуки (is_synced=0) на ПК, без обращения к серверу. Нужна,
+        # если батч достиг лимита (BATCH_LIMIT), а отправлять его не хочется — иначе
+        # сбор не продолжится, пока батч не отправлен ИЛИ не удалён. Владелец явно
+        # попросил разместить её ВВЕРХУ, рядом с сохранить/удалить пару (не рядом со
+        # Старт/Отправить, которые жмут часто) — с подтверждением, чтобы не задеть
+        # случайно даже здесь.
+        self._chest_delete_batch_btn = ctk.CTkButton(
+            id_card, text=L["chest_delete_batch_btn"], height=30, corner_radius=8,
+            fg_color="transparent", hover_color=MD3["error_hover"],
+            text_color=MD3["error_text"], border_width=1, border_color=MD3["error_text"],
+            font=ctk.CTkFont(size=12), command=self._delete_chest_batch)
+        self._chest_delete_batch_btn.pack(padx=10, pady=(0, 10), fill="x")
+        self._i18n_labels.append((self._chest_delete_batch_btn, "chest_delete_batch_btn"))
 
         # ── Отправить на сервер ──────────────────────────────────────────
         self.chest_send_btn = ctk.CTkButton(
@@ -5515,6 +5563,23 @@ class TotalHunterApp(ctk.CTk):
                                    if self._chest_pair_label(p) != current]
         self._save_gui_config_key("chest_saved_pairs", self._chest_saved_pairs)
         self._refresh_chest_pairs_menu()
+
+    def _delete_chest_batch(self):
+        """Владелец 2026-09-25: безвозвратно удаляет ещё не отправленный батч (и локальные
+        строки, и необработанные кропы очереди), чтобы сбор мог продолжиться без отправки
+        на сервер. Необратимо — подтверждение обязательно. Заблокировано во время сбора
+        (тот же лайфцикл, что у кнопки «Отправить» — гонка с потоками producer/consumer)."""
+        if self._chest_running:
+            return
+        L = LANGS[self.current_lang]
+        if not messagebox.askyesno("Hunter", f"{L['chest_delete_batch_btn']}?"):
+            return
+        import chest_reader
+        chest_reader.delete_unsynced_batch()
+        self._update_chest_counts_display({})
+        self._refresh_chest_queue()
+        self.chest_status_label.configure(text=L["chest_status_stopped"],
+                                          text_color=MD3["on_surface2"])
 
     def _on_chest_speed_change(self, value):
         L = LANGS[self.current_lang]
