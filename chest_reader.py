@@ -392,6 +392,12 @@ def _pending_queue(pending_dir: str) -> list:
     return [os.path.join(pending_dir, n) for n in names]
 
 
+def count_pending(pending_dir: str = PENDING_DIR) -> int:
+    """Сколько кропов сейчас ждут OCR — источник прогресс-бара очереди в GUI
+    (main.py, по образцу count_queue Биржи 2.0)."""
+    return len(_pending_queue(pending_dir))
+
+
 def _batch_size(pending_dir: str, db_path: str) -> int:
     """Сколько сундуков сейчас 'в этом батче' — уже в БД (is_synced=0) плюс ещё необработанные
     кропы в очереди. Считать нужно ОБА, иначе producer может проскочить лимит, пока consumer

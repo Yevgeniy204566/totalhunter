@@ -652,6 +652,17 @@ def test_collect_chests_processes_leftover_crops_from_previous_run(tmp_path, mon
     assert not os.path.exists(leftover_path)
 
 
+def test_count_pending_reflects_queue_size(tmp_path):
+    """Источник прогресс-бара очереди OCR в GUI (по образцу count_queue Биржи 2.0)."""
+    pending_dir = str(tmp_path / "chest_pending")
+    assert cr.count_pending(pending_dir) == 0
+
+    os.makedirs(pending_dir, exist_ok=True)
+    cv2.imwrite(os.path.join(pending_dir, "000001.png"), np.zeros((10, 10, 3), dtype=np.uint8))
+    cv2.imwrite(os.path.join(pending_dir, "000002.png"), np.zeros((10, 10, 3), dtype=np.uint8))
+    assert cr.count_pending(pending_dir) == 2
+
+
 def test_collect_chests_calls_on_batch_ready_when_list_ends(tmp_path, monkeypatch):
     db_path = str(tmp_path / "chest_buffer.db")
     pending_dir = str(tmp_path / "chest_pending")
