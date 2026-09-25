@@ -367,20 +367,15 @@ export default function ChestsPage() {
                   />
                   <button className="chest-pill-btn chest-pill-btn--green chest-pill-btn--sm"
                     onClick={() => saveSeason(collector.slug)}
-                  >{cx.saveSeason}</button>
+                  >{cx.save}</button>
                 </div>
               </div>
               <div className="chest-field">
                 <label>{cx.targetChestsLabel}</label>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <input className="input-dark" style={{ width: 120 }} type="number"
-                    value={seasonByCollector[collector.slug]?.target_chests ?? ''}
-                    onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
-                  />
-                  <button className="chest-pill-btn chest-pill-btn--green chest-pill-btn--sm"
-                    onClick={() => saveSeason(collector.slug)}
-                  >{cx.saveSeason}</button>
-                </div>
+                <input className="input-dark" style={{ width: 120 }} type="number"
+                  value={seasonByCollector[collector.slug]?.target_chests ?? ''}
+                  onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
+                />
               </div>
             </div>
             {/* Buttons: Save left, Close season far right */}
