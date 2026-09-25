@@ -41,7 +41,6 @@ from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
                                      SCOUT_QUEUE_LIMIT_OPTIONS, format_pause_left, SCOUT_PUBLISH_TO_ROY)
 from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
-# from combiner import CombinerEngine  # Combo заморожен — импорт отключён
 from coord_manager import coord_manager, REF_A, REF_B
 import chest_reader
 import tkinter.messagebox as messagebox
@@ -399,7 +398,7 @@ def crypt_time_remaining_text(elapsed_sec: float, limit_sec: int | None) -> str:
 LANGS = {
     "RU": {
         # --- существующие ---
-        "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛЫ",
+        "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_ref": "РЕФЕРАЛЫ",
         "get_trial": "ПОЛУЧИТЬ 300 ПОПЫТОК", "start": "ЗАПУСТИТЬ ОХОТУ", "stop": "ОСТАНОВИТЬ",
         "no_credits": "У вас 0 алмазов! Привяжите устройство на сайте.", "offline_stopped": "Остановлено: нет связи с сервером", "login_btn": "ПРИВЯЗАТЬ УСТРОЙСТВО",
         "automation_busy_warning": "Сначала остановите другую задачу бота",
@@ -476,7 +475,7 @@ LANGS = {
     },
     "EN": {
         # --- существующие ---
-        "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_combo": "Combo", "tab_ref": "REFERRALS",
+        "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_ref": "REFERRALS",
         "get_trial": "GET 300 TRIALS", "start": "START HUNT", "stop": "STOP",
         "no_credits": "0 diamonds! Link your device on the website.", "offline_stopped": "Stopped: no connection to server", "login_btn": "LINK DEVICE",
         "automation_busy_warning": "Stop another bot task first",
@@ -552,7 +551,7 @@ LANGS = {
         "roy_pool_empty": "Pool empty", "roy_pool_count": "Coords in pool",
     },
     "DE": {
-        "title": "Total Hunter", "tab_hunt": "BÖRSEN", "tab_combo": "Combo", "tab_ref": "PARTNER",
+        "title": "Total Hunter", "tab_hunt": "BÖRSEN", "tab_ref": "PARTNER",
         "get_trial": "300 VERSUCHE HOLEN", "start": "JAGD STARTEN", "stop": "STOPP",
         "no_credits": "0 Diamanten! Gerät auf Website verknüpfen.", "offline_stopped": "Gestoppt: keine Verbindung zum Server", "login_btn": "GERÄT VERKNÜPFEN",
         "automation_busy_warning": "Stoppen Sie zuerst eine andere Bot-Aufgabe",
@@ -616,7 +615,7 @@ LANGS = {
         "roy_pool_empty": "Pool leer", "roy_pool_count": "Koordinaten im Pool",
     },
     "ES": {
-        "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "REFERIDOS",
+        "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_ref": "REFERIDOS",
         "get_trial": "OBTENER 300 INTENTOS", "start": "INICIAR CAZA", "stop": "DETENER",
         "no_credits": "¡0 diamantes! Vincula tu dispositivo en el sitio.", "offline_stopped": "Detenido: sin conexión con el servidor", "login_btn": "VINCULAR DISPOSITIVO",
         "automation_busy_warning": "Detén primero otra tarea del bot",
@@ -680,7 +679,7 @@ LANGS = {
         "roy_pool_empty": "Pool vacío", "roy_pool_count": "Coords en el pool",
     },
     "FR": {
-        "title": "Total Hunter", "tab_hunt": "ÉCHANGES", "tab_combo": "Combo", "tab_ref": "PARRAINAGES",
+        "title": "Total Hunter", "tab_hunt": "ÉCHANGES", "tab_ref": "PARRAINAGES",
         "get_trial": "OBTENIR 300 ESSAIS", "start": "LANCER LA CHASSE", "stop": "ARRÊTER",
         "no_credits": "0 diamants ! Liez votre appareil sur le site.", "offline_stopped": "Arrêté : pas de connexion au serveur", "login_btn": "LIER L'APPAREIL",
         "automation_busy_warning": "Arrêtez d'abord une autre tâche du bot",
@@ -744,7 +743,7 @@ LANGS = {
         "roy_pool_empty": "Pool vide", "roy_pool_count": "Coords dans le pool",
     },
     "IT": {
-        "title": "Total Hunter", "tab_hunt": "BORSE", "tab_combo": "Combo", "tab_ref": "REFERRAL",
+        "title": "Total Hunter", "tab_hunt": "BORSE", "tab_ref": "REFERRAL",
         "get_trial": "OTTIENI 300 TENTATIVI", "start": "AVVIA CACCIA", "stop": "FERMA",
         "no_credits": "0 diamanti! Collega il tuo dispositivo sul sito.", "offline_stopped": "Fermato: nessuna connessione al server", "login_btn": "COLLEGA DISPOSITIVO",
         "automation_busy_warning": "Ferma prima un'altra attività del bot",
@@ -808,7 +807,7 @@ LANGS = {
         "roy_pool_empty": "Pool vuoto", "roy_pool_count": "Coord nel pool",
     },
     "NL": {
-        "title": "Total Hunter", "tab_hunt": "BEURZEN", "tab_combo": "Combo", "tab_ref": "REFS",
+        "title": "Total Hunter", "tab_hunt": "BEURZEN", "tab_ref": "REFS",
         "get_trial": "300 POGINGEN KRIJGEN", "start": "JACHT STARTEN", "stop": "STOPPEN",
         "no_credits": "0 diamanten! Koppel je apparaat op de website.", "offline_stopped": "Gestopt: geen verbinding met de server", "login_btn": "APPARAAT KOPPELEN",
         "automation_busy_warning": "Stop eerst een andere bottaak",
@@ -872,7 +871,7 @@ LANGS = {
         "roy_pool_empty": "Pool leeg", "roy_pool_count": "Coords in pool",
     },
     "NO": {
-        "title": "Total Hunter", "tab_hunt": "BØRSER", "tab_combo": "Combo", "tab_ref": "REFERANSER",
+        "title": "Total Hunter", "tab_hunt": "BØRSER", "tab_ref": "REFERANSER",
         "get_trial": "FÅ 300 FORSØK", "start": "START JAKT", "stop": "STOPP",
         "no_credits": "0 diamanter! Koble enheten på nettstedet.", "offline_stopped": "Stoppet: ingen forbindelse til serveren", "login_btn": "KOBLE ENHET",
         "automation_busy_warning": "Stopp en annen bot-oppgave først",
@@ -936,7 +935,7 @@ LANGS = {
         "roy_pool_empty": "Pool tom", "roy_pool_count": "Coords i pool",
     },
     "PL": {
-        "title": "Total Hunter", "tab_hunt": "GIEŁDY", "tab_combo": "Combo", "tab_ref": "POLECENIA",
+        "title": "Total Hunter", "tab_hunt": "GIEŁDY", "tab_ref": "POLECENIA",
         "get_trial": "ZDOBĄDŹ 300 PRÓB", "start": "ROZPOCZNIJ POLOWANIE", "stop": "ZATRZYMAJ",
         "no_credits": "0 diamentów! Połącz urządzenie na stronie.", "offline_stopped": "Zatrzymano: brak połączenia z serwerem", "login_btn": "POŁĄCZ URZĄDZENIE",
         "automation_busy_warning": "Najpierw zatrzymaj inne zadanie bota",
@@ -1000,7 +999,7 @@ LANGS = {
         "roy_pool_empty": "Pula pusta", "roy_pool_count": "Koord. w puli",
     },
     "PT": {
-        "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "INDICAÇÕES",
+        "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_ref": "INDICAÇÕES",
         "get_trial": "OBTER 300 TENTATIVAS", "start": "INICIAR CAÇA", "stop": "PARAR",
         "no_credits": "0 diamantes! Vincule seu dispositivo no site.", "offline_stopped": "Parado: sem conexão com o servidor", "login_btn": "VINCULAR DISPOSITIVO",
         "automation_busy_warning": "Pare primeiro outra tarefa do bot",
@@ -1064,7 +1063,7 @@ LANGS = {
         "roy_pool_empty": "Pool vazio", "roy_pool_count": "Coords no pool",
     },
     "SV": {
-        "title": "Total Hunter", "tab_hunt": "BÖRSER", "tab_combo": "Combo", "tab_ref": "HÄNVISNINGAR",
+        "title": "Total Hunter", "tab_hunt": "BÖRSER", "tab_ref": "HÄNVISNINGAR",
         "get_trial": "FÅ 300 FÖRSÖK", "start": "STARTA JAKT", "stop": "STOPP",
         "no_credits": "0 diamanter! Koppla enheten på webbplatsen.", "offline_stopped": "Stoppad: ingen anslutning till servern", "login_btn": "KOPPLA ENHET",
         "automation_busy_warning": "Stoppa en annan bot-uppgift först",
@@ -1128,7 +1127,7 @@ LANGS = {
         "roy_pool_empty": "Pool tom", "roy_pool_count": "Koords i pool",
     },
     "TR": {
-        "title": "Total Hunter", "tab_hunt": "BORSALAR", "tab_combo": "Combo", "tab_ref": "REFERANSLAR",
+        "title": "Total Hunter", "tab_hunt": "BORSALAR", "tab_ref": "REFERANSLAR",
         "get_trial": "300 DENEME AL", "start": "AVI BAŞLAT", "stop": "DURDUR",
         "no_credits": "0 elmas! Cihazınızı sitede bağlayın.", "offline_stopped": "Durduruldu: sunucuyla bağlantı yok", "login_btn": "CİHAZI BAĞLA",
         "automation_busy_warning": "Önce diğer bot görevini durdurun",
@@ -1192,7 +1191,7 @@ LANGS = {
         "roy_pool_empty": "Havuz boş", "roy_pool_count": "Havuzdaki koord.",
     },
     "AR": {
-        "title": "Total Hunter", "tab_hunt": "البورصات", "tab_combo": "Combo", "tab_ref": "الإحالات",
+        "title": "Total Hunter", "tab_hunt": "البورصات", "tab_ref": "الإحالات",
         "get_trial": "احصل على 300 محاولة", "start": "ابدأ الصيد", "stop": "إيقاف",
         "no_credits": "0 ألماس! اربط جهازك على الموقع.", "offline_stopped": "تم الإيقاف: لا يوجد اتصال بالخادم", "login_btn": "ربط الجهاز",
         "automation_busy_warning": "أوقف مهمة أخرى للبوت أولاً",
@@ -1256,7 +1255,7 @@ LANGS = {
         "roy_pool_empty": "المجمع فارغ", "roy_pool_count": "إحداثيات في المجمع",
     },
     "JA": {
-        "title": "Total Hunter", "tab_hunt": "取引所", "tab_combo": "Combo", "tab_ref": "紹介",
+        "title": "Total Hunter", "tab_hunt": "取引所", "tab_ref": "紹介",
         "get_trial": "300回分を取得", "start": "ハントを開始", "stop": "停止",
         "no_credits": "ダイヤ0個！サイトでデバイスを登録してください。", "offline_stopped": "停止しました：サーバーとの接続がありません", "login_btn": "デバイスを登録",
         "automation_busy_warning": "先に他のボット作業を停止してください",
@@ -1320,7 +1319,7 @@ LANGS = {
         "roy_pool_empty": "プール空", "roy_pool_count": "プール内座標数",
     },
     "ZH": {
-        "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推荐",
+        "title": "Total Hunter", "tab_hunt": "交易所", "tab_ref": "推荐",
         "get_trial": "获取300次试用", "start": "开始狩猎", "stop": "停止",
         "no_credits": "0钻石！请在网站上绑定设备。", "offline_stopped": "已停止：与服务器失去连接", "login_btn": "绑定设备",
         "automation_busy_warning": "请先停止另一个机器人任务",
@@ -1384,7 +1383,7 @@ LANGS = {
         "roy_pool_empty": "池为空", "roy_pool_count": "池中坐标数",
     },
     "ZH_TW": {
-        "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推薦",
+        "title": "Total Hunter", "tab_hunt": "交易所", "tab_ref": "推薦",
         "get_trial": "獲取300次試用", "start": "開始狩獵", "stop": "停止",
         "no_credits": "0鑽石！請在網站上綁定裝置。", "offline_stopped": "已停止：與伺服器失去連線", "login_btn": "綁定裝置",
         "automation_busy_warning": "請先停止另一個機器人任務",
@@ -1448,7 +1447,7 @@ LANGS = {
         "roy_pool_empty": "池為空", "roy_pool_count": "池中座標數",
     },
     "KO": {
-        "title": "Total Hunter", "tab_hunt": "거래소", "tab_combo": "Combo", "tab_ref": "추천",
+        "title": "Total Hunter", "tab_hunt": "거래소", "tab_ref": "추천",
         "get_trial": "300회 체험 받기", "start": "사냥 시작", "stop": "정지",
         "no_credits": "다이아 0개! 웹사이트에서 기기를 연결하세요.", "offline_stopped": "정지됨: 서버와 연결 없음", "login_btn": "기기 연결",
         "automation_busy_warning": "먼저 다른 봇 작업을 중지하세요",
@@ -1512,7 +1511,7 @@ LANGS = {
         "roy_pool_empty": "풀 비어 있음", "roy_pool_count": "풀 내 좌표 수",
     },
     "UK": {
-        "title": "Total Hunter", "tab_hunt": "БІРЖІ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛИ",
+        "title": "Total Hunter", "tab_hunt": "БІРЖІ", "tab_ref": "РЕФЕРАЛИ",
         "get_trial": "ОТРИМАТИ 300 СПРОБ", "start": "ЗАПУСТИТИ ПОЛЮВАННЯ", "stop": "ЗУПИНИТИ",
         "no_credits": "У вас 0 алмазів! Прив'яжіть пристрій на сайті.", "offline_stopped": "Зупинено: немає зв'язку із сервером", "login_btn": "ПРИВ'ЯЗАТИ ПРИСТРІЙ",
         "automation_busy_warning": "Спочатку зупиніть інше завдання бота",
@@ -1576,7 +1575,7 @@ LANGS = {
         "roy_pool_empty": "Пул порожній", "roy_pool_count": "Координат у пулі",
     },
     "ID": {
-        "title": "Total Hunter", "tab_hunt": "BURSA", "tab_combo": "Combo", "tab_ref": "REFERRAL",
+        "title": "Total Hunter", "tab_hunt": "BURSA", "tab_ref": "REFERRAL",
         "get_trial": "DAPATKAN 300 PERCOBAAN", "start": "MULAI PERBURUAN", "stop": "BERHENTI",
         "no_credits": "0 berlian! Hubungkan perangkat di situs web.", "offline_stopped": "Berhenti: tidak ada koneksi ke server", "login_btn": "HUBUNGKAN PERANGKAT",
         "automation_busy_warning": "Hentikan tugas bot lain terlebih dahulu",
@@ -1953,8 +1952,6 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_autostop_seconds = 3 * 3600  # дефолт 3 ч; None = «Выкл»
         self._crypt_periodic_reset_min = 10    # дефолт 10 мин; None = «Выкл»
         self._crypt_session_start = None
-        # self.combo_engine = CombinerEngine()  # Combo временно отключён
-        self.is_combo_running = False
         self._chest_running = False
         self._chest_stop_event = threading.Event()
         saved_lang = {}
@@ -2198,7 +2195,6 @@ class TotalHunterApp(ctk.CTk):
         # Фреймы вкладок (показываются/скрываются вручную)
         self.tab_crypt = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self.tab_hunt  = ctk.CTkFrame(self._content_frame, fg_color="transparent")
-        # self.tab_combo = ...  # временно отключён
         self.tab_ref   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self.tab_roy   = ctk.CTkFrame(self._content_frame, fg_color="transparent")
         self.tab_chest = ctk.CTkFrame(self._content_frame, fg_color="transparent")
@@ -2223,7 +2219,6 @@ class TotalHunterApp(ctk.CTk):
 
         self.setup_hunt_tab()
         self.setup_crypt_tab()
-        # self.setup_combo_tab()  # временно отключён
         self.setup_ref_tab()
         self.setup_chest_tab()
         self.setup_ancient_tab()
@@ -3406,40 +3401,6 @@ class TotalHunterApp(ctk.CTk):
 
         threading.Thread(target=_worker, daemon=True).start()
 
-    def toggle_combo_bot(self):
-        if not hasattr(self, 'combo_engine'):
-            return  # Combo заморожен
-        if self.is_combo_running:
-            self.is_combo_running = False
-            self.combo_engine.stop()
-            self.combo_start_btn.configure(text="ЗАПУСТИТЬ COMBO",
-                                           fg_color=MD3["green_btn"],
-                                           hover_color=MD3["green_hover"])
-            self.combo_status_label.configure(text="Остановлено",
-                                              text_color=MD3["on_surface2"])
-        else:
-            self.is_combo_running = True
-            delay = round(self.combo_speed_slider.get(), 2)
-            self.combo_start_btn.configure(text="ОСТАНОВИТЬ",
-                                           fg_color=MD3["error"],
-                                           hover_color=MD3["error_hover"])
-            self.combo_status_label.configure(text="СТАТУС: В РАБОТЕ...",
-                                              text_color=MD3["secondary"])
-            self.combo_engine.start(
-                delay=delay,
-                status_callback=self._on_combo_status,
-            )
-
-    def _on_combo_status(self, msg: str):
-        def _ui():
-            self.combo_status_label.configure(text=msg)
-            if msg in ("Готово — конец списка", "Остановлено", "Окно перекрыто — стоп"):
-                self.is_combo_running = False
-                self.combo_start_btn.configure(text="ЗАПУСТИТЬ COMBO",
-                                               fg_color=MD3["green_btn"],
-                                               hover_color=MD3["green_hover"])
-        self.after(0, _ui)
-
     def _on_always_on_top(self):
         """Переключить режим «поверх всех окон» и обновить зону исключения YOLO."""
         on_top = self.always_on_top_var.get()
@@ -3674,64 +3635,6 @@ class TotalHunterApp(ctk.CTk):
         except Exception:
             pass
 
-    def setup_combo_tab(self):
-        """Вкладка Combo — автокомбинирование материалов."""
-
-        ctk.CTkLabel(self.tab_combo,
-                     text="COMBO — Комбинирование",
-                     font=ctk.CTkFont(size=18, weight="bold"),
-                     text_color=MD3["primary"]).pack(pady=(16, 4))
-
-        ctk.CTkLabel(self.tab_combo,
-                     text="Откройте окно «Комбинирование» в игре,\nзатем нажмите СТАРТ.",
-                     font=ctk.CTkFont(size=12),
-                     text_color=MD3["on_surface2"],
-                     justify="center").pack(pady=(0, 12))
-
-        # ── Слайдер скорости ─────────────────────────────────
-        speed_frame = ctk.CTkFrame(self.tab_combo, fg_color=MD3["elevated"],
-                                   corner_radius=12, border_width=1,
-                                   border_color=MD3["outline"])
-        speed_frame.pack(padx=30, pady=(0, 10), fill="x")
-
-        ctk.CTkLabel(speed_frame, text="Задержка между кликами",
-                     font=ctk.CTkFont(size=12),
-                     text_color=MD3["on_surface2"]).pack(pady=(10, 0))
-
-        speed_row = ctk.CTkFrame(speed_frame, fg_color="transparent")
-        speed_row.pack(fill="x", padx=10, pady=(4, 10))
-
-        self.combo_speed_slider = ctk.CTkSlider(
-            speed_row, from_=0.05, to=0.5, number_of_steps=45,
-            fg_color=MD3["outline"], progress_color=MD3["primary"],
-            button_color=MD3["secondary"], button_hover_color=MD3["primary_dim"],
-            command=self._update_combo_speed_label)
-        self.combo_speed_slider.set(0.1)
-        self.combo_speed_slider.pack(side="left", fill="x", expand=True, padx=(0, 8))
-
-        self.combo_speed_val = ctk.CTkLabel(speed_row, text="0.10 с",
-                                            font=ctk.CTkFont(size=13),
-                                            text_color=MD3["value_text"], width=50)
-        self.combo_speed_val.pack(side="left")
-
-        # ── Кнопка Старт/Стоп ────────────────────────────────
-        self.combo_start_btn = ctk.CTkButton(
-            self.tab_combo, text="ЗАПУСТИТЬ COMBO",
-            height=56, font=ctk.CTkFont(size=18, weight="bold"),
-            fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
-            text_color=MD3["on_surface"], corner_radius=16,
-            command=self.toggle_combo_bot)
-        self.combo_start_btn.pack(pady=(10, 4), padx=20, fill="x")
-
-        self.combo_status_label = ctk.CTkLabel(
-            self.tab_combo, text="ГОТОВО",
-            text_color=MD3["on_surface2"])
-        self.combo_status_label.pack(pady=(0, 4))
-
-    def _update_combo_speed_label(self, _=None):
-        val = round(self.combo_speed_slider.get(), 2)
-        self.combo_speed_val.configure(text=f"{val:.2f} с")
-
     def setup_ref_tab(self):
         # Весь контент вкладки — внутри своего скроллящегося контейнера
         # (правило проекта: контент всегда помещается в окно и скроллится
@@ -3855,10 +3758,6 @@ class TotalHunterApp(ctk.CTk):
         if not self._chest_running:
             if hasattr(self, 'chest_start_btn'):
                 self.chest_start_btn.configure(state=state)
-        # Combo (заморожен — guard)
-        if not self.is_combo_running:
-            if hasattr(self, 'combo_start_btn'):
-                self.combo_start_btn.configure(state=state)
 
     def _start_balance_sync(self):
         """Запускает фоновый long-poll поток — мгновенное обновление баланса."""
@@ -4669,10 +4568,6 @@ class TotalHunterApp(ctk.CTk):
         # Сундуки
         if self._chest_running:
             self._chest_stop_event.set()
-        # Combo (заморожен — guard на случай если engine не инициализирован)
-        if self.is_combo_running and hasattr(self, 'combo_engine'):
-            self.is_combo_running = False
-            self.combo_engine.stop()
         # Обновить пул — восстановить незаконченные записи после остановки
         if hasattr(self, '_roy_enabled_var') and self._roy_enabled_var.get():
             self.after(500, self._roy_refresh_pool)
