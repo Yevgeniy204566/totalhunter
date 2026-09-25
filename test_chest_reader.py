@@ -216,6 +216,38 @@ def test_pack_unpack_row_crops_roundtrip(monkeypatch):
     assert np.array_equal(unpacked_sender, sender_roi)
 
 
+def test_unpack_row_crops_does_not_mix_fields_on_a_scaled_screen(monkeypatch):
+    """Регрессия сессии #149 (живой баг владельца, 2026-09-25): coord_manager.to_region()
+    масштабирует ШИРИНУ И ВЫСОТУ кропа (scale_x/scale_y), не только позицию — на реальном
+    экране владельца (profile_client.json: scale_x=1.332, scale_y=1.363) кроп типа/имени
+    получается ~494x33 / ~481x33, НЕ эталонные 371x24 / 361x24. unpack_row_crops резал по
+    жёстко зашитым эталонным размерам — итог: срез имени наполовину состоял из НИЗА кропа
+    типа (не имени!) и наполовину из ВЕРХА настоящего имени — франкенштейн из двух разных
+    надписей, объясняющий мусорные строки вроде «КНАГ ЕР IRA! AL VW/AILIN» при исправно
+    читающемся типе (тип лишь обрезался, но не смешивался — оставался внутри своей же
+    области). Исправление пересчитывает точный масштабированный размер каждого поля через
+    тот же coord_manager, что и при вырезке — мок здесь имитирует именно это состояние."""
+    scale_x, scale_y = 1.332389046270066, 1.3632019115890084
+
+    def fake_to_region_dialog(x, y, w, h):
+        return (x, y, round(w * scale_x), round(h * scale_y))
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", fake_to_region_dialog)
+
+    type_w, type_h = cr.coord_manager.to_region_dialog(*cr.SOURCE_REF_RECT)[2:4]
+    sender_w, sender_h = cr.coord_manager.to_region_dialog(*cr.SENDER_REF_RECT)[2:4]
+    assert (type_h, type_w) == (33, 494) and (sender_h, sender_w) == (33, 481)  # sanity, see comment above
+
+    type_roi = np.full((type_h, type_w, 3), 100, dtype=np.uint8)
+    sender_roi = np.full((sender_h, sender_w, 3), 200, dtype=np.uint8)
+
+    combined = cr.pack_row_crops(type_roi, sender_roi)
+    unpacked_type, unpacked_sender = cr.unpack_row_crops(combined)
+
+    assert np.array_equal(unpacked_type, type_roi)
+    assert np.array_equal(unpacked_sender, sender_roi)
+    assert not np.any(unpacked_sender == 100), "срез имени не должен содержать ни пикселя из кропа типа"
+
+
 def test_crop_top_row_and_ocr_top_row_crops_match_read_top_row(monkeypatch):
     """End-to-end for the pipeline's split: crop at capture time, OCR later on the saved
     crop, must give the exact same result as the still-synchronous read_top_row."""

@@ -241,9 +241,17 @@ def read_top_row(frame, full_lang=False):
 
 def pack_row_crops(type_roi, sender_roi):
     """Combines the two tiny OCR crops into one small image for the pending queue — one
-    file per captured chest instead of two, simpler ordering/pairing on disk. Unpacking
-    is a plain slice by SOURCE_REF_RECT/SENDER_REF_RECT's own fixed width/height (module
-    constants) — no extra metadata needs to be stored alongside the image."""
+    file per captured chest instead of two, simpler ordering/pairing on disk.
+
+    Regression (сессия #149, живой баг владельца 2026-09-25): unpack_row_crops раньше
+    резал холст по ЖЁСТКО ЗАШИТЫМ эталонным размерам SOURCE_REF_RECT/SENDER_REF_RECT
+    (371x24 / 361x24), а coord_manager.to_region() масштабирует и ширину, и высоту
+    (scale_x/scale_y), не только позицию — на реальном экране кроп получается совсем
+    другого размера (например ~494x33 / ~481x33). Смещение среза имени наполовину
+    состояло из низа кропа типа, склеенного с верхом настоящего имени — франкенштейн
+    из двух надписей. И SOURCE_REF_RECT, и SENDER_REF_RECT имеют ОДНУ И ТУ ЖЕ эталонную
+    высоту (24) — после одного и того же scale_y их реальные высоты ВСЕГДА равны, поэтому
+    unpack делит холст РОВНО ПОПОЛАМ по фактической высоте, а не по константам."""
     h1, w1 = type_roi.shape[:2]
     h2, w2 = sender_roi.shape[:2]
     canvas = np.zeros((h1 + h2, max(w1, w2), 3), dtype=np.uint8)
@@ -253,8 +261,13 @@ def pack_row_crops(type_roi, sender_roi):
 
 
 def unpack_row_crops(combined):
-    type_h, type_w = SOURCE_REF_RECT[3], SOURCE_REF_RECT[2]
-    sender_h, sender_w = SENDER_REF_RECT[3], SENDER_REF_RECT[2]
+    """Пересчитывает РЕАЛЬНЫЙ (масштабированный) размер каждого ROI напрямую через
+    coord_manager — тот же источник, что использовал crop_fixed_field при вырезке, а не
+    жёстко зашитые эталонные константы (см. pack_row_crops). Ширина полей разная (371 vs
+    361 в эталоне) — после масштаба тоже разная, поэтому размер каждого поля нужен
+    отдельно, не только высота."""
+    type_w, type_h = coord_manager.to_region_dialog(*SOURCE_REF_RECT)[2:4]
+    sender_w, sender_h = coord_manager.to_region_dialog(*SENDER_REF_RECT)[2:4]
     type_roi = combined[0:type_h, 0:type_w]
     sender_roi = combined[type_h:type_h + sender_h, 0:sender_w]
     return type_roi, sender_roi
