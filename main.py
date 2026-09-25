@@ -3265,20 +3265,15 @@ class TotalHunterApp(ctk.CTk):
                 return
 
             send_result = self._send_chest_batch(kingdom, clan)
-            # partial: сервер принял не всё -> ничего локально не помечено отправленным,
-            # батч всё ещё полон -> продолжать сбор нельзя (тут же снова упрёмся в лимит).
+            # success теперь всегда означает "весь батч на сервере" (см. _send_chest_batch) —
+            # partial_info у ответа лишь информационная пометка, сбор продолжать можно.
             continue_after_send["value"] = (reason == "batch_full"
-                                            and bool(send_result.get("success"))
-                                            and not send_result.get("partial"))
+                                            and bool(send_result.get("success")))
 
             def _update():
                 if send_result.get("empty"):
                     return
-                if send_result.get("partial"):
-                    text = (f"{L['chest_send_failed']} "
-                           f"({send_result.get('accepted')}/{send_result.get('submitted')})")
-                    color = MD3["error_text"]
-                elif send_result.get("success"):
+                if send_result.get("success"):
                     text, color = L["chest_send_success"], MD3["secondary"]
                     self._update_chest_counts_display({})
                 elif send_result.get("low_credits"):
@@ -3313,18 +3308,25 @@ class TotalHunterApp(ctk.CTk):
     def _send_chest_batch(self, kingdom, clan):
         """Общая логика отправки батча — переиспользуется и ручной кнопкой
         (send_chests_to_server), и авто-отправкой (toggle_chest_bot._on_batch_ready).
-        Сетевой вызов и запись в БД не переизобретаются — export_to_api/mark_synced уже
+        Сетевой вызов и запись в БД не переизобретаются — export_to_api/delete_sent уже
         реализованы и работают в проде. {'success': True, 'empty': True} — нечего отправлять
         (батч уже пуст), отличается от настоящего успешного 'success' для текста статуса.
 
-        Регрессия сессии #149 (живой инцидент владельца 2026-09-25): сервер один раз
-        ответил 200 OK, но принял МЕНЬШЕ записей, чем было отправлено (без единой ошибки
-        в логах) — код помечал is_synced=1 всему пакету по одному факту 200 OK, часть
-        данных потерялась без единого признака сбоя. Теперь is_synced=1 ставится ТОЛЬКО
-        если count из ответа сервера равен количеству отправленных записей — иначе НИ ОДНА
-        запись из этого пакета не помечается (не гадаем, какие именно приняты). Повторная
-        отправка уже полностью принятого батча бесплатна (сервер дедуплицирует, не
-        списывает второй раз — server/chests.py), поэтому это безопасно, не копит долг."""
+        Регрессия сессии #149 (живой инцидент владельца 2026-09-25, часть 1): сервер один
+        раз ответил 200 OK, но принял МЕНЬШЕ записей, чем было отправлено (без единой
+        ошибки в логах) — код помечал is_synced=1 всему пакету по одному факту 200 OK,
+        часть данных потерялась без единого признака сбоя. Первый фикс сравнивал count
+        из ответа с len(items) и не помечал ничего при несовпадении — но это сломало
+        живой сценарий (часть 2, тот же день): server/chests.py._dedupe работает атомарно
+        (один commit на весь батч, IntegrityError откатывает всё и повторяет) — при
+        success=True ВСЕ записи батча гарантированно на сервере, count просто показывает
+        сколько из них было НОВЫХ (остальные — уже существующие дубли, не потеря). Значит
+        count < len(items) при success НИКОГДА не означает частичную потерю в этой
+        архитектуре — а строгая проверка мгновенно ловила легитимный повторный дедуп
+        (count=0, всё уже отправлено раньше) как "провал", очередь не чистилась, повторная
+        отправка слала тот же батч по кругу бесконечно ("сервер недоступен" на данных,
+        которые давно и благополучно на сервере). Теперь delete_sent вызывается всегда при
+        success; count < len(items) — не ошибка, просто показывается как информация."""
         import chest_reader
         conn = chest_reader.init_db()
         rows = chest_reader.get_unsynced(conn)
@@ -3337,10 +3339,9 @@ class TotalHunterApp(ctk.CTk):
         result = chest_reader.export_to_api(kingdom, clan, items)
         if result.get("success"):
             accepted = result.get("count")
-            if accepted == len(items):
-                chest_reader.mark_synced(conn, ids)
-            else:
-                result = {**result, "partial": True, "accepted": accepted, "submitted": len(items)}
+            chest_reader.delete_sent(conn, ids)
+            if accepted != len(items):
+                result = {**result, "partial_info": True, "accepted": accepted, "submitted": len(items)}
         conn.close()
         return result
 
@@ -3390,10 +3391,6 @@ class TotalHunterApp(ctk.CTk):
                 if result.get("empty"):
                     self.chest_status_label.configure(text=L["chest_status_stopped"],
                                                        text_color=MD3["on_surface2"])
-                elif result.get("partial"):
-                    self.chest_status_label.configure(
-                        text=f"{L['chest_send_failed']} ({result.get('accepted')}/{result.get('submitted')})",
-                        text_color=MD3["error_text"])
                 elif result.get("success"):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                        text_color=MD3["secondary"])
