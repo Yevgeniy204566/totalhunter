@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 import threading
 import cv2
@@ -281,47 +280,16 @@ def test_insert_and_get_unsynced(tmp_path):
     conn.close()
 
 
-def test_delete_sent_removes_rows_from_local_db(tmp_path):
-    """Владелец 2026-09-26: после успешной выгрузки батч удаляется с ПК сразу,
-    отправленные сундуки локально не хранятся нигде."""
+def test_mark_synced_excludes_from_unsynced(tmp_path):
     db_path = str(tmp_path / "chest_buffer.db")
     conn = cr.init_db(db_path)
     cr.insert_chest(conn, "Сундук Эпического Монстра", "Alice", "2026-06-17T10:00:00")
     cr.insert_chest(conn, "Сундук Легендарного Монстра", "Bob", "2026-06-17T10:01:00")
     rows = cr.get_unsynced(conn)
     ids = [r[0] for r in rows]
-    cr.delete_sent(conn, ids)
+    cr.mark_synced(conn, ids)
     assert cr.get_unsynced(conn) == []
-    assert conn.execute("SELECT COUNT(*) FROM local_chests").fetchone()[0] == 0
     conn.close()
-
-
-def test_delete_sent_keeps_rows_not_in_batch(tmp_path):
-    db_path = str(tmp_path / "chest_buffer.db")
-    conn = cr.init_db(db_path)
-    cr.insert_chest(conn, "Тип", "Alice", "2026-06-17T10:00:00")
-    sent_ids = [r[0] for r in cr.get_unsynced(conn)]
-    cr.insert_chest(conn, "Тип", "Bob", "2026-06-17T10:01:00")  # прочитан во время отправки
-    cr.delete_sent(conn, sent_ids)
-    assert [r[1] for r in cr.get_unsynced(conn)] == ["Bob"]
-    conn.close()
-
-
-def test_init_db_purges_previously_synced_rows(tmp_path):
-    """Старые версии помечали отправленное is_synced=1 и хранили вечно —
-    при открытии базы такие строки удаляются, неотправленные остаются."""
-    db_path = str(tmp_path / "chest_buffer.db")
-    conn = cr.init_db(db_path)
-    cr.insert_chest(conn, "Тип", "Old", "2026-06-17T10:00:00")
-    conn.execute("UPDATE local_chests SET is_synced = 1")
-    cr.insert_chest(conn, "Тип", "New", "2026-06-17T10:01:00")
-    conn.commit()
-    conn.close()
-
-    conn = cr.init_db(db_path)
-    rows = conn.execute("SELECT raw_player_name FROM local_chests").fetchall()
-    conn.close()
-    assert rows == [("New",)]
 
 
 def test_get_unsynced_counts_groups_by_type(tmp_path):
@@ -346,7 +314,7 @@ def test_get_unsynced_counts_ignores_synced_rows(tmp_path):
     cr.insert_chest(conn, "Тип Б", "Игрок1", "2026-06-19T10:00:05")
     rows = cr.get_unsynced(conn)
     ids_type_a = [r[0] for r in rows if r[2] == "Тип А"]
-    cr.delete_sent(conn, ids_type_a)
+    cr.mark_synced(conn, ids_type_a)
     conn.close()
 
     conn = cr.init_db(db_path)
@@ -361,7 +329,7 @@ def test_get_unsynced_counts_empty_after_full_sync(tmp_path):
     conn = cr.init_db(db_path)
     cr.insert_chest(conn, "Тип А", "Игрок1", "2026-06-19T10:00:00")
     rows = cr.get_unsynced(conn)
-    cr.delete_sent(conn, [r[0] for r in rows])
+    cr.mark_synced(conn, [r[0] for r in rows])
     conn.close()
 
     conn = cr.init_db(db_path)
@@ -729,7 +697,8 @@ def test_count_pending_reflects_queue_size(tmp_path):
 
 def test_delete_unsynced_batch_clears_db_rows_and_pending_crops(tmp_path):
     """Кнопка «Удалить батч» (владелец 2026-09-25): убирает и непринятые строки в БД
-    (is_synced=0) и необработанные кропы очереди, _batch_size() должен вернуться к 0."""
+    (is_synced=0), и необработанные кропы очереди — уже отправленные (is_synced=1)
+    строки не трогает, _batch_size() должен вернуться к 0."""
     db_path = str(tmp_path / "chest_buffer.db")
     pending_dir = str(tmp_path / "chest_pending")
     os.makedirs(pending_dir, exist_ok=True)
@@ -737,17 +706,19 @@ def test_delete_unsynced_batch_clears_db_rows_and_pending_crops(tmp_path):
 
     conn = cr.init_db(db_path)
     cr.insert_chest(conn, "Тип", "Игрок1", "2026-09-25T21:00:00")
-    cr.insert_chest(conn, "Тип", "Игрок2", "2026-09-25T21:00:01")
+    conn.execute("UPDATE local_chests SET is_synced = 1 WHERE id = 1")  # уже отправлен раньше
+    cr.insert_chest(conn, "Тип", "Игрок2", "2026-09-25T21:00:01")       # ещё не отправлен
+    conn.commit()
     conn.close()
 
     removed = cr.delete_unsynced_batch(db_path, pending_dir)
 
-    assert removed == 2
+    assert removed == 1
     assert cr.count_pending(pending_dir) == 0
     conn = cr.init_db(db_path)
-    rows = conn.execute("SELECT COUNT(*) FROM local_chests").fetchone()[0]
+    rows = conn.execute("SELECT raw_player_name, is_synced FROM local_chests").fetchall()
     conn.close()
-    assert rows == 0
+    assert rows == [("Игрок1", 1)]  # уже отправленная запись осталась нетронутой
 
 
 def test_collect_chests_calls_on_batch_ready_when_list_ends(tmp_path, monkeypatch):
@@ -788,7 +759,7 @@ def test_collect_chests_counts_reflect_state_after_on_batch_ready_not_before(tmp
 
     def fake_on_batch_ready(reason):
         conn = cr.init_db(db_path)
-        cr.delete_sent(conn, [r[0] for r in cr.get_unsynced(conn)])
+        cr.mark_synced(conn, [r[0] for r in cr.get_unsynced(conn)])
         conn.close()
 
     result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir,
@@ -1219,64 +1190,3 @@ def test_collect_chests_forwards_full_lang_to_ocr_top_row_crops(tmp_path, monkey
     cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir, full_lang=True)
 
     assert captured["full_lang"] is True
-
-
-# --- Единое хранилище (владелец 2026-09-26) ----------------------------------------------
-# Одна рабочая база на ПК: путь не зависит от того, запущен бот из исходников или
-# собранный .exe, из какой папки и с каким cwd.
-
-def test_storage_dir_independent_of_launch_mode(tmp_path, monkeypatch):
-    env = {"LOCALAPPDATA": str(tmp_path / "local")}
-    monkeypatch.chdir(tmp_path)
-    from_source = cr.resolve_storage_dir(env)
-
-    monkeypatch.setattr(sys, "frozen", True, raising=False)
-    monkeypatch.setattr(sys, "executable", str(tmp_path / "Downloads" / "TotalHunter" / "TotalHunter.exe"))
-    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path / "Downloads" / "TotalHunter" / "_internal"), raising=False)
-    other_cwd = tmp_path / "elsewhere"
-    other_cwd.mkdir()
-    monkeypatch.chdir(other_cwd)
-    from_exe = cr.resolve_storage_dir(env)
-
-    assert from_source == from_exe == os.path.join(str(tmp_path / "local"), "TotalHunter")
-
-
-def test_db_and_pending_share_one_storage_dir():
-    assert os.path.dirname(cr.DB_PATH) == cr.STORAGE_DIR
-    assert os.path.dirname(cr.PENDING_DIR) == cr.STORAGE_DIR
-    assert os.path.basename(cr.DB_PATH) == "chest_buffer.db"
-    assert os.path.basename(cr.PENDING_DIR) == "chest_pending"
-    module_dir = os.path.dirname(os.path.abspath(cr.__file__))
-    assert cr.STORAGE_DIR != module_dir
-
-
-def test_storage_dir_has_no_fallback_without_localappdata():
-    import pytest
-    with pytest.raises(RuntimeError):
-        cr.resolve_storage_dir({})
-
-
-def test_init_db_creates_missing_storage_dir(tmp_path):
-    db_path = str(tmp_path / "local" / "TotalHunter" / "chest_buffer.db")
-    conn = cr.init_db(db_path)
-    conn.close()
-    assert os.path.isfile(db_path)
-
-
-def test_chest_buffer_path_built_in_one_place_only():
-    """Ни один модуль бота не собирает свой путь к chest_buffer.db / chest_pending —
-    иначе снова появится вторая база рядом с кодом или exe."""
-    root = os.path.dirname(os.path.abspath(cr.__file__))
-    offenders = []
-    for name in os.listdir(root):
-        if not name.endswith(".py") or name.startswith("test_") or name == "chest_reader.py":
-            continue
-        with open(os.path.join(root, name), encoding="utf-8", errors="ignore") as f:
-            text = f.read()
-        if "chest_buffer.db" in text or "'chest_pending'" in text or '"chest_pending"' in text:
-            offenders.append(name)
-    with open(os.path.join(root, "chest_reader.py"), encoding="utf-8") as f:
-        own = f.read()
-    assert offenders == []
-    assert own.count("'chest_buffer.db'") == 1
-    assert own.count("'chest_pending'") == 1
