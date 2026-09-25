@@ -82,7 +82,21 @@ EMPTY_BUTTON_RETRY_PAUSE = 0.3
 ANTI_DETECT_OFFSET_PX = 8
 ANTI_DETECT_PAUSE_RANGE = (0.16, 0.28)  # reduced again 2026-06-19 by owner decision, chests-only
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_buffer.db')
+
+
+def resolve_storage_dir(environ=os.environ):
+    """Единое хранилище сундуков на ПК (владелец 2026-09-26). Раньше база лежала рядом
+    с модулем (__file__) — у исходников это C:\BattleBot, у собранного exe — его
+    _internal, и на одном ПК жили две независимые базы. %LOCALAPPDATA% одинаков для
+    любой копии бота. Без fallback: запасной путь снова создал бы вторую базу."""
+    base = environ.get('LOCALAPPDATA')
+    if not base:
+        raise RuntimeError('LOCALAPPDATA не задан — хранилище сундуков не определено')
+    return os.path.join(base, 'TotalHunter')
+
+
+STORAGE_DIR = resolve_storage_dir()
+DB_PATH = os.path.join(STORAGE_DIR, 'chest_buffer.db')
 API_IMPORT_PATH = '/api/v1/chests/import'
 
 # --- Конвейер (сессия #149, входящие заметки п.D): захват+клик отдельно от OCR --------------
@@ -90,7 +104,7 @@ API_IMPORT_PATH = '/api/v1/chests/import'
 # Биржи 2.0 (там нужен весь экран для YOLO). Без TTL — кроп сундука не «протухает» со временем,
 # в отличие от координат биржи в игре. Без паузы-по-размеру-очереди — OCR дешевле YOLO, узкое
 # место не в диске/памяти.
-PENDING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_pending')
+PENDING_DIR = os.path.join(STORAGE_DIR, 'chest_pending')
 
 # Лимит батча — НЕ защита от потери данных (кропы и так надёжны), а денежное решение владельца
 # (2026-09-25): CHEST_IMPORT_COST на сервере (server/chests.py) списывает 10◆ ФЛЭТОМ за отправку
@@ -287,6 +301,7 @@ def ocr_top_row_crops(combined, full_lang=False):
 
 
 def init_db(path=DB_PATH):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     conn = sqlite3.connect(path)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS local_chests (

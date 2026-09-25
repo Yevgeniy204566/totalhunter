@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import threading
 import cv2
@@ -1218,3 +1219,64 @@ def test_collect_chests_forwards_full_lang_to_ocr_top_row_crops(tmp_path, monkey
     cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir, full_lang=True)
 
     assert captured["full_lang"] is True
+
+
+# --- Единое хранилище (владелец 2026-09-26) ----------------------------------------------
+# Одна рабочая база на ПК: путь не зависит от того, запущен бот из исходников или
+# собранный .exe, из какой папки и с каким cwd.
+
+def test_storage_dir_independent_of_launch_mode(tmp_path, monkeypatch):
+    env = {"LOCALAPPDATA": str(tmp_path / "local")}
+    monkeypatch.chdir(tmp_path)
+    from_source = cr.resolve_storage_dir(env)
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "Downloads" / "TotalHunter" / "TotalHunter.exe"))
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path / "Downloads" / "TotalHunter" / "_internal"), raising=False)
+    other_cwd = tmp_path / "elsewhere"
+    other_cwd.mkdir()
+    monkeypatch.chdir(other_cwd)
+    from_exe = cr.resolve_storage_dir(env)
+
+    assert from_source == from_exe == os.path.join(str(tmp_path / "local"), "TotalHunter")
+
+
+def test_db_and_pending_share_one_storage_dir():
+    assert os.path.dirname(cr.DB_PATH) == cr.STORAGE_DIR
+    assert os.path.dirname(cr.PENDING_DIR) == cr.STORAGE_DIR
+    assert os.path.basename(cr.DB_PATH) == "chest_buffer.db"
+    assert os.path.basename(cr.PENDING_DIR) == "chest_pending"
+    module_dir = os.path.dirname(os.path.abspath(cr.__file__))
+    assert cr.STORAGE_DIR != module_dir
+
+
+def test_storage_dir_has_no_fallback_without_localappdata():
+    import pytest
+    with pytest.raises(RuntimeError):
+        cr.resolve_storage_dir({})
+
+
+def test_init_db_creates_missing_storage_dir(tmp_path):
+    db_path = str(tmp_path / "local" / "TotalHunter" / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    conn.close()
+    assert os.path.isfile(db_path)
+
+
+def test_chest_buffer_path_built_in_one_place_only():
+    """Ни один модуль бота не собирает свой путь к chest_buffer.db / chest_pending —
+    иначе снова появится вторая база рядом с кодом или exe."""
+    root = os.path.dirname(os.path.abspath(cr.__file__))
+    offenders = []
+    for name in os.listdir(root):
+        if not name.endswith(".py") or name.startswith("test_") or name == "chest_reader.py":
+            continue
+        with open(os.path.join(root, name), encoding="utf-8", errors="ignore") as f:
+            text = f.read()
+        if "chest_buffer.db" in text or "'chest_pending'" in text or '"chest_pending"' in text:
+            offenders.append(name)
+    with open(os.path.join(root, "chest_reader.py"), encoding="utf-8") as f:
+        own = f.read()
+    assert offenders == []
+    assert own.count("'chest_buffer.db'") == 1
+    assert own.count("'chest_pending'") == 1
