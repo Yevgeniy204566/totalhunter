@@ -124,6 +124,15 @@ def _total_ever_for_catalog(catalog_id: Optional[str], aliases: list, raw_counts
     return sum(raw_counts.get(a.raw_type, 0) for a in aliases if a.catalog_id == catalog_id)
 
 
+async def _load_localization_lookup(db: AsyncSession) -> dict:
+    """display_text (нормализованный) -> canonical_type — глобальная таблица переводов
+    (не per-collector), источник авто-сопоставления нераспознанных названий (владелец
+    2026-09-25: пресет и реально увиденные в игре сундуки не объединялись — пресет
+    матчился только по catalog_id, а у нераспознанных строк catalog_id всегда пуст)."""
+    rows = (await db.execute(select(ChestLocalization.display_text, ChestLocalization.canonical_type))).all()
+    return {text.strip().lower(): canonical for text, canonical in rows}
+
+
 async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
     aliases = (await db.execute(
         select(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id)
@@ -133,6 +142,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
     )).scalars().all()
     config_by_catalog_id = {c.catalog_id: c for c in configs}
     raw_counts = await _raw_type_counts(db, collector.id)
+    localization_lookup = await _load_localization_lookup(db)
 
     rows = []
     seen_catalog_ids = set()
@@ -147,6 +157,41 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "counts_toward_quota": config.counts_toward_quota if config else False,
             "total_ever": _total_ever_for_catalog(alias.catalog_id, aliases, raw_counts),
         })
+
+    # Авто-сопоставление нераспознанных строк (владелец 2026-09-25: загруженный пресет и
+    # реально увиденные ботом сундуки не объединялись — пресет матчился только по
+    # catalog_id, а у нераспознанных строк catalog_id всегда пуст). Точное совпадение
+    # (без учёта регистра/пробелов по краям) с уже известным переводом эталонного типа
+    # (_load_localization_lookup) — без внешнего переводчика, только локальная таблица.
+    # ДО цикла по "осиротевшим" конфигурациям ниже: иначе конфигурация без алиаса и
+    # только что найденная авто-связанная строка задвоились бы на один catalog_id.
+    # Ничего не пишем в БД здесь (это GET) — реальную связь (alias) создаёт, как обычно,
+    # «Сохранить» (POST /rows), когда в строке уже проставлен catalog_id.
+    mapped_raw_types = {a.raw_type for a in aliases}
+    unmapped = (await db.execute(
+        select(Chest.chest_type_raw).distinct()
+        .where(Chest.collector_id == collector.id)
+    )).scalars().all()
+    for raw_type in unmapped:
+        if raw_type in mapped_raw_types:
+            continue
+        matched_catalog_id = localization_lookup.get(raw_type.strip().lower()) if raw_type else None
+        if matched_catalog_id:
+            config = config_by_catalog_id.get(matched_catalog_id)
+            seen_catalog_ids.add(matched_catalog_id)
+            rows.append({
+                "raw_type": raw_type, "catalog_id": matched_catalog_id,
+                "custom_name": config.custom_name if config else None,
+                "points": config.points if config else 0,
+                "is_in_pattern": config.is_in_pattern if config else False,
+                "counts_toward_quota": config.counts_toward_quota if config else False,
+                "total_ever": raw_counts.get(raw_type, 0),
+            })
+        else:
+            rows.append({"raw_type": raw_type, "catalog_id": None, "custom_name": None,
+                         "points": 0, "is_in_pattern": False, "counts_toward_quota": False,
+                         "total_ever": raw_counts.get(raw_type, 0)})
+
     for config in configs:
         if config.catalog_id in seen_catalog_ids:
             continue
@@ -157,18 +202,6 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "counts_toward_quota": config.counts_toward_quota,
             "total_ever": _total_ever_for_catalog(config.catalog_id, aliases, raw_counts),
         })
-
-    mapped_raw_types = {a.raw_type for a in aliases}
-    unmapped = (await db.execute(
-        select(Chest.chest_type_raw).distinct()
-        .where(Chest.collector_id == collector.id)
-    )).scalars().all()
-    for raw_type in unmapped:
-        if raw_type in mapped_raw_types:
-            continue
-        rows.append({"raw_type": raw_type, "catalog_id": None, "custom_name": None,
-                     "points": 0, "is_in_pattern": False, "counts_toward_quota": False,
-                     "total_ever": raw_counts.get(raw_type, 0)})
 
     return rows
 

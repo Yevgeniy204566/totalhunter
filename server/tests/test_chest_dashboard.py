@@ -95,6 +95,60 @@ async def test_get_chests_combines_alias_config_and_unmapped_raw(db_session):
 
 
 @pytest.mark.asyncio
+async def test_unmapped_raw_type_auto_matches_known_localization_and_preset_points(db_session):
+    """Регрессия владельца 2026-09-25: загруженный пресет и реально распознанные ботом
+    сундуки не объединялись в таблице — пресет матчился только по catalog_id, а у
+    нераспознанных строк catalog_id всегда был пуст. Теперь нераспознанная строка,
+    чей raw_type ТОЧНО совпадает с уже известным переводом (chest_localizations), сама
+    показывается объединённой с этим catalog_id и очками уже заведённой конфигурации —
+    без похода к внешнему переводчику, только по локальной таблице."""
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="automatch-slug", language="ru")
+    db_session.add(ChestLocalization(canonical_type="Epic Fire Hydra", language="ru",
+                                     display_text="Эпическая Огненная Гидра"))
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Fire Hydra",
+                                      points=65, is_in_pattern=True))
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                         chest_type_raw="Эпическая Огненная Гидра",
+                         chest_type_canonical="Эпическая Огненная Гидра",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    rows = resp.json()["collectors"][0]["rows"]
+    assert len(rows) == 1, "распознанная строка должна слиться с конфигурацией пресета, а не удвоиться"
+    row = rows[0]
+    assert row["raw_type"] == "Эпическая Огненная Гидра"
+    assert row["catalog_id"] == "Epic Fire Hydra"
+    assert row["points"] == 65
+    assert row["is_in_pattern"] is True
+    assert row["total_ever"] == 1
+
+
+@pytest.mark.asyncio
+async def test_unmapped_raw_type_without_localization_stays_unmatched(db_session):
+    """Отрицательный случай — не должно ложно матчиться на что попало."""
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="nomatch-slug", language="ko")
+    db_session.add(Chest(collector_id=collector.id, sender_raw="P1", sender_canonical="P1",
+                         chest_type_raw="불사조의 화염 히드라",
+                         chest_type_canonical="불사조의 화염 히드라",
+                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+    await db_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/web/dashboard/chests",
+                                headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    row = resp.json()["collectors"][0]["rows"][0]
+    assert row["catalog_id"] is None
+    assert row["points"] == 0
+
+
+@pytest.mark.asyncio
 async def test_catalog_options_include_reference_only_chest(db_session):
     """Sakura of Abundance: a chest with no points/translation configured yet anywhere —
     must still show up in the picker because it's in the master reference list."""
