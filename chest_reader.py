@@ -162,12 +162,19 @@ def clean_name(text):
     return text.strip()
 
 
-def read_fixed_field(frame, ref_rect, offset_name=None, lang='rus+eng', extra_config=''):
+def crop_fixed_field(frame, ref_rect, offset_name=None):
+    """Region-lookup half of read_fixed_field, without OCR — the producer side of the
+    conveyor (сессия #149) needs just the pixels to save to disk; OCR happens later,
+    in the background, on whatever crop_top_row saved (see ocr_top_row_crops)."""
     x, y, w, h = coord_manager.to_region_dialog(*ref_rect)
     if offset_name is not None:
         dx, dy = coord_manager.get_ui_offset(offset_name)
         x, y = x + dx, y + dy
-    roi = frame[y:y + h, x:x + w]
+    return frame[y:y + h, x:x + w]
+
+
+def read_fixed_field(frame, ref_rect, offset_name=None, lang='rus+eng', extra_config=''):
+    roi = crop_fixed_field(frame, ref_rect, offset_name)
     return clean_name(ocr_text(roi, lang=lang, extra_config=extra_config))
 
 
@@ -184,19 +191,68 @@ FULL_SENDER_OCR_LANG = 'eng+script/Latin+script/Cyrillic+ara+jpn+chi_sim+chi_tra
 SENDER_OCR_CONFIG = '-c load_system_dawg=0 -c load_freq_dawg=0'
 
 
-def read_sender_name(frame, full_lang=False):
+def crop_sender_name(frame):
+    return crop_fixed_field(frame, SENDER_REF_RECT, "chest_sender")
+
+
+def crop_chest_type(frame):
+    return crop_fixed_field(frame, SOURCE_REF_RECT, "chest_type")
+
+
+def ocr_sender_name_crop(roi, full_lang=False):
     lang = FULL_SENDER_OCR_LANG if full_lang else LIGHT_SENDER_OCR_LANG
-    return read_fixed_field(frame, SENDER_REF_RECT, "chest_sender",
-                            lang=lang, extra_config=SENDER_OCR_CONFIG)
+    return clean_name(ocr_text(roi, lang=lang, extra_config=SENDER_OCR_CONFIG))
+
+
+def ocr_chest_type_crop(roi):
+    return clean_name(ocr_text(roi, lang='rus+eng', extra_config=''))
+
+
+def read_sender_name(frame, full_lang=False):
+    return ocr_sender_name_crop(crop_sender_name(frame), full_lang=full_lang)
 
 
 def read_chest_type(frame):
-    return read_fixed_field(frame, SOURCE_REF_RECT, "chest_type")
+    return ocr_chest_type_crop(crop_chest_type(frame))
 
 
 def read_top_row(frame, full_lang=False):
     chest_type = read_chest_type(frame)
     sender = read_sender_name(frame, full_lang=full_lang)
+    return chest_type, sender
+
+
+def pack_row_crops(type_roi, sender_roi):
+    """Combines the two tiny OCR crops into one small image for the pending queue — one
+    file per captured chest instead of two, simpler ordering/pairing on disk. Unpacking
+    is a plain slice by SOURCE_REF_RECT/SENDER_REF_RECT's own fixed width/height (module
+    constants) — no extra metadata needs to be stored alongside the image."""
+    h1, w1 = type_roi.shape[:2]
+    h2, w2 = sender_roi.shape[:2]
+    canvas = np.zeros((h1 + h2, max(w1, w2), 3), dtype=np.uint8)
+    canvas[0:h1, 0:w1] = type_roi
+    canvas[h1:h1 + h2, 0:w2] = sender_roi
+    return canvas
+
+
+def unpack_row_crops(combined):
+    type_h, type_w = SOURCE_REF_RECT[3], SOURCE_REF_RECT[2]
+    sender_h, sender_w = SENDER_REF_RECT[3], SENDER_REF_RECT[2]
+    type_roi = combined[0:type_h, 0:type_w]
+    sender_roi = combined[type_h:type_h + sender_h, 0:sender_w]
+    return type_roi, sender_roi
+
+
+def crop_top_row(frame):
+    """Producer side: vырезает оба ROI сейчас (пока кадр свежий), OCR — потом, в фоне."""
+    return pack_row_crops(crop_chest_type(frame), crop_sender_name(frame))
+
+
+def ocr_top_row_crops(combined, full_lang=False):
+    """Consumer side: OCR над кропом, сохранённым crop_top_row — не над живым кадром."""
+    type_roi, sender_roi = unpack_row_crops(combined)
+    chest_type = ocr_chest_type_crop(type_roi)
+    sender = ocr_sender_name_crop(sender_roi, full_lang=full_lang)
     return chest_type, sender
 
 

@@ -170,6 +170,62 @@ def test_read_top_row_on_fixture(monkeypatch):
     assert sender == "Gray Cardinal"
 
 
+# --- Crop/OCR split (сессия #149, конвейер): producer вырезает пиксели и сохраняет на диск,
+# OCR над готовым кропом делает отдельный фоновый consumer — read_fixed_field/read_top_row
+# продолжают работать как раньше (обёртки над crop+ocr), см. тесты выше, они не меняются.
+
+def test_crop_fixed_field_returns_same_roi_as_read_fixed_field(monkeypatch):
+    """crop_fixed_field must do exactly the region-lookup half of read_fixed_field
+    (coord_manager + ui_offset), returning raw pixels with no OCR."""
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (10, 10, 3, 3))
+    monkeypatch.setattr(cr.coord_manager, "get_ui_offset", lambda name: (2, -1))
+
+    frame = np.arange(1200).reshape(20, 20, 3).astype(np.uint8)
+    roi = cr.crop_fixed_field(frame, (1, 2, 3, 4), offset_name="chest_type")
+
+    expected = frame[9:12, 12:15]
+    assert np.array_equal(roi, expected)
+
+
+def test_crop_chest_type_and_sender_name_match_fixture_ocr(monkeypatch):
+    """crop_chest_type/crop_sender_name feed the exact same pixels that
+    read_chest_type/read_sender_name already OCR correctly on the fixture —
+    proves the crop step alone (no OCR yet) is a faithful split."""
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
+    frame = _load_fixture()
+
+    type_roi = cr.crop_chest_type(frame)
+    sender_roi = cr.crop_sender_name(frame)
+
+    assert cr.ocr_chest_type_crop(type_roi) == "Эпический отряд нежити"
+    assert cr.ocr_sender_name_crop(sender_roi) == "Gray Cardinal"
+
+
+def test_pack_unpack_row_crops_roundtrip(monkeypatch):
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
+    frame = _load_fixture()
+    type_roi = cr.crop_chest_type(frame)
+    sender_roi = cr.crop_sender_name(frame)
+
+    combined = cr.pack_row_crops(type_roi, sender_roi)
+    unpacked_type, unpacked_sender = cr.unpack_row_crops(combined)
+
+    assert np.array_equal(unpacked_type, type_roi)
+    assert np.array_equal(unpacked_sender, sender_roi)
+
+
+def test_crop_top_row_and_ocr_top_row_crops_match_read_top_row(monkeypatch):
+    """End-to-end for the pipeline's split: crop at capture time, OCR later on the saved
+    crop, must give the exact same result as the still-synchronous read_top_row."""
+    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
+    frame = _load_fixture()
+
+    combined = cr.crop_top_row(frame)
+    chest_type, sender = cr.ocr_top_row_crops(combined)
+
+    assert (chest_type, sender) == cr.read_top_row(frame)
+
+
 def test_init_db_creates_table(tmp_path):
     db_path = str(tmp_path / "chest_buffer.db")
     conn = cr.init_db(db_path)
