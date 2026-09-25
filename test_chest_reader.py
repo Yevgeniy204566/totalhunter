@@ -1,4 +1,6 @@
 import os
+import time
+import threading
 import cv2
 import numpy as np
 import chest_reader as cr
@@ -412,31 +414,44 @@ def test_click_open_button_uses_fixed_point_plus_tuning_offset(monkeypatch):
 
 
 def test_collect_chests_counts_and_persists(tmp_path, monkeypatch):
+    """Producer/consumer split (сессия #149): find_open_button gating now tracks
+    crop_top_row's own call count (one per captured chest) — read_top_row is no longer
+    called by the loop at all, OCR happens later in the background consumer."""
     sequence = [
         ("Сундук Эпического Монстра", "Alice"),
         ("Сундук Эпического Монстра", "Bob"),
     ]
-    state = {'n': 0}
+    produced = {'n': 0}
 
     monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
     monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
     monkeypatch.setattr(cr, "find_open_button",
-                        lambda bbox, dialog: (10, 10) if state['n'] < len(sequence) else None)
+                        lambda bbox, dialog: (10, 10) if produced['n'] < len(sequence) else None)
 
-    def fake_read_top_row(frame, **kwargs):
-        chest_type, sender = sequence[state['n']]
-        state['n'] += 1
-        return chest_type, sender
+    def fake_crop_top_row(frame):
+        produced['n'] += 1
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+    monkeypatch.setattr(cr, "crop_top_row", fake_crop_top_row)
+
+    consumed = {'n': 0}
+
+    def fake_ocr_top_row_crops(combined, full_lang=False):
+        item = sequence[consumed['n']]
+        consumed['n'] += 1
+        return item
+    monkeypatch.setattr(cr, "ocr_top_row_crops", fake_ocr_top_row_crops)
 
     clicked = []
-    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
     monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: clicked.append(True))
 
     db_path = str(tmp_path / "test_chest_buffer.db")
-    result = cr.collect_chests(lambda: False, db_path=db_path)
+    pending_dir = str(tmp_path / "chest_pending")
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir)
 
     assert result["counts"] == {"Сундук Эпического Монстра": 2}
+    assert result["list_ended"] is True
+    assert result["batch_full"] is False
     assert len(clicked) == 2
 
     conn = cr.init_db(db_path)
@@ -458,11 +473,13 @@ def test_collect_chests_tolerates_single_transient_button_miss(tmp_path, monkeyp
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
     monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: next(responses))
     monkeypatch.setattr(cr.time, "sleep", lambda s: None)
-    monkeypatch.setattr(cr, "read_top_row", lambda frame, **kwargs: ("Сундук", "Alice"))
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Сундук", "Alice"))
     monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
 
     db_path = str(tmp_path / "test_chest_buffer.db")
-    result = cr.collect_chests(lambda: False, db_path=db_path)
+    pending_dir = str(tmp_path / "chest_pending")
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir)
 
     assert result["counts"] == {"Сундук": 2}
 
@@ -485,9 +502,10 @@ def test_collect_chests_stops_after_limit_consecutive_button_misses(tmp_path, mo
     monkeypatch.setattr(cr.time, "sleep", lambda s: None)
 
     db_path = str(tmp_path / "test_chest_buffer.db")
-    result = cr.collect_chests(lambda: False, db_path=db_path)
+    pending_dir = str(tmp_path / "chest_pending")
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir)
 
-    assert result == {"counts": {}, "items": []}
+    assert result == {"counts": {}, "items": [], "batch_full": False, "list_ended": True}
     assert calls["n"] == cr.EMPTY_BUTTON_RETRY_LIMIT
 
 
@@ -497,23 +515,28 @@ def test_collect_chests_stops_immediately_when_flag_already_set(tmp_path, monkey
     monkeypatch.setattr(cr, "grab_fullscreen", boom)
 
     db_path = str(tmp_path / "test_chest_buffer.db")
-    result = cr.collect_chests(lambda: True, db_path=db_path)
-    assert result == {"counts": {}, "items": []}
+    pending_dir = str(tmp_path / "chest_pending")
+    result = cr.collect_chests(lambda: True, db_path=db_path, pending_dir=pending_dir)
+    assert result == {"counts": {}, "items": [], "batch_full": False, "list_ended": False}
 
 
 def test_collect_chests_counts_are_cumulative_from_db(tmp_path, monkeypatch):
     db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
     conn = cr.init_db(db_path)
     cr.insert_chest(conn, "Сундук Эпического Монстра", "Старый", "2026-06-19T09:00:00")
     conn.close()
 
-    calls = {"n": 0}
+    produced = {"n": 0}
 
     def fake_find_open_button(bbox, dialog):
-        return (10, 10) if calls["n"] < 1 else None
+        return (10, 10) if produced["n"] < 1 else None
 
-    def fake_read_top_row(frame, **kwargs):
-        calls["n"] += 1
+    def fake_crop_top_row(frame):
+        produced["n"] += 1
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+    def fake_ocr_top_row_crops(combined, full_lang=False):
         return ("Сундук Эпического Монстра", "Новый")
 
     def fake_click_open_button(pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
@@ -523,12 +546,167 @@ def test_collect_chests_counts_are_cumulative_from_db(tmp_path, monkeypatch):
     monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
     monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
-    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
+    monkeypatch.setattr(cr, "crop_top_row", fake_crop_top_row)
+    monkeypatch.setattr(cr, "ocr_top_row_crops", fake_ocr_top_row_crops)
     monkeypatch.setattr(cr, "click_open_button", fake_click_open_button)
 
-    result = cr.collect_chests(lambda: False, db_path=db_path)
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir)
 
     assert result["counts"] == {"Сундук Эпического Монстра": 2}
+
+
+def test_collect_chests_clicks_dont_wait_for_slow_ocr(tmp_path, monkeypatch):
+    """The whole point of the conveyor (входящие заметки, п.D): OCR must not block the
+    click loop. A slow/blocked OCR must not delay any of the clicks — proven by holding
+    the very first OCR call hostage on an Event and checking every click already
+    happened before that Event is ever released."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    n_chests = 3
+    produced = {"n": 0}
+    clicked = []
+    ocr_started = threading.Event()
+    release_ocr = threading.Event()
+
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button",
+                        lambda bbox, dialog: (10, 10) if produced["n"] < n_chests else None)
+
+    def fake_crop_top_row(frame):
+        produced["n"] += 1
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+    monkeypatch.setattr(cr, "crop_top_row", fake_crop_top_row)
+
+    def fake_click_open_button(pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
+        clicked.append(True)
+    monkeypatch.setattr(cr, "click_open_button", fake_click_open_button)
+
+    def fake_ocr_top_row_crops(combined, full_lang=False):
+        ocr_started.set()
+        release_ocr.wait(timeout=5)
+        return ("Тип", "Игрок")
+    monkeypatch.setattr(cr, "ocr_top_row_crops", fake_ocr_top_row_crops)
+
+    holder = {}
+
+    def run():
+        holder["result"] = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir)
+
+    t = threading.Thread(target=run)
+    t.start()
+    try:
+        assert ocr_started.wait(timeout=5), "OCR (consumer) never started"
+        # OCR for chest #1 is now blocked on release_ocr — the producer must not be
+        # waiting on it: give it a moment to run ahead and finish ALL its clicks.
+        deadline = time.time() + 3
+        while len(clicked) < n_chests and time.time() < deadline:
+            time.sleep(0.01)
+        assert len(clicked) == n_chests
+    finally:
+        release_ocr.set()
+        t.join(timeout=5)
+
+    assert holder["result"]["counts"] == {"Тип": n_chests}
+
+
+def test_collect_chests_stops_at_batch_limit_even_with_more_available(tmp_path, monkeypatch):
+    """BATCH_LIMIT (владелец 2026-09-25): один платёж 10◆ покрывает отправку батча целиком
+    независимо от размера — producer обязан остановиться на лимите, даже если в игре есть
+    ещё сундуки (find_open_button продолжал бы находить кнопку бесконечно)."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: (10, 10))  # бесконечный список
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Тип", "Игрок"))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir, batch_limit=3)
+
+    assert result["batch_full"] is True
+    assert result["list_ended"] is False
+    assert sum(result["counts"].values()) == 3
+
+
+def test_collect_chests_processes_leftover_crops_from_previous_run(tmp_path, monkeypatch):
+    """Не допускать потери сундуков при перезапуске (входящие заметки, п.D): кроп,
+    оставшийся на диске от прерванного запуска (краш/закрытие бота до того, как consumer
+    успел его разобрать), подхватывается consumer'ом заново, даже если producer в ЭТОМ
+    вызове вообще не работает (stop_flag уже True)."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    os.makedirs(pending_dir, exist_ok=True)
+    leftover_path = os.path.join(pending_dir, "000001.jpg")
+    cv2.imwrite(leftover_path, np.zeros((48, 400, 3), dtype=np.uint8))
+
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Старый тип", "Забытый"))
+
+    result = cr.collect_chests(lambda: True, db_path=db_path, pending_dir=pending_dir)
+
+    assert result["counts"] == {"Старый тип": 1}
+    assert not os.path.exists(leftover_path)
+
+
+def test_collect_chests_calls_on_batch_ready_when_list_ends(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: None)  # сразу пусто
+    monkeypatch.setattr(cr.time, "sleep", lambda s: None)
+
+    reasons = []
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir,
+                               on_batch_ready=reasons.append)
+
+    assert reasons == ["list_ended"]
+    assert result["list_ended"] is True
+
+
+def test_collect_chests_calls_on_batch_ready_with_batch_full_reason(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: (10, 10))
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Тип", "Игрок"))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+
+    reasons = []
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir, batch_limit=1,
+                               on_batch_ready=reasons.append)
+
+    assert reasons == ["batch_full"]
+    assert result["batch_full"] is True
+
+
+def test_collect_chests_on_batch_ready_exception_does_not_lose_result(tmp_path, monkeypatch):
+    """A network/credit failure inside the owner's send-to-server callback must not
+    swallow the (already-correct) collection result — it lands in 'batch_ready_error'."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: None)
+    monkeypatch.setattr(cr.time, "sleep", lambda s: None)
+
+    def boom(reason):
+        raise RuntimeError("сервер недоступен")
+
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir,
+                               on_batch_ready=boom)
+
+    assert result["list_ended"] is True
+    assert "сервер недоступен" in result["batch_ready_error"]
 
 
 class _FakeResponse:
@@ -707,6 +885,7 @@ def test_click_open_button_defaults_to_module_constant(monkeypatch):
 
 def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
     db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
     captured_ranges = []
 
     def fake_grab_fullscreen():
@@ -718,13 +897,16 @@ def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
     def fake_crop_dialog(frame, bbox):
         return np.zeros((300, 300, 3), dtype=np.uint8)
 
-    calls = {"n": 0}
+    produced = {"n": 0}
 
     def fake_find_open_button(bbox, dialog):
-        return (10, 10) if calls["n"] < 1 else None
+        return (10, 10) if produced["n"] < 1 else None
 
-    def fake_read_top_row(frame, **kwargs):
-        calls["n"] += 1
+    def fake_crop_top_row(frame):
+        produced["n"] += 1
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+    def fake_ocr_top_row_crops(combined, full_lang=False):
         return ("Сундук Эпического Монстра", "Игрок")
 
     def fake_click_open_button(pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
@@ -734,10 +916,11 @@ def test_collect_chests_forwards_pause_range_to_click(tmp_path, monkeypatch):
     monkeypatch.setattr(cr, "detect_dialog_bbox", fake_detect_dialog_bbox)
     monkeypatch.setattr(cr, "crop_dialog", fake_crop_dialog)
     monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
-    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
+    monkeypatch.setattr(cr, "crop_top_row", fake_crop_top_row)
+    monkeypatch.setattr(cr, "ocr_top_row_crops", fake_ocr_top_row_crops)
     monkeypatch.setattr(cr, "click_open_button", fake_click_open_button)
 
-    cr.collect_chests(lambda: False, db_path=db_path, pause_range=(0.5, 0.6))
+    cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir, pause_range=(0.5, 0.6))
 
     assert captured_ranges == [(0.5, 0.6)]
 
@@ -835,27 +1018,34 @@ def test_read_top_row_forwards_full_lang_to_sender(monkeypatch):
     assert captured["full_lang"] is True
 
 
-def test_collect_chests_forwards_full_lang_to_read_top_row(tmp_path, monkeypatch):
+def test_collect_chests_forwards_full_lang_to_ocr_top_row_crops(tmp_path, monkeypatch):
+    """full_lang now reaches the background consumer's OCR call (ocr_top_row_crops),
+    not read_top_row — the producer no longer OCRs anything itself."""
     db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
     captured = {}
 
     monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
     monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
     monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
 
-    calls = {"n": 0}
+    produced = {"n": 0}
 
     def fake_find_open_button(bbox, dialog):
-        return (10, 10) if calls["n"] < 1 else None
+        return (10, 10) if produced["n"] < 1 else None
     monkeypatch.setattr(cr, "find_open_button", fake_find_open_button)
 
-    def fake_read_top_row(frame, full_lang=False):
-        calls["n"] += 1
+    def fake_crop_top_row(frame):
+        produced["n"] += 1
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+    monkeypatch.setattr(cr, "crop_top_row", fake_crop_top_row)
+
+    def fake_ocr_top_row_crops(combined, full_lang=False):
         captured["full_lang"] = full_lang
         return ("Сундук", "Player")
-    monkeypatch.setattr(cr, "read_top_row", fake_read_top_row)
+    monkeypatch.setattr(cr, "ocr_top_row_crops", fake_ocr_top_row_crops)
     monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
 
-    cr.collect_chests(lambda: False, db_path=db_path, full_lang=True)
+    cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir, full_lang=True)
 
     assert captured["full_lang"] is True

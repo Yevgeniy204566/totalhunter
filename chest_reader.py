@@ -12,6 +12,7 @@ import time
 import random
 import sqlite3
 import datetime
+import threading
 
 import cv2
 import numpy as np
@@ -83,6 +84,22 @@ ANTI_DETECT_PAUSE_RANGE = (0.16, 0.28)  # reduced again 2026-06-19 by owner deci
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_buffer.db')
 API_IMPORT_PATH = '/api/v1/chests/import'
+
+# --- Конвейер (сессия #149, входящие заметки п.D): захват+клик отдельно от OCR --------------
+# Очередь на диске — только маленькие кропы (два ROI ~10КБ на сундук), не полные кадры как у
+# Биржи 2.0 (там нужен весь экран для YOLO). Без TTL — кроп сундука не «протухает» со временем,
+# в отличие от координат биржи в игре. Без паузы-по-размеру-очереди — OCR дешевле YOLO, узкое
+# место не в диске/памяти.
+PENDING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_pending')
+
+# Лимит батча — НЕ защита от потери данных (кропы и так надёжны), а денежное решение владельца
+# (2026-09-25): CHEST_IMPORT_COST на сервере (server/chests.py) списывает 10◆ ФЛЭТОМ за отправку
+# батча целиком, независимо от размера — без потолка пользователь мог бы копить неограниченный
+# батч за одну и ту же фиксированную оплату. При достижении лимита producer останавливает приём
+# новых сундуков (просто перестаёт жать «Собрать» — уже находящиеся в игре сундуки никуда не
+# делись, их можно забрать следующим стартом), consumer дообрабатывает хвост, затем должна
+# сработать отправка батча (on_batch_ready, реализуется вызывающим кодом в main.py).
+BATCH_LIMIT = 5000
 
 
 def detect_dialog_bbox(frame):
@@ -333,27 +350,145 @@ def click_open_button(pause_range=ANTI_DETECT_PAUSE_RANGE):
     time.sleep(random.uniform(*pause_range))
 
 
-def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
-                   pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False):
-    """Reads and opens chests from the top of the «Мой клан → Подарки» list
-    until the list is empty (no «Открыть» button found for EMPTY_BUTTON_RETRY_LIMIT
-    consecutive checks in a row — presence-only HSV check, see find_open_button;
-    a single miss is treated as a transient rendering glitch and retried, not
-    an empty list) or stop_flag() returns True. Every chest is
-    persisted to SQLite as it's read.
-    Returns {'counts': {chest_type: n}, 'items': [{'chest_type', 'sender',
-    'timestamp'}, ...]} for this session. 'counts' is sourced from the DB
-    (get_unsynced_counts), not a session-local tally, so it always reflects
-    the full unsynced backlog — not just what this call found. pause_range
-    overrides the module's anti-detect click-pause default for this call,
-    so the GUI's speed slider can control it without mutating global state.
-    full_lang likewise overrides the OCR language set for read_top_row's
-    sender-name field — see LIGHT_SENDER_OCR_LANG/FULL_SENDER_OCR_LANG."""
+def save_crop_atomic(combined, final_path: str) -> bool:
+    """Атомарная запись кропа в очередь: кодирует в память, пишет во временный файл, затем
+    os.replace — тот же надёжный приём, что уже проверен в Бирже 2.0 (exchange_scout.py,
+    save_frame_atomic), продублирован здесь, а не импортирован — chest_reader.py остаётся
+    самодостаточным файлом, как и его братья tournament_reader.py/exchange_scout.py (каждый
+    reader-модуль в проекте самостоятелен, общие приёмы копируются, а не связываются импортом).
+    False при любом сбое — вызывающий producer не останавливается из-за одного сбойного кадра."""
+    try:
+        ok, encoded = cv2.imencode(".jpg", combined)
+    except cv2.error:
+        return False
+    if not ok:
+        return False
+
+    base, _ext = os.path.splitext(final_path)
+    tmp_path = base + ".tmp"
+    try:
+        with open(tmp_path, "wb") as f:
+            f.write(encoded.tobytes())
+    except OSError:
+        return False
+
+    os.replace(tmp_path, final_path)
+    return True
+
+
+def _pending_queue(pending_dir: str) -> list:
+    """Кропы, ждущие OCR, по возрастанию номера — тот же порядок, в котором сундуки собраны.
+    Проще, чем очередь Биржи 2.0 (list_queue): этот каталог заполняет только сам producer
+    последовательными именами `NNNNNN.jpg`, нет ни ручных скринов, ни подпапок, ни TTL —
+    сортировки по имени файла достаточно."""
+    if not os.path.isdir(pending_dir):
+        return []
+    names = sorted(n for n in os.listdir(pending_dir) if n.endswith(".jpg"))
+    return [os.path.join(pending_dir, n) for n in names]
+
+
+def _batch_size(pending_dir: str, db_path: str) -> int:
+    """Сколько сундуков сейчас 'в этом батче' — уже в БД (is_synced=0) плюс ещё необработанные
+    кропы в очереди. Считать нужно ОБА, иначе producer может проскочить лимит, пока consumer
+    не успел дообработать хвост (BATCH_LIMIT)."""
     conn = init_db(db_path)
+    try:
+        unsynced = len(get_unsynced(conn))
+    finally:
+        conn.close()
+    return unsynced + len(_pending_queue(pending_dir))
+
+
+def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: bool,
+                         producer_done: threading.Event, items_out: list) -> None:
+    """Фоновый consumer: разбирает очередь кропов независимо от скорости producer'а (клики не
+    ждут OCR). Останавливается, только когда очередь пуста И producer точно закончил (иначе
+    кроп, записанный между проверками, был бы пропущен) — тот же порядок проверки, что и в
+    Бирже 2.0 (exchange_scout.py:_consumer_loop)."""
+    while True:
+        queue = _pending_queue(pending_dir)
+        if not queue:
+            if producer_done.is_set():
+                break
+            time.sleep(0.05)
+            continue
+
+        src = queue[0]
+        try:
+            combined = cv2.imread(src)
+        except (FileNotFoundError, OSError):
+            continue
+        if combined is None:
+            try:
+                os.remove(src)
+            except OSError:
+                pass
+            continue
+
+        chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
+        timestamp = datetime.datetime.now().isoformat(timespec='seconds')
+
+        conn = init_db(db_path)
+        try:
+            insert_chest(conn, chest_type, sender, timestamp)
+            counts = get_unsynced_counts(conn)
+        finally:
+            conn.close()
+
+        try:
+            os.remove(src)
+        except OSError:
+            pass
+
+        items_out.append({'chest_type': chest_type, 'sender': sender, 'timestamp': timestamp})
+        if on_update:
+            on_update(counts)
+
+
+def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
+                   pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False,
+                   pending_dir=PENDING_DIR, batch_limit=BATCH_LIMIT, on_batch_ready=None):
+    """Конвейер (сессия #149, входящие заметки п.D): клики по «Собрать» НЕ ждут OCR.
+    Этот (producer) поток захватывает кадр, проверяет кнопку «Открыть» (find_open_button,
+    как раньше), вырезает оба ROI (crop_top_row) и атомарно сохраняет кроп в pending_dir —
+    затем СРАЗУ кликает и переходит к следующему сундуку. Отдельный фоновый consumer-поток
+    (_chest_consumer_loop) параллельно разбирает очередь: OCR (ocr_top_row_crops) → запись в
+    БД (insert_chest) → on_update. Останавливается по stop_flag() (список в игре ещё не
+    закончился — пользователь/ESC), по естественному концу списка (EMPTY_BUTTON_RETRY_LIMIT
+    промахов подряд) или по лимиту батча (см. BATCH_LIMIT).
+
+    Перед возвратом ВСЕГДА дожидается полной дообработки очереди consumer'ом (владелец
+    2026-09-25: партия должна уходить на сервер только после 100% OCR, не частично) — поэтому
+    вызывающий код (main.py) может звать on_batch_ready сразу после возврата, зная, что счётчик
+    уже окончательный. on_batch_ready(reason), reason — 'list_ended' или 'batch_full' — вызывается
+    ИЗНУТРИ этой функции (тем же потоком, что и весь collect_chests, обычно уже фоновый поток
+    GUI) перед возвратом результата; исключение в нём не теряет результат сбора — попадает в
+    ключ 'batch_ready_error'.
+
+    Возвращает {'counts', 'items', 'batch_full': bool, 'list_ended': bool, 'batch_ready_error'?}.
+    'counts' — из БД (get_unsynced_counts), не сессионный счётчик, всегда полный бэклог.
+    pause_range/full_lang — как раньше (анти-детект клика; язык OCR имени отправителя)."""
+    os.makedirs(pending_dir, exist_ok=True)
+
+    producer_done = threading.Event()
     items = []
+    consumer_thread = threading.Thread(
+        target=_chest_consumer_loop,
+        args=(pending_dir, db_path, on_update, full_lang, producer_done, items),
+        daemon=True,
+    )
+    consumer_thread.start()
+
+    batch_full = False
+    list_ended = False
     empty_streak = 0
+    frame_id = 0
     try:
         while not stop_flag():
+            if _batch_size(pending_dir, db_path) >= batch_limit:
+                batch_full = True
+                break
+
             frame = grab_fullscreen()
             bbox = detect_dialog_bbox(frame)
             if bbox is None:
@@ -367,26 +502,38 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
             if find_open_button(bbox, dialog) is None:
                 empty_streak += 1
                 if empty_streak >= EMPTY_BUTTON_RETRY_LIMIT:
+                    list_ended = True
                     break
                 time.sleep(EMPTY_BUTTON_RETRY_PAUSE)
                 continue
             empty_streak = 0
 
-            chest_type, sender = read_top_row(frame, full_lang=full_lang)
-            timestamp = datetime.datetime.now().isoformat(timespec='seconds')
-            insert_chest(conn, chest_type, sender, timestamp)
-            items.append({'chest_type': chest_type, 'sender': sender, 'timestamp': timestamp})
-
-            if on_update:
-                on_update(get_unsynced_counts(conn))
+            frame_id += 1
+            combined = crop_top_row(frame)
+            frame_path = os.path.join(pending_dir, f"{frame_id:06d}.jpg")
+            save_crop_atomic(combined, frame_path)
 
             click_open_button(pause_range)
+    finally:
+        producer_done.set()
+        consumer_thread.join()   # владелец 2026-09-25: ждать полного OCR, не частичный батч
 
+    conn = init_db(db_path)
+    try:
         final_counts = get_unsynced_counts(conn)
     finally:
         conn.close()
 
-    return {'counts': final_counts, 'items': items}
+    result = {'counts': final_counts, 'items': items,
+             'batch_full': batch_full, 'list_ended': list_ended}
+
+    if on_batch_ready and (batch_full or list_ended):
+        try:
+            on_batch_ready('batch_full' if batch_full else 'list_ended')
+        except Exception as e:
+            result['batch_ready_error'] = f"{type(e).__name__}: {e}"
+
+    return result
 
 
 EXPORT_MAX_ATTEMPTS = 2
