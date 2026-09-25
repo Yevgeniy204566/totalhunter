@@ -753,8 +753,17 @@ def test_collect_chests_on_batch_ready_exception_does_not_lose_result(tmp_path, 
 
 
 class _FakeResponse:
-    def __init__(self, status_code):
+    def __init__(self, status_code, count=None):
         self.status_code = status_code
+        self._count = count
+
+    def json(self):
+        # count=None имитирует ответ БЕЗ поля count вовсе (ключ отсутствует, не None) —
+        # export_to_api должен в этом случае считать, что принято всё отправленное.
+        body = {"ok": True}
+        if self._count is not None:
+            body["count"] = self._count
+        return body
 
 
 def test_export_to_api_success(monkeypatch):
@@ -763,7 +772,7 @@ def test_export_to_api_success(monkeypatch):
     def fake_post(url, json, timeout):
         captured['url'] = url
         captured['json'] = json
-        return _FakeResponse(200)
+        return _FakeResponse(200, count=1)
 
     monkeypatch.setattr(cr.requests, "post", fake_post)
     monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
@@ -772,7 +781,7 @@ def test_export_to_api_success(monkeypatch):
               "timestamp": "2026-06-17T10:00:00"}]
     result = cr.export_to_api("K229", "Legion", items)
 
-    assert result == {"success": True}
+    assert result == {"success": True, "count": 1}
     assert captured['url'].endswith("/api/v1/chests/import")
     assert captured['json']["hwid"] == "ABCD1234"
     assert captured['json']["kingdom"] == "K229"
@@ -805,7 +814,7 @@ def test_export_to_api_uses_45_second_timeout(monkeypatch):
 
     def fake_post(url, json, timeout):
         captured['timeout'] = timeout
-        return _FakeResponse(200)
+        return _FakeResponse(200, count=0)
 
     monkeypatch.setattr(cr.requests, "post", fake_post)
     monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
@@ -820,15 +829,48 @@ def test_export_to_api_retries_once_on_timeout_then_succeeds(monkeypatch):
         calls.append(1)
         if len(calls) == 1:
             raise cr.requests.Timeout("timed out")
-        return _FakeResponse(200)
+        return _FakeResponse(200, count=0)
 
     monkeypatch.setattr(cr.requests, "post", fake_post)
     monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
 
     result = cr.export_to_api("K229", "Legion", [])
 
-    assert result == {"success": True}
+    assert result == {"success": True, "count": 0}
     assert len(calls) == 2
+
+
+def test_export_to_api_reports_partial_count_when_server_accepts_fewer(monkeypatch):
+    """Регрессия сессии #149 (живой инцидент владельца, 2026-09-25): сервер вернул
+    200 OK, но 133 из 354 отправленных сундуков реально на сервер не попали — код
+    проверял только HTTP-статус, не count из ответа, и пометил ВСЕ как отправленные.
+    export_to_api теперь возвращает count из ответа сервера — сверку со len(items) и
+    решение, что делать при несовпадении, принимает вызывающий код (main.py)."""
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _FakeResponse(200, count=2))
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+
+    items = [{"chest_type": "A", "sender": "X", "timestamp": "2026-09-25T21:00:00"},
+             {"chest_type": "B", "sender": "Y", "timestamp": "2026-09-25T21:00:01"},
+             {"chest_type": "C", "sender": "Z", "timestamp": "2026-09-25T21:00:02"}]
+    result = cr.export_to_api("229", "Феникс", items)
+
+    assert result == {"success": True, "count": 2}
+
+
+def test_export_to_api_count_defaults_to_submitted_when_missing_from_response(monkeypatch):
+    """Защита от старого/нестандартного ответа без поля count — не должно ложно
+    выглядеть как 'частичный провал', раз сервер вообще ничего не сообщил."""
+    class _NoCountResponse:
+        status_code = 200
+        def json(self):
+            return {"ok": True}
+    monkeypatch.setattr(cr.requests, "post", lambda url, json, timeout: _NoCountResponse())
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+
+    items = [{"chest_type": "A", "sender": "X", "timestamp": "2026-09-25T21:00:00"}]
+    result = cr.export_to_api("229", "Феникс", items)
+
+    assert result == {"success": True, "count": 1}
 
 
 def test_export_to_api_gives_up_after_second_attempt_fails(monkeypatch):
@@ -885,7 +927,7 @@ def test_export_to_api_does_not_log_on_success(monkeypatch):
 
     result = cr.export_to_api("K229", "Legion", [])
 
-    assert result == {"success": True}
+    assert result == {"success": True, "count": 0}
 
 
 def test_click_open_button_uses_passed_pause_range(monkeypatch):

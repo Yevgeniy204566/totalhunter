@@ -3120,12 +3120,20 @@ class TotalHunterApp(ctk.CTk):
                 return
 
             send_result = self._send_chest_batch(kingdom, clan)
-            continue_after_send["value"] = reason == "batch_full" and bool(send_result.get("success"))
+            # partial: сервер принял не всё -> ничего локально не помечено отправленным,
+            # батч всё ещё полон -> продолжать сбор нельзя (тут же снова упрёмся в лимит).
+            continue_after_send["value"] = (reason == "batch_full"
+                                            and bool(send_result.get("success"))
+                                            and not send_result.get("partial"))
 
             def _update():
                 if send_result.get("empty"):
                     return
-                if send_result.get("success"):
+                if send_result.get("partial"):
+                    self.chest_status_label.configure(
+                        text=f"{L['chest_send_failed']} ({send_result.get('accepted')}/{send_result.get('submitted')})",
+                        text_color=MD3["error_text"])
+                elif send_result.get("success"):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                       text_color=MD3["secondary"])
                     self._update_chest_counts_display({})
@@ -3163,7 +3171,16 @@ class TotalHunterApp(ctk.CTk):
         (send_chests_to_server), и авто-отправкой (toggle_chest_bot._on_batch_ready).
         Сетевой вызов и запись в БД не переизобретаются — export_to_api/mark_synced уже
         реализованы и работают в проде. {'success': True, 'empty': True} — нечего отправлять
-        (батч уже пуст), отличается от настоящего успешного 'success' для текста статуса."""
+        (батч уже пуст), отличается от настоящего успешного 'success' для текста статуса.
+
+        Регрессия сессии #149 (живой инцидент владельца 2026-09-25): сервер один раз
+        ответил 200 OK, но принял МЕНЬШЕ записей, чем было отправлено (без единой ошибки
+        в логах) — код помечал is_synced=1 всему пакету по одному факту 200 OK, часть
+        данных потерялась без единого признака сбоя. Теперь is_synced=1 ставится ТОЛЬКО
+        если count из ответа сервера равен количеству отправленных записей — иначе НИ ОДНА
+        запись из этого пакета не помечается (не гадаем, какие именно приняты). Повторная
+        отправка уже полностью принятого батча бесплатна (сервер дедуплицирует, не
+        списывает второй раз — server/chests.py), поэтому это безопасно, не копит долг."""
         import chest_reader
         conn = chest_reader.init_db()
         rows = chest_reader.get_unsynced(conn)
@@ -3175,7 +3192,11 @@ class TotalHunterApp(ctk.CTk):
         ids = [r[0] for r in rows]
         result = chest_reader.export_to_api(kingdom, clan, items)
         if result.get("success"):
-            chest_reader.mark_synced(conn, ids)
+            accepted = result.get("count")
+            if accepted == len(items):
+                chest_reader.mark_synced(conn, ids)
+            else:
+                result = {**result, "partial": True, "accepted": accepted, "submitted": len(items)}
         conn.close()
         return result
 
@@ -3209,6 +3230,10 @@ class TotalHunterApp(ctk.CTk):
                 if result.get("empty"):
                     self.chest_status_label.configure(text=L["chest_status_stopped"],
                                                        text_color=MD3["on_surface2"])
+                elif result.get("partial"):
+                    self.chest_status_label.configure(
+                        text=f"{L['chest_send_failed']} ({result.get('accepted')}/{result.get('submitted')})",
+                        text_color=MD3["error_text"])
                 elif result.get("success"):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                        text_color=MD3["secondary"])

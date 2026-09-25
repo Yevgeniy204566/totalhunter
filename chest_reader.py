@@ -564,6 +564,12 @@ EXPORT_MAX_ATTEMPTS = 2
 
 
 def export_to_api(kingdom, clan, items):
+    """Регрессия сессии #149 (живой инцидент владельца 2026-09-25): раньше успех определялся
+    ТОЛЬКО HTTP-статусом — сервер один раз ответил 200 OK, но реально принял меньше записей,
+    чем было отправлено (без единой ошибки в логах), а код пометил их ВСЕ как отправленные.
+    Теперь возвращается 'count' из тела ответа сервера — сколько записей реально принято;
+    сверку с len(items) и решение (помечать ли is_synced) делает вызывающий код (main.py),
+    не эта функция — она только честно докладывает, что сказал сервер."""
     payload = {
         "hwid": get_hwid(),
         "kingdom": kingdom,
@@ -581,7 +587,11 @@ def export_to_api(kingdom, clan, items):
         if response.status_code == 402:
             return {"success": False, "low_credits": True}
         if 200 <= response.status_code < 300:
-            return {"success": True}
+            try:
+                count = response.json().get("count", len(items))
+            except ValueError:
+                count = len(items)  # ответ без валидного JSON-тела — не считать это провалом
+            return {"success": True, "count": count}
         reason = f"http_{response.status_code}"
     log_error_to_server(f"chest_export_failed after {EXPORT_MAX_ATTEMPTS} attempts: {reason}")
     return {"success": False}
