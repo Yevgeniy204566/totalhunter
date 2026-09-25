@@ -641,7 +641,7 @@ def test_collect_chests_processes_leftover_crops_from_previous_run(tmp_path, mon
     db_path = str(tmp_path / "chest_buffer.db")
     pending_dir = str(tmp_path / "chest_pending")
     os.makedirs(pending_dir, exist_ok=True)
-    leftover_path = os.path.join(pending_dir, "000001.jpg")
+    leftover_path = os.path.join(pending_dir, "000001.png")
     cv2.imwrite(leftover_path, np.zeros((48, 400, 3), dtype=np.uint8))
 
     monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Старый тип", "Забытый"))

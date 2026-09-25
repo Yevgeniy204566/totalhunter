@@ -5183,10 +5183,16 @@ class TotalHunterApp(ctk.CTk):
         coord_manager.save(path)
         self._save_gui_config_key("last_calibration_profile", profile_name)
 
+    CHEST_PAUSE_FLOOR = 0.3  # владелец 2026-09-25: пол вернул — раньше 0.3с+ гарантировал OCR
+
     def _chest_pause_range(self, slider_value: float) -> tuple:
-        """Owner-confirmed: floor removed (2026-06-25) — real pause is always
-        0.3+ s from OCR processing time, so additional 0 s slider is safe."""
-        lower = max(0.0, slider_value - 0.1)
+        """Пол 0.3с ВОЗВРАЩЁН (сессия #149, 2026-09-25): конвейер убрал OCR из цикла клика
+        (был убран 2026-06-25 именно потому, что OCR ВСЕГДА давал 0.3+ с реальной паузы —
+        игра успевала отрисовать замену строки перед следующим скриншотом). Без OCR в цикле
+        на низкой скорости пауза могла быть почти 0с — бот фотографировал строку ДО того, как
+        игра дорисовала замену, OCR читал переходный кадр -> кривое имя. Пол восстанавливает
+        ту же гарантию, ползунок по-прежнему добавляет паузу сверху."""
+        lower = max(0.0, slider_value - 0.1) + self.CHEST_PAUSE_FLOOR
         return (lower, lower + 0.2)
 
     def setup_chest_tab(self):

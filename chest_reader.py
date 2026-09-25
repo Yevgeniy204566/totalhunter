@@ -86,7 +86,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_buffer
 API_IMPORT_PATH = '/api/v1/chests/import'
 
 # --- Конвейер (сессия #149, входящие заметки п.D): захват+клик отдельно от OCR --------------
-# Очередь на диске — только маленькие кропы (два ROI ~10КБ на сундук), не полные кадры как у
+# Очередь на диске — только маленькие кропы (два ROI, PNG без потерь, ~30КБ на сундук), не полные кадры как у
 # Биржи 2.0 (там нужен весь экран для YOLO). Без TTL — кроп сундука не «протухает» со временем,
 # в отличие от координат биржи в игре. Без паузы-по-размеру-очереди — OCR дешевле YOLO, узкое
 # место не в диске/памяти.
@@ -356,9 +356,14 @@ def save_crop_atomic(combined, final_path: str) -> bool:
     save_frame_atomic), продублирован здесь, а не импортирован — chest_reader.py остаётся
     самодостаточным файлом, как и его братья tournament_reader.py/exchange_scout.py (каждый
     reader-модуль в проекте самостоятелен, общие приёмы копируются, а не связываются импортом).
+
+    PNG (без потерь), НЕ JPEG — сессия #149, живая проверка владельца показала ухудшение
+    распознавания имён после перехода на конвейер; OCR должен видеть ТЕ ЖЕ пиксели, что
+    видел бы синхронный код 1:1. Биржа 2.0 намеренно использует JPEG (полный кадр для YOLO,
+    там сжатие не критично и экономит место) — здесь кроп ~30КБ и без сжатия, экономить нечего.
     False при любом сбое — вызывающий producer не останавливается из-за одного сбойного кадра."""
     try:
-        ok, encoded = cv2.imencode(".jpg", combined)
+        ok, encoded = cv2.imencode(".png", combined)
     except cv2.error:
         return False
     if not ok:
@@ -379,11 +384,11 @@ def save_crop_atomic(combined, final_path: str) -> bool:
 def _pending_queue(pending_dir: str) -> list:
     """Кропы, ждущие OCR, по возрастанию номера — тот же порядок, в котором сундуки собраны.
     Проще, чем очередь Биржи 2.0 (list_queue): этот каталог заполняет только сам producer
-    последовательными именами `NNNNNN.jpg`, нет ни ручных скринов, ни подпапок, ни TTL —
+    последовательными именами `NNNNNN.png`, нет ни ручных скринов, ни подпапок, ни TTL —
     сортировки по имени файла достаточно."""
     if not os.path.isdir(pending_dir):
         return []
-    names = sorted(n for n in os.listdir(pending_dir) if n.endswith(".jpg"))
+    names = sorted(n for n in os.listdir(pending_dir) if n.endswith(".png"))
     return [os.path.join(pending_dir, n) for n in names]
 
 
@@ -510,7 +515,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
 
             frame_id += 1
             combined = crop_top_row(frame)
-            frame_path = os.path.join(pending_dir, f"{frame_id:06d}.jpg")
+            frame_path = os.path.join(pending_dir, f"{frame_id:06d}.png")
             save_crop_atomic(combined, frame_path)
 
             click_open_button(pause_range)
