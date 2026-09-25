@@ -5299,7 +5299,11 @@ class TotalHunterApp(ctk.CTk):
                                              text_color=MD3["on_surface2"])
         self.chest_kingdom_lb.pack(side="left", padx=(0, 8))
         self._i18n_labels.append((self.chest_kingdom_lb, "chest_kingdom_lb"))
-        self.chest_kingdom_entry = ctk.CTkEntry(kingdom_row, width=120)
+        # Владелец 2026-09-25: номер королевства — не более 4 цифр (реальные ГОСы 1-2999,
+        # с запасом до 9999). validate="key" фильтрует каждый вводимый символ до вставки.
+        _kingdom_vcmd = (self.register(lambda p: p == "" or (p.isdigit() and len(p) <= 4)), "%P")
+        self.chest_kingdom_entry = ctk.CTkEntry(kingdom_row, width=80,
+                                                validate="key", validatecommand=_kingdom_vcmd)
         self.chest_kingdom_entry.pack(side="left")
         saved_kingdom = self._load_gui_config().get("chest_kingdom", "")
         if saved_kingdom:
@@ -5307,7 +5311,7 @@ class TotalHunterApp(ctk.CTk):
         self.chest_kingdom_entry.bind("<FocusOut>", self._on_chest_kingdom_change)
 
         clan_row = ctk.CTkFrame(id_card, fg_color="transparent")
-        clan_row.pack(padx=10, pady=(4, 10), fill="x")
+        clan_row.pack(padx=10, pady=(4, 4), fill="x")
         self.chest_clan_lb = ctk.CTkLabel(clan_row, text=L["chest_clan_lb"],
                                           font=ctk.CTkFont(size=12),
                                           text_color=MD3["on_surface2"])
@@ -5319,6 +5323,30 @@ class TotalHunterApp(ctk.CTk):
         if saved_clan:
             self.chest_clan_entry.insert(0, saved_clan)
         self.chest_clan_entry.bind("<FocusOut>", self._on_chest_clan_change)
+
+        # ── Сохранённые пары Королевство+Клан (входящие, п.C; владелец 2026-09-25) ──
+        # Вписал номер+клан вручную -> «💾» сохраняет пару в список -> в любой день
+        # достаточно выбрать нужную пару из списка вместо повторного набора руками.
+        pairs_row = ctk.CTkFrame(id_card, fg_color="transparent")
+        pairs_row.pack(padx=10, pady=(0, 10), fill="x")
+        self._chest_saved_pairs = self._load_gui_config().get("chest_saved_pairs", [])
+        self._chest_pairs_menu = ctk.CTkOptionMenu(
+            pairs_row, values=["—"], height=28,
+            command=self._on_chest_pair_selected, fg_color=MD3["card"],
+            button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
+            text_color=MD3["on_surface"])
+        self._chest_pairs_menu.pack(side="left", fill="x", expand=True, padx=(0, 4))
+        self._chest_pair_save_btn = ctk.CTkButton(
+            pairs_row, text="💾", width=32, height=28, corner_radius=8,
+            fg_color=MD3["card"], hover_color=MD3["outline"], text_color=MD3["on_surface"],
+            border_width=1, border_color=MD3["outline"], command=self._save_chest_pair)
+        self._chest_pair_save_btn.pack(side="left", padx=(0, 4))
+        self._chest_pair_delete_btn = ctk.CTkButton(
+            pairs_row, text="🗑", width=32, height=28, corner_radius=8,
+            fg_color=MD3["card"], hover_color=MD3["outline"], text_color=MD3["on_surface"],
+            border_width=1, border_color=MD3["outline"], command=self._delete_chest_pair)
+        self._chest_pair_delete_btn.pack(side="left")
+        self._refresh_chest_pairs_menu()
 
         # ── Отправить на сервер ──────────────────────────────────────────
         self.chest_send_btn = ctk.CTkButton(
@@ -5445,6 +5473,48 @@ class TotalHunterApp(ctk.CTk):
 
     def _on_chest_clan_change(self, event=None):
         self._save_gui_config_key("chest_clan", self.chest_clan_entry.get().strip())
+
+    @staticmethod
+    def _chest_pair_label(pair: dict) -> str:
+        return f"{pair['kingdom']} — {pair['clan']}"
+
+    def _refresh_chest_pairs_menu(self):
+        values = ([self._chest_pair_label(p) for p in self._chest_saved_pairs]
+                 if self._chest_saved_pairs else ["—"])
+        self._chest_pairs_menu.configure(values=values)
+        self._chest_pairs_menu.set(values[0])
+
+    def _on_chest_pair_selected(self, label: str):
+        """Выбор пары из списка заполняет поля Королевство/Клан — дальше всё как раньше
+        (сбор/отправка читают эти же поля, отдельный путь не заводился)."""
+        for pair in self._chest_saved_pairs:
+            if self._chest_pair_label(pair) == label:
+                self.chest_kingdom_entry.delete(0, "end")
+                self.chest_kingdom_entry.insert(0, pair["kingdom"])
+                self.chest_clan_entry.delete(0, "end")
+                self.chest_clan_entry.insert(0, pair["clan"])
+                self._save_gui_config_key("chest_kingdom", pair["kingdom"])
+                self._save_gui_config_key("chest_clan", pair["clan"])
+                break
+
+    def _save_chest_pair(self):
+        kingdom = self.chest_kingdom_entry.get().strip()
+        clan = self.chest_clan_entry.get().strip()
+        if not kingdom or not clan:
+            return
+        if any(p["kingdom"] == kingdom and p["clan"] == clan for p in self._chest_saved_pairs):
+            return  # уже сохранена — не плодить дубли
+        self._chest_saved_pairs.append({"kingdom": kingdom, "clan": clan})
+        self._save_gui_config_key("chest_saved_pairs", self._chest_saved_pairs)
+        self._refresh_chest_pairs_menu()
+        self._chest_pairs_menu.set(self._chest_pair_label({"kingdom": kingdom, "clan": clan}))
+
+    def _delete_chest_pair(self):
+        current = self._chest_pairs_menu.get()
+        self._chest_saved_pairs = [p for p in self._chest_saved_pairs
+                                   if self._chest_pair_label(p) != current]
+        self._save_gui_config_key("chest_saved_pairs", self._chest_saved_pairs)
+        self._refresh_chest_pairs_menu()
 
     def _on_chest_speed_change(self, value):
         L = LANGS[self.current_lang]
