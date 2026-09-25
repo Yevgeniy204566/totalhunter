@@ -75,3 +75,35 @@ def test_enforce_no_maximize_is_noop_when_already_normal():
         assert main.enforce_no_maximize(root, "460x800+100+50") is False
     finally:
         root.destroy()
+
+
+# ── automation_conflict (входящие, п.G) ─────────────────────────────────────────
+
+def test_automation_conflict_nothing_running():
+    assert main.automation_conflict(None, False, False, False, exclude="chest") is False
+
+
+def test_automation_conflict_exchange_active_mode_blocks_others():
+    assert main.automation_conflict("v1", False, False, False, exclude="chest") is True
+    assert main.automation_conflict("v2", False, False, False, exclude="crypt") is True
+
+
+def test_automation_conflict_scout_consumer_still_draining_blocks_others():
+    """Живая жалоба владельца 2026-09-25: 'в фоне чекаются скрины Биржи, а мы запустили
+    другую работу' — фоновый YOLO consumer Биржи 2.0 продолжает работать и ПОСЛЕ явной
+    остановки змейки (active_mode уже None), должен блокировать старт другой автоматизации."""
+    assert main.automation_conflict(None, True, False, False, exclude="chest") is True
+    assert main.automation_conflict(None, True, False, False, exclude="crypt") is True
+
+
+def test_automation_conflict_crypt_and_chest_block_each_other():
+    assert main.automation_conflict(None, False, True, False, exclude="chest") is True
+    assert main.automation_conflict(None, False, False, True, exclude="crypt") is True
+
+
+def test_automation_conflict_excluded_automation_never_blocks_itself():
+    """exclude — сама стартующая автоматизация не должна блокировать саму себя (иначе
+    повторный старт/останов был бы невозможен)."""
+    assert main.automation_conflict("v2", True, False, False, exclude="exchange") is False
+    assert main.automation_conflict(None, False, True, False, exclude="crypt") is False
+    assert main.automation_conflict(None, False, False, True, exclude="chest") is False

@@ -402,6 +402,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "БИРЖИ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛЫ",
         "get_trial": "ПОЛУЧИТЬ 300 ПОПЫТОК", "start": "ЗАПУСТИТЬ ОХОТУ", "stop": "ОСТАНОВИТЬ",
         "no_credits": "У вас 0 алмазов! Привяжите устройство на сайте.", "offline_stopped": "Остановлено: нет связи с сервером", "login_btn": "ПРИВЯЗАТЬ УСТРОЙСТВО",
+        "automation_busy_warning": "Сначала остановите другую задачу бота",
         "banned": "ВАШ АККАУНТ ЗАБЛОКИРОВАН", "ref_title": "ПАРТНЕРСКАЯ ПРОГРАММА",
         "my_code": "ВАШ КОД ДЛЯ ПРИГЛАШЕНИЯ:", "friend_code": "КОД ПРИГЛАСИТЕЛЯ (+50):",
         "activate_ref": "АКТИВИРОВАТЬ", "ref_used": "БОНУС АКТИВИРОВАН ✅",
@@ -478,6 +479,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "EXCHANGE", "tab_combo": "Combo", "tab_ref": "REFERRALS",
         "get_trial": "GET 300 TRIALS", "start": "START HUNT", "stop": "STOP",
         "no_credits": "0 diamonds! Link your device on the website.", "offline_stopped": "Stopped: no connection to server", "login_btn": "LINK DEVICE",
+        "automation_busy_warning": "Stop another bot task first",
         "banned": "ACCOUNT BANNED", "ref_title": "REFERRAL SYSTEM",
         "my_code": "YOUR INVITE CODE:", "friend_code": "INVITER CODE (+50):",
         "activate_ref": "ACTIVATE", "ref_used": "BONUS ACTIVE ✅",
@@ -553,6 +555,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BÖRSEN", "tab_combo": "Combo", "tab_ref": "PARTNER",
         "get_trial": "300 VERSUCHE HOLEN", "start": "JAGD STARTEN", "stop": "STOPP",
         "no_credits": "0 Diamanten! Gerät auf Website verknüpfen.", "offline_stopped": "Gestoppt: keine Verbindung zum Server", "login_btn": "GERÄT VERKNÜPFEN",
+        "automation_busy_warning": "Stoppen Sie zuerst eine andere Bot-Aufgabe",
         "banned": "KONTO GESPERRT", "ref_title": "PARTNERPROGRAMM",
         "my_code": "DEIN EINLADUNGSCODE:", "friend_code": "EINLADER-CODE (+50):",
         "activate_ref": "AKTIVIEREN", "ref_used": "BONUS AKTIV ✅",
@@ -616,6 +619,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "REFERIDOS",
         "get_trial": "OBTENER 300 INTENTOS", "start": "INICIAR CAZA", "stop": "DETENER",
         "no_credits": "¡0 diamantes! Vincula tu dispositivo en el sitio.", "offline_stopped": "Detenido: sin conexión con el servidor", "login_btn": "VINCULAR DISPOSITIVO",
+        "automation_busy_warning": "Detén primero otra tarea del bot",
         "banned": "CUENTA BLOQUEADA", "ref_title": "PROGRAMA DE REFERIDOS",
         "my_code": "TU CÓDIGO DE INVITACIÓN:", "friend_code": "CÓDIGO DEL INVITADOR (+50):",
         "activate_ref": "ACTIVAR", "ref_used": "BONO ACTIVO ✅",
@@ -679,6 +683,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "ÉCHANGES", "tab_combo": "Combo", "tab_ref": "PARRAINAGES",
         "get_trial": "OBTENIR 300 ESSAIS", "start": "LANCER LA CHASSE", "stop": "ARRÊTER",
         "no_credits": "0 diamants ! Liez votre appareil sur le site.", "offline_stopped": "Arrêté : pas de connexion au serveur", "login_btn": "LIER L'APPAREIL",
+        "automation_busy_warning": "Arrêtez d'abord une autre tâche du bot",
         "banned": "COMPTE BANNI", "ref_title": "PROGRAMME DE PARRAINAGE",
         "my_code": "VOTRE CODE D'INVITATION :", "friend_code": "CODE DU PARRAIN (+50) :",
         "activate_ref": "ACTIVER", "ref_used": "BONUS ACTIF ✅",
@@ -742,6 +747,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BORSE", "tab_combo": "Combo", "tab_ref": "REFERRAL",
         "get_trial": "OTTIENI 300 TENTATIVI", "start": "AVVIA CACCIA", "stop": "FERMA",
         "no_credits": "0 diamanti! Collega il tuo dispositivo sul sito.", "offline_stopped": "Fermato: nessuna connessione al server", "login_btn": "COLLEGA DISPOSITIVO",
+        "automation_busy_warning": "Ferma prima un'altra attività del bot",
         "banned": "ACCOUNT BANNATO", "ref_title": "PROGRAMMA REFERRAL",
         "my_code": "IL TUO CODICE INVITO:", "friend_code": "CODICE INVITANTE (+50):",
         "activate_ref": "ATTIVA", "ref_used": "BONUS ATTIVO ✅",
@@ -805,6 +811,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BEURZEN", "tab_combo": "Combo", "tab_ref": "REFS",
         "get_trial": "300 POGINGEN KRIJGEN", "start": "JACHT STARTEN", "stop": "STOPPEN",
         "no_credits": "0 diamanten! Koppel je apparaat op de website.", "offline_stopped": "Gestopt: geen verbinding met de server", "login_btn": "APPARAAT KOPPELEN",
+        "automation_busy_warning": "Stop eerst een andere bottaak",
         "banned": "ACCOUNT GEBLOKKEERD", "ref_title": "REFERRALPROGRAMMA",
         "my_code": "JOUW UITNODIGINGSCODE:", "friend_code": "CODE VAN UITNODIGER (+50):",
         "activate_ref": "ACTIVEREN", "ref_used": "BONUS ACTIEF ✅",
@@ -868,6 +875,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BØRSER", "tab_combo": "Combo", "tab_ref": "REFERANSER",
         "get_trial": "FÅ 300 FORSØK", "start": "START JAKT", "stop": "STOPP",
         "no_credits": "0 diamanter! Koble enheten på nettstedet.", "offline_stopped": "Stoppet: ingen forbindelse til serveren", "login_btn": "KOBLE ENHET",
+        "automation_busy_warning": "Stopp en annen bot-oppgave først",
         "banned": "KONTO UTESTENGT", "ref_title": "REFERANSEPROGRAM",
         "my_code": "DIN INVITASJONSKODE:", "friend_code": "INVITERERS KODE (+50):",
         "activate_ref": "AKTIVER", "ref_used": "BONUS AKTIV ✅",
@@ -931,6 +939,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "GIEŁDY", "tab_combo": "Combo", "tab_ref": "POLECENIA",
         "get_trial": "ZDOBĄDŹ 300 PRÓB", "start": "ROZPOCZNIJ POLOWANIE", "stop": "ZATRZYMAJ",
         "no_credits": "0 diamentów! Połącz urządzenie na stronie.", "offline_stopped": "Zatrzymano: brak połączenia z serwerem", "login_btn": "POŁĄCZ URZĄDZENIE",
+        "automation_busy_warning": "Najpierw zatrzymaj inne zadanie bota",
         "banned": "KONTO ZABLOKOWANE", "ref_title": "PROGRAM POLECIEŃ",
         "my_code": "TWÓJ KOD ZAPROSZENIA:", "friend_code": "KOD ZAPRASZAJĄCEGO (+50):",
         "activate_ref": "AKTYWUJ", "ref_used": "BONUS AKTYWNY ✅",
@@ -994,6 +1003,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BOLSAS", "tab_combo": "Combo", "tab_ref": "INDICAÇÕES",
         "get_trial": "OBTER 300 TENTATIVAS", "start": "INICIAR CAÇA", "stop": "PARAR",
         "no_credits": "0 diamantes! Vincule seu dispositivo no site.", "offline_stopped": "Parado: sem conexão com o servidor", "login_btn": "VINCULAR DISPOSITIVO",
+        "automation_busy_warning": "Pare primeiro outra tarefa do bot",
         "banned": "CONTA BANIDA", "ref_title": "PROGRAMA DE INDICAÇÃO",
         "my_code": "SEU CÓDIGO DE CONVITE:", "friend_code": "CÓDIGO DO CONVIDADOR (+50):",
         "activate_ref": "ATIVAR", "ref_used": "BÔNUS ATIVO ✅",
@@ -1057,6 +1067,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BÖRSER", "tab_combo": "Combo", "tab_ref": "HÄNVISNINGAR",
         "get_trial": "FÅ 300 FÖRSÖK", "start": "STARTA JAKT", "stop": "STOPP",
         "no_credits": "0 diamanter! Koppla enheten på webbplatsen.", "offline_stopped": "Stoppad: ingen anslutning till servern", "login_btn": "KOPPLA ENHET",
+        "automation_busy_warning": "Stoppa en annan bot-uppgift först",
         "banned": "KONTO BLOCKERAT", "ref_title": "HÄNVISNINGSPROGRAM",
         "my_code": "DIN INBJUDNINGSKOD:", "friend_code": "INBJUDARES KOD (+50):",
         "activate_ref": "AKTIVERA", "ref_used": "BONUS AKTIV ✅",
@@ -1120,6 +1131,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BORSALAR", "tab_combo": "Combo", "tab_ref": "REFERANSLAR",
         "get_trial": "300 DENEME AL", "start": "AVI BAŞLAT", "stop": "DURDUR",
         "no_credits": "0 elmas! Cihazınızı sitede bağlayın.", "offline_stopped": "Durduruldu: sunucuyla bağlantı yok", "login_btn": "CİHAZI BAĞLA",
+        "automation_busy_warning": "Önce diğer bot görevini durdurun",
         "banned": "HESAP ENGELLENDİ", "ref_title": "REFERANS PROGRAMI",
         "my_code": "DAVET KODUNUZ:", "friend_code": "DAVET EDENİN KODU (+50):",
         "activate_ref": "ETKİNLEŞTİR", "ref_used": "BONUS AKTİF ✅",
@@ -1183,6 +1195,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "البورصات", "tab_combo": "Combo", "tab_ref": "الإحالات",
         "get_trial": "احصل على 300 محاولة", "start": "ابدأ الصيد", "stop": "إيقاف",
         "no_credits": "0 ألماس! اربط جهازك على الموقع.", "offline_stopped": "تم الإيقاف: لا يوجد اتصال بالخادم", "login_btn": "ربط الجهاز",
+        "automation_busy_warning": "أوقف مهمة أخرى للبوت أولاً",
         "banned": "الحساب محظور", "ref_title": "برنامج الإحالة",
         "my_code": "رمز دعوتك:", "friend_code": "رمز المدعو (+50):",
         "activate_ref": "تفعيل", "ref_used": "المكافأة نشطة ✅",
@@ -1246,6 +1259,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "取引所", "tab_combo": "Combo", "tab_ref": "紹介",
         "get_trial": "300回分を取得", "start": "ハントを開始", "stop": "停止",
         "no_credits": "ダイヤ0個！サイトでデバイスを登録してください。", "offline_stopped": "停止しました：サーバーとの接続がありません", "login_btn": "デバイスを登録",
+        "automation_busy_warning": "先に他のボット作業を停止してください",
         "banned": "アカウントBANされました", "ref_title": "紹介プログラム",
         "my_code": "招待コード:", "friend_code": "招待者コード (+50):",
         "activate_ref": "有効化", "ref_used": "ボーナス有効 ✅",
@@ -1309,6 +1323,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推荐",
         "get_trial": "获取300次试用", "start": "开始狩猎", "stop": "停止",
         "no_credits": "0钻石！请在网站上绑定设备。", "offline_stopped": "已停止：与服务器失去连接", "login_btn": "绑定设备",
+        "automation_busy_warning": "请先停止另一个机器人任务",
         "banned": "账户已封禁", "ref_title": "推荐计划",
         "my_code": "您的邀请码:", "friend_code": "邀请人代码 (+50):",
         "activate_ref": "激活", "ref_used": "奖励已激活 ✅",
@@ -1372,6 +1387,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "交易所", "tab_combo": "Combo", "tab_ref": "推薦",
         "get_trial": "獲取300次試用", "start": "開始狩獵", "stop": "停止",
         "no_credits": "0鑽石！請在網站上綁定裝置。", "offline_stopped": "已停止：與伺服器失去連線", "login_btn": "綁定裝置",
+        "automation_busy_warning": "請先停止另一個機器人任務",
         "banned": "帳戶已封禁", "ref_title": "推薦計畫",
         "my_code": "您的邀請碼:", "friend_code": "邀請人代碼 (+50):",
         "activate_ref": "啟動", "ref_used": "獎勵已啟動 ✅",
@@ -1435,6 +1451,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "거래소", "tab_combo": "Combo", "tab_ref": "추천",
         "get_trial": "300회 체험 받기", "start": "사냥 시작", "stop": "정지",
         "no_credits": "다이아 0개! 웹사이트에서 기기를 연결하세요.", "offline_stopped": "정지됨: 서버와 연결 없음", "login_btn": "기기 연결",
+        "automation_busy_warning": "먼저 다른 봇 작업을 중지하세요",
         "banned": "계정 차단됨", "ref_title": "추천 프로그램",
         "my_code": "초대 코드:", "friend_code": "초대자 코드 (+50):",
         "activate_ref": "활성화", "ref_used": "보너스 활성화 ✅",
@@ -1498,6 +1515,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "БІРЖІ", "tab_combo": "Combo", "tab_ref": "РЕФЕРАЛИ",
         "get_trial": "ОТРИМАТИ 300 СПРОБ", "start": "ЗАПУСТИТИ ПОЛЮВАННЯ", "stop": "ЗУПИНИТИ",
         "no_credits": "У вас 0 алмазів! Прив'яжіть пристрій на сайті.", "offline_stopped": "Зупинено: немає зв'язку із сервером", "login_btn": "ПРИВ'ЯЗАТИ ПРИСТРІЙ",
+        "automation_busy_warning": "Спочатку зупиніть інше завдання бота",
         "banned": "ВАШ АКАУНТ ЗАБЛОКОВАНО", "ref_title": "ПАРТНЕРСЬКА ПРОГРАМА",
         "my_code": "ВАШ КОД ЗАПРОШЕННЯ:", "friend_code": "КОД ЗАПРОШУВАЧА (+50):",
         "activate_ref": "АКТИВУВАТИ", "ref_used": "БОНУС АКТИВОВАНО ✅",
@@ -1561,6 +1579,7 @@ LANGS = {
         "title": "Total Hunter", "tab_hunt": "BURSA", "tab_combo": "Combo", "tab_ref": "REFERRAL",
         "get_trial": "DAPATKAN 300 PERCOBAAN", "start": "MULAI PERBURUAN", "stop": "BERHENTI",
         "no_credits": "0 berlian! Hubungkan perangkat di situs web.", "offline_stopped": "Berhenti: tidak ada koneksi ke server", "login_btn": "HUBUNGKAN PERANGKAT",
+        "automation_busy_warning": "Hentikan tugas bot lain terlebih dahulu",
         "banned": "AKUN DIBLOKIR", "ref_title": "PROGRAM REFERRAL",
         "my_code": "KODE UNDANGAN ANDA:", "friend_code": "KODE PENGUNDANG (+50):",
         "activate_ref": "AKTIFKAN", "ref_used": "BONUS AKTIF ✅",
@@ -1892,6 +1911,28 @@ def enforce_no_maximize(win, geometry: str) -> bool:
             return True
     except Exception:
         pass
+    return False
+
+
+# ── Конфликт фоновых автоматизаций (входящие, п.G; владелец 2026-09-25) ────────
+# Склепы/Сундуки/Биржа 1.0/2.0 управляют одной и той же мышью/клавиатурой — раньше ни
+# одна кнопка «Старт» не проверяла, не работает ли уже другая. Отдельная жалоба
+# владельца, подтверждённая кодом: engine.stop() Биржи 2.0 останавливает только
+# змейку (producer) — фоновый YOLO-поток (consumer) продолжает разбирать очередь
+# кадров САМ ПО СЕБЕ и после явной остановки, это заложено намеренно (не терять уже
+# сделанные скрины) — поэтому проверка учитывает его отдельно от active_mode.
+def automation_conflict(active_mode, scout_consumer_alive: bool,
+                        crypt_running: bool, chest_running: bool, exclude: str) -> bool:
+    """True, если занято чем-то, кроме `exclude` ('exchange'/'crypt'/'chest' — что само
+    пытается стартовать, эту автоматизацию не проверяем)."""
+    if exclude != "exchange" and active_mode is not None:
+        return True
+    if exclude != "exchange" and scout_consumer_alive:
+        return True
+    if exclude != "crypt" and crypt_running:
+        return True
+    if exclude != "chest" and chest_running:
+        return True
     return False
 
 
@@ -3081,6 +3122,15 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_session_start = None
         self.after(0, _update)
 
+    def _other_automation_running(self, exclude: str) -> bool:
+        """Единая проверка «занят ли бот чем-то ещё» (см. automation_conflict — чистая
+        логика вынесена отдельно ради тестируемости, main.py сам по себе GUI-код без
+        тестов). exclude — что не проверять ('exchange'/'crypt'/'chest')."""
+        scout_consumer_alive = bool(self._scout_engine is not None
+                                    and self._scout_engine.consumer_alive)
+        return automation_conflict(self.active_mode, scout_consumer_alive,
+                                   self.is_crypt_running, self._chest_running, exclude)
+
     def toggle_crypt_bot(self):
         if self.is_crypt_running:
             self.is_crypt_running = False
@@ -3097,6 +3147,11 @@ class TotalHunterApp(ctk.CTk):
             self.crypt_time_countdown_label.configure(text="")
             self.crypt_count_countdown_label.configure(text="")
         else:
+            if self._other_automation_running(exclude="crypt"):
+                self.crypt_status_label.configure(
+                    text=LANGS[self.current_lang]["automation_busy_warning"],
+                    text_color=MD3["error_text"])
+                return
             if self.current_credits <= 0:
                 messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
             selected = [k for k, v in self._crypt_vars.items() if v.get()]
@@ -3143,6 +3198,11 @@ class TotalHunterApp(ctk.CTk):
         L = LANGS[self.current_lang]
         if self._chest_running:
             self._chest_stop_event.set()
+            return
+
+        if self._other_automation_running(exclude="chest"):
+            self.chest_status_label.configure(text=L["automation_busy_warning"],
+                                              text_color=MD3["error_text"])
             return
 
         import chest_reader
@@ -4441,6 +4501,10 @@ class TotalHunterApp(ctk.CTk):
         if self.active_mode != 'v2':
             if self._exchange_mode != MODE_V2:
                 return  # кнопка 2.0 показана только в виде 2.0; ползунки сейчас держат значения 1.0
+            if self._other_automation_running(exclude="exchange"):
+                self.status_label.configure(text=LANGS[self.current_lang]["automation_busy_warning"],
+                                            text_color=MD3["error_text"])
+                return
             if self.current_credits <= 0:
                 messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
             try:
