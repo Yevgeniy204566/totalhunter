@@ -244,16 +244,20 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
     result = []
     for collector in collectors:
         # Регрессия владельца 2026-09-25: клан на кириллице ("Феникс") давал ПУСТОЙ слаг
-        # (/c/229/ без хвоста) — clan_to_slug теперь транслитерирует, но для языков вне
-        # таблицы (например иероглифы) результат всё ещё может быть пустым — тогда красивую
-        # ссылку не показываем вовсе (short_url: None), вместо битой с пустым хвостом.
+        # (/c/229/ без хвоста) — clan_to_slug теперь транслитерирует. Владелец явно
+        # потребовал: ОСНОВНАЯ публичная ссылка (public_url, кнопка «🔗») должна САМА
+        # быть в красивом виде /c/{kingdom}/{slug}, а не мелкой второй ссылкой снизу.
+        # Для языков вне таблицы транслитерации (иероглифы и т.п.) слаг всё ещё может
+        # быть пустым — тогда откатываемся на старую (гарантированно рабочую) ссылку
+        # по случайному slug, вместо битой /c/{kingdom}/ с пустым хвостом.
         _nice_slug = collector.custom_slug or clan_to_slug(collector.clan)
+        _raw_url = f"https://total-hunter.com/chests/{collector.slug}"
+        _nice_url = f"https://total-hunter.com/c/{collector.kingdom}/{_nice_slug}" if _nice_slug else None
         result.append({
             "slug": collector.slug, "kingdom": collector.kingdom, "clan": collector.clan,
             "language": collector.language,
-            "public_url": f"https://total-hunter.com/chests/{collector.slug}",
-            "short_url": (f"https://total-hunter.com/c/{collector.kingdom}/{_nice_slug}"
-                         if _nice_slug else None),
+            "public_url": _nice_url or _raw_url,
+            "short_url": _raw_url if _nice_url else None,
             "rows": await _collector_rows(db, collector),
             "player_alias_rows": await _player_alias_rows(db, collector, global_alias_map),
             "catalog_options": await _load_catalog_options(db),
