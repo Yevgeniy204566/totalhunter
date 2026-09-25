@@ -541,6 +541,24 @@ def test_collect_chests_stops_after_limit_consecutive_button_misses(tmp_path, mo
     assert calls["n"] == cr.EMPTY_BUTTON_RETRY_LIMIT
 
 
+def test_collect_chests_waits_one_second_between_button_misses(tmp_path, monkeypatch):
+    """Владелец 2026-09-26: между проверками «кнопки нет» бот ждёт 1 с (было 0.3 с) —
+    за ~0.6 с игра не всегда успевала подтянуть следующую строку, бот считал список
+    пустым после 2 сундуков."""
+    sleeps = []
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 764, 475))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((475, 764, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: None)
+    monkeypatch.setattr(cr.time, "sleep", sleeps.append)
+
+    cr.collect_chests(lambda: False, db_path=str(tmp_path / "db.db"),
+                      pending_dir=str(tmp_path / "chest_pending"))
+
+    assert cr.EMPTY_BUTTON_RETRY_PAUSE == 1.0
+    assert sleeps.count(1.0) == cr.EMPTY_BUTTON_RETRY_LIMIT - 1
+
+
 def test_collect_chests_stops_immediately_when_flag_already_set(tmp_path, monkeypatch):
     def boom():
         raise AssertionError("grab_fullscreen must not be called when stop_flag is already True")

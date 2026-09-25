@@ -76,7 +76,7 @@ OPEN_BUTTON_REF_POS = (1352, 416)
 # a reward popup momentarily overlapping the button) must not be read as "list
 # is empty" — only conclude that after this many consecutive misses in a row.
 EMPTY_BUTTON_RETRY_LIMIT = 3
-EMPTY_BUTTON_RETRY_PAUSE = 0.3
+EMPTY_BUTTON_RETRY_PAUSE = 1.0  # владелец 2026-09-26: было 0.3 — бот вставал после 2 сундуков
 
 # --- Anti-detect click ------------------------------------------------------
 ANTI_DETECT_OFFSET_PX = 8
