@@ -189,9 +189,11 @@ def scout_text(lang: str, key: str) -> str:
     return _TEXTS.get(lang, _TEXTS['EN']).get(key, _TEXTS['EN'][key])
 
 
-# Публикация находок 2.0 в РОЙ. Пока ВЫКЛ (владелец 2026-09-21: сегодня ничего не выпускаем, под РОЙ нужны новые
-# таблицы) — находки идут только в debug-Telegram. При выпуске версии — True одной правкой.
-SCOUT_PUBLISH_TO_ROY = False
+# Публикация находок 2.0 в РОЙ. Таблица roy_scout_finds, миграция, эндпоинты POST/GET /roy/scout-find(s)
+# и клиент RoyClient.report_scout_find — реализованы и в проде с сессии #146 (проверено на GCP сессия #149:
+# alembic_version=s3c4o5u6t7f8, таблица существует). ВКЛ с сессии #149 для локального теста владельца
+# из исходников — публичный выпуск версии 2.0 отдельным решением (см. Хангоф #148, «Условия перед выпуском»).
+SCOUT_PUBLISH_TO_ROY = True
 
 
 def format_pause_left(seconds: float) -> str:

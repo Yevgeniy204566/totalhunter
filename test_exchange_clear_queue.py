@@ -102,8 +102,10 @@ class TestEngineClearQueue:
 
 
 class TestSimplifiedPanelSettings:
-    def test_roy_publishing_is_off_for_now_and_is_a_single_constant(self):
-        assert exchange_mode_settings.SCOUT_PUBLISH_TO_ROY is False
+    def test_roy_publishing_is_a_single_constant(self):
+        # Сессия #149: инфраструктура РОЙ для находок 2.0 (таблица/миграция/эндпоинты, сессия #146)
+        # подтверждена живой на GCP — константа включена для локального теста владельца.
+        assert exchange_mode_settings.SCOUT_PUBLISH_TO_ROY is True
 
     def test_switch_helpers_are_gone(self):
         assert not hasattr(exchange_mode_settings, "scout_debug_default")
