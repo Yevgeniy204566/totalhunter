@@ -712,6 +712,36 @@ def test_collect_chests_calls_on_batch_ready_when_list_ends(tmp_path, monkeypatc
     assert result["list_ended"] is True
 
 
+def test_collect_chests_counts_reflect_state_after_on_batch_ready_not_before(tmp_path, monkeypatch):
+    """Регрессия сессии #149 (живая жалоба владельца — 'после отправки в окне сундуков
+    остаются записи'): 'counts' раньше считался ДО on_batch_ready — main.py показывал
+    в окне сундуков всё ещё непустой (устаревший) счёт поверх только что очищенного
+    успешной отправкой списка, будто отправка ничего не почистила. on_batch_ready
+    здесь сам помечает всё синхронизированным (как настоящая отправка) — итоговый
+    result['counts'] обязан быть уже ПУСТЫМ, не старым."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: None)  # сразу пусто
+    monkeypatch.setattr(cr.time, "sleep", lambda s: None)
+
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Тип", "Игрок", "2026-09-25T21:00:00")
+    conn.close()
+
+    def fake_on_batch_ready(reason):
+        conn = cr.init_db(db_path)
+        cr.mark_synced(conn, [r[0] for r in cr.get_unsynced(conn)])
+        conn.close()
+
+    result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir,
+                               on_batch_ready=fake_on_batch_ready)
+
+    assert result["counts"] == {}
+
+
 def test_collect_chests_calls_on_batch_ready_with_batch_full_reason(tmp_path, monkeypatch):
     db_path = str(tmp_path / "chest_buffer.db")
     pending_dir = str(tmp_path / "chest_pending")

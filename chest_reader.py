@@ -542,20 +542,24 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
         producer_done.set()
         consumer_thread.join()   # владелец 2026-09-25: ждать полного OCR, не частичный батч
 
-    conn = init_db(db_path)
-    try:
-        final_counts = get_unsynced_counts(conn)
-    finally:
-        conn.close()
-
-    result = {'counts': final_counts, 'items': items,
-             'batch_full': batch_full, 'list_ended': list_ended}
+    result = {'items': items, 'batch_full': batch_full, 'list_ended': list_ended}
 
     if on_batch_ready and (batch_full or list_ended):
         try:
             on_batch_ready('batch_full' if batch_full else 'list_ended')
         except Exception as e:
             result['batch_ready_error'] = f"{type(e).__name__}: {e}"
+
+    # 'counts' считается ПОСЛЕ on_batch_ready — регрессия сессии #149 (живая жалоба
+    # владельца): раньше счёт брался ДО отправки, и main.py показывал в окне сундуков
+    # уже отправленные (но всё ещё "старым" счётом непустые) записи поверх только что
+    # очищенного успешной отправкой списка — выглядело так, будто отправка ничего не
+    # почистила, хотя на сервере всё было принято верно.
+    conn = init_db(db_path)
+    try:
+        result['counts'] = get_unsynced_counts(conn)
+    finally:
+        conn.close()
 
     return result
 
