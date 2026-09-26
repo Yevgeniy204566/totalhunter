@@ -5,6 +5,7 @@ import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
+import ChestGuide from '../components/ChestGuide.jsx'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['5', '6', '7', '8', '9']
@@ -47,6 +48,10 @@ const ACCOUNTING_BG = {
 
 /* Квоты сезона (владелец 2026-09-26): до 3 штук, у каждой название и цель. Номер (slot) у
    квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали. */
+const QF = { display: 'flex', flexDirection: 'column', gap: 4 }
+const QL = { fontSize: 14, fontWeight: 600, color: 'var(--on-surface)' }
+const QH = { fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.5 }
+
 function QuotaEditor({ quotas, cx, onChange }) {
   const set = (i, field, value) => onChange(quotas.map((q, j) => (j === i ? { ...q, [field]: value } : q)))
   const add = () => {
@@ -60,28 +65,45 @@ function QuotaEditor({ quotas, cx, onChange }) {
       <label>{cx.quotasLabel}</label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {quotas.map((q, i) => (
-          <div key={q.slot} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <input className="input-dark" style={{ width: 200 }} placeholder={cx.quotaName} maxLength={40}
-              value={q.name} onChange={e => set(i, 'name', e.target.value)} />
-            <input className="input-dark" style={{ width: 110 }} type="number" min={0} placeholder={cx.quotaTarget}
-              value={q.target} onChange={e => set(i, 'target', e.target.value)} />
-            <button type="button" className="chest-pill-btn chest-pill-btn--danger chest-pill-btn--sm"
-              onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}
-              title={cx.perPlayerHint}>
+          <div key={q.slot} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px',
+                                     borderRadius: 10, border: '1px solid var(--outline)' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={QF}>
+                <span style={QL}>{cx.quotaName}</span>
+                <input className="input-dark" style={{ width: 200 }} placeholder={cx.quotaNameHint} maxLength={40}
+                  value={q.name} onChange={e => set(i, 'name', e.target.value)} />
+              </div>
+              <div style={QF}>
+                <span style={QL}>{cx.quotaTarget}</span>
+                <input className="input-dark" style={{ width: 130 }} type="number" min={0} placeholder={cx.quotaTargetHint}
+                  value={q.target} onChange={e => set(i, 'target', e.target.value)} />
+              </div>
+              {/* удаление — в конце строки, подальше от полей ввода (владелец 2026-09-26) */}
+              <button type="button" className="chest-pill-btn chest-pill-btn--danger chest-pill-btn--sm"
+                style={{ marginLeft: 'auto' }}
+                onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer' }}>
               <input type="checkbox" checked={q.mode === 'per_player'}
                 onChange={e => set(i, 'mode', e.target.checked ? 'per_player' : 'fixed')} />
               {cx.perPlayer}
             </label>
             {q.mode === 'per_player' && (
-              <>
-                <input className="input-dark" style={{ width: 90 }} type="number" min={-100} max={100}
-                  title={cx.heroK} placeholder={cx.heroK} value={q.hero_k}
-                  onChange={e => set(i, 'hero_k', e.target.value)} />
-                <input className="input-dark" style={{ width: 90 }} type="number" min={1} max={999}
-                  title={cx.heroH0} placeholder={cx.heroH0} value={q.hero_h0}
-                  onChange={e => set(i, 'hero_h0', e.target.value)} />
-              </>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                <div style={{ ...QF, maxWidth: 320 }}>
+                  <span style={QL}>{cx.heroK}</span>
+                  <input className="input-dark" style={{ width: 110 }} type="number" min={-100} max={100}
+                    value={q.hero_k} onChange={e => set(i, 'hero_k', e.target.value)} />
+                  <span style={QH}>{cx.heroKHelp}</span>
+                </div>
+                <div style={{ ...QF, maxWidth: 320 }}>
+                  <span style={QL}>{cx.heroH0}</span>
+                  <input className="input-dark" style={{ width: 110 }} type="number" min={1} max={999}
+                    value={q.hero_h0} onChange={e => set(i, 'hero_h0', e.target.value)} />
+                  <span style={QH}>{cx.heroH0Help}</span>
+                </div>
+                <div style={{ ...QH, flexBasis: '100%' }}>{cx.perPlayerHint}</div>
+              </div>
             )}
           </div>
         ))}
@@ -330,6 +352,7 @@ export default function ChestsPage() {
   return (
     <div className="page-content" style={{ maxWidth: 1600 }}>
 <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
+      <ChestGuide />
 
       <div className="card" style={{ marginBottom: 24, maxWidth: 520, borderRadius: 16 }}>
         <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 10 }}>

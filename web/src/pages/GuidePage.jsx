@@ -71,14 +71,14 @@ function Step({ n, title, desc, note }) {
         width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
         background: 'rgba(61,127,255,0.15)', border: '1px solid rgba(61,127,255,0.4)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 13, fontWeight: 700, color: 'var(--accent)',
+        fontSize: 16, fontWeight: 700, color: 'var(--accent)',
       }}>{n}</div>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{title}</div>
-        <div style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.7 }}>{desc}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{title}</div>
+        <div style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.7 }}>{desc}</div>
         {note && (
           <div style={{
-            marginTop: 8, padding: '7px 12px', borderRadius: 8, fontSize: 12,
+            marginTop: 8, padding: '7px 12px', borderRadius: 8, fontSize: 15,
             background: 'rgba(61,127,255,0.07)', border: '1px solid rgba(61,127,255,0.18)',
             color: '#A0B8D8',
           }}>{note}</div>
@@ -93,7 +93,7 @@ function Note({ children }) {
     <div style={{
       padding: '12px 16px', borderRadius: 10, marginTop: 16,
       background: 'rgba(255,209,102,0.07)', border: '1px solid rgba(255,209,102,0.25)',
-      fontSize: 13, color: '#FFD166', lineHeight: 1.6,
+      fontSize: 16, color: '#FFD166', lineHeight: 1.6,
     }}>{children}</div>
   )
 }
@@ -133,12 +133,12 @@ export default function GuidePage() {
           <button onClick={toggle} style={{
             background: 'rgba(61,127,255,0.08)', border: '1px solid rgba(61,127,255,0.25)',
             borderRadius: 8, padding: '6px 14px', color: 'var(--accent)',
-            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            fontSize: 16, fontWeight: 700, cursor: 'pointer',
           }}>
             {isEn ? 'RU' : 'EN'}
           </button>
           <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
-            padding: '9px 22px', borderRadius: 8, fontSize: 14,
+            padding: '9px 22px', borderRadius: 8, fontSize: 17,
             background: 'var(--accent)', color: '#FFFFFF', fontWeight: 700, textDecoration: 'none',
             boxShadow: '0 0 14px var(--accent-glow)',
           }}>
@@ -156,7 +156,7 @@ export default function GuidePage() {
         <div style={{
           display: 'inline-block', padding: '5px 16px', borderRadius: 20,
           background: 'rgba(61,127,255,0.1)', border: '1px solid rgba(61,127,255,0.3)',
-          fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)',
+          fontSize: 13, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)',
           textTransform: 'uppercase', marginBottom: 20,
         }}>{G.docsBadge}</div>
         <h1 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 16, letterSpacing: '-1px' }}>
@@ -176,13 +176,13 @@ export default function GuidePage() {
         {/* Sidebar TOC — desktop only */}
         <div className="guide-toc-sidebar" style={{ position: 'sticky', top: 80 }}>
           <div style={{ background: 'var(--elevated)', border: '1px solid var(--outline)', borderRadius: 14, padding: '20px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 16 }}>
               {isEn ? 'Contents' : 'Содержание'}
             </div>
             {G.toc.map(({ id, label }) => (
               <a key={id} href={`#${id}`} style={{
                 display: 'block', padding: '7px 10px', borderRadius: 8,
-                fontSize: 13, color: 'var(--on-surface2)', textDecoration: 'none', fontWeight: 500,
+                fontSize: 16, color: 'var(--on-surface2)', textDecoration: 'none', fontWeight: 500,
               }}
               onMouseEnter={e => { e.currentTarget.style.color='#FFFFFF'; e.currentTarget.style.background='rgba(61,127,255,0.08)' }}
               onMouseLeave={e => { e.currentTarget.style.color='var(--on-surface2)'; e.currentTarget.style.background='transparent' }}
@@ -204,10 +204,10 @@ export default function GuidePage() {
           }}>
             <span style={{ fontSize: 30, flexShrink: 0 }}>🪟</span>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 900, color: '#FF8C50', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#FF8C50', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>
                 {isEn ? 'WINDOWS ONLY — 10 / 11 (64-bit)' : 'ТОЛЬКО WINDOWS — 10 / 11 (64-bit)'}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+              <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
                 {isEn
                   ? 'Total Hunter is a desktop program for Windows PC. It does not run on mobile devices, Mac or Linux.'
                   : 'Total Hunter — десктопная программа для Windows. Не работает на телефоне, Mac и Linux.'}
@@ -222,13 +222,13 @@ export default function GuidePage() {
               style={{
                 width: '100%', padding: '11px 16px', borderRadius: 10,
                 background: 'var(--elevated)', border: '1px solid rgba(61,127,255,0.35)',
-                color: 'var(--on-surface)', fontSize: 14, fontWeight: 600,
+                color: 'var(--on-surface)', fontSize: 17, fontWeight: 600,
                 fontFamily: 'inherit', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}
             >
               <span>📋 {isEn ? 'Contents' : 'Оглавление'}</span>
-              <span style={{ fontSize: 11, transition: 'transform 0.2s', transform: tocOpen ? 'rotate(180deg)' : 'none', color: 'var(--accent)' }}>▼</span>
+              <span style={{ fontSize: 13, transition: 'transform 0.2s', transform: tocOpen ? 'rotate(180deg)' : 'none', color: 'var(--accent)' }}>▼</span>
             </button>
             {tocOpen && (
               <div style={{
@@ -249,7 +249,7 @@ export default function GuidePage() {
                       display: 'block', width: '100%', padding: '12px 16px', textAlign: 'left',
                       background: 'transparent', border: 'none',
                       borderBottom: i < G.toc.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      color: 'var(--on-surface2)', fontSize: 14, fontWeight: 500,
+                      color: 'var(--on-surface2)', fontSize: 17, fontWeight: 500,
                       fontFamily: 'inherit', cursor: 'pointer',
                     }}
                     onTouchStart={e => e.currentTarget.style.background = 'rgba(61,127,255,0.1)'}
@@ -265,22 +265,22 @@ export default function GuidePage() {
           {/* 1. What is Total Hunter */}
           <Section id="what-is" icon={<Diamond size={18}/>} title={G.whatIs.title}>
             <Card style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 20 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 20 }}>
                 <strong style={{ color: '#FFFFFF' }}>Total Hunter</strong> — {G.whatIs.intro}
               </p>
               <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <NeonCard color="#00CFFF">
                   <div style={{ fontSize: 22, marginBottom: 8 }}>🔍</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{G.whatIs.exchange.title}</div>
-                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.whatIs.exchange.desc}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{G.whatIs.exchange.title}</div>
+                  <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.whatIs.exchange.desc}</div>
                 </NeonCard>
                 <NeonCard color="#B060FF">
                   <div style={{ fontSize: 22, marginBottom: 8 }}>🏆</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{G.whatIs.crypt.title}</div>
-                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.whatIs.crypt.desc}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{G.whatIs.crypt.title}</div>
+                  <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.whatIs.crypt.desc}</div>
                 </NeonCard>
               </div>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginTop: 20, marginBottom: 0 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginTop: 20, marginBottom: 0 }}>
                 {G.whatIs.outro}
               </p>
             </Card>
@@ -289,41 +289,41 @@ export default function GuidePage() {
           {/* 2. Algorithm */}
           <Section id="algorithm" icon="🧠" title={G.algorithm.title}>
             <Card style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.algorithm.coastLabel}
               </div>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
                 {G.algorithm.coastIntro}
               </p>
               {G.algorithm.coastSteps.map((s, i) => (
                 <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
               ))}
-              <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.7, marginBottom: 0 }}>
+              <p style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.7, marginBottom: 0 }}>
                 {G.algorithm.coastOutro}
               </p>
             </Card>
 
             <Card style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.algorithm.yoloLabel}
               </div>
               <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <NeonCard color="#00CFFF">
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.algorithm.exchangeModel.title}</div>
-                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.algorithm.exchangeModel.desc}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.algorithm.exchangeModel.title}</div>
+                  <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.algorithm.exchangeModel.desc}</div>
                 </NeonCard>
                 <NeonCard color="#B060FF">
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.algorithm.cryptModel.title}</div>
-                  <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.algorithm.cryptModel.desc}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.algorithm.cryptModel.title}</div>
+                  <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{G.algorithm.cryptModel.desc}</div>
                 </NeonCard>
               </div>
-              <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.7, marginBottom: 0 }}>
+              <p style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.7, marginBottom: 0 }}>
                 {G.algorithm.yoloOutro}
               </p>
             </Card>
 
             <Card>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.algorithm.cryptLabel}
               </div>
               {G.algorithm.cryptSteps.map((s, i) => (
@@ -342,8 +342,8 @@ export default function GuidePage() {
                     display: 'flex', gap: 16, padding: '10px 14px', borderRadius: 8,
                     background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
                   }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', minWidth: 100, flexShrink: 0 }}>{param}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{value}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', minWidth: 100, flexShrink: 0 }}>{param}</div>
+                    <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.6 }}>{value}</div>
                   </div>
                 ))}
               </div>
@@ -353,7 +353,7 @@ export default function GuidePage() {
           {/* 4. Install */}
           <Section id="install" icon="⬇" title={G.install.title}>
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 24 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 24 }}>
                 {G.install.intro}
               </p>
               {G.install.steps.map((s, i) => (
@@ -365,15 +365,15 @@ export default function GuidePage() {
           {/* 5. Calibration */}
           <Section id="calibration" icon="🎯" title={G.calibration.title}>
             <Card style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
                 {G.calibration.intro}
               </p>
               <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
                 {G.calibration.points.map(({ label, sublabel, color, desc }, i) => (
                   <NeonCard key={label} color={color}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color, marginBottom: 2 }}>{label}</div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--on-surface2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>{sublabel}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: 10 }}>{desc}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color, marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--on-surface2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>{sublabel}</div>
+                    <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: 10 }}>{desc}</div>
                     <img
                       src={i === 0 ? '/img/calib_point_a.png' : '/img/calib_point_b.png'}
                       alt={label}
@@ -382,7 +382,7 @@ export default function GuidePage() {
                   </NeonCard>
                 ))}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.calibration.stepsLabel}
               </div>
               {G.calibration.steps.map((s, i) => (
@@ -391,7 +391,7 @@ export default function GuidePage() {
               <div style={{
                 padding: '12px 16px', borderRadius: 10, marginTop: 8,
                 background: 'rgba(61,127,255,0.06)', border: '1px solid rgba(61,127,255,0.15)',
-                fontSize: 13, color: '#A0B8D8', lineHeight: 1.7,
+                fontSize: 16, color: '#A0B8D8', lineHeight: 1.7,
               }}>
                 {G.calibration.slotsNote}
               </div>
@@ -404,34 +404,34 @@ export default function GuidePage() {
               <NeonCard color="#00CFFF">
                 <div style={{ fontSize: 24, marginBottom: 10 }}>🔍</div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.modes.exchange.title}</div>
-                <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 14, background: 'rgba(0,207,255,0.15)', border: '1px solid rgba(0,207,255,0.3)', fontSize: 12, color: '#00CFFF', fontWeight: 600 }}>
+                <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 14, background: 'rgba(0,207,255,0.15)', border: '1px solid rgba(0,207,255,0.3)', fontSize: 15, color: '#00CFFF', fontWeight: 600 }}>
                   {G.modes.exchange.cost}
                 </div>
                 {G.modes.exchange.rows.map(({ l, t }) => (
                   <div key={l} style={{ marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#00CFFF' }}>{l}: </span>
-                    <span style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{t}</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#00CFFF' }}>{l}: </span>
+                    <span style={{ fontSize: 16, color: 'var(--on-surface2)' }}>{t}</span>
                   </div>
                 ))}
               </NeonCard>
               <NeonCard color="#B060FF">
                 <div style={{ fontSize: 24, marginBottom: 10 }}>🏆</div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{G.modes.crypt.title}</div>
-                <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 14, background: 'rgba(176,96,255,0.15)', border: '1px solid rgba(176,96,255,0.3)', fontSize: 12, color: '#B060FF', fontWeight: 600 }}>
+                <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, marginBottom: 14, background: 'rgba(176,96,255,0.15)', border: '1px solid rgba(176,96,255,0.3)', fontSize: 15, color: '#B060FF', fontWeight: 600 }}>
                   {G.modes.crypt.cost}
                 </div>
                 {G.modes.crypt.rows.map(({ l, t }) => (
                   <div key={l} style={{ marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#B060FF' }}>{l}: </span>
-                    <span style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{t}</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#B060FF' }}>{l}: </span>
+                    <span style={{ fontSize: 16, color: 'var(--on-surface2)' }}>{t}</span>
                   </div>
                 ))}
               </NeonCard>
             </div>
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.7, margin: 0 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.7, margin: 0 }}>
                 <strong style={{ color: '#FFFFFF' }}>{isEn ? 'Emergency Stop:' : 'Экстренная остановка:'}</strong>{' '}
-                <kbd style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', fontSize: 13, fontWeight: 700 }}>ESC</kbd>
+                <kbd style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', fontSize: 16, fontWeight: 700 }}>ESC</kbd>
                 {' '}{G.modes.stopNote.replace(/^[^:：]+[:：]\s*/, '').replace(/ESC\s*[—–-]\s*/, '')}
               </p>
             </Card>
@@ -440,17 +440,17 @@ export default function GuidePage() {
           {/* 6.1 Tuning */}
           <Section id="tuning" icon="⚙️" title={G.tuning.title}>
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
                 {G.tuning.intro}
               </p>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.tuning.botLabel}
               </div>
               <div className="guide-two-cols" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 8 }}>
                 {G.tuning.steps.map(({ title, desc, img }) => (
                   <div key={title} style={{ borderRadius: 12, padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: img ? 10 : 0 }}>{desc}</div>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
+                    <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: img ? 10 : 0 }}>{desc}</div>
                     {img && (
                       <img src={img} alt={title} onClick={() => setLightboxImg(img)} style={{
                         width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
@@ -467,17 +467,17 @@ export default function GuidePage() {
           {/* 6.2 Chests */}
           <Section id="chests" icon="📦" title={G.chests.title}>
             <Card style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
                 {G.chests.intro}
               </p>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.chests.botLabel}
               </div>
               <div className="guide-packages" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
                 {G.chests.botSteps.map(({ title, desc, img }) => (
                   <div key={title} style={{ borderRadius: 12, padding: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: img ? 10 : 0 }}>{desc}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
+                    <div style={{ fontSize: 15, color: 'var(--on-surface2)', lineHeight: 1.65, marginBottom: img ? 10 : 0 }}>{desc}</div>
                     {img && (
                       <img src={img} alt={title} onClick={() => setLightboxImg(img)} style={{
                         width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
@@ -487,19 +487,19 @@ export default function GuidePage() {
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 14 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 14 }}>
                 {G.chests.botHowLabel}
               </div>
               {G.chests.botHow.map((s, i) => (
                 <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
               ))}
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
                 {G.chests.webLabel}
               </div>
               {G.chests.webSteps.map((s, i) => (
                 <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
               ))}
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
                 {G.chests.nuancesLabel}
               </div>
               {G.chests.nuances.map((s, i) => (
@@ -512,10 +512,10 @@ export default function GuidePage() {
           {/* 6.3 Ancient */}
           <Section id="ancient" icon="🐲" title={G.ancient.title}>
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
                 {G.ancient.intro}
               </p>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.ancient.howLabel}
               </div>
               {G.ancient.steps.map((s, i) => (
@@ -528,15 +528,15 @@ export default function GuidePage() {
           {/* 6.5 ROY */}
           <Section id="roy" icon="🐝" title={G.roy.title}>
             <Card style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.85, marginBottom: 24 }}>
                 {G.roy.intro}
               </p>
 
               {/* How balance works */}
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFD166', marginBottom: 12, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#FFD166', marginBottom: 12, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.roy.howTitle}
               </div>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 16 }}>
                 {G.roy.howDesc}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
@@ -547,14 +547,14 @@ export default function GuidePage() {
                     borderRadius: 10, padding: '10px 16px',
                   }}>
                     <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{icon}</span>
-                    <span style={{ fontSize: 14, color: 'var(--on-surface2)', flex: 1 }}>{label}</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#FFD166' }}>{value}</span>
+                    <span style={{ fontSize: 17, color: 'var(--on-surface2)', flex: 1 }}>{label}</span>
+                    <span style={{ fontSize: 17, fontWeight: 700, color: '#FFD166' }}>{value}</span>
                   </div>
                 ))}
               </div>
 
               {/* Rules */}
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFD166', marginBottom: 12, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#FFD166', marginBottom: 12, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.roy.rulesTitle}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
@@ -566,15 +566,15 @@ export default function GuidePage() {
                   }}>
                     <span style={{ fontSize: 24, flexShrink: 0 }}>{icon}</span>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
-                      <div style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.75 }}>{desc}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
+                      <div style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.75 }}>{desc}</div>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* How to use */}
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#FFD166', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#FFD166', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.roy.useTitle}
               </div>
               {G.roy.useSteps.map(({ n, title, desc }) => (
@@ -585,7 +585,7 @@ export default function GuidePage() {
               <div style={{
                 marginTop: 8, padding: '14px 18px', borderRadius: 10,
                 background: 'rgba(255,209,102,0.06)', border: '1px solid rgba(255,209,102,0.25)',
-                fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.7,
+                fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.7,
               }}>
                 {G.roy.note}
               </div>
@@ -599,12 +599,12 @@ export default function GuidePage() {
               { label: G.settings.cryptLabel,    note: G.settings.cryptNote,    items: G.settings.crypt,    color: '#B060FF' },
             ].map(({ label, note, items, color }) => (
               <Card key={label} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: note ? 10 : 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color, marginBottom: note ? 10 : 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                   {label}
                 </div>
                 {note && (
                   <div style={{
-                    fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.6,
+                    fontSize: 15, color: 'var(--on-surface2)', lineHeight: 1.6,
                     background: `rgba(${color === '#00CFFF' ? '0,207,255' : '176,96,255'},0.06)`,
                     border: `1px solid rgba(${color === '#00CFFF' ? '0,207,255' : '176,96,255'},0.2)`,
                     borderRadius: 8, padding: '8px 12px', marginBottom: 14,
@@ -621,16 +621,16 @@ export default function GuidePage() {
                       border: highlight ? '1px solid rgba(255,200,60,0.25)' : '1px solid rgba(255,255,255,0.06)',
                       alignItems: 'start',
                     }}>
-                      <div style={{ fontSize: 13, fontWeight: highlight ? 800 : 700, color: highlight ? '#FFC83C' : '#FFFFFF' }}>{name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>
-                        <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.rangeLabel}</div>
+                      <div style={{ fontSize: 16, fontWeight: highlight ? 800 : 700, color: highlight ? '#FFC83C' : '#FFFFFF' }}>{name}</div>
+                      <div style={{ fontSize: 15, color: 'var(--on-surface2)' }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.rangeLabel}</div>
                         {range}
                       </div>
-                      <div style={{ fontSize: 12, color }}>
-                        <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.optimalLabel}</div>
+                      <div style={{ fontSize: 15, color }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', color: color, marginBottom: 2, letterSpacing: '0.5px' }}>{G.settings.optimalLabel}</div>
                         {optimal}
                       </div>
-                      <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
+                      <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.6 }}>
                         {desc}
                         {img && (
                           <img src={img} alt={name} onClick={() => setLightboxImg(img)} style={{
@@ -650,7 +650,7 @@ export default function GuidePage() {
           {/* 8. Credits */}
           <Section id="credits" icon={<Diamond size={18}/>} title={G.credits.title}>
             <Card style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 0 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 0 }}>
                 {G.credits.intro}
               </p>
             </Card>
@@ -670,25 +670,25 @@ export default function GuidePage() {
                       position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
                       padding: '4px 16px', borderRadius: 20,
                       background: 'linear-gradient(90deg, #B060FF, #3D7FFF, #00CFFF)',
-                      color: '#FFF', fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: '1px',
+                      color: '#FFF', fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: '1px',
                     }}>{G.credits.popularLabel}</div>
                   )}
                   <div style={{ fontSize: 32, fontWeight: 900, color, marginBottom: 2,
                     textShadow: popular ? `0 0 20px ${color}` : 'none' }}>{price}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>{name}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>{name}</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
                     <Diamond size={popular ? 22 : 18} />
                     <span style={{ fontSize: popular ? 28 : 22, fontWeight: 900, color,
                       textShadow: popular ? `0 0 16px ${color}` : 'none' }}>{diamonds}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: bonus ? 12 : 0 }}>
+                  <div style={{ fontSize: 15, color: 'var(--on-surface2)', marginBottom: bonus ? 12 : 0 }}>
                     {isEn ? 'diamonds' : 'алмазов'}
                   </div>
                   {bonus && (
                     <div style={{
                       display: 'inline-block', padding: '4px 12px', borderRadius: 20,
                       background: `linear-gradient(90deg, ${color}22, ${color}44)`,
-                      border: `1px solid ${color}55`, fontSize: 12, color, fontWeight: 800,
+                      border: `1px solid ${color}55`, fontSize: 15, color, fontWeight: 800,
                     }}>{bonus}</div>
                   )}
                 </div>
@@ -696,13 +696,13 @@ export default function GuidePage() {
             </div>
 
             <Card>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', marginBottom: 16, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 {G.credits.spendLabel}
               </div>
               <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 20 }}>
                 {G.credits.spendRows.map(({ label, cost, color }) => (
                   <div key={label}>
-                    <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 15, color: 'var(--on-surface2)', marginBottom: 4 }}>{label}</div>
                     <div style={{ fontSize: 16, fontWeight: 700, color }}>{cost}</div>
                   </div>
                 ))}
@@ -714,7 +714,7 @@ export default function GuidePage() {
           {/* 8. Referrals */}
           <Section id="referrals" icon="◈" title={G.referrals.title}>
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 28 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 28 }}>
                 {G.referrals.intro}
               </p>
               <div className="guide-ref-levels" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
@@ -724,17 +724,17 @@ export default function GuidePage() {
                     background: `${color}0A`, border: `1px solid ${color}44`,
                     boxShadow: `0 0 20px ${color}14`,
                   }}>
-                    <div style={{ fontSize: 13, color, fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 10 }}>{level}</div>
+                    <div style={{ fontSize: 16, color, fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 10 }}>{level}</div>
                     <div style={{ fontSize: 44, fontWeight: 900, color, lineHeight: 1, marginBottom: 10,
                       textShadow: `0 0 20px ${color}` }}>{pct}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)' }}>{desc}</div>
+                    <div style={{ fontSize: 16, color: 'var(--on-surface2)' }}>{desc}</div>
                   </div>
                 ))}
               </div>
               <div style={{
                 padding: '14px 16px', borderRadius: 10,
                 background: 'rgba(61,127,255,0.06)', border: '1px solid rgba(61,127,255,0.15)',
-                fontSize: 13, color: '#A0B8D8', lineHeight: 1.6,
+                fontSize: 16, color: '#A0B8D8', lineHeight: 1.6,
               }}>
                 {G.referrals.note}
               </div>
@@ -744,7 +744,7 @@ export default function GuidePage() {
           {/* 9. Security */}
           <Section id="security" icon="🛡" title={G.security.title}>
             <Card>
-              <p style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
+              <p style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.8, marginBottom: 20 }}>
                 {G.security.intro}
               </p>
               {G.security.rows.map(({ icon, title, desc }) => (
@@ -754,8 +754,8 @@ export default function GuidePage() {
                 }}>
                   <div style={{ fontSize: 20, flexShrink: 0 }}>{icon}</div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{title}</div>
-                    <div style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.65 }}>{desc}</div>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{title}</div>
+                    <div style={{ fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.65 }}>{desc}</div>
                   </div>
                 </div>
               ))}
@@ -767,8 +767,8 @@ export default function GuidePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {G.faq.rows.map(({ q, a }) => (
                 <Card key={q}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>{q}</div>
-                  <div style={{ fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.75 }}>{a}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>{q}</div>
+                  <div style={{ fontSize: 17, color: 'var(--on-surface2)', lineHeight: 1.75 }}>{a}</div>
                 </Card>
               ))}
             </div>
@@ -785,7 +785,7 @@ export default function GuidePage() {
             <div style={{ fontSize: 22, fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>
               {G.cta.title}
             </div>
-            <p style={{ fontSize: 14, color: 'var(--on-surface2)', marginBottom: 28, lineHeight: 1.7 }}>
+            <p style={{ fontSize: 17, color: 'var(--on-surface2)', marginBottom: 28, lineHeight: 1.7 }}>
               {G.cta.sub}
             </p>
             <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
@@ -797,10 +797,10 @@ export default function GuidePage() {
               {isLoggedIn() ? G.cta.btnDashboard : G.cta.btnStart}
             </Link>
             <div style={{ marginTop: 24, display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/download" style={{ color: 'var(--accent)', fontSize: 14, textDecoration: 'none', opacity: 0.85 }}>
+              <Link to="/download" style={{ color: 'var(--accent)', fontSize: 17, textDecoration: 'none', opacity: 0.85 }}>
                 ⬇ {lang === 'ru' ? 'Скачать программу' : 'Download app'}
               </Link>
-              <Link to="/contacts" style={{ color: 'var(--on-surface2)', fontSize: 14, textDecoration: 'none', opacity: 0.85 }}>
+              <Link to="/contacts" style={{ color: 'var(--on-surface2)', fontSize: 17, textDecoration: 'none', opacity: 0.85 }}>
                 ✉ {lang === 'ru' ? 'Написать в поддержку' : 'Contact support'}
               </Link>
             </div>
