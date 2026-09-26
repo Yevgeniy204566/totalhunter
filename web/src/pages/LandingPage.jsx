@@ -275,27 +275,30 @@ function FeatureGroupTitle({ children, sub, style }) {
 }
 
 function FeatureGrid({ items }) {
+  // Владелец 2026-09-26: возможности — списком с зелёными галочками, не сеткой карточек.
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-      {items.map(({ icon, color, title, desc }) => (
-        <div key={title} className="card landing-feature-card" style={{
-          borderRadius: 14, padding: 26,
-          background: 'rgba(12,18,34,0.72)', backdropFilter: 'blur(6px)',
-          borderTop: `2px solid ${color}`,
+    <ul style={{
+      // Без подложки: фон (робот с сундуком) должен просматриваться, читаемость — тенью текста.
+      listStyle: 'none', margin: '0 auto', padding: 0, maxWidth: 780,
+      textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)',
+    }}>
+      {items.map(({ title, desc }) => (
+        <li key={title} style={{
+          display: 'flex', gap: 16, alignItems: 'flex-start', padding: '14px 8px',
         }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: 12,
-            background: `${color}14`, border: `1px solid ${color}44`,
+          <span style={{
+            flex: '0 0 30px', width: 30, height: 30, borderRadius: '50%',
+            background: 'rgba(74,222,128,0.14)', border: '1px solid #4ADE80',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 26, marginBottom: 18,
-          }}>
-            {icon}
+            fontSize: 17, fontWeight: 900, color: '#4ADE80', marginTop: 1,
+          }}>✓</span>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{title}</div>
+            <div style={{ fontSize: 14, color: '#DCE6F7', lineHeight: 1.65 }}>{desc}</div>
           </div>
-          <h4 style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', margin: '0 0 10px' }}>{title}</h4>
-          <p style={{ fontSize: 14, color: '#C8D8F0', lineHeight: 1.7, margin: 0 }}>{desc}</p>
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }
 
@@ -417,7 +420,7 @@ export default function LandingPage() {
           radial-gradient(ellipse 40% 40% at 25% 75%, rgba(176,96,255,0.06) 0%, transparent 60%),
           linear-gradient(rgba(5,8,16,0.25), rgba(5,8,16,0.25)),
           radial-gradient(ellipse 74% 84% at 50% 42%, transparent 0%, var(--bg) 94%),
-          url('/img/hero-bg-tb.webp') center 30% / cover no-repeat,
+          url('/img/hero-bg-tb.webp') center top / cover no-repeat,
           var(--bg)
         `,
         position: 'relative', overflow: 'hidden',
@@ -598,7 +601,7 @@ export default function LandingPage() {
       <section id="features" style={{
         padding: '88px 24px',
         background: `
-          linear-gradient(rgba(5,8,16,0.72), rgba(5,8,16,0.80)),
+          linear-gradient(rgba(5,8,16,0.50), rgba(5,8,16,0.60)),
           url('/img/features-bg.webp') center / cover no-repeat,
           var(--card)
         `,
