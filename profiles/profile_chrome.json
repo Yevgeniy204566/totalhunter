@@ -11,7 +11,7 @@
   "scale_y": 1.2616487455197132,
   "dialog_offset_x": 0,
   "dialog_offset_y": 50,
-  "scroll_clicks": 100,
+  "scroll_clicks": 129,
   "ui_offsets": {
     "wt_icon": [
       0,
@@ -43,15 +43,21 @@
     ],
     "chest_sender": [
       0,
-      0
+      -32
     ],
     "chest_type": [
-      -1,
-      -2
+      0,
+      -32
     ],
     "chest_collect": [
       0,
-      0
+      -30
+    ],
+    "exchange_coord_roi": [
+      5,
+      -14,
+      -173,
+      -77
     ]
   },
   "crypt_selected": [
@@ -60,21 +66,29 @@
     "Ordinary_3",
     "Ordinary_4",
     "Ordinary_5",
+    "Ordinary_6",
+    "Ordinary_7",
+    "Ordinary_8",
+    "Ordinary_9",
+    "Ordinary_10",
     "Epic_3",
     "Epic_11",
     "Epic_14",
-    "Epic_17"
+    "Epic_17",
+    "R_1",
+    "R_2"
   ],
-  "crypt_conf": 0.3,
-  "crypt_accelerations": 5,
+  "crypt_conf": 0.24,
+  "crypt_accelerations": 4,
   "crypt_break_sec": 10,
   "crypt_scroll_speed": 1.0,
-  "crypt_max_march_min": 10,
+  "crypt_max_march_sec": 281,
   "crypt_swing1": 0,
   "crypt_swing2": -30,
   "crypt_speed_delta": -0.2,
-  "crypt_autostop_count": 10,
-  "crypt_autostop_hours": 1,
+  "crypt_autostop_count": null,
+  "crypt_autostop_hours": 2,
+  "crypt_periodic_reset_min": 10,
   "step": 16,
   "conf": 0.8,
   "bot_speed": 0.5,

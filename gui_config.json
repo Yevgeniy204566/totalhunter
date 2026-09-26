@@ -9,13 +9,25 @@
   "nav_footprint_ttl": 600,
   "return_delta_px": 5,
   "smooth_alpha": 60,
-  "last_calibration_profile": "Client",
+  "last_calibration_profile": "Browser 1",
   "lang": "UK",
   "roy_enabled": true,
   "roy_kingdom": 237,
   "theme": "Deep Night",
   "chest_kingdom": "229",
-  "chest_clan": "BERS",
+  "chest_clan": "\u0424\u0435\u043d\u0438\u043a\u0441",
   "chest_click_pause": 0.0,
-  "ancient_full_lang_ocr": false
+  "ancient_full_lang_ocr": false,
+  "scout_queue_limit": 999,
+  "chest_auto_send": true,
+  "chest_saved_pairs": [
+    {
+      "kingdom": "229",
+      "clan": "\u0424\u0435\u043d\u0438\u043a\u0441"
+    },
+    {
+      "kingdom": "229",
+      "clan": "ELDORADO"
+    }
+  ]
 }
