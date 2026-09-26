@@ -501,7 +501,10 @@ a:hover { color: var(--on-surface); }
   margin-bottom: 20px;
 }
 
-.public-table-wrap { overflow-x: auto; overflow-y: clip; }
+/* Своя вертикальная прокрутка высотой с экран: при overflow-x:auto sticky-шапка держится
+   только внутри обёртки, а без собственной вертикальной прокрутки она уезжала вместе со
+   страницей (владелец 2026-09-26: «строка с названиями сундуков не закреплена»). */
+.public-table-wrap { overflow: auto; max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); }
 .public-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
 .public-table th {
   text-align: right; padding: 10px 14px; color: var(--on-surface2);
