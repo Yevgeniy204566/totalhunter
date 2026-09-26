@@ -4,6 +4,8 @@ import { api } from '../api.js'
 import { isLoggedIn } from '../auth.js'
 import { LANDING as LANDING_RU } from '../constants.js'
 import { LANDING as LANDING_EN } from '../constants.en.js'
+import { DOWNLOAD as DL_RU } from '../constants.js'
+import { DOWNLOAD as DL_EN } from '../constants.en.js'
 import { useLang } from '../lang.js'
 import { useMeta } from '../hooks/useMeta.js'
 import { track } from '@vercel/analytics'
@@ -262,8 +264,71 @@ const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/late
 
 const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
 
+// Окно перед скачиванием с лендинга (владелец 2026-09-26): тот же текст про Defender и
+// калибровку, что на /download (constants.js DOWNLOAD) — формулировки не расходятся.
+function DownloadWarningModal({ lang, source, onClose }) {
+  const T = lang === 'en' ? DL_EN : DL_RU
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div onClick={onClose} role="dialog" aria-modal="true" style={{
+      position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.72)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto',
+        background: 'var(--card)', border: '1px solid var(--outline)', borderRadius: 16,
+        padding: '24px 24px 20px', boxSizing: 'border-box', color: 'var(--on-surface)',
+      }}>
+        <div style={{
+          textAlign: 'left', background: 'rgba(255,176,32,0.10)',
+          border: '1px solid rgba(255,176,32,0.35)', borderRadius: 14, padding: '20px 24px',
+        }}>
+          <div style={{
+            fontSize: 14, fontWeight: 800, color: '#FFB020', marginBottom: 8,
+            textTransform: 'uppercase', letterSpacing: '0.5px',
+          }}>
+            {T.warning.title}
+          </div>
+          <p style={{ fontSize: 14, color: '#E8DCC8', lineHeight: 1.6, margin: '0 0 10px' }}>
+            {T.warning.defenderText}
+          </p>
+          <p style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 1.6, margin: 0, fontWeight: 700 }}>
+            {T.warning.calibrationText}
+          </p>
+        </div>
+
+        <div style={{ fontSize: 15, fontWeight: 700, margin: '20px 0 10px' }}>{T.stepsTitle}</div>
+        <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.7, color: 'var(--on-surface2)' }}>
+          {T.steps.map(s => <li key={s.n}>{s.text}</li>)}
+        </ol>
+
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', flexWrap: 'wrap', marginTop: 22 }}>
+          <button onClick={onClose} style={{
+            padding: '12px 22px', borderRadius: 10, fontSize: 15, cursor: 'pointer',
+            background: 'transparent', color: 'var(--on-surface)', border: '1px solid rgba(255,255,255,0.2)',
+          }}>
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+          <a href={RELEASE_URL} onClick={() => { track('App_Downloaded', { source }); onClose() }} style={{
+            padding: '12px 26px', borderRadius: 10, fontSize: 15, fontWeight: 900,
+            background: 'linear-gradient(135deg, #00C853, #00FF88)', color: '#000',
+            textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8,
+          }}>
+            ⬇ {lang === 'en' ? 'Download' : 'Скачать'}
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const [stats, setStats] = useState(null)
+  const [dlSource, setDlSource] = useState(null)
   const { lang, toggle } = useLang()
   const LANDING = lang === 'en' ? LANDING_EN : LANDING_RU
 
@@ -397,7 +462,7 @@ export default function LandingPage() {
 
           <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* ── BIG GREEN DOWNLOAD ── */}
-            <a href={RELEASE_URL} onClick={() => track('App_Downloaded', { source: 'hero' })} className="landing-hero-download" style={{
+            <a href={RELEASE_URL} onClick={e => { e.preventDefault(); setDlSource('hero') }} className="landing-hero-download" style={{
               padding: '20px 52px', borderRadius: 12, fontSize: 20,
               background: 'linear-gradient(135deg, #00C853, #00FF88)',
               color: '#000',
@@ -471,7 +536,7 @@ export default function LandingPage() {
 
       {/* ── Download CTA under screenshots ─────────────────────── */}
       <div className="landing-screenshots-download" style={{ textAlign: 'center', paddingBottom: 64, background: 'var(--bg)' }}>
-        <a href={RELEASE_URL} onClick={() => track('App_Downloaded', { source: 'screenshots_cta' })} style={{
+        <a href={RELEASE_URL} onClick={e => { e.preventDefault(); setDlSource('screenshots_cta') }} style={{
           padding: '18px 56px', borderRadius: 12, fontSize: 19,
           background: 'linear-gradient(135deg, #00C853, #00FF88)',
           color: '#000',
@@ -760,6 +825,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
+      {dlSource && <DownloadWarningModal lang={lang} source={dlSource} onClose={() => setDlSource(null)} />}
     </div>
   )
 }
