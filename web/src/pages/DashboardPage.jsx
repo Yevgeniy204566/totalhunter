@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { api, fetchChestByKingdomSlug } from '../api.js'
 import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
@@ -105,49 +105,123 @@ function TabBar({ tabs, active, setActive }) {
   )
 }
 
-/* ─── Поиск таблицы сундуков клана (входящие п.2, владелец 2026-09-26: в «Профиле») ─── */
+/* ─── Сохранённые таблицы сундуков кланов (Профиль, владелец 2026-09-26) ───
+   Список хранится в аккаунте (/web/chest-links): выпадающий список кланов, ссылка на
+   публичную таблицу выбранного, Сохранить / Удалить. */
+function chestLinkUrl(l) {
+  return `${window.location.origin}/c/${encodeURIComponent(l.kingdom)}/${encodeURIComponent(l.clan)}`
+}
+
 function ChestFinder({ D }) {
   const T = D.chestFinder
-  const navigate = useNavigate()
+  const [links, setLinks]     = useState([])
+  const [sel, setSel]         = useState(-1)   // -1 — новый клан
   const [kingdom, setKingdom] = useState('')
   const [clan, setClan]       = useState('')
-  const [msg, setMsg]         = useState('')
+  const [msg, setMsg]         = useState({ text: '', ok: false })
   const [busy, setBusy]       = useState(false)
 
-  async function open() {
+  useEffect(() => {
+    api.chestLinks().then(r => {
+      const list = r?.links || []
+      setLinks(list)
+      if (list.length) pick(0, list)
+    }).catch(() => {})
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  function pick(i, list = links) {
+    setSel(i); setMsg({ text: '', ok: false })
+    if (i >= 0) { setKingdom(list[i].kingdom); setClan(list[i].clan) }
+    else { setKingdom(''); setClan('') }
+  }
+
+  async function persist(next, selectIndex) {
+    const r = await api.saveChestLinks(next)
+    const list = r?.links || next
+    setLinks(list)
+    pick(Math.min(selectIndex, list.length - 1), list)
+  }
+
+  async function save() {
     const k = kingdom.trim(), c = clan.trim()
-    if (!k || !c) { setMsg(T.empty); return }
-    setBusy(true); setMsg('')
+    if (!k || !c) { setMsg({ text: T.empty, ok: false }); return }
+    setBusy(true)
     try {
-      // Сервер сам приводит название к слагу — проверяем, что клан есть, до перехода.
+      // Сервер сам приводит название к слагу — сохраняем только существующий клан.
       await fetchChestByKingdomSlug(k, c)
-      navigate(`/c/${encodeURIComponent(k)}/${encodeURIComponent(c)}`)
     } catch {
-      setMsg(T.notFound)
+      setMsg({ text: T.notFound, ok: false }); setBusy(false); return
+    }
+    try {
+      const same = links.findIndex(l => l.kingdom === k && l.clan.toLowerCase() === c.toLowerCase())
+      const next = [...links]
+      let idx
+      if (same >= 0) { next[same] = { kingdom: k, clan: c }; idx = same }
+      else if (sel >= 0) { next[sel] = { kingdom: k, clan: c }; idx = sel }
+      else { next.push({ kingdom: k, clan: c }); idx = next.length - 1 }
+      await persist(next, idx)
+      setMsg({ text: T.saved, ok: true })
+    } catch (e) {
+      setMsg({ text: e.message, ok: false })
     } finally {
       setBusy(false)
     }
   }
 
-  const inputStyle = {
+  async function remove() {
+    if (sel < 0) return
+    setBusy(true)
+    try {
+      await persist(links.filter((_, i) => i !== sel), 0)
+    } catch (e) {
+      setMsg({ text: e.message, ok: false })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const field = {
     background: 'var(--elevated)', border: '1px solid var(--outline)', color: 'var(--on-surface)',
     borderRadius: 6, padding: '9px 12px', fontSize: 16,
   }
+  const current = sel >= 0 ? links[sel] : null
   return (
     <div style={{ marginBottom: 20 }}>
       <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>{T.title}</h2>
       <div className="card" style={{ borderRadius: 14 }}>
         <div className="text-muted" style={{ fontSize: 14, marginBottom: 12 }}>{T.sub}</div>
-        <form onSubmit={e => { e.preventDefault(); open() }}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+          <select value={sel} onChange={e => pick(Number(e.target.value))}
+            style={{ ...field, flex: '0 1 260px', minWidth: 0 }} translate="no" className="notranslate">
+            {links.map((l, i) => <option key={`${l.kingdom}/${l.clan}`} value={i}>{l.kingdom} / {l.clan}</option>)}
+            <option value={-1}>{T.newItem}</option>
+          </select>
+          {current && (
+            <a href={chestLinkUrl(current)} target="_blank" rel="noreferrer"
+              style={{ color: 'var(--accent)', fontSize: 15, wordBreak: 'break-all' }}
+              translate="no" className="notranslate">
+              {chestLinkUrl(current)}
+            </a>
+          )}
+        </div>
+        <form onSubmit={e => { e.preventDefault(); save() }}
           style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={kingdom} placeholder={T.kingdom} inputMode="numeric"
             onChange={e => setKingdom(e.target.value.replace(/\D/g, '').slice(0, 4))}
-            style={{ ...inputStyle, width: 140 }} />
+            style={{ ...field, width: 140 }} />
           <input value={clan} placeholder={T.clan} onChange={e => setClan(e.target.value)}
-            style={{ ...inputStyle, flex: '1 1 200px', minWidth: 0 }} />
-          <button type="submit" className="btn-primary" disabled={busy}>{busy ? '...' : T.open}</button>
+            style={{ ...field, flex: '1 1 200px', minWidth: 0 }} />
+          <button type="submit" className="btn-primary" disabled={busy}>{busy ? '...' : T.save}</button>
+          <button type="button" className="btn-secondary" onClick={remove} disabled={busy || sel < 0}
+            style={{ borderColor: 'var(--error)', color: 'var(--error-text)' }}>
+            {T.remove}
+          </button>
         </form>
-        {msg && <div style={{ marginTop: 10, fontSize: 14, color: 'var(--error-text)' }}>{msg}</div>}
+        {msg.text && (
+          <div style={{ marginTop: 10, fontSize: 14, color: msg.ok ? 'var(--secondary, #4ADE80)' : 'var(--error-text)' }}>
+            {msg.text}
+          </div>
+        )}
       </div>
     </div>
   )

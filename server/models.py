@@ -77,6 +77,8 @@ class User(Base):
     last_seen     = Column(TIMESTAMP(timezone=True))
     session_started_at = Column(TIMESTAMP(timezone=True), nullable=True)
     hwid_reset_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    # Сохранённые в «Профиле» кабинета таблицы сундуков кланов: [{"kingdom", "clan"}, ...]
+    saved_chest_links = Column(JSON, nullable=False, server_default=text("'[]'"))
     created_at    = Column(TIMESTAMP(timezone=True), nullable=False,
                            server_default=func.now())
 

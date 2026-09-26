@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import CrashReport, Feedback, Hunt, HwidHistory, LinkCode, Transaction, User
+from schemas import ChestLinksPayload
 from schemas import (
     BasicResponse,
     CrashReportRequest,
@@ -336,6 +337,35 @@ async def send_feedback(
         db.add(Feedback(user_id=web_user.id, text=req.text.strip()))
     await db.commit()
     return BasicResponse(success=True, message="Thank you for your feedback!")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET/PUT /web/chest-links — сохранённые таблицы сундуков кланов (Профиль кабинета)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/chest-links")
+async def get_chest_links(web_user: User = Depends(get_web_user)):
+    return {"links": web_user.saved_chest_links or []}
+
+
+@router.put("/chest-links")
+async def put_chest_links(
+    req: ChestLinksPayload,
+    db: AsyncSession = Depends(get_db),
+    web_user: User = Depends(get_web_user),
+):
+    # Полная замена списка; повтор того же клана (без учёта регистра/пробелов) отбрасывается.
+    seen, links = set(), []
+    for item in req.links:
+        kingdom, clan = item.kingdom.strip(), item.clan.strip()
+        key = (kingdom, clan.lower())
+        if not clan or key in seen:
+            continue
+        seen.add(key)
+        links.append({"kingdom": kingdom, "clan": clan})
+    web_user.saved_chest_links = links
+    await db.commit()
+    return {"links": links}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

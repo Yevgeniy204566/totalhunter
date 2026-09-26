@@ -24,13 +24,16 @@ export const DASHBOARD = {
   },
 
   chestFinder: {
-    title:     'Clan Chest Table',
-    sub:       'Enter the kingdom number and clan name — the public chest table will open.',
+    title:     'Clan Chest Tables',
+    sub:       'Save a kingdom and clan — the link to its public chest table stays in the list.',
     kingdom:   'Kingdom',
     clan:      'Clan',
-    open:      'Open',
+    newItem:   '— new clan —',
+    save:      'Save',
+    remove:    'Delete',
     notFound:  'Clan not found. Check the kingdom number and clan name.',
     empty:     'Enter the kingdom number and clan name.',
+    saved:     'Saved',
   },
   devices: {
     title:       'Devices',

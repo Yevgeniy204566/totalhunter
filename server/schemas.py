@@ -207,3 +207,15 @@ class CrashReportRequest(BaseModel):
     version: Optional[str] = None
     os_info: Optional[str] = None
     traceback: str
+
+
+# ─── Сохранённые ссылки на публичные таблицы сундуков (Профиль, 2026-09-26) ───
+
+class ChestLink(BaseModel):
+    kingdom: str = Field(pattern=r"^\s*\d{1,4}\s*$")
+    clan: str = Field(min_length=1, max_length=100)
+
+
+class ChestLinksPayload(BaseModel):
+    # 50 — защита от мусора, не бизнес-лимит: столько кланов человеку не нужно
+    links: list[ChestLink] = Field(max_length=50)

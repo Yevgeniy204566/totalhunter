@@ -269,3 +269,53 @@ def test_referral_tree_schema_serializes():
     d = resp.model_dump()
     assert d["l1"][0]["email_masked"] == "yev***"
     assert d["l1"][0]["l2"][0]["l3"][0]["credits"] == 4
+
+
+# ─── Сохранённые ссылки на таблицы сундуков кланов (Профиль, владелец 2026-09-26) ───
+
+@pytest.mark.asyncio
+async def test_chest_links_empty_for_new_user():
+    claims = {"email": "links1@example.com", "name": "L1", "sub": "links-1"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _get_jwt(client, claims)
+        resp = await client.get("/web/chest-links", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    assert resp.json() == {"links": []}
+
+
+@pytest.mark.asyncio
+async def test_chest_links_saved_and_returned_deduped():
+    claims = {"email": "links2@example.com", "name": "L2", "sub": "links-2"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _get_jwt(client, claims)
+        h = {"Authorization": f"Bearer {token}"}
+        put = await client.put("/web/chest-links", headers=h, json={"links": [
+            {"kingdom": "229", "clan": "ELDORADO"},
+            {"kingdom": " 229 ", "clan": " eldorado "},   # тот же клан — повтор
+            {"kingdom": "229", "clan": "Феникс"},
+        ]})
+        assert put.status_code == 200
+        got = (await client.get("/web/chest-links", headers=h)).json()
+    assert got == {"links": [{"kingdom": "229", "clan": "ELDORADO"},
+                             {"kingdom": "229", "clan": "Феникс"}]}
+
+
+@pytest.mark.asyncio
+async def test_chest_links_requires_auth():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.get("/web/chest-links")).status_code in (401, 403)
+        assert (await client.put("/web/chest-links", json={"links": []})).status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_chest_links_rejects_bad_kingdom_and_too_many():
+    claims = {"email": "links3@example.com", "name": "L3", "sub": "links-3"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token = await _get_jwt(client, claims)
+        h = {"Authorization": f"Bearer {token}"}
+        bad = await client.put("/web/chest-links", headers=h,
+                               json={"links": [{"kingdom": "abc", "clan": "X"}]})
+        assert bad.status_code == 422
+        many = await client.put("/web/chest-links", headers=h, json={"links": [
+            {"kingdom": str(i), "clan": f"C{i}"} for i in range(1, 52)]})
+        assert many.status_code == 422
