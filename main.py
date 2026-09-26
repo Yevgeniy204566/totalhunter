@@ -3427,11 +3427,15 @@ class TotalHunterApp(ctk.CTk):
             self.crypt_engine.set_exclusion_region(None)
 
     def _save_crypt_settings_all(self):
-        """Сохраняет все настройки Склепов в активный профиль калибровки."""
-        self._save_crypt_settings()
+        """Сохраняет все настройки Склепов в активный профиль калибровки. Результат виден
+        на самой кнопке 1 с: ✓ записано, ✗ не записано (владелец 2026-09-26)."""
+        ok = self._save_crypt_settings()
+        self.crypt_save_settings_btn.configure(text="✓" if ok else "✗")
+        self.after(1000, lambda: self.crypt_save_settings_btn.configure(text="💾"))
 
-    def _save_crypt_settings(self):
-        """Сохраняет настройки Склепов (слайдеры, свинги, выбор) в файл активного профиля."""
+    def _save_crypt_settings(self) -> bool:
+        """Сохраняет настройки Склепов (слайдеры, свинги, выбор) в файл активного профиля.
+        True — файл записан, False — ошибка (для ✓/✗ на кнопке 💾)."""
         try:
             profile_name = self._cal_profile_var.get()
             path = self._PROFILES[profile_name]
@@ -3464,8 +3468,9 @@ class TotalHunterApp(ctk.CTk):
             cfg.update(exchange_cfg_from_values(v1, self.conf_slider.get(), scout))
             with open(path, 'w') as f:
                 json.dump(cfg, f, indent=2)
+            return True
         except Exception:
-            pass
+            return False
 
     def _set_march_slider_from_cfg(self, cfg: dict):
         """Применить дальность марша Картера из сохранённого конфига.
