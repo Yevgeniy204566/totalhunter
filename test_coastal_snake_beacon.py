@@ -260,7 +260,10 @@ def test_returning_blind_moves_toward_coast():
          patch.object(nav, '_grab_minimap', return_value=_land_minimap()):
         nav.step()
 
-    mock_move.assert_called_once_with(toward_water=True)
+    # к вызову позже добавлен return_delta_px (ползунок «Дельта возврата») — суть теста:
+    # ровно один шаг к берегу
+    mock_move.assert_called_once()
+    assert mock_move.call_args.kwargs.get("toward_water") is True
 
 def test_returning_blind_does_not_call_hsv():
     """HSV detection must NOT run during blind phase."""

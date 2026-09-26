@@ -83,6 +83,8 @@ def _run(eng, initial_box):
     with (
         patch('navigator.time.sleep'),
         patch('navigator.pyautogui.click') as mock_click,
+        # клик по бирже: moveTo(cx, cy) → click() без аргументов — координаты берём из moveTo
+        patch('navigator.pyautogui.moveTo') as mock_move,
         patch('navigator.pyautogui.press'),
         patch('navigator.winsound.PlaySound'),
         patch('navigator.winsound.Beep'),
@@ -95,6 +97,7 @@ def _run(eng, initial_box):
     ):
         eng._exchange_detected(initial_box, frame=frame)
 
+    mock_click.move = mock_move
     return mock_click, mock_jstk
 
 
@@ -110,7 +113,7 @@ class TestExchangeDetectedBacktrack:
 
         assert mock_click.call_count == 1, "должен быть ровно один клик"
         assert mock_jstk.call_count == 0, "шаг назад не нужен — биржа найдена сразу"
-        cx, cy = mock_click.call_args[0]
+        cx, cy = mock_click.move.call_args[0][:2]
         assert cx == 350                             # (300+400)//2
         assert cy == int(200 + (300 - 200) * 0.35)  # верхняя треть
 
@@ -124,7 +127,7 @@ class TestExchangeDetectedBacktrack:
 
         assert mock_click.call_count == 1, "клик должен быть — биржа нашлась на 2-м скане"
         assert mock_jstk.call_count == 1, "один шаг назад перед 2-м сканом"
-        cx, cy = mock_click.call_args[0]
+        cx, cy = mock_click.move.call_args[0][:2]
         assert cx == 550                             # (500+600)//2
         assert cy == int(400 + (500 - 400) * 0.35)
 

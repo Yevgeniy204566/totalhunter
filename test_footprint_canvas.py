@@ -17,7 +17,7 @@ def test_record_does_not_stamp_grid():
     from navigator import FootprintCanvas
     fc = FootprintCanvas()
     fc.record(0.0, 0.0)
-    assert fc._grid[fc._cy, fc._cx] == 0.0, \
+    assert fc._grid[fc._cy_i, fc._cx_i] == 0.0, \
         "record() must not write a timestamp — only draw_ray() stamps the grid"
 
 
@@ -48,7 +48,7 @@ def test_render_overlay_red_pixels():
     from navigator import FootprintCanvas
     fc = FootprintCanvas()
     # Stamp center cell directly for a known location
-    fc._grid[fc._cy, fc._cx] = time.time()
+    fc._grid[fc._cy_i, fc._cx_i] = time.time()
     overlay = fc.render_overlay((180, 180, 3), ttl_sec=120.0)
     # Find any non-zero pixel
     ys, xs = np.where(overlay.any(axis=2))
@@ -65,7 +65,7 @@ def test_render_overlay_red_pixels():
 def test_render_overlay_expired():
     from navigator import FootprintCanvas
     fc = FootprintCanvas()
-    fc._grid[fc._cy, fc._cx] = time.time() - 999.0
+    fc._grid[fc._cy_i, fc._cx_i] = time.time() - 999.0
     overlay = fc.render_overlay((180, 180, 3), ttl_sec=120.0)
     assert overlay.sum() == 0, "Expired footprint should not render"
 
@@ -112,7 +112,7 @@ def test_overlay_not_detected_as_water():
     """RED footprint pixels must NOT be mistaken for water by get_land_water_masks."""
     from navigator import FootprintCanvas, get_land_water_masks
     fc = FootprintCanvas()
-    fc._grid[fc._cy, fc._cx] = time.time()
+    fc._grid[fc._cy_i, fc._cx_i] = time.time()
     overlay = fc.render_overlay((180, 180, 3), ttl_sec=120.0)
     _, water_mask = get_land_water_masks(overlay)
     # Red pixels should not trigger blue-water detection

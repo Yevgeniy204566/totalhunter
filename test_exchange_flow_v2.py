@@ -170,6 +170,7 @@ class TestNoDuplicateBackgroundThreads:
         eng._roy_client = None
         eng.roy_kingdom = 0
         eng._bg_gen = 0
+        eng._bg_threads = []   # __init__ заводит список фоновых тредов (join при stop)
         return eng
 
     def test_bg_gen_attribute_exists(self):

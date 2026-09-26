@@ -4,6 +4,15 @@ import numpy as np
 import tournament_reader as tr
 
 
+import os as _os
+import pytest
+
+# Отладочные кропы живой сессии (name_crop_*.png, debug_name_crops/) в git никогда не
+# попадали и утеряны — без них тест не на чем гонять. Пропуск ТОЛЬКО при отсутствии файла:
+# вернут снимки — тесты снова заработают без правок.
+def _needs(path):
+    return pytest.mark.skipif(not _os.path.exists(path), reason=f"нет отладочного снимка {path}")
+
 def _load_fixture():
     return cv2.imdecode(np.fromfile("Турнир.png", dtype=np.uint8), cv2.IMREAD_COLOR)
 
@@ -146,12 +155,14 @@ def test_ocr_own_row():
     assert result == {'rank': 79, 'name': 'ЗОЛОТОЙ By', 'points': 71896730}
 
 
+@_needs("name_crop_aeon.png")
 def test_ocr_name_otsu_aeon():
     img = cv2.imdecode(np.fromfile("name_crop_aeon.png", dtype=np.uint8), cv2.IMREAD_COLOR)
     # Otsu picks a per-ROI threshold; tesseract still misreads AEON as AEGON
     assert tr.ocr_name(img) == "AEGON"
 
 
+@_needs("name_crop_gigabyte.png")
 def test_ocr_name_otsu_gigabyte():
     img = cv2.imdecode(np.fromfile("name_crop_gigabyte.png", dtype=np.uint8), cv2.IMREAD_COLOR)
     assert tr.ocr_name(img) == "Gigabyte"
@@ -161,24 +172,28 @@ def _load_debug_crop(rank):
     return cv2.imdecode(np.fromfile(f"debug_name_crops/rank_{rank:02d}.png", dtype=np.uint8), cv2.IMREAD_COLOR)
 
 
+@_needs("debug_name_crops/rank_04.png")
 def test_ocr_name_otsu_pattern_b_dark_shadow():
     # rank 4: all 4 fixed thresholds returned '' despite readable "Dark Shadow"
     img = _load_debug_crop(4)
     assert tr.ocr_name(img) == "Dark Shadow"
 
 
+@_needs("debug_name_crops/rank_11.png")
 def test_ocr_name_otsu_pattern_b_ayar_md():
     # rank 11: all 4 fixed thresholds returned '' despite readable "AYAR MD"
     img = _load_debug_crop(11)
     assert tr.ocr_name(img) == "AYAR MD"
 
 
+@_needs("debug_name_crops/rank_31.png")
 def test_ocr_name_otsu_pattern_b_lord():
     # rank 31: all 4 fixed thresholds returned '' despite readable "Lord"
     img = _load_debug_crop(31)
     assert tr.ocr_name(img) == "Lord"
 
 
+@_needs("debug_name_crops/rank_35.png")
 def test_ocr_name_otsu_pattern_b_mikajar():
     # rank 35: all 4 fixed thresholds returned '' despite readable "Mikajar"
     img = _load_debug_crop(35)
