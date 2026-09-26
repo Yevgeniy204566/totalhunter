@@ -264,6 +264,10 @@
   .public-table thead th:nth-child(2) {
     position: sticky !important; left: auto !important;
   }
+  /* Средние на телефоне не показываем совсем — мешают (владелец 2026-09-26) */
+  .public-avg-toggle,
+  .public-table thead tr.public-avg-row { display: none !important; }
+  .public-table thead tr.public-head-row th { top: 0 !important; }
 
   /* Намёк о скролле: тень на правом крае таблицы */
   .public-table-wrap {
