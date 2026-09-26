@@ -3,31 +3,71 @@ import { Link, useParams } from 'react-router-dom'
 import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
-function formatRemaining(periodEndIso, offsetMinutes) {
+// Публичная таблица: RU/EN со своим переключателем (владелец 2026-09-26). Адрес /c/... не
+// несёт язык, поэтому общий useLang тут всегда дал бы 'en'. Остальные языки — переводчик
+// браузера; ники/клан/названия сундуков помечены translate="no", чтобы он их не портил.
+const TXT = {
+  ru: {
+    ended: 'Сбор завершён',
+    left: (d, h, m) => `Осталось: ${d} дн. ${h} ч. ${m} мин.`,
+    stoppedTitle: '⏸ Учёт сундуков остановлен.',
+    stoppedText: 'Лидер клана завершил сезон досрочно. Новый сезон пока не начат — данные не обновляются. Предыдущие сезоны доступны во вкладке «История».',
+    target: (p, c) => `Цель сезона: ${p} очков / ${c} Epic-склепов`,
+    tz: 'Часовой пояс',
+    editOpen: '✏️ Ввести состав', editClose: '✕ Закрыть',
+    updated: 'Последнее обновление',
+    tabCurrent: 'Текущий сезон', tabHistory: 'История',
+    historyEmpty: 'Архив пока пуст — сезоны появятся здесь после первого автозакрытия.',
+    points: 'очков', back: '← Назад к списку сезонов',
+  },
+  en: {
+    ended: 'Collection finished',
+    left: (d, h, m) => `Time left: ${d}d ${h}h ${m}m`,
+    stoppedTitle: '⏸ Chest tracking is stopped.',
+    stoppedText: 'The clan leader ended the season early. A new season has not started yet — data is not updated. Previous seasons are in the "History" tab.',
+    target: (p, c) => `Season target: ${p} points / ${c} Epic crypts`,
+    tz: 'Time zone',
+    editOpen: '✏️ Enter troops', editClose: '✕ Close',
+    updated: 'Last update',
+    tabCurrent: 'Current season', tabHistory: 'History',
+    historyEmpty: 'The archive is empty — seasons will appear here after the first auto-close.',
+    points: 'points', back: '← Back to seasons',
+  },
+}
+
+function initialLang() {
+  try {
+    const saved = localStorage.getItem('th_lang')
+    if (saved === 'ru' || saved === 'en') return saved
+  } catch { /* приватный режим */ }
+  return (navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en'
+}
+
+function formatRemaining(periodEndIso, offsetMinutes, t) {
   const [datePart, timePart] = periodEndIso.split('T')
   const [y, mo, d] = datePart.split('-').map(Number)
   const [h, mi, s] = (timePart || '00:00:00').split(':').map(Number)
   const periodEndMillis = Date.UTC(y, mo - 1, d, h, mi, s || 0)
   const clanNowMillis = Date.now() + offsetMinutes * 60000
   const remaining = periodEndMillis - clanNowMillis
-  if (remaining <= 0) return 'Сбор завершён'
+  if (remaining <= 0) return t.ended
   const totalMinutes = Math.floor(remaining / 60000)
   const days = Math.floor(totalMinutes / (24 * 60))
   const hours = Math.floor((totalMinutes % (24 * 60)) / 60)
   const minutes = totalMinutes % 60
-  return `Осталось: ${days} дн. ${hours} ч. ${minutes} мин.`
+  return t.left(days, hours, minutes)
 }
 
-function CountdownTimer({ periodEnd, offsetMinutes }) {
-  const [label, setLabel] = useState(() => formatRemaining(periodEnd, offsetMinutes))
+function CountdownTimer({ periodEnd, offsetMinutes, t }) {
+  const [label, setLabel] = useState(() => formatRemaining(periodEnd, offsetMinutes, t))
 
   useEffect(() => {
-    setLabel(formatRemaining(periodEnd, offsetMinutes))
+    setLabel(formatRemaining(periodEnd, offsetMinutes, t))
     const id = setInterval(() => {
-      setLabel(formatRemaining(periodEnd, offsetMinutes))
+      setLabel(formatRemaining(periodEnd, offsetMinutes, t))
     }, 60000)
     return () => clearInterval(id)
-  }, [periodEnd, offsetMinutes])
+  }, [periodEnd, offsetMinutes, t])
 
   return <span className="public-season-badge public-season-timer">{label}</span>
 }
@@ -64,6 +104,19 @@ export default function ChestSummaryPage() {
   const [selectedSeasonId, setSelectedSeasonId] = useState(null)
   const [seasonDetail, setSeasonDetail] = useState(null)
   const [editMode, setEditMode] = useState(false)
+  const [lang, setLang] = useState(initialLang)
+  const t = TXT[lang]
+  function toggleLang() {
+    const next = lang === 'ru' ? 'en' : 'ru'
+    try { localStorage.setItem('th_lang', next) } catch { /* приватный режим */ }
+    setLang(next)
+  }
+  // Общий LangProvider ставит <html lang="en"> для любого адреса вне /ru — перебиваем после
+  // него (его эффект выполняется позже нашего), чтобы переводчик браузера видел верный язык.
+  useEffect(() => {
+    const id = setTimeout(() => document.documentElement.setAttribute('lang', lang), 0)
+    return () => clearTimeout(id)
+  }, [lang])
 
   // kingdom param is present on /c/:kingdom/:slug route, absent on /chests/:slug route
   const internalSlug = data?.collector_slug || (!kingdom ? slug : null)
@@ -101,15 +154,20 @@ export default function ChestSummaryPage() {
   return (
     <div className="page-content">
       {/* Переход на лендинг — тот же логотип, что в шапке кабинета (владелец 2026-09-26) */}
-      <Link to="/" style={{
-        display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12,
-        textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
-      }}>
-        <span style={{ fontSize: 20, color: 'var(--accent)' }}>⚔</span>
-        <span className="header-logo-text" style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
-        <span className="header-logo-text" style={{ color: 'var(--on-surface)' }}>Hunter</span>
-      </Link>
-      <h1 className="public-summary-title">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <Link to="/" translate="no" className="notranslate" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 10,
+          textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
+        }}>
+          <span style={{ fontSize: 20, color: 'var(--accent)' }}>⚔</span>
+          <span className="header-logo-text" style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
+          <span className="header-logo-text" style={{ color: 'var(--on-surface)' }}>Hunter</span>
+        </Link>
+        <button type="button" className="public-avg-toggle notranslate" translate="no" onClick={toggleLang}>
+          {lang === 'ru' ? 'EN' : 'RU'}
+        </button>
+      </div>
+      <h1 className="public-summary-title notranslate" translate="no">
         <span className="public-kingdom-label">{data.kingdom}/</span>
         <span className="public-clan-label">{data.clan}</span>
       </h1>
@@ -125,21 +183,20 @@ export default function ChestSummaryPage() {
           fontSize: 14,
           lineHeight: 1.5,
         }}>
-          <strong>⏸ Учёт сундуков остановлен.</strong><br />
-          Лидер клана завершил сезон досрочно. Новый сезон пока не начат — данные не обновляются.
-          Предыдущие сезоны доступны во вкладке «История».
+          <strong>{t.stoppedTitle}</strong><br />
+          {t.stoppedText}
         </div>
       )}
 
       <div className="public-season-info">
         {hasSeasonTargets && (
           <span className="public-season-badge">
-            Цель сезона: {targets.points ?? '—'} очков / {targets.chests ?? '—'} Epic-склепов
+            {t.target(targets.points ?? '—', targets.chests ?? '—')}
           </span>
         )}
         {hasSeasonTargets && data.timezone_offset_minutes != null && (
           <span className="public-season-badge">
-            Часовой пояс: UTC{formatOffsetLabel(data.timezone_offset_minutes)}
+            {t.tz}: UTC{formatOffsetLabel(data.timezone_offset_minutes)}
           </span>
         )}
         {hasSeasonTargets && data.period_start && data.period_end && (
@@ -148,7 +205,7 @@ export default function ChestSummaryPage() {
           </span>
         )}
         {hasSeasonTargets && data.period_end && (
-          <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} />
+          <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} t={t} />
         )}
         {tab === 'current' && (
           <button
@@ -159,12 +216,12 @@ export default function ChestSummaryPage() {
               else { setEditMode(true) }
             }}
           >
-            {editMode ? '✕ Закрыть' : '✏️ Ввести состав'}
+            {editMode ? t.editClose : t.editOpen}
           </button>
         )}
       </div>
 
-      <div className="public-summary-updated">Последнее обновление: {updatedLabel}</div>
+      <div className="public-summary-updated">{t.updated}: {updatedLabel}</div>
       <div className="public-summary-divider" />
 
       <div className="chest-tabs chest-tabs--pill">
@@ -172,13 +229,13 @@ export default function ChestSummaryPage() {
           className={`chest-tab chest-tab--pill ${tab === 'current' ? 'chest-tab--active' : ''}`}
           onClick={() => setTab('current')}
         >
-          Текущий сезон
+          {t.tabCurrent}
         </button>
         <button
           className={`chest-tab chest-tab--pill ${tab === 'history' ? 'chest-tab--active' : ''}`}
           onClick={() => setTab('history')}
         >
-          История
+          {t.tabHistory}
         </button>
       </div>
 
@@ -190,6 +247,7 @@ export default function ChestSummaryPage() {
             targets={targets}
             editMode={editMode}
             collectorSlug={internalSlug}
+            lang={lang}
           />
         </>
       )}
@@ -199,7 +257,7 @@ export default function ChestSummaryPage() {
           {historyError && <div className="text-muted">{historyError}</div>}
           {!historyError && !history && <div className="text-muted">...</div>}
           {history && history.seasons.length === 0 && (
-            <div className="text-muted">Архив пока пуст — сезоны появятся здесь после первого автозакрытия.</div>
+            <div className="text-muted">{t.historyEmpty}</div>
           )}
           {history && history.seasons.map(s => (
             <button
@@ -208,7 +266,7 @@ export default function ChestSummaryPage() {
               onClick={() => setSelectedSeasonId(s.id)}
               style={{ display: 'block', marginBottom: 8, cursor: 'pointer' }}
             >
-              {formatPeriodPoint(s.period_start)} – {formatPeriodPoint(s.period_end)} · {s.total_points} очков
+              {formatPeriodPoint(s.period_start)} – {formatPeriodPoint(s.period_end)} · {s.total_points} {t.points}
             </button>
           ))}
         </div>
@@ -217,7 +275,7 @@ export default function ChestSummaryPage() {
       {tab === 'history' && selectedSeasonId && (
         <div>
           <button className="public-season-badge" onClick={() => { setSelectedSeasonId(null); setSeasonDetail(null) }} style={{ marginBottom: 12, cursor: 'pointer' }}>
-            ← Назад к списку сезонов
+            {t.back}
           </button>
           {!seasonDetail && <div className="text-muted">...</div>}
           {seasonDetail && (
@@ -225,6 +283,7 @@ export default function ChestSummaryPage() {
               chestTypes={seasonDetail.chest_types}
               players={seasonDetail.players}
               targets={seasonDetail.targets || { points: null, chests: null }}
+              lang={lang}
             />
           )}
         </div>

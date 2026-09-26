@@ -710,6 +710,7 @@ export default function ChestsPage() {
                   chestTypes={seasonDetailByCollector[collector.slug].data.chest_types}
                   players={seasonDetailByCollector[collector.slug].data.players}
                   targets={seasonDetailByCollector[collector.slug].data.targets || { points: null, chests: null }}
+                  lang={lang}
                 />
               )}
             </div>

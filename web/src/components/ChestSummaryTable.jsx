@@ -164,7 +164,15 @@ export function sortPlayers(players, sort, chestTypes) {
   })
 }
 
-export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug }) {
+const TABLE_TXT = {
+  ru: { player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав',
+        hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ' },
+  en: { player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops',
+        hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ' },
+}
+
+export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en' }) {
+  const tt = TABLE_TXT[lang] || TABLE_TXT.en
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
   const pointsRank = useMemo(() => {
@@ -230,7 +238,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
       setSavedRows(prev => ({ ...prev, [playerName]: true }))
       setTimeout(() => setSavedRows(prev => { const n = { ...prev }; delete n[playerName]; return n }), 3000)
     } catch (e) {
-      alert('Ошибка сохранения: ' + e.message)
+      alert(tt.saveError + e.message)
     } finally {
       setSaving(null)
     }
@@ -251,7 +259,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 6px' }}>
         <button type="button" className="public-avg-toggle" onClick={toggleAvg}>
-          {showAvg ? 'Скрыть средние' : 'Показать средние'}
+          {showAvg ? tt.hideAvg : tt.showAvg}
         </button>
       </div>
       <div
@@ -267,7 +275,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
           <thead>
             {showAvg && <tr className="public-avg-row">
               <th></th>
-              <th>Среднее</th>
+              <th>{tt.avg}</th>
               {editMode && <th></th>}
               {editMode && <th></th>}
               {editMode && <th></th>}
@@ -281,16 +289,16 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
             </tr>}
             <tr className={showAvg ? 'public-head-row' : ''}>
               <th>#</th>
-              <th className="public-sortable" onClick={() => toggleSort('name')}>Player{sortMark('name')}</th>
-              {editMode && <th>Звание</th>}
-              {editMode && <th>Состав</th>}
+              <th className="public-sortable" onClick={() => toggleSort('name')}>{tt.player}{sortMark('name')}</th>
+              {editMode && <th>{tt.rank}</th>}
+              {editMode && <th>{tt.troops}</th>}
               {editMode && <th></th>}
-              <th className="public-sortable" onClick={() => toggleSort('points')}>Points{sortMark('points')}</th>
-              <th className="public-epic-cell public-sortable" onClick={() => toggleSort('epic')}>Epic Crypts{sortMark('epic')}</th>
+              <th className="public-sortable" onClick={() => toggleSort('points')}>{tt.points}{sortMark('points')}</th>
+              <th className="public-epic-cell public-sortable" onClick={() => toggleSort('epic')}>{tt.epic}{sortMark('epic')}</th>
               {chestTypes.map(t => (
                 <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
                     onClick={() => toggleSort(t)}>
-                  {t}{sortMark(t)}
+                  <span translate="no" className="notranslate">{t}</span>{sortMark(t)}
                 </th>
               ))}
             </tr>
@@ -300,7 +308,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
               return (
                 <tr key={p.name}>
                   <td>{pointsRank[p.name]}</td>
-                  <td title={p.name}>
+                  <td title={p.name} translate="no" className="notranslate">
                     {renderPlayerName(p, targets)}
                   </td>
                   {editMode && (
