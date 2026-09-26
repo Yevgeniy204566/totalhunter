@@ -342,10 +342,13 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
             func.lower(ChestCollector.kingdom) == kingdom.lower(),
         )
     )).scalars().all()
+    # Название клана «как ввели» (форма в кабинете) и готовый слаг из ссылки сводятся к
+    # одному виду той же транслитерацией: clan_to_slug('feniks') == 'feniks'.
+    wanted = clan_to_slug(custom_slug)
     collector = next(
         (c for c in collectors if
          (c.custom_slug and c.custom_slug.lower() == custom_slug.lower()) or
-         clan_to_slug(c.clan) == custom_slug.lower()),
+         (wanted and clan_to_slug(c.clan) == wanted)),
         None
     )
     if not collector:

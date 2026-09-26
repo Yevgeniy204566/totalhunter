@@ -1503,3 +1503,21 @@ async def test_patch_leader_null_clears_leader(db_session):
         )).scalar_one()
         await db_session.refresh(collector)
     assert collector.leader_canonical_name is None
+
+
+@pytest.mark.asyncio
+async def test_by_kingdom_finds_clan_by_name_as_typed(db_session):
+    """Форма «Королевство + Клан» в кабинете (владелец 2026-09-26) передаёт название клана
+    как его ввёл человек — сервер прогоняет его через ту же транслитерацию, что и слаг."""
+    user = await _create_user(db_session, "bykingdomname0a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        imp = await client.post("/api/v1/chests/import",
+                                json=_payload(user.hwid, kingdom="777", clan="Феникс"))
+        assert imp.status_code == 200
+        for typed in ("Феникс", "феникс", " Феникс ", "feniks"):
+            resp = await client.get(f"/api/v1/chests/by/777/{typed}")
+            assert resp.status_code == 200, typed
+            assert resp.json()["clan"] == "Феникс"
+        assert (await client.get("/api/v1/chests/by/777/Нет-Такого")).status_code == 404
+        assert (await client.get("/api/v1/chests/by/778/Феникс")).status_code == 404

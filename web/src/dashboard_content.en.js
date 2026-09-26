@@ -23,6 +23,15 @@ export const DASHBOARD = {
     ancients:     'Ancient',
   },
 
+  chestFinder: {
+    title:     'Clan Chest Table',
+    sub:       'Enter the kingdom number and clan name — the public chest table will open.',
+    kingdom:   'Kingdom',
+    clan:      'Clan',
+    open:      'Open',
+    notFound:  'Clan not found. Check the kingdom number and clan name.',
+    empty:     'Enter the kingdom number and clan name.',
+  },
   devices: {
     title:       'Devices',
     linked:      'Linked device',

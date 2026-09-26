@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { api } from '../api.js'
+import { Link, useNavigate } from 'react-router-dom'
+import { api, fetchChestByKingdomSlug } from '../api.js'
 import { useCounter } from '../hooks/useCounter.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
@@ -101,6 +101,54 @@ function TabBar({ tabs, active, setActive }) {
           </button>
         )
       })}
+    </div>
+  )
+}
+
+/* ─── Поиск таблицы сундуков клана (входящие п.2, владелец 2026-09-26: в «Профиле») ─── */
+function ChestFinder({ D }) {
+  const T = D.chestFinder
+  const navigate = useNavigate()
+  const [kingdom, setKingdom] = useState('')
+  const [clan, setClan]       = useState('')
+  const [msg, setMsg]         = useState('')
+  const [busy, setBusy]       = useState(false)
+
+  async function open() {
+    const k = kingdom.trim(), c = clan.trim()
+    if (!k || !c) { setMsg(T.empty); return }
+    setBusy(true); setMsg('')
+    try {
+      // Сервер сам приводит название к слагу — проверяем, что клан есть, до перехода.
+      await fetchChestByKingdomSlug(k, c)
+      navigate(`/c/${encodeURIComponent(k)}/${encodeURIComponent(c)}`)
+    } catch {
+      setMsg(T.notFound)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const inputStyle = {
+    background: 'var(--elevated)', border: '1px solid var(--outline)', color: 'var(--on-surface)',
+    borderRadius: 6, padding: '9px 12px', fontSize: 16,
+  }
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>{T.title}</h2>
+      <div className="card" style={{ borderRadius: 14 }}>
+        <div className="text-muted" style={{ fontSize: 14, marginBottom: 12 }}>{T.sub}</div>
+        <form onSubmit={e => { e.preventDefault(); open() }}
+          style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input value={kingdom} placeholder={T.kingdom} inputMode="numeric"
+            onChange={e => setKingdom(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            style={{ ...inputStyle, width: 140 }} />
+          <input value={clan} placeholder={T.clan} onChange={e => setClan(e.target.value)}
+            style={{ ...inputStyle, flex: '1 1 200px', minWidth: 0 }} />
+          <button type="submit" className="btn-primary" disabled={busy}>{busy ? '...' : T.open}</button>
+        </form>
+        {msg && <div style={{ marginTop: 10, fontSize: 14, color: 'var(--error-text)' }}>{msg}</div>}
+      </div>
     </div>
   )
 }
@@ -250,6 +298,8 @@ function ProfileTab({ user, stats, hunts, D, onViewHunts, onRefresh }) {
           </div>
         </div>
       </div>
+
+      <ChestFinder D={D} />
 
       {/* recent hunts */}
       <div>
