@@ -1935,6 +1935,17 @@ def automation_conflict(active_mode, scout_consumer_alive: bool,
     return False
 
 
+# Списки профилей и сохранённых кланов — крупнее, жирно, светло-синим, чтобы выделялись
+# (владелец 2026-09-26; аудитория 40-60+). Все темы тёмные — один цвет читается везде.
+PICK_LIST_COLOR = "#7DD3FC"
+
+
+def pick_list_style() -> dict:
+    return dict(font=ctk.CTkFont(size=16, weight="bold"), text_color=PICK_LIST_COLOR,
+                dropdown_font=ctk.CTkFont(size=16, weight="bold"),
+                dropdown_text_color=PICK_LIST_COLOR)
+
+
 class TotalHunterApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -3584,13 +3595,12 @@ class TotalHunterApp(ctk.CTk):
         lb.pack(side="left")
         self._i18n_labels.append((lb, "crypt_profile_lb"))
         ctk.CTkOptionMenu(row, values=list(self._PROFILES.keys()),
-                          variable=self._cal_profile_var, width=120,
+                          variable=self._cal_profile_var, width=140,
                           command=self._on_crypt_profile_change,
                           fg_color=MD3["card"],
                           button_color=MD3["primary"],
                           button_hover_color=MD3["primary_dim"],
-                          text_color=MD3["on_surface"],
-                          corner_radius=6).pack(side="left", padx=(6, 0))
+                          corner_radius=6, **pick_list_style()).pack(side="left", padx=(6, 0))
         return row
 
     def _on_crypt_profile_change(self, profile_name: str):
@@ -5410,7 +5420,7 @@ class TotalHunterApp(ctk.CTk):
             pairs_row, values=["—"], height=36,
             command=self._on_chest_pair_selected, fg_color=MD3["card"],
             button_color=MD3["primary"], button_hover_color=MD3["primary_dim"],
-            text_color=MD3["on_surface"])
+            **pick_list_style())
         self._chest_pairs_menu.pack(side="left", fill="x", expand=True, padx=(0, 4))
         self._chest_pair_save_btn = ctk.CTkButton(
             pairs_row, text="💾", width=48, height=36, corner_radius=8,
@@ -5942,8 +5952,8 @@ class TotalHunterApp(ctk.CTk):
             fg_color=MD3["elevated"],
             button_color=MD3["primary"],
             button_hover_color=MD3["primary_dim"],
-            text_color=MD3["on_surface"],
             corner_radius=8,
+            **pick_list_style(),
         ).pack(side="right")
 
         # ── Status label ──────────────────────────────────────────────────
