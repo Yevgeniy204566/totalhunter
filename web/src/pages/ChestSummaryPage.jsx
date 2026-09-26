@@ -155,8 +155,8 @@ export default function ChestSummaryPage() {
     fetchChestHistorySeason(internalSlug, selectedSeasonId).then(setSeasonDetail)
   }, [selectedSeasonId, internalSlug])
 
-  if (error) return <div className="page-content">{error}</div>
-  if (!data) return <div className="page-content text-muted">...</div>
+  if (error) return <div className="page-content public-summary-page">{error}</div>
+  if (!data) return <div className="page-content public-summary-page text-muted">...</div>
 
   const updatedLabel = data.updated_at
     ? formatUpdatedAt(data.updated_at)
@@ -174,7 +174,7 @@ export default function ChestSummaryPage() {
   const hasSeasonTargets = targetParts.length > 0
 
   return (
-    <div className="page-content">
+    <div className="page-content public-summary-page">
       {/* Переход на лендинг — тот же логотип, что в шапке кабинета (владелец 2026-09-26) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <Link to="/" translate="no" className="notranslate" style={{

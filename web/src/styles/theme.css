@@ -671,3 +671,7 @@ a:hover { color: var(--on-surface); }
 }
 .public-table.with-hero tbody tr:nth-child(even) td:nth-child(3) { background: #0D1326; }
 .public-table.with-hero tbody tr:hover td:nth-child(3) { background: var(--accent-glow); }
+
+/* Публичная таблица сундуков — вдвое шире общего контейнера 900px: у таблицы десятки столбцов
+   (владелец 2026-09-26). Общий .page-content не трогаем — он для текстовых страниц. */
+.page-content.public-summary-page { max-width: 1800px; }
