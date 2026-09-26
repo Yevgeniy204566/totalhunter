@@ -560,6 +560,8 @@ class PlayerProfile(Base):
     canonical_name = Column(String(100), nullable=False)
     rank           = Column(String(20), nullable=True)
     troop_level    = Column(String(20), nullable=True)
+    # Уровень Героя (1..999) — задел для квоты EM: цель будет зависеть от войск и Героя.
+    hero_level     = Column(Integer, nullable=True)
     updated_at     = Column(TIMESTAMP(timezone=True), nullable=False,
                             server_default=func.now())
 

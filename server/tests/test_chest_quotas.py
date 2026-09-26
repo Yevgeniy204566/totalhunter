@@ -201,3 +201,46 @@ async def test_close_season_snapshots_quotas(db_session):
         detail = (await client.get(f"/api/v1/chests/history/{c.slug}/{seasons[0]['id']}")).json()
     assert [q["slot"] for q in detail["targets"]["quotas"]] == [1, 2]
     assert detail["players"][0]["quotas"] == {"1": 2, "2": 1}
+
+
+# ── уровень Героя в профиле игрока (владелец 2026-09-26, задел для квоты EM) ──
+
+@pytest.mark.asyncio
+async def test_dashboard_profiles_save_and_return_hero_level(db_session):
+    user, h = await _owner(db_session, "hero1@example.com")
+    c = await _collector(db_session, user.id)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post("/web/dashboard/chests/player-profiles", headers=h, json={
+            "collector_slug": c.slug,
+            "rows": [{"canonical_name": "Olla", "rank": None, "troop_level": "G9 S9 M9", "hero_level": 550}]})
+        assert r.status_code == 200
+        rows = (await client.get("/web/dashboard/chests", headers=h)).json()["collectors"][0]["player_alias_rows"]
+    from models import PlayerProfile
+    prof = (await db_session.execute(select(PlayerProfile).where(PlayerProfile.collector_id == c.id))).scalar_one()
+    assert prof.hero_level == 550
+
+
+@pytest.mark.asyncio
+async def test_public_profile_accepts_hero_level_and_summary_returns_it(db_session):
+    user, _ = await _owner(db_session, "hero2@example.com")
+    c = await _seed_two_quotas(db_session, user.id)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": c.slug, "canonical_name": "Olla", "troop_level": "G9 S9 M9", "hero_level": 300})
+        assert r.status_code == 200
+        olla = (await client.get(f"/api/v1/chests/summary/{c.slug}")).json()["players"][0]
+    assert olla["hero_level"] == 300
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("hero", [0, 1000, -5])
+async def test_public_profile_rejects_bad_hero_level(db_session, hero):
+    user, _ = await _owner(db_session, f"hero3{secrets.token_hex(2)}@example.com")
+    c = await _collector(db_session, user.id)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post("/api/v1/chests/public/player-profile", json={
+            "collector_slug": c.slug, "canonical_name": "Olla", "hero_level": hero})
+    assert r.status_code == 422

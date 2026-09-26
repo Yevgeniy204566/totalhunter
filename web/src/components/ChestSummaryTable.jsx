@@ -175,9 +175,9 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 }
 
 const TABLE_TXT = {
-  ru: { player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав',
+  ru: { player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
         hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ' },
-  en: { player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops',
+  en: { player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
         hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ' },
 }
 
@@ -235,7 +235,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
     const init = {}
     players.forEach(p => {
       const { g, s, m } = parseTroop(p.troop_level)
-      init[p.name] = { rank: p.rank || '', g, s, m }
+      init[p.name] = { rank: p.rank || '', g, s, m, hero: p.hero_level ?? '' }
     })
     setEditRows(init)
   }, [editMode, players])
@@ -245,7 +245,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
     const troop = row.g && row.s && row.m ? `G${row.g} S${row.s} M${row.m}` : null
     setSaving(playerName)
     try {
-      await postPublicPlayerProfile(collectorSlug, playerName, row.rank || null, troop)
+      const hero = Number(row.hero) || null   // пусто/0 → не задан
+      await postPublicPlayerProfile(collectorSlug, playerName, row.rank || null, troop, hero)
       setSavedRows(prev => ({ ...prev, [playerName]: true }))
       setTimeout(() => setSavedRows(prev => { const n = { ...prev }; delete n[playerName]; return n }), 3000)
     } catch (e) {
@@ -373,6 +374,14 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                             </span>
                           )
                         })()}
+                        {/* уровень Героя — задел для квоты EM */}
+                        <input type="number" min={1} max={999} placeholder={tt.hero}
+                          value={editRows[p.name]?.hero ?? ''}
+                          onChange={e => setEditRows(prev => ({
+                            ...prev,
+                            [p.name]: { ...prev[p.name], hero: e.target.value.replace(/\D/g, '').slice(0, 3) },
+                          }))}
+                          style={{ width: 62, fontSize: 11, padding: '2px 4px', background: '#1e1e2e', color: '#cdd6f4', border: '1px solid #45475a', borderRadius: 4, marginLeft: 4 }} />
                       </div>
                     </td>
                   )}

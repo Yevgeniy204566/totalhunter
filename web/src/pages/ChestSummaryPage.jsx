@@ -12,7 +12,8 @@ const TXT = {
     left: (d, h, m) => `Осталось: ${d} дн. ${h} ч. ${m} мин.`,
     stoppedTitle: '⏸ Учёт сундуков остановлен.',
     stoppedText: 'Лидер клана завершил сезон досрочно. Новый сезон пока не начат — данные не обновляются. Предыдущие сезоны доступны во вкладке «История».',
-    target: (p, c) => `Цель сезона: ${p} очков / ${c} Epic-склепов`,
+    targetTitle: 'Цели сезона',
+    pointsWord: 'очков',
     tz: 'Часовой пояс',
     editOpen: '✏️ Ввести состав', editClose: '✕ Закрыть',
     updated: 'Последнее обновление',
@@ -25,7 +26,8 @@ const TXT = {
     left: (d, h, m) => `Time left: ${d}d ${h}h ${m}m`,
     stoppedTitle: '⏸ Chest tracking is stopped.',
     stoppedText: 'The clan leader ended the season early. A new season has not started yet — data is not updated. Previous seasons are in the "History" tab.',
-    target: (p, c) => `Season target: ${p} points / ${c} Epic crypts`,
+    targetTitle: 'Season targets',
+    pointsWord: 'points',
     tz: 'Time zone',
     editOpen: '✏️ Enter troops', editClose: '✕ Close',
     updated: 'Last update',
@@ -161,7 +163,15 @@ export default function ChestSummaryPage() {
     : '—'
 
   const targets = data.targets || { points: null, chests: null }
-  const hasSeasonTargets = targets.points != null || targets.chests != null
+  // Все цели сезона (владелец 2026-09-26): очки + каждая квота со своей целью; архив до
+  // квот — прежняя одна цель по сундукам.
+  const targetParts = [
+    ...(targets.points != null ? [`${targets.points} ${t.pointsWord}`] : []),
+    ...(Array.isArray(targets.quotas)
+      ? targets.quotas.filter(q => q.target != null).map(q => `${q.name}: ${q.target}`)
+      : (targets.chests != null ? [`Epic: ${targets.chests}`] : [])),
+  ]
+  const hasSeasonTargets = targetParts.length > 0
 
   return (
     <div className="page-content">
@@ -203,7 +213,7 @@ export default function ChestSummaryPage() {
       <div className="public-season-info">
         {hasSeasonTargets && (
           <span className="public-season-badge">
-            {t.target(targets.points ?? '—', targets.chests ?? '—')}
+            {t.targetTitle}: <span translate="no" className="notranslate">{targetParts.join(' · ')}</span>
           </span>
         )}
         {hasSeasonTargets && data.timezone_offset_minutes != null && (

@@ -225,6 +225,7 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
             "canonical_name": a.canonical_name,
             "rank": profile.rank if profile else None,
             "troop_level": profile.troop_level if profile else None,
+            "hero_level": profile.hero_level if profile else None,
         })
 
     mapped_raw_names = {a.raw_name for a in aliases}
@@ -242,6 +243,7 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
             "canonical_name": canonical or raw_name,  # fallback so POST can always save
             "rank": profile.rank if profile else None,
             "troop_level": profile.troop_level if profile else None,
+            "hero_level": profile.hero_level if profile else None,
         })
 
     return rows
@@ -397,6 +399,8 @@ class PlayerProfileRowIn(BaseModel):
     canonical_name: str
     rank: Optional[str] = None
     troop_level: Optional[str] = None
+    # Кабинет сохраняет профили целиком (delete+insert) — поле обязано приходить, иначе затрётся.
+    hero_level: Optional[int] = Field(default=None, ge=1, le=999)
 
 
 class PlayerProfilesPayload(BaseModel):
@@ -423,6 +427,7 @@ async def post_player_profiles(payload: PlayerProfilesPayload,
             canonical_name=canonical,
             rank=row.rank or None,
             troop_level=row.troop_level or None,
+            hero_level=row.hero_level,
         ))
 
     await db.commit()

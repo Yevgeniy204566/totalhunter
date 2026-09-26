@@ -431,7 +431,7 @@ async def test_get_chests_includes_unmapped_sender_as_player_alias_row(db_sessio
     assert resp.status_code == 200
     collector_data = resp.json()["collectors"][0]
     assert collector_data["player_alias_rows"] == [
-        {"raw_name": "Araiina", "canonical_name": "Araiina", "rank": None, "troop_level": None}
+        {"raw_name": "Araiina", "canonical_name": "Araiina", "rank": None, "troop_level": None, "hero_level": None}
     ]
 
 
@@ -453,7 +453,7 @@ async def test_get_chests_includes_existing_player_alias_with_canonical_name(db_
     assert resp.status_code == 200
     collector_data = resp.json()["collectors"][0]
     assert collector_data["player_alias_rows"] == [
-        {"raw_name": "Araiina", "canonical_name": "Arahna", "rank": None, "troop_level": None}
+        {"raw_name": "Araiina", "canonical_name": "Arahna", "rank": None, "troop_level": None, "hero_level": None}
     ]
 
 

@@ -89,6 +89,7 @@ export const DASHBOARD = {
     accountingCol: 'Учёт',
     accountingTooltip: 'Не в учёте — сундук не показывается и очков не даёт. В учёте — даёт очки. Квота — даёт очки и считается в столбце своей квоты.',
     accOff: 'Не в учёте',
+    heroPlaceholder: 'Герой',
     accOn: 'В учёте',
     quotasLabel: 'Квоты сезона',
     quotaName: 'Название квоты',

@@ -127,11 +127,11 @@ export async function fetchAncientsPublic(slug) {
   return res.json()
 }
 
-export async function postPublicPlayerProfile(collector_slug, canonical_name, rank, troop_level) {
+export async function postPublicPlayerProfile(collector_slug, canonical_name, rank, troop_level, hero_level = null) {
   const res = await fetch(`${BASE}/api/v1/chests/public/player-profile`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ collector_slug, canonical_name, rank, troop_level }),
+    body: JSON.stringify({ collector_slug, canonical_name, rank, troop_level, hero_level }),
   })
   if (!res.ok) {
     let msg = 'Save failed'

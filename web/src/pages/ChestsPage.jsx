@@ -35,6 +35,16 @@ function formatPeriodPoint(isoString) {
   return `${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
 }
 
+// Цвет «Учёта» (владелец 2026-09-26): не в учёте — бледно-красный, квоты — от бледно- к
+// насыщенно-зелёному; «В учёте» — без подсветки.
+const ACCOUNTING_BG = {
+  off: { background: 'rgba(248,113,113,0.16)', borderColor: 'rgba(248,113,113,0.45)' },
+  on:  {},
+  1:   { background: 'rgba(74,222,128,0.12)', borderColor: 'rgba(74,222,128,0.35)' },
+  2:   { background: 'rgba(74,222,128,0.26)', borderColor: 'rgba(74,222,128,0.55)' },
+  3:   { background: 'rgba(74,222,128,0.42)', borderColor: 'rgba(74,222,128,0.75)' },
+}
+
 /* Квоты сезона (владелец 2026-09-26): до 3 штук, у каждой название и цель. Номер (slot) у
    квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали. */
 function QuotaEditor({ quotas, cx, onChange }) {
@@ -106,7 +116,7 @@ export default function ChestsPage() {
         nextRows[c.slug] = c.rows
         nextPlayerRows[c.slug] = c.player_alias_rows.map(r => {
           const { g, s, m } = parseTroop(r.troop_level)
-          return { ...r, troop_g: g, troop_s: s, troop_m: m }
+          return { ...r, troop_g: g, troop_s: s, troop_m: m, hero_level: r.hero_level ?? '' }
         })
         nextSeason[c.slug] = {
           timezone_offset_minutes: c.timezone_offset_minutes,
@@ -214,6 +224,8 @@ export default function ChestsPage() {
           troop_level: r.troop_g && r.troop_s && r.troop_m
               ? `G${r.troop_g} S${r.troop_s} M${r.troop_m}`
               : null,
+          // сохранение профилей — полная замена: без поля уровень Героя затрётся
+          hero_level: Number(r.hero_level) || null,
         }))
       await api.dashboardChestsPlayerProfiles(slug, profileRows)
       await api.dashboardChestsLeader(slug, {
@@ -526,6 +538,7 @@ export default function ChestsPage() {
                       <td>
                         <select
                           className="input-dark"
+                          style={ACCOUNTING_BG[row.quota_slot ? String(row.quota_slot) : (row.is_in_pattern ? 'on' : 'off')]}
                           value={row.quota_slot ? String(row.quota_slot) : (row.is_in_pattern ? 'on' : 'off')}
                           onChange={e => {
                             const v = e.target.value
@@ -645,6 +658,11 @@ export default function ChestsPage() {
                               </span>
                             : <span style={{ fontSize: 12, color: '#6c7086', marginLeft: 6 }}>—</span>
                           }
+                          <input className="input-dark" type="number" min={1} max={999}
+                            placeholder={cx.heroPlaceholder} style={{ width: 70, marginLeft: 6 }}
+                            value={row.hero_level ?? ''}
+                            onChange={e => updatePlayerRow(collector.slug, origIdx, 'hero_level',
+                              e.target.value.replace(/\D/g, '').slice(0, 3))} />
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>

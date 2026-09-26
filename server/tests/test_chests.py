@@ -797,7 +797,7 @@ async def test_summary_uses_chest_configuration_points_and_custom_name(db_sessio
     assert body["totals"] == {"Толстяк": 1, "grand_total": 1, "total_points": 40}
     assert body["players"][0] == {"name": "P1", "counts": {"Толстяк": 1}, "total": 1, "quotas": {},
                                   "points": 40, "quota_chests": 0,
-                                  "rank": None, "troop_level": None}
+                                  "rank": None, "troop_level": None, "hero_level": None}
 
 
 @pytest.mark.asyncio

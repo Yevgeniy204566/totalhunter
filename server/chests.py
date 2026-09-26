@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -252,6 +252,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         profile = profile_map.get(player["name"])
         player["rank"] = profile.rank if profile else None
         player["troop_level"] = profile.troop_level if profile else None
+        player["hero_level"] = profile.hero_level if profile else None
 
     result["collector_slug"] = collector.slug
     result["public_url"] = public_url(collector.kingdom, collector.clan,
@@ -277,6 +278,7 @@ class PublicPlayerProfileIn(BaseModel):
     canonical_name: str
     rank: Optional[str] = None
     troop_level: Optional[str] = None
+    hero_level: Optional[int] = Field(default=None, ge=1, le=999)
 
 
 @router.post("/public/player-profile")
@@ -321,6 +323,7 @@ async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
                                     detail=f"Повторное сохранение доступно через {wait_min} мин.")
         existing.rank = rank
         existing.troop_level = troop
+        existing.hero_level = payload.hero_level
         existing.updated_at = now
     else:
         db.add(PlayerProfile(
@@ -328,6 +331,7 @@ async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
             canonical_name=canonical,
             rank=rank,
             troop_level=troop,
+            hero_level=payload.hero_level,
         ))
 
     await db.commit()
@@ -384,6 +388,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
         profile = profile_map.get(player["name"])
         player["rank"] = profile.rank if profile else None
         player["troop_level"] = profile.troop_level if profile else None
+        player["hero_level"] = profile.hero_level if profile else None
 
     result["collector_slug"] = collector.slug
     result["public_url"] = public_url(collector.kingdom, collector.clan,
