@@ -361,7 +361,7 @@ async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get
     return LinkGenerateResponse(code=code, expires_in_seconds=int(timedelta(days=3650).total_seconds()))
 
 
-TRIAL_CREDITS    = 100
+TRIAL_CREDITS    = 300  # как кнопка «Получить 300 попыток» в боте (владелец 2026-09-26)
 REFERRAL_REWARD  = 50
 
 @router.post("/link/verify", response_model=BasicResponse)

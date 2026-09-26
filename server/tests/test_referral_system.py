@@ -70,7 +70,7 @@ async def test_trial_bonus_granted_on_first_hwid_link():
         assert resp.status_code == 200
 
         me = await _me(c, jwt)
-        assert me["credits"] == 100
+        assert me["credits"] == 300
         assert me["trial_used"] is True
 
 
@@ -98,7 +98,7 @@ async def test_no_ref_welcome_without_ref_code():
         await _link_hwid(c, jwt, "HWID0000NOREF001")
         me = await _me(c, jwt)
         assert me["ref_credits"] == 0
-        assert me["credits"] == 100
+        assert me["credits"] == 300
 
 
 # ── HIGH: Idempotency — double-pay prevention ─────────────────────────────────
@@ -216,12 +216,12 @@ async def test_trial_not_repeated_after_hwid_reset_and_relink():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         jwt = await _register(c, "repeat_trial@ref.test")
         await _link_hwid(c, jwt, "HWID0000REPEA001")
-        assert (await _me(c, jwt))["credits"] == 100
+        assert (await _me(c, jwt))["credits"] == 300
 
         await _reset(c, jwt)
         await _link_hwid(c, jwt, "HWID0000REPEA001")
 
-        assert (await _me(c, jwt))["credits"] == 100  # still 100, no second +100
+        assert (await _me(c, jwt))["credits"] == 300  # still 300, no second trial
 
 
 @pytest.mark.asyncio
@@ -230,12 +230,12 @@ async def test_trial_not_repeated_on_new_hwid_after_reset():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         jwt = await _register(c, "new_hwid@ref.test")
         await _link_hwid(c, jwt, "HWID0000NEWHW0A1")
-        assert (await _me(c, jwt))["credits"] == 100
+        assert (await _me(c, jwt))["credits"] == 300
 
         await _reset(c, jwt)
         await _link_hwid(c, jwt, "HWID0000NEWHW0B1")
 
-        assert (await _me(c, jwt))["credits"] == 100  # trial_used=True blocks second grant
+        assert (await _me(c, jwt))["credits"] == 300  # trial_used=True blocks second grant
 
 
 # ── BUG-1: Banned inviter — invited still gets +50 (FAILS before fix) ─────────
