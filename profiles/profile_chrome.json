@@ -82,7 +82,7 @@
   "crypt_accelerations": 4,
   "crypt_break_sec": 10,
   "crypt_scroll_speed": 1.0,
-  "crypt_max_march_sec": 281,
+  "crypt_max_march_sec": 360,
   "crypt_swing1": 0,
   "crypt_swing2": -30,
   "crypt_speed_delta": -0.2,
