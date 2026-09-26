@@ -36,6 +36,7 @@ export const api = {
   activateReferral: (code)     => request('POST', `/web/referral/activate?ref_code=${encodeURIComponent(code)}`),
   referralTree:     ()         => request('GET',  '/web/referral/tree'),
   globalStats:      ()         => request('GET',  '/web/stats/global'),
+  latestVersion:    ()         => request('GET',  '/version/latest'),
   sendFeedback:     (text)     => request('POST', '/web/feedback', { text }),
   paymentCreate:    (pkg)      => request('POST', '/web/payment/create', { package: pkg }),
   earnStatus:       ()         => request('GET',  '/web/earn/status'),

@@ -266,10 +266,10 @@ const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/late
 function FeatureGroupTitle({ children, sub, style }) {
   return (
     <div style={{ textAlign: 'center', marginBottom: 24, ...style }}>
-      <h3 style={{ fontSize: 'clamp(22px, 3vw, 30px)', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+      <h3 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
         {children}
       </h3>
-      {sub && <p style={{ color: '#C8D8F0', fontSize: 15, margin: '8px 0 0' }}>{sub}</p>}
+      {sub && <p style={{ color: '#DCE6F7', fontSize: 18, margin: '8px 0 0' }}>{sub}</p>}
     </div>
   )
 }
@@ -279,22 +279,22 @@ function FeatureGrid({ items }) {
   return (
     <ul style={{
       // Без подложки: фон (робот с сундуком) должен просматриваться, читаемость — тенью текста.
-      listStyle: 'none', margin: '0 auto', padding: 0, maxWidth: 780,
+      listStyle: 'none', margin: '0 auto', padding: 0, maxWidth: 920,
       textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)',
     }}>
       {items.map(({ title, desc }) => (
         <li key={title} style={{
-          display: 'flex', gap: 16, alignItems: 'flex-start', padding: '14px 8px',
+          display: 'flex', gap: 18, alignItems: 'flex-start', padding: '16px 8px',
         }}>
           <span style={{
-            flex: '0 0 30px', width: 30, height: 30, borderRadius: '50%',
+            flex: '0 0 38px', width: 38, height: 38, borderRadius: '50%',
             background: 'rgba(74,222,128,0.14)', border: '1px solid #4ADE80',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 17, fontWeight: 900, color: '#4ADE80', marginTop: 1,
+            fontSize: 22, fontWeight: 900, color: '#4ADE80', marginTop: 0,
           }}>✓</span>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{title}</div>
-            <div style={{ fontSize: 14, color: '#DCE6F7', lineHeight: 1.65 }}>{desc}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
+            <div style={{ fontSize: 18, color: '#E6EEFA', lineHeight: 1.6 }}>{desc}</div>
           </div>
         </li>
       ))}
@@ -367,6 +367,7 @@ function DownloadWarningModal({ lang, source, onClose }) {
 export default function LandingPage() {
   const [stats, setStats] = useState(null)
   const [dlSource, setDlSource] = useState(null)
+  const [appVersion, setAppVersion] = useState(null)
   const { lang, toggle } = useLang()
   const LANDING = lang === 'en' ? LANDING_EN : LANDING_RU
 
@@ -378,6 +379,8 @@ export default function LandingPage() {
   )
   useEffect(() => {
     api.globalStats().then(d => setStats(d)).catch(() => {})
+    // Версия — с того же /version/latest, что и автообновление бота: не устаревает после релиза.
+    api.latestVersion().then(d => setAppVersion(d?.version || null)).catch(() => {})
   }, [])
 
   return (
@@ -566,7 +569,7 @@ export default function LandingPage() {
           {lang === 'en' ? 'Download TotalHunter (.zip)' : 'Скачать TotalHunter (.zip)'}
         </a>
         <p style={{ marginTop: 10, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-          v1.6.9 · {lang === 'en' ? 'Windows PC only · 10/11 · 64-bit' : 'Только для Windows ПК · 10/11 · 64-bit'}
+          {appVersion ? `v${appVersion} · ` : ''}{lang === 'en' ? 'Windows PC only · 10/11 · 64-bit' : 'Только для Windows ПК · 10/11 · 64-bit'}
         </p>
       </div>
 
@@ -614,8 +617,8 @@ export default function LandingPage() {
             {LANDING.featuresTitle}
           </h2>
           <p style={{
-            textAlign: 'center', color: '#C8D8F0', fontSize: 16,
-            maxWidth: 560, margin: '0 auto 48px',
+            textAlign: 'center', color: '#DCE6F7', fontSize: 19,
+            maxWidth: 640, margin: '0 auto 48px',
           }}>
             {LANDING.featuresSub}
           </p>
@@ -636,7 +639,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
               {LANDING.tech.map(({ icon, text }) => (
                 <span key={text} style={{
-                  padding: '8px 14px', borderRadius: 20, fontSize: 13, color: '#C8D8F0',
+                  padding: '10px 16px', borderRadius: 22, fontSize: 16, color: '#E6EEFA',
                   background: 'rgba(12,18,34,0.72)', border: '1px solid rgba(61,127,255,0.25)',
                 }}>
                   {icon} {text}
