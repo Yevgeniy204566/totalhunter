@@ -487,11 +487,23 @@ export default function GuidePage() {
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 14, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 14 }}>
+                {G.chests.botHowLabel}
+              </div>
+              {G.chests.botHow.map((s, i) => (
+                <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
+              ))}
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
                 {G.chests.webLabel}
               </div>
               {G.chests.webSteps.map((s, i) => (
                 <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
+              ))}
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
+                {G.chests.nuancesLabel}
+              </div>
+              {G.chests.nuances.map((s, i) => (
+                <Step key={i} n="•" title={s.title} desc={s.desc} />
               ))}
               <Note>{G.chests.note}</Note>
             </Card>
