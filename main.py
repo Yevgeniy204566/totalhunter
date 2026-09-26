@@ -2667,6 +2667,18 @@ class TotalHunterApp(ctk.CTk):
         """Вкладка «Склепы» — выбор типов, настройки, старт/стоп."""
         from PIL import Image
 
+        # Владелец 2026-09-26: профиль и «Сохранить» — самый верх вкладки, одной строкой,
+        # не в глубине настроек под ползунками.
+        _crypt_profile_row = self._build_profile_row(self.tab_crypt)
+        self.crypt_save_settings_btn = ctk.CTkButton(
+                      _crypt_profile_row, text=LANGS[self.current_lang]["crypt_save_btn"],
+                      height=32,
+                      fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
+                      text_color=MD3["on_surface"], corner_radius=8,
+                      command=self._save_crypt_settings_all)
+        self.crypt_save_settings_btn.pack(side="left", padx=(10, 0), fill="x", expand=True)
+        self._i18n_labels.append((self.crypt_save_settings_btn, "crypt_save_btn"))
+
         # Баланс + алмаз рядом
         _crypt_bal_row = ctk.CTkFrame(self.tab_crypt, fg_color="transparent")
         _crypt_bal_row.pack(pady=(4, 2))
@@ -2944,32 +2956,6 @@ class TotalHunterApp(ctk.CTk):
         self.crypt_speed_slider.set(0.0)
         self.crypt_speed_slider.pack(padx=10, pady=(2, 4), fill="x")
 
-        # ── Профиль калибровки ────────────────────────────────────
-        misc_row = ctk.CTkFrame(settings_frame, fg_color="transparent")
-        misc_row.pack(fill="x", padx=10, pady=(2, 0))
-        _crypt_profile_lb = ctk.CTkLabel(misc_row, text=LANGS[self.current_lang]["crypt_profile_lb"],
-                                         font=ctk.CTkFont(size=13),
-                                         text_color=MD3["on_surface2"])
-        _crypt_profile_lb.pack(side="left")
-        self._i18n_labels.append((_crypt_profile_lb, "crypt_profile_lb"))
-        ctk.CTkOptionMenu(misc_row, values=list(self._PROFILES.keys()),
-                          variable=self._cal_profile_var, width=100,
-                          command=self._on_crypt_profile_change,
-                          fg_color=MD3["card"],
-                          button_color=MD3["primary"],
-                          button_hover_color=MD3["primary_dim"],
-                          text_color=MD3["on_surface"],
-                          corner_radius=6).pack(side="left", padx=(4, 6))
-
-        # Единая кнопка сохранения
-        self.crypt_save_settings_btn = ctk.CTkButton(
-                      settings_frame, text=LANGS[self.current_lang]["crypt_save_btn"],
-                      height=32,
-                      fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
-                      text_color=MD3["on_surface"], corner_radius=8,
-                      command=self._save_crypt_settings_all)
-        self.crypt_save_settings_btn.pack(padx=10, pady=(6, 6), fill="x")
-        self._i18n_labels.append((self.crypt_save_settings_btn, "crypt_save_btn"))
 
         # Обратный отсчёт (над кнопкой — всегда в зоне видимости)
         self.crypt_countdown_label = ctk.CTkLabel(
@@ -3574,6 +3560,25 @@ class TotalHunterApp(ctk.CTk):
             self.update_slider_labels()
         except Exception:
             pass
+
+    def _build_profile_row(self, parent):
+        """Строка «Профиль: [▼]» для верха вкладок Склепы/Сундуки — та же переменная
+        _cal_profile_var, что и в Калибровке: выбор в любой вкладке виден во всех."""
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", padx=20, pady=(8, 2))
+        lb = ctk.CTkLabel(row, text=LANGS[self.current_lang]["crypt_profile_lb"],
+                          font=ctk.CTkFont(size=13), text_color=MD3["on_surface2"])
+        lb.pack(side="left")
+        self._i18n_labels.append((lb, "crypt_profile_lb"))
+        ctk.CTkOptionMenu(row, values=list(self._PROFILES.keys()),
+                          variable=self._cal_profile_var, width=120,
+                          command=self._on_crypt_profile_change,
+                          fg_color=MD3["card"],
+                          button_color=MD3["primary"],
+                          button_hover_color=MD3["primary_dim"],
+                          text_color=MD3["on_surface"],
+                          corner_radius=6).pack(side="left", padx=(6, 0))
+        return row
 
     def _on_crypt_profile_change(self, profile_name: str):
         """Смена профиля в Склепах — загружает калибровку + все настройки Склепов."""
@@ -5322,6 +5327,9 @@ class TotalHunterApp(ctk.CTk):
     def setup_chest_tab(self):
         L = LANGS[self.current_lang]
 
+        # Владелец 2026-09-26: выбор профиля калибровки прямо в Сундуках, самый верх.
+        self._build_profile_row(self.tab_chest)
+
         title_lb = ctk.CTkLabel(self.tab_chest, text=L["tab_chest"],
                                 font=ctk.CTkFont(size=20, weight="bold"),
                                 text_color=MD3["primary"])
@@ -5898,7 +5906,8 @@ class TotalHunterApp(ctk.CTk):
 
         # ── Profile dropdown ──────────────────────────────────────────────
         profile_frame = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
-        profile_frame.pack(fill="x", padx=40, pady=4)
+        # Владелец 2026-09-26: профиль + Сохранить/Загрузить — самый верх вкладки.
+        profile_frame.pack(fill="x", padx=40, pady=(12, 4), before=_cal_title_lb)
         _cal_profile_lb = ctk.CTkLabel(profile_frame, text=LANGS[self.current_lang]["cal_profile_lb"],
                                        text_color=MD3["on_surface2"])
         _cal_profile_lb.pack(side="left")
@@ -6092,7 +6101,7 @@ class TotalHunterApp(ctk.CTk):
 
         # ── Сохранить / Загрузить — в одну строку ────────────────────────
         save_load_row = ctk.CTkFrame(self._cal_frame, fg_color="transparent")
-        save_load_row.pack(fill="x", padx=40, pady=(0, 8))
+        save_load_row.pack(fill="x", padx=40, pady=(0, 8), before=_cal_title_lb)
         self._cal_save_btn = ctk.CTkButton(save_load_row, text=LANGS[self.current_lang]["cal_save_btn"],
                       command=_save_profile,
                       fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
