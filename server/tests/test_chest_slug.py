@@ -34,3 +34,16 @@ def test_fully_unsupported_script_falls_back_to_empty_string():
     код (chest_dashboard.py) должен в этом случае не показывать short_url вовсе,
     а не давать битую ссылку /c/{kingdom}/ с пустым хвостом."""
     assert clan_to_slug("日本語") == ""
+
+
+def test_public_url_readable_latin_slug():
+    from chest_slug import public_url
+    assert public_url("229", "Феникс", None, "raw123") == "https://total-hunter.com/c/229/feniks"
+    assert public_url("229", "ELDORADO", None, "raw123") == "https://total-hunter.com/c/229/eldorado"
+
+
+def test_public_url_prefers_custom_slug_and_falls_back_to_raw():
+    from chest_slug import public_url
+    assert public_url("229", "Феникс", "myclan", "raw123") == "https://total-hunter.com/c/229/myclan"
+    # название без латинской транслитерации -> старая рабочая ссылка, не %D0... и не пустой хвост
+    assert public_url("229", "龍", None, "raw123") == "https://total-hunter.com/chests/raw123"

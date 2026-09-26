@@ -343,9 +343,21 @@ async def send_feedback(
 # GET/PUT /web/chest-links — сохранённые таблицы сундуков кланов (Профиль кабинета)
 # ─────────────────────────────────────────────────────────────────────────────
 
+async def _chest_links_with_urls(db: AsyncSession, links: list) -> list:
+    # Ссылка — готовая читаемая с сервера (/c/229/feniks), сайт её не собирает сам.
+    from chests import find_collector_by_kingdom_name
+    from chest_slug import public_url
+    out = []
+    for l in links:
+        c = await find_collector_by_kingdom_name(db, l["kingdom"], l["clan"])
+        out.append({**l, "url": public_url(c.kingdom, c.clan, c.custom_slug, c.slug) if c else None})
+    return out
+
+
 @router.get("/chest-links")
-async def get_chest_links(web_user: User = Depends(get_web_user)):
-    return {"links": web_user.saved_chest_links or []}
+async def get_chest_links(db: AsyncSession = Depends(get_db),
+                          web_user: User = Depends(get_web_user)):
+    return {"links": await _chest_links_with_urls(db, web_user.saved_chest_links or [])}
 
 
 @router.put("/chest-links")
@@ -365,7 +377,7 @@ async def put_chest_links(
         links.append({"kingdom": kingdom, "clan": clan})
     web_user.saved_chest_links = links
     await db.commit()
-    return {"links": links}
+    return {"links": await _chest_links_with_urls(db, links)}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

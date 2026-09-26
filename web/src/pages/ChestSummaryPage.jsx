@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
@@ -105,6 +105,18 @@ export default function ChestSummaryPage() {
   const [seasonDetail, setSeasonDetail] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [lang, setLang] = useState(initialLang)
+  const navigate = useNavigate()
+  // Открыли по «сырому» адресу (/c/229/Феникс → %D0%A4...) или старому /chests/{slug} —
+  // показываем в адресной строке читаемую ссылку с сервера (/c/229/feniks).
+  useEffect(() => {
+    if (!data?.public_url) return
+    try {
+      const path = new URL(data.public_url).pathname
+      if (decodeURIComponent(window.location.pathname) !== decodeURIComponent(path)) {
+        navigate(path, { replace: true })
+      }
+    } catch { /* некорректный url — оставляем как есть */ }
+  }, [data?.public_url])  // eslint-disable-line react-hooks/exhaustive-deps
   const t = TXT[lang]
   function toggleLang() {
     const next = lang === 'ru' ? 'en' : 'ru'

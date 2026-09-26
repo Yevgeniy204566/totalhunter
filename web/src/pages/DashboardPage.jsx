@@ -107,10 +107,8 @@ function TabBar({ tabs, active, setActive }) {
 
 /* ─── Сохранённые таблицы сундуков кланов (Профиль, владелец 2026-09-26) ───
    Список хранится в аккаунте (/web/chest-links): выпадающий список кланов, ссылка на
-   публичную таблицу выбранного, Сохранить / Удалить. */
-function chestLinkUrl(l) {
-  return `${window.location.origin}/c/${encodeURIComponent(l.kingdom)}/${encodeURIComponent(l.clan)}`
-}
+   публичную таблицу выбранного, Сохранить / Удалить. Ссылку (читаемую, /c/229/feniks)
+   строит сервер — сайт её не собирает, иначе кириллица превращается в %D0%A4... */
 
 function ChestFinder({ D }) {
   const T = D.chestFinder
@@ -136,7 +134,7 @@ function ChestFinder({ D }) {
   }
 
   async function persist(next, selectIndex) {
-    const r = await api.saveChestLinks(next)
+    const r = await api.saveChestLinks(next.map(({ kingdom, clan }) => ({ kingdom, clan })))
     const list = r?.links || next
     setLinks(list)
     pick(Math.min(selectIndex, list.length - 1), list)
@@ -196,11 +194,11 @@ function ChestFinder({ D }) {
             {links.map((l, i) => <option key={`${l.kingdom}/${l.clan}`} value={i}>{l.kingdom} / {l.clan}</option>)}
             <option value={-1}>{T.newItem}</option>
           </select>
-          {current && (
-            <a href={chestLinkUrl(current)} target="_blank" rel="noreferrer"
+          {current?.url && (
+            <a href={current.url} target="_blank" rel="noreferrer"
               style={{ color: 'var(--accent)', fontSize: 15, wordBreak: 'break-all' }}
               translate="no" className="notranslate">
-              {chestLinkUrl(current)}
+              {current.url}
             </a>
           )}
         </div>

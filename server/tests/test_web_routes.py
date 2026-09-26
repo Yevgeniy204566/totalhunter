@@ -296,8 +296,9 @@ async def test_chest_links_saved_and_returned_deduped():
         ]})
         assert put.status_code == 200
         got = (await client.get("/web/chest-links", headers=h)).json()
-    assert got == {"links": [{"kingdom": "229", "clan": "ELDORADO"},
-                             {"kingdom": "229", "clan": "Феникс"}]}
+    # url — None: в этом тесте таких кланов нет на сервере (ссылку строит сервер, см. ниже)
+    assert got == {"links": [{"kingdom": "229", "clan": "ELDORADO", "url": None},
+                             {"kingdom": "229", "clan": "Феникс", "url": None}]}
 
 
 @pytest.mark.asyncio
@@ -319,3 +320,27 @@ async def test_chest_links_rejects_bad_kingdom_and_too_many():
         many = await client.put("/web/chest-links", headers=h, json={"links": [
             {"kingdom": str(i), "clan": f"C{i}"} for i in range(1, 52)]})
         assert many.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_chest_links_return_readable_url_for_existing_clan(db_session):
+    import secrets
+    from models import User
+    bot_user = User(hwid="linksurl0000001", ref_code=secrets.token_urlsafe(6), credits=100)
+    db_session.add(bot_user)
+    await db_session.commit()
+    claims = {"email": "links4@example.com", "name": "L4", "sub": "links-4"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        imp = await client.post("/api/v1/chests/import", json={
+            "hwid": "linksurl0000001", "kingdom": "779", "clan": "Феникс",
+            "timestamp": "2026-09-26T12:00:00",
+            "items": [{"chest_type": "T", "sender": "P", "timestamp": "2026-09-26T11:00:00"}]})
+        assert imp.status_code == 200
+        token = await _get_jwt(client, claims)
+        h = {"Authorization": f"Bearer {token}"}
+        put = await client.put("/web/chest-links", headers=h, json={"links": [
+            {"kingdom": "779", "clan": "Феникс"}, {"kingdom": "779", "clan": "НетТакого"}]})
+        got = (await client.get("/web/chest-links", headers=h)).json()
+    assert put.json() == got
+    assert got["links"][0]["url"] == "https://total-hunter.com/c/779/feniks"
+    assert got["links"][1]["url"] is None

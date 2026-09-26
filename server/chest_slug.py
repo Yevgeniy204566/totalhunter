@@ -41,3 +41,17 @@ def clan_to_slug(clan: str) -> str:
     латинской транслитерации в таблице выше) — вызывающий код должен в этом случае не
     показывать короткую ссылку, а не давать /c/{kingdom}/ с пустым хвостом."""
     return re.sub(r'[^a-z0-9]+', '-', transliterate(clan)).strip('-')
+
+
+SITE = "https://total-hunter.com"
+
+
+def public_url(kingdom: str, clan: str, custom_slug, raw_slug: str) -> str:
+    """Единственное место, где строится публичная ссылка на таблицу клана (владелец
+    2026-09-26: везде читаемые ссылки латиницей, без %D0%A4...). Свой адрес лидера →
+    транслитерация названия (/c/229/feniks) → если латиницы не получилось (иероглифы и
+    т.п.) — старая гарантированно рабочая /chests/{slug}, а не /c/229/ с пустым хвостом."""
+    nice = custom_slug or clan_to_slug(clan)
+    if nice:
+        return f"{SITE}/c/{kingdom}/{nice}"
+    return f"{SITE}/chests/{raw_slug}"

@@ -1521,3 +1521,13 @@ async def test_by_kingdom_finds_clan_by_name_as_typed(db_session):
             assert resp.json()["clan"] == "Феникс"
         assert (await client.get("/api/v1/chests/by/777/Нет-Такого")).status_code == 404
         assert (await client.get("/api/v1/chests/by/778/Феникс")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_by_kingdom_returns_readable_public_url(db_session):
+    user = await _create_user(db_session, "bykingdomurl00a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/chests/import", json=_payload(user.hwid, kingdom="778", clan="Феникс"))
+        resp = await client.get("/api/v1/chests/by/778/Феникс")
+    assert resp.json()["public_url"] == "https://total-hunter.com/c/778/feniks"

@@ -18,7 +18,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
-from chest_slug import clan_to_slug
+from chest_slug import clan_to_slug, public_url
 from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
@@ -283,9 +283,9 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
         # Для языков вне таблицы транслитерации (иероглифы и т.п.) слаг всё ещё может
         # быть пустым — тогда откатываемся на старую (гарантированно рабочую) ссылку
         # по случайному slug, вместо битой /c/{kingdom}/ с пустым хвостом.
-        _nice_slug = collector.custom_slug or clan_to_slug(collector.clan)
         _raw_url = f"https://total-hunter.com/chests/{collector.slug}"
-        _nice_url = f"https://total-hunter.com/c/{collector.kingdom}/{_nice_slug}" if _nice_slug else None
+        _public = public_url(collector.kingdom, collector.clan, collector.custom_slug, collector.slug)
+        _nice_url = _public if _public != _raw_url else None
         result.append({
             "slug": collector.slug, "kingdom": collector.kingdom, "clan": collector.clan,
             "language": collector.language,

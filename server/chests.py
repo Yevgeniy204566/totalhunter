@@ -22,7 +22,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
-from chest_slug import clan_to_slug
+from chest_slug import clan_to_slug, public_url
 from chest_summary import pivot_summary, query_summary_rows
 from database import get_db
 from models import (
@@ -253,6 +253,8 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         player["troop_level"] = profile.troop_level if profile else None
 
     result["collector_slug"] = collector.slug
+    result["public_url"] = public_url(collector.kingdom, collector.clan,
+                                      collector.custom_slug, collector.slug)
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
@@ -334,23 +336,27 @@ async def public_upsert_player_profile(payload: PublicPlayerProfileIn,
     return {"ok": True}
 
 
-@router.get("/by/{kingdom}/{custom_slug}")
-async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
-                                    db: AsyncSession = Depends(get_db)):
+async def find_collector_by_kingdom_name(db: AsyncSession, kingdom: str, name: str):
+    """Клан по королевству + названию «как ввели» или слагу из ссылки: оба сводятся к
+    одному виду той же транслитерацией (clan_to_slug('feniks') == 'feniks')."""
     collectors = (await db.execute(
         select(ChestCollector).where(
-            func.lower(ChestCollector.kingdom) == kingdom.lower(),
+            func.lower(ChestCollector.kingdom) == kingdom.strip().lower(),
         )
     )).scalars().all()
-    # Название клана «как ввели» (форма в кабинете) и готовый слаг из ссылки сводятся к
-    # одному виду той же транслитерацией: clan_to_slug('feniks') == 'feniks'.
-    wanted = clan_to_slug(custom_slug)
-    collector = next(
+    wanted = clan_to_slug(name)
+    return next(
         (c for c in collectors if
-         (c.custom_slug and c.custom_slug.lower() == custom_slug.lower()) or
+         (c.custom_slug and c.custom_slug.lower() == name.strip().lower()) or
          (wanted and clan_to_slug(c.clan) == wanted)),
         None
     )
+
+
+@router.get("/by/{kingdom}/{custom_slug}")
+async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
+                                    db: AsyncSession = Depends(get_db)):
+    collector = await find_collector_by_kingdom_name(db, kingdom, custom_slug)
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
 
@@ -381,6 +387,8 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
         player["troop_level"] = profile.troop_level if profile else None
 
     result["collector_slug"] = collector.slug
+    result["public_url"] = public_url(collector.kingdom, collector.clan,
+                                      collector.custom_slug, collector.slug)
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
