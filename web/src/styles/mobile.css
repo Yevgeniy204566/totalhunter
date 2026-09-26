@@ -259,6 +259,11 @@
   .public-table td:nth-child(2) {
     position: static !important;
   }
+  /* …но в шапке они держатся сверху, как остальные заголовки (владелец 2026-09-26) */
+  .public-table thead th:nth-child(1),
+  .public-table thead th:nth-child(2) {
+    position: sticky !important; left: auto !important;
+  }
 
   /* Намёк о скролле: тень на правом крае таблицы */
   .public-table-wrap {
