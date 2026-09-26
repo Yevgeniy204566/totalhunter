@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
 from chest_slug import clan_to_slug, public_url
-from chest_summary import pivot_summary, query_summary_rows, quota_slots_of, targets_of
+from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of, targets_of
 from database import get_db
 from models import (
     Chest, ChestCollector, ChestTypeAlias, Hunt,
@@ -243,16 +243,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         quota_slots=quota_slots_of(collector.quotas),
     )
 
-    # Enrich each player with rank + troop_level from player_profiles
-    profiles = (await db.execute(
-        select(PlayerProfile).where(PlayerProfile.collector_id == collector.id)
-    )).scalars().all()
-    profile_map = {p.canonical_name: p for p in profiles}
-    for player in result["players"]:
-        profile = profile_map.get(player["name"])
-        player["rank"] = profile.rank if profile else None
-        player["troop_level"] = profile.troop_level if profile else None
-        player["hero_level"] = profile.hero_level if profile else None
+    await enrich_with_profiles(db, collector.id, result, collector.quotas)
 
     result["collector_slug"] = collector.slug
     result["public_url"] = public_url(collector.kingdom, collector.clan,
@@ -379,16 +370,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
         quota_slots=quota_slots_of(collector.quotas),
     )
 
-    # Enrich each player with rank + troop_level from player_profiles
-    profiles = (await db.execute(
-        select(PlayerProfile).where(PlayerProfile.collector_id == collector.id)
-    )).scalars().all()
-    profile_map = {p.canonical_name: p for p in profiles}
-    for player in result["players"]:
-        profile = profile_map.get(player["name"])
-        player["rank"] = profile.rank if profile else None
-        player["troop_level"] = profile.troop_level if profile else None
-        player["hero_level"] = profile.hero_level if profile else None
+    await enrich_with_profiles(db, collector.id, result, collector.quotas)
 
     result["collector_slug"] = collector.slug
     result["public_url"] = public_url(collector.kingdom, collector.clan,

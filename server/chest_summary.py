@@ -161,3 +161,45 @@ def targets_of(target_points, quotas) -> dict:
     quotas = quotas or []
     slot1 = next((q for q in quotas if int(q["slot"]) == 1), None)
     return {"points": target_points, "chests": slot1["target"] if slot1 else None, "quotas": quotas}
+
+
+def personal_target(quota: dict, troop_level, hero_level) -> tuple:
+    """Личная цель игрока для квоты режима per_player (спека 02, владелец 2026-09-26):
+    база × (1 + k/100 × (Герой − H₀)/100), не меньше 0.
+    ФОРМУЛА ПРЕДВАРИТЕЛЬНАЯ И ЗАМЕНЯЕМАЯ: нужна, чтобы заложить механизм личной цели;
+    вид зависимости и коэффициенты поменяются по статистике без изменения модели данных.
+    Уровень войск в расчёт НЕ входит (для EM все фактически 9/9/9) — только в статистику.
+    Нет Героя → база, partial=True. Для fixed-квоты — (None, False): личной цели нет."""
+    if quota.get("mode") != "per_player":
+        return None, False
+    base = quota.get("target") or 0
+    if not hero_level:
+        return base, True
+    k = quota.get("hero_k") or 0
+    h0 = quota.get("hero_h0") or 400
+    return max(0, round(base * (1 + (k / 100) * ((hero_level - h0) / 100)))), False
+
+
+async def enrich_with_profiles(db, collector_id: int, result: dict, quotas) -> None:
+    """Звание, войска, уровень Героя и личные цели квот per_player — в каждого игрока сводки.
+    Вызывается для живой сводки И перед снимком сезона: архив хранит профили на момент
+    закрытия — это и есть статистика для подбора коэффициентов EM."""
+    from models import PlayerProfile
+    profiles = (await db.execute(
+        select(PlayerProfile).where(PlayerProfile.collector_id == collector_id)
+    )).scalars().all()
+    profile_map = {p.canonical_name: p for p in profiles}
+    pp_quotas = [q for q in (quotas or []) if q.get("mode") == "per_player"]
+    for player in result["players"]:
+        profile = profile_map.get(player["name"])
+        player["rank"] = profile.rank if profile else None
+        player["troop_level"] = profile.troop_level if profile else None
+        player["hero_level"] = profile.hero_level if profile else None
+        if pp_quotas:
+            targets, partial = {}, {}
+            for q in pp_quotas:
+                t, part = personal_target(q, player["troop_level"], player["hero_level"])
+                targets[str(q["slot"])] = t
+                partial[str(q["slot"])] = part
+            player["quota_targets"] = targets
+            player["quota_targets_partial"] = partial

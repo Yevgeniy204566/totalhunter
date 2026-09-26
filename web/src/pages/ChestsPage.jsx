@@ -52,7 +52,8 @@ function QuotaEditor({ quotas, cx, onChange }) {
   const add = () => {
     const used = new Set(quotas.map(q => q.slot))
     const slot = [1, 2, 3].find(n => !used.has(n))
-    if (slot) onChange([...quotas, { slot, name: '', target: '' }].sort((a, b) => a.slot - b.slot))
+    if (slot) onChange([...quotas, { slot, name: '', target: '', mode: 'fixed', hero_k: 0, hero_h0: 400 }]
+      .sort((a, b) => a.slot - b.slot))
   }
   return (
     <div className="chest-field" style={{ flexBasis: '100%' }}>
@@ -66,6 +67,22 @@ function QuotaEditor({ quotas, cx, onChange }) {
               value={q.target} onChange={e => set(i, 'target', e.target.value)} />
             <button type="button" className="chest-pill-btn chest-pill-btn--danger chest-pill-btn--sm"
               onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}
+              title={cx.perPlayerHint}>
+              <input type="checkbox" checked={q.mode === 'per_player'}
+                onChange={e => set(i, 'mode', e.target.checked ? 'per_player' : 'fixed')} />
+              {cx.perPlayer}
+            </label>
+            {q.mode === 'per_player' && (
+              <>
+                <input className="input-dark" style={{ width: 90 }} type="number" min={-100} max={100}
+                  title={cx.heroK} placeholder={cx.heroK} value={q.hero_k}
+                  onChange={e => set(i, 'hero_k', e.target.value)} />
+                <input className="input-dark" style={{ width: 90 }} type="number" min={1} max={999}
+                  title={cx.heroH0} placeholder={cx.heroH0} value={q.hero_h0}
+                  onChange={e => set(i, 'hero_h0', e.target.value)} />
+              </>
+            )}
           </div>
         ))}
         {quotas.length < 3 && (
@@ -123,7 +140,8 @@ export default function ChestsPage() {
           period_start: c.period_start ? c.period_start.slice(0, 16) : '',
           period_end: c.period_end ? c.period_end.slice(0, 16) : '',
           target_points: c.target_points,
-          quotas: (c.quotas || []).map(q => ({ slot: q.slot, name: q.name, target: q.target ?? '' })),
+          quotas: (c.quotas || []).map(q => ({ slot: q.slot, name: q.name, target: q.target ?? '',
+                                               mode: q.mode || 'fixed', hero_k: q.hero_k ?? 0, hero_h0: q.hero_h0 ?? 400 })),
         }
         nextLeader[c.slug] = c.leader_canonical_name || null
         nextLeaderExcluded[c.slug] = c.leader_excluded_catalog_ids || []
@@ -256,7 +274,10 @@ export default function ChestsPage() {
       quotas: (s.quotas || [])
         .filter(q => (q.name || '').trim())
         .map(q => ({ slot: q.slot, name: q.name.trim(),
-                     target: q.target === '' || q.target == null ? null : Number(q.target) })),
+                     target: q.target === '' || q.target == null ? null : Number(q.target),
+                     mode: q.mode || 'fixed',
+                     ...(q.mode === 'per_player'
+                       ? { hero_k: Number(q.hero_k) || 0, hero_h0: Number(q.hero_h0) || 400 } : {}) })),
     }
     try {
       await api.dashboardChestsSeason(slug, payload)
@@ -741,6 +762,17 @@ export default function ChestsPage() {
                   {cx.loadHistoryBtn}
                 </button>
               )}
+              {/* Статистика для подбора формулы квоты EM (спека 02): сезоны × игроки × Герой × квоты */}
+              <button className="chest-pill-btn" style={{ marginLeft: 8 }} onClick={async () => {
+                try {
+                  const blob = await api.dashboardChestsStatsCsv(collector.slug)
+                  const a = document.createElement('a')
+                  a.href = URL.createObjectURL(blob)
+                  a.download = `chests-stats-${collector.kingdom}-${collector.clan}.csv`
+                  a.click()
+                  URL.revokeObjectURL(a.href)
+                } catch (e) { setMsg(e.message) }
+              }}>{cx.statsBtn}</button>
               {historyByCollector[collector.slug]?.length === 0 && (
                 <div className="text-muted">{cx.historyEmpty}</div>
               )}

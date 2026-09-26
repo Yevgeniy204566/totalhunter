@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
 from chest_slug import clan_to_slug, public_url
-from chest_summary import pivot_summary, query_summary_rows, quota_slots_of
+from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of
 from database import get_db
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
@@ -485,8 +485,11 @@ class QuotaIn(BaseModel):
     slot: int = Field(ge=1, le=3)
     name: str = Field(min_length=1, max_length=40)
     target: Optional[int] = Field(default=None, ge=0)
-    # точка расширения для квоты EM (спека 02): сейчас только одна цель на всех
-    mode: Literal["fixed"] = "fixed"
+    # fixed — одна цель на всех; per_player — личная цель по уровню Героя (спека 02),
+    # все коэффициенты правит лидер: формула будет уточняться по статистике.
+    mode: Literal["fixed", "per_player"] = "fixed"
+    hero_k: float = Field(default=0, ge=-100, le=100)     # % цели на 100 уровней Героя
+    hero_h0: int = Field(default=400, ge=1, le=999)       # «средний» уровень Героя
 
 
 class SeasonSettingsPayload(BaseModel):
@@ -563,7 +566,12 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
     if payload.target_chests is not None:
         collector.target_chests = payload.target_chests
     if payload.quotas is not None:
-        collector.quotas = [q.model_dump() for q in sorted(payload.quotas, key=lambda q: q.slot)]
+        # коэффициенты храним только у персональных квот — у fixed они ни на что не влияют
+        collector.quotas = [
+            q.model_dump() if q.mode == "per_player"
+            else q.model_dump(include={"slot", "name", "target", "mode"})
+            for q in sorted(payload.quotas, key=lambda q: q.slot)
+        ]
     if payload.period_start is not None or payload.period_end is not None:
         collector.stopped_at = None
 
@@ -586,6 +594,7 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
         leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
         quota_slots=quota_slots_of(collector.quotas),
     )
+    await enrich_with_profiles(db, collector.id, summary, collector.quotas)
 
     db.add(ChestSeasonHistory(
         collector_id=collector.id,
@@ -634,6 +643,60 @@ async def delete_collector(slug: str, user: User = Depends(get_web_user),
     await db.execute(delete(ChestCollector).where(ChestCollector.id == collector.id))
     await db.commit()
     return {"ok": True}
+
+
+@router.get("/{slug}/stats.csv")
+async def dashboard_stats_csv(slug: str, user: User = Depends(get_web_user),
+                              db: AsyncSession = Depends(get_db)):
+    """Статистика для подбора коэффициентов квоты EM (спека 02): по строке на игрока в каждом
+    закрытом сезоне + текущем — войска G/S/M, Герой, очки, сундуки каждой квоты. Сезоны,
+    закрытые до спеки 02, без войск/Героя (пусто) — не падают."""
+    import csv
+    import io
+    from fastapi.responses import Response
+    collector = await _get_own_collector(db, slug, user)
+
+    seasons = (await db.execute(
+        select(ChestSeasonHistory).where(ChestSeasonHistory.collector_id == collector.id)
+        .order_by(ChestSeasonHistory.period_start)
+    )).scalars().all()
+    blocks = []
+    for sn in seasons:
+        quotas = sn.quotas_snapshot if sn.quotas_snapshot is not None else (
+            [{"slot": 1, "name": "Epic Crypts"}])
+        blocks.append((sn.period_start, sn.period_end, sn.summary_json.get("players", []), quotas))
+    if collector.period_start is not None:
+        rows = await query_summary_rows(db, collector, collector.period_start, collector.period_end)
+        live = pivot_summary(collector.kingdom, collector.clan, rows,
+                             leader_name=collector.leader_canonical_name,
+                             leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+                             quota_slots=quota_slots_of(collector.quotas))
+        await enrich_with_profiles(db, collector.id, live, collector.quotas)
+        blocks.append((collector.period_start, collector.period_end, live["players"], collector.quotas or []))
+
+    quota_names = []
+    for *_, quotas in blocks:
+        for q in quotas:
+            if q["name"] not in quota_names:
+                quota_names.append(q["name"])
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["season_start", "season_end", "player", "G", "S", "M", "hero", "points", *quota_names])
+    for start, end, players, quotas in blocks:
+        slot_by_name = {q["name"]: str(q["slot"]) for q in quotas}
+        for p in players:
+            troop = p.get("troop_level") or ""
+            gsm = [troop[1:2], troop[4:5], troop[7:8]] if troop else ["", "", ""]
+            counts = p.get("quotas") or ({"1": p.get("quota_chests", 0)} if "quota_chests" in p else {})
+            w.writerow([
+                start.isoformat() if start else "", end.isoformat() if end else "", p["name"], *gsm,
+                p.get("hero_level") or "", p.get("points", 0),
+                *[counts.get(slot_by_name[n], "") if n in slot_by_name else "" for n in quota_names],
+            ])
+    # BOM — чтобы Excel сразу открыл кириллицу правильно
+    return Response(content="\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="chests-stats-{collector.kingdom}.csv"'})
 
 
 @router.get("/{slug}/history")

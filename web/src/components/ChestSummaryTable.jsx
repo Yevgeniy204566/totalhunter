@@ -142,7 +142,11 @@ export function quotaColumns(targets, epicLabel) {
   if (Array.isArray(targets?.quotas)) {
     return targets.quotas.map(q => ({
       key: `quota:${q.slot}`, name: q.name, target: q.target,
+      personal: q.mode === 'per_player',
       get: p => p.quotas?.[String(q.slot)] ?? 0,
+      // личная цель игрока (per_player): считает сервер по уровню Героя
+      targetOf: p => (q.mode === 'per_player' ? p.quota_targets?.[String(q.slot)] : q.target),
+      partialOf: p => !!p.quota_targets_partial?.[String(q.slot)],
     }))
   }
   return [{ key: 'quota:legacy', name: epicLabel, target: targets?.chests ?? null,
@@ -311,7 +315,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
               {quotaCols.map(c => (
                 <th key={c.key} className="public-epic-cell public-sortable" onClick={() => toggleSort(c.key)}>
                   <span translate="no" className="notranslate">{c.name}</span>
-                  {c.target != null && <span style={{ opacity: 0.6 }}> /{c.target}</span>}
+                  {c.target != null && !c.personal && <span style={{ opacity: 0.6 }}> /{c.target}</span>}
                   {sortMark(c.key)}
                 </th>
               ))}
@@ -404,6 +408,27 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                   </td>
                   {quotaCols.map(c => {
                     const v = c.get(p)
+                    if (c.personal) {
+                      // Личная цель EM (владелец 2026-09-26): прогресс-бар, % выполнения,
+                      // цвет от красного (0%) к зелёному (100%+).
+                      const tgt = c.targetOf(p)
+                      const pct = tgt ? Math.round((v / tgt) * 100) : (v > 0 ? 100 : 0)
+                      const fill = Math.min(pct, 100)
+                      return (
+                        <td key={c.key} className="public-epic-cell" style={{ minWidth: 120 }}
+                            title={c.partialOf(p) ? '?' : ''}>
+                          <div style={{ fontSize: 12, marginBottom: 3, whiteSpace: 'nowrap' }}>
+                            {v}/{tgt ?? '—'}{c.partialOf(p) ? ' ?' : ''} · <b>{pct}%</b>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                            {/* градиент на всю шкалу: видна его часть до текущего процента */}
+                            <div style={{ width: `${fill}%`, height: '100%', borderRadius: 3, transition: 'width 0.4s',
+                                          background: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e)',
+                                          backgroundSize: `${fill ? 10000 / fill : 100}% 100%` }} />
+                          </div>
+                        </td>
+                      )
+                    }
                     return (
                       <td key={c.key} className={[
                         'public-epic-cell',

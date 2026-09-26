@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chest_summary import pivot_summary, query_summary_rows, quota_slots_of, targets_of
+from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of, targets_of
 from database import AsyncSessionLocal
 from models import (
     AncientCalculation, AncientEditor, AncientInviteCode, AncientNameMapping,
@@ -69,6 +69,7 @@ async def archive_one(db: AsyncSession, collector: ChestCollector) -> None:
         leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
         quota_slots=quota_slots_of(collector.quotas),
     )
+    await enrich_with_profiles(db, collector.id, summary, collector.quotas)
 
     db.add(ChestSeasonHistory(
         collector_id=collector.id,

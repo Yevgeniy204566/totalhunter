@@ -56,6 +56,13 @@ export const api = {
   dashboardChestsLeader: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/leader`, payload),
   dashboardChestsPresets: ()            => request('GET',   '/web/dashboard/chests/presets'),
   dashboardChestsHistory: (slug) => request('GET', `/web/dashboard/chests/${slug}/history`),
+  dashboardChestsStatsCsv: async (slug) => {
+    const res = await fetch(`${BASE}/web/dashboard/chests/${slug}/stats.csv`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    })
+    if (!res.ok) throw new Error('Request failed')
+    return res.blob()
+  },
   dashboardChestsHistoryDetail: (slug, seasonId) => request('GET', `/web/dashboard/chests/${slug}/history/${seasonId}`),
   dashboardChestsCloseSeason:   (slug) => request('POST', `/web/dashboard/chests/${slug}/close-season`),
   dashboardChestsMyNames:       ()    => request('GET',  '/web/dashboard/chests/my-custom-names'),
