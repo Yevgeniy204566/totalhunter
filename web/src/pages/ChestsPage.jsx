@@ -47,11 +47,9 @@ const ACCOUNTING_BG = {
 }
 
 /* Квоты сезона (владелец 2026-09-26): до 3 штук, у каждой название и цель. Номер (slot) у
-   квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали. */
-const QF = { display: 'flex', flexDirection: 'column', gap: 4 }
-const QL = { fontSize: 14, fontWeight: 600, color: 'var(--on-surface)' }
-const QH = { fontSize: 14, color: 'var(--on-surface2)', lineHeight: 1.5 }
-
+   квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали.
+   Карточки в один ряд; цвет карточки = цвет этой квоты в списке «Учёт», чтобы было видно,
+   какие сундуки в какую квоту идут. */
 function QuotaEditor({ quotas, cx, onChange }) {
   const set = (i, field, value) => onChange(quotas.map((q, j) => (j === i ? { ...q, [field]: value } : q)))
   const add = () => {
@@ -61,55 +59,51 @@ function QuotaEditor({ quotas, cx, onChange }) {
       .sort((a, b) => a.slot - b.slot))
   }
   return (
-    <div className="chest-field" style={{ flexBasis: '100%' }}>
-      <label>{cx.quotasLabel}</label>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div className="quota-block">
+      <div className="season-subtitle">{cx.quotasLabel}</div>
+      <div className="quota-grid">
         {quotas.map((q, i) => (
-          <div key={q.slot} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px',
-                                     borderRadius: 10, border: '1px solid var(--outline)' }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div style={QF}>
-                <span style={QL}>{cx.quotaName}</span>
-                <input className="input-dark" style={{ width: 200 }} placeholder={cx.quotaNameHint} maxLength={40}
-                  value={q.name} onChange={e => set(i, 'name', e.target.value)} />
-              </div>
-              <div style={QF}>
-                <span style={QL}>{cx.quotaTarget}</span>
-                <input className="input-dark" style={{ width: 130 }} type="number" min={0} placeholder={cx.quotaTargetHint}
-                  value={q.target} onChange={e => set(i, 'target', e.target.value)} />
-              </div>
-              {/* удаление — в конце строки, подальше от полей ввода (владелец 2026-09-26) */}
-              <button type="button" className="chest-pill-btn chest-pill-btn--danger chest-pill-btn--sm"
-                style={{ marginLeft: 'auto' }}
+          <div key={q.slot} className={`quota-card quota-card--${q.slot}`}>
+            <div className="quota-card-head">
+              <span>{cx.accLegendQuotaShort} {q.slot}</span>
+              <button type="button" className="quota-del" title={cx.quotaDelete}
                 onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer' }}>
+            <label className="quota-row">
+              <span>{cx.quotaName}</span>
+              <input className="input-dark" placeholder={cx.quotaNameHint} maxLength={40}
+                value={q.name} onChange={e => set(i, 'name', e.target.value)} />
+            </label>
+            <label className="quota-row">
+              <span>{cx.quotaTarget}</span>
+              <input className="input-dark" type="number" min={0} placeholder={cx.quotaTargetHint}
+                value={q.target} onChange={e => set(i, 'target', e.target.value)} />
+            </label>
+            <label className="quota-check">
               <input type="checkbox" checked={q.mode === 'per_player'}
                 onChange={e => set(i, 'mode', e.target.checked ? 'per_player' : 'fixed')} />
               {cx.perPlayer}
             </label>
             {q.mode === 'per_player' && (
-              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                <div style={{ ...QF, maxWidth: 320 }}>
-                  <span style={QL}>{cx.heroK}</span>
-                  <input className="input-dark" style={{ width: 110 }} type="number" min={-100} max={100}
+              <div className="quota-hero">
+                <label className="quota-row">
+                  <span>{cx.heroK}</span>
+                  <input className="input-dark" type="number" min={-100} max={100}
                     value={q.hero_k} onChange={e => set(i, 'hero_k', e.target.value)} />
-                  <span style={QH}>{cx.heroKHelp}</span>
-                </div>
-                <div style={{ ...QF, maxWidth: 320 }}>
-                  <span style={QL}>{cx.heroH0}</span>
-                  <input className="input-dark" style={{ width: 110 }} type="number" min={1} max={999}
+                  <small>{cx.heroKHelp}</small>
+                </label>
+                <label className="quota-row">
+                  <span>{cx.heroH0}</span>
+                  <input className="input-dark" type="number" min={1} max={999}
                     value={q.hero_h0} onChange={e => set(i, 'hero_h0', e.target.value)} />
-                  <span style={QH}>{cx.heroH0Help}</span>
-                </div>
-                <div style={{ ...QH, flexBasis: '100%' }}>{cx.perPlayerHint}</div>
+                  <small>{cx.heroH0Help}</small>
+                </label>
               </div>
             )}
           </div>
         ))}
         {quotas.length < 3 && (
-          <button type="button" className="chest-pill-btn chest-pill-btn--sm" style={{ alignSelf: 'flex-start' }}
-            onClick={add}>{cx.addQuota}</button>
+          <button type="button" className="quota-add" onClick={add}>{cx.addQuota}</button>
         )}
       </div>
     </div>
@@ -437,15 +431,14 @@ export default function ChestsPage() {
             </div>
           </div>
 
-          {/* Season settings */}
+          {/* Сезон: поля в одну строку, квоты рядом, одна кнопка «Сохранить сезон» (владелец 2026-09-26) */}
           <div className="chest-season-card">
-            <div className="chest-season-title">{cx.seasonTitle}</div>
-            <div className="chest-field-grid">
-              <div className="chest-field">
-                <label>{cx.timezoneLabel}</label>
+            <div className="season-subtitle">{cx.seasonTitle}</div>
+            <div className="season-fields">
+              <label className="season-field">
+                <span>{cx.timezoneLabel}</span>
                 <select
                   className="input-dark"
-                  style={{ width: 150 }}
                   value={seasonByCollector[collector.slug]?.timezone_offset_minutes ?? ''}
                   onChange={e => updateSeasonField(collector.slug, 'timezone_offset_minutes', e.target.value)}
                 >
@@ -458,49 +451,42 @@ export default function ChestsPage() {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="chest-field">
-                <label>{cx.periodStartLabel}</label>
-                <input className="input-dark" style={{ width: 180 }} type="datetime-local"
+              </label>
+              <label className="season-field">
+                <span>{cx.periodStartLabel}</span>
+                <input className="input-dark" type="datetime-local"
                   value={seasonByCollector[collector.slug]?.period_start || ''}
                   onChange={e => updateSeasonField(collector.slug, 'period_start', e.target.value)}
                 />
-              </div>
-              <div className="chest-field">
-                <label>{cx.periodEndLabel}</label>
-                <input className="input-dark" style={{ width: 180 }} type="datetime-local"
+              </label>
+              <label className="season-field">
+                <span>{cx.periodEndLabel}</span>
+                <input className="input-dark" type="datetime-local"
                   value={seasonByCollector[collector.slug]?.period_end || ''}
                   onChange={e => updateSeasonField(collector.slug, 'period_end', e.target.value)}
                 />
-              </div>
-              <div className="chest-field">
-                <label>{cx.targetPointsLabel}</label>
-                <input className="input-dark" style={{ width: 120 }} type="number"
+              </label>
+              <label className="season-field">
+                <span>{cx.targetPointsLabel}</span>
+                <input className="input-dark" type="number"
                   value={seasonByCollector[collector.slug]?.target_points ?? ''}
                   onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
                 />
-              </div>
-              <QuotaEditor
-                quotas={seasonByCollector[collector.slug]?.quotas || []}
-                cx={cx}
-                onChange={q => updateSeasonField(collector.slug, 'quotas', q)}
-              />
-              <div className="chest-field" style={{ justifyContent: 'flex-end' }}>
-                <label>&nbsp;</label>
-                <button className="chest-pill-btn chest-pill-btn--green chest-pill-btn--sm"
-                  onClick={() => saveSeason(collector.slug)}
-                >{cx.save}</button>
-              </div>
+              </label>
             </div>
-            {/* Buttons: Save left, Close season far right */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <QuotaEditor
+              quotas={seasonByCollector[collector.slug]?.quotas || []}
+              cx={cx}
+              onChange={q => updateSeasonField(collector.slug, 'quotas', q)}
+            />
+            <div className="season-actions">
               <button className="chest-pill-btn chest-pill-btn--green" onClick={() => saveSeason(collector.slug)}>
                 {cx.saveSeason}
               </button>
               {collector.period_end && (
                 confirmCloseByCollector[collector.slug] ? (
                   <>
-                    <span style={{ fontSize: 13, color: '#F87171', marginLeft: 'auto' }}>{cx.closeSeasonConfirmText}</span>
+                    <span style={{ fontSize: 14, color: '#F87171', marginLeft: 'auto' }}>{cx.closeSeasonConfirmText}</span>
                     <button className="chest-pill-btn chest-pill-btn--solid-danger"
                       onClick={() => closeSeason(collector.slug)}
                     >{cx.closeSeasonYes}</button>
