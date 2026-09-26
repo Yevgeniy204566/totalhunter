@@ -35,7 +35,7 @@ export const LANDING = {
   heroAccent: 'Smart Search and Automation in Total Battle',
   heroSub:
     'Tired of spending hours scrolling the map for exchanges and manually timing Carter\'s marches? ' +
-    'Total Hunter finds mercenary exchanges and sends Carter to crypts — automatically, without you.',
+    'Total Hunter finds mercenary exchanges, sends Carter to crypts and tracks your clan’s chests — automatically, without you.',
   ctaPrimary:   'Try for Free ➔',
   ctaSecondary: 'Guide',
   statsLabel:   '⬡ Total Hunter Players\' Results',
@@ -44,23 +44,70 @@ export const LANDING = {
     { key: 'total_crypts',    label: 'Crypts Collected',  color: '#B060FF'       },
     { key: 'active_hunters',  label: 'Players Online',    color: 'var(--credits-gold)' },
   ],
-  featuresTitle: 'What Total Hunter Solves',
+  featuresTitle: 'What Total Hunter Does',
   featuresSub:   'Not a clicker — a full scout with a neural network',
+  playersTitle:  'For Players',
   features: [
     {
-      icon: '🏪', color: 'var(--accent)',
-      title: 'Mercenary Exchanges — Never Miss One',
+      icon: '🏪', color: '#3D7FFF',
+      title: 'Mercenary Exchanges',
       desc:
-        'The bot scans kingdom coastlines 24/7 and wakes you with a sound signal the moment it finds an exchange. ' +
-        'No more hours at the monitor — just an alert and buying your army.',
+        'Two search modes. "Snake" follows the kingdom coastlines and wakes you with a sound signal the moment it finds an exchange. ' +
+        '"Scanner 2.0" captures the map fast while a neural network processes the frames in the background.',
     },
     {
       icon: '⚰️', color: '#B060FF',
-      title: 'Crypts Farm While You Sleep',
+      title: 'Crypts Without You',
       desc:
-        'Full cycle without you: found crypt → sent Carter → calculated return time → repeated. ' +
-        'Elite resources accumulate around the clock.',
+        'Pick the crypt types — the bot finds a crypt, sends Carter, calculates the march return time and repeats. ' +
+        'Auto-stop by number of crypts or by time.',
     },
+    {
+      icon: '🐝', color: '#FFD166',
+      title: 'SWARM — Shared Exchange Pool',
+      desc:
+        'Exchange coordinates found by kingdom hunters go into a shared pool. ' +
+        'Fresh finds appear on the SWARM page in real time.',
+    },
+    {
+      icon: '👁', color: '#22D3EE',
+      title: 'Sees the Game Like a Human',
+      desc:
+        'The bot works from the screen image, on top of the browser or the official game client. ' +
+        'No game login or password needed. Calibrates to any monitor.',
+    },
+  ],
+  clanTitle: 'For Clans',
+  clanSub:   "Track every player's contribution — for leaders and treasurers",
+  clanFeatures: [
+    {
+      icon: '📦', color: '#F59E0B',
+      title: 'Chest Collection by the Bot',
+      desc:
+        'The bot opens gift chests one by one, reads the sender and chest type, ' +
+        'and uploads the whole list to the site in one batch. Every chest is counted.',
+    },
+    {
+      icon: '🏆', color: '#4ADE80',
+      title: 'Clan Table on the Site',
+      desc:
+        'A public link for the whole clan. Seasons with dates, points per chest type, targets by points and chests. ' +
+        'Players ranked by points, those who hit the target highlighted. Archive of past seasons.',
+    },
+    {
+      icon: '🐲', color: '#F87171',
+      title: 'Ancient',
+      desc:
+        'Clan roster with ranks and troop composition, an Ancient damage quota calculator, ' +
+        'and a public roster page for the clan.',
+    },
+  ],
+  techTitle: 'Under the Hood',
+  tech: [
+    { icon: '🧠', text: 'YOLO neural network finds objects on the map' },
+    { icon: '🔤', text: 'Text recognition (OCR) reads names and chests' },
+    { icon: '🎯', text: 'Two-point calibration — any resolution' },
+    { icon: '💻', text: 'Runs on your PC' },
   ],
   ctaTitle: 'Want to Keep Up With the Top Players?',
   ctaSub:

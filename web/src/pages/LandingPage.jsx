@@ -262,7 +262,42 @@ function VideoGuides({ lang }) {
 
 const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/latest/download/TotalHunter.zip'
 
-const FEATURE_IMAGES = ['/img/exchange.png', '/img/crypt.png', null]
+
+function FeatureGroupTitle({ children, sub, style }) {
+  return (
+    <div style={{ textAlign: 'center', marginBottom: 24, ...style }}>
+      <h3 style={{ fontSize: 'clamp(22px, 3vw, 30px)', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+        {children}
+      </h3>
+      {sub && <p style={{ color: '#C8D8F0', fontSize: 15, margin: '8px 0 0' }}>{sub}</p>}
+    </div>
+  )
+}
+
+function FeatureGrid({ items }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+      {items.map(({ icon, color, title, desc }) => (
+        <div key={title} className="card landing-feature-card" style={{
+          borderRadius: 14, padding: 26,
+          background: 'rgba(12,18,34,0.72)', backdropFilter: 'blur(6px)',
+          borderTop: `2px solid ${color}`,
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 12,
+            background: `${color}14`, border: `1px solid ${color}44`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 26, marginBottom: 18,
+          }}>
+            {icon}
+          </div>
+          <h4 style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', margin: '0 0 10px' }}>{title}</h4>
+          <p style={{ fontSize: 14, color: '#C8D8F0', lineHeight: 1.7, margin: 0 }}>{desc}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 // Окно перед скачиванием с лендинга (владелец 2026-09-26): тот же текст про Defender и
 // калибровку, что на /download (constants.js DOWNLOAD) — формулировки не расходятся.
@@ -380,9 +415,9 @@ export default function LandingPage() {
         background: `
           radial-gradient(ellipse 80% 60% at 50% 40%, rgba(61,127,255,0.13) 0%, transparent 70%),
           radial-gradient(ellipse 40% 40% at 25% 75%, rgba(176,96,255,0.06) 0%, transparent 60%),
-          linear-gradient(rgba(5,8,16,0.55), rgba(5,8,16,0.55)),
+          linear-gradient(rgba(5,8,16,0.25), rgba(5,8,16,0.25)),
           radial-gradient(ellipse 74% 84% at 50% 42%, transparent 0%, var(--bg) 94%),
-          url('/img/hero-bg-mono.webp') center 38% / cover no-repeat,
+          url('/img/hero-bg-tb.webp') center 30% / cover no-repeat,
           var(--bg)
         `,
         position: 'relative', overflow: 'hidden',
@@ -395,27 +430,6 @@ export default function LandingPage() {
         }} />
 
         <div style={{ position: 'relative', maxWidth: 800 }}>
-
-          {/* ── Big Logo with glow ── */}
-          <div style={{ marginBottom: 40, width: '100%' }}>
-            <img
-              src="/img/logo.png"
-              alt="Total Hunter"
-              fetchpriority="high"
-              loading="eager"
-              style={{
-                width: '100%',
-                maxWidth: 920,
-                height: 'auto',
-                aspectRatio: '920 / 280',
-                borderRadius: 32,
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 0 64px rgba(61,127,255,0.9)) drop-shadow(0 0 120px rgba(61,127,255,0.5))',
-                display: 'block',
-                margin: '0 auto',
-              }}
-            />
-          </div>
 
           <div style={{
             display: 'inline-block',
@@ -580,9 +594,16 @@ export default function LandingPage() {
       </section>
 
       </div>
-      {/* ── Features ───────────────────────────────────────────── */}
-      <section id="features" style={{ padding: '88px 24px', background: 'var(--card)' }}>
-        <div style={{ maxWidth: 920, margin: '0 auto' }}>
+      {/* ── Features: для игрока + для кланов + под капотом ───────── */}
+      <section id="features" style={{
+        padding: '88px 24px',
+        background: `
+          linear-gradient(rgba(5,8,16,0.72), rgba(5,8,16,0.80)),
+          url('/img/features-bg.webp') center / cover no-repeat,
+          var(--card)
+        `,
+      }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <h2 style={{
             textAlign: 'center', fontSize: 'clamp(28px, 4vw, 44px)',
             fontWeight: 800, color: '#FFFFFF', marginBottom: 12,
@@ -591,44 +612,34 @@ export default function LandingPage() {
           </h2>
           <p style={{
             textAlign: 'center', color: '#C8D8F0', fontSize: 16,
-            maxWidth: 520, margin: '0 auto 60px',
+            maxWidth: 560, margin: '0 auto 48px',
           }}>
             {LANDING.featuresSub}
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
-            {LANDING.features.map(({ icon, color, title, desc }, i) => (
-              <div key={title} className="card" style={{ borderRadius: 14, padding: 28 }}>
-                {FEATURE_IMAGES[i] ? (
-                  <div style={{
-                    width: '100%', height: 280, borderRadius: 12,
-                    marginBottom: 22, overflow: 'hidden',
-                    border: `1px solid ${color}44`,
-                    background: `${color}08`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <img
-                      src={FEATURE_IMAGES[i]}
-                      alt={title}
-                      style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
-                    />
-                  </div>
-                ) : (
-                  <div style={{
-                    width: 52, height: 52, borderRadius: 12,
-                    background: `${color}14`, border: `1px solid ${color}44`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 24, marginBottom: 22,
-                  }}>
-                    {icon}
-                  </div>
-                )}
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 10 }}>
-                  {title}
-                </h3>
-                <p style={{ fontSize: 14, color: '#C8D8F0', lineHeight: 1.75 }}>{desc}</p>
-              </div>
-            ))}
+          <FeatureGroupTitle>{LANDING.playersTitle}</FeatureGroupTitle>
+          <FeatureGrid items={LANDING.features} />
+
+          <FeatureGroupTitle sub={LANDING.clanSub} style={{ marginTop: 64 }}>{LANDING.clanTitle}</FeatureGroupTitle>
+          <FeatureGrid items={LANDING.clanFeatures} />
+
+          <div style={{ marginTop: 56, textAlign: 'center' }}>
+            <div style={{
+              fontSize: 12, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase',
+              color: 'var(--accent)', marginBottom: 14,
+            }}>
+              {LANDING.techTitle}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+              {LANDING.tech.map(({ icon, text }) => (
+                <span key={text} style={{
+                  padding: '8px 14px', borderRadius: 20, fontSize: 13, color: '#C8D8F0',
+                  background: 'rgba(12,18,34,0.72)', border: '1px solid rgba(61,127,255,0.25)',
+                }}>
+                  {icon} {text}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
