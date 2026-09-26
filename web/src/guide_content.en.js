@@ -166,7 +166,6 @@ export const GUIDE = {
     webSteps: [
       { title: 'The clan appears by itself', desc: 'After the first send from the bot the clan appears in the dashboard of whoever sent it. To hand control to another leader, use "Generate transfer code"; they enter it and press "Claim management".' },
       { title: 'Preset — ready-made points', desc: 'A preset is a ready template of chest prices in points for a clan level (T5–T9), so you do not have to price dozens of chests by hand. T9 is the working setup of an experienced clan, T5–T8 is a basic crypt set. Pick a preset and press "Load Preset": known chests get their points, missing ones are added as "Counted". The preset does not change the "Accounting" of chests you already set. Then adjust points to your clan rules and press "Save".' },
-      { title: 'Clan language', desc: 'The language used for chest names in the clan table.' },
       { title: 'Points and "Accounting" per chest', desc: 'For each chest type set points and choose "Accounting": "Not counted" — hidden, no points; "Counted" — gives points; "Quota 1–3" — gives points and is also counted in its quota column.' },
       { title: 'Season quotas', desc: 'Up to 3 quotas at once, e.g. "Epic Crypts" and "EMC" (Epic Monster Chests). Each has a name and a target: how many chests of that kind a player must collect per season.' },
       { title: 'Players', desc: '"Players" tab: if the bot misread a nickname, set the "Correct Name" — all variants merge into one player. You can also add a player manually and fill in rank, troops and Hero level.' },
