@@ -411,3 +411,15 @@
   .mobile-bottom-nav { display: none !important; }
   .desktop-sidebar   { display: flex !important; }
 }
+
+/* Лендинг, список возможностей бота — на телефоне шрифт меньше (владелец 2026-09-26);
+   на ПК размеры задаются инлайном в LandingPage.jsx, поэтому здесь !important. */
+@media (max-width: 768px) {
+  .lf-group { font-size: 20px !important; }
+  .lf-group-sub { font-size: 14px !important; }
+  .lf-item { gap: 12px !important; padding: 8px 4px !important; }
+  .lf-check { flex: 0 0 26px !important; width: 26px !important; height: 26px !important; font-size: 15px !important; }
+  .lf-title { font-size: 16px !important; margin-bottom: 2px !important; }
+  .lf-desc { font-size: 14px !important; }
+  .lf-chip { font-size: 13px !important; padding: 7px 12px !important; }
+}
