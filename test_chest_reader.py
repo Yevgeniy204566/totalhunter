@@ -1272,3 +1272,113 @@ def test_consumer_gives_identical_chests_distinct_timestamps(tmp_path, monkeypat
     conn.close()
     assert len(rows) == 3
     assert len(set(rows)) == 3
+
+
+# ── Одна база на ПК + клан в момент сбора (владелец 2026-09-26) ─────────────
+
+def test_storage_dir_is_localappdata_for_any_copy_of_bot():
+    """Исходники и exe раньше держали каждый свою базу рядом с модулем. Путь хранилища
+    теперь зависит только от %LOCALAPPDATA%."""
+    assert cr.resolve_storage_dir({"LOCALAPPDATA": r"C:\Users\X\AppData\Local"}) == \
+        os.path.join(r"C:\Users\X\AppData\Local", "TotalHunter")
+
+
+def test_storage_dir_without_localappdata_raises():
+    import pytest
+    with pytest.raises(RuntimeError):
+        cr.resolve_storage_dir({})
+
+
+def test_default_db_and_pending_live_in_storage_dir():
+    assert os.path.dirname(cr.DB_PATH) == cr.STORAGE_DIR
+    assert os.path.dirname(cr.PENDING_DIR) == cr.STORAGE_DIR
+
+
+def test_init_db_creates_missing_dir(tmp_path):
+    db_path = str(tmp_path / "new" / "chest_buffer.db")
+    cr.init_db(db_path).close()
+    assert os.path.exists(db_path)
+
+
+def test_init_db_adds_pair_columns_to_old_table(tmp_path):
+    import sqlite3
+    db_path = str(tmp_path / "chest_buffer.db")
+    old = sqlite3.connect(db_path)
+    old.execute("CREATE TABLE local_chests (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "raw_player_name TEXT, chest_type TEXT, timestamp TEXT, is_synced INTEGER DEFAULT 0)")
+    old.execute("INSERT INTO local_chests (raw_player_name, chest_type, timestamp) VALUES ('A','T','ts')")
+    old.commit(); old.close()
+
+    conn = cr.init_db(db_path)
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(local_chests)")]
+    rows = conn.execute("SELECT raw_player_name, kingdom, clan FROM local_chests").fetchall()
+    conn.close()
+    assert "kingdom" in cols and "clan" in cols
+    assert rows == [("A", None, None)]
+
+
+def test_migrate_legacy_storage_moves_unsent_and_removes_old_db(tmp_path):
+    legacy_dir = tmp_path / "legacy"
+    legacy_dir.mkdir()
+    legacy_db = str(legacy_dir / "chest_buffer.db")
+    conn = cr.init_db(legacy_db)
+    cr.insert_chest(conn, "Тип", "НеОтправлен", "2026-09-26T09:00:00", "229", "ELDORADO")
+    conn.close()
+    legacy_pending = legacy_dir / "chest_pending"
+    legacy_pending.mkdir()
+    cv2.imwrite(str(legacy_pending / "000003.png"), np.zeros((10, 10, 3), dtype=np.uint8))
+
+    new_db = str(tmp_path / "store" / "chest_buffer.db")
+    new_pending = str(tmp_path / "store" / "chest_pending")
+    moved = cr.migrate_legacy_storage(str(legacy_dir), new_db, new_pending)
+
+    assert moved == 1
+    assert not os.path.exists(legacy_db)
+    conn = cr.init_db(new_db)
+    rows = conn.execute("SELECT raw_player_name, kingdom, clan FROM local_chests").fetchall()
+    conn.close()
+    assert rows == [("НеОтправлен", "229", "ELDORADO")]
+    queue = cr._pending_queue(new_pending)
+    assert len(queue) == 1
+    # имя не совпадает ни с одним будущим NNNNNN.png producer'а и идёт первым в очереди
+    assert os.path.basename(queue[0]) < "000001.png"
+    assert not list(legacy_pending.glob("*.png"))
+
+
+def test_migrate_legacy_storage_noop_when_same_place_or_absent(tmp_path):
+    db = str(tmp_path / "chest_buffer.db")
+    cr.init_db(db).close()
+    assert cr.migrate_legacy_storage(str(tmp_path), db, str(tmp_path / "chest_pending")) == 0
+    assert os.path.exists(db)
+    assert cr.migrate_legacy_storage(str(tmp_path / "nothing"), db, str(tmp_path / "p")) == 0
+
+
+def test_consumer_stores_pair_of_collection_time(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    os.makedirs(pending_dir, exist_ok=True)
+    cv2.imwrite(os.path.join(pending_dir, "000001.png"), np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda crop, full_lang=False: ("Склеп", "Jack"))
+
+    done = threading.Event()
+    done.set()
+    cr._chest_consumer_loop(pending_dir, db_path, None, False, done, [], "229", "Феникс")
+
+    conn = cr.init_db(db_path)
+    rows = conn.execute("SELECT raw_player_name, kingdom, clan FROM local_chests").fetchall()
+    conn.close()
+    assert rows == [("Jack", "229", "Феникс")]
+
+
+def test_get_unsynced_by_pair_groups_and_uses_fallback_for_old_rows(tmp_path):
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Т", "A", "t1", "229", "ELDORADO")
+    cr.insert_chest(conn, "Т", "B", "t2", "229", "Феникс")
+    cr.insert_chest(conn, "Т", "C", "t3", "229", "ELDORADO")
+    cr.insert_chest(conn, "Т", "D", "t4")  # старая строка без пары
+    groups = dict(cr.get_unsynced_by_pair(conn, "229", "ELDORADO"))
+    conn.close()
+
+    assert [r[1] for r in groups[("229", "ELDORADO")]] == ["A", "C", "D"]
+    assert [r[1] for r in groups[("229", "Феникс")]] == ["B"]

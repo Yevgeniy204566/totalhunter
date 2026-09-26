@@ -82,7 +82,21 @@ EMPTY_BUTTON_RETRY_PAUSE = 1.0  # владелец 2026-09-26: было 0.3 — 
 ANTI_DETECT_OFFSET_PX = 8
 ANTI_DETECT_PAUSE_RANGE = (0.16, 0.28)  # reduced again 2026-06-19 by owner decision, chests-only
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_buffer.db')
+def resolve_storage_dir(environ=os.environ):
+    """Одна база сундуков на ПК (владелец 2026-09-26). Раньше база лежала рядом с модулем:
+    у исходников — папка проекта, у exe — его _internal, и на одном ПК жили две независимые
+    базы. %LOCALAPPDATA% одинаков для любой копии бота. Без запасного пути: он снова создал
+    бы вторую базу."""
+    base = environ.get('LOCALAPPDATA')
+    if not base:
+        raise RuntimeError('LOCALAPPDATA не задан — хранилище сундуков не определено')
+    return os.path.join(base, 'TotalHunter')
+
+
+STORAGE_DIR = resolve_storage_dir()
+DB_PATH = os.path.join(STORAGE_DIR, 'chest_buffer.db')
+# Где база жила раньше (рядом с модулем) — только для однократного переноса неотправленного.
+LEGACY_DIR = os.path.dirname(os.path.abspath(__file__))
 API_IMPORT_PATH = '/api/v1/chests/import'
 
 # --- Конвейер (сессия #149, входящие заметки п.D): захват+клик отдельно от OCR --------------
@@ -90,7 +104,7 @@ API_IMPORT_PATH = '/api/v1/chests/import'
 # Биржи 2.0 (там нужен весь экран для YOLO). Без TTL — кроп сундука не «протухает» со временем,
 # в отличие от координат биржи в игре. Без паузы-по-размеру-очереди — OCR дешевле YOLO, узкое
 # место не в диске/памяти.
-PENDING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chest_pending')
+PENDING_DIR = os.path.join(STORAGE_DIR, 'chest_pending')
 
 # Лимит батча — НЕ защита от потери данных (кропы и так надёжны), а денежное решение владельца
 # (2026-09-25): CHEST_IMPORT_COST на сервере (server/chests.py) списывает 10◆ ФЛЭТОМ за отправку
@@ -287,6 +301,7 @@ def ocr_top_row_crops(combined, full_lang=False):
 
 
 def init_db(path=DB_PATH):
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     conn = sqlite3.connect(path)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS local_chests (
@@ -300,15 +315,51 @@ def init_db(path=DB_PATH):
     # Владелец 2026-09-26: отправленные сундуки на ПК не хранятся. Старые версии
     # помечали их is_synced=1 и копили вечно — вычищаем при каждом открытии базы.
     conn.execute('DELETE FROM local_chests WHERE is_synced = 1')
+    # Королевство+клан на момент СБОРА (владелец 2026-09-26): раньше пара бралась из полей
+    # в момент отправки, и переключение пары посреди сбора уводило весь батч в новый клан.
+    cols = {r[1] for r in conn.execute('PRAGMA table_info(local_chests)')}
+    for col in ('kingdom', 'clan'):
+        if col not in cols:
+            conn.execute(f'ALTER TABLE local_chests ADD COLUMN {col} TEXT')
     conn.commit()
     return conn
 
 
-def insert_chest(conn, chest_type, raw_player_name, timestamp):
+def migrate_legacy_storage(legacy_dir=LEGACY_DIR, db_path=DB_PATH, pending_dir=PENDING_DIR) -> int:
+    """Однократный перенос НЕОТПРАВЛЕННЫХ сундуков из старой базы рядом с модулем в единую
+    базу, затем старый файл удаляется — очередь пользователя при обновлении не теряется.
+    Необработанные кропы переименовываются в '000000_legacy_*.png': такое имя никогда не
+    пишет producer (NNNNNN.png с 000001) и идёт в очереди первым. Возвращает число
+    перенесённых строк."""
+    legacy_db = os.path.join(legacy_dir, 'chest_buffer.db')
+    moved = 0
+    if os.path.exists(legacy_db) and os.path.abspath(legacy_db) != os.path.abspath(db_path):
+        old = init_db(legacy_db)
+        rows = old.execute('SELECT raw_player_name, chest_type, timestamp, kingdom, clan '
+                           'FROM local_chests WHERE is_synced = 0 ORDER BY id').fetchall()
+        old.close()
+        new = init_db(db_path)
+        new.executemany('INSERT INTO local_chests (raw_player_name, chest_type, timestamp, '
+                        'kingdom, clan, is_synced) VALUES (?, ?, ?, ?, ?, 0)', rows)
+        new.commit()
+        new.close()
+        moved = len(rows)
+        os.remove(legacy_db)
+
+    legacy_pending = os.path.join(legacy_dir, 'chest_pending')
+    if os.path.isdir(legacy_pending) and os.path.abspath(legacy_pending) != os.path.abspath(pending_dir):
+        os.makedirs(pending_dir, exist_ok=True)
+        for src in _pending_queue(legacy_pending):
+            dst = os.path.join(pending_dir, '000000_legacy_' + os.path.basename(src))
+            os.replace(src, dst)
+    return moved
+
+
+def insert_chest(conn, chest_type, raw_player_name, timestamp, kingdom=None, clan=None):
     conn.execute(
-        'INSERT INTO local_chests (raw_player_name, chest_type, timestamp, is_synced) '
-        'VALUES (?, ?, ?, 0)',
-        (raw_player_name, chest_type, timestamp),
+        'INSERT INTO local_chests (raw_player_name, chest_type, timestamp, kingdom, clan, is_synced) '
+        'VALUES (?, ?, ?, ?, ?, 0)',
+        (raw_player_name, chest_type, timestamp, kingdom, clan),
     )
     conn.commit()
 
@@ -318,6 +369,19 @@ def get_unsynced(conn):
         'SELECT id, raw_player_name, chest_type, timestamp FROM local_chests WHERE is_synced = 0'
     )
     return cur.fetchall()
+
+
+def get_unsynced_by_pair(conn, fallback_kingdom='', fallback_clan=''):
+    """Неотправленные строки, сгруппированные по паре (королевство, клан) момента сбора:
+    [((kingdom, clan), [(id, raw_player_name, chest_type, timestamp), ...]), ...] в порядке
+    сбора. Строки старых версий без пары идут в fallback (пара из полей ввода)."""
+    groups = {}
+    for id_, name, ctype, ts, k, c in conn.execute(
+            'SELECT id, raw_player_name, chest_type, timestamp, kingdom, clan '
+            'FROM local_chests WHERE is_synced = 0 ORDER BY id'):
+        pair = (k, c) if k and c else (fallback_kingdom, fallback_clan)
+        groups.setdefault(pair, []).append((id_, name, ctype, ts))
+    return list(groups.items())
 
 
 def get_unsynced_counts(conn):
@@ -469,7 +533,8 @@ def _unique_chest_timestamp() -> str:
 
 
 def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: bool,
-                         producer_done: threading.Event, items_out: list) -> None:
+                         producer_done: threading.Event, items_out: list,
+                         kingdom=None, clan=None) -> None:
     """Фоновый consumer: разбирает очередь кропов независимо от скорости producer'а (клики не
     ждут OCR). Останавливается, только когда очередь пуста И producer точно закончил (иначе
     кроп, записанный между проверками, был бы пропущен) — тот же порядок проверки, что и в
@@ -499,7 +564,7 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 
         conn = init_db(db_path)
         try:
-            insert_chest(conn, chest_type, sender, timestamp)
+            insert_chest(conn, chest_type, sender, timestamp, kingdom, clan)
             counts = get_unsynced_counts(conn)
         finally:
             conn.close()
@@ -516,7 +581,8 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                    pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False,
-                   pending_dir=PENDING_DIR, batch_limit=BATCH_LIMIT, on_batch_ready=None):
+                   pending_dir=PENDING_DIR, batch_limit=BATCH_LIMIT, on_batch_ready=None,
+                   kingdom=None, clan=None):
     """Конвейер (сессия #149, входящие заметки п.D): клики по «Собрать» НЕ ждут OCR.
     Этот (producer) поток захватывает кадр, проверяет кнопку «Открыть» (find_open_button,
     как раньше), вырезает оба ROI (crop_top_row) и атомарно сохраняет кроп в pending_dir —
@@ -543,7 +609,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     items = []
     consumer_thread = threading.Thread(
         target=_chest_consumer_loop,
-        args=(pending_dir, db_path, on_update, full_lang, producer_done, items),
+        args=(pending_dir, db_path, on_update, full_lang, producer_done, items, kingdom, clan),
         daemon=True,
     )
     consumer_thread.start()

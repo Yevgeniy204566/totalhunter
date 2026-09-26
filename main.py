@@ -3187,6 +3187,15 @@ class TotalHunterApp(ctk.CTk):
                                               text_color=MD3["error_text"])
             return
 
+        # Пара королевство+клан фиксируется на момент СТАРТА и пишется в каждый сундук
+        # (владелец 2026-09-26) — смена полей посреди сбора уже не уводит батч в другой клан.
+        run_kingdom = self.chest_kingdom_entry.get().strip()
+        run_clan = self.chest_clan_entry.get().strip()
+        if not run_kingdom or not run_clan:
+            self.chest_status_label.configure(text=L["chest_missing_fields"],
+                                              text_color=MD3["error_text"])
+            return
+
         import chest_reader
         try:
             frame = chest_reader.grab_fullscreen()
@@ -3237,16 +3246,7 @@ class TotalHunterApp(ctk.CTk):
         def _on_batch_ready(reason):
             if not self.chest_auto_send_var.get():
                 return   # тумблер выключен — работает как 1.0, только ручная кнопка
-            kingdom = self.chest_kingdom_entry.get().strip()
-            clan = self.chest_clan_entry.get().strip()
-            if not kingdom or not clan:
-                continue_after_send["value"] = False
-                last_send_status.update(text=L["chest_missing_fields"], color=MD3["error_text"])
-                self.after(0, lambda: self.chest_status_label.configure(
-                    text=L["chest_missing_fields"], text_color=MD3["error_text"]))
-                return
-
-            send_result = self._send_chest_batch(kingdom, clan)
+            send_result = self._send_chest_batch(run_kingdom, run_clan)
             # success теперь всегда означает "весь батч на сервере" (см. _send_chest_batch) —
             # partial_info у ответа лишь информационная пометка, сбор продолжать можно.
             continue_after_send["value"] = (reason == "batch_full"
@@ -3258,6 +3258,8 @@ class TotalHunterApp(ctk.CTk):
                 if send_result.get("success"):
                     text, color = L["chest_send_success"], MD3["secondary"]
                     self._update_chest_counts_display({})
+                elif send_result.get("missing_fields"):
+                    text, color = L["chest_missing_fields"], MD3["error_text"]
                 elif send_result.get("low_credits"):
                     messagebox.showwarning("Hunter", L["no_credits"])
                     text, color = L["chest_status_stopped"], MD3["on_surface2"]
@@ -3275,6 +3277,7 @@ class TotalHunterApp(ctk.CTk):
                         stop_event.is_set, on_update=_on_update,
                         pause_range=pause_range, full_lang=full_lang,
                         on_batch_ready=_on_batch_ready,
+                        kingdom=run_kingdom, clan=run_clan,
                     )
                 except Exception as exc:
                     result = {"counts": {}, "error": str(exc)}
@@ -3311,21 +3314,27 @@ class TotalHunterApp(ctk.CTk):
         success; count < len(items) — не ошибка, просто показывается как информация."""
         import chest_reader
         conn = chest_reader.init_db()
-        rows = chest_reader.get_unsynced(conn)
-        if not rows:
-            conn.close()
-            return {"success": True, "empty": True}
+        try:
+            # Владелец 2026-09-26: каждый сундук уходит в клан, под которым его СОБРАЛИ.
+            # kingdom/clan здесь — только для строк старых версий без пары.
+            groups = chest_reader.get_unsynced_by_pair(conn, kingdom, clan)
+            if not groups:
+                return {"success": True, "empty": True}
+            if any(not k or not c for (k, c), _ in groups):
+                return {"success": False, "missing_fields": True}
 
-        items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
-        ids = [r[0] for r in rows]
-        result = chest_reader.export_to_api(kingdom, clan, items)
-        if result.get("success"):
-            accepted = result.get("count")
-            chest_reader.delete_sent(conn, ids)
-            if accepted != len(items):
-                result = {**result, "partial_info": True, "accepted": accepted, "submitted": len(items)}
-        conn.close()
-        return result
+            result = {"success": True}
+            for (k, c), rows in groups:
+                items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
+                group_result = chest_reader.export_to_api(k, c, items)
+                if group_result.get("success"):
+                    # Отправленная пара удаляется сразу — провал следующей её не вернёт.
+                    chest_reader.delete_sent(conn, [r[0] for r in rows])
+                else:
+                    result = group_result
+            return result
+        finally:
+            conn.close()
 
     def _on_chest_collection_done(self, result, last_send_status=None):
         L = LANGS[self.current_lang]
@@ -3358,11 +3367,6 @@ class TotalHunterApp(ctk.CTk):
         L = LANGS[self.current_lang]
         kingdom = self.chest_kingdom_entry.get().strip()
         clan = self.chest_clan_entry.get().strip()
-        if not kingdom or not clan:
-            self.chest_status_label.configure(text=L["chest_missing_fields"],
-                                              text_color=MD3["error_text"])
-            return
-
         self.chest_send_btn.configure(state="disabled")
 
         def _worker():
@@ -3377,6 +3381,9 @@ class TotalHunterApp(ctk.CTk):
                     self.chest_status_label.configure(text=L["chest_send_success"],
                                                        text_color=MD3["secondary"])
                     self._update_chest_counts_display({})
+                elif result.get("missing_fields"):
+                    self.chest_status_label.configure(text=L["chest_missing_fields"],
+                                                       text_color=MD3["error_text"])
                 elif result.get("low_credits"):
                     messagebox.showwarning("Hunter", L["no_credits"])
                     self.chest_status_label.configure(text=L["chest_status_stopped"],
@@ -5332,6 +5339,15 @@ class TotalHunterApp(ctk.CTk):
 
     def setup_chest_tab(self):
         L = LANGS[self.current_lang]
+
+        # Одна база сундуков в %LOCALAPPDATA%\TotalHunter (владелец 2026-09-26): неотправленное
+        # из старой базы рядом с программой переносится сюда один раз, старый файл удаляется.
+        # Сбой переноса не теряет данные — старая база остаётся на месте до следующего запуска.
+        try:
+            import chest_reader
+            chest_reader.migrate_legacy_storage()
+        except Exception as exc:
+            log_error_to_server(f"chest storage migration failed: {type(exc).__name__}: {exc}")
 
         # Владелец 2026-09-26: выбор профиля калибровки прямо в Сундуках, самый верх.
         self._build_profile_row(self.tab_chest)
