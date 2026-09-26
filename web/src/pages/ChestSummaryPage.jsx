@@ -190,8 +190,9 @@ export default function ChestSummaryPage() {
         </button>
       </div>
       <h1 className="public-summary-title notranslate" translate="no">
-        <span className="public-kingdom-label">{data.kingdom}/</span>
+        {/* «ELDORADO 229» — клан, затем королевство, без «/» (владелец 2026-09-26) */}
         <span className="public-clan-label">{data.clan}</span>
+        <span className="public-kingdom-label" style={{ marginLeft: '0.35em' }}>{data.kingdom}</span>
       </h1>
 
       {data.stopped_at && (
