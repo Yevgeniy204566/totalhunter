@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
@@ -143,7 +143,62 @@ function isEpicColumn(typeName) {
   return typeName.includes('Epic')
 }
 
+// Среднее по участникам таблицы (входящие п.5): сумма столбца / число игроков в таблице,
+// нули входят в расчёт; от сортировки не зависит.
+export function columnAverage(players, getValue) {
+  if (!players.length) return 0
+  return players.reduce((sum, p) => sum + (getValue(p) || 0), 0) / players.length
+}
+
+export function sortPlayers(players, sort, chestTypes) {
+  const value = p => sort.key === 'name' ? p.name.toLowerCase()
+    : sort.key === 'points' ? p.points
+    : sort.key === 'epic' ? p.quota_chests
+    : (p.counts[sort.key] || 0)
+  const dir = sort.dir === 'asc' ? 1 : -1
+  return [...players].sort((a, b) => {
+    const va = value(a), vb = value(b)
+    if (va < vb) return -dir
+    if (va > vb) return dir
+    return b.points - a.points || a.name.localeCompare(b.name)
+  })
+}
+
 export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug }) {
+  // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
+  const [sort, setSort] = useState(null)
+  const pointsRank = useMemo(() => {
+    const m = {}
+    players.forEach((p, i) => { m[p.name] = i + 1 })
+    return m
+  }, [players])
+  const shownPlayers = useMemo(
+    () => (sort ? sortPlayers(players, sort, chestTypes) : players),
+    [players, sort, chestTypes],
+  )
+  function toggleSort(key) {
+    setSort(prev => {
+      const firstDir = key === 'name' ? 'asc' : 'desc'
+      if (!prev || prev.key !== key) return { key, dir: firstDir }
+      return { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
+    })
+  }
+  function sortMark(key) {
+    if (!sort || sort.key !== key) return <span className="public-sort-mark"> ⇅</span>
+    return <span className="public-sort-mark public-sort-mark--on">{sort.dir === 'desc' ? ' ▼' : ' ▲'}</span>
+  }
+  const fmtAvg = v => v.toFixed(1)
+  // Строку средних можно скрыть (владелец 2026-09-26); выбор помнится в этом браузере.
+  const [showAvg, setShowAvg] = useState(() => {
+    try { return localStorage.getItem('chestShowAvg') !== '0' } catch { return true }
+  })
+  function toggleAvg() {
+    setShowAvg(v => {
+      try { localStorage.setItem('chestShowAvg', v ? '0' : '1') } catch { /* приватный режим */ }
+      return !v
+    })
+  }
+
   const tableWrapRef = useRef(null)
   const topScrollRef = useRef(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
@@ -194,6 +249,11 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
 
   return (
     <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 6px' }}>
+        <button type="button" className="public-avg-toggle" onClick={toggleAvg}>
+          {showAvg ? 'Скрыть средние' : 'Показать средние'}
+        </button>
+      </div>
       <div
         className="public-table-top-scroll"
         ref={topScrollRef}
@@ -205,24 +265,41 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
       <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncTopScrollFromTable}>
         <table className="public-table">
           <thead>
-            <tr>
+            {showAvg && <tr className="public-avg-row">
+              <th></th>
+              <th>Среднее</th>
+              {editMode && <th></th>}
+              {editMode && <th></th>}
+              {editMode && <th></th>}
+              <th></th>
+              <th className="public-epic-cell">{fmtAvg(columnAverage(players, p => p.quota_chests))}</th>
+              {chestTypes.map(t => (
+                <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''}>
+                  {fmtAvg(columnAverage(players, p => p.counts[t]))}
+                </th>
+              ))}
+            </tr>}
+            <tr className={showAvg ? 'public-head-row' : ''}>
               <th>#</th>
-              <th>Player</th>
+              <th className="public-sortable" onClick={() => toggleSort('name')}>Player{sortMark('name')}</th>
               {editMode && <th>Звание</th>}
               {editMode && <th>Состав</th>}
               {editMode && <th></th>}
-              <th>Points</th>
-              <th className="public-epic-cell">Epic Crypts</th>
+              <th className="public-sortable" onClick={() => toggleSort('points')}>Points{sortMark('points')}</th>
+              <th className="public-epic-cell public-sortable" onClick={() => toggleSort('epic')}>Epic Crypts{sortMark('epic')}</th>
               {chestTypes.map(t => (
-                <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''}>{t}</th>
+                <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
+                    onClick={() => toggleSort(t)}>
+                  {t}{sortMark(t)}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {players.map((p, i) => {
+            {shownPlayers.map(p => {
               return (
                 <tr key={p.name}>
-                  <td>{i + 1}</td>
+                  <td>{pointsRank[p.name]}</td>
                   <td title={p.name}>
                     {renderPlayerName(p, targets)}
                   </td>

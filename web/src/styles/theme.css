@@ -586,6 +586,21 @@ a:hover { color: var(--on-surface); }
 .public-table thead th {
   position: sticky; top: 0; z-index: 3; background: var(--elevated);
 }
+/* Две закреплённые строки шапки: средние (сверху) и заголовки под ними (входящие п.4/5) */
+.public-table thead tr.public-avg-row th {
+  top: 0; height: 30px; box-sizing: border-box; font-weight: 600; color: var(--credits-gold);
+  border-bottom: 1px solid var(--outline);
+}
+.public-table thead tr.public-head-row th { top: 30px; }
+.public-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.public-avg-toggle {
+  font-size: 14px; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+  background: var(--elevated); color: var(--on-surface); border: 1px solid var(--outline);
+}
+.public-avg-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.public-sortable:hover { color: var(--accent); }
+.public-sort-mark { opacity: 0.45; font-size: 0.85em; }
+.public-sort-mark--on { opacity: 1; color: var(--accent); }
 /* Overrides z-index & background for sticky corner cells; left-position comes from earlier .public-table th:nth-child(1/2) rules */
 .public-table thead th:nth-child(1), .public-table thead th:nth-child(2) {
   z-index: 4; background: var(--card);
