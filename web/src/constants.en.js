@@ -52,8 +52,8 @@ export const LANDING = {
       icon: '🏪', color: '#3D7FFF',
       title: 'Mercenary Exchanges',
       desc:
-        'Two search modes. "Snake" follows the kingdom coastlines and wakes you with a sound signal the moment it finds an exchange. ' +
-        '"Scanner 2.0" captures the map fast while a neural network processes the frames in the background.',
+        'Two modes: "Snake" follows the coast and wakes you with a sound signal on a find, ' +
+        '"Scanner 2.0" captures the map fast while a neural network processes frames in the background.',
     },
     {
       icon: '⚰️', color: '#B060FF',
@@ -91,8 +91,8 @@ export const LANDING = {
       icon: '🏆', color: '#4ADE80',
       title: 'Clan Table on the Site',
       desc:
-        'A public link for the whole clan. Seasons with dates, points per chest type, targets by points and chests. ' +
-        'Players ranked by points, those who hit the target highlighted. Archive of past seasons.',
+        'A public clan link: seasons with dates, points per chest type, targets, ' +
+        'ranking by points, target achievers highlighted, season archive.',
     },
     {
       icon: '🐲', color: '#F87171',

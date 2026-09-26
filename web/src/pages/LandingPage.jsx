@@ -279,12 +279,12 @@ function FeatureGrid({ items }) {
   return (
     <ul style={{
       // Без подложки: фон (робот с сундуком) должен просматриваться, читаемость — тенью текста.
-      listStyle: 'none', margin: '0 auto', padding: 0,
+      listStyle: 'none', margin: '0 auto', padding: 0, width: 'min(1560px, 100%)',
       textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)',
     }}>
       {items.map(({ title, desc }) => (
         <li key={title} className="lf-item" style={{
-          display: 'flex', gap: 14, alignItems: 'flex-start', padding: '10px 4px',
+          display: 'flex', gap: 14, alignItems: 'flex-start', padding: '6px 4px',
         }}>
           <span className="lf-check" style={{
             flex: '0 0 30px', width: 30, height: 30, borderRadius: '50%',
@@ -292,9 +292,10 @@ function FeatureGrid({ items }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 18, fontWeight: 900, color: '#4ADE80', marginTop: 0,
           }}>✓</span>
-          <div>
-            <div className="lf-title" style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 3 }}>{title}</div>
-            <div className="lf-desc" style={{ fontSize: 16, color: '#E6EEFA', lineHeight: 1.5 }}>{desc}</div>
+          <div style={{ fontSize: 16, color: '#E6EEFA', lineHeight: 1.5, paddingTop: 3 }}>
+            <span className="lf-title" style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF' }}>{title}</span>
+            <span className="lf-dash"> — </span>
+            <span className="lf-desc">{desc}</span>
           </div>
         </li>
       ))}
@@ -609,7 +610,7 @@ export default function LandingPage() {
           var(--card)
         `,
       }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1760, margin: '0 auto' }}>
           <h2 style={{
             textAlign: 'center', fontSize: 'clamp(28px, 4vw, 44px)',
             fontWeight: 800, color: '#FFFFFF', marginBottom: 12,
@@ -624,16 +625,12 @@ export default function LandingPage() {
           </p>
 
           {/* Две колонки: блок помещается в один экран, фон не растягивается (владелец 2026-09-26) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: '32px 48px' }}>
-            <div>
-              <FeatureGroupTitle>{LANDING.playersTitle}</FeatureGroupTitle>
-              <FeatureGrid items={LANDING.features} />
-            </div>
-            <div>
-              <FeatureGroupTitle sub={LANDING.clanSub}>{LANDING.clanTitle}</FeatureGroupTitle>
-              <FeatureGrid items={LANDING.clanFeatures} />
-            </div>
-          </div>
+          {/* ПК: каждая возможность — одной строкой (галочка + название — описание), один список
+              на всю ширину; телефон: название над описанием (mobile.css .lf-*) */}
+          <FeatureGroupTitle>{LANDING.playersTitle}</FeatureGroupTitle>
+          <FeatureGrid items={LANDING.features} />
+          <FeatureGroupTitle sub={LANDING.clanSub} style={{ marginTop: 28 }}>{LANDING.clanTitle}</FeatureGroupTitle>
+          <FeatureGrid items={LANDING.clanFeatures} />
 
           <div style={{ marginTop: 36, textAlign: 'center' }}>
             <div style={{
