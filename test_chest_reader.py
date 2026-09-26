@@ -1382,3 +1382,72 @@ def test_get_unsynced_by_pair_groups_and_uses_fallback_for_old_rows(tmp_path):
 
     assert [r[1] for r in groups[("229", "ELDORADO")]] == ["A", "C", "D"]
     assert [r[1] for r in groups[("229", "Феникс")]] == ["B"]
+
+
+# ── Аварийный перезапуск: кропы прошлого запуска не теряются и не меняют клан ──
+
+def _patch_collect(monkeypatch, buttons):
+    """buttons — сколько раз подряд «кнопка Открыть есть», дальше список кончился."""
+    left = {"n": buttons}
+
+    def fake_find(bbox, dialog):
+        if left["n"] > 0:
+            left["n"] -= 1
+            return (10, 10)
+        return None
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", fake_find)
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.full((10, 10, 3), 7, dtype=np.uint8))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+    monkeypatch.setattr(cr.time, "sleep", lambda s: None)
+
+
+def test_crop_names_unique_per_run_and_sorted_in_collection_order():
+    a1, a2 = cr._crop_name("20260926114307000001", 1), cr._crop_name("20260926114307000001", 2)
+    b1 = cr._crop_name("20260926120000000000", 1)
+    assert len({a1, a2, b1}) == 3
+    assert sorted([b1, a2, a1]) == [a1, a2, b1]
+    assert "000000_legacy_000001.png" < a1  # перенесённые из старой базы — первыми
+
+
+def test_leftover_crops_keep_their_run_pair_and_are_not_overwritten(tmp_path, monkeypatch):
+    """Бот упал посреди сбора ELDORADO: 2 кропа остались в очереди. Следующий запуск —
+    под Фениксом. Старые кропы обязаны уйти в ELDORADO, новые не должны их перезаписать."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    os.makedirs(pending_dir)
+    old_run = "20260926100000000000"
+    cr._write_run_pair(pending_dir, old_run, "229", "ELDORADO")
+    for i in (1, 2):
+        cv2.imwrite(os.path.join(pending_dir, cr._crop_name(old_run, i)),
+                    np.full((10, 10, 3), i, dtype=np.uint8))
+
+    seen = []
+
+    def fake_ocr(crop, full_lang=False):
+        seen.append(int(crop[0, 0, 0]))
+        return ("Тип", f"P{len(seen)}")
+    monkeypatch.setattr(cr, "ocr_top_row_crops", fake_ocr)
+    _patch_collect(monkeypatch, buttons=2)
+
+    cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir,
+                      kingdom="229", clan="Феникс")
+
+    conn = cr.init_db(db_path)
+    rows = conn.execute("SELECT kingdom, clan FROM local_chests ORDER BY id").fetchall()
+    conn.close()
+    assert sorted(seen[:2]) == [1, 2]          # оба старых кропа прочитаны, не перезаписаны
+    assert len(rows) == 4
+    assert rows.count(("229", "ELDORADO")) == 2
+    assert rows.count(("229", "Феникс")) == 2
+    assert os.listdir(pending_dir) == []       # очередь и файлы пар подчищены
+
+
+def test_migrate_removes_empty_legacy_pending_dir(tmp_path):
+    legacy = tmp_path / "legacy"
+    (legacy / "chest_pending").mkdir(parents=True)
+    cr.migrate_legacy_storage(str(legacy), str(tmp_path / "s" / "chest_buffer.db"),
+                              str(tmp_path / "s" / "chest_pending"))
+    assert not (legacy / "chest_pending").exists()

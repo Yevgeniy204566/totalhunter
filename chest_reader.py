@@ -352,6 +352,10 @@ def migrate_legacy_storage(legacy_dir=LEGACY_DIR, db_path=DB_PATH, pending_dir=P
         for src in _pending_queue(legacy_pending):
             dst = os.path.join(pending_dir, '000000_legacy_' + os.path.basename(src))
             os.replace(src, dst)
+        try:
+            os.rmdir(legacy_pending)   # только пустую — иначе OSError, данные не трогаем
+        except OSError:
+            pass
     return moved
 
 
@@ -462,6 +466,55 @@ def save_crop_atomic(combined, final_path: str) -> bool:
     return True
 
 
+def _new_run_id() -> str:
+    return datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')
+
+
+def _crop_name(run_id: str, frame_id: int) -> str:
+    """Метка запуска в имени: после аварийного перезапуска новые кропы не перезаписывают
+    ещё не прочитанные старые (номера каждый запуск начинаются с 1), а сортировка по имени
+    сохраняет порядок сбора. Стоит ~1 мкс на сундук против ~2 мс кодирования PNG."""
+    return f"{run_id}_{frame_id:06d}.png"
+
+
+def _write_run_pair(pending_dir: str, run_id: str, kingdom, clan) -> None:
+    """Пара королевство+клан запуска — ОДИН крошечный файл на весь запуск, не на сундук:
+    кропы, оставшиеся после падения, уйдут в свой клан, а не в клан следующего запуска."""
+    with open(os.path.join(pending_dir, f"{run_id}.pair"), 'w', encoding='utf-8') as f:
+        f.write(f"{kingdom}\n{clan}")
+
+
+def _pair_for_crop(path: str, cache: dict):
+    """(kingdom, clan) запуска, снявшего кроп, или None (старые имена без метки/пары)."""
+    run_id = os.path.basename(path).split('_', 1)[0]
+    if run_id not in cache:
+        pair = None
+        try:
+            with open(os.path.join(os.path.dirname(path), f"{run_id}.pair"), encoding='utf-8') as f:
+                k, c = f.read().split('\n', 1)
+            if k and c:
+                pair = (k, c)
+        except (OSError, ValueError):
+            pass
+        cache[run_id] = pair
+    return cache[run_id]
+
+
+def _cleanup_run_pairs(pending_dir: str) -> None:
+    """Удаляет файлы пар запусков, у которых в очереди не осталось кропов."""
+    if not os.path.isdir(pending_dir):
+        return
+    names = os.listdir(pending_dir)
+    for n in names:
+        if n.endswith('.pair'):
+            run_id = n[:-len('.pair')]
+            if not any(x.startswith(run_id + '_') and x.endswith('.png') for x in names):
+                try:
+                    os.remove(os.path.join(pending_dir, n))
+                except OSError:
+                    pass
+
+
 def _pending_queue(pending_dir: str) -> list:
     """Кропы, ждущие OCR, по возрастанию номера — тот же порядок, в котором сундуки собраны.
     Проще, чем очередь Биржи 2.0 (list_queue): этот каталог заполняет только сам producer
@@ -497,6 +550,7 @@ def delete_unsynced_batch(db_path: str = DB_PATH, pending_dir: str = PENDING_DIR
             os.remove(path)
         except OSError:
             pass
+    _cleanup_run_pairs(pending_dir)
     return removed
 
 
@@ -539,6 +593,7 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
     ждут OCR). Останавливается, только когда очередь пуста И producer точно закончил (иначе
     кроп, записанный между проверками, был бы пропущен) — тот же порядок проверки, что и в
     Бирже 2.0 (exchange_scout.py:_consumer_loop)."""
+    pair_cache = {}
     while True:
         queue = _pending_queue(pending_dir)
         if not queue:
@@ -561,10 +616,11 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 
         chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
         timestamp = _unique_chest_timestamp()
+        crop_kingdom, crop_clan = _pair_for_crop(src, pair_cache) or (kingdom, clan)
 
         conn = init_db(db_path)
         try:
-            insert_chest(conn, chest_type, sender, timestamp, kingdom, clan)
+            insert_chest(conn, chest_type, sender, timestamp, crop_kingdom, crop_clan)
             counts = get_unsynced_counts(conn)
         finally:
             conn.close()
@@ -604,6 +660,9 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     'counts' — из БД (get_unsynced_counts), не сессионный счётчик, всегда полный бэклог.
     pause_range/full_lang — как раньше (анти-детект клика; язык OCR имени отправителя)."""
     os.makedirs(pending_dir, exist_ok=True)
+    run_id = _new_run_id()
+    if kingdom and clan:
+        _write_run_pair(pending_dir, run_id, kingdom, clan)
 
     producer_done = threading.Event()
     items = []
@@ -645,13 +704,14 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
 
             frame_id += 1
             combined = crop_top_row(frame)
-            frame_path = os.path.join(pending_dir, f"{frame_id:06d}.png")
+            frame_path = os.path.join(pending_dir, _crop_name(run_id, frame_id))
             save_crop_atomic(combined, frame_path)
 
             click_open_button(pause_range)
     finally:
         producer_done.set()
         consumer_thread.join()   # владелец 2026-09-25: ждать полного OCR, не частичный батч
+        _cleanup_run_pairs(pending_dir)
 
     result = {'items': items, 'batch_full': batch_full, 'list_ended': list_ended}
 
