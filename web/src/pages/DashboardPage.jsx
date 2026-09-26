@@ -14,13 +14,13 @@ import { useMeta } from '../hooks/useMeta.js'
 function CollectedCell({ value, color }) {
   const animated = useCounter(typeof value === 'number' ? value : null, 1000)
   return (
-    <div style={{
+    <div className="collected-cell" style={{
       background: 'var(--elevated)', border: '1px solid var(--outline)', borderRadius: 14,
       padding: '18px 12px', textAlign: 'center', transition: 'box-shadow 0.2s, border-color 0.2s',
     }}
     onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 20px ${color}44`; e.currentTarget.style.borderColor = `${color}55` }}
     onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = 'var(--outline)' }}>
-      <div style={{ fontSize: 44, fontWeight: 900, color, lineHeight: 1,
+      <div className="collected-num" style={{ fontSize: 44, fontWeight: 900, color, lineHeight: 1,
                     textShadow: `0 0 28px ${color}88`, fontVariantNumeric: 'tabular-nums' }}>
         {value != null ? animated.toLocaleString('ru-RU') : '—'}
       </div>
@@ -296,14 +296,14 @@ function ProfileTab({ user, hunts, D, onRefresh }) {
             const CRYPT = '#B060FF', EXCH = '#3D7FFF'
             const head = { fontSize: 15, fontWeight: 800, textAlign: 'center', letterSpacing: '0.5px', textTransform: 'uppercase' }
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) 1fr 1fr', gap: 12, padding: 16, alignItems: 'center' }}>
+              <div className="collected-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) 1fr 1fr', gap: 12, padding: 16, alignItems: 'center' }}>
                 <div />
-                <div style={{ ...head, color: CRYPT }}>{D.collected.crypts}</div>
-                <div style={{ ...head, color: EXCH }}>{D.collected.exchanges}</div>
+                <div className="collected-head" style={{ ...head, color: CRYPT }}>{D.collected.crypts}</div>
+                <div className="collected-head" style={{ ...head, color: EXCH }}>{D.collected.exchanges}</div>
                 {['today', 'week', 'total'].map(period => {
                   const row = hunts?.by_type?.[period]
                   return [
-                    <div key={period + 'l'} style={{ fontSize: 16, fontWeight: 700, color: '#C8D8F0' }}>{D.collected[period]}</div>,
+                    <div key={period + 'l'} className="collected-label" style={{ fontSize: 16, fontWeight: 700, color: '#C8D8F0' }}>{D.collected[period]}</div>,
                     <CollectedCell key={period + 'c'} value={row ? row.crypt : null} color={CRYPT} />,
                     <CollectedCell key={period + 'e'} value={row ? row.exchange : null} color={EXCH} />,
                   ]
