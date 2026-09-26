@@ -182,10 +182,10 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 const TABLE_TXT = {
   ru: { player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
         hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ',
-        heroCol: 'Ур. Героя', hideHero: 'Скрыть ур. Героя', showHero: 'Показать ур. Героя' },
+        heroCol: 'Герой', hideHero: 'Скрыть Героя', showHero: 'Показать Героя' },
   en: { player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
         hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ',
-        heroCol: 'Hero lvl', hideHero: 'Hide Hero level', showHero: 'Show Hero level' },
+        heroCol: 'Hero', hideHero: 'Hide Hero', showHero: 'Show Hero' },
 }
 
 export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en' }) {
