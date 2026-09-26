@@ -167,6 +167,7 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
   const qcol = quotaCols.find(c => c.key === sort.key)
   const value = p => sort.key === 'name' ? p.name.toLowerCase()
     : sort.key === 'points' ? p.points
+    : sort.key === 'hero' ? (p.hero_level ?? -1)
     : qcol ? qcol.get(p)
     : (p.counts[sort.key] || 0)
   const dir = sort.dir === 'asc' ? 1 : -1
@@ -180,9 +181,11 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 
 const TABLE_TXT = {
   ru: { player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
-        hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ' },
+        hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ',
+        heroCol: 'Ур. Героя', hideHero: 'Скрыть ур. Героя', showHero: 'Показать ур. Героя' },
   en: { player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
-        hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ' },
+        hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ',
+        heroCol: 'Hero lvl', hideHero: 'Hide Hero level', showHero: 'Show Hero level' },
 }
 
 export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en' }) {
@@ -218,6 +221,17 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
   function toggleAvg() {
     setShowAvg(v => {
       try { localStorage.setItem('chestShowAvg', v ? '0' : '1') } catch { /* приватный режим */ }
+      return !v
+    })
+  }
+
+  // Колонка «Ур. Героя» первой слева, скрываемая (владелец 2026-09-26); выбор помнится в браузере.
+  const [showHero, setShowHero] = useState(() => {
+    try { return localStorage.getItem('chestShowHero') !== '0' } catch { return true }
+  })
+  function toggleHero() {
+    setShowHero(v => {
+      try { localStorage.setItem('chestShowHero', v ? '0' : '1') } catch { /* приватный режим */ }
       return !v
     })
   }
@@ -274,6 +288,9 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 6px' }}>
+        <button type="button" className="public-avg-toggle public-hero-toggle" onClick={toggleHero} style={{ marginRight: 8 }}>
+          {showHero ? tt.hideHero : tt.showHero}
+        </button>
         <button type="button" className="public-avg-toggle" onClick={toggleAvg}>
           {showAvg ? tt.hideAvg : tt.showAvg}
         </button>
@@ -287,9 +304,10 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
       </div>
 
       <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncTopScrollFromTable}>
-        <table className="public-table">
+        <table className={`public-table${showHero ? ' with-hero' : ''}`}>
           <thead>
             {showAvg && <tr className="public-avg-row">
+              {showHero && <th></th>}
               <th></th>
               <th>{tt.avg}</th>
               {editMode && <th></th>}
@@ -306,6 +324,9 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
               ))}
             </tr>}
             <tr className={showAvg ? 'public-head-row' : ''}>
+              {showHero && (
+                <th className="public-sortable" onClick={() => toggleSort('hero')}>{tt.heroCol}{sortMark('hero')}</th>
+              )}
               <th>#</th>
               <th className="public-sortable" onClick={() => toggleSort('name')}>{tt.player}{sortMark('name')}</th>
               {editMode && <th>{tt.rank}</th>}
@@ -331,6 +352,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
             {shownPlayers.map(p => {
               return (
                 <tr key={p.name}>
+                  {showHero && <td style={{ textAlign: 'center' }}>{p.hero_level ?? '—'}</td>}
                   <td>{pointsRank[p.name]}</td>
                   <td title={p.name} translate="no" className="notranslate">
                     {renderPlayerName(p, targets)}

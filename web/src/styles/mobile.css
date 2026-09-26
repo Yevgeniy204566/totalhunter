@@ -264,10 +264,14 @@
   .public-table thead th:nth-child(2) {
     position: sticky !important; left: auto !important;
   }
+  /* С колонкой Героя имя третье — на телефоне тоже не прилипает слева, но шапка держится сверху */
+  .public-table.with-hero td:nth-child(3) { position: static !important; }
+  .public-table.with-hero thead th:nth-child(3) { position: sticky !important; left: auto !important; }
   /* Средние на телефоне не показываем совсем — мешают (владелец 2026-09-26) */
   .public-avg-toggle,
   .public-table thead tr.public-avg-row { display: none !important; }
   .public-table thead tr.public-head-row th { top: 0 !important; }
+  .public-avg-toggle.public-hero-toggle { display: inline-block !important; margin-right: 0 !important; }
 
   /* Намёк о скролле: тень на правом крае таблицы */
   .public-table-wrap {
