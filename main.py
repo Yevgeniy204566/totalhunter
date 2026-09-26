@@ -6145,7 +6145,9 @@ class TotalHunterApp(ctk.CTk):
 
         def _update_tune_card_visibility():
             if cal_tune_card_visible(self._cal_selected_id):
-                tune_card.pack(fill="x", padx=16, pady=(10, 4))
+                # Сразу под списком целей, а не в конце вкладки: после переноса
+                # Сохранить/Загрузить наверх (2026-09-26) панель уезжала вниз под «Эталон».
+                tune_card.pack(fill="x", padx=16, pady=(10, 4), after=_target_list_frame)
             else:
                 tune_card.pack_forget()
 
