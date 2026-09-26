@@ -5,6 +5,7 @@ import { useLang } from '../lang.js'
 import { GUIDE as GUIDE_RU } from '../guide_content.js'
 import { GUIDE as GUIDE_EN } from '../guide_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
+import { ChestQuotaExample } from '../components/ChestGuide.jsx'
 
 function Diamond({ size = 28, style = {} }) {
   return (
@@ -499,6 +500,10 @@ export default function GuidePage() {
               {G.chests.webSteps.map((s, i) => (
                 <Step key={i} n={String(i + 1)} title={s.title} desc={s.desc} />
               ))}
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
+                {G.chests.exampleLabel}
+              </div>
+              <ChestQuotaExample C={G.chests} />
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '24px 0 14px' }}>
                 {G.chests.nuancesLabel}
               </div>

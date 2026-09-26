@@ -21,6 +21,34 @@ function Steps({ items, bullet }) {
   ))
 }
 
+const TD = { padding: '7px 12px', border: '1px solid var(--outline)', fontSize: 16, textAlign: 'left' }
+
+function MiniTable({ head, rows }) {
+  return (
+    <div style={{ overflowX: 'auto', margin: '8px 0 12px' }}>
+      <table style={{ borderCollapse: 'collapse' }}>
+        <thead><tr>{head.map(h => <th key={h} style={{ ...TD, background: 'var(--elevated)' }}>{h}</th>)}</tr></thead>
+        <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} style={TD}>{c}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  )
+}
+
+// Пример «очки и квоты» (владелец 2026-09-26: «привести пример с квотами в табличке»)
+export function ChestQuotaExample({ C }) {
+  const E = C.example
+  const P = { fontSize: 16, color: 'var(--on-surface2)', lineHeight: 1.65, margin: '6px 0' }
+  return (
+    <div>
+      <p style={P}>{E.intro}</p>
+      <MiniTable head={E.setupHead} rows={E.setup} />
+      <p style={P}>{E.collected}</p>
+      <MiniTable head={E.resultHead} rows={[E.result]} />
+      <p style={P}>{E.explain}</p>
+    </div>
+  )
+}
+
 export default function ChestGuide() {
   const { lang } = useLang()
   const C = (lang === 'en' ? GUIDE_EN : GUIDE_RU).chests
@@ -35,6 +63,8 @@ export default function ChestGuide() {
       <Steps items={C.botHow} />
       <div style={LABEL}>{C.webLabel}</div>
       <Steps items={C.webSteps} />
+      <div style={LABEL}>{C.exampleLabel}</div>
+      <ChestQuotaExample C={C} />
       <div style={LABEL}>{C.nuancesLabel}</div>
       <Steps items={C.nuances} bullet />
     </details>
