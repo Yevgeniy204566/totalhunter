@@ -608,3 +608,7 @@ a:hover { color: var(--on-surface); }
 .public-table thead th:nth-child(1), .public-table thead th:nth-child(2) {
   z-index: 4; background: var(--card);
 }
+
+/* «Учёт»: пункты списка без своего фона брали полупрозрачный цвет поля и на Windows
+   просвечивали белым — нечитаемо (владелец 2026-09-26). Даём тёмный непрозрачный фон. */
+.chest-acc-select option { background: #0F1528; color: #E8EEF8; }

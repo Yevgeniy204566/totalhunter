@@ -353,6 +353,25 @@ export default function ChestsPage() {
     <div className="page-content" style={{ maxWidth: 1600 }}>
 <h2 style={{ marginBottom: 24 }}>{cx.title}</h2>
       <ChestGuide />
+      {/* Мини-таблица значений «Учёта» — одна над всеми ростерами (владелец 2026-09-26) */}
+      <div style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 12, background: 'var(--card)',
+                    border: '1px solid var(--outline)' }}>
+        <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>{cx.accLegendTitle}</div>
+        <table style={{ borderCollapse: 'collapse', fontSize: 15 }}>
+          <tbody>
+            {[['off', cx.accOff, cx.accLegendOff], ['on', cx.accOn, cx.accLegendOn],
+              ['1', cx.accLegendQuotaName, cx.accLegendQuota]].map(([k, name, desc]) => (
+              <tr key={k}>
+                <td style={{ padding: '6px 12px 6px 0', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                  <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 6,
+                                 border: '1px solid var(--outline)', fontWeight: 600, ...ACCOUNTING_BG[k] }}>{name}</span>
+                </td>
+                <td style={{ padding: '6px 0', color: 'var(--on-surface2)', lineHeight: 1.5 }}>{desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="card" style={{ marginBottom: 24, maxWidth: 520, borderRadius: 16 }}>
         <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 10 }}>
@@ -533,6 +552,11 @@ export default function ChestsPage() {
                   {cx.grandTotalLabel} {(rowsByCollector[collector.slug] || []).reduce((sum, row) => sum + (row.total_ever ?? 0), 0)}
                 </span>
               </div>
+              {/* Ростер сундуков сворачивается (владелец 2026-09-26); открыт по умолчанию */}
+              <details open className="chest-roster">
+              <summary style={{ fontSize: 17, fontWeight: 700, cursor: 'pointer', margin: '4px 0 10px' }}>
+                {cx.rosterTitle} ({(rowsByCollector[collector.slug] || []).length})
+              </summary>
               <div style={{ overflowX: 'auto' }}>
               <table className="chest-table">
                 <thead>
@@ -581,7 +605,7 @@ export default function ChestsPage() {
                       </td>
                       <td>
                         <select
-                          className="input-dark"
+                          className="input-dark chest-acc-select"
                           style={ACCOUNTING_BG[row.quota_slot ? String(row.quota_slot) : (row.is_in_pattern ? 'on' : 'off')]}
                           value={row.quota_slot ? String(row.quota_slot) : (row.is_in_pattern ? 'on' : 'off')}
                           onChange={e => {
@@ -605,6 +629,7 @@ export default function ChestsPage() {
                 </tbody>
               </table>
               </div>
+              </details>
               <button className="chest-pill-btn" onClick={() => addRow(collector.slug)} style={{ marginTop: 12 }}>
                 {cx.addRow}
               </button>
