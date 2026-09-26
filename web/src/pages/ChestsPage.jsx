@@ -297,10 +297,13 @@ export default function ChestsPage() {
               >
                 🔗 {cx.publicLink}
               </a>
-              {collector.short_url && (
-                <a href={collector.short_url} target="_blank" rel="noreferrer"
-                  style={{ fontSize: 13, color: '#60A5FA', marginTop: 6, display: 'block' }}>
-                  {collector.short_url.replace('https://', '')}
+              {/* Под кнопкой — та же читаемая ссылка (/c/229/feniks), а не служебная
+                  /chests/{случайный id}: её владелец видел как «каракули» (2026-09-26). */}
+              {collector.public_url && (
+                <a href={collector.public_url} target="_blank" rel="noreferrer"
+                  translate="no" className="notranslate"
+                  style={{ fontSize: 13, color: '#60A5FA', marginTop: 6, display: 'block', wordBreak: 'break-all' }}>
+                  {collector.public_url.replace('https://', '')}
                 </a>
               )}
 
