@@ -1,4 +1,5 @@
 import os
+import datetime
 import time
 import threading
 import cv2
@@ -1228,3 +1229,46 @@ def test_collect_chests_forwards_full_lang_to_ocr_top_row_crops(tmp_path, monkey
     cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir, full_lang=True)
 
     assert captured["full_lang"] is True
+
+
+def test_chest_timestamps_unique_even_within_same_microsecond(monkeypatch):
+    """Владелец 2026-09-26: бот считает АБСОЛЮТНО ВСЕ сундуки. Сервер склеивает записи с
+    одинаковым (игрок, тип, время) — раньше время было с точностью до секунды, а фоновый
+    OCR обрабатывает 2-3 сундука в секунду: два одинаковых сундука одного игрока подряд
+    получали один ключ, и второй терялся на сервере (53 из 709 утром 26.09). Каждый
+    сундук обязан получить своё, строго возрастающее время — даже если часы стоят."""
+    frozen = datetime.datetime(2026, 9, 26, 10, 0, 0, 0)
+    monkeypatch.setattr(cr, "_now", lambda: frozen)
+    monkeypatch.setattr(cr, "_last_chest_ts", None)
+
+    stamps = [cr._unique_chest_timestamp() for _ in range(5)]
+
+    assert len(set(stamps)) == 5
+    parsed = [datetime.datetime.fromisoformat(s) for s in stamps]
+    assert parsed == sorted(parsed)
+    assert all(p >= frozen for p in parsed)
+
+
+def test_consumer_gives_identical_chests_distinct_timestamps(tmp_path, monkeypatch):
+    """Два одинаковых сундука одного игрока, обработанные в одну секунду, должны остаться
+    двумя разными записями — ключ (игрок, тип, время) у них различается."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    os.makedirs(pending_dir, exist_ok=True)
+    for name in ("000001.png", "000002.png", "000003.png"):
+        cv2.imwrite(os.path.join(pending_dir, name), np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda crop, full_lang=False: ("Склеп 25", "Jack"))
+    frozen = datetime.datetime(2026, 9, 26, 10, 0, 0, 0)
+    monkeypatch.setattr(cr, "_now", lambda: frozen)
+    monkeypatch.setattr(cr, "_last_chest_ts", None)
+
+    done = threading.Event()
+    done.set()
+    items = []
+    cr._chest_consumer_loop(pending_dir, db_path, None, False, done, items)
+
+    conn = cr.init_db(db_path)
+    rows = conn.execute("SELECT raw_player_name, chest_type, timestamp FROM local_chests").fetchall()
+    conn.close()
+    assert len(rows) == 3
+    assert len(set(rows)) == 3

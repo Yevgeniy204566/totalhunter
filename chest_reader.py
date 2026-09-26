@@ -448,6 +448,26 @@ def _batch_size(pending_dir: str, db_path: str) -> int:
     return unsynced + len(_pending_queue(pending_dir))
 
 
+_now = datetime.datetime.now
+_last_chest_ts = None
+_chest_ts_lock = threading.Lock()
+
+
+def _unique_chest_timestamp() -> str:
+    """Бот считает АБСОЛЮТНО ВСЕ сундуки (владелец 2026-09-26). Сервер склеивает записи с
+    одинаковым (игрок, тип, время) — это защита от повторной отправки того же батча, а не
+    «повторы» сундуков. С точностью до секунды фоновый OCR давал двум одинаковым сундукам
+    одного игрока подряд один ключ, и второй терялся. Поэтому время — с микросекундами и
+    строго возрастает, даже если часы не сдвинулись между двумя сундуками."""
+    global _last_chest_ts
+    with _chest_ts_lock:
+        ts = _now()
+        if _last_chest_ts is not None and ts <= _last_chest_ts:
+            ts = _last_chest_ts + datetime.timedelta(microseconds=1)
+        _last_chest_ts = ts
+    return ts.isoformat(timespec='microseconds')
+
+
 def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: bool,
                          producer_done: threading.Event, items_out: list) -> None:
     """Фоновый consumer: разбирает очередь кропов независимо от скорости producer'а (клики не
@@ -475,7 +495,7 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
             continue
 
         chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
-        timestamp = datetime.datetime.now().isoformat(timespec='seconds')
+        timestamp = _unique_chest_timestamp()
 
         conn = init_db(db_path)
         try:
