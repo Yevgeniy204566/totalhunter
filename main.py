@@ -2670,14 +2670,15 @@ class TotalHunterApp(ctk.CTk):
         # Владелец 2026-09-26: профиль и «Сохранить» — самый верх вкладки, одной строкой,
         # не в глубине настроек под ползунками.
         _crypt_profile_row = self._build_profile_row(self.tab_crypt)
+        # Значок 💾 вместо надписи (владелец 2026-09-26) — как у пар в Сундуках; в
+        # _i18n_labels не добавляется, иначе смена языка вернёт текст.
         self.crypt_save_settings_btn = ctk.CTkButton(
-                      _crypt_profile_row, text=LANGS[self.current_lang]["crypt_save_btn"],
-                      height=32,
+                      _crypt_profile_row, text="💾", width=48, height=32,
+                      font=ctk.CTkFont(size=16),
                       fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
                       text_color=MD3["on_surface"], corner_radius=8,
                       command=self._save_crypt_settings_all)
-        self.crypt_save_settings_btn.pack(side="left", padx=(10, 0), fill="x", expand=True)
-        self._i18n_labels.append((self.crypt_save_settings_btn, "crypt_save_btn"))
+        self.crypt_save_settings_btn.pack(side="left", padx=(10, 0))
 
         # Баланс + алмаз рядом
         _crypt_bal_row = ctk.CTkFrame(self.tab_crypt, fg_color="transparent")
@@ -5343,7 +5344,7 @@ class TotalHunterApp(ctk.CTk):
         id_card.pack(padx=20, pady=(0, 8), fill="x")
 
         kingdom_row = ctk.CTkFrame(id_card, fg_color="transparent")
-        kingdom_row.pack(padx=10, pady=(10, 4), fill="x")
+        kingdom_row.pack(padx=10, pady=(4, 4), fill="x")
         self.chest_kingdom_lb = ctk.CTkLabel(kingdom_row, text=L["chest_kingdom_lb"],
                                              font=ctk.CTkFont(size=12),
                                              text_color=MD3["on_surface2"])
@@ -5361,7 +5362,7 @@ class TotalHunterApp(ctk.CTk):
         self.chest_kingdom_entry.bind("<FocusOut>", self._on_chest_kingdom_change)
 
         clan_row = ctk.CTkFrame(id_card, fg_color="transparent")
-        clan_row.pack(padx=10, pady=(4, 4), fill="x")
+        clan_row.pack(padx=10, pady=(4, 8), fill="x")
         self.chest_clan_lb = ctk.CTkLabel(clan_row, text=L["chest_clan_lb"],
                                           font=ctk.CTkFont(size=12),
                                           text_color=MD3["on_surface2"])
@@ -5381,7 +5382,8 @@ class TotalHunterApp(ctk.CTk):
         # красная) — здесь же, наверху, кнопка «Удалить батч» (см. ниже), чтобы её было
         # видно, но не путали с сохранением/удалением пары.
         pairs_row = ctk.CTkFrame(id_card, fg_color="transparent")
-        pairs_row.pack(padx=10, pady=(0, 6), fill="x")
+        # Владелец 2026-09-26: выбор сохранённой пары — выше полей ввода королевства/клана.
+        pairs_row.pack(padx=10, pady=(10, 4), fill="x", before=kingdom_row)
         self._chest_saved_pairs = self._load_gui_config().get("chest_saved_pairs", [])
         self._chest_pairs_menu = ctk.CTkOptionMenu(
             pairs_row, values=["—"], height=36,
