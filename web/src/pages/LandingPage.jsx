@@ -265,11 +265,11 @@ const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/late
 
 function FeatureGroupTitle({ children, sub, style }) {
   return (
-    <div style={{ textAlign: 'center', marginBottom: 24, ...style }}>
-      <h3 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+    <div style={{ textAlign: 'center', marginBottom: 16, ...style }}>
+      <h3 style={{ fontSize: 'clamp(22px, 2.6vw, 28px)', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
         {children}
       </h3>
-      {sub && <p style={{ color: '#DCE6F7', fontSize: 18, margin: '8px 0 0' }}>{sub}</p>}
+      {sub && <p style={{ color: '#DCE6F7', fontSize: 16, margin: '6px 0 0' }}>{sub}</p>}
     </div>
   )
 }
@@ -279,22 +279,22 @@ function FeatureGrid({ items }) {
   return (
     <ul style={{
       // Без подложки: фон (робот с сундуком) должен просматриваться, читаемость — тенью текста.
-      listStyle: 'none', margin: '0 auto', padding: 0, maxWidth: 920,
+      listStyle: 'none', margin: '0 auto', padding: 0,
       textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)',
     }}>
       {items.map(({ title, desc }) => (
         <li key={title} style={{
-          display: 'flex', gap: 18, alignItems: 'flex-start', padding: '16px 8px',
+          display: 'flex', gap: 14, alignItems: 'flex-start', padding: '10px 4px',
         }}>
           <span style={{
-            flex: '0 0 38px', width: 38, height: 38, borderRadius: '50%',
+            flex: '0 0 30px', width: 30, height: 30, borderRadius: '50%',
             background: 'rgba(74,222,128,0.14)', border: '1px solid #4ADE80',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 900, color: '#4ADE80', marginTop: 0,
+            fontSize: 18, fontWeight: 900, color: '#4ADE80', marginTop: 0,
           }}>✓</span>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{title}</div>
-            <div style={{ fontSize: 18, color: '#E6EEFA', lineHeight: 1.6 }}>{desc}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 3 }}>{title}</div>
+            <div style={{ fontSize: 16, color: '#E6EEFA', lineHeight: 1.5 }}>{desc}</div>
           </div>
         </li>
       ))}
@@ -602,7 +602,7 @@ export default function LandingPage() {
       </div>
       {/* ── Features: для игрока + для кланов + под капотом ───────── */}
       <section id="features" style={{
-        padding: '88px 24px',
+        padding: '64px 24px',
         background: `
           linear-gradient(rgba(5,8,16,0.50), rgba(5,8,16,0.60)),
           url('/img/features-bg.webp') center / cover no-repeat,
@@ -618,18 +618,24 @@ export default function LandingPage() {
           </h2>
           <p style={{
             textAlign: 'center', color: '#DCE6F7', fontSize: 19,
-            maxWidth: 640, margin: '0 auto 48px',
+            maxWidth: 640, margin: '0 auto 36px',
           }}>
             {LANDING.featuresSub}
           </p>
 
-          <FeatureGroupTitle>{LANDING.playersTitle}</FeatureGroupTitle>
-          <FeatureGrid items={LANDING.features} />
+          {/* Две колонки: блок помещается в один экран, фон не растягивается (владелец 2026-09-26) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '32px 48px' }}>
+            <div>
+              <FeatureGroupTitle>{LANDING.playersTitle}</FeatureGroupTitle>
+              <FeatureGrid items={LANDING.features} />
+            </div>
+            <div>
+              <FeatureGroupTitle sub={LANDING.clanSub}>{LANDING.clanTitle}</FeatureGroupTitle>
+              <FeatureGrid items={LANDING.clanFeatures} />
+            </div>
+          </div>
 
-          <FeatureGroupTitle sub={LANDING.clanSub} style={{ marginTop: 64 }}>{LANDING.clanTitle}</FeatureGroupTitle>
-          <FeatureGrid items={LANDING.clanFeatures} />
-
-          <div style={{ marginTop: 56, textAlign: 'center' }}>
+          <div style={{ marginTop: 36, textAlign: 'center' }}>
             <div style={{
               fontSize: 12, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase',
               color: 'var(--accent)', marginBottom: 14,
@@ -639,7 +645,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
               {LANDING.tech.map(({ icon, text }) => (
                 <span key={text} style={{
-                  padding: '10px 16px', borderRadius: 22, fontSize: 16, color: '#E6EEFA',
+                  padding: '8px 14px', borderRadius: 20, fontSize: 15, color: '#E6EEFA',
                   background: 'rgba(12,18,34,0.72)', border: '1px solid rgba(61,127,255,0.25)',
                 }}>
                   {icon} {text}
