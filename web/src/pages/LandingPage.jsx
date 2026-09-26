@@ -266,10 +266,10 @@ const RELEASE_URL = 'https://github.com/Yevgeniy204566/totalhunter/releases/late
 function FeatureGroupTitle({ children, sub, style }) {
   return (
     <div style={{ textAlign: 'center', marginBottom: 16, ...style }}>
-      <h3 style={{ fontSize: 'clamp(22px, 2.6vw, 28px)', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+      <h3 style={{ fontSize: 'clamp(20px, 2.2vw, 24px)', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
         {children}
       </h3>
-      {sub && <p style={{ color: '#DCE6F7', fontSize: 16, margin: '6px 0 0' }}>{sub}</p>}
+      {sub && <p style={{ color: '#DCE6F7', fontSize: 14, margin: '6px 0 0' }}>{sub}</p>}
     </div>
   )
 }
@@ -284,17 +284,17 @@ function FeatureGrid({ items }) {
     }}>
       {items.map(({ title, desc }) => (
         <li key={title} style={{
-          display: 'flex', gap: 14, alignItems: 'flex-start', padding: '10px 4px',
+          display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 4px',
         }}>
           <span style={{
-            flex: '0 0 30px', width: 30, height: 30, borderRadius: '50%',
+            flex: '0 0 26px', width: 26, height: 26, borderRadius: '50%',
             background: 'rgba(74,222,128,0.14)', border: '1px solid #4ADE80',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, fontWeight: 900, color: '#4ADE80', marginTop: 0,
+            fontSize: 15, fontWeight: 900, color: '#4ADE80', marginTop: 0,
           }}>✓</span>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 3 }}>{title}</div>
-            <div style={{ fontSize: 16, color: '#E6EEFA', lineHeight: 1.5 }}>{desc}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 2 }}>{title}</div>
+            <div style={{ fontSize: 14, color: '#E6EEFA', lineHeight: 1.5 }}>{desc}</div>
           </div>
         </li>
       ))}
@@ -645,7 +645,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
               {LANDING.tech.map(({ icon, text }) => (
                 <span key={text} style={{
-                  padding: '8px 14px', borderRadius: 20, fontSize: 15, color: '#E6EEFA',
+                  padding: '7px 13px', borderRadius: 20, fontSize: 14, color: '#E6EEFA',
                   background: 'rgba(12,18,34,0.72)', border: '1px solid rgba(61,127,255,0.25)',
                 }}>
                   {icon} {text}
