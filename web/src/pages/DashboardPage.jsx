@@ -8,65 +8,25 @@ import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 
 /* ─── helpers ─────────────────────────────────────────────────── */
-const STAT_KEYS = [
-  { key: 'exchanges_today', color: 'var(--accent)'       },
-  { key: 'crypts_today',    color: '#B060FF'              },
-  { key: 'active_hunters',  color: 'var(--credits-gold)' },
-]
-
-const TX_ICONS = {
-  purchase:               { icon: '◆', color: '#4ADE80' },
-  credit_use:             { icon: '⚔', color: '#FFFFFF' },
-  trial:                  { icon: '🎁', color: '#4ADE80' },
-  ref_welcome:            { icon: '⬡', color: 'var(--credits-gold)' },
-  ref_earning:            { icon: '⬡', color: 'var(--credits-gold)' },
-  ref_transfer:           { icon: '→', color: '#4ADE80' },
-  hwid_duplicate_blocked: { icon: '⚠', color: 'var(--on-surface2)' },
-  manual_adjust:          { icon: '✎', color: 'var(--on-surface2)' },
-}
-
 /* ─── sub-components ──────────────────────────────────────────── */
-function GlobalStatTile({ label, color, rawValue }) {
-  const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
-  return (
-    <div style={{
-      flex: '1 1 160px', background: 'var(--elevated)',
-      border: '1px solid var(--outline)', borderRadius: 14,
-      padding: '24px 16px', textAlign: 'center',
-      transition: 'box-shadow 0.2s, border-color 0.2s',
-    }}
-    onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 20px ${color}44`; e.currentTarget.style.borderColor = `${color}55` }}
-    onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = 'var(--outline)' }}>
-      <div style={{ fontSize: 48, fontWeight: 900, color, lineHeight: 1, marginBottom: 8,
-                    textShadow: `0 0 28px ${color}88`, fontVariantNumeric: 'tabular-nums' }}>
-        {rawValue != null ? animated : '—'}
-      </div>
-      <div style={{ fontSize: 12, color: '#C8D8F0', fontWeight: 600, letterSpacing: '0.3px' }}>{label}</div>
-    </div>
-  )
-}
 
-function HuntStatTile({ icon, label, color, value }) {
+/* Ячейка «Собрано»: шрифт и подсветка бывших верхних плиток (владелец 2026-09-26) */
+function CollectedCell({ value, color }) {
   const animated = useCounter(typeof value === 'number' ? value : null, 1000)
   return (
     <div style={{
-      flex: '1 1 140px', background: 'var(--elevated)',
-      border: '1px solid var(--outline)', borderRadius: 12,
-      padding: '20px 16px', textAlign: 'center',
-      transition: 'box-shadow 0.2s, border-color 0.2s',
+      background: 'var(--elevated)', border: '1px solid var(--outline)', borderRadius: 14,
+      padding: '18px 12px', textAlign: 'center', transition: 'box-shadow 0.2s, border-color 0.2s',
     }}
     onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 20px ${color}44`; e.currentTarget.style.borderColor = `${color}55` }}
     onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = 'var(--outline)' }}>
-      <div style={{ fontSize: 18, marginBottom: 6 }}>{icon}</div>
-      <div style={{ fontSize: 34, fontWeight: 800, color, lineHeight: 1, marginBottom: 6,
-                    textShadow: `0 0 20px ${color}88`, fontVariantNumeric: 'tabular-nums' }}>
-        {value != null ? animated : '—'}
+      <div style={{ fontSize: 44, fontWeight: 900, color, lineHeight: 1,
+                    textShadow: `0 0 28px ${color}88`, fontVariantNumeric: 'tabular-nums' }}>
+        {value != null ? animated.toLocaleString('ru-RU') : '—'}
       </div>
-      <div style={{ fontSize: 12, color: '#C8D8F0', fontWeight: 500 }}>{label}</div>
     </div>
   )
 }
-
 
 /* ─── Сохранённые таблицы сундуков кланов (Профиль, владелец 2026-09-26) ───
    Список хранится в аккаунте (/web/chest-links): выпадающий список кланов, ссылка на
@@ -189,12 +149,11 @@ function ChestFinder({ D }) {
 }
 
 /* ─── tab: Profile ────────────────────────────────────────────── */
-function ProfileTab({ user, stats, hunts, D, onRefresh }) {
+function ProfileTab({ user, hunts, D, onRefresh }) {
   const [code, setCode]       = useState('')
   const [msg, setMsg]         = useState('')
   const [loading, setLoading] = useState(false)
   const dv = D.devices
-  const statTileLabels = [D.statTiles.exchangesToday, D.statTiles.cryptsToday, D.statTiles.huntersOnline]
 
   async function linkHwid() {
     if (code.length !== 6) { setMsg(dv.codeError); return }
@@ -223,14 +182,6 @@ function ProfileTab({ user, stats, hunts, D, onRefresh }) {
 
   return (
     <>
-      {/* global stat tiles */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 28, flexWrap: 'wrap' }}>
-        {STAT_KEYS.map(({ key, color }, i) => (
-          <GlobalStatTile key={key} label={statTileLabels[i]} color={color}
-                          rawValue={stats ? stats[key] : null} />
-        ))}
-      </div>
-
       {/* two-column: profile + devices */}
       <div className="dash-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
 
@@ -340,28 +291,26 @@ function ProfileTab({ user, stats, hunts, D, onRefresh }) {
         <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>
           {D.collected.title}
         </h2>
-        <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
-            <thead>
-              <tr style={{ color: 'var(--on-surface2)', fontSize: 14 }}>
-                <th style={{ textAlign: 'left', padding: '12px 20px', fontWeight: 600 }}></th>
-                <th style={{ textAlign: 'right', padding: '12px 20px', fontWeight: 700, color: '#B060FF' }}>{D.collected.crypts}</th>
-                <th style={{ textAlign: 'right', padding: '12px 20px', fontWeight: 700, color: 'var(--accent)' }}>{D.collected.exchanges}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {['today', 'week', 'total'].map(period => {
-                const row = hunts?.by_type?.[period] || { crypt: 0, exchange: 0 }
-                return (
-                  <tr key={period} style={{ borderTop: '1px solid var(--separator)' }}>
-                    <td style={{ padding: '12px 20px', fontWeight: 600 }}>{D.collected[period]}</td>
-                    <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 700 }}>{row.crypt.toLocaleString('ru-RU')}</td>
-                    <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 700 }}>{row.exchange.toLocaleString('ru-RU')}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <div className="card" style={{ borderRadius: 14, padding: 0 }}>
+          {(() => {
+            const CRYPT = '#B060FF', EXCH = '#3D7FFF'
+            const head = { fontSize: 15, fontWeight: 800, textAlign: 'center', letterSpacing: '0.5px', textTransform: 'uppercase' }
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.7fr) 1fr 1fr', gap: 12, padding: 16, alignItems: 'center' }}>
+                <div />
+                <div style={{ ...head, color: CRYPT }}>{D.collected.crypts}</div>
+                <div style={{ ...head, color: EXCH }}>{D.collected.exchanges}</div>
+                {['today', 'week', 'total'].map(period => {
+                  const row = hunts?.by_type?.[period]
+                  return [
+                    <div key={period + 'l'} style={{ fontSize: 16, fontWeight: 700, color: '#C8D8F0' }}>{D.collected[period]}</div>,
+                    <CollectedCell key={period + 'c'} value={row ? row.crypt : null} color={CRYPT} />,
+                    <CollectedCell key={period + 'e'} value={row ? row.exchange : null} color={EXCH} />,
+                  ]
+                })}
+              </div>
+            )
+          })()}
         </div>
       </div>
     </>
@@ -373,7 +322,6 @@ function ProfileTab({ user, stats, hunts, D, onRefresh }) {
 /* ─── main page ───────────────────────────────────────────────── */
 export default function DashboardPage() {
   const [user,   setUser]   = useState(null)
-  const [stats,  setStats]  = useState(null)
   const [hunts,  setHunts]  = useState(null)
   const [error,  setError]  = useState('')
   const { lang } = useLang()
@@ -391,7 +339,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     refreshUser().catch(e => setError(e.message))
-    api.globalStats().then(setStats).catch(() => {})
     api.hunts().then(setHunts).catch(() => {})
   }, [])
 
@@ -406,7 +353,7 @@ export default function DashboardPage() {
       padding: '32px 24px',
       maxWidth: 1000, margin: '0 auto',
     }}>
-      <ProfileTab user={user} stats={stats} hunts={hunts} D={D} onRefresh={refreshUser} />
+      <ProfileTab user={user} hunts={hunts} D={D} onRefresh={refreshUser} />
     </div>
   )
 }
