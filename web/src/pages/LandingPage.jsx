@@ -279,7 +279,7 @@ function FeatureGrid({ items }) {
   return (
     <ul style={{
       // Без подложки: фон (робот с сундуком) должен просматриваться, читаемость — тенью текста.
-      listStyle: 'none', margin: '0 auto', padding: 0, width: 'min(1560px, 100%)',
+      listStyle: 'none', margin: '0 auto', padding: 0, width: 'min(1800px, 100%)',
       textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)',
     }}>
       {items.map(({ title, desc }) => (
@@ -287,13 +287,18 @@ function FeatureGrid({ items }) {
           display: 'flex', gap: 14, alignItems: 'flex-start', padding: '6px 4px',
         }}>
           <span className="lf-check" style={{
-            flex: '0 0 30px', width: 30, height: 30, borderRadius: '50%',
-            background: 'rgba(74,222,128,0.14)', border: '1px solid #4ADE80',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, fontWeight: 900, color: '#4ADE80', marginTop: 0,
-          }}>✓</span>
-          <div style={{ fontSize: 16, color: '#E6EEFA', lineHeight: 1.5, paddingTop: 3 }}>
-            <span className="lf-title" style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF' }}>{title}</span>
+            flex: '0 0 32px', width: 32, height: 32, borderRadius: '50%',
+            background: 'rgba(57,255,136,0.18)', border: '2px solid #39FF88',
+            boxShadow: '0 0 10px rgba(57,255,136,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 0,
+          }}>
+            <svg viewBox="0 0 24 24" width="62%" height="62%" aria-hidden="true">
+              <path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#39FF88" strokeWidth="4"
+                strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <div className="lf-line" style={{ fontSize: 17, color: '#E6EEFA', lineHeight: 1.5, paddingTop: 2 }}>
+            <span className="lf-title" style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>{title}</span>
             <span className="lf-dash"> — </span>
             <span className="lf-desc">{desc}</span>
           </div>
@@ -610,7 +615,7 @@ export default function LandingPage() {
           var(--card)
         `,
       }}>
-        <div style={{ maxWidth: 1760, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1860, margin: '0 auto' }}>
           <h2 style={{
             textAlign: 'center', fontSize: 'clamp(28px, 4vw, 44px)',
             fontWeight: 800, color: '#FFFFFF', marginBottom: 12,
