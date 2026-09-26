@@ -664,10 +664,10 @@ a:hover { color: var(--on-surface); }
 }
 
 /* Колонка «Ур. Героя» первой: сдвигаем закреплённые «#» и имя вправо (владелец 2026-09-26) */
-.public-table.with-hero th:nth-child(1), .public-table.with-hero td:nth-child(1) { width: 72px; min-width: 72px; }
-.public-table.with-hero th:nth-child(2), .public-table.with-hero td:nth-child(2) { left: 72px; width: 40px; }
+.public-table.with-hero th:nth-child(1), .public-table.with-hero td:nth-child(1) { width: 92px; min-width: 92px; white-space: nowrap; }
+.public-table.with-hero th:nth-child(2), .public-table.with-hero td:nth-child(2) { left: 92px; width: 40px; }
 .public-table.with-hero th:nth-child(3), .public-table.with-hero td:nth-child(3) {
-  position: sticky; left: 112px; z-index: 2; background: var(--card);
+  position: sticky; left: 132px; z-index: 2; background: var(--card);
 }
 .public-table.with-hero tbody tr:nth-child(even) td:nth-child(3) { background: #0D1326; }
 .public-table.with-hero tbody tr:hover td:nth-child(3) { background: var(--accent-glow); }
