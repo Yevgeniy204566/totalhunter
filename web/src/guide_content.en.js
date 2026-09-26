@@ -10,7 +10,7 @@ export const GUIDE = {
     { id: 'install',      label: 'Installation' },
     { id: 'calibration',  label: 'Calibration' },
     { id: 'modes',        label: 'Operating Modes' },
-    { id: 'tuning',       label: '⚙ Tuning (Carter)' },
+    { id: 'tuning',       label: '⚙ Sending Carter' },
     { id: 'chests',       label: '📦 Chests' },
     { id: 'ancient',      label: '🐲 Ancient' },
     { id: 'roy',          label: 'SWARM System 🐝' },
@@ -22,8 +22,8 @@ export const GUIDE = {
   ],
 
   packages: [
-    { name: 'Lite',  price: '$1',  diamonds: '300',   bonus: '',          color: '#64B5F6' },
-    { name: 'Pro',   price: '$5',  diamonds: '2,000', bonus: '+33%',      color: '#3D7FFF' },
+    { name: 'Scout',  price: '$3',  diamonds: '1,000', bonus: '',          color: '#64B5F6' },
+    { name: 'Hunter', price: '$5',  diamonds: '2,000', bonus: '+20%',      color: '#3D7FFF' },
     { name: 'Ultra', price: '$10', diamonds: '5,000', bonus: 'MAX VALUE', color: '#00CFFF', popular: true },
   ],
 
@@ -32,13 +32,13 @@ export const GUIDE = {
     intro: 'Total Hunter is a desktop assistant bot for automating routine tasks in Total Battle. The app handles the mindless searching and clicking, saving your time:',
     exchange: {
       title: 'Exchange Hunting',
-      desc: 'The bot scans coastlines looking for mercenary markets. As soon as it finds one — it plays a sound alert and stops, so you have time to buy troops.',
+      desc: 'Two modes. "Snake" scans coastlines and, once it finds a mercenary market, plays a sound alert and stops so you have time to buy troops. "Scanner 2.0" captures the map fast while a neural network processes frames in the background; finds go to the SWARM.',
     },
     crypt: {
       title: 'Crypt Farming',
       desc: 'The bot recognizes the crypt types you need (Common, Rare, Epic) and sends Carter to collect automatically, applying march speed-ups on its own.',
     },
-    outro: 'The program works on top of your game window (browser or client), fully imitating the clicks and pauses of a real player.',
+    outro: 'For clans, the bot collects chests from clan gifts, and the website keeps the clan table and the Ancient calculator (see sections below). The program works on top of your game window (browser or client), imitating the clicks and pauses of a real player.',
   },
 
   algorithm: {
@@ -73,7 +73,7 @@ export const GUIDE = {
       { param: 'Resolution', value: '1920×1080 (Full HD) — recommended for ideal click accuracy' },
       { param: 'Platform',   value: 'Chrome, Firefox or the official Total Battle PC client' },
       { param: 'RAM',        value: '4 GB or more' },
-      { param: 'Internet',   value: 'Stable connection (required for neural network and balance checks)' },
+      { param: 'Internet',   value: 'Stable connection (account and diamond balance checks; the neural network runs on your PC)' },
       { param: 'Account',    value: 'Any active in-game profile' },
     ],
   },
@@ -84,8 +84,9 @@ export const GUIDE = {
     steps: [
       { title: 'Sign Up',        desc: 'Log in at total-hunter.com using your Google account.' },
       { title: 'Free Trial',     desc: 'Your dashboard will instantly show 100 diamonds to test all bot features.', note: 'Trial is issued once per unique device (HWID).' },
-      { title: 'Download',       desc: 'Download TotalHunter.exe from your personal dashboard.' },
-      { title: 'Launch',         desc: 'Just open the program. It\'s fully portable and ready to run.' },
+      { title: 'Download',       desc: 'Download TotalHunter.zip from the website and extract it to any folder. Do not run the program from inside the archive.' },
+      { title: 'Windows Defender', desc: 'If needed, add the program and its folder to Windows Defender exclusions — otherwise it may interfere with the bot.' },
+      { title: 'Launch',         desc: 'Open TotalHunter.exe from the extracted folder. No installation required.' },
       { title: 'Log In to Bot',  desc: 'Click "Sign in with Google" inside the app (use the same account as the website).' },
       { title: 'First Setup',    desc: 'Before starting, the bot will ask you to complete Calibration. This is required!' },
     ],
@@ -102,9 +103,10 @@ export const GUIDE = {
     steps: [
       { title: 'Prepare your window',  desc: 'Open the game and set the window to the size you\'ll use (fullscreen recommended).' },
       { title: 'Open Calibration',     desc: 'Switch to the CALIBRATION tab in the Total Hunter app.' },
-      { title: 'Set Point A',          desc: 'Click the center of the mini-map as described above.' },
-      { title: 'Set Point B',          desc: 'Click the Silver plus sign.' },
-      { title: 'Save to a slot',       desc: 'Choose a free profile (e.g. "Browser 1") and click "Save". Next time the bot will load these coordinates automatically.' },
+      { title: 'Choose a profile',     desc: 'At the top of the tab pick a profile (Client, Browser 1 or Browser 2).' },
+      { title: 'Set Points A and B',   desc: 'In the target list click "1. Point A" and mark the mini-map center, then "2. Point B" and the Silver plus sign.' },
+      { title: 'Other targets',        desc: 'Click targets 3–13 one by one and use the arrows below the list to line up the bot\'s aim with the game buttons.' },
+      { title: 'Save',                 desc: 'Click "Save" at the top of the tab. Next time the bot will load these settings automatically.' },
     ],
     slotsNote: '💡 3 independent profile slots. You can play from a browser and from the official client. Save a separate calibration, slider settings, and click tuning for each. Switching between them takes one second.',
   },
@@ -115,9 +117,9 @@ export const GUIDE = {
       title: 'Exchange Hunting',
       cost: '10 diamonds / find',
       rows: [
-        { l: 'How it works', t: 'Continuously scans coastlines, moving the map in a "snake" pattern.' },
+        { l: 'How it works', t: '"Snake" continuously scans coastlines by moving the map; "Scanner 2.0" captures the map fast and processes frames with a neural network in the background.' },
         { l: 'Result',       t: 'Once it spots an exchange — it stops and plays a loud sound. You buy the mercenaries yourself.' },
-        { l: 'Settings',     t: 'Set the "Range" slider to 100% and speed to maximum.' },
+        { l: 'Settings',     t: 'See "Fine-Tuning the Bot" below for details.' },
       ],
     },
     crypt: {
@@ -126,15 +128,15 @@ export const GUIDE = {
       rows: [
         { l: 'How it works',  t: 'Finds crypts in the search menu, clicks their coordinates, presses "Speed Up", and sends Carter.' },
         { l: 'Smart cycle',   t: 'The bot calculates flight time on its own. It waits for Carter and immediately sends him to the next crypt.' },
-        { l: 'Full control',  t: 'You set the max range (in minutes) and how many speed-up levels to apply.' },
+        { l: 'Full control',  t: 'You set the max march range (in seconds), the number of speed-ups, and auto-stop by crypt count or time.' },
       ],
     },
     stopNote: 'Emergency stop: press the ESC key on your keyboard. The bot will freeze instantly.',
   },
 
   tuning: {
-    title: 'Tuning (Auto-Carter)',
-    intro: 'This module saves you from manually sending Carter and pressing speed-ups. It works in the background, even while you\'re busy with your own things in the game or running another bot module.',
+    title: 'How the Bot Sends Carter',
+    intro: 'In Crypts mode the bot sends Carter and presses the speed-ups itself — you don\'t have to do it by hand. Click accuracy on these buttons is set up in the Calibration tab.',
     botLabel: 'How the bot automates the routine',
     steps: [
       { title: 'Waits for Carter',    desc: 'The bot scans the "Watchtower" icon. As soon as it changes color — Carter is home.', img: '/img/tune_wt_icon.png' },
@@ -142,7 +144,7 @@ export const GUIDE = {
       { title: 'Catches the march',   desc: 'In the active march list the bot finds Carter\'s bar and presses "Speed up".', img: '/img/tune_speed_up.png' },
       { title: 'Applies boosts',      desc: 'Automatically picks the most efficient available accelerator and clicks "Use".', img: '/img/tune_march_accel.png' },
     ],
-    note: '💡 The Tuning module has its own toggle in the interface. You can enable it alongside Exchange hunting or Chest collection.',
+    note: '💡 Crypts, Chests and "Scanner 2.0" never run at the same time — the bot makes sure the modes don\'t interfere with each other.',
   },
 
   chests: {
@@ -157,7 +159,7 @@ export const GUIDE = {
     webLabel: 'Step 2. Analytics (on the Website)',
     webSteps: [
       { title: 'Management',   desc: 'In the leader dashboard you can set the "value" of each chest in points, set a season goal, and correct player names.' },
-      { title: 'Public board', desc: 'Your clan gets its own link (like /chests/clan-name). Any member can open it from their phone and check their progress without registering.' },
+      { title: 'Public board', desc: 'Your clan gets its own link (like /c/kingdom-number/clan). Any member can open it from their phone and check their progress without registering.' },
     ],
     note: '💡 All history is saved. The leader can close seasons — old data is archived (available for 90 days).',
   },
@@ -225,7 +227,7 @@ export const GUIDE = {
       { name: 'Scan Frequency',      range: '0.1 – 5.0 s',  optimal: '0.4–0.8 s', desc: 'How often the neural network takes a "screenshot" of the screen. Lower = faster reaction, but higher PC load.' },
       { name: 'Joystick Step',       range: '10 – 20 px',   optimal: '13–16',     desc: 'How many pixels the bot moves the mini-map per step. Bigger step = faster travel, smaller = more thorough search.', highlight: true },
       { name: 'Speed (sec/step)',    range: '0.5 – 5.0 s',  optimal: '1.5–2.5 s', desc: 'Pause after each joystick step. If you have a slow connection and the map doesn\'t load in time — increase this.', highlight: true },
-      { name: 'Dive Depth',          range: '1 – 10',       optimal: '3–6',       desc: 'How many screens deep the bot goes inland before turning back.' },
+      { name: 'Dive Depth',          range: '1 – 10 (Scanner 2.0: up to 50)',       optimal: '3–6',       desc: 'How many screens deep the bot goes inland before turning back.' },
       { name: 'Ocean/Land Boundary', range: '1 – 15 %',     optimal: '3–5 %',    desc: 'What percentage of land must be on the radar for the bot to recognize it as a coastline rather than open ocean.' },
       { name: 'Min Water Body',      range: '100 – 2000 px', optimal: '≈ 500',    desc: 'Helps the bot tell large seas apart from small inland puddles.' },
       { name: 'Return Diagonal',     range: '0.0 – 1.0',    optimal: '0.4–0.6',  desc: 'Return-to-shore trajectory. 0 — straight line, 1 — diagonal.' },
@@ -242,7 +244,7 @@ export const GUIDE = {
       { name: 'Stop (hours)',         range: 'Off / 1–12 h', optimal: 'as needed', desc: 'Automatically stops collection N hours after the session started.' },
       { name: 'Reset to Start',       range: 'Off / 10–60 min', optimal: '20 min', desc: 'Over a long session the crypt list gradually drifts down, increasing march distance. This periodically resets the list back to the top (the same "Arena x2" trick used at the normal end of the list) — independently of it.', highlight: true },
       { name: 'Detection Frequency',  range: '0.0 – 4.0 s',  optimal: '0.8–1.5 s', desc: 'Speed at which the bot scrolls through the crypt search menu.' },
-      { name: 'Click Tuning (X/Y)',   range: 'X + Y axes',   optimal: '1–5 px',   desc: 'IMPORTANT: If the bot slightly misses buttons (due to font or Windows scaling quirks), you can manually shift its "aim" horizontally (X) and vertically (Y). Configured in the CALIBRATION tab for 4 main buttons.', img: '/img/swing1.png', highlight: true },
+      { name: 'Click Tuning (X/Y)',   range: 'X + Y axes',   optimal: '1–5 px',   desc: 'IMPORTANT: If the bot slightly misses buttons (due to font or Windows scaling quirks), you can manually shift its "aim" horizontally (X) and vertically (Y). Configured in the CALIBRATION tab: click the target in the list and move the aim with the arrows.', img: '/img/swing1.png', highlight: true },
       { name: '↳ Adjustment example', range: 'X + Y axes',   optimal: '1–5 px',   desc: 'Screenshots show how axis offsets align the click precisely to the center of the "Speed Up" button in the march window.', img: '/img/swing2.png' },
       { name: 'Click Speed',          range: '−2.0 – +2.0 s', optimal: '0.0 s',  desc: 'Global interface speed. Slide left if your computer is slow and the bot clicks too fast.', highlight: true },
     ],
@@ -255,6 +257,7 @@ export const GUIDE = {
     spendRows: [
       { label: 'Exchange Found (sound triggered)', cost: '−10 diamonds', color: '#00CFFF' },
       { label: 'Successfully Sent to Crypt',       cost: '−1 diamond',   color: '#B060FF' },
+      { label: 'Uploaded chests to the site (per batch)', cost: '−10 diamonds', color: '#F59E0B' },
       { label: 'Searched but found nothing',       cost: 'Free',         color: 'var(--on-surface2)' },
       { label: 'Registration (Trial)',             cost: '+100 diamonds', color: 'var(--credits-gold)' },
     ],
@@ -277,8 +280,8 @@ export const GUIDE = {
     title: 'Anti-Ban & Security',
     intro: 'Total Hunter is built so the game\'s servers see it as a real, slightly tired player — not a machine:',
     rows: [
-      { icon: '⏱', title: 'Floating Timings', desc: 'Pauses between clicks are never the same (random 0.4 to 0.9 sec).' },
-      { icon: '🖱', title: 'Hand Tremor',      desc: 'The bot never clicks the same pixel twice. There\'s always a micro-offset of ±5–8 px.' },
+      { icon: '⏱', title: 'Floating Timings', desc: 'Pauses between clicks are never the same — a random length every time.' },
+      { icon: '🖱', title: 'Hand Tremor',      desc: 'The bot never clicks the same pixel twice — there is always a small random offset.' },
       { icon: '🛑', title: 'Full Control',     desc: 'The bot doesn\'t lock the system permanently. One press of ESC — and it stops instantly.' },
       { icon: '🔒', title: 'Legal Interface',  desc: 'We don\'t hack the game API or inject into memory. The bot simply "watches" your monitor and moves the mouse — just like you.' },
     ],
@@ -294,7 +297,7 @@ export const GUIDE = {
       { q: 'What is HWID and why does it matter?',
         a: 'Hardware ID is your PC\'s unique motherboard number. Trial diamonds and the active session are tied to it to protect the system from multi-accounting.' },
       { q: 'I bought a new computer. How do I transfer the bot?',
-        a: 'Go to your Dashboard on the website, open the "Devices" section, click "Unbind current device". Then simply log in to the bot on your new PC.' },
+        a: 'Go to your Dashboard on the website and click "Unbind device" in the "Devices" block. Then simply log in to the bot on your new PC.' },
       { q: 'My internet dropped and the bot froze. Did I lose diamonds?',
         a: 'No. Balance is deducted only upon a successful "Send march" click or after an exchange is found. Crashes and idle time are free.' },
       { q: 'Is there a risk of getting banned in the game?',

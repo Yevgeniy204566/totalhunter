@@ -14,9 +14,9 @@ export default function DownloadPage() {
 
   useMeta(lang === 'en'
     ? { title: 'Download Total Hunter — Free Bot for Total Battle (Windows)',
-        description: 'Download Total Hunter installer for Windows 10/11. Free setup, 100 free diamonds included. Exchange and crypt automation for Total Battle.' }
+        description: 'Download Total Hunter for Windows 10/11 — a ZIP archive, no installation needed. 100 free diamonds included. Exchange and crypt automation for Total Battle.' }
     : { title: 'Скачать Total Hunter — программа автоматизации Total Battle (Windows)',
-        description: 'Скачай установщик Total Hunter для Windows 10/11. Бесплатная установка, 100 алмазов в подарок. Автоматизация бирж и склепов в Total Battle.' }
+        description: 'Скачай Total Hunter для Windows 10/11 — архив ZIP, установка не нужна. 100 алмазов в подарок. Автоматизация бирж и склепов в Total Battle.' }
   )
 
   return (

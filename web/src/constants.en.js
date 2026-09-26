@@ -1,5 +1,5 @@
 export const DOWNLOAD = {
-  badge:       'Windows · v1.0',
+  badge:       'Windows 10 / 11',
   title:       'Download Total Hunter',
   subtitle:    'Install the bot in 2 minutes and start farming exchanges and crypts automatically.',
   btnDownload: 'Download TotalHunter.zip',

@@ -120,7 +120,7 @@ function ContentEN() {
         <UL items={[
           'Your Total Battle game login, password, or game account credentials — never requested, never stored.',
           'Screen content or visual data from your game session.',
-          'Payment card numbers or banking details — all payments are processed by NOWPayments. We never see or store your payment credentials.',
+          'Payment card numbers or banking details — all payments are processed by the payment providers (BlackSea for bank cards, NOWPayments for cryptocurrency). We never see or store your payment credentials.',
         ]} />
 
         <H4>2.3 How We Use Your Data</H4>
@@ -143,6 +143,7 @@ function ContentEN() {
         <UL items={[
           'Google OAuth — authentication provider. Subject to Google\'s Privacy Policy.',
           'NOWPayments — cryptocurrency payment processing. Subject to NOWPayments\' Privacy Policy.',
+          'BlackSea — bank card payment processing. Subject to BlackSea\'s Privacy Policy.',
           'Google Cloud Platform (GCP) — server infrastructure. Data is stored in the US region.',
           'Vercel — website hosting. No personal data is processed by Vercel.',
         ]} />
@@ -182,17 +183,17 @@ function ContentEN() {
           'We strongly recommend using the bot on secondary or alternate game accounts when first testing.',
         ]} />
         <P>
-          We have implemented industry-standard anti-detection measures: randomized action delays
-          (0.4–0.9 seconds), randomized click offsets (±5–8 pixels), and direct window interaction
-          without API manipulation. However, no automation software can guarantee zero detection risk.
+          We have implemented industry-standard anti-detection measures: randomized action delays,
+          randomized click offsets, and direct window interaction without API manipulation. However, no automation software can guarantee zero detection risk.
         </P>
       </Section>
 
       <Section title="4. Refund & Payment Policy">
         <H4>4.1 Accepted Payment Methods</H4>
         <P>
-          Payments are processed exclusively through <Hl>NOWPayments</Hl> — a non-custodial
-          cryptocurrency payment processor. Accepted currencies include: USDT (TRC-20 / ERC-20),
+          Payments are accepted by <Hl>bank card</Hl> through BlackSea and in <Hl>cryptocurrency</Hl>
+          through <Hl>NOWPayments</Hl> — a non-custodial cryptocurrency payment processor. Accepted
+          cryptocurrencies include: USDT (TRC-20 / ERC-20),
           Bitcoin (BTC), Ethereum (ETH), BNB, and other major cryptocurrencies supported by NOWPayments.
           All transactions are secured by SSL/TLS encryption.
         </P>
@@ -355,7 +356,7 @@ function ContentRU() {
         <UL items={[
           'Логин, пароль или учётные данные вашего игрового аккаунта Total Battle — никогда не запрашиваются и не хранятся.',
           'Содержимое экрана или визуальные данные из вашей игровой сессии.',
-          'Номера банковских карт или банковские реквизиты — все платежи обрабатываются NOWPayments. Мы никогда не видим и не храним ваши платёжные данные.',
+          'Номера банковских карт или банковские реквизиты — все платежи обрабатываются платёжными провайдерами (BlackSea — банковские карты, NOWPayments — криптовалюта). Мы никогда не видим и не храним ваши платёжные данные.',
         ]} />
 
         <H4>2.3 Как мы используем ваши данные</H4>
@@ -378,6 +379,7 @@ function ContentRU() {
         <UL items={[
           'Google OAuth — провайдер аутентификации. Подпадает под Политику конфиденциальности Google.',
           'NOWPayments — обработка криптовалютных платежей. Подпадает под Политику конфиденциальности NOWPayments.',
+          'BlackSea — обработка платежей банковскими картами. Подпадает под Политику конфиденциальности BlackSea.',
           'Google Cloud Platform (GCP) — серверная инфраструктура. Данные хранятся в регионе США.',
           'Vercel — хостинг сайта. Персональные данные через Vercel не обрабатываются.',
         ]} />
@@ -418,9 +420,8 @@ function ContentRU() {
           'Мы настоятельно рекомендуем сначала тестировать бота на дополнительных или альтернативных игровых аккаунтах.',
         ]} />
         <P>
-          Нами внедрены современные методы антидетекта: рандомизация задержек между действиями
-          (0,4–0,9 секунды), случайное смещение кликов (±5–8 пикселей) и прямое взаимодействие
-          с окном игры без API-манипуляций. Тем не менее ни одно программное обеспечение
+          Нами внедрены современные методы антидетекта: рандомизация задержек между действиями,
+          случайное смещение кликов и прямое взаимодействие с окном игры без API-манипуляций. Тем не менее ни одно программное обеспечение
           для автоматизации не может гарантировать нулевой риск обнаружения.
         </P>
       </Section>
@@ -428,8 +429,9 @@ function ContentRU() {
       <Section title="4. Политика возврата и оплаты">
         <H4>4.1 Принимаемые способы оплаты</H4>
         <P>
-          Платежи обрабатываются исключительно через <Hl>NOWPayments</Hl> — некастодиальный
-          процессор криптовалютных платежей. Поддерживаемые валюты: USDT (TRC-20 / ERC-20),
+          Оплата принимается <Hl>банковской картой</Hl> через BlackSea и <Hl>криптовалютой</Hl>
+          через <Hl>NOWPayments</Hl> — некастодиальный процессор криптовалютных платежей.
+          Поддерживаемые криптовалюты: USDT (TRC-20 / ERC-20),
           Bitcoin (BTC), Ethereum (ETH), BNB и другие криптовалюты, поддерживаемые NOWPayments.
           Все транзакции защищены шифрованием SSL/TLS.
         </P>

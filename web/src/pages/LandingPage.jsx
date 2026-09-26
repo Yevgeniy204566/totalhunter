@@ -12,36 +12,36 @@ import { track } from '@vercel/analytics'
 
 const FAQ_ITEMS_RU = [
   { q: 'Что такое Total Hunter?',
-    a: 'Total Hunter — десктопный бот для автоматизации Total Battle. Автоматически ищет биржи наёмников и собирает склепы, имитируя действия реального игрока.' },
+    a: 'Total Hunter — десктопный бот для автоматизации Total Battle. Ищет биржи наёмников, отправляет Картера в склепы и собирает сундуки клана, а сайт ведёт таблицу клана и калькулятор Древнего. Бот имитирует действия реального игрока.' },
   { q: 'Сколько стоит Total Hunter?',
-    a: 'Первые 100 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп.' },
+    a: 'Первые 100 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп, −10 за отправку пакета сундуков на сайт.' },
   { q: 'Работает ли бот с браузером и клиентом Total Battle?',
     a: 'Да. Total Hunter поддерживает браузерную версию (Chrome, Firefox) и официальный клиент Total Battle. Настройки сохраняются в профилях.' },
   { q: 'Могут ли меня забанить за использование бота?',
-    a: 'Бот полностью имитирует действия человека: случайные паузы 0.4–0.9 сек, случайное отклонение кликов ±5–8 пикселей. Риск минимален.' },
+    a: 'Бот имитирует действия человека: паузы между кликами каждый раз разные, а клики немного смещаются случайным образом. Риск есть при любом боте, но он минимален.' },
   { q: 'Нужен ли боту мой игровой пароль?',
     a: 'Нет. Бот работает поверх уже запущенной игры через скриншоты экрана. Ваши учётные данные нам не нужны.' },
   { q: 'На каких системах работает Total Hunter?',
-    a: 'Windows 10 и Windows 11 (64-bit). Установщик включает все необходимые компоненты (VC++ Runtime).' },
+    a: 'Windows 10 и Windows 11 (64-bit). Программа поставляется архивом ZIP: распакуйте его в любую папку и запустите TotalHunter.exe — установка не нужна.' },
   { q: 'Работает ли бот на телефоне (Android / iOS)?',
-    a: 'Сканер разработан для браузерной ПК-версии игры. Поскольку Total Battle — кроссплатформенная MMO-стратегия от Scorewarrior, доступная на Android и iOS, все найденные биржи и склепы вы сможете использовать с любого устройства.' },
+    a: 'Бот работает на компьютере. Total Battle есть на компьютере, Android и iOS, поэтому найденные биржи и склепы вы сможете использовать с любого устройства.' },
 ]
 
 const FAQ_ITEMS_EN = [
   { q: 'What is Total Hunter?',
-    a: 'Total Hunter is a desktop bot for Total Battle automation. It automatically searches for mercenary exchanges and collects crypts, imitating real player actions.' },
+    a: 'Total Hunter is a desktop bot for Total Battle automation. It finds mercenary exchanges, sends Carter to crypts and collects clan chests, while the website keeps the clan table and the Ancient calculator. The bot imitates real player actions.' },
   { q: 'How much does Total Hunter cost?',
-    a: 'First 100 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected.' },
+    a: 'First 100 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected, −10 per chest batch uploaded to the site.' },
   { q: 'Does it work with both browser and client versions of Total Battle?',
     a: 'Yes. Total Hunter supports both browser (Chrome, Firefox) and the official Total Battle client. Settings are saved in profiles.' },
   { q: 'Can I get banned for using the bot?',
-    a: 'The bot fully imitates human actions: random pauses 0.4–0.9s, random click offsets ±5–8 pixels. Risk is minimal.' },
+    a: 'The bot imitates human actions: pauses between clicks are different every time and clicks are slightly shifted at random. Any bot carries some risk, but it is minimal.' },
   { q: 'Does the bot need my game password?',
     a: 'No. The bot works on top of an already running game via screen screenshots. Your credentials are never required.' },
   { q: 'What systems does Total Hunter support?',
-    a: 'Windows 10 and Windows 11 (64-bit). The installer includes all required components (VC++ Runtime).' },
+    a: 'Windows 10 and Windows 11 (64-bit). The program comes as a ZIP archive: extract it to any folder and run TotalHunter.exe — no installation needed.' },
   { q: 'Does the bot work on mobile (Android / iOS)?',
-    a: 'The scanner is built for the browser-based PC version of the game. Since Total Battle is a cross-platform MMO RTS by Scorewarrior — available on Android and iOS — all exchanges and crypts found by the bot can be used from any device.' },
+    a: 'The bot runs on a PC. Total Battle is available on PC, Android and iOS, so the exchanges and crypts it finds can be used from any device.' },
 ]
 
 function useCounter(target, duration = 1400) {
@@ -378,9 +378,9 @@ export default function LandingPage() {
   const LANDING = lang === 'en' ? LANDING_EN : LANDING_RU
 
   useMeta(lang === 'en'
-    ? { title: 'Total Hunter — Bot for Total Battle | Exchange & Crypt Automation',
+    ? { title: 'Total Hunter — Bot for Total Battle | Exchanges, Crypts & Clan Chests',
         description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle — MMO RTS by Scorewarrior. Neural network + player imitation. 100 free diamonds on registration.' }
-    : { title: 'Total Hunter — автоматизация Total Battle | Биржи и склепы',
+    : { title: 'Total Hunter — автоматизация Total Battle | Биржи, склепы, сундуки клана',
         description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle (Триумф: Рождение Империй) от Scorewarrior. Нейросеть + имитация игрока. 100 алмазов бесплатно.' }
   )
   useEffect(() => {
@@ -512,7 +512,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="landing-hero-download" style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-            {lang === 'en' ? 'Windows PC only · 10/11 · 64-bit · Installer · VC++ included' : 'Только для Windows ПК · 10/11 · 64-bit · Установщик · VC++ встроен'}
+            {lang === 'en' ? 'Windows PC only · 10/11 · 64-bit · ZIP archive, no installation' : 'Только для Windows ПК · 10/11 · 64-bit · Архив ZIP, без установки'}
           </p>
         </div>
       </section>
@@ -678,8 +678,8 @@ export default function LandingPage() {
             <div style={{ fontSize: 40, marginBottom: 20 }}>👨‍💻</div>
             <p style={{ fontSize: 17, color: '#C8D8F0', lineHeight: 1.85, margin: 0 }}>
               {lang === 'en'
-                ? "Hey, I'm the solo developer behind Total Hunter. Like you, I spent hours manually hunting exchanges in Total Battle — and constantly missed them while sleeping. So I decided to automate it. But instead of a basic clicker, I built a real algorithm: a coastal snake navigator, YOLO-based object detection, and the ROY swarm system so the whole community scans the map together. Total Hunter is my solution to a problem I faced myself as a player."
-                : 'Привет, я — соло-разработчик и создатель Total Hunter. Как и вы, я часами вручную охотился за биржами в Total Battle — и постоянно упускал их пока спал. Решил автоматизировать. Но вместо обычного кликера написал настоящий алгоритм: навигатор-змейка вдоль берега, YOLO-детекция объектов и система РОЙ — чтобы всё комьюнити майнило карту вместе. Total Hunter — это моё решение задачи, с которой я сам столкнулся как игрок.'}
+                ? "Hey, I'm the solo developer behind Total Hunter. Like you, I spent hours manually hunting exchanges in Total Battle — and constantly missed them while sleeping. So I decided to automate it. But instead of a basic clicker, I built a real algorithm: a coastal snake navigator, a neural network that sees exchanges and crypts on the screen like a human does, and the SWARM system so the whole community scans the map together. Total Hunter is my solution to a problem I faced myself as a player."
+                : 'Привет, я — соло-разработчик и создатель Total Hunter. Как и вы, я часами вручную охотился за биржами в Total Battle — и постоянно упускал их пока спал. Решил автоматизировать. Но вместо обычного кликера написал настоящий алгоритм: навигатор-змейка вдоль берега, нейросеть, которая видит биржи и склепы на экране как человек, и система РОЙ — чтобы всё комьюнити майнило карту вместе. Total Hunter — это моё решение задачи, с которой я сам столкнулся как игрок.'}
             </p>
           </div>
         </div>
@@ -698,8 +698,8 @@ export default function LandingPage() {
           </p>
           <p style={{ textAlign: 'center', color: 'var(--on-surface2)', fontSize: 13, marginBottom: 56 }}>
             {lang === 'en'
-              ? '−10 ◆ per Exchange found · −1 ◆ per Crypt gathered · 0 ◆ if nothing found'
-              : '−10 ◆ за биржу · −1 ◆ за склеп · 0 ◆ если ничего не найдено'}
+              ? '−10 ◆ per Exchange found · −1 ◆ per Crypt gathered · −10 ◆ per chest batch · 0 ◆ if nothing found'
+              : '−10 ◆ за биржу · −1 ◆ за склеп · −10 ◆ за пакет сундуков · 0 ◆ если ничего не найдено'}
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 400, margin: '0 auto' }}>
@@ -750,8 +750,8 @@ export default function LandingPage() {
 
           <p style={{ textAlign: 'center', color: 'var(--on-surface2)', fontSize: 13, marginTop: 32 }}>
             🔒 {lang === 'en'
-              ? 'Payments via NOWPayments (crypto). Diamonds credited instantly. No subscription, no expiry.'
-              : 'Оплата через NOWPayments (крипта). Алмазы зачисляются мгновенно. Без подписки, без срока действия.'}
+              ? 'Pay by bank card or cryptocurrency. Diamonds credited instantly. No subscription, no expiry.'
+              : 'Оплата банковской картой или криптовалютой. Алмазы зачисляются мгновенно. Без подписки, без срока действия.'}
           </p>
         </div>
       </section>

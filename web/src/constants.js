@@ -1,5 +1,5 @@
 export const DOWNLOAD = {
-  badge:       'Windows · v1.0',
+  badge:       'Windows 10 / 11',
   title:       'Скачать Total Hunter',
   subtitle:    'Установи программу за 2 минуты и начни автоматически фармить рынки наёмников и склепы.',
   btnDownload: 'Скачать TotalHunter.zip',
