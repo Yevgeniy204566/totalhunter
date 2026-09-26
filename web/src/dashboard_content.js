@@ -231,6 +231,25 @@ export const DASHBOARD = {
     download:       'Скачать программу',
   },
 
+  collected: {
+    title:     'Собрано',
+    today:     'Сегодня',
+    week:      'Неделя',
+    total:     'Всё время',
+    crypts:    'Склепы',
+    exchanges: 'Биржи',
+  },
+  history: {
+    show:      'Показать историю',
+    hide:      'Скрыть историю',
+    title:     'История пополнений',
+    empty:     'Пополнений пока нет',
+    colDate:   'Дата',
+    colOp:     'Что',
+    colAmount: 'Алмазы',
+    colUsd:    '$',
+    adReward:  'Колесо фортуны',
+  },
   recentHunts: {
     title:      'Последние находки',
     empty:      'Ещё нет охот. Запусти Total Hunter! ⚔',

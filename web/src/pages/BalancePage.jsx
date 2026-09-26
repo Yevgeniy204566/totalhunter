@@ -380,6 +380,67 @@ export default function BalancePage() {
           {b.secureNote}
         </span>
       </div>
+
+      <IncomeHistory D={D} />
+    </div>
+  )
+}
+
+/* История пополнений (владелец 2026-09-26): покупки, колесо фортуны, триал, бонусы —
+   только поступления; грузится по кнопке, чтобы не утяжелять страницу. */
+function IncomeHistory({ D }) {
+  const H = D.history
+  const types = D.transactions.types
+  const [open, setOpen]   = useState(false)
+  const [items, setItems] = useState(null)
+  const [err, setErr]     = useState('')
+
+  function toggle() {
+    const next = !open
+    setOpen(next)
+    if (next && items === null) {
+      api.incomeHistory().then(r => setItems(r?.items || [])).catch(e => setErr(e.message))
+    }
+  }
+  const fmtDate = iso => new Date(iso).toLocaleString('ru-RU', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+  const label = t => (t.type === 'ad_reward' ? H.adReward : (types[t.type] || t.type))
+    + (t.package ? ` (${t.package})` : '')
+  const cell = { padding: '10px 14px', borderTop: '1px solid var(--separator)' }
+
+  return (
+    <div style={{ marginTop: 28, textAlign: 'center' }}>
+      <button className="btn-secondary" onClick={toggle}>{open ? H.hide : H.show}</button>
+      {open && (
+        <div className="card" style={{ marginTop: 16, borderRadius: 14, padding: 0, overflow: 'auto', textAlign: 'left' }}>
+          {err && <div style={{ padding: 16, color: 'var(--error-text)' }}>{err}</div>}
+          {!err && items === null && <div style={{ padding: 16 }} className="text-muted">...</div>}
+          {items && items.length === 0 && <div style={{ padding: 16 }} className="text-muted">{H.empty}</div>}
+          {items && items.length > 0 && (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15 }}>
+              <thead>
+                <tr style={{ color: 'var(--on-surface2)', fontSize: 13 }}>
+                  <th style={{ ...cell, borderTop: 'none', textAlign: 'left' }}>{H.colDate}</th>
+                  <th style={{ ...cell, borderTop: 'none', textAlign: 'left' }}>{H.colOp}</th>
+                  <th style={{ ...cell, borderTop: 'none', textAlign: 'right' }}>{H.colAmount}</th>
+                  <th style={{ ...cell, borderTop: 'none', textAlign: 'right' }}>{H.colUsd}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((t, i) => (
+                  <tr key={i}>
+                    <td style={cell}>{fmtDate(t.created_at)}</td>
+                    <td style={cell}>{label(t)}</td>
+                    <td style={{ ...cell, textAlign: 'right', color: '#4ADE80', fontWeight: 700 }}>+{t.amount.toLocaleString('ru-RU')} ◆</td>
+                    <td style={{ ...cell, textAlign: 'right' }}>{t.usd_amount ? `$${Number(t.usd_amount)}` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   )
 }

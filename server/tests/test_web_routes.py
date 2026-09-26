@@ -344,3 +344,56 @@ async def test_chest_links_return_readable_url_for_existing_clan(db_session):
     assert put.json() == got
     assert got["links"][0]["url"] == "https://total-hunter.com/c/779/feniks"
     assert got["links"][1]["url"] is None
+
+
+# ─── Профиль: «Собрано» по типам; Баланс: история поступлений (владелец 2026-09-26) ───
+
+async def _web_user(db_session, client, email, sub):
+    from sqlalchemy import select
+    from models import User
+    token = await _get_jwt(client, {"email": email, "name": "U", "sub": sub})
+    user = (await db_session.execute(select(User).where(User.email == email))).scalar_one()
+    return token, user
+
+
+@pytest.mark.asyncio
+async def test_hunts_counts_split_by_type(db_session):
+    from datetime import datetime, timezone
+    from models import Hunt
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token, user = await _web_user(db_session, client, "huntsplit@example.com", "hs-1")
+        old = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        db_session.add_all([
+            Hunt(user_id=user.id, hunt_type="crypt"), Hunt(user_id=user.id, hunt_type="crypt"),
+            Hunt(user_id=user.id, hunt_type="exchange"),
+            Hunt(user_id=user.id, hunt_type="chest"),
+            Hunt(user_id=user.id, hunt_type="crypt", created_at=old),
+            Hunt(user_id=user.id, hunt_type="exchange", created_at=old),
+        ])
+        await db_session.commit()
+        data = (await client.get("/web/hunts", headers={"Authorization": f"Bearer {token}"})).json()
+    assert data["by_type"] == {
+        "today": {"crypt": 2, "exchange": 1},
+        "week":  {"crypt": 2, "exchange": 1},
+        "total": {"crypt": 3, "exchange": 2},
+    }
+
+
+@pytest.mark.asyncio
+async def test_transactions_income_only_with_purchase_details(db_session):
+    from models import Transaction
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        token, user = await _web_user(db_session, client, "txincome@example.com", "tx-1")
+        db_session.add_all([
+            Transaction(user_id=user.id, type="purchase", amount=5000, usd_amount="10.00", package="ultra"),
+            Transaction(user_id=user.id, type="ad_reward", amount=20),
+            Transaction(user_id=user.id, type="credit_use", amount=-10),
+        ])
+        await db_session.commit()
+        h = {"Authorization": f"Bearer {token}"}
+        income = (await client.get("/web/transactions?income=1", headers=h)).json()["items"]
+        everything = (await client.get("/web/transactions", headers=h)).json()["items"]
+    assert sorted(t["type"] for t in income) == ["ad_reward", "purchase"]
+    purchase = next(t for t in income if t["type"] == "purchase")
+    assert purchase["usd_amount"] == "10.00" and purchase["package"] == "ultra"
+    assert len(everything) == 3   # без фильтра — как раньше

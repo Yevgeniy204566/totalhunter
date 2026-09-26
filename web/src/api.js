@@ -30,6 +30,7 @@ export const api = {
   me:               ()         => request('GET',  '/web/me'),
   hunts:            ()         => request('GET',  '/web/hunts'),
   transactions:     ()         => request('GET',  '/web/transactions'),
+  incomeHistory:    ()         => request('GET',  '/web/transactions?income=1'),
   linkVerify:       (code)     => request('POST', '/web/link/verify', { code }),
   hwidReset:        ()         => request('POST', '/web/hwid/reset'),
   referralTransfer: ()         => request('POST', '/web/referral/transfer'),

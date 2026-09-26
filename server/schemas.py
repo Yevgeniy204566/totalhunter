@@ -126,12 +126,16 @@ class HuntsResponse(BaseModel):
     week: int
     total: int
     items: list[HuntEntry]
+    # Профиль «Собрано»: {"today"|"week"|"total": {"crypt": n, "exchange": n}}
+    by_type: dict[str, dict[str, int]] = {}
 
 
 class TransactionEntry(BaseModel):
     type: str
     amount: int
     created_at: str
+    usd_amount: Optional[str] = None
+    package: Optional[str] = None
 
 
 class TransactionsResponse(BaseModel):

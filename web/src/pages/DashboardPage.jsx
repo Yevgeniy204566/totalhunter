@@ -14,11 +14,6 @@ const STAT_KEYS = [
   { key: 'active_hunters',  color: 'var(--credits-gold)' },
 ]
 
-const HUNT_COLORS = {
-  exchange: { color: '#B060FF' },
-  crypt:    { color: '#4ADE80' },
-}
-
 const TX_ICONS = {
   purchase:               { icon: '◆', color: '#4ADE80' },
   credit_use:             { icon: '⚔', color: '#FFFFFF' },
@@ -28,14 +23,6 @@ const TX_ICONS = {
   ref_transfer:           { icon: '→', color: '#4ADE80' },
   hwid_duplicate_blocked: { icon: '⚠', color: 'var(--on-surface2)' },
   manual_adjust:          { icon: '✎', color: 'var(--on-surface2)' },
-}
-
-function timeAgo(iso, T) {
-  const diff = (Date.now() - new Date(iso)) / 1000
-  if (diff < 60)    return T.justNow
-  if (diff < 3600)  return `${Math.floor(diff / 60)} ${T.minutesAgo}`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} ${T.hoursAgo}`
-  return `${Math.floor(diff / 86400)} ${T.daysAgo}`
 }
 
 /* ─── sub-components ──────────────────────────────────────────── */
@@ -80,30 +67,6 @@ function HuntStatTile({ icon, label, color, value }) {
   )
 }
 
-/* ─── tab bar ─────────────────────────────────────────────────── */
-function TabBar({ tabs, active, setActive }) {
-  return (
-    <div style={{ display: 'flex', gap: 4, marginBottom: 28,
-                  background: 'var(--elevated)', borderRadius: 10, padding: 4,
-                  border: '1px solid var(--outline)', alignSelf: 'flex-start' }}>
-      {tabs.map(({ key, label }) => {
-        const isActive = active === key
-        return (
-          <button key={key} onClick={() => setActive(key)} style={{
-            padding: '8px 20px', borderRadius: 7, border: 'none', cursor: 'pointer',
-            fontSize: 14, fontWeight: isActive ? 700 : 500,
-            background: isActive ? 'var(--accent)' : 'transparent',
-            color: isActive ? '#fff' : 'var(--on-surface2)',
-            boxShadow: isActive ? '0 0 12px var(--accent-glow)' : 'none',
-            transition: 'all 0.15s',
-          }}>
-            {label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 /* ─── Сохранённые таблицы сундуков кланов (Профиль, владелец 2026-09-26) ───
    Список хранится в аккаунте (/web/chest-links): выпадающий список кланов, ссылка на
@@ -226,13 +189,11 @@ function ChestFinder({ D }) {
 }
 
 /* ─── tab: Profile ────────────────────────────────────────────── */
-function ProfileTab({ user, stats, hunts, D, onViewHunts, onRefresh }) {
+function ProfileTab({ user, stats, hunts, D, onRefresh }) {
   const [code, setCode]       = useState('')
   const [msg, setMsg]         = useState('')
   const [loading, setLoading] = useState(false)
   const dv = D.devices
-  const ta = D.timeAgo
-  const recentHunts = hunts?.items?.slice(0, 5) ?? []
   const statTileLabels = [D.statTiles.exchangesToday, D.statTiles.cryptsToday, D.statTiles.huntersOnline]
 
   async function linkHwid() {
@@ -373,223 +334,48 @@ function ProfileTab({ user, stats, hunts, D, onViewHunts, onRefresh }) {
 
       <ChestFinder D={D} />
 
-      {/* recent hunts */}
+      {/* «Собрано» (владелец 2026-09-26): вместо вкладок «Охоты»/«Транзакции» и списка
+          последних находок — три строки: сегодня / неделя / всё время × склепы / биржи. */}
       <div>
         <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>
-          {D.recentHunts.title}
+          {D.collected.title}
         </h2>
         <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-          {recentHunts.length === 0 ? (
-            <div style={{ padding: 24, color: 'var(--on-surface2)', fontSize: 14, textAlign: 'center' }}>
-              {D.recentHunts.empty}
-            </div>
-          ) : recentHunts.map((h, i) => {
-            const hunti = HUNT_COLORS[h.hunt_type] ?? { color: 'var(--on-surface2)' }
-            const label = D.huntTypes[h.hunt_type] ?? h.hunt_type
-            return (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '11px 20px',
-                borderBottom: i < recentHunts.length - 1 ? '1px solid var(--separator)' : 'none',
-                transition: 'background 0.12s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--elevated)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                              background: hunti.color, boxShadow: `0 0 6px ${hunti.color}` }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: hunti.color }}>{label}</div>
-                  <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>{timeAgo(h.created_at, ta)}</div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <div style={{ marginTop: 10, textAlign: 'right' }}>
-          <button onClick={onViewHunts} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 13, color: 'var(--on-surface2)',
-          }}>
-            {D.recentHunts.allHistory}
-          </button>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
+            <thead>
+              <tr style={{ color: 'var(--on-surface2)', fontSize: 14 }}>
+                <th style={{ textAlign: 'left', padding: '12px 20px', fontWeight: 600 }}></th>
+                <th style={{ textAlign: 'right', padding: '12px 20px', fontWeight: 700, color: '#B060FF' }}>{D.collected.crypts}</th>
+                <th style={{ textAlign: 'right', padding: '12px 20px', fontWeight: 700, color: 'var(--accent)' }}>{D.collected.exchanges}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {['today', 'week', 'total'].map(period => {
+                const row = hunts?.by_type?.[period] || { crypt: 0, exchange: 0 }
+                return (
+                  <tr key={period} style={{ borderTop: '1px solid var(--separator)' }}>
+                    <td style={{ padding: '12px 20px', fontWeight: 600 }}>{D.collected[period]}</td>
+                    <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 700 }}>{row.crypt.toLocaleString('ru-RU')}</td>
+                    <td style={{ padding: '12px 20px', textAlign: 'right', fontWeight: 700 }}>{row.exchange.toLocaleString('ru-RU')}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </>
   )
 }
 
-/* ─── tab: Hunts ──────────────────────────────────────────────── */
-function HuntsTab({ data, D }) {
-  const h  = D.hunts
-  const ta = D.timeAgo
-  const items    = data?.items ?? []
-  const exchanges = items.filter(i => i.hunt_type === 'exchange').length
-  const crypts    = items.filter(i => i.hunt_type === 'crypt').length
-  const visTotal  = exchanges + crypts
-  const exRatio   = visTotal > 0 ? (exchanges / visTotal) * 100 : 50
 
-  function timeAgoFn(iso) {
-    const diff = (Date.now() - new Date(iso)) / 1000
-    if (diff < 60)    return ta.justNow
-    if (diff < 3600)  return `${Math.floor(diff / 60)} ${ta.minutesAgo}`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} ${ta.hoursAgo}`
-    return `${Math.floor(diff / 86400)} ${ta.daysAgo}`
-  }
-
-  if (!data) return <div className="text-muted">{D.loading}</div>
-
-  return (
-    <>
-      <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>
-        {h.title}
-      </h2>
-
-      <div style={{ display: 'flex', gap: 14, marginBottom: 24, flexWrap: 'wrap' }}>
-        <HuntStatTile icon="⚔" label={h.statToday} color="var(--accent)"       value={data.today} />
-        <HuntStatTile icon="📅" label={h.stat7days} color="#B060FF"             value={data.week}  />
-        <HuntStatTile icon="◈"  label={h.statTotal} color="var(--credits-gold)" value={data.total} />
-      </div>
-
-      {visTotal > 0 && (
-        <div className="card" style={{ borderRadius: 12, marginBottom: 20, padding: '16px 20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-            <span style={{ fontSize: 13, color: '#B060FF', fontWeight: 600 }}>{h.exchangeLabel} — {exchanges}</span>
-            <span style={{ fontSize: 13, color: '#4ADE80', fontWeight: 600 }}>{crypts} — {h.cryptLabel}</span>
-          </div>
-          <div style={{ height: 8, borderRadius: 4, background: 'var(--outline)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', borderRadius: 4, width: `${exRatio}%`,
-                          background: 'linear-gradient(90deg, var(--accent), #B060FF)',
-                          transition: 'width 0.8s ease' }} />
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--on-surface2)', marginTop: 6, textAlign: 'center' }}>
-            {h.lastRecords} {visTotal} {h.lastRecordsSuffix}
-          </div>
-        </div>
-      )}
-
-      <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-        <div className="dash-row" style={{
-          display: 'grid', gridTemplateColumns: '40px 1fr 1fr', padding: '10px 20px',
-          borderBottom: '1px solid var(--outline)',
-          fontSize: 11, fontWeight: 700, letterSpacing: '1px',
-          color: 'var(--on-surface2)', textTransform: 'uppercase',
-        }}>
-          <div /><div>{h.colType}</div>
-          <div style={{ textAlign: 'right' }}>{h.colTime}</div>
-        </div>
-        {items.length === 0 ? (
-          <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--on-surface2)' }}>{h.empty}</div>
-        ) : items.map((item, i) => {
-          const meta  = HUNT_COLORS[item.hunt_type] ?? { color: 'var(--on-surface2)' }
-          const label = D.huntTypes[item.hunt_type] ?? item.hunt_type
-          return (
-            <div key={i} className="dash-row" style={{
-              display: 'grid', gridTemplateColumns: '40px 1fr 1fr', alignItems: 'center',
-              padding: '12px 20px',
-              borderBottom: i < items.length - 1 ? '1px solid var(--separator)' : 'none',
-              transition: 'background 0.12s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--elevated)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%',
-                            background: meta.color, boxShadow: `0 0 6px ${meta.color}`,
-                            margin: '0 10px' }} />
-              <div style={{ fontSize: 14, fontWeight: 600, color: meta.color }}>{label}</div>
-              <div style={{ fontSize: 12, color: 'var(--on-surface2)', textAlign: 'right' }}>
-                {timeAgoFn(item.created_at)}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </>
-  )
-}
-
-/* ─── tab: Transactions ───────────────────────────────────────── */
-function TransactionsTab({ data, D }) {
-  const t = D.transactions
-
-  function formatDate(iso) {
-    const d = new Date(iso)
-    return d.toLocaleString(D === D_EN ? 'en-GB' : 'ru-RU', {
-      day: '2-digit', month: '2-digit', year: '2-digit',
-      hour: '2-digit', minute: '2-digit',
-    })
-  }
-
-  if (!data) return <div className="text-muted">{D.loading}</div>
-
-  const items = data.items ?? []
-
-  return (
-    <>
-      <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>
-        {t.title}
-      </h2>
-
-      <div className="card" style={{ borderRadius: 14, padding: 0, overflow: 'hidden' }}>
-        <div className="dash-row dash-row--tx" style={{
-          display: 'grid', gridTemplateColumns: '36px 1fr 100px 140px', padding: '10px 20px',
-          borderBottom: '1px solid var(--outline)',
-          fontSize: 11, fontWeight: 700, letterSpacing: '1px',
-          color: 'var(--on-surface2)', textTransform: 'uppercase',
-        }}>
-          <div />
-          <div>{t.colOp}</div>
-          <div style={{ textAlign: 'right' }}>{t.colAmount}</div>
-          <div style={{ textAlign: 'right' }}>{t.colDate}</div>
-        </div>
-
-        {items.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--on-surface2)', fontSize: 14 }}>
-            {t.empty}
-          </div>
-        ) : items.map((tx, i) => {
-          const meta  = TX_ICONS[tx.type] ?? { icon: '◈', color: '#FFFFFF' }
-          const label = t.types[tx.type] ?? tx.type
-          const isPos = tx.amount > 0
-          const prefix = tx.amount > 0 ? '+' : tx.amount < 0 ? '−' : ''
-          return (
-            <div key={i} className="dash-row dash-row--tx" style={{
-              display: 'grid', gridTemplateColumns: '36px 1fr 100px 140px',
-              alignItems: 'center', padding: '13px 20px',
-              borderBottom: i < items.length - 1 ? '1px solid var(--separator)' : 'none',
-              transition: 'background 0.12s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--elevated)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <div style={{ width: 28, height: 28, borderRadius: 6,
-                            background: `${meta.color}18`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>
-                {meta.icon}
-              </div>
-              <div style={{ fontSize: 14, color: '#FFFFFF', fontWeight: 500 }}>{label}</div>
-              <div style={{ fontSize: 15, fontWeight: 700, textAlign: 'right',
-                            color: isPos ? '#4ADE80' : '#FFFFFF',
-                            textShadow: isPos ? '0 0 10px rgba(74,222,128,0.5)' : 'none',
-                            fontVariantNumeric: 'tabular-nums' }}>
-                {tx.amount !== 0 ? `${prefix}${Math.abs(tx.amount)}` : '—'}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--on-surface2)', textAlign: 'right',
-                            fontVariantNumeric: 'tabular-nums' }}>
-                {formatDate(tx.created_at)}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </>
-  )
-}
 
 /* ─── main page ───────────────────────────────────────────────── */
 export default function DashboardPage() {
   const [user,   setUser]   = useState(null)
   const [stats,  setStats]  = useState(null)
   const [hunts,  setHunts]  = useState(null)
-  const [txs,    setTxs]    = useState(null)
   const [error,  setError]  = useState('')
-  const [tab,    setTab]    = useState('profile')
   const { lang } = useLang()
   const D = lang === 'en' ? D_EN : D_RU
   useMeta({
@@ -607,14 +393,8 @@ export default function DashboardPage() {
     refreshUser().catch(e => setError(e.message))
     api.globalStats().then(setStats).catch(() => {})
     api.hunts().then(setHunts).catch(() => {})
-    api.transactions().then(setTxs).catch(() => {})
   }, [])
 
-  const TABS = [
-    { key: 'profile',      label: D.nav.profile      },
-    { key: 'hunts',        label: D.nav.hunts        },
-    { key: 'transactions', label: D.nav.transactions },
-  ]
 
   if (error) return <div className="page-content" style={{ color: 'var(--error-text)' }}>{error}</div>
   if (!user) return <div className="page-content text-muted">{D.loading}</div>
@@ -626,17 +406,7 @@ export default function DashboardPage() {
       padding: '32px 24px',
       maxWidth: 1000, margin: '0 auto',
     }}>
-      <TabBar tabs={TABS} active={tab} setActive={setTab} />
-
-      {tab === 'profile' && (
-        <ProfileTab
-          user={user} stats={stats} hunts={hunts} D={D}
-          onViewHunts={() => setTab('hunts')}
-          onRefresh={refreshUser}
-        />
-      )}
-      {tab === 'hunts' && <HuntsTab data={hunts} D={D} />}
-      {tab === 'transactions' && <TransactionsTab data={txs} D={D} />}
+      <ProfileTab user={user} stats={stats} hunts={hunts} D={D} onRefresh={refreshUser} />
     </div>
   )
 }

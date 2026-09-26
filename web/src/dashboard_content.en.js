@@ -230,6 +230,25 @@ export const DASHBOARD = {
     download:       'Download Bot',
   },
 
+  collected: {
+    title:     'Collected',
+    today:     'Today',
+    week:      'Week',
+    total:     'All time',
+    crypts:    'Crypts',
+    exchanges: 'Exchanges',
+  },
+  history: {
+    show:      'Show history',
+    hide:      'Hide history',
+    title:     'Top-up history',
+    empty:     'No top-ups yet',
+    colDate:   'Date',
+    colOp:     'What',
+    colAmount: 'Diamonds',
+    colUsd:    '$',
+    adReward:  'Wheel of fortune',
+  },
   recentHunts: {
     title:      'Recent Finds',
     empty:      'No hunts yet. Start the bot! ⚔',

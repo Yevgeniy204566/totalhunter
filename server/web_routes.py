@@ -566,9 +566,21 @@ async def web_hunts(
         select(Hunt).where(Hunt.user_id == web_user.id).order_by(Hunt.created_at.desc()).limit(100)
     )).scalars().all()
 
+    # «Собрано» в Профиле: склепы и биржи отдельно за сегодня / 7 дней / всё время.
+    by_type = {}
+    for period, since in (("today", today_start), ("week", week_start), ("total", None)):
+        q = (select(Hunt.hunt_type, func.count(Hunt.id))
+             .where(Hunt.user_id == web_user.id, Hunt.hunt_type.in_(("crypt", "exchange")))
+             .group_by(Hunt.hunt_type))
+        if since is not None:
+            q = q.where(Hunt.created_at >= since)
+        counts = dict((await db.execute(q)).all())
+        by_type[period] = {"crypt": counts.get("crypt", 0), "exchange": counts.get("exchange", 0)}
+
     return HuntsResponse(
         today=today, week=week, total=total,
         items=[HuntEntry(hunt_type=h.hunt_type, created_at=h.created_at.isoformat()) for h in rows],
+        by_type=by_type,
     )
 
 
@@ -578,17 +590,22 @@ async def web_hunts(
 
 @router.get("/transactions", response_model=TransactionsResponse)
 async def web_transactions(
+    income: bool = False,
     db: AsyncSession = Depends(get_db),
     web_user: User = Depends(get_web_user),
 ):
-    rows = (await db.execute(
-        select(Transaction)
-        .where(Transaction.user_id == web_user.id)
-        .order_by(Transaction.created_at.desc())
-        .limit(100)
-    )).scalars().all()
+    q = select(Transaction).where(Transaction.user_id == web_user.id)
+    if income:
+        # История в «Балансе»: только поступления (покупки, колесо, триал, бонусы) —
+        # списания за каждую находку их бы утопили.
+        q = q.where(Transaction.amount > 0)
+    rows = (await db.execute(q.order_by(Transaction.created_at.desc()).limit(100))).scalars().all()
     return TransactionsResponse(
-        items=[TransactionEntry(type=t.type, amount=t.amount, created_at=t.created_at.isoformat()) for t in rows]
+        items=[TransactionEntry(
+            type=t.type, amount=t.amount, created_at=t.created_at.isoformat(),
+            usd_amount=str(t.usd_amount) if t.usd_amount is not None else None,
+            package=t.package,
+        ) for t in rows]
     )
 
 
