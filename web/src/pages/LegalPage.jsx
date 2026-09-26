@@ -59,7 +59,7 @@ function ContentEN() {
         <H4>1.3 User Registration and Account</H4>
         <UL items={[
           'Registration is performed via Google OAuth. By registering, the User authorizes Total Hunter to store their Google account email address for identification purposes.',
-          'Each account is tied to a unique Hardware ID (HWID) — a cryptographic fingerprint of the User\'s device. One free trial (100 diamonds) is issued per device.',
+          'Each account is tied to a unique Hardware ID (HWID) — a cryptographic fingerprint of the User\'s device. One free trial (300 diamonds) is issued per device.',
           'The User is solely responsible for maintaining the confidentiality of their account.',
           'The User must be at least 18 years of age, or the minimum legal age in their jurisdiction, to register.',
           'One person may not register multiple accounts to obtain additional free trials. Such accounts will be permanently suspended without refund.',
@@ -215,7 +215,7 @@ function ContentEN() {
         <H4>4.3 Non-Refundable Items</H4>
         <UL items={[
           'Diamonds that have been consumed by successful bot actions (exchange finds or crypt dispatches).',
-          'Free trial diamonds (100 diamonds upon registration).',
+          'Free trial diamonds (300 diamonds upon registration).',
           'Referral reward diamonds.',
           'Any purchase made more than 14 days prior to the refund request.',
           'Partial packages where more than 50% of diamonds have been spent.',
@@ -294,7 +294,7 @@ function ContentRU() {
         <H4>1.3 Регистрация и аккаунт пользователя</H4>
         <UL items={[
           'Регистрация осуществляется через Google OAuth. Регистрируясь, Пользователь разрешает Total Hunter хранить адрес электронной почты Google-аккаунта для целей идентификации.',
-          'Каждый аккаунт привязан к уникальному Hardware ID (HWID) — криптографическому идентификатору устройства Пользователя. Один бесплатный триал (100 алмазов) выдаётся на одно устройство.',
+          'Каждый аккаунт привязан к уникальному Hardware ID (HWID) — криптографическому идентификатору устройства Пользователя. Один бесплатный триал (300 алмазов) выдаётся на одно устройство.',
           'Пользователь несёт единоличную ответственность за сохранность данных своего аккаунта.',
           'Для регистрации Пользователь должен быть не моложе 18 лет или достичь минимального законного возраста в своей стране.',
           'Одно лицо не вправе регистрировать несколько аккаунтов для получения дополнительных триалов. Такие аккаунты будут заблокированы навсегда без возврата средств.',
@@ -453,7 +453,7 @@ function ContentRU() {
         <H4>4.3 Невозвратные позиции</H4>
         <UL items={[
           'Алмазы, израсходованные в результате успешных действий бота (нахождение биржи или отправка Картера в склеп).',
-          'Бесплатные триальные алмазы (100 алмазов при регистрации).',
+          'Бесплатные триальные алмазы (300 алмазов при регистрации).',
           'Алмазы, начисленные по реферальной программе.',
           'Любая покупка, совершённая более 14 дней назад.',
           'Частичные пакеты, из которых потрачено более 50% алмазов.',

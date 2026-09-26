@@ -25,7 +25,7 @@ export const DOWNLOAD = {
     { n: '5', text: 'Only launch the bot after calibration is fully complete.' },
   ],
   noteTitle: 'First Launch',
-  noteText:  'First 100 diamonds are free. Sign in with Google, no credit card required.',
+  noteText:  'First 300 diamonds are free. Sign in with Google, no credit card required.',
   backHome:  '← Back to Home',
 }
 
@@ -111,6 +111,6 @@ export const LANDING = {
   ],
   ctaTitle: 'Want to Keep Up With the Top Players?',
   ctaSub:
-    'First 100 diamonds are free. No credit card required. Ready to launch in 5 minutes.',
+    'First 300 diamonds are free. No credit card required. Ready to launch in 5 minutes.',
   ctaBtn: 'Start for Free',
 }

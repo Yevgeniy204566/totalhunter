@@ -83,7 +83,7 @@ export const GUIDE = {
     intro: 'From sign-up to first launch takes no more than 5 minutes. No complex Python setup — everything is already bundled inside.',
     steps: [
       { title: 'Sign Up',        desc: 'Log in at total-hunter.com using your Google account.' },
-      { title: 'Free Trial',     desc: 'Your dashboard will instantly show 100 diamonds to test all bot features.', note: 'Trial is issued once per unique device (HWID).' },
+      { title: 'Free Trial',     desc: 'In the bot, click "Get 300 trials" — you get 300 diamonds to test all bot features.', note: 'Trial is issued once per unique device (HWID).' },
       { title: 'Download',       desc: 'Download TotalHunter.zip from the website and extract it to any folder. Do not run the program from inside the archive.' },
       { title: 'Windows Defender', desc: 'If needed, add the program and its folder to Windows Defender exclusions — otherwise it may interfere with the bot.' },
       { title: 'Launch',         desc: 'Open TotalHunter.exe from the extracted folder. No installation required.' },
@@ -259,7 +259,7 @@ export const GUIDE = {
       { label: 'Successfully Sent to Crypt',       cost: '−1 diamond',   color: '#B060FF' },
       { label: 'Uploaded chests to the site (per batch)', cost: '−10 diamonds', color: '#F59E0B' },
       { label: 'Searched but found nothing',       cost: 'Free',         color: 'var(--on-surface2)' },
-      { label: 'Registration (Trial)',             cost: '+100 diamonds', color: 'var(--credits-gold)' },
+      { label: 'Registration (Trial)',             cost: '+300 diamonds', color: 'var(--credits-gold)' },
     ],
     trialNote: '⚠ Trial is issued automatically on first login. The system remembers your PC\'s HWID, so creating new accounts to abuse it won\'t work.',
     popularLabel: 'BEST VALUE',
@@ -307,7 +307,7 @@ export const GUIDE = {
 
   cta: {
     title: 'Ready to Automate the Grind?',
-    sub: 'Get 100 diamonds right after registration. No credit card required.',
+    sub: 'Get 300 diamonds right after registration. No credit card required.',
     btnDashboard: 'Go to Dashboard →',
     btnStart: 'Start for Free →',
   },

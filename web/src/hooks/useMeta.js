@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 const BASE = 'https://total-hunter.com'
 const DEFAULT_TITLE = 'Total Hunter — Total Battle Automation | Exchanges & Crypts'
-const DEFAULT_DESC  = 'Automatic mercenary exchange and crypt finder for Total Battle. Neural network + player simulation. 100 free diamonds on registration.'
+const DEFAULT_DESC  = 'Automatic mercenary exchange and crypt finder for Total Battle. Neural network + player simulation. 300 free diamonds on registration.'
 
 function setMeta(selector, attr, value) {
   const el = document.querySelector(selector)

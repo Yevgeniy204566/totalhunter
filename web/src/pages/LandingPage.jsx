@@ -14,7 +14,7 @@ const FAQ_ITEMS_RU = [
   { q: 'Что такое Total Hunter?',
     a: 'Total Hunter — десктопный бот для автоматизации Total Battle. Ищет биржи наёмников, отправляет Картера в склепы и собирает сундуки клана, а сайт ведёт таблицу клана и калькулятор Древнего. Бот имитирует действия реального игрока.' },
   { q: 'Сколько стоит Total Hunter?',
-    a: 'Первые 100 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп, −10 за отправку пакета сундуков на сайт.' },
+    a: 'Первые 300 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп, −10 за отправку пакета сундуков на сайт.' },
   { q: 'Работает ли бот с браузером и клиентом Total Battle?',
     a: 'Да. Total Hunter поддерживает браузерную версию (Chrome, Firefox) и официальный клиент Total Battle. Настройки сохраняются в профилях.' },
   { q: 'Могут ли меня забанить за использование бота?',
@@ -31,7 +31,7 @@ const FAQ_ITEMS_EN = [
   { q: 'What is Total Hunter?',
     a: 'Total Hunter is a desktop bot for Total Battle automation. It finds mercenary exchanges, sends Carter to crypts and collects clan chests, while the website keeps the clan table and the Ancient calculator. The bot imitates real player actions.' },
   { q: 'How much does Total Hunter cost?',
-    a: 'First 100 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected, −10 per chest batch uploaded to the site.' },
+    a: 'First 300 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected, −10 per chest batch uploaded to the site.' },
   { q: 'Does it work with both browser and client versions of Total Battle?',
     a: 'Yes. Total Hunter supports both browser (Chrome, Firefox) and the official Total Battle client. Settings are saved in profiles.' },
   { q: 'Can I get banned for using the bot?',
@@ -379,9 +379,9 @@ export default function LandingPage() {
 
   useMeta(lang === 'en'
     ? { title: 'Total Hunter — Bot for Total Battle | Exchanges, Crypts & Clan Chests',
-        description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle — MMO RTS by Scorewarrior. Neural network + player imitation. 100 free diamonds on registration.' }
+        description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle — MMO RTS by Scorewarrior. Neural network + player imitation. 300 free diamonds on registration.' }
     : { title: 'Total Hunter — автоматизация Total Battle | Биржи, склепы, сундуки клана',
-        description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle (Триумф: Рождение Империй) от Scorewarrior. Нейросеть + имитация игрока. 100 алмазов бесплатно.' }
+        description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle (Триумф: Рождение Империй) от Scorewarrior. Нейросеть + имитация игрока. 300 алмазов бесплатно.' }
   )
   useEffect(() => {
     api.globalStats().then(d => setStats(d)).catch(() => {})
