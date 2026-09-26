@@ -795,7 +795,7 @@ async def test_summary_uses_chest_configuration_points_and_custom_name(db_sessio
     body = resp.json()
     assert body["chest_types"] == ["Толстяк"]
     assert body["totals"] == {"Толстяк": 1, "grand_total": 1, "total_points": 40}
-    assert body["players"][0] == {"name": "P1", "counts": {"Толстяк": 1}, "total": 1,
+    assert body["players"][0] == {"name": "P1", "counts": {"Толстяк": 1}, "total": 1, "quotas": {},
                                   "points": 40, "quota_chests": 0,
                                   "rank": None, "troop_level": None}
 
@@ -980,15 +980,17 @@ async def test_summary_quota_chests_counts_only_quota_marked_types(db_session):
         assert import_resp.status_code == 200
         slug = import_resp.json()["collector_slug"]
 
-        collector_id = (await db_session.execute(
+        collector = (await db_session.execute(
             select(ChestCollector).where(ChestCollector.slug == slug)
-        )).scalar_one().id
+        )).scalar_one()
+        collector.quotas = [{"slot": 1, "name": "Epic Crypts", "target": None, "mode": "fixed"}]
+        collector_id = collector.id
         db_session.add(ChestConfiguration(collector_id=collector_id, catalog_id="EpicCrypt",
                                           points=80, is_in_pattern=True,
-                                          counts_toward_quota=True))
+                                          quota_slot=1))
         db_session.add(ChestConfiguration(collector_id=collector_id, catalog_id="Common",
                                           points=5, is_in_pattern=True,
-                                          counts_toward_quota=False))
+                                          quota_slot=None))
         await db_session.commit()
 
         resp = await client.get(f"/api/v1/chests/summary/{slug}")
@@ -1021,7 +1023,7 @@ async def test_summary_includes_season_metadata_when_configured(db_session):
         collector.period_end = datetime.fromisoformat("2026-07-05T00:00:00")
         collector.timezone_offset_minutes = 180
         collector.target_points = 5000
-        collector.target_chests = 50
+        collector.quotas = [{"slot": 1, "name": "Epic Crypts", "target": 50, "mode": "fixed"}]
         db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Common",
                                           points=0, is_in_pattern=True))
         await db_session.commit()
@@ -1032,7 +1034,8 @@ async def test_summary_includes_season_metadata_when_configured(db_session):
     assert body["period_start"] == "2026-06-21T00:00:00"
     assert body["period_end"] == "2026-07-05T00:00:00"
     assert body["timezone_offset_minutes"] == 180
-    assert body["targets"] == {"points": 5000, "chests": 50}
+    assert body["targets"] == {"points": 5000, "chests": 50,
+                               "quotas": [{"slot": 1, "name": "Epic Crypts", "target": 50, "mode": "fixed"}]}
 
 
 @pytest.mark.asyncio
@@ -1063,7 +1066,7 @@ async def test_summary_season_metadata_is_null_when_unconfigured(db_session):
     assert body["period_start"] is None
     assert body["period_end"] is None
     assert body["timezone_offset_minutes"] is None
-    assert body["targets"] == {"points": None, "chests": None}
+    assert body["targets"] == {"points": None, "chests": None, "quotas": []}
 
 
 @pytest.mark.asyncio

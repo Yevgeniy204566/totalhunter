@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chest_summary import pivot_summary, query_summary_rows
+from chest_summary import pivot_summary, query_summary_rows, quota_slots_of, targets_of
 from database import AsyncSessionLocal
 from models import (
     AncientCalculation, AncientEditor, AncientInviteCode, AncientNameMapping,
@@ -67,6 +67,7 @@ async def archive_one(db: AsyncSession, collector: ChestCollector) -> None:
         collector.kingdom, collector.clan, rows,
         leader_name=collector.leader_canonical_name,
         leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+        quota_slots=quota_slots_of(collector.quotas),
     )
 
     db.add(ChestSeasonHistory(
@@ -75,6 +76,7 @@ async def archive_one(db: AsyncSession, collector: ChestCollector) -> None:
         period_end=period_end,
         target_points_snapshot=collector.target_points,
         target_chests_snapshot=collector.target_chests,
+        quotas_snapshot=list(collector.quotas or []),
         summary_json=summary,
     ))
     await db.execute(
@@ -186,10 +188,12 @@ async def build_history_detail(db: AsyncSession, collector_id: int,
     result = dict(season.summary_json)
     result["period_start"] = season.period_start.isoformat()
     result["period_end"] = season.period_end.isoformat()
-    result["targets"] = {
-        "points": season.target_points_snapshot,
-        "chests": season.target_chests_snapshot,
-    }
+    if season.quotas_snapshot is None:
+        # сезон закрыт до появления квот — старый формат, сайт покажет один столбец
+        result["targets"] = {"points": season.target_points_snapshot,
+                             "chests": season.target_chests_snapshot}
+    else:
+        result["targets"] = targets_of(season.target_points_snapshot, season.quotas_snapshot)
     return result
 
 

@@ -136,8 +136,17 @@ function renderPlayerName(p, targets) {
 function pointsHitTarget(player, targets) {
   return targets.points != null && player.points >= targets.points
 }
-function questHitTarget(player, targets) {
-  return targets.chests != null && player.quota_chests >= targets.chests
+// Столбцы квот (владелец 2026-09-26): по одному на квоту из targets.quotas; архив, закрытый
+// до квот (нет targets.quotas), — прежний один столбец «Epic-склепы» из quota_chests.
+export function quotaColumns(targets, epicLabel) {
+  if (Array.isArray(targets?.quotas)) {
+    return targets.quotas.map(q => ({
+      key: `quota:${q.slot}`, name: q.name, target: q.target,
+      get: p => p.quotas?.[String(q.slot)] ?? 0,
+    }))
+  }
+  return [{ key: 'quota:legacy', name: epicLabel, target: targets?.chests ?? null,
+            get: p => p.quota_chests ?? 0 }]
 }
 function isEpicColumn(typeName) {
   return typeName.includes('Epic')
@@ -150,10 +159,11 @@ export function columnAverage(players, getValue) {
   return players.reduce((sum, p) => sum + (getValue(p) || 0), 0) / players.length
 }
 
-export function sortPlayers(players, sort, chestTypes) {
+export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
+  const qcol = quotaCols.find(c => c.key === sort.key)
   const value = p => sort.key === 'name' ? p.name.toLowerCase()
     : sort.key === 'points' ? p.points
-    : sort.key === 'epic' ? p.quota_chests
+    : qcol ? qcol.get(p)
     : (p.counts[sort.key] || 0)
   const dir = sort.dir === 'asc' ? 1 : -1
   return [...players].sort((a, b) => {
@@ -173,6 +183,7 @@ const TABLE_TXT = {
 
 export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en' }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
+  const quotaCols = useMemo(() => quotaColumns(targets, tt.epic), [targets, tt.epic])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
   const pointsRank = useMemo(() => {
@@ -181,8 +192,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
     return m
   }, [players])
   const shownPlayers = useMemo(
-    () => (sort ? sortPlayers(players, sort, chestTypes) : players),
-    [players, sort, chestTypes],
+    () => (sort ? sortPlayers(players, sort, chestTypes, quotaCols) : players),
+    [players, sort, chestTypes, quotaCols],
   )
   function toggleSort(key) {
     setSort(prev => {
@@ -280,7 +291,9 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
               {editMode && <th></th>}
               {editMode && <th></th>}
               <th></th>
-              <th className="public-epic-cell">{fmtAvg(columnAverage(players, p => p.quota_chests))}</th>
+              {quotaCols.map(c => (
+                <th key={c.key} className="public-epic-cell">{fmtAvg(columnAverage(players, c.get))}</th>
+              ))}
               {chestTypes.map(t => (
                 <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''}>
                   {fmtAvg(columnAverage(players, p => p.counts[t]))}
@@ -294,7 +307,13 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
               {editMode && <th>{tt.troops}</th>}
               {editMode && <th></th>}
               <th className="public-sortable" onClick={() => toggleSort('points')}>{tt.points}{sortMark('points')}</th>
-              <th className="public-epic-cell public-sortable" onClick={() => toggleSort('epic')}>{tt.epic}{sortMark('epic')}</th>
+              {quotaCols.map(c => (
+                <th key={c.key} className="public-epic-cell public-sortable" onClick={() => toggleSort(c.key)}>
+                  <span translate="no" className="notranslate">{c.name}</span>
+                  {c.target != null && <span style={{ opacity: 0.6 }}> /{c.target}</span>}
+                  {sortMark(c.key)}
+                </th>
+              ))}
               {chestTypes.map(t => (
                 <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
                     onClick={() => toggleSort(t)}>
@@ -374,13 +393,18 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                   <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
                     {fmtNum(p.points)}
                   </td>
-                  <td className={[
-                    'public-epic-cell',
-                    questHitTarget(p, targets) && 'public-cell-hit-target',
-                    p.quota_chests === 0 && 'public-cell-zero',
-                  ].filter(Boolean).join(' ')}>
-                    {p.quota_chests}
-                  </td>
+                  {quotaCols.map(c => {
+                    const v = c.get(p)
+                    return (
+                      <td key={c.key} className={[
+                        'public-epic-cell',
+                        c.target != null && v >= c.target && 'public-cell-hit-target',
+                        v === 0 && 'public-cell-zero',
+                      ].filter(Boolean).join(' ')}>
+                        {v}
+                      </td>
+                    )
+                  })}
                   {chestTypes.map(t => {
                     const value = p.counts[t] || 0
                     return (

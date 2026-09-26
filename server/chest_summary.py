@@ -15,7 +15,8 @@ from models import Chest, ChestConfiguration, ChestCollector, ChestLocalization,
 
 def pivot_summary(kingdom: str, clan: str, rows, *,
                   leader_name: str | None = None,
-                  leader_excluded: frozenset = frozenset()) -> dict:
+                  leader_excluded: frozenset = frozenset(),
+                  quota_slots: frozenset = frozenset({1})) -> dict:
     """rows: iterable of (sender, chest_type_en, display_name, points_per_unit,
     counts_toward_quota, is_in_pattern, count).
 
@@ -38,12 +39,14 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
     display_names: dict[str, str] = {}
     per_player: dict[str, dict[str, int]] = {}
     player_points: dict[str, int] = {}
-    player_quota: dict[str, int] = {}
+    # Квоты (2026-09-26): слот конфига засчитывается, только если такая квота есть у
+    # коллектора (quota_slots) — сундук удалённой квоты остаётся в очках, но не в столбцах.
+    player_quota: dict[str, dict[int, int]] = {}
     totals: dict[str, int] = {}
     grand_total = 0
     total_points = 0
 
-    for sender, chest_type_en, display_name, points, counts_toward_quota, is_in_pattern, count in rows:
+    for sender, chest_type_en, display_name, points, quota_slot, is_in_pattern, count in rows:
         if not is_in_pattern:
             continue
         if leader_name and sender == leader_name and chest_type_en in leader_excluded:
@@ -62,8 +65,10 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
         per_player.setdefault(sender, {})
         per_player[sender][chest_type_en] = per_player[sender].get(chest_type_en, 0) + count
         player_points[sender] = player_points.get(sender, 0) + count * (points or 0)
-        if counts_toward_quota:
-            player_quota[sender] = player_quota.get(sender, 0) + count
+        slot = int(quota_slot) if quota_slot else None
+        if slot in quota_slots:
+            q = player_quota.setdefault(sender, {})
+            q[slot] = q.get(slot, 0) + count
         totals[chest_type_en] = totals.get(chest_type_en, 0) + count
         grand_total += count
         total_points += count * (points or 0)
@@ -80,7 +85,9 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
             "counts": counts,
             "total": sum(counts_by_en.values()),
             "points": player_points[sender],
-            "quota_chests": player_quota.get(sender, 0),
+            "quotas": {str(s): player_quota.get(sender, {}).get(s, 0) for s in sorted(quota_slots)},
+            # совместимость со старым сайтом/архивом: один столбец = квота 1
+            "quota_chests": player_quota.get(sender, {}).get(1, 0),
         })
     players.sort(key=lambda p: (-p["points"], p["name"]))
 
@@ -107,7 +114,7 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
     rows_query = (
         select(sender_expr, chest_type_expr, display_expr,
                func.max(ChestConfiguration.points).label("points"),
-               func.max(cast(ChestConfiguration.counts_toward_quota, Integer)).label("counts_toward_quota"),
+               func.max(ChestConfiguration.quota_slot).label("quota_slot"),
                func.max(cast(ChestConfiguration.is_in_pattern, Integer)).label("is_in_pattern"),
                func.count())
         .select_from(Chest)
@@ -140,3 +147,17 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
 
     rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr)
     return (await db.execute(rows_query)).all()
+
+
+
+def quota_slots_of(quotas) -> frozenset:
+    """Слоты квот коллектора (или снимка архива) для pivot_summary."""
+    return frozenset(int(q["slot"]) for q in (quotas or []))
+
+
+def targets_of(target_points, quotas) -> dict:
+    """targets для публичной страницы: общая цель по очкам + квоты; chests — цель квоты 1
+    для старого сайта/кэша (один столбец «Epic-склепы»)."""
+    quotas = quotas or []
+    slot1 = next((q for q in quotas if int(q["slot"]) == 1), None)
+    return {"points": target_points, "chests": slot1["target"] if slot1 else None, "quotas": quotas}

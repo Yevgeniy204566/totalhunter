@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
 from chest_slug import clan_to_slug, public_url
-from chest_summary import pivot_summary, query_summary_rows
+from chest_summary import pivot_summary, query_summary_rows, quota_slots_of, targets_of
 from database import get_db
 from models import (
     Chest, ChestCollector, ChestTypeAlias, Hunt,
@@ -240,6 +240,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
         collector.kingdom, collector.clan, rows,
         leader_name=collector.leader_canonical_name,
         leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+        quota_slots=quota_slots_of(collector.quotas),
     )
 
     # Enrich each player with rank + troop_level from player_profiles
@@ -260,10 +261,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
     result["stopped_at"] = collector.stopped_at.isoformat() if collector.stopped_at else None
     result["timezone_offset_minutes"] = collector.timezone_offset_minutes
-    result["targets"] = {
-        "points": collector.target_points,
-        "chests": collector.target_chests,
-    }
+    result["targets"] = targets_of(collector.target_points, collector.quotas)
     return result
 
 
@@ -374,6 +372,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
         collector.kingdom, collector.clan, rows,
         leader_name=collector.leader_canonical_name,
         leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+        quota_slots=quota_slots_of(collector.quotas),
     )
 
     # Enrich each player with rank + troop_level from player_profiles
@@ -394,10 +393,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
     result["stopped_at"] = collector.stopped_at.isoformat() if collector.stopped_at else None
     result["timezone_offset_minutes"] = collector.timezone_offset_minutes
-    result["targets"] = {
-        "points": collector.target_points,
-        "chests": collector.target_chests,
-    }
+    result["targets"] = targets_of(collector.target_points, collector.quotas)
     return result
 
 

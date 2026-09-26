@@ -716,7 +716,7 @@ async def test_patch_season_rejects_other_users_collector(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_chests_rows_include_counts_toward_quota(db_session):
+async def test_get_chests_rows_include_quota_slot(db_session):
     from models import ChestConfiguration, ChestTypeAlias
 
     user, token = await _create_user_with_token(db_session)
@@ -724,7 +724,7 @@ async def test_get_chests_rows_include_counts_toward_quota(db_session):
     db_session.add(ChestTypeAlias(collector_id=collector.id, raw_type="RawEpic",
                                   catalog_id="Epic Crypt 30"))
     db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Crypt 30",
-                                      points=80, is_in_pattern=True, counts_toward_quota=True))
+                                      points=80, is_in_pattern=True, quota_slot=1))
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -733,11 +733,11 @@ async def test_get_chests_rows_include_counts_toward_quota(db_session):
     assert resp.status_code == 200
     rows = resp.json()["collectors"][0]["rows"]
     row = next(r for r in rows if r["catalog_id"] == "Epic Crypt 30")
-    assert row["counts_toward_quota"] is True
+    assert row["quota_slot"] == 1
 
 
 @pytest.mark.asyncio
-async def test_post_rows_persists_counts_toward_quota(db_session):
+async def test_post_rows_persists_quota_slot(db_session):
     user, token = await _create_user_with_token(db_session)
     collector = await _create_collector(db_session, user.id, slug="quota-post-slug")
     db_session.add(ChestTypeCatalog(canonical_type="Epic Crypt 30", pattern="T9", points=80))
@@ -749,7 +749,7 @@ async def test_post_rows_persists_counts_toward_quota(db_session):
             json={"collector_slug": "quota-post-slug",
                  "rows": [{"raw_type": "RawEpic", "catalog_id": "Epic Crypt 30",
                            "custom_name": None, "points": 80, "is_in_pattern": True,
-                           "counts_toward_quota": True}]},
+                           "quota_slot": 1}]},
             headers={"Authorization": f"Bearer {token}"},
         )
     assert resp.status_code == 200
@@ -757,7 +757,7 @@ async def test_post_rows_persists_counts_toward_quota(db_session):
     config = (await db_session.execute(
         select(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id)
     )).scalar_one()
-    assert config.counts_toward_quota is True
+    assert config.quota_slot == 1
 
 
 @pytest.mark.asyncio

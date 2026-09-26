@@ -459,7 +459,9 @@ class ChestCollector(Base):
     period_start            = Column(TIMESTAMP(timezone=True), nullable=True)
     period_end              = Column(TIMESTAMP(timezone=True), nullable=True)
     target_points           = Column(Integer, nullable=True)
-    target_chests           = Column(Integer, nullable=True)
+    target_chests           = Column(Integer, nullable=True)   # устарело: цель теперь в quotas[slot 1]
+    # До 3 квот сезона: [{"slot": 1, "name": "Склепы", "target": 200, "mode": "fixed"}, ...]
+    quotas                  = Column(JSON, nullable=False, server_default=text("'[]'"))
     stopped_at              = Column(TIMESTAMP(timezone=True), nullable=True)
     leader_canonical_name   = Column(String(200), nullable=True)
     leader_excluded_catalog_ids = Column(JSON, nullable=False, server_default=text("'[]'"))
@@ -506,6 +508,7 @@ class ChestSeasonHistory(Base):
     period_end              = Column(TIMESTAMP(timezone=True), nullable=False)
     target_points_snapshot  = Column(Integer, nullable=True)
     target_chests_snapshot  = Column(Integer, nullable=True)
+    quotas_snapshot         = Column(JSON, nullable=True)   # NULL у сезонов, закрытых до квот
     summary_json            = Column(JSON, nullable=False)
     closed_at               = Column(TIMESTAMP(timezone=True), nullable=False,
                                      server_default=func.now())
@@ -582,6 +585,9 @@ class ChestConfiguration(Base):
     __tablename__ = "chest_configurations"
     __table_args__ = (
         UniqueConstraint("collector_id", "catalog_id", name="uq_chest_config_collector_catalog"),
+        # Несколько квот (2026-09-26): сундук — не более одной квоты, и квота ⇒ «в учёте».
+        CheckConstraint("quota_slot IS NULL OR quota_slot IN (1, 2, 3)", name="ck_chest_config_quota_slot"),
+        CheckConstraint("quota_slot IS NULL OR is_in_pattern", name="ck_chest_config_slot_in_account"),
     )
 
     id            = Column(Integer, primary_key=True)
@@ -591,6 +597,8 @@ class ChestConfiguration(Base):
     custom_name   = Column(String(200), nullable=True)
     points        = Column(Integer, nullable=False, server_default=text("0"))
     is_in_pattern = Column(Boolean, nullable=False, server_default=text("false"))
+    # Номер квоты сундука (1..3) или NULL; заменяет counts_toward_quota (колонка оставлена для отката).
+    quota_slot    = Column(Integer, nullable=True)
     counts_toward_quota = Column(Boolean, nullable=False, server_default=text("false"))
 
 

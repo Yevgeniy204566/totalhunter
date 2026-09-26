@@ -35,6 +35,38 @@ function formatPeriodPoint(isoString) {
   return `${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
 }
 
+/* Квоты сезона (владелец 2026-09-26): до 3 штук, у каждой название и цель. Номер (slot) у
+   квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали. */
+function QuotaEditor({ quotas, cx, onChange }) {
+  const set = (i, field, value) => onChange(quotas.map((q, j) => (j === i ? { ...q, [field]: value } : q)))
+  const add = () => {
+    const used = new Set(quotas.map(q => q.slot))
+    const slot = [1, 2, 3].find(n => !used.has(n))
+    if (slot) onChange([...quotas, { slot, name: '', target: '' }].sort((a, b) => a.slot - b.slot))
+  }
+  return (
+    <div className="chest-field" style={{ flexBasis: '100%' }}>
+      <label>{cx.quotasLabel}</label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {quotas.map((q, i) => (
+          <div key={q.slot} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input className="input-dark" style={{ width: 200 }} placeholder={cx.quotaName} maxLength={40}
+              value={q.name} onChange={e => set(i, 'name', e.target.value)} />
+            <input className="input-dark" style={{ width: 110 }} type="number" min={0} placeholder={cx.quotaTarget}
+              value={q.target} onChange={e => set(i, 'target', e.target.value)} />
+            <button type="button" className="chest-pill-btn chest-pill-btn--danger chest-pill-btn--sm"
+              onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
+          </div>
+        ))}
+        {quotas.length < 3 && (
+          <button type="button" className="chest-pill-btn chest-pill-btn--sm" style={{ alignSelf: 'flex-start' }}
+            onClick={add}>{cx.addQuota}</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function ChestsPage() {
   const [collectors, setCollectors] = useState(null)
   const [rowsByCollector, setRowsByCollector] = useState({})
@@ -81,7 +113,7 @@ export default function ChestsPage() {
           period_start: c.period_start ? c.period_start.slice(0, 16) : '',
           period_end: c.period_end ? c.period_end.slice(0, 16) : '',
           target_points: c.target_points,
-          target_chests: c.target_chests,
+          quotas: (c.quotas || []).map(q => ({ slot: q.slot, name: q.name, target: q.target ?? '' })),
         }
         nextLeader[c.slug] = c.leader_canonical_name || null
         nextLeaderExcluded[c.slug] = c.leader_excluded_catalog_ids || []
@@ -115,7 +147,7 @@ export default function ChestsPage() {
     setRowsByCollector(prev => ({
       ...prev,
       [slug]: [...prev[slug], { raw_type: null, catalog_id: null, custom_name: null,
-                                points: 0, is_in_pattern: false, counts_toward_quota: false }],
+                                points: 0, is_in_pattern: false, quota_slot: null }],
     }))
   }
 
@@ -126,12 +158,13 @@ export default function ChestsPage() {
       const rows = [...(prev[slug] || [])]
       for (const item of preset) {
         const idx = rows.findIndex(r => r.catalog_id === item.catalog_id)
+        // Пресет — только шаблон (владелец 2026-09-26): у существующих строк меняет очки,
+        // «Учёт» не трогает; новые строки ставит «В учёте».
         if (idx >= 0) {
-          rows[idx] = { ...rows[idx], points: item.points, is_in_pattern: item.is_in_pattern }
+          rows[idx] = { ...rows[idx], points: item.points }
         } else {
           rows.push({ raw_type: null, catalog_id: item.catalog_id, custom_name: null,
-                     points: item.points, is_in_pattern: item.is_in_pattern,
-                     counts_toward_quota: false })
+                     points: item.points, is_in_pattern: true, quota_slot: null })
         }
       }
       return { ...prev, [slug]: rows }
@@ -207,7 +240,11 @@ export default function ChestsPage() {
       period_start: s.period_start ? s.period_start + ':00' : null,
       period_end: s.period_end ? s.period_end + ':00' : null,
       target_points: s.target_points === '' || s.target_points == null ? null : Number(s.target_points),
-      target_chests: s.target_chests === '' || s.target_chests == null ? null : Number(s.target_chests),
+      // квота без названия = удалена; сундуки удалённой квоты остаются «в учёте» (сервер)
+      quotas: (s.quotas || [])
+        .filter(q => (q.name || '').trim())
+        .map(q => ({ slot: q.slot, name: q.name.trim(),
+                     target: q.target === '' || q.target == null ? null : Number(q.target) })),
     }
     try {
       await api.dashboardChestsSeason(slug, payload)
@@ -368,13 +405,11 @@ export default function ChestsPage() {
                   onChange={e => updateSeasonField(collector.slug, 'target_points', e.target.value)}
                 />
               </div>
-              <div className="chest-field">
-                <label>{cx.targetChestsLabel}</label>
-                <input className="input-dark" style={{ width: 120 }} type="number"
-                  value={seasonByCollector[collector.slug]?.target_chests ?? ''}
-                  onChange={e => updateSeasonField(collector.slug, 'target_chests', e.target.value)}
-                />
-              </div>
+              <QuotaEditor
+                quotas={seasonByCollector[collector.slug]?.quotas || []}
+                cx={cx}
+                onChange={q => updateSeasonField(collector.slug, 'quotas', q)}
+              />
               <div className="chest-field" style={{ justifyContent: 'flex-end' }}>
                 <label>&nbsp;</label>
                 <button className="chest-pill-btn chest-pill-btn--green chest-pill-btn--sm"
@@ -450,13 +485,9 @@ export default function ChestsPage() {
                     <th style={{ minWidth: 240 }}>{cx.catalogCol}</th>
                     <th className="chest-secondary-col" style={{ minWidth: 130 }}>{cx.customNameCol}</th>
                     <th style={{ minWidth: 70 }}>{cx.pointsCol}</th>
-                    <th style={{ minWidth: 90 }}>
-                      {cx.inPatternCol}
-                      <span className="chest-col-help" title={cx.inPatternTooltip}>?</span>
-                    </th>
-                    <th style={{ minWidth: 90 }}>
-                      {cx.quotaCol}
-                      <span className="chest-col-help" title={cx.quotaTooltip}>?</span>
+                    <th style={{ minWidth: 170 }}>
+                      {cx.accountingCol}
+                      <span className="chest-col-help" title={cx.accountingTooltip}>?</span>
                     </th>
                     <th style={{ minWidth: 60 }}>{cx.totalEverCol}</th>
                   </tr>
@@ -493,24 +524,21 @@ export default function ChestsPage() {
                         />
                       </td>
                       <td>
-                        <label className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={row.is_in_pattern}
-                            onChange={e => updateRow(collector.slug, i, 'is_in_pattern', e.target.checked)}
-                          />
-                          <span className="slider"></span>
-                        </label>
-                      </td>
-                      <td>
-                        <label className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={row.counts_toward_quota}
-                            onChange={e => updateRow(collector.slug, i, 'counts_toward_quota', e.target.checked)}
-                          />
-                          <span className="slider"></span>
-                        </label>
+                        <select
+                          className="input-dark"
+                          value={row.quota_slot ? String(row.quota_slot) : (row.is_in_pattern ? 'on' : 'off')}
+                          onChange={e => {
+                            const v = e.target.value
+                            updateRow(collector.slug, i, 'is_in_pattern', v !== 'off')
+                            updateRow(collector.slug, i, 'quota_slot', v === 'off' || v === 'on' ? null : Number(v))
+                          }}
+                        >
+                          <option value="off">{cx.accOff}</option>
+                          <option value="on">{cx.accOn}</option>
+                          {(collector.quotas || []).map(q => (
+                            <option key={q.slot} value={String(q.slot)}>{q.name}</option>
+                          ))}
+                        </select>
                       </td>
                       <td style={{ textAlign: 'right', color: 'var(--on-surface2)' }}>
                         {row.total_ever ?? 0}

@@ -10,16 +10,16 @@ and the global Chest Catalog/Localizations Sheets are untouched (see design doc)
 """
 import secrets
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
 from chest_slug import clan_to_slug, public_url
-from chest_summary import pivot_summary, query_summary_rows
+from chest_summary import pivot_summary, query_summary_rows, quota_slots_of
 from database import get_db
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
@@ -154,7 +154,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "custom_name": config.custom_name if config else None,
             "points": config.points if config else 0,
             "is_in_pattern": config.is_in_pattern if config else False,
-            "counts_toward_quota": config.counts_toward_quota if config else False,
+            "quota_slot": config.quota_slot if config else None,
             "total_ever": _total_ever_for_catalog(alias.catalog_id, aliases, raw_counts),
         })
 
@@ -184,12 +184,12 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
                 "custom_name": config.custom_name if config else None,
                 "points": config.points if config else 0,
                 "is_in_pattern": config.is_in_pattern if config else False,
-                "counts_toward_quota": config.counts_toward_quota if config else False,
+                "quota_slot": config.quota_slot if config else None,
                 "total_ever": raw_counts.get(raw_type, 0),
             })
         else:
             rows.append({"raw_type": raw_type, "catalog_id": None, "custom_name": None,
-                         "points": 0, "is_in_pattern": False, "counts_toward_quota": False,
+                         "points": 0, "is_in_pattern": False, "quota_slot": None,
                          "total_ever": raw_counts.get(raw_type, 0)})
 
     for config in configs:
@@ -199,7 +199,7 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "raw_type": None, "catalog_id": config.catalog_id,
             "custom_name": config.custom_name, "points": config.points,
             "is_in_pattern": config.is_in_pattern,
-            "counts_toward_quota": config.counts_toward_quota,
+            "quota_slot": config.quota_slot,
             "total_ever": _total_ever_for_catalog(config.catalog_id, aliases, raw_counts),
         })
 
@@ -299,6 +299,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "period_end": collector.period_end,
             "target_points": collector.target_points,
             "target_chests": collector.target_chests,
+            "quotas": collector.quotas or [],
             "leader_canonical_name": collector.leader_canonical_name,
             "leader_excluded_catalog_ids": collector.leader_excluded_catalog_ids or [],
         })
@@ -311,7 +312,8 @@ class RowIn(BaseModel):
     custom_name: Optional[str] = None
     points: int = 0
     is_in_pattern: bool = False
-    counts_toward_quota: bool = False
+    counts_toward_quota: bool = False   # устарело (старый сайт в окне деплоя) — игнорируется
+    quota_slot: Optional[int] = Field(default=None, ge=1, le=3)
 
 
 class RowsPayload(BaseModel):
@@ -355,8 +357,9 @@ async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web
             seen_catalog_ids.add(row.catalog_id)
             db.add(ChestConfiguration(collector_id=collector.id, catalog_id=row.catalog_id,
                                       custom_name=row.custom_name, points=row.points,
-                                      is_in_pattern=row.is_in_pattern,
-                                      counts_toward_quota=row.counts_toward_quota))
+                                      # квота ⇒ в учёте (CHECK ck_chest_config_slot_in_account)
+                                      is_in_pattern=row.is_in_pattern or row.quota_slot is not None,
+                                      quota_slot=row.quota_slot))
 
     await db.commit()
     return {"ok": True}
@@ -473,12 +476,28 @@ async def update_language(slug: str, payload: LanguagePayload,
     return {"ok": True}
 
 
+class QuotaIn(BaseModel):
+    slot: int = Field(ge=1, le=3)
+    name: str = Field(min_length=1, max_length=40)
+    target: Optional[int] = Field(default=None, ge=0)
+    # точка расширения для квоты EM (спека 02): сейчас только одна цель на всех
+    mode: Literal["fixed"] = "fixed"
+
+
 class SeasonSettingsPayload(BaseModel):
     timezone_offset_minutes: Optional[int] = None
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None
     target_points: Optional[int] = None
     target_chests: Optional[int] = None
+    quotas: Optional[List[QuotaIn]] = Field(default=None, max_length=3)
+
+    @field_validator("quotas")
+    @classmethod
+    def _unique_slots(cls, v):
+        if v is not None and len({q.slot for q in v}) != len(v):
+            raise ValueError("duplicate quota slot")
+        return v
 
 
 class LeaderSettingsPayload(BaseModel):
@@ -538,6 +557,8 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
         collector.target_points = payload.target_points
     if payload.target_chests is not None:
         collector.target_chests = payload.target_chests
+    if payload.quotas is not None:
+        collector.quotas = [q.model_dump() for q in sorted(payload.quotas, key=lambda q: q.slot)]
     if payload.period_start is not None or payload.period_end is not None:
         collector.stopped_at = None
 
@@ -558,6 +579,7 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
         collector.kingdom, collector.clan, rows,
         leader_name=collector.leader_canonical_name,
         leader_excluded=frozenset(collector.leader_excluded_catalog_ids or []),
+        quota_slots=quota_slots_of(collector.quotas),
     )
 
     db.add(ChestSeasonHistory(
@@ -566,6 +588,7 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
         period_end=now,
         target_points_snapshot=collector.target_points,
         target_chests_snapshot=collector.target_chests,
+        quotas_snapshot=list(collector.quotas or []),
         summary_json=summary,
     ))
     await db.execute(
