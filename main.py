@@ -3308,7 +3308,7 @@ class TotalHunterApp(ctk.CTk):
     def _send_chest_batch(self, kingdom, clan):
         """Общая логика отправки батча — переиспользуется и ручной кнопкой
         (send_chests_to_server), и авто-отправкой (toggle_chest_bot._on_batch_ready).
-        Сетевой вызов и запись в БД не переизобретаются — export_to_api/mark_synced уже
+        Сетевой вызов и запись в БД не переизобретаются — export_to_api/delete_sent уже
         реализованы и работают в проде. {'success': True, 'empty': True} — нечего отправлять
         (батч уже пуст), отличается от настоящего успешного 'success' для текста статуса.
 
@@ -3325,7 +3325,7 @@ class TotalHunterApp(ctk.CTk):
         архитектуре — а строгая проверка мгновенно ловила легитимный повторный дедуп
         (count=0, всё уже отправлено раньше) как "провал", очередь не чистилась, повторная
         отправка слала тот же батч по кругу бесконечно ("сервер недоступен" на данных,
-        которые давно и благополучно на сервере). Теперь mark_synced вызывается всегда при
+        которые давно и благополучно на сервере). Теперь delete_sent вызывается всегда при
         success; count < len(items) — не ошибка, просто показывается как информация."""
         import chest_reader
         conn = chest_reader.init_db()
@@ -3339,7 +3339,7 @@ class TotalHunterApp(ctk.CTk):
         result = chest_reader.export_to_api(kingdom, clan, items)
         if result.get("success"):
             accepted = result.get("count")
-            chest_reader.mark_synced(conn, ids)
+            chest_reader.delete_sent(conn, ids)
             if accepted != len(items):
                 result = {**result, "partial_info": True, "accepted": accepted, "submitted": len(items)}
         conn.close()

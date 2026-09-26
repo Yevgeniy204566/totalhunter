@@ -297,6 +297,9 @@ def init_db(path=DB_PATH):
             is_synced INTEGER DEFAULT 0
         )
     ''')
+    # Владелец 2026-09-26: отправленные сундуки на ПК не хранятся. Старые версии
+    # помечали их is_synced=1 и копили вечно — вычищаем при каждом открытии базы.
+    conn.execute('DELETE FROM local_chests WHERE is_synced = 1')
     conn.commit()
     return conn
 
@@ -327,8 +330,9 @@ def get_unsynced_counts(conn):
     return {chest_type: n for chest_type, n in cur.fetchall()}
 
 
-def mark_synced(conn, ids):
-    conn.executemany('UPDATE local_chests SET is_synced = 1 WHERE id = ?', [(i,) for i in ids])
+def delete_sent(conn, ids):
+    """Сервер подтвердил батч — строки удаляются с ПК сразу, без архива (владелец 2026-09-26)."""
+    conn.executemany('DELETE FROM local_chests WHERE id = ?', [(i,) for i in ids])
     conn.commit()
 
 

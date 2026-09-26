@@ -280,16 +280,36 @@ def test_insert_and_get_unsynced(tmp_path):
     conn.close()
 
 
-def test_mark_synced_excludes_from_unsynced(tmp_path):
+def test_delete_sent_removes_rows_from_pc(tmp_path):
+    """Владелец 2026-09-26: отправленные сундуки на ПК не хранятся — строки удаляются
+    физически, а не помечаются is_synced=1."""
     db_path = str(tmp_path / "chest_buffer.db")
     conn = cr.init_db(db_path)
     cr.insert_chest(conn, "Сундук Эпического Монстра", "Alice", "2026-06-17T10:00:00")
     cr.insert_chest(conn, "Сундук Легендарного Монстра", "Bob", "2026-06-17T10:01:00")
+    cr.insert_chest(conn, "Сундук Легендарного Монстра", "Carol", "2026-06-17T10:02:00")
     rows = cr.get_unsynced(conn)
-    ids = [r[0] for r in rows]
-    cr.mark_synced(conn, ids)
-    assert cr.get_unsynced(conn) == []
+    cr.delete_sent(conn, [r[0] for r in rows[:2]])
+    left = conn.execute("SELECT raw_player_name FROM local_chests").fetchall()
     conn.close()
+    assert left == [("Carol",)]
+
+
+def test_init_db_purges_rows_synced_by_old_versions(tmp_path):
+    """Старые версии копили is_synced=1 вечно (у владельца 1500 строк за сутки) —
+    при открытии базы они вычищаются, неотправленные не трогаются."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    conn = cr.init_db(db_path)
+    cr.insert_chest(conn, "Тип", "Отправлен", "2026-09-26T09:00:00")
+    cr.insert_chest(conn, "Тип", "НеОтправлен", "2026-09-26T09:00:01")
+    conn.execute("UPDATE local_chests SET is_synced = 1 WHERE raw_player_name = 'Отправлен'")
+    conn.commit()
+    conn.close()
+
+    conn = cr.init_db(db_path)
+    left = conn.execute("SELECT raw_player_name, is_synced FROM local_chests").fetchall()
+    conn.close()
+    assert left == [("НеОтправлен", 0)]
 
 
 def test_get_unsynced_counts_groups_by_type(tmp_path):
@@ -314,7 +334,7 @@ def test_get_unsynced_counts_ignores_synced_rows(tmp_path):
     cr.insert_chest(conn, "Тип Б", "Игрок1", "2026-06-19T10:00:05")
     rows = cr.get_unsynced(conn)
     ids_type_a = [r[0] for r in rows if r[2] == "Тип А"]
-    cr.mark_synced(conn, ids_type_a)
+    cr.delete_sent(conn, ids_type_a)
     conn.close()
 
     conn = cr.init_db(db_path)
@@ -329,7 +349,7 @@ def test_get_unsynced_counts_empty_after_full_sync(tmp_path):
     conn = cr.init_db(db_path)
     cr.insert_chest(conn, "Тип А", "Игрок1", "2026-06-19T10:00:00")
     rows = cr.get_unsynced(conn)
-    cr.mark_synced(conn, [r[0] for r in rows])
+    cr.delete_sent(conn, [r[0] for r in rows])
     conn.close()
 
     conn = cr.init_db(db_path)
@@ -716,7 +736,7 @@ def test_count_pending_reflects_queue_size(tmp_path):
 def test_delete_unsynced_batch_clears_db_rows_and_pending_crops(tmp_path):
     """Кнопка «Удалить батч» (владелец 2026-09-25): убирает и непринятые строки в БД
     (is_synced=0), и необработанные кропы очереди — уже отправленные (is_synced=1)
-    строки не трогает, _batch_size() должен вернуться к 0."""
+    строки на ПК не хранятся вовсе, _batch_size() должен вернуться к 0."""
     db_path = str(tmp_path / "chest_buffer.db")
     pending_dir = str(tmp_path / "chest_pending")
     os.makedirs(pending_dir, exist_ok=True)
@@ -736,7 +756,7 @@ def test_delete_unsynced_batch_clears_db_rows_and_pending_crops(tmp_path):
     conn = cr.init_db(db_path)
     rows = conn.execute("SELECT raw_player_name, is_synced FROM local_chests").fetchall()
     conn.close()
-    assert rows == [("Игрок1", 1)]  # уже отправленная запись осталась нетронутой
+    assert rows == []  # отправленная тоже не хранится (вычищена init_db)
 
 
 def test_collect_chests_calls_on_batch_ready_when_list_ends(tmp_path, monkeypatch):
@@ -777,7 +797,7 @@ def test_collect_chests_counts_reflect_state_after_on_batch_ready_not_before(tmp
 
     def fake_on_batch_ready(reason):
         conn = cr.init_db(db_path)
-        cr.mark_synced(conn, [r[0] for r in cr.get_unsynced(conn)])
+        cr.delete_sent(conn, [r[0] for r in cr.get_unsynced(conn)])
         conn.close()
 
     result = cr.collect_chests(lambda: False, db_path=db_path, pending_dir=pending_dir,
