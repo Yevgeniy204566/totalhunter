@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 
@@ -100,6 +100,15 @@ export default function ChestSummaryPage() {
 
   return (
     <div className="page-content">
+      {/* Переход на лендинг — тот же логотип, что в шапке кабинета (владелец 2026-09-26) */}
+      <Link to="/" style={{
+        display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12,
+        textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
+      }}>
+        <span style={{ fontSize: 20, color: 'var(--accent)' }}>⚔</span>
+        <span className="header-logo-text" style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
+        <span className="header-logo-text" style={{ color: 'var(--on-surface)' }}>Hunter</span>
+      </Link>
       <h1 className="public-summary-title">
         <span className="public-kingdom-label">{data.kingdom}/</span>
         <span className="public-clan-label">{data.clan}</span>
