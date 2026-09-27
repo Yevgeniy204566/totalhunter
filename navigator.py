@@ -13,6 +13,7 @@ import math
 import random
 import time
 import winsound
+import found_sound
 import threading
 import numpy as np
 import cv2
@@ -1125,12 +1126,13 @@ class PacmanEngine:
         except Exception:
             return
 
-        # Шаг 6: звук — ПОСЛЕ клика (подтверждение попадания)
-        try:
-            winsound.PlaySound(self.sound_path,
-                               winsound.SND_FILENAME | winsound.SND_ASYNC)
-        except Exception:
-            winsound.Beep(1000, 500)
+        # Шаг 6: звук — ПОСЛЕ клика (подтверждение попадания); выключатель — вкладка Бирж
+        if found_sound.enabled:
+            try:
+                winsound.PlaySound(self.sound_path,
+                                   winsound.SND_FILENAME | winsound.SND_ASYNC)
+            except Exception:
+                winsound.Beep(1000, 500)
 
         # Шаг 7: ждём открытия диалога (1.0с — запас для медленных ПК)
         time.sleep(1.0)
@@ -1171,10 +1173,11 @@ class PacmanEngine:
     def _on_exchange_found(self):
         """Legacy — оставлен для обратной совместимости с тестами."""
         self.is_running = False
-        try:
-            winsound.PlaySound(self.sound_path,
-                               winsound.SND_FILENAME | winsound.SND_ASYNC)
-        except Exception:
-            winsound.Beep(1000, 500)
+        if found_sound.enabled:
+            try:
+                winsound.PlaySound(self.sound_path,
+                                   winsound.SND_FILENAME | winsound.SND_ASYNC)
+            except Exception:
+                winsound.Beep(1000, 500)
         if self.on_found_callback:
             self.on_found_callback()

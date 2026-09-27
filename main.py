@@ -44,6 +44,7 @@ from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
                            CARTER_EVENT_BAR, ACCEL_USE_BTN, WT_ARENA_TAB, scale_ui_coord)
 from coord_manager import coord_manager, REF_A, REF_B
 import chest_reader
+import found_sound
 import tkinter.messagebox as messagebox
 import keyboard
 import webbrowser
@@ -2342,6 +2343,16 @@ class TotalHunterApp(ctk.CTk):
                       font=ctk.CTkFont(size=22, weight="bold"),
                       command=lambda: webbrowser.open("https://total-hunter.com/dashboard/balance"),
                       ).pack(side="left", padx=(8, 0))
+        # Звук находки биржи (1.0, 2.0 и РОЙ) — круглая кнопка-динамик; хранится в
+        # пользовательском gui_config.json (обновление его не трогает)
+        found_sound.enabled = bool(self._read_gui_config().get("found_sound", True))
+        self._sound_btn = ctk.CTkButton(_bal_row, text="", width=40, height=40,
+                                        fg_color="#0A0F1E", hover_color="#1A2A5E",
+                                        text_color="#00CFFF", corner_radius=20,
+                                        font=ctk.CTkFont(size=18),
+                                        command=self._toggle_found_sound)
+        self._sound_btn.pack(side="left", padx=(8, 0))
+        self._refresh_sound_btn()
 
         # ─── Переключатель режима: Биржа 1.0 / Биржа 2.0 ─────────────────
         # Меняет значения и диапазон ползунков навигации ниже (глубина нырка 1.0: до 10, 2.0: до 50)
@@ -4180,12 +4191,7 @@ class TotalHunterApp(ctk.CTk):
         from exchange_scout import make_found_handler
 
         def _sound():
-            import winsound
-            path = getattr(self.engine, 'sound_path', None)
-            if path:
-                winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
-            else:
-                winsound.Beep(1000, 500)
+            found_sound.play(getattr(self.engine, 'sound_path', None), 500)
 
         def _result(kingdom, result):
             if result.get('coords_ok'):
@@ -4422,6 +4428,29 @@ class TotalHunterApp(ctk.CTk):
             messagebox.showinfo("OK", "Настройки сохранены")
         except Exception as e:
             messagebox.showerror("Error", f"Не удалось сохранить: {e}")
+
+    def _read_gui_config(self) -> dict:
+        try:
+            with open(GUI_CONFIG_PATH, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def _refresh_sound_btn(self) -> None:
+        self._sound_btn.configure(text="🔊" if found_sound.enabled else "🔇",
+                                  text_color="#00CFFF" if found_sound.enabled else "#6B7280")
+
+    def _toggle_found_sound(self) -> None:
+        found_sound.enabled = not found_sound.enabled
+        self._refresh_sound_btn()
+        # read-modify-write: остальные ключи пользовательского gui_config не трогаем
+        cfg = self._read_gui_config()
+        cfg["found_sound"] = found_sound.enabled
+        try:
+            with open(GUI_CONFIG_PATH, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2)
+        except Exception:
+            pass
 
     def _load_settings(self):
         """Загружает настройки Бирж из активного профиля."""
@@ -5174,14 +5203,7 @@ class TotalHunterApp(ctk.CTk):
         truly_new = (new_ids - self._roy_pool_known_ids) - getattr(self, '_roy_self_reported', set())
         if truly_new and self._roy_enabled_var.get():
             _sound = getattr(self.engine, 'sound_path', None) if hasattr(self, 'engine') and self.engine else None
-            try:
-                import winsound
-                if _sound:
-                    winsound.PlaySound(_sound, winsound.SND_FILENAME | winsound.SND_ASYNC)
-                else:
-                    winsound.Beep(1000, 400)
-            except Exception:
-                pass
+            found_sound.play(_sound, 400)
         self._roy_pool_known_ids = new_ids
 
         for w in self._roy_list_frame.winfo_children():

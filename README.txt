@@ -145,6 +145,10 @@
 
    Disable the player-cities layer -> scroll map to minimum zoom -> START
 
+   Speaker button (next to the balance): 🔊 = sound on, 🔇 = sound off.
+   When off, there is no sound alert for found exchanges (Exchange 1.0,
+   2.0 and ROY). The choice is remembered.
+
 --------------------------------------------------------------------------------
 6. ANCIENT (tournament roster)
    The Ancient tab is used to track damage quotas in tournament events
@@ -352,6 +356,10 @@ Support    : totalhunter.support@gmail.com
    Глубина нырка    — 4–6
 
    Отключи слой городов -> прокрути карту на минимум -> СТАРТ
+
+   Кнопка-динамик (рядом с балансом): 🔊 — звук включён, 🔇 — выключен.
+   Когда выключен, звукового оповещения о найденных биржах нет
+   (Биржа 1.0, 2.0 и РОЙ). Выбор запоминается.
 
 --------------------------------------------------------------------------------
 6. ДРЕВНИЙ (турнирный ростер)
