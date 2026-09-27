@@ -343,46 +343,6 @@ async def test_post_rows_full_replace_removes_omitted_rows(db_session):
 
 
 @pytest.mark.asyncio
-async def test_management_token_then_claim_transfers_ownership(db_session):
-    owner, owner_token = await _create_user_with_token(db_session, email="a@example.com")
-    claimant, claimant_token = await _create_user_with_token(db_session, email="b@example.com")
-    collector = await _create_collector(db_session, owner.id, slug="transferable-slug")
-    await db_session.commit()
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        gen_resp = await client.post(
-            "/web/dashboard/chests/management-token",
-            json={"collector_slug": "transferable-slug"},
-            headers={"Authorization": f"Bearer {owner_token}"},
-        )
-        assert gen_resp.status_code == 200
-        code = gen_resp.json()["code"]
-
-        claim_resp = await client.post(
-            "/web/dashboard/chests/claim",
-            json={"code": code},
-            headers={"Authorization": f"Bearer {claimant_token}"},
-        )
-        assert claim_resp.status_code == 200
-
-    await db_session.refresh(collector)
-    assert collector.user_id == claimant.id
-    assert collector.management_token is None
-
-
-@pytest.mark.asyncio
-async def test_claim_unknown_code_returns_404(db_session):
-    _, token = await _create_user_with_token(db_session)
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.post(
-            "/web/dashboard/chests/claim",
-            json={"code": "does-not-exist"},
-            headers={"Authorization": f"Bearer {token}"},
-        )
-    assert resp.status_code == 404
-
-
-@pytest.mark.asyncio
 async def test_patch_language_updates_own_collector(db_session):
     user, token = await _create_user_with_token(db_session)
     collector = await _create_collector(db_session, user.id, slug="lang-slug")

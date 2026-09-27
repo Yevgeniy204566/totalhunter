@@ -49,8 +49,11 @@ export const api = {
   dashboardChestsPlayerAliases: (slug, rows) => request('POST', '/web/dashboard/chests/player-aliases', { collector_slug: slug, rows }),
   dashboardChestsPlayerProfiles: (slug, rows) =>
     request('POST', '/web/dashboard/chests/player-profiles', { collector_slug: slug, rows }),
-  dashboardChestsToken: (slug)          => request('POST',  '/web/dashboard/chests/management-token', { collector_slug: slug }),
-  dashboardChestsClaim: (code)          => request('POST',  '/web/dashboard/chests/claim', { code }),
+  // Руководители ростера (2026-09-27): хозяин приглашает кодом, хозяин не меняется
+  dashboardChestsManagerInvite: (slug)         => request('POST',   `/web/dashboard/chests/${slug}/managers/invite`),
+  dashboardChestsManagerJoin:   (code)         => request('POST',   '/web/dashboard/chests/managers/join', { code }),
+  dashboardChestsManagerRemove: (slug, userId) => request('DELETE', `/web/dashboard/chests/${slug}/managers/${userId}`),
+  dashboardChestsManagerLeave:  (slug)         => request('POST',   `/web/dashboard/chests/${slug}/managers/leave`),
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),
   dashboardChestsSeason: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/season`, payload),
   dashboardChestsLeader: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/leader`, payload),

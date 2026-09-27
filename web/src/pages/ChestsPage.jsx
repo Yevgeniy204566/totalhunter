@@ -119,6 +119,8 @@ export default function ChestsPage() {
   const [msg, setMsg] = useState('')
   const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
+  const [inviteCodeByCollector, setInviteCodeByCollector] = useState({})
+  const [confirmRemoveManager, setConfirmRemoveManager] = useState({})
   const [presets, setPresets] = useState(null)
   const [presetChoiceByCollector, setPresetChoiceByCollector] = useState({})
   const [historyByCollector, setHistoryByCollector] = useState({})
@@ -262,7 +264,8 @@ export default function ChestsPage() {
           hero_level: Number(r.hero_level) || null,
         }))
       await api.dashboardChestsPlayerProfiles(slug, profileRows)
-      await api.dashboardChestsLeader(slug, {
+      // «Лидер» и исключённые сундуки — настройка хозяина; руководителю сервер ответит 403
+      if (isOwner(slug)) await api.dashboardChestsLeader(slug, {
         leader_canonical_name: leaderByCollector[slug] || null,
         leader_excluded_catalog_ids: leaderExcludedByCollector[slug] || [],
       })
@@ -302,15 +305,36 @@ export default function ChestsPage() {
     } catch (e) { setMsg(e.message) }
   }
 
-  async function genToken(slug) {
-    const res = await api.dashboardChestsToken(slug)
-    setMsg(res.code)
+  // Руководители (2026-09-27): хозяин всегда один; руководитель помогает вести его ростер
+  const isOwner = slug => (collectors.find(c => c.slug === slug)?.role ?? 'owner') === 'owner'
+
+  async function inviteManager(slug) {
+    try {
+      const res = await api.dashboardChestsManagerInvite(slug)
+      setInviteCodeByCollector(prev => ({ ...prev, [slug]: res.code }))
+    } catch (e) { setMsg(e.message) }
   }
 
-  async function claim() {
+  async function joinAsManager() {
     try {
-      await api.dashboardChestsClaim(claimCode)
+      await api.dashboardChestsManagerJoin(claimCode.trim())
       setClaimCode('')
+      setMsg(cx.managerJoined)
+      await refresh()
+    } catch (e) { setMsg(cx.managerJoinError) }
+  }
+
+  async function removeManager(slug, userId) {
+    try {
+      await api.dashboardChestsManagerRemove(slug, userId)
+      setConfirmRemoveManager(prev => ({ ...prev, [`${slug}:${userId}`]: false }))
+      await refresh()
+    } catch (e) { setMsg(e.message) }
+  }
+
+  async function leaveManagers(slug) {
+    try {
+      await api.dashboardChestsManagerLeave(slug)
       await refresh()
     } catch (e) { setMsg(e.message) }
   }
@@ -368,9 +392,8 @@ export default function ChestsPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 24, maxWidth: 520, borderRadius: 16 }}>
-        <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginBottom: 10 }}>
-          {cx.claimBtn} — {cx.claimPlaceholder.toLowerCase()}
-        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{cx.managerJoinTitle}</div>
+        <div style={{ fontSize: 14, color: 'var(--on-surface2)', marginBottom: 10 }}>{cx.managerJoinHint}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input
             className="input-dark"
@@ -379,7 +402,8 @@ export default function ChestsPage() {
             placeholder={cx.claimPlaceholder}
             style={{ flex: '1 1 180px' }}
           />
-          <button className="chest-pill-btn chest-pill-btn--primary" onClick={claim}>{cx.claimBtn}</button>
+          <button className="chest-pill-btn chest-pill-btn--primary" onClick={joinAsManager}
+            disabled={!claimCode.trim()}>{cx.claimBtn}</button>
         </div>
       </div>
 
@@ -424,15 +448,65 @@ export default function ChestsPage() {
                   <option value="ru">ru</option>
                   <option value="en">en</option>
                 </select>
-                <button className="chest-pill-btn chest-pill-btn--sm" onClick={() => genToken(collector.slug)}>
-                  {cx.generateToken}
-                </button>
+                {collector.role === 'manager' ? (
+                  <button className="chest-pill-btn chest-pill-btn--sm" onClick={() => leaveManagers(collector.slug)}>
+                    {cx.managerLeave}
+                  </button>
+                ) : (
+                  <button className="chest-pill-btn chest-pill-btn--sm" onClick={() => inviteManager(collector.slug)}>
+                    👥 {cx.generateToken}
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Сезон: поля в одну строку, квоты рядом, одна кнопка «Сохранить сезон» (владелец 2026-09-26) */}
-          <div className="chest-season-card">
+          {collector.role === 'manager' && (
+            <div className="chest-season-card" style={{ fontSize: 15, marginBottom: 12 }}>
+              👥 {cx.managerYouAre} <b translate="no" className="notranslate">{collector.owner_label}</b>.
+              <span style={{ color: 'var(--on-surface2)' }}> {cx.managerOwnerOnlyNote}</span>
+            </div>
+          )}
+
+          {collector.role !== 'manager' && (inviteCodeByCollector[collector.slug] || (collector.managers || []).length > 0) && (
+            <div className="chest-season-card" style={{ marginBottom: 12 }}>
+              <div className="season-subtitle">{cx.managersTitle}</div>
+              {inviteCodeByCollector[collector.slug] && (
+                <div style={{ marginBottom: 10, fontSize: 15 }}>
+                  {cx.managerCodeLabel}{' '}
+                  <code translate="no" className="notranslate" style={{ fontSize: 16, userSelect: 'all',
+                    padding: '2px 8px', border: '1px solid var(--outline)', borderRadius: 6 }}>
+                    {inviteCodeByCollector[collector.slug]}
+                  </code>
+                  <div style={{ fontSize: 14, color: 'var(--on-surface2)', marginTop: 6 }}>{cx.managerCodeHint}</div>
+                </div>
+              )}
+              {(collector.managers || []).map(m => {
+                const key = `${collector.slug}:${m.user_id}`
+                return (
+                  <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 15 }}>
+                    <span translate="no" className="notranslate">{m.email}</span>
+                    {confirmRemoveManager[key] ? (
+                      <>
+                        <span style={{ fontSize: 14, color: '#F87171', marginLeft: 'auto' }}>{cx.managerRemoveConfirm}</span>
+                        <button className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--solid-danger"
+                          onClick={() => removeManager(collector.slug, m.user_id)}>{cx.managerRemoveYes}</button>
+                        <button className="chest-pill-btn chest-pill-btn--sm"
+                          onClick={() => setConfirmRemoveManager(prev => ({ ...prev, [key]: false }))}>{cx.closeSeasonNo}</button>
+                      </>
+                    ) : (
+                      <button className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--danger" style={{ marginLeft: 'auto' }}
+                        onClick={() => setConfirmRemoveManager(prev => ({ ...prev, [key]: true }))}>{cx.managerRemove}</button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Сезон: поля в одну строку, квоты рядом, одна кнопка «Сохранить сезон» (владелец 2026-09-26).
+              Сезон и его квоты — только хозяину ростера (руководители 2026-09-27). */}
+          {collector.role !== 'manager' && <div className="chest-season-card">
             <div className="season-subtitle">{cx.seasonTitle}</div>
             <div className="season-fields">
               <label className="season-field">
@@ -503,7 +577,7 @@ export default function ChestsPage() {
                 )
               )}
             </div>
-          </div>
+          </div>}
 
           <div className="chest-tabs chest-tabs--pill">
             <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
@@ -724,8 +798,10 @@ export default function ChestsPage() {
                         <input
                           type="radio"
                           name={`leader-${collector.slug}`}
+                          disabled={collector.role === 'manager'}
                           checked={leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name)}
                           onClick={() => {
+                            if (collector.role === 'manager') return
                             const name = row.canonical_name || row.raw_name
                             setLeaderByCollector(prev => ({
                               ...prev,
@@ -832,8 +908,9 @@ export default function ChestsPage() {
           )}
 
           {/* Удалить коллектор — намеренно отдельно внизу карточки, подальше от ссылок
-              наверху (владелец 2026-09-25: рядом с публичной ссылкой легко нажать случайно) */}
-          <div style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--outline)',
+              наверху (владелец 2026-09-25: рядом с публичной ссылкой легко нажать случайно).
+              Только хозяину ростера. */}
+          {collector.role !== 'manager' && <div style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--outline)',
                        display: 'flex', justifyContent: 'flex-end', gap: 8, alignItems: 'center' }}>
             {confirmDeleteByCollector[collector.slug] ? (
               <>
@@ -861,7 +938,7 @@ export default function ChestsPage() {
                 onClick={() => setConfirmDeleteByCollector(prev => ({ ...prev, [collector.slug]: true }))}
               >{cx.deleteCollectorBtn}</button>
             )}
-          </div>
+          </div>}
         </div>
       ))}
 

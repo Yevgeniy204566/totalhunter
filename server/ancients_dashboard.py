@@ -26,7 +26,7 @@ from database import get_db
 from models import (
     AncientCalculation, AncientEditor, AncientInviteCode,
     AncientNameMapping, AncientRoster,
-    ChestCollector, Log, PlayerAlias, PlayerProfile, User,
+    ChestCollector, Log, PlayerAlias, PlayerProfile, User, ChestManager,
 )
 from roy import next_trade_routes_end
 from web_routes import get_web_user
@@ -47,6 +47,25 @@ async def _get_own_collector(db: AsyncSession, slug: str, user: User) -> ChestCo
     return collector
 
 
+async def _is_chest_manager(db: AsyncSession, collector_id: int, user_id: int) -> bool:
+    return (await db.execute(
+        select(ChestManager.id).where(ChestManager.collector_id == collector_id,
+                                      ChestManager.user_id == user_id)
+    )).scalar_one_or_none() is not None
+
+
+async def _get_own_or_manager_collector(db: AsyncSession, slug: str, user: User) -> ChestCollector:
+    """Хозяин или руководитель ростера — калькулятор Древнего (утверждено владельцем 2026-09-27)."""
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+    if collector.user_id == user.id or await _is_chest_manager(db, collector.id, user.id):
+        return collector
+    raise HTTPException(status_code=403, detail="Not your collector")
+
+
 async def _get_own_or_editor_collector(
     db: AsyncSession, slug: str, user: User
 ) -> tuple[ChestCollector, bool]:
@@ -58,6 +77,9 @@ async def _get_own_or_editor_collector(
         raise HTTPException(status_code=404, detail="Collector not found")
     if collector.user_id == user.id:
         return collector, True
+    # Руководитель ростера (2026-09-27) — постоянная роль, права не меньше редактора Древнего
+    if await _is_chest_manager(db, collector.id, user.id):
+        return collector, False
     now = datetime.now(timezone.utc)
     editor = (await db.execute(
         select(AncientEditor).where(
@@ -291,6 +313,14 @@ async def get_dashboard_ancients(
     )).all()
     own_ids = {c.id for c in own_collectors}
     editor_collectors = [row.ChestCollector for row in editor_rows if row.ChestCollector.id not in own_ids]
+    managed = (await db.execute(
+        select(ChestCollector)
+        .join(ChestManager, ChestManager.collector_id == ChestCollector.id)
+        .where(ChestManager.user_id == user.id, ChestCollector.ancient_hidden.is_(False))
+        .order_by(ChestCollector.id.desc())
+    )).scalars().all()
+    seen = own_ids | {c.id for c in editor_collectors}
+    editor_collectors += [c for c in managed if c.id not in seen]
 
     # (collector, is_owner) pairs
     all_pairs: list[tuple[ChestCollector, bool]] = (
@@ -517,7 +547,9 @@ async def clear_ocr_import(slug: str,
     Строка без войск/звания (чистый OCR-мусор) удаляется целиком. Строка,
     несущая войска/звание (слитая с Сундуками или ручная), только теряет
     место/очки — иначе кнопка стирала бы кураторские данные лидера."""
-    collector, _ = await _get_own_or_editor_collector(db, slug, user)
+    collector, is_owner = await _get_own_or_editor_collector(db, slug, user)
+    if not is_owner and await _is_chest_manager(db, collector.id, user.id):
+        raise HTTPException(status_code=403, detail="Only the roster owner can clear the import")
     rows = (await db.execute(
         select(AncientRoster).where(AncientRoster.collector_id == collector.id)
     )).scalars().all()
@@ -578,7 +610,7 @@ class CalculatePayload(BaseModel):
 async def calculate(slug: str, payload: CalculatePayload,
                     user: User = Depends(get_web_user),
                     db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, slug, user)
+    collector = await _get_own_or_manager_collector(db, slug, user)
     if collector.ancient_hidden:
         collector.ancient_hidden_at = datetime.now(timezone.utc)
 

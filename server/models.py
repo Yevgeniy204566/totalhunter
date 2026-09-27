@@ -436,7 +436,8 @@ class ChestCollector(Base):
     """
     Один сборщик внутри одного клана/королевства — единица тенант-изоляции.
     slug — непредсказуемый публичный идентификатор публичной страницы /chests/{slug}.
-    management_token — одноразовый код передачи владения коллектором другому user_id.
+    management_token — одноразовый код приглашения РУКОВОДИТЕЛЯ (ChestManager); хозяин (user_id)
+    при этом не меняется — ростер наполняет только его бот (владелец 2026-09-27).
     """
     __tablename__ = "chest_collectors"
     __table_args__ = (
@@ -471,6 +472,23 @@ class ChestCollector(Base):
     ancient_shortfall_medium_pct   = Column(Float, nullable=True)
     ancient_shortfall_critical_pct = Column(Float, nullable=True)
 
+
+
+class ChestManager(Base):
+    """Руководитель ростера (владелец 2026-09-27): помогает хозяину вести ЕГО ростер на сайте —
+    участники, звания/войска/Герой, очки и учёт сундуков, Древний, история. Сезон, квоты сезона,
+    закрытие, удаление ростера и список руководителей — только хозяину. Хозяин всегда один;
+    роль постоянная, пока хозяин не уберёт или руководитель не выйдет сам."""
+    __tablename__ = "chest_managers"
+    __table_args__ = (
+        UniqueConstraint("collector_id", "user_id", name="uq_chest_manager"),
+    )
+
+    id           = Column(Integer, primary_key=True)
+    collector_id = Column(Integer, ForeignKey("chest_collectors.id", ondelete="CASCADE"),
+                          nullable=False, index=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at   = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
 class Chest(Base):
     """

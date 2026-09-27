@@ -23,7 +23,7 @@ from chest_summary import enrich_with_profiles, pivot_summary, query_summary_row
 from database import get_db
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
-    ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, PlayerAlias, PlayerProfile, User,
+    ChestSeasonHistory, ChestTypeAlias, ChestTypeCatalog, PlayerAlias, PlayerProfile, User, ChestManager,
 )
 from web_routes import get_web_user
 
@@ -263,6 +263,28 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
         .where(ChestCollector.user_id == user.id)
         .order_by(last_chest_sub.c.last_chest.desc().nulls_last())
     )).scalars().all()
+    # Ростеры, где пользователь — руководитель (хозяин пригласил кодом); идут после своих.
+    managed = (await db.execute(
+        select(ChestCollector, User.email)
+        .join(ChestManager, ChestManager.collector_id == ChestCollector.id)
+        .join(User, User.id == ChestCollector.user_id)
+        .where(ChestManager.user_id == user.id)
+        .order_by(ChestCollector.id.desc())
+    )).all()
+    owner_label_by_id = {row.ChestCollector.id: _mask_email(row.email) for row in managed}
+    collectors = list(collectors) + [row.ChestCollector for row in managed]
+    own_ids = {c.id for c in collectors if c.user_id == user.id}
+    managers_by_collector: dict[int, list[dict]] = {cid: [] for cid in own_ids}
+    if own_ids:
+        for m_row in (await db.execute(
+            select(ChestManager.collector_id, ChestManager.user_id, ChestManager.created_at, User.email)
+            .join(User, User.id == ChestManager.user_id)
+            .where(ChestManager.collector_id.in_(own_ids))
+            .order_by(ChestManager.created_at)
+        )).all():
+            managers_by_collector[m_row.collector_id].append({
+                "user_id": m_row.user_id, "email": m_row.email, "added_at": m_row.created_at,
+            })
 
     global_alias_rows = (await db.execute(
         select(PlayerAlias.raw_name, PlayerAlias.canonical_name)
@@ -304,6 +326,10 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "quotas": collector.quotas or [],
             "leader_canonical_name": collector.leader_canonical_name,
             "leader_excluded_catalog_ids": collector.leader_excluded_catalog_ids or [],
+            # Руководители (2026-09-27): кабинет прячет у руководителя настройки хозяина
+            "role": "owner" if collector.id in own_ids else "manager",
+            "owner_label": None if collector.id in own_ids else owner_label_by_id.get(collector.id),
+            "managers": managers_by_collector.get(collector.id) if collector.id in own_ids else None,
         })
     return {"collectors": result}
 
@@ -334,10 +360,37 @@ async def _get_own_collector(db: AsyncSession, slug: str, user: User) -> ChestCo
     return collector
 
 
+async def _get_collector_access(db: AsyncSession, slug: str, user: User) -> tuple[ChestCollector, str]:
+    """(ростер, роль «owner»|«manager») для действий, разрешённых руководителю: участники,
+    очки/учёт сундуков, язык, история/CSV. Всё остальное — _get_own_collector (только хозяин)."""
+    collector = (await db.execute(
+        select(ChestCollector).where(ChestCollector.slug == slug)
+    )).scalar_one_or_none()
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+    if collector.user_id == user.id:
+        return collector, "owner"
+    manager = (await db.execute(
+        select(ChestManager.id).where(ChestManager.collector_id == collector.id,
+                                      ChestManager.user_id == user.id)
+    )).scalar_one_or_none()
+    if manager is None:
+        raise HTTPException(status_code=403, detail="Not your collector")
+    return collector, "manager"
+
+
+def _mask_email(email: Optional[str]) -> str:
+    """«владелец: iev***@gmail.com» — руководителю видно, чей ростер, без полного адреса."""
+    if not email or "@" not in email:
+        return "—"
+    name, domain = email.split("@", 1)
+    return f"{name[:3]}***@{domain}"
+
+
 @router.post("/rows")
 async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web_user),
                               db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, payload.collector_slug, user)
+    collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
     known_ids = await _load_known_catalog_ids(db)
     for row in payload.rows:
@@ -380,7 +433,7 @@ class PlayerAliasesPayload(BaseModel):
 @router.post("/player-aliases")
 async def post_player_aliases(payload: PlayerAliasesPayload, user: User = Depends(get_web_user),
                               db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, payload.collector_slug, user)
+    collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
     await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector.id))
 
@@ -412,7 +465,7 @@ class PlayerProfilesPayload(BaseModel):
 async def post_player_profiles(payload: PlayerProfilesPayload,
                                user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, payload.collector_slug, user)
+    collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
     await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id))
 
@@ -438,33 +491,63 @@ class CollectorSlugPayload(BaseModel):
     collector_slug: str
 
 
-@router.post("/management-token")
-async def create_management_token(payload: CollectorSlugPayload,
-                                   user: User = Depends(get_web_user),
-                                   db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, payload.collector_slug, user)
+@router.post("/{slug}/managers/invite")
+async def invite_manager(slug: str, user: User = Depends(get_web_user),
+                         db: AsyncSession = Depends(get_db)):
+    """Хозяин получает одноразовый код; кто введёт его — станет РУКОВОДИТЕЛЕМ этого ростера.
+    Хозяин не меняется (раньше этот код передавал ростер целиком — заменено 2026-09-27)."""
+    collector = await _get_own_collector(db, slug, user)
     code = secrets.token_urlsafe(16)
     collector.management_token = code
     await db.commit()
     return {"code": code}
 
 
-class ClaimPayload(BaseModel):
+class JoinManagerPayload(BaseModel):
     code: str
 
 
-@router.post("/claim")
-async def claim_collector(payload: ClaimPayload, user: User = Depends(get_web_user),
+@router.post("/managers/join")
+async def join_as_manager(payload: JoinManagerPayload, user: User = Depends(get_web_user),
                           db: AsyncSession = Depends(get_db)):
     collector = (await db.execute(
         select(ChestCollector).where(ChestCollector.management_token == payload.code)
     )).scalar_one_or_none()
     if not collector:
         raise HTTPException(status_code=404, detail="Invalid code")
-    collector.user_id = user.id
+    if collector.user_id == user.id:
+        raise HTTPException(status_code=400, detail="This is your own roster")
+    exists = (await db.execute(
+        select(ChestManager.id).where(ChestManager.collector_id == collector.id,
+                                      ChestManager.user_id == user.id)
+    )).scalar_one_or_none()
+    if exists is None:
+        db.add(ChestManager(collector_id=collector.id, user_id=user.id))
     collector.management_token = None
     await db.commit()
     return {"ok": True, "slug": collector.slug}
+
+
+@router.delete("/{slug}/managers/{manager_user_id}")
+async def remove_manager(slug: str, manager_user_id: int, user: User = Depends(get_web_user),
+                         db: AsyncSession = Depends(get_db)):
+    collector = await _get_own_collector(db, slug, user)
+    await db.execute(delete(ChestManager).where(ChestManager.collector_id == collector.id,
+                                                ChestManager.user_id == manager_user_id))
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/{slug}/managers/leave")
+async def leave_managers(slug: str, user: User = Depends(get_web_user),
+                         db: AsyncSession = Depends(get_db)):
+    collector, role = await _get_collector_access(db, slug, user)
+    if role != "manager":
+        raise HTTPException(status_code=400, detail="Owner cannot leave own roster")
+    await db.execute(delete(ChestManager).where(ChestManager.collector_id == collector.id,
+                                                ChestManager.user_id == user.id))
+    await db.commit()
+    return {"ok": True}
 
 
 class LanguagePayload(BaseModel):
@@ -475,7 +558,7 @@ class LanguagePayload(BaseModel):
 async def update_language(slug: str, payload: LanguagePayload,
                           user: User = Depends(get_web_user),
                           db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, slug, user)
+    collector, _ = await _get_collector_access(db, slug, user)
     collector.language = payload.language
     await db.commit()
     return {"ok": True}
@@ -640,6 +723,7 @@ async def delete_collector(slug: str, user: User = Depends(get_web_user),
     await db.execute(delete(AncientNameMapping).where(AncientNameMapping.collector_id == collector.id))
     await db.execute(delete(AncientEditor).where(AncientEditor.collector_id == collector.id))
     await db.execute(delete(AncientInviteCode).where(AncientInviteCode.collector_id == collector.id))
+    await db.execute(delete(ChestManager).where(ChestManager.collector_id == collector.id))
     await db.execute(delete(ChestCollector).where(ChestCollector.id == collector.id))
     await db.commit()
     return {"ok": True}
@@ -654,7 +738,7 @@ async def dashboard_stats_csv(slug: str, user: User = Depends(get_web_user),
     import csv
     import io
     from fastapi.responses import Response
-    collector = await _get_own_collector(db, slug, user)
+    collector, _ = await _get_collector_access(db, slug, user)
 
     seasons = (await db.execute(
         select(ChestSeasonHistory).where(ChestSeasonHistory.collector_id == collector.id)
@@ -702,7 +786,7 @@ async def dashboard_stats_csv(slug: str, user: User = Depends(get_web_user),
 @router.get("/{slug}/history")
 async def get_dashboard_history(slug: str, user: User = Depends(get_web_user),
                                 db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, slug, user)
+    collector, _ = await _get_collector_access(db, slug, user)
     return {"seasons": await build_history_list(db, collector.id)}
 
 
@@ -710,7 +794,7 @@ async def get_dashboard_history(slug: str, user: User = Depends(get_web_user),
 async def get_dashboard_history_detail(slug: str, season_id: int,
                                        user: User = Depends(get_web_user),
                                        db: AsyncSession = Depends(get_db)):
-    collector = await _get_own_collector(db, slug, user)
+    collector, _ = await _get_collector_access(db, slug, user)
     detail = await build_history_detail(db, collector.id, season_id)
     if detail is None:
         raise HTTPException(status_code=404, detail="Season not found")
