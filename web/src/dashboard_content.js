@@ -132,6 +132,9 @@ export const DASHBOARD = {
     managerRemove: 'Убрать',
     managerRemoveConfirm: 'Убрать руководителя?',
     managerRemoveYes: 'Да, убрать',
+    nickPlaceholder: 'Ваш игровой ник',
+    nickMissing: 'ник не указан',
+    nickRequired: 'Впишите свой игровой ник — хозяин ростера видит руководителей только по нику',
     noCollectors: 'У вас пока нет ни одного клана. Ростер создаётся сам при первой отправке сундуков из бота. Если вас пригласили руководителем — введите код выше.',
     noCatalog: '— выбрать —',
     language: 'Язык клана',
@@ -268,6 +271,11 @@ export const DASHBOARD = {
     trialAvailable: '✓ Триал доступен',
     topUp:          'Пополнить кредиты →',
     download:       'Скачать программу',
+    nickLabel: 'Игровой ник',
+    nickPlaceholder: 'Ваш ник в Total Battle',
+    nickSave: 'Сохранить',
+    nickSaved: 'Ник сохранён',
+    nickHint: 'Его видят другие вместо вашей почты — например, хозяин ростера и руководители в Сундуках.',
   },
 
   collected: {

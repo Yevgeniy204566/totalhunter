@@ -132,6 +132,9 @@ export const DASHBOARD = {
     managerRemove: 'Remove',
     managerRemoveConfirm: 'Remove this manager?',
     managerRemoveYes: 'Yes, remove',
+    nickPlaceholder: 'Your in-game nickname',
+    nickMissing: 'no nickname',
+    nickRequired: 'Enter your in-game nickname: the roster owner sees managers only by nickname',
     noCollectors: "You don't have a clan yet. A roster is created automatically on your first chest submission from the bot. If you were invited as a manager, enter the code above.",
     noCatalog: '— select —',
     language: 'Clan language',
@@ -267,6 +270,11 @@ export const DASHBOARD = {
     trialAvailable: '✓ Trial available',
     topUp:          'Top up credits →',
     download:       'Download Bot',
+    nickLabel: 'In-game nickname',
+    nickPlaceholder: 'Your nickname in Total Battle',
+    nickSave: 'Save',
+    nickSaved: 'Nickname saved',
+    nickHint: 'Others see it instead of your email, for example the roster owner and managers in Chests.',
   },
 
   collected: {

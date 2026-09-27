@@ -120,6 +120,7 @@ export default function ChestsPage() {
   const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
   const [inviteCodeByCollector, setInviteCodeByCollector] = useState({})
+  const [joinNick, setJoinNick] = useState('')
   const [confirmRemoveManager, setConfirmRemoveManager] = useState({})
   const [presets, setPresets] = useState(null)
   const [presetChoiceByCollector, setPresetChoiceByCollector] = useState({})
@@ -142,6 +143,7 @@ export default function ChestsPage() {
     try {
       const data = await api.dashboardChests()
       setCollectors(data.collectors)
+      if (data.my_nick) setJoinNick(prev => prev || data.my_nick)
       const nextRows = {}
       const nextPlayerRows = {}
       const nextSeason = {}
@@ -317,11 +319,13 @@ export default function ChestsPage() {
 
   async function joinAsManager() {
     try {
-      await api.dashboardChestsManagerJoin(claimCode.trim())
+      await api.dashboardChestsManagerJoin(claimCode.trim(), joinNick.trim())
       setClaimCode('')
       setMsg(cx.managerJoined)
       await refresh()
-    } catch (e) { setMsg(cx.managerJoinError) }
+    } catch (e) {
+      setMsg(String(e.message || '').includes('nick_required') ? cx.nickRequired : cx.managerJoinError)
+    }
   }
 
   async function removeManager(slug, userId) {
@@ -397,6 +401,15 @@ export default function ChestsPage() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input
             className="input-dark"
+            value={joinNick}
+            maxLength={32}
+            translate="no"
+            onChange={e => setJoinNick(e.target.value)}
+            placeholder={cx.nickPlaceholder}
+            style={{ flex: '1 1 160px' }}
+          />
+          <input
+            className="input-dark"
             value={claimCode}
             onChange={e => setClaimCode(e.target.value)}
             placeholder={cx.claimPlaceholder}
@@ -463,7 +476,7 @@ export default function ChestsPage() {
 
           {collector.role === 'manager' && (
             <div className="chest-season-card" style={{ fontSize: 15, marginBottom: 12 }}>
-              👥 {cx.managerYouAre} <b translate="no" className="notranslate">{collector.owner_label}</b>.
+              👥 {cx.managerYouAre} <b translate="no" className="notranslate">{collector.owner_label || cx.nickMissing}</b>.
               <span style={{ color: 'var(--on-surface2)' }}> {cx.managerOwnerOnlyNote}</span>
             </div>
           )}
@@ -485,7 +498,7 @@ export default function ChestsPage() {
                 const key = `${collector.slug}:${m.user_id}`
                 return (
                   <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 15 }}>
-                    <span translate="no" className="notranslate">{m.email}</span>
+                    <span translate="no" className="notranslate">{m.nick || cx.nickMissing}</span>
                     {confirmRemoveManager[key] ? (
                       <>
                         <span style={{ fontSize: 14, color: '#F87171', marginLeft: 'auto' }}>{cx.managerRemoveConfirm}</span>

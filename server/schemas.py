@@ -93,6 +93,7 @@ class WebMeResponse(BaseModel):
     created_at: str
     referrals: dict = {"l1": 0, "l2": 0, "l3": 0}
     invited_by_id: Optional[int] = None
+    game_nick: Optional[str] = None
 
 
 class LinkGenerateRequest(BaseModel):
@@ -223,3 +224,8 @@ class ChestLink(BaseModel):
 class ChestLinksPayload(BaseModel):
     # 50 — защита от мусора, не бизнес-лимит: столько кланов человеку не нужно
     links: list[ChestLink] = Field(max_length=50)
+
+
+class GameNickPayload(BaseModel):
+    """Игровой ник аккаунта (владелец 2026-09-27) — виден другим вместо почты."""
+    game_nick: str = Field(default="", max_length=32)

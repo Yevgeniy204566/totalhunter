@@ -148,6 +148,35 @@ function ChestFinder({ D }) {
   )
 }
 
+/* ─── Игровой ник (владелец 2026-09-27): другим виден ник, а не почта ─────────── */
+function GameNickField({ user, D, onRefresh }) {
+  const [nick, setNick] = useState(user.game_nick || '')
+  const [msg, setMsg]   = useState('')
+  const [busy, setBusy] = useState(false)
+  async function save() {
+    setBusy(true); setMsg('')
+    try {
+      await api.saveGameNick(nick.trim())
+      setMsg(D.profile.nickSaved)
+      onRefresh && onRefresh()
+    } catch (e) { setMsg(e.message) }
+    setBusy(false)
+  }
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 14, color: 'var(--on-surface2)', marginBottom: 6 }}>{D.profile.nickLabel}</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input className="input-dark" value={nick} maxLength={32}
+          onChange={e => setNick(e.target.value)} placeholder={D.profile.nickPlaceholder}
+          translate="no" style={{ flex: '1 1 160px', fontSize: 16 }} />
+        <button className="chest-pill-btn chest-pill-btn--primary" onClick={save}
+          disabled={busy || nick.trim() === (user.game_nick || '')}>{D.profile.nickSave}</button>
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginTop: 6 }}>{msg || D.profile.nickHint}</div>
+    </div>
+  )
+}
+
 /* ─── tab: Profile ────────────────────────────────────────────── */
 function ProfileTab({ user, hunts, D, onRefresh }) {
   const [code, setCode]       = useState('')
@@ -203,6 +232,7 @@ function ProfileTab({ user, hunts, D, onRefresh }) {
                 <div style={{ fontSize: 12, color: 'var(--on-surface2)' }}>{user.email}</div>
               </div>
             </div>
+            <GameNickField user={user} D={D} onRefresh={onRefresh} />
             <div className="separator" />
             {[
               { label: D.profile.credits,     value: user.credits,     gold: true  },

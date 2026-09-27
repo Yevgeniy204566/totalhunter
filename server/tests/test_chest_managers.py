@@ -43,9 +43,10 @@ def _client():
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
-async def _make_manager(client, owner_h, manager_h, slug):
+async def _make_manager(client, owner_h, manager_h, slug, nick="Vasya"):
     code = (await client.post(f"{BASE}/{slug}/managers/invite", headers=owner_h)).json()["code"]
-    r = await client.post(f"{BASE}/managers/join", json={"code": code}, headers=manager_h)
+    r = await client.post(f"{BASE}/managers/join", json={"code": code, "game_nick": nick},
+                          headers=manager_h)
     assert r.status_code == 200, r.text
     return r
 
@@ -80,9 +81,9 @@ async def test_code_is_one_time_and_owner_cannot_join_own_roster(db_session):
         code = (await c.post(f"{BASE}/roster-1/managers/invite", headers=owner_h)).json()["code"]
         assert (await c.post(f"{BASE}/managers/join", json={"code": code},
                              headers=owner_h)).status_code == 400
-        assert (await c.post(f"{BASE}/managers/join", json={"code": code},
+        assert (await c.post(f"{BASE}/managers/join", json={"code": code, "game_nick": "Vasya"},
                              headers=vasya_h)).status_code == 200
-        assert (await c.post(f"{BASE}/managers/join", json={"code": code},
+        assert (await c.post(f"{BASE}/managers/join", json={"code": code, "game_nick": "Petya"},
                              headers=petya_h)).status_code == 404
         assert (await c.post(f"{BASE}/managers/join", json={"code": "nope"},
                              headers=petya_h)).status_code == 404
@@ -103,10 +104,10 @@ async def test_manager_sees_roster_in_dashboard_with_role(db_session):
 
     assert mine["vasya-own"]["role"] == "owner"
     assert mine["roster-1"]["role"] == "manager"
-    assert mine["roster-1"]["owner_label"]              # «владелец: …»
+    assert mine["roster-1"]["owner_label"] is None      # у хозяина ещё нет ника
     assert "managers" not in mine["roster-1"] or mine["roster-1"]["managers"] is None
     assert owners["roster-1"]["role"] == "owner"
-    assert [m["user_id"] for m in owners["roster-1"]["managers"]] == [vasya.id]
+    assert [(m["user_id"], m["nick"]) for m in owners["roster-1"]["managers"]] == [(vasya.id, "Vasya")]
 
 
 @pytest.mark.asyncio
@@ -256,3 +257,71 @@ async def test_manager_works_with_ancients_but_not_owner_only_parts(db_session):
                     c.post(f"{A}/roster-1/invite", headers=vasya_h)):
             r = await req
             assert r.status_code == 403, (r.request.url, r.status_code, r.text)
+
+
+
+# ── Игровые ники вместо почт (владелец 2026-09-27: хозяин хочет быть анонимом) ──────
+
+@pytest.mark.asyncio
+async def test_nobody_sees_other_peoples_email_only_nicks(db_session):
+    owner, owner_h = await _user(db_session, "owner.secret@x.com")
+    owner.game_nick = "Hozyain"
+    vasya, vasya_h = await _user(db_session, "vasya.secret@x.com")
+    await _collector(db_session, owner.id, "roster-1")
+    await db_session.commit()
+
+    async with _client() as c:
+        await _make_manager(c, owner_h, vasya_h, "roster-1", nick="VasyaNick")
+        as_manager = (await c.get(BASE, headers=vasya_h)).text
+        as_owner = (await c.get(BASE, headers=owner_h)).text
+        mine = {x["slug"]: x for x in (await c.get(BASE, headers=vasya_h)).json()["collectors"]}
+
+    assert "owner.secret" not in as_manager and "@x.com" not in as_manager.replace("vasya.secret@x.com", "")
+    assert "vasya.secret" not in as_owner
+    assert mine["roster-1"]["owner_label"] == "Hozyain"
+    assert "VasyaNick" in as_owner
+
+
+@pytest.mark.asyncio
+async def test_join_requires_game_nick_when_account_has_none(db_session):
+    owner, owner_h = await _user(db_session, "owner@x.com")
+    vasya, vasya_h = await _user(db_session, "vasya@x.com")
+    await _collector(db_session, owner.id, "roster-1")
+    await db_session.commit()
+
+    async with _client() as c:
+        code = (await c.post(f"{BASE}/roster-1/managers/invite", headers=owner_h)).json()["code"]
+        r = await c.post(f"{BASE}/managers/join", json={"code": code}, headers=vasya_h)
+        assert r.status_code == 400 and r.json()["detail"] == "nick_required"
+        r = await c.post(f"{BASE}/managers/join", json={"code": code, "game_nick": "  Vasya  "},
+                         headers=vasya_h)
+        assert r.status_code == 200
+    await db_session.refresh(vasya)
+    assert vasya.game_nick == "Vasya"
+
+
+@pytest.mark.asyncio
+async def test_join_without_nick_ok_when_account_already_has_one(db_session):
+    owner, owner_h = await _user(db_session, "owner@x.com")
+    vasya, vasya_h = await _user(db_session, "vasya@x.com")
+    vasya.game_nick = "Vasya"
+    await _collector(db_session, owner.id, "roster-1")
+    await db_session.commit()
+    async with _client() as c:
+        code = (await c.post(f"{BASE}/roster-1/managers/invite", headers=owner_h)).json()["code"]
+        assert (await c.post(f"{BASE}/managers/join", json={"code": code},
+                             headers=vasya_h)).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_game_nick_saved_in_profile_and_returned_by_me(db_session):
+    _, h = await _user(db_session, "someone@x.com")
+    await db_session.commit()
+    async with _client() as c:
+        assert (await c.put("/web/game-nick", json={"game_nick": "  Dragon  "}, headers=h)).status_code == 200
+        assert (await c.get("/web/me", headers=h)).json()["game_nick"] == "Dragon"
+        assert (await c.put("/web/game-nick", json={"game_nick": "x" * 33}, headers=h)).status_code == 422
+        assert (await c.put("/web/game-nick", json={"game_nick": ""}, headers=h)).status_code == 200
+        assert (await c.get("/web/me", headers=h)).json()["game_nick"] is None
+        mine = (await c.get(BASE, headers=h)).json()
+        assert "my_nick" in mine

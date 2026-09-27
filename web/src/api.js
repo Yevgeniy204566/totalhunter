@@ -40,6 +40,7 @@ export const api = {
   latestVersion:    ()         => request('GET',  '/version/latest'),
   chestLinks:       ()         => request('GET',  '/web/chest-links'),
   saveChestLinks:   (links)    => request('PUT',  '/web/chest-links', { links }),
+  saveGameNick:     (nick)     => request('PUT',  '/web/game-nick', { game_nick: nick }),
   sendFeedback:     (text)     => request('POST', '/web/feedback', { text }),
   paymentCreate:    (pkg)      => request('POST', '/web/payment/create', { package: pkg }),
   earnStatus:       ()         => request('GET',  '/web/earn/status'),
@@ -51,7 +52,7 @@ export const api = {
     request('POST', '/web/dashboard/chests/player-profiles', { collector_slug: slug, rows }),
   // Руководители ростера (2026-09-27): хозяин приглашает кодом, хозяин не меняется
   dashboardChestsManagerInvite: (slug)         => request('POST',   `/web/dashboard/chests/${slug}/managers/invite`),
-  dashboardChestsManagerJoin:   (code)         => request('POST',   '/web/dashboard/chests/managers/join', { code }),
+  dashboardChestsManagerJoin:   (code, nick)   => request('POST',   '/web/dashboard/chests/managers/join', { code, game_nick: nick || null }),
   dashboardChestsManagerRemove: (slug, userId) => request('DELETE', `/web/dashboard/chests/${slug}/managers/${userId}`),
   dashboardChestsManagerLeave:  (slug)         => request('POST',   `/web/dashboard/chests/${slug}/managers/leave`),
   dashboardChestsLang:  (slug, language) => request('PATCH', `/web/dashboard/chests/${slug}/language`, { language }),

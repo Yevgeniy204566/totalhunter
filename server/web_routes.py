@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import CrashReport, Feedback, Hunt, HwidHistory, LinkCode, Transaction, User
-from schemas import ChestLinksPayload
+from schemas import ChestLinksPayload, GameNickPayload
 from schemas import (
     BasicResponse,
     CrashReportRequest,
@@ -281,6 +281,7 @@ async def web_me(user: User = Depends(get_web_user), db: AsyncSession = Depends(
         created_at=user.created_at.isoformat() if user.created_at else "",
         referrals={"l1": l1, "l2": l2, "l3": l3},
         invited_by_id=user.invited_by_id,
+        game_nick=user.game_nick,
     )
 
 
@@ -337,6 +338,20 @@ async def send_feedback(
         db.add(Feedback(user_id=web_user.id, text=req.text.strip()))
     await db.commit()
     return BasicResponse(success=True, message="Thank you for your feedback!")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUT /web/game-nick — игровой ник аккаунта (Профиль кабинета)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.put("/game-nick")
+async def put_game_nick(req: GameNickPayload, db: AsyncSession = Depends(get_db),
+                        web_user: User = Depends(get_web_user)):
+    # Пустая строка — убрать ник. Длину проверяем уже после strip, как видят другие.
+    nick = (req.game_nick or "").strip()
+    web_user.game_nick = nick or None
+    await db.commit()
+    return {"game_nick": web_user.game_nick}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

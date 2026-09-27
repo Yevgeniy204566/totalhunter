@@ -265,25 +265,26 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
     )).scalars().all()
     # Ростеры, где пользователь — руководитель (хозяин пригласил кодом); идут после своих.
     managed = (await db.execute(
-        select(ChestCollector, User.email)
+        select(ChestCollector, User.game_nick)
         .join(ChestManager, ChestManager.collector_id == ChestCollector.id)
         .join(User, User.id == ChestCollector.user_id)
         .where(ChestManager.user_id == user.id)
         .order_by(ChestCollector.id.desc())
     )).all()
-    owner_label_by_id = {row.ChestCollector.id: _mask_email(row.email) for row in managed}
+    # Почта не показывается никому (владелец 2026-09-27) — только игровой ник, None если не задан
+    owner_label_by_id = {row.ChestCollector.id: row.game_nick for row in managed}
     collectors = list(collectors) + [row.ChestCollector for row in managed]
     own_ids = {c.id for c in collectors if c.user_id == user.id}
     managers_by_collector: dict[int, list[dict]] = {cid: [] for cid in own_ids}
     if own_ids:
         for m_row in (await db.execute(
-            select(ChestManager.collector_id, ChestManager.user_id, ChestManager.created_at, User.email)
+            select(ChestManager.collector_id, ChestManager.user_id, ChestManager.created_at, User.game_nick)
             .join(User, User.id == ChestManager.user_id)
             .where(ChestManager.collector_id.in_(own_ids))
             .order_by(ChestManager.created_at)
         )).all():
             managers_by_collector[m_row.collector_id].append({
-                "user_id": m_row.user_id, "email": m_row.email, "added_at": m_row.created_at,
+                "user_id": m_row.user_id, "nick": m_row.game_nick, "added_at": m_row.created_at,
             })
 
     global_alias_rows = (await db.execute(
@@ -331,7 +332,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "owner_label": None if collector.id in own_ids else owner_label_by_id.get(collector.id),
             "managers": managers_by_collector.get(collector.id) if collector.id in own_ids else None,
         })
-    return {"collectors": result}
+    return {"collectors": result, "my_nick": user.game_nick}
 
 
 class RowIn(BaseModel):
@@ -379,12 +380,6 @@ async def _get_collector_access(db: AsyncSession, slug: str, user: User) -> tupl
     return collector, "manager"
 
 
-def _mask_email(email: Optional[str]) -> str:
-    """«владелец: iev***@gmail.com» — руководителю видно, чей ростер, без полного адреса."""
-    if not email or "@" not in email:
-        return "—"
-    name, domain = email.split("@", 1)
-    return f"{name[:3]}***@{domain}"
 
 
 @router.post("/rows")
@@ -505,6 +500,8 @@ async def invite_manager(slug: str, user: User = Depends(get_web_user),
 
 class JoinManagerPayload(BaseModel):
     code: str
+    # Ник обязателен, если у аккаунта его ещё нет: хозяин видит руководителей только по нику
+    game_nick: Optional[str] = Field(default=None, max_length=32)
 
 
 @router.post("/managers/join")
@@ -517,6 +514,11 @@ async def join_as_manager(payload: JoinManagerPayload, user: User = Depends(get_
         raise HTTPException(status_code=404, detail="Invalid code")
     if collector.user_id == user.id:
         raise HTTPException(status_code=400, detail="This is your own roster")
+    nick = (payload.game_nick or "").strip()
+    if nick:
+        user.game_nick = nick
+    elif not user.game_nick:
+        raise HTTPException(status_code=400, detail="nick_required")
     exists = (await db.execute(
         select(ChestManager.id).where(ChestManager.collector_id == collector.id,
                                       ChestManager.user_id == user.id)

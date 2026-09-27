@@ -64,6 +64,9 @@ class User(Base):
     id            = Column(Integer, primary_key=True)
     hwid          = Column(String(16),  unique=True, nullable=True,  index=True)
     email         = Column(String(255), unique=True, index=True)
+    # Игровой ник (владелец 2026-09-27): показывается другим вместо почты — в руководителях
+    # ростера хозяин и руководители видят друг друга только по нику. username — имя из Google.
+    game_nick     = Column(String(32), nullable=True)
     username      = Column(String(50))
     credits       = Column(Integer, nullable=False, server_default=text('0'))
     ref_credits   = Column(Integer, nullable=False, server_default=text('0'))
