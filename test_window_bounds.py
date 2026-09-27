@@ -107,3 +107,38 @@ def test_automation_conflict_excluded_automation_never_blocks_itself():
     assert main.automation_conflict("v2", True, False, False, exclude="exchange") is False
     assert main.automation_conflict(None, False, True, False, exclude="crypt") is False
     assert main.automation_conflict(None, False, False, True, exclude="chest") is False
+
+
+# ── Владелец 2026-09-27: при старте окно НЕ перекрывает панель задач Windows и НЕ
+#    залезает в игру больше чем на 30% ширины — на любом экране и масштабе Windows.
+#    Остальное (что не влезло) игрок доматывает двумя scrollbar / растягивает окно сам.
+SCREENS = [(1024, 600), (1280, 720), (1366, 768), (1600, 900), (1920, 1080),
+           (2560, 1440), (3840, 2160)]
+SCALES = [1.0, 1.25, 1.5, 1.75, 2.0]
+TASKBAR = 40
+TITLE_BAR_LOGICAL = 31  # заголовок окна Windows при 100%, растёт вместе с масштабом
+
+
+def test_start_window_never_covers_windows_taskbar():
+    for sw, sh in SCREENS:
+        for s in SCALES:
+            area = (0, 0, sw, sh - TASKBAR)
+            _, h, geo = main.compute_window_geometry(area, s)
+            y = int(geo.split("+")[2])
+            bottom = y + round((h + TITLE_BAR_LOGICAL) * s)
+            assert bottom <= area[3], f"{sw}x{sh}@{s}: низ окна {bottom} > панель задач {area[3]}"
+
+
+def test_start_window_takes_at_most_30_percent_of_screen_width():
+    """≤30% — пока 30% не упираются в пол 360 (решение владельца 25.09 для экранов
+    уже 1200 логических px, см. test_ancient_tv_resolutions_respect_absolute_floor)."""
+    for sw, sh in SCREENS:
+        for s in SCALES:
+            area = (0, 0, sw, sh - TASKBAR)
+            w, _, geo = main.compute_window_geometry(area, s)
+            x = int(geo.split("+")[1])
+            phys_w = round(w * s)
+            assert x + phys_w <= sw, f"{sw}x{sh}@{s}: окно за правым краем"
+            if sw / s >= main.WINDOW_MIN_WIDTH_FLOOR / main.WINDOW_MAX_WIDTH_FRACTION:
+                assert phys_w <= sw * main.WINDOW_MAX_WIDTH_FRACTION + s, \
+                    f"{sw}x{sh}@{s}: окно {phys_w}px > 30% экрана"

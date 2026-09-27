@@ -1907,7 +1907,7 @@ def compute_window_width(work_area_width: int,
 # масштаб Windows — при 125%+ низ окна со скроллбаром уходил за край экрана.
 WINDOW_BOTTOM_MARGIN_PX = 35
 WINDOW_RIGHT_MARGIN_PX = 10
-WINDOW_MIN_HEIGHT = 400
+WINDOW_MIN_SIZE = 150
 CONTENT_FIT_INTERVAL_MS = 300
 
 
@@ -1947,6 +1947,32 @@ def compute_content_height(base_height: int, tab_req_px: int, scaling: float) ->
     прокрутка до неё не дотягивается. reqheight — в физических пикселях, отсюда деление."""
     s = scaling if scaling and scaling > 0 else 1.0
     return max(base_height, math.ceil(tab_req_px / s))
+
+
+def add_horizontal_scroll(sf, **scrollbar_colors):
+    """ПРАВИЛО владельца (2026-09-27): у прокручиваемой области бота ДВА scrollbar —
+    вертикальный и горизонтальный. Штатный вертикальный CTkScrollableFrame растягивает
+    содержимое ровно по ширине окна, и всё, что шире, Tk молча сжимает/выдавливает
+    (так на узком окне пропадала кнопка «+5»). Здесь ширина содержимого =
+    max(ширина окна, естественная ширина содержимого), лишнее проматывается вбок.
+    Возвращает (горизонтальный scrollbar, функция подгонки ширины)."""
+    canvas = sf._parent_canvas
+    hsb = ctk.CTkScrollbar(sf._parent_frame, orientation="horizontal",
+                           command=canvas.xview, **scrollbar_colors)
+    canvas.configure(xscrollcommand=hsb.set)
+    hsb.grid(row=2, column=0, sticky="ew")
+
+    def fit_width(_event=None):
+        try:
+            width = max(canvas.winfo_width(), sf.winfo_reqwidth())
+            if int(float(canvas.itemcget(sf._create_window_id, "width") or 0)) != width:
+                canvas.itemconfigure(sf._create_window_id, width=width)
+        except Exception:
+            pass
+
+    # заменяет штатную подгонку CTk (width = ширина canvas), а не добавляется к ней
+    canvas.bind("<Configure>", fit_width)
+    return hsb, fit_width
 
 
 def enforce_no_maximize(win, geometry: str) -> bool:
@@ -2048,9 +2074,11 @@ class TotalHunterApp(ctk.CTk):
         _win_w, _work_h, self._window_geometry = compute_window_geometry(
             self._current_work_area(), self._get_window_scaling())
         self.geometry(self._window_geometry)
-        self.resizable(False, True)
-        self.minsize(_win_w, min(WINDOW_MIN_HEIGHT, _work_h))
-        self.maxsize(_win_w, _work_h)  # входящие п.A: жёсткий потолок ширины; высота — не выше экрана
+        # ЗОЛОТОЕ ПРАВИЛО владельца (2026-09-27): окно растягивается во ВСЕХ направлениях,
+        # всё, что не влезло, проматывается двумя scrollbar. Стартовый размер — прежний
+        # (≤30% ширины, над панелью задач); разворот на весь экран по-прежнему запрещён.
+        self.resizable(True, True)
+        self.minsize(WINDOW_MIN_SIZE, WINDOW_MIN_SIZE)
         self.bind("<Configure>", lambda e: enforce_no_maximize(self, self._window_geometry))
         self.configure(fg_color=MD3["bg"])
 
@@ -2060,6 +2088,8 @@ class TotalHunterApp(ctk.CTk):
             scrollbar_button_hover_color=MD3["primary"],
         )
         self._outer.pack(fill="both", expand=True)
+        self._outer_hscroll, self._fit_outer_width = add_horizontal_scroll(
+            self._outer, button_color=MD3["primary_dim"], button_hover_color=MD3["primary"])
 
         # Шапка: «Поверх окон» слева, выбор языка справа
         _header = ctk.CTkFrame(self._outer, fg_color="transparent")
@@ -3880,14 +3910,41 @@ class TotalHunterApp(ctk.CTk):
     def _fit_content_height(self) -> None:
         """Растит (или возвращает к базе) карточку под реальную высоту активной вкладки."""
         try:
-            tab = self._cal_frame if self._cal_visible else getattr(self, self._active_tab_key)
-            h = compute_content_height(self._content_h, tab.winfo_reqheight(),
-                                       self._content_frame._get_widget_scaling())
-            if h != self._content_fit_h:
+            # Сначала вложенные вертикальные области — по ширине их содержимое не сжимать;
+            # от их новой ширины зависит ширина вкладки ниже.
+            for sf in self._nested_scrollables():
+                need = sf.winfo_reqwidth()
+                if int(float(sf._parent_canvas.cget("width"))) < need:
+                    sf._parent_canvas.configure(width=need)
+            if self._cal_visible:
+                # калибровка сама прокручиваемая: высота — её содержимого, ширина — её
+                # внешнего контейнера (canvas уже по содержимому + scrollbar + отступы)
+                tab_req_h = self._cal_frame.winfo_reqheight()
+                tab_req_w = self._cal_frame._parent_frame.winfo_reqwidth()
+            else:
+                tab = getattr(self, self._active_tab_key)
+                tab_req_h, tab_req_w = tab.winfo_reqheight(), tab.winfo_reqwidth()
+            s = self._content_frame._get_widget_scaling()
+            h = compute_content_height(self._content_h, tab_req_h, s)
+            # Ширина тоже по содержимому: pack_propagate(False) иначе обрезал бы вкладку
+            # справа, а reqwidth карточки — лишь её собственный width, не детей.
+            w = math.ceil(tab_req_w / s)
+            if h != self._content_fit_h or w != getattr(self, "_content_fit_w", None):
                 self._content_fit_h = h
-                self._content_frame.configure(height=h)
+                self._content_fit_w = w
+                self._content_frame.configure(height=h, width=w)
+            self._fit_outer_width()
         except Exception:
             pass
+
+    def _nested_scrollables(self):
+        found, stack = [], [self._outer]
+        while stack:
+            for child in stack.pop().winfo_children():
+                stack.append(child)
+                if isinstance(child, ctk.CTkScrollableFrame):
+                    found.append(child)
+        return found
 
     def _tick_content_fit(self) -> None:
         # Опрос, а не событие: содержимое вкладок меняется из десятков мест (режим Биржи
@@ -3973,6 +4030,7 @@ class TotalHunterApp(ctk.CTk):
             self.nav_sliders_frame.pack_forget()
             self._adv_btn.configure(text="▸")
             self.nav_frame.pack_configure(expand=False)
+        self._fit_content_height()
 
     def _on_nav_toggle(self):
         """Dim nav controls when auto-navigation is disabled."""
@@ -4033,6 +4091,7 @@ class TotalHunterApp(ctk.CTk):
             self._scout_button.pack_forget()
             self._scout_queue_card.pack_forget()
             self.start_button.pack(pady=5, padx=40, fill="x", before=self.status_label)
+        self._fit_content_height()
 
     _SCOUT_STATE_COLORS = {'active': "#3D7FFF", 'paused': "#B07A3C", 'brown': "#B07A3C",
                            'green': "#4ADE80"}
