@@ -62,6 +62,13 @@ GUI_CONFIG_PATH = os.path.join(_config_dir, 'gui_config.json')
 if not os.path.exists(GUI_CONFIG_PATH) and _bundled_config and os.path.exists(_bundled_config):
     import shutil as _shutil
     _shutil.copy2(_bundled_config, GUI_CONFIG_PATH)
+# v2.1.1 писал кириллицу в UTF-8, а файл местами читается как cp1251 — названия кланов
+# превращались в «Р¤РµРЅРёРєСЃ». Чиним до первого чтения и возвращаем прежний ASCII-формат.
+try:
+    from safe_json import repair_file as _repair_settings_file
+    _repair_settings_file(GUI_CONFIG_PATH)
+except Exception:
+    pass
 
 
 # Настройки внешнего вида

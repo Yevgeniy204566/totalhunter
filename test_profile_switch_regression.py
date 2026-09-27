@@ -160,3 +160,31 @@ def test_interrupted_write_leaves_old_profile_intact(tmp_path, monkeypatch):
         safe_json.atomic_write_json(str(p), {"point_a": [0, 0]})
     assert p.read_bytes() == before
     assert not [f for f in os.listdir(tmp_path) if f.startswith(".tmp_")]
+
+
+# ── Кириллица в настройках (v2.1.1: «Феникс» портился в «Р¤РµРЅРёРєСЃ») ────────
+
+def test_written_settings_are_ascii_and_survive_cp1251_read(tmp_path):
+    import safe_json
+    p = tmp_path / "gui_config.json"
+    safe_json.atomic_write_json(str(p), {"chest_clan": "Феникс"})
+    assert p.read_bytes().isascii()                       # прежний формат \u0424…
+    with open(p, encoding="cp1251") as f:                 # как читают места без encoding
+        assert json.load(f)["chest_clan"] == "Феникс"
+
+
+def test_corrupted_clan_names_are_repaired(tmp_path):
+    import safe_json
+    once = "Феникс".encode("utf-8").decode("cp1251")
+    twice = once.encode("utf-8").decode("cp1251")
+    assert safe_json.repair_mojibake(twice) == "Феникс"
+    assert safe_json.repair_mojibake("Феникс") == "Феникс"   # нормальный текст не трогаем
+    assert safe_json.repair_mojibake("ELDORADO") == "ELDORADO"
+    p = tmp_path / "gui_config.json"
+    p.write_text(json.dumps({"chest_saved_pairs": [{"kingdom": "229", "clan": twice}],
+                             "chest_clan": "ELDORADO"}, ensure_ascii=False), encoding="utf-8")
+    assert safe_json.repair_file(str(p)) is True
+    data = json.loads(p.read_text(encoding="utf-8"))
+    assert data["chest_saved_pairs"][0]["clan"] == "Феникс"
+    assert data["chest_clan"] == "ELDORADO"
+    assert p.read_bytes().isascii()
