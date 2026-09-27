@@ -113,7 +113,11 @@ def check_gui_layout():
     """Владелец 2026-09-27: при старте окно не перекрывает панель задач Windows и не
     шире 30% экрана — на любом разрешении и масштабе. Быстрый тест формулы (секунды)."""
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", "test_window_bounds.py", "-q", "-p", "no:cacheprovider"],
+        [sys.executable, "-m", "pytest", "test_window_bounds.py",
+         # калибровка игрока не меняется и не теряется (выбор профиля = загрузка, сохранение
+         # не трогает чужие поля и другой профиль, профиль прошлой версии читается один в один)
+         "test_profile_switch_regression.py", "test_coord_manager.py",
+         "-q", "-p", "no:cacheprovider"],
         cwd=ROOT,
     )
     return result.returncode == 0
@@ -187,11 +191,11 @@ def main():
             sys.exit(1)
         print("  OK Все ассеты на месте")
 
-        print("\n[1b/4] Проверка окна: панель задач видна, ширина <=30% экрана...")
+        print("\n[1b/4] Проверка окна (панель задач, 30%) и сохранности калибровки игроков...")
         if not check_gui_layout():
-            print("\nFAIL  Окно бота перекрывает панель задач или шире 30% (см. pytest выше).")
+            print("\nFAIL  Окно или сохранность калибровки игроков нарушены (см. pytest выше).")
             sys.exit(1)
-        print("  OK Окно не перекрывает панель задач и не шире 30% экрана")
+        print("  OK Окно в норме; калибровка игроков загружается и сохраняется без потерь")
 
         # Шаг 2: Компиляция чувствительных модулей в .pyd
         print("\n[2/4] Kompiliatsiia modulei (Nuitka -> C++)...")

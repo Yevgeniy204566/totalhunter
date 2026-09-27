@@ -121,8 +121,14 @@ class CoordinateManager:
         return (sx + self.dialog_offset_x, sy + self.dialog_offset_y, sw, sh)
 
     def save(self, path: str) -> None:
-        """Save calibration to JSON profile."""
-        data = {
+        """Save calibration to JSON profile.
+        Меняет ТОЛЬКО поля калибровки: настройки склепов/бирж в том же файле и ключи
+        тюнинга, неизвестные этой версии, сохраняются. Запись атомарная (safe_json) —
+        раньше open('w') перезаписывал профиль целиком и мог стереть чужие поля."""
+        from safe_json import read_json, update_json
+        ui_offsets = dict(read_json(path).get("ui_offsets") or {})
+        ui_offsets.update({k: list(v) for k, v in self.ui_offsets.items()})
+        update_json(path, {
             "point_a": list(self._point_a),
             "point_b": list(self._point_b),
             "scale_x": self.scale_x,
@@ -130,10 +136,8 @@ class CoordinateManager:
             "dialog_offset_x": self.dialog_offset_x,
             "dialog_offset_y": self.dialog_offset_y,
             "scroll_clicks": self.scroll_clicks,
-            "ui_offsets": {k: list(v) for k, v in self.ui_offsets.items()},
-        }
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+            "ui_offsets": ui_offsets,
+        })
 
     def load(self, path: str) -> None:
         """Load calibration from JSON profile and re-calibrate."""

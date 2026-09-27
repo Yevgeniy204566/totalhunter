@@ -45,6 +45,7 @@ from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
 from coord_manager import coord_manager, REF_A, REF_B
 import chest_reader
 import found_sound
+from safe_json import atomic_write_json
 import tkinter.messagebox as messagebox
 import keyboard
 import webbrowser
@@ -3549,8 +3550,7 @@ class TotalHunterApp(ctk.CTk):
             v1 = self._mode_settings.values_for(MODE_V1, self._exchange_mode, self._nav_sliders())
             scout = scout_settings_for_profile(self._mode_settings, self._exchange_mode, self._nav_sliders())
             cfg.update(exchange_cfg_from_values(v1, self.conf_slider.get(), scout))
-            with open(path, 'w') as f:
-                json.dump(cfg, f, indent=2)
+            atomic_write_json(path, cfg)  # обрыв записи не оставит пустой профиль
             return True
         except Exception:
             return False
@@ -3675,6 +3675,13 @@ class TotalHunterApp(ctk.CTk):
             coord_manager.load(path)
             self._dialog_offset_y_var.set(coord_manager.dialog_offset_y)
             self._load_crypt_from_profile(path)
+            # вкладка Калибровки показывает ту же калибровку, что сейчас в памяти
+            refresh = getattr(self, "_cal_refresh_after_profile_load", None)
+            if refresh:
+                try:
+                    refresh()
+                except Exception:
+                    pass
         self._save_gui_config_key("last_calibration_profile", profile_name)
 
     def _on_crypt_autostop_count_change(self, display_val: str):
@@ -4447,8 +4454,7 @@ class TotalHunterApp(ctk.CTk):
         cfg = self._read_gui_config()
         cfg["found_sound"] = found_sound.enabled
         try:
-            with open(GUI_CONFIG_PATH, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, indent=2)
+            atomic_write_json(GUI_CONFIG_PATH, cfg)
         except Exception:
             pass
 
@@ -5454,8 +5460,7 @@ class TotalHunterApp(ctk.CTk):
     def _save_gui_config_key(self, key: str, value) -> None:
         cfg = self._load_gui_config()
         cfg[key] = value
-        with open(GUI_CONFIG_PATH, "w") as f:
-            json.dump(cfg, f, indent=2)
+        atomic_write_json(GUI_CONFIG_PATH, cfg)
 
     def _save_dialog_profile(self):
         """Сохраняет dialog_offset_y в выбранный профиль калибровки."""
@@ -6076,16 +6081,21 @@ class TotalHunterApp(ctk.CTk):
                                        text_color=MD3["on_surface2"])
         _cal_profile_lb.pack(side="left")
         self._i18n_labels.append((_cal_profile_lb, "cal_profile_lb"))
-        ctk.CTkOptionMenu(
+        # command обязателен: без него выбор профиля лишь менял название, а на экране и в
+        # памяти оставалась калибровка ПРЕЖНЕГО профиля — «СОХРАНИТЬ ПРОФИЛЬ» записывал её
+        # поверх выбранного (так у владельца 26.09 «слетела» калибровка Клиента/Браузера 1).
+        self._cal_profile_menu = ctk.CTkOptionMenu(
             profile_frame,
             values=list(PROFILES.keys()),
             variable=self._cal_profile_var,
+            command=self._on_crypt_profile_change,
             fg_color=MD3["elevated"],
             button_color=MD3["primary"],
             button_hover_color=MD3["primary_dim"],
             corner_radius=8,
             **pick_list_style(),
-        ).pack(side="right")
+        )
+        self._cal_profile_menu.pack(side="right")
 
         # ── Status label ──────────────────────────────────────────────────
         self._cal_status_label = ctk.CTkLabel(
@@ -6459,6 +6469,8 @@ class TotalHunterApp(ctk.CTk):
         self._i18n_labels.append((_tune_reset_btn, "cal_tune_reset"))
 
         self._cal_tune_refresh_display = _tune_refresh_display
+        self._cal_refresh_after_profile_load = lambda: (_update_status(), _tune_refresh_display())
+        self._cal_save_profile = _save_profile
         _update_tune_card_visibility()
         _tune_refresh_display()
 
