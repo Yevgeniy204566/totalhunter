@@ -109,6 +109,19 @@ def check_assets():
     return True
 
 
+def check_gui_layout():
+    """Окно бота на любом мониторе (владелец 2026-09-27, после v2.1.0 с обрезанным
+    Старт/Стоп на маленьких экранах): реальное окно на 7 разрешениях × 5 масштабах
+    Windows. Блокирующая проверка — выпуск невозможен, пока хоть один экран ломает окно.
+    До Nuitka: .pyd в корне ещё нет, тест гоняет исходники — ровно то, что попадёт в сборку."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "test_gui_small_screens.py", "test_window_bounds.py",
+         "-q", "-p", "no:cacheprovider"],
+        cwd=ROOT,
+    )
+    return result.returncode == 0
+
+
 def cleanup_pyd_from_root():
     """Удаляет .pyd из корня проекта. Вызывается всегда — даже при ошибке сборки."""
     removed = []
@@ -152,6 +165,13 @@ def main():
         if not check_assets():
             sys.exit(1)
         print("  OK Все ассеты на месте")
+
+        print("\n[1b/4] Проверка окна на маленьких мониторах и масштабе 100-200% (~3 мин)...")
+        if not check_gui_layout():
+            print("\nFAIL  Окно бота ломается на части экранов (см. вывод pytest выше).")
+            print("      Сборка остановлена: такой релиз обрежет Старт/Стоп у игроков.")
+            sys.exit(1)
+        print("  OK Старт/Стоп доступен и прокрутка доходит до низа на всех экранах")
 
         # Шаг 2: Компиляция чувствительных модулей в .pyd
         print("\n[2/4] Kompiliatsiia modulei (Nuitka -> C++)...")

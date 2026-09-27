@@ -25,6 +25,7 @@ if getattr(sys, 'frozen', False):
 # ─────────────────────────────────────────────────────────────────────────────
 
 import json
+import math
 import time
 import threading
 import customtkinter as ctk
@@ -1898,6 +1899,56 @@ def compute_window_width(work_area_width: int,
     return max(min_floor, min(preferred_width, cap))
 
 
+# ── Маленькие мониторы и масштаб Windows 125-200% (владелец 2026-09-27) ────────
+# Жалоба v2.1.0: на маленьком мониторе Старт/Стоп обрезан и докрутить до него нельзя.
+# Причин было две: (1) карточка вкладки фиксированной высоты 740 при pack_propagate(False)
+# молча обрезала вкладки, которым нужно 850-930; (2) рабочая область приходит в
+# ФИЗИЧЕСКИХ пикселях (процесс DPI-aware), а CTk.geometry() ещё раз умножает её на
+# масштаб Windows — при 125%+ низ окна со скроллбаром уходил за край экрана.
+WINDOW_BOTTOM_MARGIN_PX = 35
+WINDOW_RIGHT_MARGIN_PX = 10
+WINDOW_MIN_HEIGHT = 400
+CONTENT_FIT_INTERVAL_MS = 300
+
+
+def get_work_area() -> tuple:
+    """(left, top, right, bottom) рабочей области основного монитора в физических
+    пикселях (без панели задач). Отдельной функцией — чтобы GUI-тест сборки мог
+    подменить её и проверить окно на любом разрешении, не имея такого монитора."""
+    try:
+        import ctypes, ctypes.wintypes
+        rect = ctypes.wintypes.RECT()
+        ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)
+        if rect.right > rect.left and rect.bottom > rect.top:
+            return rect.left, rect.top, rect.right, rect.bottom
+    except Exception:
+        pass
+    return None
+
+
+def compute_window_geometry(work_area: tuple, scaling: float) -> tuple:
+    """(ширина, высота, geometry-строка) в ЛОГИЧЕСКИХ единицах CTk — CTk.geometry()
+    сам умножает ширину/высоту на scaling, а x/y оставляет физическими. Поэтому всё
+    переводим в логические здесь, иначе окно выходит за экран при масштабе >100%."""
+    s = scaling if scaling and scaling > 0 else 1.0
+    left, top, right, bottom = work_area
+    win_w = compute_window_width(int((right - left) / s))
+    # Отступ логический: заголовок окна Windows растёт вместе с масштабом (≈31px при
+    # 100%, ≈46px при 150%) — физические 35px на 150% роняли низ окна за панель задач.
+    win_h = max(1, int((bottom - top) / s) - WINDOW_BOTTOM_MARGIN_PX)
+    snap_x = max(left, right - round(win_w * s) - WINDOW_RIGHT_MARGIN_PX)
+    return win_w, win_h, f"{win_w}x{win_h}+{snap_x}+{top}"
+
+
+def compute_content_height(base_height: int, tab_req_px: int, scaling: float) -> int:
+    """Высота карточки вкладки (логическая): не меньше базовой (пропорция эталонного
+    дизайна), но и не меньше того, что реально требует активная вкладка — иначе
+    pack_propagate(False) обрезает низ вкладки вместе с кнопкой Старт/Стоп, и внешняя
+    прокрутка до неё не дотягивается. reqheight — в физических пикселях, отсюда деление."""
+    s = scaling if scaling and scaling > 0 else 1.0
+    return max(base_height, math.ceil(tab_req_px / s))
+
+
 def enforce_no_maximize(win, geometry: str) -> bool:
     """Обработчик <Configure>: если окно всё же оказалось развёрнуто (Win+Up, двойной
     клик по заголовку — resizable(False,...) не всегда блокирует это на всех сборках
@@ -1994,26 +2045,12 @@ class TotalHunterApp(ctk.CTk):
         # Динамический размер и позиция: высота = рабочая область экрана, прижато вправо.
         # Ширина считается от РЕАЛЬНОЙ рабочей области (входящие, п.A) — не всегда 460px:
         # на маленьких экранах (1366×768 и меньше) ужимается, чтобы не превышать 30%.
-        try:
-            import ctypes, ctypes.wintypes
-            _rect = ctypes.wintypes.RECT()
-            ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(_rect), 0)
-            _work_y = _rect.top
-            _work_h = _rect.bottom - _rect.top - 35
-            _work_right = _rect.right
-            _work_w = _rect.right - _rect.left
-        except Exception:
-            _work_y = 0
-            _work_h = self.winfo_screenheight() - 90
-            _work_right = self.winfo_screenwidth()
-            _work_w = self.winfo_screenwidth()
-        _win_w = compute_window_width(_work_w)
-        _snap_x = _work_right - _win_w - 10
-        self._window_geometry = f"{_win_w}x{_work_h}+{_snap_x}+{_work_y}"
+        _win_w, _work_h, self._window_geometry = compute_window_geometry(
+            self._current_work_area(), self._get_window_scaling())
         self.geometry(self._window_geometry)
         self.resizable(False, True)
-        self.minsize(_win_w, 400)
-        self.maxsize(_win_w, self.winfo_screenheight())  # входящие п.A: жёсткий потолок ширины
+        self.minsize(_win_w, min(WINDOW_MIN_HEIGHT, _work_h))
+        self.maxsize(_win_w, _work_h)  # входящие п.A: жёсткий потолок ширины; высота — не выше экрана
         self.bind("<Configure>", lambda e: enforce_no_maximize(self, self._window_geometry))
         self.configure(fg_color=MD3["bg"])
 
@@ -2197,7 +2234,10 @@ class TotalHunterApp(ctk.CTk):
         # обрезание/сжатие содержимого карточки. Обрезать контент вместо
         # прокрутки — то, из-за чего Старт/Стоп и часть склепов пропадали
         # без возможности до них докрутить.
+        # Базовая высота — лишь нижняя граница: реальная подгоняется под активную
+        # вкладку (_fit_content_height), иначе Старт/Стоп обрезался на экранах ≤1080p.
         self._content_h = max(740, round(_work_h * 740 / 1010))
+        self._content_fit_h = self._content_h
         self._content_frame = ctk.CTkFrame(self._outer, fg_color=MD3["card"],
                                             corner_radius=12, height=self._content_h)
         self._content_frame.pack(padx=20, pady=(4, 0), fill="x")
@@ -2240,6 +2280,8 @@ class TotalHunterApp(ctk.CTk):
         self.after(500, self._tick_trade_routes)
         self.after(700, self._tick_scout_queue)
         self.after(60_000, self._tick_roy_drain)
+        self._fit_content_height()
+        self.after(CONTENT_FIT_INTERVAL_MS, self._tick_content_fit)
         # On Top включён по умолчанию (см. CLAUDE.md: snap вправо, always-on-top) —
         # отложенный вызов, чтобы winfo_width()/winfo_height() в _on_always_on_top
         # вернули реальные размеры окна после отрисовки, а не 1x1 до неё.
@@ -3411,30 +3453,12 @@ class TotalHunterApp(ctk.CTk):
         on_top = self.always_on_top_var.get()
         self.wm_attributes('-topmost', on_top)
         if on_top:
-            try:
-                import ctypes, ctypes.wintypes
-                rect = ctypes.wintypes.RECT()
-                ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)
-                work_x  = rect.left
-                work_y  = rect.top
-                work_w  = rect.right  - rect.left
-                work_h  = rect.bottom - rect.top - 35
-            except Exception:
-                work_x, work_y = 0, 0
-                work_w  = self.winfo_screenwidth()
-                work_h  = self.winfo_screenheight() - 90
-
-            # Берём реальный размер окна ПОСЛЕ отрисовки
-            self.update_idletasks()
-            win_w = self.winfo_width()
-            win_h = min(work_h, work_w)
-
-            # Прижать к правому краю с отступом 10px, не выходя за границы
-            snap_x = max(work_x, work_x + work_w - win_w - 10)
-            snap_y = work_y
-
-            self.geometry(f"{win_w}x{work_h}+{snap_x}+{snap_y}")
-            self._window_geometry = f"{win_w}x{work_h}+{snap_x}+{snap_y}"  # для enforce_no_maximize
+            # Прижать к правому краю — та же формула, что при старте. Раньше тут брался
+            # winfo_width() (физические px) и снова масштабировался в geometry() — при
+            # масштабе Windows >100% окно росло и уезжало за правый/нижний край.
+            _, _, self._window_geometry = compute_window_geometry(
+                self._current_work_area(), self._get_window_scaling())
+            self.geometry(self._window_geometry)
             self.update_idletasks()
             x = self.winfo_x()
             y = self.winfo_y()
@@ -3847,6 +3871,30 @@ class TotalHunterApp(ctk.CTk):
         except: pass
 
 
+    def _current_work_area(self) -> tuple:
+        area = get_work_area()
+        if area is None:
+            area = (0, 0, self.winfo_screenwidth(), self.winfo_screenheight() - 55)
+        return area
+
+    def _fit_content_height(self) -> None:
+        """Растит (или возвращает к базе) карточку под реальную высоту активной вкладки."""
+        try:
+            tab = self._cal_frame if self._cal_visible else getattr(self, self._active_tab_key)
+            h = compute_content_height(self._content_h, tab.winfo_reqheight(),
+                                       self._content_frame._get_widget_scaling())
+            if h != self._content_fit_h:
+                self._content_fit_h = h
+                self._content_frame.configure(height=h)
+        except Exception:
+            pass
+
+    def _tick_content_fit(self) -> None:
+        # Опрос, а не событие: содержимое вкладок меняется из десятков мест (режим Биржи
+        # 1.0/2.0, «Дополнительно», баннеры, очередь Скаута) — reqheight не шлёт <Configure>.
+        self._fit_content_height()
+        self.after(CONTENT_FIT_INTERVAL_MS, self._tick_content_fit)
+
     def _show_tab(self, key):
         """Показать фрейм вкладки по ключу, скрыть остальные."""
         _all = (self.tab_crypt, self.tab_hunt, self.tab_ref, self.tab_roy, self.tab_chest,
@@ -3866,6 +3914,7 @@ class TotalHunterApp(ctk.CTk):
         if frame:
             self._active_tab_key = key
             frame.pack(fill="both", expand=True)
+            self._fit_content_height()
         if key in self._tab_init_names:
             self._main_seg.set(self._tab_init_names.get(key, ""))
             self._main_seg2.set("")
@@ -3900,6 +3949,7 @@ class TotalHunterApp(ctk.CTk):
             f.pack_forget()
         self._cal_frame.pack(fill="both", expand=True)
         self._cal_visible = True
+        self._fit_content_height()
 
     def _toggle_cal(self):
         if self._cal_visible:
