@@ -26,6 +26,19 @@
    exceptions/allow-list, or temporarily disable the antivirus and
    try again.
 
+   WINDOWS PROTECTION: The program is not digitally signed yet, so
+   Windows may treat it as unknown and block it. This is expected and
+   only needs to be set up once:
+   - Blue "Windows protected your PC" window -> "More info" ->
+     "Run anyway".
+   - Windows Defender -> add the program folder to exclusions:
+     Windows Security -> Virus & threat protection -> Manage settings
+     -> Exclusions -> Add an exclusion -> Folder.
+   - Windows 11 only: if you see "An Application Control policy has
+     blocked this file" on start, turn off Smart App Control:
+     Windows Security -> App & browser control. Windows only lets you
+     turn it back on after reinstalling the system.
+
 --------------------------------------------------------------------------------
 2. CALIBRATION (one time only)
    Open the game exactly as you will play it (browser or client).
@@ -172,6 +185,20 @@ Support    : totalhunter.support@gmail.com
    подписи, некоторые антивирусы блокируют такие .exe по умолчанию).
    Добавь TotalHunter.exe / папку TotalHunter в исключения антивируса,
    либо временно отключи антивирус и попробуй снова.
+
+   ЗАЩИТА WINDOWS: У программы пока нет цифровой подписи, поэтому
+   Windows может принять её за незнакомую и заблокировать. Это нормально
+   и настраивается один раз:
+   - Синее окно «Windows защитил ваш компьютер» -> «Подробнее» ->
+     «Выполнить в любом случае».
+   - Windows Defender -> добавь папку с программой в исключения:
+     Безопасность Windows -> Защита от вирусов и угроз -> Управление
+     настройками -> Исключения -> Добавить исключение -> Папка.
+   - Только Windows 11: если при запуске появляется ошибка
+     «An Application Control policy has blocked this file», выключи
+     «Интеллектуальное управление приложениями»: Безопасность Windows ->
+     Управление приложениями/браузером. Включить его обратно Windows
+     позволяет только после переустановки системы.
 
 --------------------------------------------------------------------------------
 2. КАЛИБРОВКА (один раз)

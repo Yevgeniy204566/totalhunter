@@ -85,7 +85,7 @@ export const GUIDE = {
       { title: 'Sign Up',        desc: 'Log in at total-hunter.com using your Google account.' },
       { title: 'Free Trial',     desc: 'In the bot, click "Get 300 trials" — you get 300 diamonds to test all bot features.', note: 'Trial is issued once per unique device (HWID).' },
       { title: 'Download',       desc: 'Download TotalHunter.zip from the website and extract it to any folder. Do not run the program from inside the archive.' },
-      { title: 'Windows Defender', desc: 'If needed, add the program and its folder to Windows Defender exclusions — otherwise it may interfere with the bot.' },
+      { title: 'Windows protection', desc: 'The program is not digitally signed, so Windows may block it. Add the program folder to Windows Defender exclusions. On Windows 11, if you see "An Application Control policy has blocked this file", turn off Smart App Control (it can only be turned back on after reinstalling Windows). More details on the Download page.' },
       { title: 'Launch',         desc: 'Open TotalHunter.exe from the extracted folder. No installation required.' },
       { title: 'Log In to Bot',  desc: 'Click "Sign in with Google" inside the app (use the same account as the website).' },
       { title: 'First Setup',    desc: 'Before starting, the bot will ask you to complete Calibration. This is required!' },

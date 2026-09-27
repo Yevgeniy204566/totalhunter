@@ -13,7 +13,12 @@ export const DOWNLOAD = {
   ],
   warning: {
     title: '⚠️ Important before installing',
-    defenderText: 'Windows Defender may block the bot from working. Before installing, we recommend adding the program and its folder to Windows Defender exclusions.',
+    defenderText: 'The program is not digitally signed yet, so Windows may treat it as unknown and block it. This is expected and only needs to be set up once:',
+    defenderItems: [
+      { b: 'Blue "Windows protected your PC" window', t: ' → "More info" → "Run anyway".' },
+      { b: 'Windows Defender', t: ' → add the program folder to exclusions: Windows Security → Virus & threat protection → Manage settings → Exclusions → Add an exclusion → Folder.' },
+      { b: 'Windows 11 only:', t: ' if you see "An Application Control policy has blocked this file" on start, turn off Smart App Control: Windows Security → App & browser control. Windows only lets you turn it back on after reinstalling the system.' },
+    ],
     calibrationText: 'The bot cannot be launched until all 13 calibration points are completed.',
   },
   stepsTitle: 'How to Install',
