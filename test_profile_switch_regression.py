@@ -47,29 +47,40 @@ def _write(path, data):
         json.dump(data, f, indent=2)
 
 
-@pytest.fixture
-def app(tmp_path, monkeypatch):
+@pytest.fixture(scope="module")
+def _app_once(tmp_path_factory):
+    """Одно окно бота на весь файл: второе TotalHunterApp в том же процессе после
+    destroy() натыкается на остатки Tk первого (картинки/after-таймеры)."""
+    mp = pytest.MonkeyPatch()
     # Без сети и фоновых таймеров: тест про профили, не про сервер
     for name in ("update_license_info", "_start_balance_sync", "_tick_trade_routes",
                  "_tick_scout_queue", "_tick_roy_drain"):
-        monkeypatch.setattr(main.TotalHunterApp, name, lambda self: None)
-    monkeypatch.setattr(main.messagebox, "showinfo", lambda *a, **k: None)
-    monkeypatch.setattr(main.messagebox, "showerror", lambda *a, **k: None)
-    monkeypatch.setattr(main, "GUI_CONFIG_PATH", str(tmp_path / "gui_config.json"))
+        mp.setattr(main.TotalHunterApp, name, lambda self: None)
+    mp.setattr(main.messagebox, "showinfo", lambda *a, **k: None)
+    mp.setattr(main.messagebox, "showerror", lambda *a, **k: None)
+    mp.setattr(main, "GUI_CONFIG_PATH", str(tmp_path_factory.mktemp("cfg") / "gui_config.json"))
     a = main.TotalHunterApp()
     a.withdraw()
     a.update()
+    yield a
+    try:
+        keyboard.unhook_all()
+    except Exception:
+        pass
+    a.destroy()
+    mp.undo()
+
+
+@pytest.fixture
+def app(_app_once, tmp_path, monkeypatch):
+    a = _app_once
+    monkeypatch.setattr(main, "GUI_CONFIG_PATH", str(tmp_path / "gui_config.json"))
     client, browser = tmp_path / "profile_client.json", tmp_path / "profile_chrome.json"
     _write(client, CLIENT)
     _write(browser, BROWSER1)
     a._PROFILES["Client"] = str(client)      # тот же dict, что PROFILES вкладки Калибровки
     a._PROFILES["Browser 1"] = str(browser)
     yield a, client, browser
-    try:
-        keyboard.unhook_all()
-    except Exception:
-        pass
-    a.destroy()
 
 
 def _assert_loaded(a, prof):
@@ -188,3 +199,52 @@ def test_corrupted_clan_names_are_repaired(tmp_path):
     assert data["chest_saved_pairs"][0]["clan"] == "Феникс"
     assert data["chest_clan"] == "ELDORADO"
     assert p.read_bytes().isascii()
+
+
+def test_unreadable_gui_config_is_never_overwritten_by_sound_button(app):
+    """Нечитаемый gui_config: кнопка-динамик и сохранение ключа НЕ записывают файл
+    с одним ключом поверх всех настроек игрока."""
+    a, _, _ = app
+    p = main.GUI_CONFIG_PATH
+    with open(p, "wb") as f:
+        f.write(b'{"lang": "UK", "chest_clan": "ELDOR')          # оборванный файл
+    before = open(p, "rb").read()
+    a._toggle_found_sound()
+    with pytest.raises(Exception):
+        a._save_gui_config_key("theme", "Deep Night")
+    assert open(p, "rb").read() == before
+
+
+def test_gui_config_written_by_v211_is_read_without_loss(tmp_path):
+    import safe_json
+    p = tmp_path / "gui_config.json"
+    p.write_bytes(json.dumps({"chest_clan": "Феникс", "lang": "UK"},
+                             ensure_ascii=False).encode("utf-8"))
+    assert safe_json.read_json_strict(str(p)) == {"chest_clan": "Феникс", "lang": "UK"}
+
+
+@pytest.mark.parametrize("name", ["Феникс", "Їжаки", "Сила і Честь", "Єдність", "Ґрунт", "Ёжик"])
+def test_repair_restores_any_depth_of_v211_corruption(name):
+    import safe_json
+    bad, depths = name, 0
+    for depth in range(1, 4):
+        try:
+            bad = bad.encode("utf-8").decode("cp1251")
+        except UnicodeDecodeError:
+            break   # дальше порча невозможна: байт 0x98 не читается как cp1251 — чтение падает
+        depths += 1
+        assert safe_json.repair_mojibake(bad) == name, (name, depth)
+    assert depths >= 1
+
+
+@pytest.mark.parametrize("name", ["Лі", "Сі", "Мі", "Дё", "Феникс", "Сила і Честь", "Клан №1",
+                                  "ELDORADO", "Café", "النسور", "龙之队", "Р2Д2", ""])
+def test_repair_never_touches_normal_names(name):
+    import safe_json
+    assert safe_json.repair_mojibake(name) == name
+
+
+def test_repair_on_real_string_from_owner_pc():
+    import safe_json
+    real = "Р\xa0В¤Р\xa0ВµР\xa0Р…Р\xa0С‘Р\xa0С”РЎРѓ"   # gui_config владельца после 2.1.1
+    assert safe_json.repair_mojibake(real) == "Феникс"

@@ -45,7 +45,7 @@ from crypt_hunter import (CryptHunter, WT_ICON, CRYPT_STUDY_BTN, CRYPT_OPEN_BTN,
 from coord_manager import coord_manager, REF_A, REF_B
 import chest_reader
 import found_sound
-from safe_json import atomic_write_json
+from safe_json import atomic_write_json, read_json_strict
 import tkinter.messagebox as messagebox
 import keyboard
 import webbrowser
@@ -3963,12 +3963,19 @@ class TotalHunterApp(ctk.CTk):
             pass
 
     def _nested_scrollables(self):
+        # Полный обход ~1100 виджетов стоит ~5 мс — каждые 300 мс это лишняя нагрузка на
+        # GUI во время работы бота. Области создаются при старте: кэш, обновление раз в ~6 с.
+        self._nested_tick = getattr(self, "_nested_tick", 0) + 1
+        cache = getattr(self, "_nested_cache", None)
+        if cache is not None and self._nested_tick % 20:
+            return [sf for sf in cache if sf.winfo_exists()]
         found, stack = [], [self._outer]
         while stack:
             for child in stack.pop().winfo_children():
                 stack.append(child)
                 if isinstance(child, ctk.CTkScrollableFrame):
                     found.append(child)
+        self._nested_cache = found
         return found
 
     def _tick_content_fit(self) -> None:
@@ -4444,9 +4451,10 @@ class TotalHunterApp(ctk.CTk):
             messagebox.showerror("Error", f"Не удалось сохранить: {e}")
 
     def _read_gui_config(self) -> dict:
+        """Только для ЧТЕНИЯ (стартовое состояние кнопок): при ошибке — пустые значения.
+        Писать gui_config — только через _save_gui_config_key."""
         try:
-            with open(GUI_CONFIG_PATH, encoding="utf-8") as f:
-                return json.load(f)
+            return read_json_strict(GUI_CONFIG_PATH)
         except Exception:
             return {}
 
@@ -4457,11 +4465,10 @@ class TotalHunterApp(ctk.CTk):
     def _toggle_found_sound(self) -> None:
         found_sound.enabled = not found_sound.enabled
         self._refresh_sound_btn()
-        # read-modify-write: остальные ключи пользовательского gui_config не трогаем
-        cfg = self._read_gui_config()
-        cfg["found_sound"] = found_sound.enabled
+        # Через штатный _save_gui_config_key: он при нечитаемом файле НЕ пишет — иначе
+        # файл с одним found_sound затёр бы все остальные настройки игрока.
         try:
-            atomic_write_json(GUI_CONFIG_PATH, cfg)
+            self._save_gui_config_key("found_sound", found_sound.enabled)
         except Exception:
             pass
 
@@ -5459,9 +5466,10 @@ class TotalHunterApp(ctk.CTk):
     # ── helpers ─────────────────────────────────────────────────────────────
 
     def _load_gui_config(self) -> dict:
+        # Нечитаемый файл -> исключение, а не {}: вызывающий _save_gui_config_key тогда не
+        # пишет и не затирает остальные настройки игрока.
         if os.path.exists(GUI_CONFIG_PATH):
-            with open(GUI_CONFIG_PATH, "r") as f:
-                return json.load(f)
+            return read_json_strict(GUI_CONFIG_PATH)
         return {}
 
     def _save_gui_config_key(self, key: str, value) -> None:
