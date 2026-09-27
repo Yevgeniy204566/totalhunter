@@ -119,6 +119,30 @@ def check_gui_layout():
     return result.returncode == 0
 
 
+# ЗОЛОТОЕ ПРАВИЛО владельца (2026-09-27): обновление НИКОГДА не трогает настройки игрока.
+# Автообновление (updater.py) делает xcopy /s /y поверх папки бота — любой такой файл в ZIP
+# молча перезапишет то, что игрок часами настраивал. Пути — относительно dist/TotalHunter.
+USER_SETTINGS_DIRS = {"profiles", "chest_pending", "scout_sessions", "logs"}
+USER_SETTINGS_ROOT_FILES = {"gui_config.json"}  # пользовательский — рядом с exe; шаблон в _internal можно
+
+
+def find_user_settings_in_dist(dist_dir: str) -> list:
+    """Список файлов/папок с настройками пользователя, попавших в дистрибутив."""
+    leaked = []
+    for name in USER_SETTINGS_ROOT_FILES:
+        if os.path.exists(os.path.join(dist_dir, name)):
+            leaked.append(name)
+    for dirpath, dirnames, filenames in os.walk(dist_dir):
+        rel = os.path.relpath(dirpath, dist_dir)
+        for d in dirnames:
+            if d.lower() in USER_SETTINGS_DIRS:
+                leaked.append(os.path.join(rel, d))
+        for f in filenames:
+            if f.lower().startswith("profile_") and f.lower().endswith(".json"):
+                leaked.append(os.path.join(rel, f))
+    return leaked
+
+
 def cleanup_pyd_from_root():
     """Удаляет .pyd из корня проекта. Вызывается всегда — даже при ошибке сборки."""
     removed = []
@@ -238,10 +262,19 @@ def main():
         else:
             print(f"  --  tesseract_bin/ не найден — РОЙ OCR в сборке отсутствует")
 
+        dist_dir = os.path.join(ROOT, "dist", "TotalHunter")
+        leaked = find_user_settings_in_dist(dist_dir)
+        if leaked:
+            print("\nFAIL  В дистрибутив попали настройки пользователя — обновление")
+            print("      затёрло бы игрокам калибровку/тюнинг/настройки склепов и бирж:")
+            for p in leaked:
+                print(f"        {p}")
+            sys.exit(1)
+        print("  OK Настройки пользователей (профили, калибровка, gui_config) в сборку не попали")
+
         # Шаг 6: Создание плоского ZIP (ОБЯЗАТЕЛЬНО из dist/TotalHunter/)
         print("\n[6/6] Создание плоского ZIP...")
         zip_path = os.path.join(ROOT, "TotalHunter.zip")
-        dist_dir = os.path.join(ROOT, "dist", "TotalHunter")
 
         if os.path.exists(zip_path):
             os.remove(zip_path)

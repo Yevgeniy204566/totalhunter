@@ -8,15 +8,22 @@
 ================================================================================
 
 1. INSTALLATION
-   - Extract TotalHunter.zip to any folder
-   - Run TotalHunter.exe
-   - Sign in with your Google account
+   Step 1. Extract the archive. Right-click TotalHunter.zip ->
+           "Extract All..." (or WinRAR / 7-Zip -> "Extract to
+           TotalHunter\") into any folder, e.g. C:\TotalHunter.
+   Step 2. Open the extracted folder.
+   Step 3. Run TotalHunter.exe FROM THIS FOLDER.
+   Step 4. Sign in with your Google account.
 
-   IMPORTANT: Fully extract the ZIP before running the app. Do NOT
-   double-click TotalHunter.exe from inside the archive viewer
-   (WinRAR / 7-Zip) — this launches the bot from a temporary folder
-   and can cause it to crash, especially if you click more than once
-   and end up running several copies at the same time.
+   IMPORTANT: Do NOT run TotalHunter.exe from inside the archive
+   window (WinRAR / 7-Zip / Explorer zip view) - the bot then starts
+   from a temporary folder, may crash, and your calibration and
+   settings will not be saved. Always extract first, then run from
+   the folder.
+
+   Updates are installed automatically on start. Your calibration,
+   tuning, crypt and exchange settings are kept - an update never
+   overwrites them.
 
    IMPORTANT: If login/account linking shows "Connection error" even
    though your internet works fine, your antivirus may be silently
@@ -26,9 +33,9 @@
    exceptions/allow-list, or temporarily disable the antivirus and
    try again.
 
-   WINDOWS PROTECTION: The program is not digitally signed yet, so
-   Windows may treat it as unknown and block it. This is expected and
-   only needs to be set up once:
+   WINDOWS PROTECTION (Windows 10 / 11): The program is not digitally
+   signed yet, so Windows may treat it as unknown and block it. This
+   is expected and only needs to be set up once:
    - Blue "Windows protected your PC" window -> "More info" ->
      "Run anyway".
    - Windows Defender -> add the program folder to exclusions:
@@ -74,23 +81,61 @@
    Select crypt types -> scroll map to maximum zoom -> COLLECT CRYPTS
 
 --------------------------------------------------------------------------------
-4. CHESTS
-   The bot automatically collects chests from your alliance.
+4. CHESTS - collection and clan tracking
+   The bot opens clan gifts in the game and records every chest: who
+   earned it ("From:") and which event it came from ("Source:"). The
+   site turns these records into a season table: points, quotas,
+   player ranking and a public page for the whole clan.
 
-   Kingdom / Clan  — enter your kingdom number and clan tag (e.g. 229 / BERS)
-   Source          — who sends the chests (leave blank to collect from all)
-   Player name     — collect chests only from this player (leave blank for all)
-   Click speed     — pause between clicks (0.0 = as fast as OCR allows,
-                     actual pause is always 0.3+ s due to recognition time)
-   Light / Full    — OCR language set for player names
-                     Light = Latin + Cyrillic (fast)
-                     Full  = all 19 languages (slower, use for non-Latin names)
+   STEP 1. COLLECT WITH THE BOT (Chests tab)
+   1. Choose the clan: pick a saved "kingdom - clan" pair from the
+      list, or type the kingdom number and clan name and save it
+      with the disk button. Chests go to the clan selected at the
+      moment you press START.
+   2. Open the clan gifts tab in the game and press START. The bot
+      collects chests to the end of the list. Collected chests are
+      stored on your PC until they are sent.
+   3. "SEND TO SERVER" sends everything collected as one batch -
+      10 diamonds per send, no matter how many chests are in it.
+      With "Auto-send" on, the bot sends by itself when the list ends
+      or 5000 chests are collected. After a successful send the
+      records are removed from the PC.
 
-   Click START to begin. Results are saved to the server automatically.
+   Click speed  - pause between clicks (actual pause is always 0.3+ s
+                  due to recognition time)
+   Light / Full - OCR languages for player names
+                  Light = Latin + Cyrillic (fast)
+                  Full  = all 19 languages (slower, for non-Latin names)
 
    TUNING (if the bot clicks in the wrong place):
-     Open the Calibration tab -> Tuning section -> select the item you want
-     to adjust -> use the D-Pad arrows to shift the click position.
+     Calibration tab -> Tuning -> select the item -> D-Pad arrows.
+
+   STEP 2. SET UP ON THE SITE (total-hunter.com -> Dashboard -> Chests)
+   - The clan appears by itself after the first send from the bot, in
+     the dashboard of whoever sent it. To hand control to another
+     leader: "Generate transfer code" -> they enter it and press
+     "Claim management".
+   - Preset: ready chest prices in points for a clan level (T5-T9).
+     Pick a preset -> "Load Preset", then adjust points -> "Save".
+   - For each chest type set points and "Accounting":
+       Not counted - hidden, no points (data is kept)
+       Counted     - gives points
+       Quota 1-3   - gives points and counts in its quota column
+   - Quotas: up to 3 at once (e.g. "Epic Crypts", "EMC"), each with a
+     target - how many chests of that kind a player must collect per
+     season. A quota counts chests, not points.
+   - Players tab: if a nickname was misread, set the "Correct Name" -
+     all variants merge into one player.
+   - Season: clan time zone, start and end dates, points target ->
+     "Save". A chest belongs to the season in which it was collected -
+     collect and send before the season ends.
+   - Public page: the clan link (e.g. total-hunter.com/c/450/hot) opens
+     from a phone without registration.
+   - At the end date the season moves to "History" (kept 90 days) and
+     the next one starts. "Download statistics (CSV)" exports all
+     seasons.
+
+   Full guide with examples: total-hunter.com/guide
 
 --------------------------------------------------------------------------------
 5. EXCHANGES
@@ -140,6 +185,8 @@
    Finds wrong objects?             -> set search accuracy to 0.8
    No credits?                      -> total-hunter.com or Fortune Wheel
    Chest bot clicks wrong button?   -> Calibration tab -> Tuning -> D-Pad
+   Bot window does not fit?         -> drag any window edge; scroll with
+                                       the vertical/horizontal scrollbars
 
 --------------------------------------------------------------------------------
 9. CHANGING THE ALERT SOUND
@@ -169,15 +216,20 @@ Support    : totalhunter.support@gmail.com
 ================================================================================
 
 1. УСТАНОВКА
-   - Распакуй TotalHunter.zip в любую папку
-   - Запусти TotalHunter.exe
-   - Войди через Google-аккаунт
+   Шаг 1. Распакуй архив. Правый клик по TotalHunter.zip ->
+          «Извлечь всё...» (или WinRAR / 7-Zip -> «Извлечь в
+          TotalHunter\») в любую папку, например C:\TotalHunter.
+   Шаг 2. Открой распакованную папку.
+   Шаг 3. Запусти TotalHunter.exe ИЗ ЭТОЙ ПАПКИ.
+   Шаг 4. Войди через Google-аккаунт.
 
-   ВАЖНО: Сначала полностью распакуй ZIP, потом запускай программу.
-   НЕ запускай TotalHunter.exe двойным кликом прямо из окна архиватора
-   (WinRAR / 7-Zip) — в этом случае бот стартует из временной папки и
-   может упасть с ошибкой, особенно если кликнуть несколько раз и
-   случайно запустить сразу несколько копий одновременно.
+   ВАЖНО: НЕ запускай TotalHunter.exe прямо из окна архива
+   (WinRAR / 7-Zip / просмотр zip в Проводнике) — бот стартует из
+   временной папки, может упасть, а калибровка и настройки не
+   сохранятся. Всегда сначала распаковать, потом запускать из папки.
+
+   Обновления ставятся автоматически при запуске. Калибровка, тюнинг,
+   настройки склепов и бирж сохраняются — обновление их не трогает.
 
    ВАЖНО: Если при входе/привязке аккаунта пишет "Connection error"
    (ошибка соединения), хотя интернет работает — скорее всего,
@@ -186,9 +238,9 @@ Support    : totalhunter.support@gmail.com
    Добавь TotalHunter.exe / папку TotalHunter в исключения антивируса,
    либо временно отключи антивирус и попробуй снова.
 
-   ЗАЩИТА WINDOWS: У программы пока нет цифровой подписи, поэтому
-   Windows может принять её за незнакомую и заблокировать. Это нормально
-   и настраивается один раз:
+   ЗАЩИТА WINDOWS (Windows 10 / 11): У программы пока нет цифровой
+   подписи, поэтому Windows может принять её за незнакомую и
+   заблокировать. Это нормально и настраивается один раз:
    - Синее окно «Windows защитил ваш компьютер» -> «Подробнее» ->
      «Выполнить в любом случае».
    - Windows Defender -> добавь папку с программой в исключения:
@@ -237,23 +289,61 @@ Support    : totalhunter.support@gmail.com
    Выбери типы склепов -> прокрути карту на максимум -> ЗАПУСТИТЬ СБОР СКЛЕПОВ
 
 --------------------------------------------------------------------------------
-4. СУНДУКИ
-   Бот автоматически собирает сундуки от участников альянса.
+4. СУНДУКИ — сбор и учёт для клана
+   Бот открывает клановые подарки в игре и записывает каждый сундук:
+   кто его добыл («From:») и из какого он события («Source:»). Сайт
+   превращает эти записи в таблицу сезона: очки, квоты, рейтинг
+   игроков и публичную страницу для всего клана.
 
-   Королевство / Клан — введи номер королевства и тег клана (например: 229 / BERS)
-   Источник           — кто отправляет сундуки (оставь пустым — собирать от всех)
-   Имя игрока         — собирать только от этого игрока (пустое — от всех)
-   Скорость клика     — пауза между кликами (0.0 = так быстро, как позволяет OCR;
-                        реальная пауза всегда 0.3+ с из-за времени распознавания)
-   Light / Full       — набор языков OCR для имён игроков
-                        Light = Латиница + Кириллица (быстро)
-                        Full  = все 19 языков (медленнее, для нелатинских имён)
+   ШАГ 1. СБОР В БОТЕ (вкладка Сундуки)
+   1. Выбери клан: сохранённую пару «королевство · клан» из списка,
+      или впиши номер королевства и название клана и сохрани
+      кнопкой с дискетой. Сундуки попадают в тот клан, который был
+      выбран в момент нажатия СТАРТ.
+   2. Открой в игре вкладку клановых подарков и нажми СТАРТ. Бот
+      собирает сундуки до конца списка. Собранное хранится на твоём
+      ПК, пока не будет отправлено.
+   3. «ОТПРАВИТЬ НА СЕРВЕР» отправляет всё собранное одним пакетом —
+      10 алмазов за отправку, сколько бы сундуков в ней ни было.
+      С включённой «Авто-отправкой» бот отправляет сам, когда список
+      закончился или набралось 5000 сундуков. После успешной отправки
+      записи на ПК удаляются.
 
-   Нажми СТАРТ для начала сбора. Результаты сохраняются на сервер автоматически.
+   Скорость клика — пауза между кликами (реальная пауза всегда 0.3+ с
+                    из-за времени распознавания)
+   Light / Full   — языки OCR для имён игроков
+                    Light = Латиница + Кириллица (быстро)
+                    Full  = все 19 языков (медленнее, для нелатинских имён)
 
    ТЮНИНГ (если бот кликает не туда):
-     Вкладка Калибровка -> раздел Тюнинг -> выбери нужный пункт ->
-     используй D-Pad стрелки для сдвига позиции клика.
+     Вкладка Калибровка -> Тюнинг -> выбери пункт -> стрелки D-Pad.
+
+   ШАГ 2. НАСТРОЙКА НА САЙТЕ (total-hunter.com -> Личный кабинет -> Сундуки)
+   - Клан появляется сам после первой отправки из бота — в кабинете у
+     того, кто отправил. Передать управление другому лидеру:
+     «Сгенерировать код передачи» -> он вводит код у себя и нажимает
+     «Принять управление».
+   - Пресет: готовые цены сундуков в очках для уровня клана (T5–T9).
+     Выбери пресет -> «Загрузить пресет», поправь очки -> «Сохранить».
+   - Для каждого типа сундука задай очки и «Учёт»:
+       Не в учёте — не показывается, очков не даёт (данные сохраняются)
+       В учёте    — даёт очки
+       Квота 1–3  — даёт очки и считается в столбце своей квоты
+   - Квоты: до 3 одновременно (например «Epic Crypts», «EMC»), у каждой
+     цель — сколько сундуков этого вида игрок должен собрать за сезон.
+     Квота считает сундуки, а не очки.
+   - Вкладка «Игроки»: если ник распознан с ошибкой, укажи «Правильное
+     имя» — все варианты сложатся в одного игрока.
+   - Сезон: часовой пояс клана, начало и конец, цель по очкам ->
+     «Сохранить». Сундук попадает в тот сезон, в который бот его
+     собрал — собери и отправь до окончания сезона.
+   - Публичная страница: ссылка клана (например
+     total-hunter.com/c/450/hot) открывается с телефона без регистрации.
+   - В дату окончания сезон уходит в «Историю» (хранится 90 дней) и
+     начинается следующий. «Скачать статистику (CSV)» выгружает все
+     сезоны.
+
+   Полный гайд с примерами: total-hunter.com/guide
 
 --------------------------------------------------------------------------------
 5. БИРЖИ
@@ -303,6 +393,9 @@ Support    : totalhunter.support@gmail.com
    Находит не то?                  -> точность поиска 0.8
    Нет кредитов?                   -> total-hunter.com или Колесо Фортуны
    Сундуки кликают не туда?        -> Калибровка -> Тюнинг -> D-Pad
+   Окно бота не помещается?        -> потяни окно за любой край;
+                                      прокрутка — вертикальная и
+                                      горизонтальная полосы
 
 --------------------------------------------------------------------------------
 9. КАК ПОМЕНЯТЬ ЗВУК ОПОВЕЩЕНИЯ
