@@ -24,7 +24,7 @@ export const DOWNLOAD = {
   stepsTitle: 'How to Install',
   steps: [
     { n: '1', text: 'Install the program.' },
-    { n: '2', text: 'If needed, add the program and its folder to Windows Defender exclusions.' },
+    { n: '2', text: 'If Windows blocks the program, follow the steps in "Important before installing" above (Windows Defender, and on Windows 11 — Smart App Control).' },
     { n: '3', text: 'Sign in with Google and link your device in the dashboard.' },
     { n: '4', text: 'Run calibration and complete all 13 points.' },
     { n: '5', text: 'Only launch the bot after calibration is fully complete.' },

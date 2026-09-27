@@ -340,6 +340,13 @@ function DownloadWarningModal({ lang, source, onClose }) {
           <p style={{ fontSize: 14, color: '#E8DCC8', lineHeight: 1.6, margin: '0 0 10px' }}>
             {T.warning.defenderText}
           </p>
+          <ul style={{ fontSize: 14, color: '#E8DCC8', lineHeight: 1.6, margin: '0 0 10px', paddingLeft: 20 }}>
+            {T.warning.defenderItems.map((item, i) => (
+              <li key={i} style={{ marginBottom: 6 }}>
+                <strong style={{ color: '#FFFFFF' }}>{item.b}</strong>{item.t}
+              </li>
+            ))}
+          </ul>
           <p style={{ fontSize: 14, color: '#FFFFFF', lineHeight: 1.6, margin: 0, fontWeight: 700 }}>
             {T.warning.calibrationText}
           </p>
