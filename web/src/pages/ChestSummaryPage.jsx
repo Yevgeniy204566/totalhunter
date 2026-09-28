@@ -228,15 +228,22 @@ export default function ChestSummaryPage() {
                 ))}
               </span>
             </span>
-            {/* Телефон: каждая цель — своя плашка на всю ширину, одной строкой (владелец 2026-09-28) */}
-            {targetParts.map((part, i) => (
-              <span key={part.key} className="public-season-badge public-targets-mobile">
-                {i === 0 && `${t.targetTitle}: `}
-                <span translate="no" className="notranslate">
-                  {part.before}<b className="public-target-num">{part.value}</b>{part.after}
+            {/* Телефон: 1-я строка — очки, 2-я — все квоты вместе (владелец 2026-09-28) */}
+            {[targetParts.filter(p => p.key === 'points'), targetParts.filter(p => p.key !== 'points')]
+              .filter(row => row.length > 0)
+              .map((row, r) => (
+                <span key={r} className="public-season-badge public-targets-mobile">
+                  {r === 0 && `${t.targetTitle}: `}
+                  <span translate="no" className="notranslate">
+                    {row.map((part, i) => (
+                      <span key={part.key}>
+                        {i > 0 && ' · '}
+                        {part.before}<b className="public-target-num">{part.value}</b>{part.after}
+                      </span>
+                    ))}
+                  </span>
                 </span>
-              </span>
-            ))}
+              ))}
           </>
         )}
         {hasSeasonTargets && data.timezone_offset_minutes != null && (
