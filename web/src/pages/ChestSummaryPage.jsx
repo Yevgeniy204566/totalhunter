@@ -165,11 +165,13 @@ export default function ChestSummaryPage() {
   const targets = data.targets || { points: null, chests: null }
   // Все цели сезона (владелец 2026-09-26): очки + каждая квота со своей целью; архив до
   // квот — прежняя одна цель по сундукам.
+  // Число цели выделено цветом и жирным; на телефоне цели — столбиком (владелец 2026-09-28).
   const targetParts = [
-    ...(targets.points != null ? [`${targets.points} ${t.pointsWord}`] : []),
+    ...(targets.points != null ? [{ key: 'points', value: targets.points, after: ` ${t.pointsWord}` }] : []),
     ...(Array.isArray(targets.quotas)
-      ? targets.quotas.filter(q => q.target != null).map(q => `${q.name}: ${q.target}`)
-      : (targets.chests != null ? [`Epic: ${targets.chests}`] : [])),
+      ? targets.quotas.filter(q => q.target != null)
+          .map(q => ({ key: `q${q.slot}`, before: `${q.name}: `, value: q.target }))
+      : (targets.chests != null ? [{ key: 'legacy', before: 'Epic: ', value: targets.chests }] : [])),
   ]
   const hasSeasonTargets = targetParts.length > 0
 
@@ -213,8 +215,16 @@ export default function ChestSummaryPage() {
 
       <div className="public-season-info">
         {hasSeasonTargets && (
-          <span className="public-season-badge">
-            {t.targetTitle}: <span translate="no" className="notranslate">{targetParts.join(' · ')}</span>
+          <span className="public-season-badge public-targets-badge">
+            <span className="public-targets-title">{t.targetTitle}:</span>
+            <span translate="no" className="notranslate public-targets-list">
+              {targetParts.map((part, i) => (
+                <span key={part.key} className="public-target-item">
+                  {i > 0 && <span className="public-target-sep"> · </span>}
+                  {part.before}<b className="public-target-num">{part.value}</b>{part.after}
+                </span>
+              ))}
+            </span>
           </span>
         )}
         {hasSeasonTargets && data.timezone_offset_minutes != null && (

@@ -282,6 +282,11 @@
   .public-table th,
   .public-table td { font-size: 12px !important; padding: 6px 8px !important; }
 
+  /* Цели сезона на телефоне — столбиком, заголовок сверху (владелец 2026-09-28) */
+  .public-targets-badge { display: flex !important; flex-direction: column !important; gap: 4px !important; }
+  .public-targets-list { display: flex !important; flex-direction: column !important; gap: 2px !important; }
+  .public-target-sep { display: none !important; }
+
   /* Сезонная инфо-строка: бейджи переносятся */
   .public-season-info {
     flex-wrap: wrap !important;

@@ -536,6 +536,9 @@ a:hover { color: var(--on-surface); }
   padding: 6px 12px; font-size: 13px; color: var(--on-surface2);
 }
 .public-season-timer { color: var(--accent); font-weight: 600; }
+/* Цели сезона: на ПК — в строку, числа выделены (владелец 2026-09-28) */
+.public-targets-title { margin-right: 0.35em; }
+.public-target-num { color: var(--credits-gold); font-weight: 700; }
 
 .public-table-wrap::-webkit-scrollbar { height: 10px; }
 .public-table-wrap::-webkit-scrollbar-track { background: var(--elevated); border-radius: 4px; }
