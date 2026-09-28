@@ -252,18 +252,6 @@ export default function ChestSummaryPage() {
         {hasSeasonTargets && data.period_end && (
           <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} t={t} />
         )}
-        {tab === 'current' && (
-          <button
-            className="chest-pill-btn chest-pill-btn--sm"
-            style={{ marginLeft: 'auto' }}
-            onClick={() => {
-              if (editMode) { setEditMode(false); loadData() }
-              else { setEditMode(true) }
-            }}
-          >
-            {editMode ? t.editClose : t.editOpen}
-          </button>
-        )}
       </div>
 
       <div className="public-summary-updated">{t.updated}: {updatedLabel}</div>
@@ -293,6 +281,19 @@ export default function ChestSummaryPage() {
             editMode={editMode}
             collectorSlug={internalSlug}
             lang={lang}
+            // «Ввести состав» — рядом с «Герой» над таблицей (владелец 2026-09-28)
+            editButton={
+              <button
+                className="chest-pill-btn chest-pill-btn--sm"
+                style={{ marginRight: 8 }}
+                onClick={() => {
+                  if (editMode) { setEditMode(false); loadData() }
+                  else { setEditMode(true) }
+                }}
+              >
+                {editMode ? t.editClose : t.editOpen}
+              </button>
+            }
           />
         </>
       )}

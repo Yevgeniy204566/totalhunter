@@ -188,7 +188,7 @@ const TABLE_TXT = {
         heroCol: 'Hero' },
 }
 
-export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en' }) {
+export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic), [targets, tt.epic])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
@@ -287,7 +287,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '0 0 6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '0 0 6px' }}>
+        {editButton}
         {/* Просто «Герой»: клик прячет/показывает колонку, подсветка = колонка видна (владелец 2026-09-26) */}
         <button type="button" className="public-avg-toggle public-hero-toggle" onClick={toggleHero}
           aria-pressed={showHero}
