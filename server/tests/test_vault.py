@@ -36,7 +36,7 @@ async def test_balance_sync_updates_last_seen_on_each_cycle(db_session):
     resp = await task
 
     assert resp.status_code == 200
-    assert resp.json() == {"credits": 10, "ref_credits": 0}
+    assert resp.json() == {"credits": 10, "ref_credits": 0, "linked": False}
 
     await db_session.refresh(u)
     assert u.last_seen is not None
@@ -116,4 +116,24 @@ async def test_balance_sync_returns_zero_for_unknown_hwid_without_crashing(db_se
     resp = await task
 
     assert resp.status_code == 200
-    assert resp.json() == {"credits": 0, "ref_credits": 0}
+    assert resp.json() == {"credits": 0, "ref_credits": 0, "linked": False}
+
+
+@pytest.mark.asyncio
+async def test_balance_sync_reports_linked_when_account_has_email(db_session):
+    """Бот ждёт привязку не опросом раз в 5 с, а через этот long-poll: linked — состояние из БД
+    в КАЖДОМ ответе, поэтому потерянное пробуждение догоняется следующим циклом (≤50 с)."""
+    u = User(hwid="hwidvault0004d", credits=3, ref_code="vault4", email="linked@example.com")
+    db_session.add(u)
+    await db_session.commit()
+
+    async def _call():
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            return await client.get(f"/vault/sync/{u.hwid}")
+
+    task = asyncio.create_task(_call())
+    await asyncio.sleep(0.05)
+    notify_balance_changed(u.hwid)
+    resp = await task
+
+    assert resp.json() == {"credits": 3, "ref_credits": 0, "linked": True}

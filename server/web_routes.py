@@ -516,6 +516,8 @@ async def link_verify(
             ))
 
     await db.commit()
+    from vault import notify_balance_changed
+    notify_balance_changed(hwid)   # привязка меняет баланс и снимает ожидание в боте — только после commit
     return BasicResponse(success=True, message="HWID linked successfully")
 
 

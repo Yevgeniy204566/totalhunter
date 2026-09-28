@@ -93,6 +93,24 @@ async def test_link_verify_links_hwid(fake_google_claims):
 
 
 @pytest.mark.asyncio
+async def test_link_verify_wakes_bot_long_poll(fake_google_claims):
+    """Привязка меняет баланс (перенос, пробные, бонусы) и должна будить /vault/sync бота —
+    бот больше не опрашивает сервер раз в 5 с, пока ждёт привязку."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        gen = await client.post("/web/link/generate", json={"hwid": "WAKEWAKE12345678"})
+        code = gen.json()["code"]
+        token = await _get_jwt(client, {**fake_google_claims, "email": "wake_test@example.com"})
+        with patch("vault.notify_balance_changed") as notify:
+            resp = await client.post(
+                "/web/link/verify",
+                json={"code": code},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+    assert resp.status_code == 200
+    notify.assert_called_once_with("WAKEWAKE12345678")
+
+
+@pytest.mark.asyncio
 async def test_link_verify_wrong_code(fake_google_claims):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         token = await _get_jwt(client, {**fake_google_claims, "email": "wrong_code@example.com"})

@@ -64,9 +64,11 @@ async def balance_sync(hwid: str, db: AsyncSession = Depends(get_db)):
                 ),
                 last_seen=now,
             )
-            .returning(User.credits, User.ref_credits)
+            .returning(User.credits, User.ref_credits, User.email)
         )).first()
 
+    # linked — состояние, а не разовое событие: бот ждёт привязку через этот long-poll вместо
+    # опроса check_auth раз в 5 с, и потерянное пробуждение догоняется следующим циклом.
     if not row:
-        return {"credits": 0, "ref_credits": 0}
-    return {"credits": row.credits, "ref_credits": row.ref_credits}
+        return {"credits": 0, "ref_credits": 0, "linked": False}
+    return {"credits": row.credits, "ref_credits": row.ref_credits, "linked": bool(row.email)}
