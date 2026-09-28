@@ -215,17 +215,29 @@ export default function ChestSummaryPage() {
 
       <div className="public-season-info">
         {hasSeasonTargets && (
-          <span className="public-season-badge public-targets-badge">
-            <span className="public-targets-title">{t.targetTitle}:</span>
-            <span translate="no" className="notranslate public-targets-list">
-              {targetParts.map((part, i) => (
-                <span key={part.key} className="public-target-item">
-                  {i > 0 && <span className="public-target-sep"> · </span>}
+          <>
+            {/* ПК: все цели одной плашкой в строку */}
+            <span className="public-season-badge public-targets-desktop">
+              {t.targetTitle}:{' '}
+              <span translate="no" className="notranslate">
+                {targetParts.map((part, i) => (
+                  <span key={part.key}>
+                    {i > 0 && ' · '}
+                    {part.before}<b className="public-target-num">{part.value}</b>{part.after}
+                  </span>
+                ))}
+              </span>
+            </span>
+            {/* Телефон: каждая цель — своя плашка на всю ширину, одной строкой (владелец 2026-09-28) */}
+            {targetParts.map((part, i) => (
+              <span key={part.key} className="public-season-badge public-targets-mobile">
+                {i === 0 && `${t.targetTitle}: `}
+                <span translate="no" className="notranslate">
                   {part.before}<b className="public-target-num">{part.value}</b>{part.after}
                 </span>
-              ))}
-            </span>
-          </span>
+              </span>
+            ))}
+          </>
         )}
         {hasSeasonTargets && data.timezone_offset_minutes != null && (
           <span className="public-season-badge">

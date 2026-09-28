@@ -282,10 +282,10 @@
   .public-table th,
   .public-table td { font-size: 12px !important; padding: 6px 8px !important; }
 
-  /* Цели сезона на телефоне — столбиком, заголовок сверху (владелец 2026-09-28) */
-  .public-targets-badge { display: flex !important; flex-direction: column !important; gap: 4px !important; }
-  .public-targets-list { display: flex !important; flex-direction: column !important; gap: 2px !important; }
-  .public-target-sep { display: none !important; }
+  /* Цели сезона на телефоне: каждая цель — своя плашка на всю ширину, одной строкой
+     (владелец 2026-09-28); общая плашка ПК скрыта */
+  .public-targets-desktop { display: none !important; }
+  .public-targets-mobile { display: block !important; flex: 0 0 100% !important; box-sizing: border-box !important; }
 
   /* Сезонная инфо-строка: бейджи переносятся */
   .public-season-info {
