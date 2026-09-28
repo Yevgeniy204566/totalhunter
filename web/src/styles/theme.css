@@ -522,8 +522,10 @@ a:hover { color: var(--on-surface); }
 .public-cell-zero { color: var(--on-surface2); }
 .public-points-cell { color: var(--credits-gold); font-weight: 700; }
 .public-cell-hit-target { color: #50C878 !important; font-weight: 700; }
-.public-epic-cell {
-  color: var(--epic-purple); font-weight: 700;
+/* Свечение — только в шапке (владелец 2026-09-28): тройной text-shadow на каждой ячейке
+   перерисовывался на каждый кадр прокрутки и тормозил таблицу на телефонах. */
+.public-epic-cell { color: var(--epic-purple); font-weight: 700; }
+.public-table thead .public-epic-cell {
   text-shadow: 0 1px 0 var(--epic-shadow), 0 0 8px var(--epic-glow), 0 0 16px var(--epic-glow);
 }
 

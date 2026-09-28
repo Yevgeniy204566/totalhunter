@@ -63,6 +63,20 @@ def test_points_sum_ignores_quota_and_each_quota_counts_separately():
     assert "Common Crypt 25" not in s["chest_types"]
 
 
+def test_chest_type_columns_ordered_by_quota_then_rest():
+    """Владелец 2026-09-28: столбцы — сундуки квоты 1, потом 2, потом 3, потом всё, что просто
+    в учёте; внутри группы — как раньше, по количеству. Сундук удалённой квоты — в «остальных»."""
+    rows = [
+        _row("A", "Infernus", 30, None, 1, 50),      # в учёте, самый частый
+        _row("A", "Epic Monster", 60, 2, 1, 9),
+        _row("A", "Epic Crypt 30", 80, 1, 1, 2),
+        _row("A", "Epic Crypt 25", 70, 1, 1, 4),
+        _row("A", "Ghost", 20, 3, 1, 7),             # квоты 3 у коллектора нет
+    ]
+    s = pivot_summary("K", "C", rows, quota_slots=frozenset({1, 2}))
+    assert s["chest_types"] == ["Epic Crypt 25", "Epic Crypt 30", "Epic Monster", "Infernus", "Ghost"]
+
+
 def test_removed_quota_rows_keep_points():
     rows = [_row("A", "Epic Monster", 60, 2, 1, 3)]
     s = pivot_summary("K", "C", rows, quota_slots=frozenset({1}))   # квоты 2 больше нет

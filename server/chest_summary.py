@@ -37,6 +37,7 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
     chest_type_order: list[str] = []
     seen_types = set()
     display_names: dict[str, str] = {}
+    type_slot: dict[str, int] = {}   # квота типа — для порядка столбцов
     per_player: dict[str, dict[str, int]] = {}
     player_points: dict[str, int] = {}
     # Квоты (2026-09-26): слот конфига засчитывается, только если такая квота есть у
@@ -49,6 +50,8 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
     for sender, chest_type_en, display_name, points, quota_slot, is_in_pattern, count in rows:
         if not is_in_pattern:
             continue
+        if quota_slot and int(quota_slot) in quota_slots:
+            type_slot[chest_type_en] = int(quota_slot)
         if leader_name and sender == leader_name and chest_type_en in leader_excluded:
             # Excluded from leader score but still tracked in clan totals
             grand_total += count
@@ -73,8 +76,10 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
         grand_total += count
         total_points += count * (points or 0)
 
+    # Владелец 2026-09-28: сундуки квоты 1, потом 2, потом 3, потом просто «в учёте»;
+    # внутри группы — по количеству, как раньше.
     chest_type_order_sorted = sorted(
-        seen_types, key=lambda t: (-totals[t], display_names[t])
+        seen_types, key=lambda t: (type_slot.get(t, 99), -totals[t], display_names[t])
     )
     chest_types = [display_names[t] for t in chest_type_order_sorted]
     players = []

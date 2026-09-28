@@ -273,19 +273,10 @@
   .public-table thead tr.public-head-row th { top: 0 !important; }
   .public-avg-toggle.public-hero-toggle { display: inline-block !important; margin-right: 0 !important; }
 
-  /* Намёк о скролле: тень на правом крае таблицы */
-  .public-table-wrap {
-    position: relative !important;
-  }
-  .public-table-wrap::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: 28px;
-    background: linear-gradient(to right, transparent, rgba(13,19,38,0.7));
-    pointer-events: none;
-    z-index: 5;
-  }
+  /* Тень-«намёк о скролле» (::after) убрана (владелец 2026-09-28): внутри прокручиваемой
+     обёртки она уезжала вместе с таблицей и тёмной полосой резала столбец посередине.
+     Верхняя дублирующая полоса прокрутки на телефоне не нужна — таблицу двигают пальцем. */
+  .public-table-top-scroll { display: none !important; }
 
   /* Меньший шрифт ячеек — больше колонок видно без скролла */
   .public-table th,
