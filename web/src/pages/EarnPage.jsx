@@ -521,7 +521,7 @@ function mountWheel() {
     prizeRevertT=setTimeout(()=>{
       spinBtn.classList.remove('show-prize','jackpot')
       spinBtn.style.removeProperty('--prize-glow')
-      if(holder) holder.textContent=window.__wheelSpinLabel||'КРУТИТЬ'
+      if(holder) holder.textContent=window.__wheelSpinLabel||'PLAY'
     },2600)
   }
 
@@ -722,9 +722,9 @@ export default function EarnPage() {
     if (btn?.classList.contains('show-prize')) return
     const label = remaining === 0
         ? (isRu ? '✓ Лимит исчерпан' : '✓ Limit reached')
-        : (isRu ? 'КРУТИТЬ' : 'SPIN')
+        : (isRu ? 'PLAY' : 'SPIN')
     el.textContent = label
-    window.__wheelSpinLabel = isRu ? 'КРУТИТЬ' : 'SPIN'
+    window.__wheelSpinLabel = isRu ? 'PLAY' : 'SPIN'
   }, [spinning, remaining, isRu])
 
   // ── Spin handler ───────────────────────────────────────────────
@@ -811,7 +811,7 @@ export default function EarnPage() {
           <div className="btn-glow-ring" />
           <div className="btn-bg-body" />
           <div className="btn-text-holder" ref={spinTextRef}>
-            {isRu ? 'КРУТИТЬ' : 'SPIN'}
+            {isRu ? 'PLAY' : 'SPIN'}
           </div>
         </button>
       </div>
