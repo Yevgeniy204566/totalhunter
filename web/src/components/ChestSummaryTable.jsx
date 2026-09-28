@@ -48,8 +48,11 @@ function hslToHex(h, s, l) {
 // бесшовный блик; путь «норма → легенда» идёт через несколько оттенков, легенды — на лентах.
 // 0 → цель: алый → оранжевый
 const BELOW_QUOTA_STOPS = ['#FF2D55', '#FF9F0A']
-// цель → цель+100к: салатовый → бирюза → голубой → фиолетовый → розовый → золото
-const ABOVE_QUOTA_STOPS = ['#3DFF7A', '#1FE5C8', '#4DB5FF', '#A77BFF', '#FF7AD9', '#FFD24D']
+// цель → цель+100к: салатовый → бирюза → голубой → фиолетовый → розовый → глубокая неоновая фуксия
+// (не бежевый/жёлтый — скучно; не красный/оранжевый — это цвета «ниже цели»)
+const ABOVE_QUOTA_STOPS = ['#3DFF7A', '#1FE5C8', '#4DB5FF', '#A77BFF', '#FF7AD9', '#E01AD6']
+// куда уходит бегущая полоска перед легендой — синий, в тон лент легенд
+const STRIPE_TO_LEGEND = '#3D6BFF'
 const LEGENDARY_OVERAGE = 100000
 // легенда: число цветов перелива растёт каждые 100к превышения (от 2 до 6)
 const LEGENDARY_BAND_SIZE = 100000
@@ -57,9 +60,17 @@ const LEGENDARY_MAX_COLORS = 6
 
 function mixWhite(hex, t) { return lerpColor(hex, '#FFFFFF', t) }
 
-// Плитка фона — 2 ширины текста, края совпадают по цвету: блик повторяется без рывка.
-function shimmerGradient(c) {
-  const h = mixWhite(c, 0.6)
+// Цвет пути чуть впереди игрока; после фуксии — к синему миру легенд.
+function aheadColor(t) {
+  if (t <= 1) return multiLerp(ABOVE_QUOTA_STOPS, t)
+  return lerpColor(ABOVE_QUOTA_STOPS[ABOVE_QUOTA_STOPS.length - 1], STRIPE_TO_LEGEND, Math.min(1, (t - 1) / 0.3))
+}
+
+// Бегущая полоска — одного цвета, опережает цвет имени (следующий шаг пути), пастельная — не давит
+// и не перебивает легенд (владелец 2026-09-29). Плитка фона — 2 ширины текста, края совпадают по
+// цвету: полоска повторяется без рывка.
+function shimmerGradient(c, t) {
+  const h = mixWhite(aheadColor(t + 0.2), 0.45)
   return `linear-gradient(90deg, ${c} 0%, ${c} 22%, ${h} 32%, ${c} 42%, ${c} 72%, ${h} 82%, ${c} 92%, ${c} 100%)`
 }
 
@@ -90,7 +101,7 @@ function nameGradientStyle(player, targets) {
   const overage = player.points - quota
   if (overage < LEGENDARY_OVERAGE) {
     const t = overage / LEGENDARY_OVERAGE
-    return { mode: 'shimmer', backgroundImage: shimmerGradient(multiLerp(ABOVE_QUOTA_STOPS, t)), fontSize: nameSize(t * 3) }
+    return { mode: 'shimmer', backgroundImage: shimmerGradient(multiLerp(ABOVE_QUOTA_STOPS, t), t), fontSize: nameSize(t * 3) }
   }
   const extra = overage - LEGENDARY_OVERAGE
   const band = Math.floor(extra / LEGENDARY_BAND_SIZE)
