@@ -77,22 +77,26 @@ function legendaryGradient(extra) {
   return `linear-gradient(90deg, ${all.map((c, i) => `${c} ${(i / (all.length - 1) * 100).toFixed(1)}%`).join(', ')})`
 }
 
+// Базовый размер имени — CSS-переменная (ПК 17px — на кегль крупнее цифр 16px, телефон 14.5px);
+// сверху — прибавка за очки: чем больше набрал, тем крупнее.
+function nameSize(extraPx) { return `calc(var(--public-name-base) + ${extraPx.toFixed(2)}px)` }
+
 function nameGradientStyle(player, targets) {
   const quota = targets?.points
   if (!quota) return null
   if (player.points < quota) {
-    return { mode: 'plain', color: multiLerp(BELOW_QUOTA_STOPS, player.points / quota), fontSize: 14.5 }
+    return { mode: 'plain', color: multiLerp(BELOW_QUOTA_STOPS, player.points / quota), fontSize: nameSize(0) }
   }
   const overage = player.points - quota
   if (overage < LEGENDARY_OVERAGE) {
     const t = overage / LEGENDARY_OVERAGE
-    return { mode: 'shimmer', backgroundImage: shimmerGradient(multiLerp(ABOVE_QUOTA_STOPS, t)), fontSize: 14.5 + t * 3 }
+    return { mode: 'shimmer', backgroundImage: shimmerGradient(multiLerp(ABOVE_QUOTA_STOPS, t)), fontSize: nameSize(t * 3) }
   }
   const extra = overage - LEGENDARY_OVERAGE
   const band = Math.floor(extra / LEGENDARY_BAND_SIZE)
   return {
     mode: 'legendary', backgroundImage: legendaryGradient(extra),
-    fontSize: 19 + Math.min(band, 5) * 0.4,
+    fontSize: nameSize(4.5 + Math.min(band, 5) * 0.4),
     // все легенды — синяя лента с бликом; последний уровень (6 цветов) — королевская лента
     banner: band >= LEGENDARY_MAX_COLORS - 1 ? 'royal' : 'blue',
   }

@@ -281,6 +281,7 @@
   /* Меньший шрифт ячеек — больше колонок видно без скролла */
   .public-table th,
   .public-table td { font-size: 12px !important; padding: 6px 8px !important; }
+  .public-table { --public-name-base: 14.5px; }
 
   /* Цели сезона на телефоне: каждая цель — своя плашка на всю ширину, одной строкой
      (владелец 2026-09-28); общая плашка ПК скрыта */
