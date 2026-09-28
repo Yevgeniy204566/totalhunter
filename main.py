@@ -1984,6 +1984,50 @@ def add_horizontal_scroll(sf, **scrollbar_colors):
     return hsb, fit_width
 
 
+SCROLLBAR_HIDE_DELAY_MS = 2000  # владелец 28.09: полосы гаснут через 2 с после изменения размера
+
+
+class AutoHideScrollbars:
+    """Владелец 27.09/28.09: полосы прокрутки окна не видны, пока игрок не меняет размер окна.
+    Полосы остаются в раскладке и работают (колесо, перетаскивание) — просто рисуются цветом
+    фона: убери их из grid — содержимое прыгало бы на ширину полосы при каждом появлении."""
+
+    def __init__(self, win, bars, shown_colors: dict, hidden_color: str,
+                 delay_ms: int = SCROLLBAR_HIDE_DELAY_MS):
+        self._win, self._bars = win, bars
+        self._shown = dict(shown_colors)
+        self._hidden = {key: hidden_color for key in shown_colors}
+        self._delay_ms = delay_ms
+        self._last_size = None
+        self._job = None
+        self._apply(self._hidden)
+
+    def _apply(self, colors: dict) -> None:
+        for bar in self._bars:
+            try:
+                bar.configure(**colors)
+            except Exception:
+                pass
+
+    def _hide(self) -> None:
+        self._job = None
+        self._apply(self._hidden)
+
+    def on_configure(self, event) -> None:
+        # <Configure> на Toplevel приходит и от всех дочерних виджетов, и при перемещении окна
+        if event.widget is not self._win:
+            return
+        size = (event.width, event.height)
+        if self._last_size is None or size == self._last_size:
+            self._last_size = size
+            return
+        self._last_size = size
+        self._apply(self._shown)
+        if self._job is not None:
+            self._win.after_cancel(self._job)
+        self._job = self._win.after(self._delay_ms, self._hide)
+
+
 def enforce_no_maximize(win, geometry: str) -> bool:
     """Обработчик <Configure>: если окно всё же оказалось развёрнуто (Win+Up, двойной
     клик по заголовку — resizable(False,...) не всегда блокирует это на всех сборках
@@ -2100,6 +2144,11 @@ class TotalHunterApp(ctk.CTk):
         self._outer.pack(fill="both", expand=True)
         self._outer_hscroll, self._fit_outer_width = add_horizontal_scroll(
             self._outer, button_color=MD3["primary_dim"], button_hover_color=MD3["primary"])
+        self._scrollbar_hider = AutoHideScrollbars(
+            self, [self._outer._scrollbar, self._outer_hscroll],
+            {"button_color": MD3["primary_dim"], "button_hover_color": MD3["primary"]},
+            MD3["bg"])
+        self.bind("<Configure>", self._scrollbar_hider.on_configure, add="+")
 
         # Шапка: «Поверх окон» слева, выбор языка справа
         _header = ctk.CTkFrame(self._outer, fg_color="transparent")
