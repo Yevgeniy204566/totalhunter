@@ -423,7 +423,7 @@ LANGS = {
         "tab_crypt": "СКЛЕПЫ", "tab_cal": "Калибровка", "tab_roy": "РОЙ", "tab_chest": "СУНДУКИ",
         # --- chest tab ---
         "chest_kingdom_lb": "Королевство:", "chest_clan_lb": "Название клана:",
-        "chest_start_btn": "СТАРТ", "chest_stop_btn": "СТОП",
+        "chest_start_btn": "СТАРТ", "chest_stop_btn": "СТОП", "chest_sent_lb": "Отправлено:",
         "chest_status_ready": "Готово к сбору", "chest_status_running": "Сбор сундуков...",
         "chest_status_stopped": "Остановлено", "chest_status_no_dialog": "Откройте «Мой клан → Подарки»",
         "chest_missing_fields": "Укажите Королевство и Клан",
@@ -449,7 +449,7 @@ LANGS = {
         "crypt_icons_title": "Выберите типы склепов:",
         "crypt_conf_lb": "Точность поиска", "crypt_accel_lb": "Ускорение марша (0–5)",
         "crypt_break_lb": "Перерыв между склепами", "crypt_march_lb": "Дальность марша Картера",
-        "crypt_scroll_lb": "Частота YOLO-детекции", "scroll_clicks_lb": "Тики скролла", "crypt_profile_lb": "Профиль:",
+        "crypt_scroll_lb": "Частота YOLO-детекции", "scroll_clicks_lb": "Скорость скролла", "crypt_profile_lb": "Профиль:",
         "crypt_swing1_lb": "Swing 1 — Исследовать ↑↓:", "crypt_swing2_lb": "Swing 2 — Ускорение ↑↓:",
         "crypt_speed_lb": "Скорость кликов",
         "crypt_save_btn": "💾  Сохранить настройки",
@@ -500,7 +500,7 @@ LANGS = {
         "tab_crypt": "CRYPTS", "tab_cal": "Calibration", "tab_roy": "SWARM", "tab_chest": "CHESTS",
         # --- chest tab ---
         "chest_kingdom_lb": "Kingdom:", "chest_clan_lb": "Clan name:",
-        "chest_start_btn": "START", "chest_stop_btn": "STOP",
+        "chest_start_btn": "START", "chest_stop_btn": "STOP", "chest_sent_lb": "Sent:",
         "chest_status_ready": "Ready to collect", "chest_status_running": "Collecting chests...",
         "chest_status_stopped": "Stopped", "chest_status_no_dialog": "Open «My Clan → Gifts»",
         "chest_missing_fields": "Enter Kingdom and Clan name",
@@ -526,7 +526,7 @@ LANGS = {
         "crypt_icons_title": "Select crypt types:",
         "crypt_conf_lb": "Detection accuracy", "crypt_accel_lb": "March acceleration (0–5)",
         "crypt_break_lb": "Break between crypts", "crypt_march_lb": "Carter march distance",
-        "crypt_scroll_lb": "YOLO detection rate", "scroll_clicks_lb": "Scroll ticks", "crypt_profile_lb": "Profile:",
+        "crypt_scroll_lb": "YOLO detection rate", "scroll_clicks_lb": "Scroll speed", "crypt_profile_lb": "Profile:",
         "crypt_swing1_lb": "Swing 1 — Study ↑↓:", "crypt_swing2_lb": "Swing 2 — Speed up ↑↓:",
         "crypt_speed_lb": "Click speed",
         "crypt_save_btn": "💾  Save settings",
@@ -575,7 +575,7 @@ LANGS = {
         "tab_crypt": "KRYPTEN", "tab_cal": "Kalibrierung", "tab_roy": "SCHWARM", "tab_chest": "TRUHEN",
         # --- chest tab ---
         "chest_kingdom_lb": "Königreich:", "chest_clan_lb": "Clanname:",
-        "chest_start_btn": "START", "chest_stop_btn": "STOPP",
+        "chest_start_btn": "START", "chest_stop_btn": "STOPP", "chest_sent_lb": "Gesendet:",
         "chest_status_ready": "Bereit zum Sammeln", "chest_status_running": "Truhen werden gesammelt...",
         "chest_status_stopped": "Gestoppt", "chest_status_no_dialog": "Öffne «Mein Clan → Geschenke»",
         "chest_missing_fields": "Königreich und Clan angeben",
@@ -598,7 +598,7 @@ LANGS = {
         "crypt_icons_title": "Krypttypen auswählen:",
         "crypt_conf_lb": "Erkennungsgenauigkeit", "crypt_accel_lb": "Marchbeschl. (0–5)",
         "crypt_break_lb": "Pause zwischen Krypten", "crypt_march_lb": "Carter-Marchdistanz",
-        "crypt_scroll_lb": "YOLO-Erkennungsrate", "scroll_clicks_lb": "Scroll-Ticks", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO-Erkennungsrate", "scroll_clicks_lb": "Scroll-Geschwindigkeit", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Erkunden ↑↓:", "crypt_swing2_lb": "Swing 2 — Beschl. ↑↓:",
         "crypt_speed_lb": "Klickgeschwindigkeit", "crypt_save_btn": "💾  Einstellungen speichern",
         "crypt_start": "KRYPTJAGD STARTEN", "crypt_stop_btn": "STOPP",
@@ -639,7 +639,7 @@ LANGS = {
         "tab_crypt": "CRIPTAS", "tab_cal": "Calibración", "tab_roy": "ENJAMBRE", "tab_chest": "COFRES",
         # --- chest tab ---
         "chest_kingdom_lb": "Reino:", "chest_clan_lb": "Nombre del clan:",
-        "chest_start_btn": "INICIAR", "chest_stop_btn": "DETENER",
+        "chest_start_btn": "INICIAR", "chest_stop_btn": "DETENER", "chest_sent_lb": "Enviados:",
         "chest_status_ready": "Listo para recolectar", "chest_status_running": "Recolectando cofres...",
         "chest_status_stopped": "Detenido", "chest_status_no_dialog": "Abra «Mi clan → Regalos»",
         "chest_missing_fields": "Indique Reino y Clan",
@@ -662,7 +662,7 @@ LANGS = {
         "crypt_icons_title": "Seleccionar tipos de cripta:",
         "crypt_conf_lb": "Precisión de detección", "crypt_accel_lb": "Aceleración de marcha (0–5)",
         "crypt_break_lb": "Pausa entre criptas", "crypt_march_lb": "Distancia de marcha Carter",
-        "crypt_scroll_lb": "Tasa de detección YOLO", "scroll_clicks_lb": "Ticks desplazamiento", "crypt_profile_lb": "Perfil:",
+        "crypt_scroll_lb": "Tasa de detección YOLO", "scroll_clicks_lb": "Velocidad de desplazamiento", "crypt_profile_lb": "Perfil:",
         "crypt_swing1_lb": "Swing 1 — Explorar ↑↓:", "crypt_swing2_lb": "Swing 2 — Acelerar ↑↓:",
         "crypt_speed_lb": "Velocidad de clic", "crypt_save_btn": "💾  Guardar ajustes",
         "crypt_start": "INICIAR CAZA DE CRIPTAS", "crypt_stop_btn": "DETENER",
@@ -703,7 +703,7 @@ LANGS = {
         "tab_crypt": "CRYPTES", "tab_cal": "Calibration", "tab_roy": "ESSAIM", "tab_chest": "COFFRES",
         # --- chest tab ---
         "chest_kingdom_lb": "Royaume :", "chest_clan_lb": "Nom du clan :",
-        "chest_start_btn": "DÉMARRER", "chest_stop_btn": "ARRÊTER",
+        "chest_start_btn": "DÉMARRER", "chest_stop_btn": "ARRÊTER", "chest_sent_lb": "Envoyés :",
         "chest_status_ready": "Prêt à collecter", "chest_status_running": "Collecte des coffres...",
         "chest_status_stopped": "Arrêté", "chest_status_no_dialog": "Ouvrez «Mon clan → Cadeaux»",
         "chest_missing_fields": "Indiquez le Royaume et le Clan",
@@ -726,7 +726,7 @@ LANGS = {
         "crypt_icons_title": "Sélectionner types de crypte :",
         "crypt_conf_lb": "Précision de détection", "crypt_accel_lb": "Accél. de marche (0–5)",
         "crypt_break_lb": "Pause entre cryptes", "crypt_march_lb": "Distance de marche Carter",
-        "crypt_scroll_lb": "Taux détection YOLO", "scroll_clicks_lb": "Ticks défilement", "crypt_profile_lb": "Profil :",
+        "crypt_scroll_lb": "Taux détection YOLO", "scroll_clicks_lb": "Vitesse de défilement", "crypt_profile_lb": "Profil :",
         "crypt_swing1_lb": "Swing 1 — Explorer ↑↓ :", "crypt_swing2_lb": "Swing 2 — Accél. ↑↓ :",
         "crypt_speed_lb": "Vitesse de clic", "crypt_save_btn": "💾  Sauvegarder",
         "crypt_start": "DÉMARRER LA CHASSE AUX CRYPTES", "crypt_stop_btn": "ARRÊTER",
@@ -767,7 +767,7 @@ LANGS = {
         "tab_crypt": "CRIPTE", "tab_cal": "Calibrazione", "tab_roy": "SCIAME", "tab_chest": "SCRIGNI",
         # --- chest tab ---
         "chest_kingdom_lb": "Regno:", "chest_clan_lb": "Nome del clan:",
-        "chest_start_btn": "AVVIA", "chest_stop_btn": "STOP",
+        "chest_start_btn": "AVVIA", "chest_stop_btn": "STOP", "chest_sent_lb": "Inviati:",
         "chest_status_ready": "Pronto per la raccolta", "chest_status_running": "Raccolta scrigni...",
         "chest_status_stopped": "Fermato", "chest_status_no_dialog": "Apri «Il mio clan → Regali»",
         "chest_missing_fields": "Indica Regno e Clan",
@@ -790,7 +790,7 @@ LANGS = {
         "crypt_icons_title": "Seleziona tipi di cripta:",
         "crypt_conf_lb": "Precisione rilevamento", "crypt_accel_lb": "Accelerazione marcia (0–5)",
         "crypt_break_lb": "Pausa tra cripte", "crypt_march_lb": "Distanza marcia Carter",
-        "crypt_scroll_lb": "Frequenza rilevamento YOLO", "scroll_clicks_lb": "Tick scorrimento", "crypt_profile_lb": "Profilo:",
+        "crypt_scroll_lb": "Frequenza rilevamento YOLO", "scroll_clicks_lb": "Velocità di scorrimento", "crypt_profile_lb": "Profilo:",
         "crypt_swing1_lb": "Swing 1 — Esplora ↑↓:", "crypt_swing2_lb": "Swing 2 — Accel. ↑↓:",
         "crypt_speed_lb": "Velocità clic", "crypt_save_btn": "💾  Salva impostazioni",
         "crypt_start": "AVVIA CACCIA CRIPTE", "crypt_stop_btn": "FERMA",
@@ -831,7 +831,7 @@ LANGS = {
         "tab_crypt": "CRYPTEN", "tab_cal": "Kalibratie", "tab_roy": "ZWERM", "tab_chest": "KISTEN",
         # --- chest tab ---
         "chest_kingdom_lb": "Koninkrijk:", "chest_clan_lb": "Clannaam:",
-        "chest_start_btn": "START", "chest_stop_btn": "STOP",
+        "chest_start_btn": "START", "chest_stop_btn": "STOP", "chest_sent_lb": "Verzonden:",
         "chest_status_ready": "Gereed om te verzamelen", "chest_status_running": "Kisten verzamelen...",
         "chest_status_stopped": "Gestopt", "chest_status_no_dialog": "Open «Mijn clan → Geschenken»",
         "chest_missing_fields": "Vul Koninkrijk en Clan in",
@@ -854,7 +854,7 @@ LANGS = {
         "crypt_icons_title": "Selecteer crypttypen:",
         "crypt_conf_lb": "Detectienauwkeurigheid", "crypt_accel_lb": "Marsbescherming (0–5)",
         "crypt_break_lb": "Pauze tussen crypten", "crypt_march_lb": "Carter-marsafstand",
-        "crypt_scroll_lb": "YOLO-detectiesnelheid", "scroll_clicks_lb": "Scroll-ticks", "crypt_profile_lb": "Profiel:",
+        "crypt_scroll_lb": "YOLO-detectiesnelheid", "scroll_clicks_lb": "Scrollsnelheid", "crypt_profile_lb": "Profiel:",
         "crypt_swing1_lb": "Swing 1 — Verkennen ↑↓:", "crypt_swing2_lb": "Swing 2 — Versnellen ↑↓:",
         "crypt_speed_lb": "Kliksnelheid", "crypt_save_btn": "💾  Instellingen opslaan",
         "crypt_start": "CRYPTJACHT STARTEN", "crypt_stop_btn": "STOPPEN",
@@ -895,7 +895,7 @@ LANGS = {
         "tab_crypt": "KRYPTER", "tab_cal": "Kalibrering", "tab_roy": "SVERM", "tab_chest": "KISTER",
         # --- chest tab ---
         "chest_kingdom_lb": "Kongerike:", "chest_clan_lb": "Klannavn:",
-        "chest_start_btn": "START", "chest_stop_btn": "STOPP",
+        "chest_start_btn": "START", "chest_stop_btn": "STOPP", "chest_sent_lb": "Sendt:",
         "chest_status_ready": "Klar til å samle", "chest_status_running": "Samler kister...",
         "chest_status_stopped": "Stoppet", "chest_status_no_dialog": "Åpne «Min klan → Gaver»",
         "chest_missing_fields": "Angi kongerike og klan",
@@ -918,7 +918,7 @@ LANGS = {
         "crypt_icons_title": "Velg krypttyper:",
         "crypt_conf_lb": "Deteksjonsnøyaktighet", "crypt_accel_lb": "Marsjacc. (0–5)",
         "crypt_break_lb": "Pause mellom krypter", "crypt_march_lb": "Carter marsjavstand",
-        "crypt_scroll_lb": "YOLO-deteksjonsrate", "scroll_clicks_lb": "Rulletaster", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO-deteksjonsrate", "scroll_clicks_lb": "Rullehastighet", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Utforsk ↑↓:", "crypt_swing2_lb": "Swing 2 — Accel. ↑↓:",
         "crypt_speed_lb": "Klikkhastighet", "crypt_save_btn": "💾  Lagre innstillinger",
         "crypt_start": "START KRYPTJAKT", "crypt_stop_btn": "STOPP",
@@ -959,7 +959,7 @@ LANGS = {
         "tab_crypt": "KRYPTY", "tab_cal": "Kalibracja", "tab_roy": "RÓJ", "tab_chest": "SKRZYNIE",
         # --- chest tab ---
         "chest_kingdom_lb": "Królestwo:", "chest_clan_lb": "Nazwa klanu:",
-        "chest_start_btn": "START", "chest_stop_btn": "STOP",
+        "chest_start_btn": "START", "chest_stop_btn": "STOP", "chest_sent_lb": "Wysłano:",
         "chest_status_ready": "Gotowy do zbierania", "chest_status_running": "Zbieranie skrzyń...",
         "chest_status_stopped": "Zatrzymano", "chest_status_no_dialog": "Otwórz «Mój klan → Prezenty»",
         "chest_missing_fields": "Podaj Królestwo i Klan",
@@ -982,7 +982,7 @@ LANGS = {
         "crypt_icons_title": "Wybierz typy krypt:",
         "crypt_conf_lb": "Dokładność wykrywania", "crypt_accel_lb": "Przyspieszenie marszu (0–5)",
         "crypt_break_lb": "Przerwa między kryptami", "crypt_march_lb": "Dystans marszu Carter",
-        "crypt_scroll_lb": "Częstotliwość YOLO", "scroll_clicks_lb": "Tiki przewijania", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "Częstotliwość YOLO", "scroll_clicks_lb": "Prędkość przewijania", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Eksploruj ↑↓:", "crypt_swing2_lb": "Swing 2 — Przyspiesz ↑↓:",
         "crypt_speed_lb": "Prędkość klikania", "crypt_save_btn": "💾  Zapisz ustawienia",
         "crypt_start": "ROZPOCZNIJ POLOWANIE NA KRYPTY", "crypt_stop_btn": "ZATRZYMAJ",
@@ -1023,7 +1023,7 @@ LANGS = {
         "tab_crypt": "CRIPTAS", "tab_cal": "Calibração", "tab_roy": "ENXAME", "tab_chest": "BAÚS",
         # --- chest tab ---
         "chest_kingdom_lb": "Reino:", "chest_clan_lb": "Nome do clã:",
-        "chest_start_btn": "INICIAR", "chest_stop_btn": "PARAR",
+        "chest_start_btn": "INICIAR", "chest_stop_btn": "PARAR", "chest_sent_lb": "Enviados:",
         "chest_status_ready": "Pronto para coletar", "chest_status_running": "Coletando baús...",
         "chest_status_stopped": "Parado", "chest_status_no_dialog": "Abra «Meu clã → Presentes»",
         "chest_missing_fields": "Informe Reino e Clã",
@@ -1046,7 +1046,7 @@ LANGS = {
         "crypt_icons_title": "Selecionar tipos de cripta:",
         "crypt_conf_lb": "Precisão de detecção", "crypt_accel_lb": "Aceleração de marcha (0–5)",
         "crypt_break_lb": "Pausa entre criptas", "crypt_march_lb": "Distância de marcha Carter",
-        "crypt_scroll_lb": "Taxa de detecção YOLO", "scroll_clicks_lb": "Ticks de rolagem", "crypt_profile_lb": "Perfil:",
+        "crypt_scroll_lb": "Taxa de detecção YOLO", "scroll_clicks_lb": "Velocidade de rolagem", "crypt_profile_lb": "Perfil:",
         "crypt_swing1_lb": "Swing 1 — Explorar ↑↓:", "crypt_swing2_lb": "Swing 2 — Acelerar ↑↓:",
         "crypt_speed_lb": "Velocidade de clique", "crypt_save_btn": "💾  Salvar configurações",
         "crypt_start": "INICIAR CAÇA DE CRIPTAS", "crypt_stop_btn": "PARAR",
@@ -1087,7 +1087,7 @@ LANGS = {
         "tab_crypt": "KRYPTOR", "tab_cal": "Kalibrering", "tab_roy": "SVÄRM", "tab_chest": "KISTOR",
         # --- chest tab ---
         "chest_kingdom_lb": "Kungarike:", "chest_clan_lb": "Klannamn:",
-        "chest_start_btn": "START", "chest_stop_btn": "STOPP",
+        "chest_start_btn": "START", "chest_stop_btn": "STOPP", "chest_sent_lb": "Skickade:",
         "chest_status_ready": "Redo att samla", "chest_status_running": "Samlar kistor...",
         "chest_status_stopped": "Stoppad", "chest_status_no_dialog": "Öppna «Mitt klan → Gåvor»",
         "chest_missing_fields": "Ange kungarike och klan",
@@ -1110,7 +1110,7 @@ LANGS = {
         "crypt_icons_title": "Välj krypttyper:",
         "crypt_conf_lb": "Detektionsnoggrannhet", "crypt_accel_lb": "Marschaccel. (0–5)",
         "crypt_break_lb": "Paus mellan kryptor", "crypt_march_lb": "Carter marsjavstånd",
-        "crypt_scroll_lb": "YOLO-detektionsfrekvens", "scroll_clicks_lb": "Bläddra ticks", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO-detektionsfrekvens", "scroll_clicks_lb": "Rullningshastighet", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Utforska ↑↓:", "crypt_swing2_lb": "Swing 2 — Accel. ↑↓:",
         "crypt_speed_lb": "Klickhastighet", "crypt_save_btn": "💾  Spara inställningar",
         "crypt_start": "STARTA KRYPTJAKT", "crypt_stop_btn": "STOPP",
@@ -1151,7 +1151,7 @@ LANGS = {
         "tab_crypt": "KRİPTALAR", "tab_cal": "Kalibrasyon", "tab_roy": "OĞUL", "tab_chest": "SANDIKLAR",
         # --- chest tab ---
         "chest_kingdom_lb": "Krallık:", "chest_clan_lb": "Klan adı:",
-        "chest_start_btn": "BAŞLAT", "chest_stop_btn": "DURDUR",
+        "chest_start_btn": "BAŞLAT", "chest_stop_btn": "DURDUR", "chest_sent_lb": "Gönderilen:",
         "chest_status_ready": "Toplamaya hazır", "chest_status_running": "Sandıklar toplanıyor...",
         "chest_status_stopped": "Durduruldu", "chest_status_no_dialog": "«Klanım → Hediyeler»'i açın",
         "chest_missing_fields": "Krallık ve Klan girin",
@@ -1174,7 +1174,7 @@ LANGS = {
         "crypt_icons_title": "Kripta türlerini seçin:",
         "crypt_conf_lb": "Algılama hassasiyeti", "crypt_accel_lb": "Yürüyüş ivmesi (0–5)",
         "crypt_break_lb": "Kriptalar arası mola", "crypt_march_lb": "Carter yürüyüş mesafesi",
-        "crypt_scroll_lb": "YOLO algılama hızı", "scroll_clicks_lb": "Kaydırma adımları", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "YOLO algılama hızı", "scroll_clicks_lb": "Kaydırma hızı", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Keşfet ↑↓:", "crypt_swing2_lb": "Swing 2 — Hızlan ↑↓:",
         "crypt_speed_lb": "Tıklama hızı", "crypt_save_btn": "💾  Ayarları kaydet",
         "crypt_start": "KRİPTA AVINI BAŞLAT", "crypt_stop_btn": "DURDUR",
@@ -1215,7 +1215,7 @@ LANGS = {
         "tab_crypt": "المقابر", "tab_cal": "معايرة", "tab_roy": "سرب", "tab_chest": "الصناديق",
         # --- chest tab ---
         "chest_kingdom_lb": "المملكة:", "chest_clan_lb": "اسم العشيرة:",
-        "chest_start_btn": "بدء", "chest_stop_btn": "إيقاف",
+        "chest_start_btn": "بدء", "chest_stop_btn": "إيقاف", "chest_sent_lb": "تم الإرسال:",
         "chest_status_ready": "جاهز للجمع", "chest_status_running": "جمع الصناديق...",
         "chest_status_stopped": "متوقف", "chest_status_no_dialog": "افتح «عشيرتي → الهدايا»",
         "chest_missing_fields": "أدخل المملكة والعشيرة",
@@ -1238,7 +1238,7 @@ LANGS = {
         "crypt_icons_title": "اختر أنواع المقابر:",
         "crypt_conf_lb": "دقة الكشف", "crypt_accel_lb": "تسارع المسير (0–5)",
         "crypt_break_lb": "استراحة بين المقابر", "crypt_march_lb": "مسافة مسير كارتر",
-        "crypt_scroll_lb": "معدل كشف YOLO", "scroll_clicks_lb": "نقرات التمرير", "crypt_profile_lb": "الملف الشخصي:",
+        "crypt_scroll_lb": "معدل كشف YOLO", "scroll_clicks_lb": "سرعة التمرير", "crypt_profile_lb": "الملف الشخصي:",
         "crypt_swing1_lb": "Swing 1 — استكشاف ↑↓:", "crypt_swing2_lb": "Swing 2 — تسريع ↑↓:",
         "crypt_speed_lb": "سرعة النقر", "crypt_save_btn": "💾  حفظ الإعدادات",
         "crypt_start": "ابدأ صيد المقابر", "crypt_stop_btn": "إيقاف",
@@ -1279,7 +1279,7 @@ LANGS = {
         "tab_crypt": "クリプト", "tab_cal": "キャリブレーション", "tab_roy": "群れ", "tab_chest": "宝箱",
         # --- chest tab ---
         "chest_kingdom_lb": "王国:", "chest_clan_lb": "クラン名:",
-        "chest_start_btn": "開始", "chest_stop_btn": "停止",
+        "chest_start_btn": "開始", "chest_stop_btn": "停止", "chest_sent_lb": "送信済み:",
         "chest_status_ready": "収集準備完了", "chest_status_running": "宝箱を収集中...",
         "chest_status_stopped": "停止しました", "chest_status_no_dialog": "「マイクラン → ギフト」を開いてください",
         "chest_missing_fields": "王国とクランを入力してください",
@@ -1302,7 +1302,7 @@ LANGS = {
         "crypt_icons_title": "クリプトタイプを選択:",
         "crypt_conf_lb": "検出精度", "crypt_accel_lb": "進軍加速 (0–5)",
         "crypt_break_lb": "クリプト間の休憩", "crypt_march_lb": "カーター進軍距離",
-        "crypt_scroll_lb": "YOLO検出レート", "scroll_clicks_lb": "スクロールティック", "crypt_profile_lb": "プロファイル:",
+        "crypt_scroll_lb": "YOLO検出レート", "scroll_clicks_lb": "スクロール速度", "crypt_profile_lb": "プロファイル:",
         "crypt_swing1_lb": "Swing 1 — 探索 ↑↓:", "crypt_swing2_lb": "Swing 2 — 加速 ↑↓:",
         "crypt_speed_lb": "クリック速度", "crypt_save_btn": "💾  設定を保存",
         "crypt_start": "クリプトハントを開始", "crypt_stop_btn": "停止",
@@ -1343,7 +1343,7 @@ LANGS = {
         "tab_crypt": "地下墓穴", "tab_cal": "校准", "tab_roy": "蜂群", "tab_chest": "宝箱",
         # --- chest tab ---
         "chest_kingdom_lb": "王国:", "chest_clan_lb": "公会名称:",
-        "chest_start_btn": "开始", "chest_stop_btn": "停止",
+        "chest_start_btn": "开始", "chest_stop_btn": "停止", "chest_sent_lb": "已发送：",
         "chest_status_ready": "准备收集", "chest_status_running": "正在收集宝箱...",
         "chest_status_stopped": "已停止", "chest_status_no_dialog": "请打开「我的公会 → 礼物」",
         "chest_missing_fields": "请输入王国和公会名称",
@@ -1366,7 +1366,7 @@ LANGS = {
         "crypt_icons_title": "选择地下墓穴类型:",
         "crypt_conf_lb": "检测精度", "crypt_accel_lb": "行军加速 (0–5)",
         "crypt_break_lb": "墓穴间休息", "crypt_march_lb": "卡特行军距离",
-        "crypt_scroll_lb": "YOLO检测率", "scroll_clicks_lb": "滚动点击数", "crypt_profile_lb": "配置文件:",
+        "crypt_scroll_lb": "YOLO检测率", "scroll_clicks_lb": "滚动速度", "crypt_profile_lb": "配置文件:",
         "crypt_swing1_lb": "Swing 1 — 探索 ↑↓:", "crypt_swing2_lb": "Swing 2 — 加速 ↑↓:",
         "crypt_speed_lb": "点击速度", "crypt_save_btn": "💾  保存设置",
         "crypt_start": "开始墓穴狩猎", "crypt_stop_btn": "停止",
@@ -1407,7 +1407,7 @@ LANGS = {
         "tab_crypt": "地下墓穴", "tab_cal": "校準", "tab_roy": "蜂群", "tab_chest": "寶箱",
         # --- chest tab ---
         "chest_kingdom_lb": "王國:", "chest_clan_lb": "公會名稱:",
-        "chest_start_btn": "開始", "chest_stop_btn": "停止",
+        "chest_start_btn": "開始", "chest_stop_btn": "停止", "chest_sent_lb": "已傳送：",
         "chest_status_ready": "準備收集", "chest_status_running": "正在收集寶箱...",
         "chest_status_stopped": "已停止", "chest_status_no_dialog": "請打開「我的公會 → 禮物」",
         "chest_missing_fields": "請輸入王國和公會名稱",
@@ -1430,7 +1430,7 @@ LANGS = {
         "crypt_icons_title": "選擇地下墓穴類型:",
         "crypt_conf_lb": "偵測精度", "crypt_accel_lb": "行軍加速 (0–5)",
         "crypt_break_lb": "墓穴間休息", "crypt_march_lb": "卡特行軍距離",
-        "crypt_scroll_lb": "YOLO偵測率", "scroll_clicks_lb": "捲動點擊數", "crypt_profile_lb": "設定檔:",
+        "crypt_scroll_lb": "YOLO偵測率", "scroll_clicks_lb": "捲動速度", "crypt_profile_lb": "設定檔:",
         "crypt_swing1_lb": "Swing 1 — 探索 ↑↓:", "crypt_swing2_lb": "Swing 2 — 加速 ↑↓:",
         "crypt_speed_lb": "點擊速度", "crypt_save_btn": "💾  儲存設定",
         "crypt_start": "開始墓穴狩獵", "crypt_stop_btn": "停止",
@@ -1471,7 +1471,7 @@ LANGS = {
         "tab_crypt": "크립트", "tab_cal": "보정", "tab_roy": "군집", "tab_chest": "보물상자",
         # --- chest tab ---
         "chest_kingdom_lb": "왕국:", "chest_clan_lb": "클랜 이름:",
-        "chest_start_btn": "시작", "chest_stop_btn": "정지",
+        "chest_start_btn": "시작", "chest_stop_btn": "정지", "chest_sent_lb": "전송됨:",
         "chest_status_ready": "수집 준비 완료", "chest_status_running": "상자 수집 중...",
         "chest_status_stopped": "정지됨", "chest_status_no_dialog": "«내 클랜 → 선물»을 여세요",
         "chest_missing_fields": "왕국과 클랜을 입력하세요",
@@ -1494,7 +1494,7 @@ LANGS = {
         "crypt_icons_title": "크립트 유형 선택:",
         "crypt_conf_lb": "감지 정확도", "crypt_accel_lb": "행군 가속 (0–5)",
         "crypt_break_lb": "크립트 사이 휴식", "crypt_march_lb": "카터 행군 거리",
-        "crypt_scroll_lb": "YOLO 감지 속도", "scroll_clicks_lb": "스크롤 틱", "crypt_profile_lb": "프로파일:",
+        "crypt_scroll_lb": "YOLO 감지 속도", "scroll_clicks_lb": "스크롤 속도", "crypt_profile_lb": "프로파일:",
         "crypt_swing1_lb": "Swing 1 — 탐색 ↑↓:", "crypt_swing2_lb": "Swing 2 — 가속 ↑↓:",
         "crypt_speed_lb": "클릭 속도", "crypt_save_btn": "💾  설정 저장",
         "crypt_start": "크립트 사냥 시작", "crypt_stop_btn": "정지",
@@ -1535,7 +1535,7 @@ LANGS = {
         "tab_crypt": "СКЛЕПИ", "tab_cal": "Калібрування", "tab_roy": "РОЙ", "tab_chest": "СКРИНІ",
         # --- chest tab ---
         "chest_kingdom_lb": "Королівство:", "chest_clan_lb": "Назва клану:",
-        "chest_start_btn": "СТАРТ", "chest_stop_btn": "СТОП",
+        "chest_start_btn": "СТАРТ", "chest_stop_btn": "СТОП", "chest_sent_lb": "Надіслано:",
         "chest_status_ready": "Готовий до збору", "chest_status_running": "Збір скринь...",
         "chest_status_stopped": "Зупинено", "chest_status_no_dialog": "Відкрийте «Мій клан → Подарунки»",
         "chest_missing_fields": "Вкажіть Королівство і Клан",
@@ -1558,7 +1558,7 @@ LANGS = {
         "crypt_icons_title": "Виберіть типи склепів:",
         "crypt_conf_lb": "Точність пошуку", "crypt_accel_lb": "Прискорення маршу (0–5)",
         "crypt_break_lb": "Перерва між склепами", "crypt_march_lb": "Дальність маршу Картера",
-        "crypt_scroll_lb": "Частота YOLO-детекції", "scroll_clicks_lb": "Тіки прокрутки", "crypt_profile_lb": "Профіль:",
+        "crypt_scroll_lb": "Частота YOLO-детекції", "scroll_clicks_lb": "Швидкість прокрутки", "crypt_profile_lb": "Профіль:",
         "crypt_swing1_lb": "Swing 1 — Дослідити ↑↓:", "crypt_swing2_lb": "Swing 2 — Прискорення ↑↓:",
         "crypt_speed_lb": "Швидкість кліків", "crypt_save_btn": "💾  Зберегти налаштування",
         "crypt_start": "ЗАПУСТИТИ ЗБІР СКЛЕПІВ", "crypt_stop_btn": "ЗУПИНИТИ",
@@ -1599,7 +1599,7 @@ LANGS = {
         "tab_crypt": "KRIPTA", "tab_cal": "Kalibrasi", "tab_roy": "KAWANAN", "tab_chest": "PETI",
         # --- chest tab ---
         "chest_kingdom_lb": "Kerajaan:", "chest_clan_lb": "Nama klan:",
-        "chest_start_btn": "MULAI", "chest_stop_btn": "BERHENTI",
+        "chest_start_btn": "MULAI", "chest_stop_btn": "BERHENTI", "chest_sent_lb": "Terkirim:",
         "chest_status_ready": "Siap mengumpulkan", "chest_status_running": "Mengumpulkan peti...",
         "chest_status_stopped": "Dihentikan", "chest_status_no_dialog": "Buka «Klan Saya → Hadiah»",
         "chest_missing_fields": "Masukkan Kerajaan dan Klan",
@@ -1622,7 +1622,7 @@ LANGS = {
         "crypt_icons_title": "Pilih jenis kripta:",
         "crypt_conf_lb": "Akurasi deteksi", "crypt_accel_lb": "Percepatan mars (0–5)",
         "crypt_break_lb": "Jeda antar kripta", "crypt_march_lb": "Jarak mars Carter",
-        "crypt_scroll_lb": "Laju deteksi YOLO", "scroll_clicks_lb": "Tik gulir", "crypt_profile_lb": "Profil:",
+        "crypt_scroll_lb": "Laju deteksi YOLO", "scroll_clicks_lb": "Kecepatan gulir", "crypt_profile_lb": "Profil:",
         "crypt_swing1_lb": "Swing 1 — Jelajahi ↑↓:", "crypt_swing2_lb": "Swing 2 — Percepat ↑↓:",
         "crypt_speed_lb": "Kecepatan klik", "crypt_save_btn": "💾  Simpan pengaturan",
         "crypt_start": "MULAI PERBURUAN KRIPTA", "crypt_stop_btn": "BERHENTI",
@@ -3407,6 +3407,7 @@ class TotalHunterApp(ctk.CTk):
             def _update():
                 if send_result.get("empty"):
                     return
+                self._show_chest_sent(send_result.get("sent", 0))
                 if send_result.get("success"):
                     text, color = L["chest_send_success"], MD3["secondary"]
                     self._update_chest_counts_display({})
@@ -3476,14 +3477,17 @@ class TotalHunterApp(ctk.CTk):
                 return {"success": False, "missing_fields": True}
 
             result = {"success": True}
+            sent = 0
             for (k, c), rows in groups:
                 items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
                 group_result = chest_reader.export_to_api(k, c, items)
                 if group_result.get("success"):
                     # Отправленная пара удаляется сразу — провал следующей её не вернёт.
                     chest_reader.delete_sent(conn, [r[0] for r in rows])
+                    sent += len(rows)
                 else:
-                    result = group_result
+                    result = dict(group_result)
+            result["sent"] = sent   # «Отправлено: N» под СТАРТ — только реально ушедшие сундуки
             return result
         finally:
             conn.close()
@@ -3515,6 +3519,14 @@ class TotalHunterApp(ctk.CTk):
         self._update_chest_counts_display(result.get("counts", {}))
         self._refresh_chest_queue()
 
+    def _show_chest_sent(self, count: int) -> None:
+        self._chest_last_sent = count
+        self._render_chest_sent()
+
+    def _render_chest_sent(self) -> None:
+        count = "—" if self._chest_last_sent is None else self._chest_last_sent
+        self.chest_sent_label.configure(text=f"{LANGS[self.current_lang]['chest_sent_lb']} {count}")
+
     def send_chests_to_server(self):
         L = LANGS[self.current_lang]
         kingdom = self.chest_kingdom_entry.get().strip()
@@ -3526,6 +3538,8 @@ class TotalHunterApp(ctk.CTk):
 
             def _update():
                 self.chest_send_btn.configure(state="normal")
+                if not result.get("empty"):
+                    self._show_chest_sent(result.get("sent", 0))
                 if result.get("empty"):
                     self.chest_status_label.configure(text=L["chest_status_stopped"],
                                                        text_color=MD3["on_surface2"])
@@ -5405,6 +5419,8 @@ class TotalHunterApp(ctk.CTk):
         # Статичные i18n лейблы
         for widget, key in self._i18n_labels:
             widget.configure(text=LANGS[val].get(key, LANGS["EN"].get(key, key)))
+        if hasattr(self, "chest_sent_label"):
+            self._render_chest_sent()   # «Отправлено: N» — число не из словаря, отдельно
 
         # Навигация — обновляем оба ряда вкладок
         new_names = {k: LANGS[val][k] for k in ("tab_crypt", "tab_hunt", "tab_roy", "tab_ref")}
@@ -5749,8 +5765,15 @@ class TotalHunterApp(ctk.CTk):
             fg_color=MD3["green_btn"], hover_color=MD3["green_hover"],
             text_color=MD3["on_surface"], font=ctk.CTkFont(size=14, weight="bold"),
             command=self.toggle_chest_bot)
-        self.chest_start_btn.pack(padx=20, pady=(4, 14), fill="x")
+        self.chest_start_btn.pack(padx=20, pady=(4, 4), fill="x")
         self._i18n_labels.append((self.chest_start_btn, "chest_start_btn"))
+        # Владелец 2026-09-28: сколько сундуков ушло на сервер в последнем батче
+        self._chest_last_sent = None
+        self.chest_sent_label = ctk.CTkLabel(self.tab_chest, text="",
+                                             font=ctk.CTkFont(size=14),
+                                             text_color=MD3["on_surface2"])
+        self.chest_sent_label.pack(padx=20, pady=(0, 14))
+        self._render_chest_sent()
 
         # ── Показать текущий невыгруженный остаток сразу при открытии вкладки,
         # без этого счётчик после перезапуска бота врал бы нулём ───────────
