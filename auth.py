@@ -124,6 +124,21 @@ def spend_credit(hunt_type: str = "crypt"):
         return {"success": False}
 
 
+# Пауза, если long-poll не получил ответа (сервер лежит/перезапускается, нет сети):
+# без неё цикл баланса крутил запросы вхолостую (журнал nginx 27.09).
+BALANCE_RETRY_PAUSE_SEC = 5
+
+
+def balance_sync_step(on_credits, sleep=time.sleep):
+    """Один шаг цикла баланса: ответ пришёл — сразу следующий long-poll (как раньше)."""
+    data = get_balance_update()
+    if data is None:
+        sleep(BALANCE_RETRY_PAUSE_SEC)
+        return
+    if data.get("credits") is not None:
+        on_credits(data["credits"])
+
+
 def get_balance_update():
     """Long-poll: блокирует до изменения баланса или 55-секундного timeout.
     Возвращает {"credits": N, "ref_credits": M} или None при ошибке."""
@@ -143,11 +158,23 @@ def get_balance_update():
     return None
 
 
+# Каждый старт движка шлёт heartbeat сразу — частые перезапуски давали до 687 запросов
+# в минуту (журнал nginx 27.09). Штатный цикл раз в 2 минуты под порог не попадает.
+HEARTBEAT_MIN_INTERVAL_SEC = 60
+_last_heartbeat_sent = None
+
+
 def heartbeat():
     """
     Онлайн-пинг — вызывается каждые 2 минуты пока бот запущен.
     Обновляет last_seen на сервере → онлайн-счётчик в админке.
     """
+    global _last_heartbeat_sent
+    now = time.monotonic()
+    if _last_heartbeat_sent is not None and now - _last_heartbeat_sent < HEARTBEAT_MIN_INTERVAL_SEC:
+        return
+    # Отметка ДО запроса: при недоступном сервере повторы тоже не чаще раза в минуту.
+    _last_heartbeat_sent = now
     hwid = get_hwid()
     try:
         _session.post(f"{SERVER_URL}/heartbeat", json={"hwid": hwid}, timeout=3)

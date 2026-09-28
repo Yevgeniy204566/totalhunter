@@ -31,7 +31,7 @@ import threading
 import customtkinter as ctk
 from auth import (get_hwid, check_license, get_free_trial, spend_credit,
                   login_with_google, log_error_to_server, activate_referral,
-                  transfer_referral_balance, generate_link_code, get_balance_update,
+                  transfer_referral_balance, generate_link_code, balance_sync_step,
                   seconds_since_last_contact, HEARTBEAT_TIMEOUT)
 from engine import HuntEngine
 from exchange_mode_settings import (ExchangeModeSettings, MODE_V1, MODE_V2,
@@ -3872,9 +3872,8 @@ class TotalHunterApp(ctk.CTk):
             import time
             while True:
                 try:
-                    data = get_balance_update()
-                    if data and data.get("credits") is not None:
-                        self.after(0, lambda c=data["credits"]: self._update_credits_display(c))
+                    balance_sync_step(
+                        lambda c: self.after(0, lambda: self._update_credits_display(c)))
                 except Exception:
                     time.sleep(2)
         threading.Thread(target=_worker, daemon=True).start()
@@ -5177,26 +5176,16 @@ class TotalHunterApp(ctk.CTk):
         """Daemon-тред: слушает SSE сервера. При pool_updated — звук + обновление пула.
         Работает на любой вкладке пока тумблер РОЙ включён и ивент активен.
         """
-        import json as _json
-        def _loop():
-            import requests as _req, time as _t
-            url = "https://api.total-hunter.com/roy/status-stream"
-            while True:
-                try:
-                    with _req.get(url, stream=True, timeout=70) as r:
-                        for raw in r.iter_lines(decode_unicode=True):
-                            if raw.startswith('data:'):
-                                try:
-                                    data = _json.loads(raw[5:].strip())
-                                    if (data.get('pool_updated')
-                                            and self._roy_enabled_var.get()
-                                            and self.engine.event_active):
-                                        self.after(0, self._roy_refresh_pool)
-                                except Exception:
-                                    pass
-                except Exception:
-                    _t.sleep(5)
-        threading.Thread(target=_loop, daemon=True).start()
+        from roy.roy_client import listen_status_stream
+        def _on_data(data):
+            if (data.get('pool_updated')
+                    and self._roy_enabled_var.get()
+                    and self.engine.event_active):
+                self.after(0, self._roy_refresh_pool)
+        threading.Thread(
+            target=listen_status_stream,
+            args=("https://api.total-hunter.com/roy/status-stream", _on_data),
+            daemon=True).start()
 
     def _roy_refresh_pool(self):
         """Загружает список координат из пула Роя и обновляет список."""

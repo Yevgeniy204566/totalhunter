@@ -2,7 +2,9 @@
 roy_client.py — HTTP-клиент для Системы РОЙ (вызывается из бота).
 """
 
+import json
 import threading
+import time
 import requests
 
 SERVER_URL = "https://api.total-hunter.com"
@@ -124,3 +126,27 @@ class RoyClient:
             return r.json().get("balance_sec", 0)
         except Exception:
             return 0
+
+
+# Поток сервера бесконечный (keepalive 25 с) — штатно он не закрывается, поэтому пауза перед
+# переподключением нормальную работу не задевает. Без неё при 502 во время рестарта сервера бот
+# переподключался мгновенно — сотни запросов на каждый рестарт (журнал nginx 27.09).
+SSE_RECONNECT_PAUSE_SEC = 5
+
+
+def listen_status_stream(url, on_data, keep_running=lambda: True,
+                         get=requests.get, sleep=time.sleep) -> None:
+    """Слушает SSE /roy/status-stream, передаёт каждое data-событие (dict) в on_data."""
+    while keep_running():
+        try:
+            with get(url, stream=True, timeout=70) as r:
+                if r.status_code == 200:
+                    for raw in r.iter_lines(decode_unicode=True):
+                        if raw and raw.startswith('data:'):
+                            try:
+                                on_data(json.loads(raw[5:].strip()))
+                            except Exception:
+                                pass
+        except Exception:
+            pass
+        sleep(SSE_RECONNECT_PAUSE_SEC)
