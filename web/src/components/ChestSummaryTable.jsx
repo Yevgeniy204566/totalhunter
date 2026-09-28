@@ -53,10 +53,11 @@ const BELOW_QUOTA_STOPS = ['#FF2D55', '#FF9F0A']
 const ABOVE_QUOTA_STOPS = ['#3DFF7A', '#1FE5C8', '#4DB5FF', '#A77BFF', '#FF7AD9', '#E01AD6']
 // куда уходит бегущая полоска перед легендой — синий, в тон лент легенд
 const STRIPE_TO_LEGEND = '#3D6BFF'
-const LEGENDARY_OVERAGE = 100000
-// легенда: число цветов перелива растёт каждые 100к превышения (от 2 до 6)
-const LEGENDARY_BAND_SIZE = 100000
-const LEGENDARY_MAX_COLORS = 6
+// Пороги — во сколько раз игрок перекрыл цель сезона (владелец 2026-09-29): так шкала одинаково
+// честная для клана с целью 5к и с целью 50к. От ×1 до ×10 — путь «норма → легенда»;
+// легенды I–V: ×10 / ×12 / ×14 / ×17 / ×20 (последняя — королевская лента).
+const LEGEND_TIERS = [10, 12, 14, 17, 20]
+const LEGEND_START = LEGEND_TIERS[0]
 
 function mixWhite(hex, t) { return lerpColor(hex, '#FFFFFF', t) }
 
@@ -74,12 +75,11 @@ function shimmerGradient(c, t) {
   return `linear-gradient(90deg, ${c} 0%, ${c} 22%, ${h} 32%, ${c} 42%, ${c} 72%, ${h} 82%, ${c} 92%, ${c} 100%)`
 }
 
-function legendaryGradient(extra) {
-  const band = Math.floor(extra / LEGENDARY_BAND_SIZE)
-  const n = Math.max(2, Math.min(band + 1, LEGENDARY_MAX_COLORS))
-  // старт с холодных тонов — первая легенда не повторяет розово-золотой конец зоны «выше цели»;
-  // пара цветов — 120° по кругу (гармонично, не кислотно)
-  const base = (160 + extra / 1500) % 360
+function legendaryGradient(tier, ratio) {
+  // цветов перелива: легенда I — 2, … легенда V — 6
+  const n = tier + 2
+  // старт с холодных тонов; пара цветов — 120° по кругу (гармонично, не кислотно)
+  const base = (160 + (ratio - LEGEND_START) * 12) % 360
   const step = n === 2 ? 120 : 360 / n
   const cols = []
   for (let i = 0; i < n; i++) cols.push(hslToHex((base + i * step) % 360, 100, 64))
@@ -95,21 +95,20 @@ function nameSize(extraPx) { return `calc(var(--public-name-base) + ${extraPx.to
 function nameGradientStyle(player, targets) {
   const quota = targets?.points
   if (!quota) return null
-  if (player.points < quota) {
-    return { mode: 'plain', color: multiLerp(BELOW_QUOTA_STOPS, player.points / quota), fontSize: nameSize(0) }
+  const ratio = player.points / quota
+  if (ratio < 1) {
+    return { mode: 'plain', color: multiLerp(BELOW_QUOTA_STOPS, ratio), fontSize: nameSize(0) }
   }
-  const overage = player.points - quota
-  if (overage < LEGENDARY_OVERAGE) {
-    const t = overage / LEGENDARY_OVERAGE
+  if (ratio < LEGEND_START) {
+    const t = (ratio - 1) / (LEGEND_START - 1)
     return { mode: 'shimmer', backgroundImage: shimmerGradient(multiLerp(ABOVE_QUOTA_STOPS, t), t), fontSize: nameSize(t * 3) }
   }
-  const extra = overage - LEGENDARY_OVERAGE
-  const band = Math.floor(extra / LEGENDARY_BAND_SIZE)
+  const tier = LEGEND_TIERS.filter(x => ratio >= x).length - 1
   return {
-    mode: 'legendary', backgroundImage: legendaryGradient(extra),
-    fontSize: nameSize(4.5 + Math.min(band, 5) * 0.4),
-    // все легенды — синяя лента с бликом; последний уровень (6 цветов) — королевская лента
-    banner: band >= LEGENDARY_MAX_COLORS - 1 ? 'royal' : 'blue',
+    mode: 'legendary', backgroundImage: legendaryGradient(tier, ratio),
+    fontSize: nameSize(4.5 + tier * 0.4),
+    // легенды I–IV — синяя лента с бликом; легенда V — королевская «ласточкин хвост»
+    banner: tier === LEGEND_TIERS.length - 1 ? 'royal' : 'blue',
   }
 }
 
