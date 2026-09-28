@@ -561,26 +561,43 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr:hover td:nth-child(1),
 .public-table tbody tr:hover td:nth-child(2) { background: var(--accent-glow); }
 
-/* ── Имя игрока — непрерывный градиент прогресса (0→квота→легенда) ── */
-@keyframes public-tier-shimmer {
-  to { background-position: -200% center; }
-}
-.public-name-shimmer {
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  background-size: 260% auto;
+/* ── Имя игрока по очкам (редизайн 2026-09-28): ярко, без размытого свечения, плавный блик ── */
+@keyframes public-name-flow { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+.public-name-plain { font-weight: 700; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.85)); }
+.public-name-shimmer, .public-name-legendary {
+  font-weight: 700; letter-spacing: 0.3px;
+  background-size: 200% 100%; background-repeat: repeat-x;
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
-  animation: public-tier-shimmer 2.4s linear infinite;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.9));
 }
-.public-name-legendary {
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  background-size: 400% auto;
-  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 0.3px #1A1A1A;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.55), 0 0 14px rgba(255, 215, 0, 0.4);
-  animation: public-tier-shimmer 1.8s linear infinite;
+.public-name-shimmer { animation: public-name-flow 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.public-name-legendary { letter-spacing: 0.4px; animation: public-name-flow 6s linear infinite; }
+
+/* Ленты легенд: синяя с пробегающим бликом; последний уровень — королевская «ласточкин хвост» */
+@keyframes public-banner-sweep { from { background-position: -60% 0, 0 0; } to { background-position: 160% 0, 0 0; } }
+@keyframes public-banner-aurora { from { background-position: -60% 0, 0% 50%; } to { background-position: 160% 0, 200% 50%; } }
+.public-name-banner { display: inline-block; padding: 2px 14px; border-radius: 6px; background-repeat: no-repeat; }
+.public-name-banner--blue {
+  background-image: linear-gradient(100deg, transparent 0 40%, rgba(160, 200, 255, 0.28) 50%, transparent 60% 100%),
+                    linear-gradient(180deg, #16305E, #0C1C3D);
+  background-size: 40% 100%, 100% 100%;
+  box-shadow: inset 0 0 0 1px rgba(110, 160, 255, 0.45);
+  animation: public-banner-sweep 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.public-name-banner--royal {
+  padding: 3px 22px; border-radius: 0;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%, 10px 50%);
+  background-image: linear-gradient(100deg, transparent 0 40%, rgba(220, 240, 255, 0.35) 50%, transparent 60% 100%),
+                    linear-gradient(90deg, #1B3C9E, #1486B8, #3B2A9E, #1B3C9E, #1486B8, #3B2A9E, #1B3C9E);
+  background-size: 40% 100%, 200% 100%; background-repeat: no-repeat, repeat-x;
+  animation: public-banner-aurora 5s linear infinite;
+}
+/* Пока таблицу листают — движение на паузе, цвета и ленты остаются */
+.public-table-wrap.is-scrolling .public-name-shimmer,
+.public-table-wrap.is-scrolling .public-name-legendary,
+.public-table-wrap.is-scrolling .public-name-banner { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .public-name-shimmer, .public-name-legendary, .public-name-banner { animation: none; }
 }
 
 .public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }

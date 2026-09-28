@@ -36,10 +36,6 @@ function multiLerp(stops, t) {
   const idx = Math.min(Math.floor(scaled), n - 1)
   return lerpColor(stops[idx], stops[idx + 1], scaled - idx)
 }
-function darkenHex(hex, factor) {
-  const { r, g, b } = hexToRgb(hex)
-  return rgbToHex({ r: r * factor, g: g * factor, b: b * factor })
-}
 function hslToHex(h, s, l) {
   s /= 100; l /= 100
   const k = n => (n + h / 30) % 12
@@ -48,55 +44,58 @@ function hslToHex(h, s, l) {
   return rgbToHex({ r: 255 * f(0), g: 255 * f(8), b: 255 * f(4) })
 }
 
-// 0 → квота: красный → оранжевый (зелёный убран — сливался с зоной после квоты)
-const BELOW_QUOTA_STOPS = ['#C81E3A', '#C9862E']
-// квота → квота+100к: ярко-зелёный (салатовый) → жёлтый
-const ABOVE_QUOTA_STOPS = ['#39FF6A', '#FFD700']
+// Имена по очкам (редизайн владельца 2026-09-28): ярче, без размытого свечения, плавный
+// бесшовный блик; путь «норма → легенда» идёт через несколько оттенков, легенды — на лентах.
+// 0 → цель: алый → оранжевый
+const BELOW_QUOTA_STOPS = ['#FF2D55', '#FF9F0A']
+// цель → цель+100к: салатовый → бирюза → голубой → фиолетовый → розовый → золото
+const ABOVE_QUOTA_STOPS = ['#3DFF7A', '#1FE5C8', '#4DB5FF', '#A77BFF', '#FF7AD9', '#FFD24D']
 const LEGENDARY_OVERAGE = 100000
-// легендарный: число цветов растёт каждые 100к превышения (макс. 6), оттенки едут непрерывно
+// легенда: число цветов перелива растёт каждые 100к превышения (от 2 до 6)
 const LEGENDARY_BAND_SIZE = 100000
 const LEGENDARY_MAX_COLORS = 6
 
-function legendaryPalette(overageBeyond) {
-  const band = Math.floor(overageBeyond / LEGENDARY_BAND_SIZE)
-  const numColors = Math.min(band + 1, LEGENDARY_MAX_COLORS)
-  const baseHue = (overageBeyond / 1000) % 360
-  const colors = []
-  for (let i = 0; i < numColors; i++) {
-    const hue = (baseHue + i * (360 / numColors)) % 360
-    colors.push(hslToHex(hue, 88, 56))
-  }
-  return colors
+function mixWhite(hex, t) { return lerpColor(hex, '#FFFFFF', t) }
+
+// Плитка фона — 2 ширины текста, края совпадают по цвету: блик повторяется без рывка.
+function shimmerGradient(c) {
+  const h = mixWhite(c, 0.6)
+  return `linear-gradient(90deg, ${c} 0%, ${c} 22%, ${h} 32%, ${c} 42%, ${c} 72%, ${h} 82%, ${c} 92%, ${c} 100%)`
 }
-function legendaryGradient(colors) {
-  if (colors.length === 1) {
-    const c = colors[0]
-    return `linear-gradient(100deg, ${c} 0%, ${c} 38%, #FFFFFF 50%, ${c} 62%, ${c} 100%)`
-  }
-  const stops = colors.map((c, i) => `${c} ${(i / colors.length * 100).toFixed(1)}%`)
-  stops.push(`${colors[0]} 100%`)
-  return `linear-gradient(100deg, ${stops.join(', ')})`
+
+function legendaryGradient(extra) {
+  const band = Math.floor(extra / LEGENDARY_BAND_SIZE)
+  const n = Math.max(2, Math.min(band + 1, LEGENDARY_MAX_COLORS))
+  // старт с холодных тонов — первая легенда не повторяет розово-золотой конец зоны «выше цели»;
+  // пара цветов — 120° по кругу (гармонично, не кислотно)
+  const base = (160 + extra / 1500) % 360
+  const step = n === 2 ? 120 : 360 / n
+  const cols = []
+  for (let i = 0; i < n; i++) cols.push(hslToHex((base + i * step) % 360, 100, 64))
+  // палитра дважды на плитку 200% — перелив непрерывный
+  const all = [...cols, ...cols, cols[0]]
+  return `linear-gradient(90deg, ${all.map((c, i) => `${c} ${(i / (all.length - 1) * 100).toFixed(1)}%`).join(', ')})`
 }
 
 function nameGradientStyle(player, targets) {
   const quota = targets?.points
   if (!quota) return null
-  const ratio = player.points / quota
-  if (ratio < 1) {
-    const color = multiLerp(BELOW_QUOTA_STOPS, ratio)
-    return { mode: 'plain', color, stroke: darkenHex(color, 0.45), fontSize: 14.5 }
+  if (player.points < quota) {
+    return { mode: 'plain', color: multiLerp(BELOW_QUOTA_STOPS, player.points / quota), fontSize: 14.5 }
   }
   const overage = player.points - quota
   if (overage < LEGENDARY_OVERAGE) {
     const t = overage / LEGENDARY_OVERAGE
-    const color = multiLerp(ABOVE_QUOTA_STOPS, t)
-    return { mode: 'shimmer', color, stroke: darkenHex(color, 0.55), fontSize: 14.5 + t * 3 }
+    return { mode: 'shimmer', backgroundImage: shimmerGradient(multiLerp(ABOVE_QUOTA_STOPS, t)), fontSize: 14.5 + t * 3 }
   }
   const extra = overage - LEGENDARY_OVERAGE
   const band = Math.floor(extra / LEGENDARY_BAND_SIZE)
-  const colors = legendaryPalette(extra)
-  const fontSize = 19 + Math.min(band, 5) * 0.4
-  return { mode: 'legendary', backgroundImage: legendaryGradient(colors), fontSize }
+  return {
+    mode: 'legendary', backgroundImage: legendaryGradient(extra),
+    fontSize: 19 + Math.min(band, 5) * 0.4,
+    // все легенды — синяя лента с бликом; последний уровень (6 цветов) — королевская лента
+    banner: band >= LEGENDARY_MAX_COLORS - 1 ? 'royal' : 'blue',
+  }
 }
 
 function renderPlayerName(p, targets) {
@@ -104,33 +103,21 @@ function renderPlayerName(p, targets) {
   if (!s) return p.name
   if (s.mode === 'legendary') {
     return (
-      <span
-        className="public-name-legendary"
-        style={{ backgroundImage: s.backgroundImage, fontSize: s.fontSize }}
-      >
-        {p.name}
+      <span className={`public-name-banner public-name-banner--${s.banner}`}>
+        <span className="public-name-legendary" style={{ backgroundImage: s.backgroundImage, fontSize: s.fontSize }}>
+          {p.name}
+        </span>
       </span>
     )
   }
   if (s.mode === 'shimmer') {
     return (
-      <span
-        className="public-name-shimmer"
-        style={{
-          backgroundImage: `linear-gradient(100deg, ${s.color} 0%, ${s.color} 38%, #FFFFFF 50%, ${s.color} 62%, ${s.color} 100%)`,
-          WebkitTextStroke: `0.3px ${s.stroke}`,
-          fontSize: s.fontSize,
-        }}
-      >
+      <span className="public-name-shimmer" style={{ backgroundImage: s.backgroundImage, fontSize: s.fontSize }}>
         {p.name}
       </span>
     )
   }
-  return (
-    <span style={{ color: s.color, WebkitTextStroke: `0.35px ${s.stroke}`, fontWeight: 700, fontSize: s.fontSize }}>
-      {p.name}
-    </span>
-  )
+  return <span className="public-name-plain" style={{ color: s.color, fontSize: s.fontSize }}>{p.name}</span>
 }
 
 function pointsHitTarget(player, targets) {
@@ -279,7 +266,23 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
       tableWrapRef.current.scrollLeft = topScrollRef.current.scrollLeft
     }
   }
+  // Пока таблицу листают — анимации имён на паузе (владелец 2026-09-28): десятки бликов и
+  // переливов тормозили прокрутку на телефонах. Класс напрямую, без setState — без перерисовки.
+  const scrollIdleRef = useRef(null)
+  function pauseNameAnimations() {
+    const el = tableWrapRef.current
+    if (!el) return
+    el.classList.add('is-scrolling')
+    clearTimeout(scrollIdleRef.current)
+    scrollIdleRef.current = setTimeout(() => el.classList.remove('is-scrolling'), 200)
+  }
+  useEffect(() => {
+    window.addEventListener('scroll', pauseNameAnimations, { passive: true })
+    return () => { window.removeEventListener('scroll', pauseNameAnimations); clearTimeout(scrollIdleRef.current) }
+  }, [])
+
   function syncTopScrollFromTable() {
+    pauseNameAnimations()
     if (tableWrapRef.current && topScrollRef.current) {
       topScrollRef.current.scrollLeft = tableWrapRef.current.scrollLeft
     }
