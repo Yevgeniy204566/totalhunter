@@ -2036,6 +2036,7 @@ class TotalHunterApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self._roy_self_reported: set = set()  # координаты только что найденные нами — не звучать в ROY
+        self._awaiting_link = False  # нажата «Войти», ждём linked=True из long-poll баланса
         self.engine = HuntEngine()
         self.engine.on_found_callback = self.on_target_found
         self.engine.on_last_exchange_callback = self._on_last_exchange_found
@@ -3873,7 +3874,8 @@ class TotalHunterApp(ctk.CTk):
             while True:
                 try:
                     balance_sync_step(
-                        lambda c: self.after(0, lambda: self._update_credits_display(c)))
+                        lambda c: self.after(0, lambda: self._update_credits_display(c)),
+                        on_linked=lambda: self._awaiting_link and self.after(0, self._on_account_linked))
                 except Exception:
                     time.sleep(2)
         threading.Thread(target=_worker, daemon=True).start()
@@ -4802,15 +4804,16 @@ class TotalHunterApp(ctk.CTk):
             hover_color="#1B3A4B",
         )
         webbrowser.open("https://total-hunter.com/dashboard/devices")
-        self._poll_link_status()
+        # Ждём привязку без опроса: сервер будит long-poll баланса, ответ несёт linked=True
+        # (раньше check_auth раз в 5 с бесконечно + новая цепочка на каждый клик).
+        self._awaiting_link = True
 
-    def _poll_link_status(self):
-        """Poll every 5 sec until device is linked (email appears)."""
-        data = check_license()
-        if data and data.get("email"):
-            self.update_license_info()
+    def _on_account_linked(self):
+        """Из цикла баланса (главный поток): привязка завершена — один раз обновить лицензию."""
+        if not self._awaiting_link:
             return
-        self.after(5000, self._poll_link_status)
+        self._awaiting_link = False
+        self.update_license_info()
 
 
     def copy_code(self):

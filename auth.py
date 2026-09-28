@@ -129,14 +129,17 @@ def spend_credit(hunt_type: str = "crypt"):
 BALANCE_RETRY_PAUSE_SEC = 5
 
 
-def balance_sync_step(on_credits, sleep=time.sleep):
-    """Один шаг цикла баланса: ответ пришёл — сразу следующий long-poll (как раньше)."""
+def balance_sync_step(on_credits, on_linked=None, sleep=time.sleep):
+    """Один шаг цикла баланса: ответ пришёл — сразу следующий long-poll (как раньше).
+    linked=True в ответе — аккаунт привязан: так бот узнаёт о привязке без опроса сервера."""
     data = get_balance_update()
     if data is None:
         sleep(BALANCE_RETRY_PAUSE_SEC)
         return
     if data.get("credits") is not None:
         on_credits(data["credits"])
+    if on_linked is not None and data.get("linked"):
+        on_linked()
 
 
 def get_balance_update():
