@@ -285,7 +285,8 @@
   /* Цели сезона на телефоне: каждая цель — своя плашка на всю ширину, одной строкой
      (владелец 2026-09-28); общая плашка ПК скрыта */
   .public-targets-desktop { display: none !important; }
-  .public-targets-mobile { display: block !important; flex: 0 0 100% !important; box-sizing: border-box !important; }
+  .public-targets-mobile { display: inline-block !important; }
+  .public-targets-break { display: block !important; flex-basis: 100% !important; height: 0 !important; margin-top: -6px !important; }
 
   /* Сезонная инфо-строка: бейджи переносятся */
   .public-season-info {

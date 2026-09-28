@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
@@ -232,17 +232,21 @@ export default function ChestSummaryPage() {
             {[targetParts.filter(p => p.key === 'points'), targetParts.filter(p => p.key !== 'points')]
               .filter(row => row.length > 0)
               .map((row, r) => (
-                <span key={r} className="public-season-badge public-targets-mobile">
-                  {r === 0 && `${t.targetTitle}: `}
-                  <span translate="no" className="notranslate">
-                    {row.map((part, i) => (
-                      <span key={part.key}>
-                        {i > 0 && ' · '}
-                        {part.before}<b className="public-target-num">{part.value}</b>{part.after}
-                      </span>
-                    ))}
+                <Fragment key={r}>
+                  <span className="public-season-badge public-targets-mobile">
+                    {r === 0 && `${t.targetTitle}: `}
+                    <span translate="no" className="notranslate">
+                      {row.map((part, i) => (
+                        <span key={part.key}>
+                          {i > 0 && ' · '}
+                          {part.before}<b className="public-target-num">{part.value}</b>{part.after}
+                        </span>
+                      ))}
+                    </span>
                   </span>
-                </span>
+                  {/* перенос строки во flex: плашка по размеру текста, но на своей строке */}
+                  <span className="public-targets-break" />
+                </Fragment>
               ))}
           </>
         )}
