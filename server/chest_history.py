@@ -21,27 +21,27 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of, targets_of
 from database import AsyncSessionLocal
 from models import (
     AncientCalculation, AncientEditor, AncientInviteCode, AncientNameMapping,
-    AncientRoster, Chest, ChestCollector, ChestConfiguration,
-    ChestSeasonHistory, ChestTypeAlias, PlayerAlias,
+    AncientRoster, Chest, ChestCollector, ChestConfiguration, ChestManager,
+    ChestSeasonHistory, ChestTypeAlias, ClanRosterEntry, PlayerAlias, PlayerProfile,
 )
 
 ARCHIVE_TICK_SEC             = 86400  # раз в сутки — сезоны измеряются неделями, чаще не нужно
 RETENTION_DAYS               = 90     # 3 месяца хранения истории
 RETENTION_TICK_SEC           = 86400  # раз в сутки
-STOPPED_COLLECTOR_DAYS       = 90     # коллектор удаляется через 90 дней после остановки
+INACTIVE_COLLECTOR_DAYS      = 90     # клан удаляется через 90 дней без заливок сундуков
 
 logger = logging.getLogger(__name__)
 
 _archive_task:            asyncio.Task | None = None
 _retention_task:          asyncio.Task | None = None
-_stopped_retention_task:  asyncio.Task | None = None
+_inactive_retention_task: asyncio.Task | None = None
 
 
 def _clan_now(timezone_offset_minutes: int | None) -> datetime:
@@ -124,37 +124,41 @@ async def run_retention_tick(db: AsyncSession) -> int:
     return result.rowcount or 0
 
 
-async def run_stopped_collector_tick(db: AsyncSession) -> int:
-    """Удаляет коллекторы, остановленные >90 дней назад (каскадно — все связанные записи)."""
-    cutoff = datetime.utcnow() - timedelta(days=STOPPED_COLLECTOR_DAYS)
-    collectors = (await db.execute(
-        select(ChestCollector).where(
-            ChestCollector.stopped_at.is_not(None),
-            ChestCollector.stopped_at < cutoff,
+# Все таблицы с collector_id. Один список на ручное удаление и автоудаление: clan_roster на проде
+# без ON DELETE CASCADE, и его пропуск в одной из копий списка ронял удаление клана навсегда.
+_COLLECTOR_CHILD_MODELS = (
+    Chest, ChestTypeAlias, ChestConfiguration, PlayerAlias, ClanRosterEntry, PlayerProfile,
+    ChestSeasonHistory, AncientRoster, AncientCalculation, AncientNameMapping, AncientEditor,
+    AncientInviteCode, ChestManager,
+)
+
+
+async def purge_collector(db: AsyncSession, collector_id: int) -> None:
+    """Удаляет клан со всеми связанными записями. Не коммитит — это делает вызывающий."""
+    for model in _COLLECTOR_CHILD_MODELS:
+        await db.execute(delete(model).where(model.collector_id == collector_id))
+    await db.execute(delete(ChestCollector).where(ChestCollector.id == collector_id))
+
+
+async def run_inactive_collector_tick(db: AsyncSession) -> int:
+    """Удаляет кланы без заливок сундуков дольше INACTIVE_COLLECTOR_DAYS — идёт сезон или на
+    паузе, не важно; ни разу не заливавшие считаются от создания (владелец 2026-09-28)."""
+    cutoff = datetime.utcnow() - timedelta(days=INACTIVE_COLLECTOR_DAYS)
+    collector_ids = (await db.execute(
+        select(ChestCollector.id).where(
+            func.coalesce(ChestCollector.last_import_at, ChestCollector.created_at) < cutoff,
         )
     )).scalars().all()
     deleted = 0
-    for collector in collectors:
+    for cid in collector_ids:
         try:
-            cid = collector.id
-            await db.execute(delete(ChestSeasonHistory).where(ChestSeasonHistory.collector_id == cid))
-            await db.execute(delete(Chest).where(Chest.collector_id == cid))
-            await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == cid))
-            await db.execute(delete(ChestConfiguration).where(ChestConfiguration.collector_id == cid))
-            await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == cid))
-            await db.execute(delete(AncientRoster).where(AncientRoster.collector_id == cid))
-            await db.execute(delete(AncientNameMapping).where(AncientNameMapping.collector_id == cid))
-            await db.execute(delete(AncientCalculation).where(AncientCalculation.collector_id == cid))
-            await db.execute(delete(AncientEditor).where(AncientEditor.collector_id == cid))
-            await db.execute(delete(AncientInviteCode).where(AncientInviteCode.collector_id == cid))
-            await db.execute(delete(ChestCollector).where(ChestCollector.id == cid))
+            await purge_collector(db, cid)
             await db.commit()
             deleted += 1
         except Exception:
             await db.rollback()
             logger.exception(
-                "chest_history: stopped_collector_tick failed for collector_id=%s, skipping",
-                collector.id,
+                "chest_history: inactive_collector_tick failed for collector_id=%s, skipping", cid,
             )
     return deleted
 
@@ -200,13 +204,13 @@ async def build_history_detail(db: AsyncSession, collector_id: int,
 
 def ensure_background_tasks() -> None:
     """Запускается раз за жизнь процесса из main.py при старте приложения."""
-    global _archive_task, _retention_task, _stopped_retention_task
+    global _archive_task, _retention_task, _inactive_retention_task
     if _archive_task is None or _archive_task.done():
         _archive_task = asyncio.create_task(_archive_loop())
     if _retention_task is None or _retention_task.done():
         _retention_task = asyncio.create_task(_retention_loop())
-    if _stopped_retention_task is None or _stopped_retention_task.done():
-        _stopped_retention_task = asyncio.create_task(_stopped_collector_retention_loop())
+    if _inactive_retention_task is None or _inactive_retention_task.done():
+        _inactive_retention_task = asyncio.create_task(_inactive_collector_retention_loop())
 
 
 async def _archive_loop() -> None:
@@ -223,8 +227,8 @@ async def _retention_loop() -> None:
             await run_retention_tick(db)
 
 
-async def _stopped_collector_retention_loop() -> None:
+async def _inactive_collector_retention_loop() -> None:
     while True:
         await asyncio.sleep(RETENTION_TICK_SEC)
         async with AsyncSessionLocal() as db:
-            await run_stopped_collector_tick(db)
+            await run_inactive_collector_tick(db)

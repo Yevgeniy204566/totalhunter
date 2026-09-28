@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chest_history import build_history_list, build_history_detail
+from chest_history import build_history_list, build_history_detail, purge_collector
 from chest_slug import clan_to_slug, public_url
 from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of
 from database import get_db
@@ -707,26 +707,8 @@ async def close_season_early(slug: str, user: User = Depends(get_web_user),
 @router.delete("/{slug}")
 async def delete_collector(slug: str, user: User = Depends(get_web_user),
                            db: AsyncSession = Depends(get_db)):
-    from models import (
-        AncientRoster, AncientNameMapping, AncientEditor, AncientInviteCode,
-        AncientCalculation, ClanRosterEntry,
-    )
     collector = await _get_own_collector(db, slug, user)
-    # Cascades not guaranteed in all FK definitions — delete explicitly in order
-    await db.execute(delete(Chest).where(Chest.collector_id == collector.id))
-    await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id))
-    await db.execute(delete(ChestConfiguration).where(ChestConfiguration.collector_id == collector.id))
-    await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector.id))
-    await db.execute(delete(ClanRosterEntry).where(ClanRosterEntry.collector_id == collector.id))
-    await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id))
-    await db.execute(delete(ChestSeasonHistory).where(ChestSeasonHistory.collector_id == collector.id))
-    await db.execute(delete(AncientRoster).where(AncientRoster.collector_id == collector.id))
-    await db.execute(delete(AncientCalculation).where(AncientCalculation.collector_id == collector.id))
-    await db.execute(delete(AncientNameMapping).where(AncientNameMapping.collector_id == collector.id))
-    await db.execute(delete(AncientEditor).where(AncientEditor.collector_id == collector.id))
-    await db.execute(delete(AncientInviteCode).where(AncientInviteCode.collector_id == collector.id))
-    await db.execute(delete(ChestManager).where(ChestManager.collector_id == collector.id))
-    await db.execute(delete(ChestCollector).where(ChestCollector.id == collector.id))
+    await purge_collector(db, collector.id)
     await db.commit()
     return {"ok": True}
 

@@ -181,6 +181,9 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
     user_id = user.id
 
     collector = await _get_or_create_collector(payload.kingdom, payload.clan, user_id, db)
+    # Любая отправка сундуков (в т.ч. повтор уже отправленного батча) держит клан живым для
+    # автоудаления через 90 дней без заливок. Турниры Древнего сюда не входят (владелец 2026-09-28).
+    collector.last_import_at = datetime.utcnow()
     collector_id = collector.id
     collector_slug = collector.slug
 
@@ -189,6 +192,7 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
     new_items = _dedupe(payload.items, existing_keys)
 
     if not new_items:
+        await db.commit()   # сохранить last_import_at
         return {"ok": True, "count": 0, "collector_slug": collector_slug}
 
     await _charge_chest_import(user_id, db)
@@ -204,11 +208,13 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
         # откатился) и существующие ключи по-настоящему, и пробуем один раз заново.
         await db.rollback()
         collector = await _get_or_create_collector(payload.kingdom, payload.clan, user_id, db)
+        collector.last_import_at = datetime.utcnow()
         collector_id = collector.id
         collector_slug = collector.slug
         existing_keys = await _load_existing_keys(collector_id, db)
         new_items = _dedupe(new_items, existing_keys)
         if not new_items:
+            await db.commit()   # сохранить last_import_at
             return {"ok": True, "count": 0, "collector_slug": collector_slug}
         await _charge_chest_import(user_id, db)
         for row in _build_chest_rows(collector_id, new_items, player_aliases, type_aliases):

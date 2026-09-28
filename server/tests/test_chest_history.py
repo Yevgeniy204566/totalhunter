@@ -311,61 +311,93 @@ async def test_build_history_detail_includes_target_snapshot(db_session):
     assert "period_start" in detail and "period_end" in detail
 
 
-@pytest.mark.asyncio
-async def test_stopped_collector_tick_deletes_ancient_tables_too(db_session):
-    from models import AncientCalculation, AncientNameMapping, AncientRoster, PlayerAlias
-    from chest_history import run_stopped_collector_tick
+async def _make_owner(db, hwid):
+    from models import User
+    u = User(hwid=hwid, ref_code=hwid[:6])
+    db.add(u)
+    await db.flush()
+    return u
 
+
+@pytest.mark.asyncio
+async def test_inactive_collector_tick_deletes_everything_including_clan_roster(db_session):
+    """Сезон идёт, но заливок нет 91 день — клан удаляется целиком. clan_roster на проде
+    без ON DELETE CASCADE: пропуск его в списке ронял удаление клана навсегда."""
+    from models import (AncientCalculation, AncientNameMapping, AncientRoster, ChestManager,
+                        ClanRosterEntry, PlayerAlias, PlayerProfile)
+    from chest_history import run_inactive_collector_tick
+
+    owner = await _make_owner(db_session, "inactowner00000a")
+    manager = await _make_owner(db_session, "inactmanag00000a")
     collector = await _make_collector(
-        db_session, slug="stopped-with-ancient",
-        stopped_at=datetime.utcnow() - timedelta(days=91),
+        db_session, slug="inactive-full", user_id=owner.id,
+        created_at=datetime.utcnow() - timedelta(days=200),
+        last_import_at=datetime.utcnow() - timedelta(days=91),
+        period_start=datetime.utcnow() - timedelta(days=3),
+        period_end=datetime.utcnow() + timedelta(days=4),
     )
-    db_session.add(AncientRoster(collector_id=collector.id, player_name="P1", place=1, points=10))
-    db_session.add(AncientNameMapping(collector_id=collector.id, raw_ocr_name="p1", canonical_name="P1"))
+    cid = collector.id
+    await _add_chest(db_session, collector, "P1", "T1", datetime.utcnow() - timedelta(days=91))
+    db_session.add(ChestSeasonHistory(collector_id=cid, period_start=datetime.utcnow(),
+                                      period_end=datetime.utcnow(), summary_json={}))
+    db_session.add(ClanRosterEntry(collector_id=cid, raw_name="p1", canonical_name="P1"))
+    db_session.add(PlayerProfile(collector_id=cid, canonical_name="P1"))
+    db_session.add(ChestManager(collector_id=cid, user_id=manager.id))
+    db_session.add(AncientRoster(collector_id=cid, player_name="P1", place=1, points=10))
+    db_session.add(AncientNameMapping(collector_id=cid, raw_ocr_name="p1", canonical_name="P1"))
     db_session.add(AncientCalculation(
-        collector_id=collector.id, strategy="A", summon_levels=[81],
+        collector_id=cid, strategy="A", summon_levels=[81],
         amplification_coef=1.0, officer_count=1, veteran_count=0,
         total_quota_millions=1.0, result_json={},
     ))
-    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="p1raw", canonical_name="P1"))
+    db_session.add(PlayerAlias(collector_id=cid, raw_name="p1raw", canonical_name="P1"))
     await db_session.commit()
 
-    deleted = await run_stopped_collector_tick(db_session)
+    deleted = await run_inactive_collector_tick(db_session)
 
     assert deleted == 1
     assert (await db_session.execute(
-        select(ChestCollector).where(ChestCollector.id == collector.id)
+        select(ChestCollector).where(ChestCollector.id == cid)
     )).scalar_one_or_none() is None
-    assert (await db_session.execute(
-        select(AncientRoster).where(AncientRoster.collector_id == collector.id)
-    )).scalars().all() == []
-    assert (await db_session.execute(
-        select(AncientNameMapping).where(AncientNameMapping.collector_id == collector.id)
-    )).scalars().all() == []
-    assert (await db_session.execute(
-        select(AncientCalculation).where(AncientCalculation.collector_id == collector.id)
-    )).scalars().all() == []
-    # PlayerAlias behavior unchanged — still deleted with the collector.
-    assert (await db_session.execute(
-        select(PlayerAlias).where(PlayerAlias.collector_id == collector.id)
-    )).scalars().all() == []
+    for model in (Chest, ChestConfiguration, ChestSeasonHistory, ClanRosterEntry, PlayerProfile,
+                  ChestManager, AncientRoster, AncientNameMapping, AncientCalculation, PlayerAlias):
+        assert (await db_session.execute(
+            select(model).where(model.collector_id == cid)
+        )).scalars().all() == [], model.__name__
 
 
 @pytest.mark.asyncio
-async def test_stopped_collector_tick_ignores_recent_stop(db_session):
-    from chest_history import run_stopped_collector_tick
+async def test_inactive_collector_tick_keeps_recent_import_even_if_old_and_stopped(db_session):
+    from chest_history import run_inactive_collector_tick
     collector = await _make_collector(
-        db_session, slug="stopped-recent",
-        stopped_at=datetime.utcnow() - timedelta(days=10),
+        db_session, slug="recent-import",
+        created_at=datetime.utcnow() - timedelta(days=300),
+        last_import_at=datetime.utcnow() - timedelta(days=10),
+        stopped_at=datetime.utcnow() - timedelta(days=200),
     )
     await db_session.commit()
 
-    deleted = await run_stopped_collector_tick(db_session)
-
-    assert deleted == 0
+    assert await run_inactive_collector_tick(db_session) == 0
     assert (await db_session.execute(
         select(ChestCollector).where(ChestCollector.id == collector.id)
     )).scalar_one_or_none() is not None
+
+
+@pytest.mark.asyncio
+async def test_inactive_collector_tick_never_imported_counts_from_creation(db_session):
+    """Клан без единой заливки (веб-онбординг Древнего) — 90 дней от создания (владелец 2026-09-28)."""
+    from chest_history import run_inactive_collector_tick
+    old = await _make_collector(db_session, slug="never-old", clan="Old",
+                                created_at=datetime.utcnow() - timedelta(days=91))
+    young = await _make_collector(db_session, slug="never-young", clan="Young",
+                                  created_at=datetime.utcnow() - timedelta(days=10))
+    old_id, young_id = old.id, young.id
+    await db_session.commit()
+
+    assert await run_inactive_collector_tick(db_session) == 1
+    remaining = {c.id for c in (await db_session.execute(select(ChestCollector))).scalars().all()}
+    assert old_id not in remaining
+    assert young_id in remaining
 
 
 def test_app_startup_schedules_archive_background_tasks(monkeypatch):

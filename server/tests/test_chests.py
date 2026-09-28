@@ -137,6 +137,28 @@ async def test_import_creates_collector_and_chest_row(db_session):
 
 
 @pytest.mark.asyncio
+async def test_import_stamps_last_import_at_even_for_duplicate_batch(db_session):
+    """last_import_at — основа автоудаления через 90 дней без заливок. Повторная отправка того же
+    батча (count=0) — тоже живой бот, отметка обязана обновиться."""
+    from datetime import datetime, timedelta
+    user = await _create_user(db_session, "lastimport000a")
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/chests/import", json=_payload(user.hwid))
+    collector = (await db_session.execute(select(ChestCollector))).scalar_one()
+    assert collector.last_import_at is not None
+
+    collector.last_import_at = datetime.utcnow() - timedelta(days=50)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/import", json=_payload(user.hwid))
+    assert resp.json()["count"] == 0
+    await db_session.refresh(collector)
+    stamp = collector.last_import_at.replace(tzinfo=None)
+    assert stamp > datetime.utcnow() - timedelta(minutes=5)
+
+
+@pytest.mark.asyncio
 async def test_import_same_tenant_twice_reuses_collector(db_session):
     user = await _create_user(db_session, "reuseuser0000a")
     await db_session.commit()

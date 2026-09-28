@@ -467,6 +467,9 @@ class ChestCollector(Base):
     # До 3 квот сезона: [{"slot": 1, "name": "Склепы", "target": 200, "mode": "fixed"}, ...]
     quotas                  = Column(JSON, nullable=False, server_default=text("'[]'"))
     stopped_at              = Column(TIMESTAMP(timezone=True), nullable=True)
+    # Последняя отправка сундуков из бота. Не Chest.collected_at: сырые сундуки удаляются при
+    # архивации сезона, а collected_at — игровое время клиента, не момент заливки.
+    last_import_at          = Column(TIMESTAMP(timezone=True), nullable=True)
     leader_canonical_name   = Column(String(200), nullable=True)
     leader_excluded_catalog_ids = Column(JSON, nullable=False, server_default=text("'[]'"))
     ancient_hidden          = Column(Boolean, nullable=False, server_default=text("false"))
