@@ -19,6 +19,7 @@ import ChestsPage from './pages/ChestsPage.jsx'
 import ChestSummaryPage from './pages/ChestSummaryPage.jsx'
 import PublicAncientsPage from './pages/PublicAncientsPage.jsx'
 import AncientsPage from './pages/AncientsPage.jsx'
+import NamePreviewPage from './pages/NamePreviewPage.jsx'
 
 function PrivateRoute({ element }) {
   return isLoggedIn() ? element : <Navigate to="/login" replace />
@@ -38,6 +39,7 @@ export default function App() {
       <Route path="/chests/:slug" element={<ChestSummaryPage />} />
       <Route path="/c/:kingdom/:slug" element={<ChestSummaryPage />} />
       <Route path="/ancients/:slug" element={<PublicAncientsPage />} />
+      {import.meta.env.DEV && <Route path="/dev/names" element={<NamePreviewPage />} />}
 
       {/* ── RU public routes (/ru prefix) ───────────────── */}
       <Route path="/ru"              element={<LandingPage />} />
