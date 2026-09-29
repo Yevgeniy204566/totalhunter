@@ -4,6 +4,38 @@ import { useMeta } from '../hooks/useMeta.js'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
+// Сколько находка висит на сайте — как SCOUT_FIND_TTL_MIN на сервере (roy.py)
+const FIND_TTL_MS = 30 * 60 * 1000
+
+// Формат координат как в игре (владелец 2026-09-29): вставленная в чат строка становится ссылкой
+function coordText(f) { return `K:${f.kingdom} X:${f.x} Y:${f.y}` }
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // старые браузеры / нет разрешения — через скрытое поле
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    let ok = false
+    try { ok = document.execCommand('copy') } catch { ok = false }
+    document.body.removeChild(ta)
+    return ok
+  }
+}
+
+function fmtLeft(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const m = Math.floor(total / 60)
+  const sec = total % 60
+  return `${m}:${String(sec).padStart(2, '0')}`
+}
+
 function plural(n, one, few, many) {
   if (n === 1) return one
   if (n >= 2 && n <= 4) return few
@@ -15,6 +47,8 @@ export default function RoyPage() {
   const [connected, setConnected] = useState(false)
   const [finds, setFinds]         = useState(null)
   const [findsError, setFindsError] = useState(false)
+  const [now, setNow]             = useState(() => Date.now())
+  const [copiedKey, setCopiedKey] = useState(null)
   const { lang } = useLang()
   useMeta({
     title:       lang === 'ru' ? 'Total Hunter — Система РОЙ' : 'Total Hunter — SWARM System',
@@ -48,10 +82,91 @@ export default function RoyPage() {
       .then(d => { setFinds(d.finds || []); setFindsError(false) })
       .catch(() => setFindsError(true))
   }
-  useEffect(() => { loadFinds() }, [])
+  // находки подтягиваются сами раз в 30 с; таймер тикает каждую секунду
+  useEffect(() => {
+    loadFinds()
+    const poll = setInterval(loadFinds, 30000)
+    const tick = setInterval(() => setNow(Date.now()), 1000)
+    return () => { clearInterval(poll); clearInterval(tick) }
+  }, [])
+
+  async function onCopy(f, key) {
+    if (await copyText(coordText(f))) {
+      setCopiedKey(key)
+      setTimeout(() => setCopiedKey(k => (k === key ? null : k)), 1500)
+    }
+  }
+
+  const liveFinds = (finds || [])
+    .map(f => ({ ...f, left: new Date(f.found_at).getTime() + FIND_TTL_MS - now }))
+    .filter(f => f.left > 0)
+
+  // Найденные биржи — наверху страницы (владелец 2026-09-29), список королевств — ниже
+  const findsCard = (
+    <div style={{
+      background: 'var(--card)', borderRadius: 14, border: '1px solid var(--outline)',
+      padding: '18px 20px', marginBottom: 20,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <h1 style={{ fontSize: 21, fontWeight: 800, color: 'var(--accent)', margin: 0 }}>
+          {isRu ? 'Найденные биржи' : 'Found exchanges'}
+        </h1>
+        <button onClick={loadFinds} style={{
+          background: 'transparent', border: '1px solid var(--outline)', color: 'var(--on-surface2)',
+          borderRadius: 8, padding: '6px 14px', fontSize: 15, cursor: 'pointer',
+        }}>{isRu ? 'Обновить' : 'Refresh'}</button>
+      </div>
+      <p style={{ fontSize: 15, color: 'var(--on-surface2)', lineHeight: 1.55, margin: '10px 0 12px' }}>
+        {isRu
+          ? 'Нажмите на координаты — они скопируются, вставьте в чат игры, получится ссылка. Расположение примерное: позиция экрана бота в момент кадра. Запись видна 30 минут.'
+          : 'Tap the coordinates to copy them, paste into the game chat and it becomes a link. The location is approximate: the bot screen position at the moment of the frame. An entry is shown for 30 minutes.'}
+      </p>
+      {findsError ? (
+        <div style={{ fontSize: 16, color: 'var(--on-surface2)' }}>
+          {isRu ? 'Не удалось загрузить находки.' : 'Failed to load finds.'}
+        </div>
+      ) : finds === null ? null : liveFinds.length === 0 ? (
+        <div style={{ fontSize: 16, color: 'var(--on-surface2)' }}>
+          {isRu ? 'Сейчас находок нет.' : 'No finds right now.'}
+        </div>
+      ) : liveFinds.map((f, i) => {
+        const key = `${f.kingdom}-${f.x}-${f.y}-${f.found_at}`
+        const copied = copiedKey === key
+        return (
+          <div key={key} style={{
+            display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px 14px', padding: '12px 0',
+            borderTop: i === 0 ? 'none' : '1px solid var(--outline)',
+          }}>
+            <button onClick={() => onCopy(f, key)} title={isRu ? 'Скопировать' : 'Copy'} style={{
+              background: copied ? 'rgba(74,222,128,0.14)' : 'rgba(61,127,255,0.10)',
+              border: `1px solid ${copied ? 'rgba(74,222,128,0.5)' : 'rgba(61,127,255,0.35)'}`,
+              color: copied ? '#4ADE80' : 'var(--on-surface)', borderRadius: 8,
+              padding: '8px 14px', fontSize: 19, fontWeight: 700, cursor: 'pointer',
+              fontVariantNumeric: 'tabular-nums', transition: 'all 0.2s',
+            }}>
+              {coordText(f)} <span style={{ fontSize: 15, fontWeight: 600, marginLeft: 6 }}>
+                {copied ? (isRu ? '✓ скопировано' : '✓ copied') : '⧉'}
+              </span>
+            </button>
+            <span style={{ marginLeft: 'auto', textAlign: 'right', fontSize: 16, lineHeight: 1.35 }}>
+              <span style={{ color: f.left < 5 * 60 * 1000 ? '#F87171' : 'var(--credits-gold)', fontWeight: 700,
+                             fontVariantNumeric: 'tabular-nums' }}>
+                {isRu ? 'осталось' : 'left'} {fmtLeft(f.left)}
+              </span>
+              <br />
+              <span style={{ color: 'var(--on-surface2)', fontSize: 14 }}>
+                {isRu ? 'найдена' : 'found'} {new Date(f.found_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
 
   return (
     <div style={{ padding: '24px 20px', maxWidth: 560, margin: '0 auto' }}>
+      {findsCard}
 
       {/* ── Header card ── */}
       <div style={{
@@ -61,9 +176,9 @@ export default function RoyPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <span style={{ fontSize: 22, color: 'var(--accent)' }}>⬡</span>
-          <h1 style={{ fontSize: 19, fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.5px' }}>
+          <h2 style={{ fontSize: 19, fontWeight: 800, color: 'var(--accent)', letterSpacing: '0.5px', margin: 0 }}>
             {isRu ? 'СИСТЕМА РОЙ' : 'SWARM SYSTEM'}
-          </h1>
+          </h2>
         </div>
         <p style={{ fontSize: 13, color: 'var(--on-surface2)', lineHeight: 1.55 }}>
           {isRu
@@ -181,47 +296,6 @@ export default function RoyPage() {
           }} />
           {isRu ? 'Сканирует во время ивента' : 'Scanning during event'}
         </div>
-      </div>
-
-      {/* ── Scout finds (Exchange 2.0) ── */}
-      <div style={{
-        background: 'var(--card)', borderRadius: 14, border: '1px solid var(--outline)',
-        padding: '16px 20px', marginBottom: 16,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--on-surface)' }}>
-            {isRu ? 'Находки Биржи 2.0' : 'Exchange 2.0 finds'}
-          </span>
-          <button onClick={loadFinds} style={{
-            background: 'transparent', border: '1px solid var(--outline)', color: 'var(--on-surface2)',
-            borderRadius: 8, padding: '4px 12px', fontSize: 12, cursor: 'pointer',
-          }}>{isRu ? 'Обновить' : 'Refresh'}</button>
-        </div>
-        <p style={{ fontSize: 12, color: 'var(--on-surface2)', lineHeight: 1.55, margin: '8px 0 12px' }}>
-          {isRu
-            ? 'Примерное расположение: позиция экрана бота в момент кадра, не точные координаты биржи. Запись показывается 30 минут после публикации.'
-            : 'Approximate location: the bot screen position at the moment of the frame, not the exact exchange coordinates. An entry is shown for 30 minutes after publication.'}
-        </p>
-        {findsError ? (
-          <div style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
-            {isRu ? 'Не удалось загрузить находки.' : 'Failed to load finds.'}
-          </div>
-        ) : finds === null ? null : finds.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--on-surface2)' }}>
-            {isRu ? 'Сейчас находок нет.' : 'No finds right now.'}
-          </div>
-        ) : finds.map((f, i) => (
-          <div key={i} style={{
-            display: 'flex', gap: 14, padding: '8px 0', fontSize: 13,
-            borderTop: i === 0 ? 'none' : '1px solid var(--outline)', color: 'var(--on-surface)',
-          }}>
-            <span style={{ fontWeight: 700 }}>K {f.kingdom}</span>
-            <span>X {f.x} · Y {f.y}</span>
-            <span style={{ marginLeft: 'auto', color: 'var(--on-surface2)' }}>
-              {new Date(f.found_at).toLocaleTimeString()}
-            </span>
-          </div>
-        ))}
       </div>
 
       {/* ── Hint ── */}
