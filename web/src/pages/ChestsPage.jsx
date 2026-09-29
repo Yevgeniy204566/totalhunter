@@ -46,6 +46,19 @@ const ACCOUNTING_BG = {
   3:   { background: 'rgba(74,222,128,0.42)', borderColor: 'rgba(74,222,128,0.75)' },
 }
 
+// Порядок сортировки «Учёта» (владелец 2026-09-29): квоты по номеру → «В учёте» → «Не в учёте»
+function accountingRank(row) {
+  if (row.quota_slot) return row.quota_slot
+  return row.is_in_pattern ? 10 : 20
+}
+
+function accountingOrder(rows, dir) {
+  const sign = dir === 'desc' ? -1 : 1
+  return rows.map((row, i) => ({ i, r: accountingRank(row) }))
+    .sort((a, b) => sign * (a.r - b.r))
+    .map(x => x.i)
+}
+
 /* Квоты сезона (владелец 2026-09-26): до 3 штук, у каждой название и цель. Номер (slot) у
    квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали.
    Карточки в один ряд; цвет карточки = цвет этой квоты в списке «Учёт», чтобы было видно,
@@ -131,6 +144,9 @@ export default function ChestsPage() {
   const [leaderByCollector, setLeaderByCollector] = useState({})
   const [leaderExcludedByCollector, setLeaderExcludedByCollector] = useState({})
   const [sortByCollector, setSortByCollector] = useState({})
+  // Сортировка ростера по «Учёту» — снимок порядка на момент клика: при живой сортировке
+  // строка уезжала бы из-под руки, как только ей поменяли учёт.
+  const [accSortByCollector, setAccSortByCollector] = useState({})
   const { lang } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
   const cx = D.chests
@@ -167,6 +183,14 @@ export default function ChestsPage() {
         nextLeaderExcluded[c.slug] = c.leader_excluded_catalog_ids || []
       }
       setRowsByCollector(nextRows)
+      // После сохранения сервер отдаёт строки заново — пересобрать снимок, иначе индексы устареют
+      setAccSortByCollector(prev => {
+        const next = {}
+        for (const [slug, s] of Object.entries(prev)) {
+          if (s && nextRows[slug]) next[slug] = { dir: s.dir, order: accountingOrder(nextRows[slug], s.dir) }
+        }
+        return next
+      })
       setPlayerRowsByCollector(nextPlayerRows)
       setSeasonByCollector(nextSeason)
       setLeaderByCollector(nextLeader)
@@ -241,6 +265,24 @@ export default function ChestsPage() {
       const cur = prev[slug] || { field: 'name', dir: 'asc' }
       return { ...prev, [slug]: { field, dir: cur.field === field && cur.dir === 'asc' ? 'desc' : 'asc' } }
     })
+  }
+
+  function toggleAccSort(slug) {
+    setAccSortByCollector(prev => {
+      const dir = prev[slug]?.dir === 'asc' ? 'desc' : 'asc'
+      return { ...prev, [slug]: { dir, order: accountingOrder(rowsByCollector[slug] || [], dir) } }
+    })
+  }
+
+  // Индексы строк в порядке снимка; строки, добавленные после клика, — в конец
+  function accSortedIndices(slug) {
+    const rows = rowsByCollector[slug] || []
+    const order = accSortByCollector[slug]?.order
+    if (!order) return rows.map((_, i) => i)
+    const seen = new Set()
+    const out = order.filter(i => i < rows.length && !seen.has(i) && seen.add(i))
+    for (let i = 0; i < rows.length; i++) if (!seen.has(i)) out.push(i)
+    return out
   }
 
   function addPlayerRow(slug) {
@@ -638,15 +680,18 @@ export default function ChestsPage() {
                     <th style={{ minWidth: 240 }}>{cx.catalogCol}</th>
                     <th className="chest-secondary-col" style={{ minWidth: 130 }}>{cx.customNameCol}</th>
                     <th style={{ minWidth: 70 }}>{cx.pointsCol}</th>
-                    <th style={{ minWidth: 170 }}>
+                    <th style={{ minWidth: 170, cursor: 'pointer', userSelect: 'none' }}
+                        title={cx.accountingTooltip}
+                        onClick={() => toggleAccSort(collector.slug)}>
                       {cx.accountingCol}
-                      <span className="chest-col-help" title={cx.accountingTooltip}>?</span>
+                      {accSortByCollector[collector.slug]?.dir === 'asc' ? ' ↑'
+                        : accSortByCollector[collector.slug]?.dir === 'desc' ? ' ↓' : ''}
                     </th>
                     <th style={{ minWidth: 60 }}>{cx.totalEverCol}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rowsByCollector[collector.slug]?.map((row, i) => (
+                  {accSortedIndices(collector.slug).map(i => [rowsByCollector[collector.slug][i], i]).map(([row, i]) => (
                     <tr key={i}>
                       <td style={{ whiteSpace: 'nowrap' }}>{row.raw_type || '—'}</td>
                       <td>
