@@ -55,8 +55,8 @@ const ABOVE_QUOTA_STOPS = ['#3DFF7A', '#1FE5C8', '#4DB5FF', '#A77BFF', '#FF7AD9'
 const STRIPE_TO_LEGEND = '#3D6BFF'
 // Пороги — во сколько раз игрок перекрыл цель сезона (владелец 2026-09-29): так шкала одинаково
 // честная для клана с целью 5к и с целью 50к. От ×1 до ×10 — путь «норма → легенда»;
-// легенды I–V: ×10 / ×12 / ×14 / ×17 / ×20 (последняя — королевская лента).
-const LEGEND_TIERS = [10, 12, 14, 17, 20]
+// Легенды I–XVII: шаг между званиями растёт на 1 каждые два звания (2,2,3,3,4,4,…).
+const LEGEND_TIERS = [10, 12, 14, 17, 20, 24, 28, 33, 38, 44, 50, 57, 64, 72, 80, 89, 98]
 const LEGEND_START = LEGEND_TIERS[0]
 
 function mixWhite(hex, t) { return lerpColor(hex, '#FFFFFF', t) }
@@ -76,7 +76,7 @@ function shimmerGradient(c, t) {
 }
 
 function legendaryGradient(tier, ratio) {
-  // цветов перелива: легенда I — 2, … легенда V — 6
+  // цветов перелива: легенда I — 2, … от V — 6
   const n = tier + 2
   // старт с холодных тонов; пара цветов — 120° по кругу (гармонично, не кислотно)
   const base = (160 + (ratio - LEGEND_START) * 12) % 360
@@ -86,6 +86,64 @@ function legendaryGradient(tier, ratio) {
   // палитра дважды на плитку 200% — перелив непрерывный
   const all = [...cols, ...cols, cols[0]]
   return `linear-gradient(90deg, ${all.map((c, i) => `${c} ${(i / (all.length - 1) * 100).toFixed(1)}%`).join(', ')})`
+}
+
+// Знамёна легенд (владелец 2026-09-29). Правило: оформление только держится или усложняется —
+// после «ласточкина хвоста» назад к прямоугольнику нельзя.
+// I–III — синяя лента; IV–V — прямой штандарт; VI–VII — ласточкин хвост; VIII–IX — + серебряная
+// нить; с X — «камень в оправе» (золото, полоса камня, золотая нить), каждое звание — свой камень;
+// с XI — ореол цвета камня; с XVI — ещё золотой волосок снаружи.
+// Металл — вертикальный градиент (блик сверху, тень снизу): кайма читается как литая рамка.
+const GOLD = 'linear-gradient(180deg, #FFF3C4, #D9A73A 55%, #8A5E14)'
+const PLATINUM = 'linear-gradient(180deg, #F2F6FF, #9FB3D9 50%, #3E4F7A)'
+const BRONZE = 'linear-gradient(180deg, #F3C18C, #B87333 55%, #5E3514)'
+const LIGHT_AZURE = 'linear-gradient(180deg, #D8F0FF, #7FC4FF 55%, #2F6FC4)'
+const SILVER_THREAD = '#DCE3EE'
+const FIELD_BLUE = '#0B2A6B'
+// поле течёт: плитка 200% без стыка
+const fieldTile = b => `linear-gradient(90deg, ${FIELD_BLUE} 0%, ${b} 25%, ${FIELD_BLUE} 50%, ${b} 75%, ${FIELD_BLUE} 100%)`
+const FIELD_SKY = fieldTile('#1F5FC4')
+const FIELD_INDIGO = fieldTile('#3A1F8C')
+// камни X и выше — по порядку званий
+const LEGEND_STONES = [
+  { outer: GOLD, stone: 'linear-gradient(180deg, #F0475E, #A3102A 55%, #4E0512)', halo: '#FF7A8A' },     // X рубин
+  { outer: GOLD, stone: 'linear-gradient(180deg, #C25AB2, #761A6A 55%, #340830)', halo: '#E59BDA' },     // XI пурпур
+  { outer: GOLD, stone: 'linear-gradient(180deg, #3FD196, #0F7550 55%, #053A26)', halo: '#7BEBBB' },     // XII изумруд
+  { outer: GOLD, stone: 'linear-gradient(180deg, #454B5C, #12141C 55%, #000000)', halo: '#A8B0C4' },     // XIII обсидиан
+  { outer: GOLD, stone: 'linear-gradient(180deg, #FFC15A, #E0561F 55%, #7A1A08)', halo: '#FFD08A' },     // XIV огонь
+  { outer: PLATINUM, stone: 'linear-gradient(180deg, #4A6BD8, #1A2E80 55%, #0A1238)', halo: '#B8CCFF' }, // XV сапфир
+  { outer: BRONZE, stone: LIGHT_AZURE, halo: '#9FD6FF' },                                                // XVI бронза и лазурь
+  { outer: LIGHT_AZURE, stone: 'linear-gradient(180deg, #6A4FD0, #3A1F8C 55%, #1A0C4A)', halo: '#B9A8FF', field: FIELD_INDIGO }, // XVII индиго
+]
+
+function legendBanner(tier) {
+  if (tier <= 2) return null
+  if (tier <= 8) {
+    return {
+      shape: tier <= 4 ? 'flag' : 'tail', flow: false, field: FIELD_SKY,
+      border: tier >= 7 ? [[GOLD, 2], [FIELD_BLUE, 1], [SILVER_THREAD, 1]] : [[GOLD, 2]],
+    }
+  }
+  const st = LEGEND_STONES[Math.min(tier - 9, LEGEND_STONES.length - 1)]
+  let border = [[st.outer, 2], [st.stone, 3], [GOLD, 1]]
+  if (tier >= 10) border = [[st.halo, 1], ...border]
+  if (tier >= 15) border = [[GOLD, 1], ...border]
+  return { shape: 'tail', flow: true, field: st.field || FIELD_SKY, border }
+}
+
+function ImperialBanner({ spec, children }) {
+  const field = (
+    <span className={`public-imp-field${spec.flow ? ' public-imp-field--flow' : ''}`} style={{ '--imp-field': spec.field }}>
+      {children}
+    </span>
+  )
+  // на ласточкином хвосте вырез косой — по бокам кайма шире, иначе на скосе она выглядит тоньше
+  const sideK = spec.shape === 'tail' ? 1.6 : 1
+  return spec.border.reduceRight((inner, [color, w]) => (
+    <span className={`public-imp-layer public-imp-${spec.shape}`} style={{ background: color, padding: `${w}px ${w * sideK}px` }}>
+      {inner}
+    </span>
+  ), field)
 }
 
 // Базовый размер имени — CSS-переменная (ПК 17px — на кегль крупнее цифр 16px, телефон 14.5px);
@@ -105,24 +163,24 @@ function nameGradientStyle(player, targets) {
   }
   const tier = LEGEND_TIERS.filter(x => ratio >= x).length - 1
   return {
-    mode: 'legendary', backgroundImage: legendaryGradient(tier, ratio),
-    fontSize: nameSize(4.5 + tier * 0.4),
-    // легенды I–IV — синяя лента с бликом; легенда V — королевская «ласточкин хвост»
-    banner: tier === LEGEND_TIERS.length - 1 ? 'royal' : 'blue',
+    // цветов перелива не больше 6, шрифт растёт до VII — иначе радуга и слишком крупно
+    mode: 'legendary', backgroundImage: legendaryGradient(Math.min(tier, 4), ratio),
+    fontSize: nameSize(4.5 + Math.min(tier, 6) * 0.4),
+    banner: legendBanner(tier),
   }
 }
 
-function renderPlayerName(p, targets) {
+export function renderPlayerName(p, targets) {
   const s = nameGradientStyle(p, targets)
   if (!s) return p.name
   if (s.mode === 'legendary') {
-    return (
-      <span className={`public-name-banner public-name-banner--${s.banner}`}>
-        <span className="public-name-legendary" style={{ backgroundImage: s.backgroundImage, fontSize: s.fontSize }}>
-          {p.name}
-        </span>
+    const text = (
+      <span className="public-name-legendary" style={{ backgroundImage: s.backgroundImage, fontSize: s.fontSize }}>
+        {p.name}
       </span>
     )
+    if (s.banner) return <ImperialBanner spec={s.banner}>{text}</ImperialBanner>
+    return <span className="public-name-banner public-name-banner--blue">{text}</span>
   }
   if (s.mode === 'shimmer') {
     return (

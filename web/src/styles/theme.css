@@ -573,9 +573,8 @@ a:hover { color: var(--on-surface); }
 .public-name-shimmer { animation: public-name-flow 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 .public-name-legendary { letter-spacing: 0.4px; animation: public-name-flow 6s linear infinite; }
 
-/* Ленты легенд: синяя с пробегающим бликом; последний уровень — королевская «ласточкин хвост» */
+/* Легенды I–III — синяя лента с пробегающим бликом */
 @keyframes public-banner-sweep { from { background-position: -60% 0, 0 0; } to { background-position: 160% 0, 0 0; } }
-@keyframes public-banner-aurora { from { background-position: -60% 0, 0% 50%; } to { background-position: 160% 0, 200% 50%; } }
 .public-name-banner { display: inline-block; padding: 2px 14px; border-radius: 6px; background-repeat: no-repeat; }
 .public-name-banner--blue {
   background-image: linear-gradient(100deg, transparent 0 40%, rgba(160, 200, 255, 0.28) 50%, transparent 60% 100%),
@@ -584,20 +583,34 @@ a:hover { color: var(--on-surface); }
   box-shadow: inset 0 0 0 1px rgba(110, 160, 255, 0.45);
   animation: public-banner-sweep 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
-.public-name-banner--royal {
-  padding: 3px 22px; border-radius: 0;
-  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%, 10px 50%);
-  background-image: linear-gradient(100deg, transparent 0 40%, rgba(220, 240, 255, 0.35) 50%, transparent 60% 100%),
-                    linear-gradient(90deg, #1B3C9E, #1486B8, #3B2A9E, #1B3C9E, #1486B8, #3B2A9E, #1B3C9E);
-  background-size: 40% 100%, 200% 100%; background-repeat: no-repeat, repeat-x;
-  animation: public-banner-aurora 5s linear infinite;
-}
+/* Знамёна легенд IV+ (владелец 2026-09-29): слои одной формы, каждый внешний виден по краю как кайма.
+   inline-flex — у inline-block под слоем остаётся место под «хвосты» букв, кайма снизу толще. */
+@keyframes public-imp-drift { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+@keyframes public-imp-glare { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+.public-imp-layer { display: inline-flex; vertical-align: middle; }
+.public-imp-field { position: relative; display: inline-block; padding: 3px 18px; overflow: hidden;
+  background-image: var(--imp-field); background-size: 200% 100%; background-repeat: repeat-x;
+  animation: public-imp-drift 16s linear infinite; }
+/* блик — отдельный слой со своей скоростью; поле течёт неспешно */
+.public-imp-field::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 0 40%, rgba(255, 240, 200, 0.30) 50%, transparent 60% 100%);
+  background-size: 40% 100%; background-repeat: no-repeat;
+  animation: public-imp-glare 3.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.public-imp-field > * { position: relative; }
+.public-imp-field--flow { animation-duration: 8s; }
+.public-imp-flag, .public-imp-flag .public-imp-field { border-radius: 4px; }
+.public-imp-tail, .public-imp-tail .public-imp-field {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 50%, 100% 100%, 0 100%, 12px 50%); }
+.public-imp-tail .public-imp-field { padding: 3px 26px; }
 /* Пока таблицу листают — движение на паузе, цвета и ленты остаются */
 .public-table-wrap.is-scrolling .public-name-shimmer,
 .public-table-wrap.is-scrolling .public-name-legendary,
-.public-table-wrap.is-scrolling .public-name-banner { animation-play-state: paused; }
+.public-table-wrap.is-scrolling .public-name-banner,
+.public-table-wrap.is-scrolling .public-imp-field,
+.public-table-wrap.is-scrolling .public-imp-field::before { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
-  .public-name-shimmer, .public-name-legendary, .public-name-banner { animation: none; }
+  .public-name-shimmer, .public-name-legendary, .public-name-banner,
+  .public-imp-field, .public-imp-field::before { animation: none; }
 }
 
 .public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
