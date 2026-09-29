@@ -298,3 +298,83 @@ def test_next_trade_routes_end_during_pause_window(monkeypatch):
     expected = (datetime.fromtimestamp(_EVENT_ANCHOR_TS, tz=timezone.utc)
                 + timedelta(hours=_EVENT_CYCLE_H + _EVENT_DURATION_H))
     assert next_trade_routes_end() == expected
+
+
+# ── Открытая дверь РОЙ (владелец 2026-09-29): пул читают все, сайт показывает биржи 1.0 ──
+
+def _add_pool(db_session, **kw):
+    future = datetime.now(timezone.utc) + timedelta(minutes=10)
+    now = datetime.now(timezone.utc)
+    base = dict(kingdom=100, x=10, y=20, percent=30, reporter_hwid="OTHER1",
+                expires_at=future, updated_at=now)
+    base.update(kw)
+    db_session.add(RoyPool(**base))
+
+
+@pytest.mark.asyncio
+async def test_open_door_pool_without_balance_returns_coords(db_session, monkeypatch):
+    import roy
+    monkeypatch.setattr(roy, "ROY_OPEN_DOOR", True)
+    _add_pool(db_session)
+    await db_session.flush()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/roy/pool", params={"hwid": "HWID_NOBAL01"})
+    data = r.json()
+    assert data["success"] is True
+    assert len(data["pool"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_open_door_consume_does_not_charge(db_session, monkeypatch):
+    import roy
+    monkeypatch.setattr(roy, "ROY_OPEN_DOOR", True)
+    db_session.add(RoyBalance(hwid="HWID_OPEN02", balance_sec=300))
+    _add_pool(db_session)
+    # commit, не flush: сессия эндпоинта на том же соединении откатила бы незафиксированный баланс
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        await c.get("/roy/pool", params={"hwid": "HWID_OPEN02", "consume": "true"})
+    from sqlalchemy import select
+    async for db in app.dependency_overrides[get_db]():
+        bal = (await db.execute(select(RoyBalance).where(RoyBalance.hwid == "HWID_OPEN02"))).scalar_one()
+        assert bal.balance_sec == 300
+
+
+@pytest.mark.asyncio
+async def test_closed_door_pool_without_balance_refused(db_session, monkeypatch):
+    import roy
+    monkeypatch.setattr(roy, "ROY_OPEN_DOOR", False)
+    _add_pool(db_session)
+    await db_session.flush()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/roy/pool", params={"hwid": "HWID_NOBAL03"})
+    data = r.json()
+    assert data["success"] is False
+    assert data["reason"] == "no_balance"
+
+
+@pytest.mark.asyncio
+async def test_public_pool_lists_live_unbought_without_hwid(db_session, monkeypatch):
+    import roy
+    monkeypatch.setattr(roy, "ROY_OPEN_DOOR", True)
+    past = datetime.now(timezone.utc) - timedelta(minutes=1)
+    _add_pool(db_session, kingdom=101, x=1, y=1, percent=40)
+    _add_pool(db_session, kingdom=102, x=2, y=2, percent=95)             # выкуплена — не показываем
+    _add_pool(db_session, kingdom=103, x=3, y=3, percent=10, expires_at=past)  # истекла
+    await db_session.flush()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/roy/public-pool")
+    pool = r.json()["pool"]
+    assert [(e["kingdom"], e["x"], e["y"]) for e in pool] == [(101, 1, 1)]
+    assert set(pool[0].keys()) == {"kingdom", "x", "y", "percent", "updated_at", "expires_at"}
+
+
+@pytest.mark.asyncio
+async def test_public_pool_empty_when_door_closed(db_session, monkeypatch):
+    import roy
+    monkeypatch.setattr(roy, "ROY_OPEN_DOOR", False)
+    _add_pool(db_session, kingdom=104, x=4, y=4, percent=20)
+    await db_session.flush()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/roy/public-pool")
+    assert r.json()["pool"] == []

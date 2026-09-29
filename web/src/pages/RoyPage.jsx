@@ -46,6 +46,7 @@ export default function RoyPage() {
   const [kingdoms, setKingdoms]   = useState([])
   const [connected, setConnected] = useState(false)
   const [finds, setFinds]         = useState(null)
+  const [pool, setPool]           = useState([])
   const [findsError, setFindsError] = useState(false)
   const [now, setNow]             = useState(() => Date.now())
   const [copiedKey, setCopiedKey] = useState(null)
@@ -81,6 +82,11 @@ export default function RoyPage() {
       .then(r => { if (!r.ok) throw new Error('http'); return r.json() })
       .then(d => { setFinds(d.finds || []); setFindsError(false) })
       .catch(() => setFindsError(true))
+    // биржи 1.0 из пула РОЙ — пока открыта дверь (ROY_OPEN_DOOR на сервере), иначе пустой список
+    fetch(`${API_BASE}/roy/public-pool`)
+      .then(r => { if (!r.ok) throw new Error('http'); return r.json() })
+      .then(d => setPool(d.pool || []))
+      .catch(() => setPool([]))
   }
   // находки подтягиваются сами раз в 30 с; таймер тикает каждую секунду
   useEffect(() => {
@@ -97,9 +103,16 @@ export default function RoyPage() {
     }
   }
 
-  const liveFinds = (finds || [])
-    .map(f => ({ ...f, left: new Date(f.found_at).getTime() + FIND_TTL_MS - now }))
+  // Биржа 1.0 — точные координаты и заполнение, живёт до expires_at сервера;
+  // Биржа 2.0 — примерные, 30 минут с публикации. Один список, свежие сверху.
+  const liveFinds = [
+    ...pool.map(e => ({ ...e, exact: true, shownAt: e.updated_at || e.expires_at,
+                        left: new Date(e.expires_at).getTime() - now })),
+    ...(finds || []).map(f => ({ ...f, exact: false, shownAt: f.found_at,
+                                 left: new Date(f.found_at).getTime() + FIND_TTL_MS - now })),
+  ]
     .filter(f => f.left > 0)
+    .sort((a, b) => new Date(b.shownAt) - new Date(a.shownAt))
 
   // Найденные биржи — наверху страницы (владелец 2026-09-29), список королевств — ниже
   const findsCard = (
@@ -118,8 +131,8 @@ export default function RoyPage() {
       </div>
       <p style={{ fontSize: 15, color: 'var(--on-surface2)', lineHeight: 1.55, margin: '10px 0 12px' }}>
         {isRu
-          ? 'Нажмите на координаты — они скопируются, вставьте в чат игры, получится ссылка. Расположение примерное: позиция экрана бота в момент кадра. Запись видна 30 минут.'
-          : 'Tap the coordinates to copy them, paste into the game chat and it becomes a link. The location is approximate: the bot screen position at the moment of the frame. An entry is shown for 30 minutes.'}
+          ? 'Нажмите на координаты — они скопируются, вставьте в чат игры, получится ссылка. «Точные» — координаты самой биржи и её заполнение. «Примерные» — позиция экрана бота в момент кадра, биржа где-то рядом.'
+          : 'Tap the coordinates to copy them, paste into the game chat and it becomes a link. "Exact" — the exchange itself and how full it is. "Approximate" — the bot screen position at the moment of the frame, the exchange is nearby.'}
       </p>
       {findsError ? (
         <div style={{ fontSize: 16, color: 'var(--on-surface2)' }}>
@@ -130,7 +143,7 @@ export default function RoyPage() {
           {isRu ? 'Сейчас находок нет.' : 'No finds right now.'}
         </div>
       ) : liveFinds.map((f, i) => {
-        const key = `${f.kingdom}-${f.x}-${f.y}-${f.found_at}`
+        const key = `${f.exact ? 'p' : 's'}-${f.kingdom}-${f.x}-${f.y}-${f.shownAt}`
         const copied = copiedKey === key
         return (
           <div key={key} style={{
@@ -155,7 +168,13 @@ export default function RoyPage() {
               </span>
               <br />
               <span style={{ color: 'var(--on-surface2)', fontSize: 14 }}>
-                {isRu ? 'найдена' : 'found'} {new Date(f.found_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {isRu ? 'найдена' : 'found'} {new Date(f.shownAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <br />
+              <span style={{ fontSize: 14, fontWeight: 600, color: f.exact ? '#4ADE80' : 'var(--on-surface2)' }}>
+                {f.exact
+                  ? (isRu ? `точные · заполнена ${f.percent}%` : `exact · ${f.percent}% full`)
+                  : (isRu ? 'примерные' : 'approximate')}
               </span>
             </span>
           </div>

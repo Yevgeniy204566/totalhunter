@@ -41,6 +41,10 @@ SCAN_RATE_SEC     = 28    # минимальный интервал /scan с о�
 SESSION_TTL_SEC   = 300   # 5 минут без пинга = сессия считается мёртвой
 SCOUT_FIND_TTL_MIN = 30   # находка Биржи 2.0 живёт на сайте 30 минут (своя константа, не POOL_TTL_MIN)
 SCOUT_FINDS_LIMIT  = 500  # не более 500 самых новых находок в GET /roy/scout-finds (P-09)
+# «Открытая дверь» (владелец 2026-09-29): пока в боте мало людей, пул РОЙ читают все бесплатно
+# (без баланса и без списания), а биржи 1.0 выкладываются на сайт. От экономики РОЙ не отказываемся —
+# когда будут люди, вернуть False: пул снова за баланс, GET /roy/public-pool отдаёт пустой список.
+ROY_OPEN_DOOR      = True
 
 # in-memory rate limiters: hwid → unix timestamp последнего запроса
 _report_rate:  dict[str, float]             = {}
@@ -497,7 +501,7 @@ async def get_pool(
 
     balance = bal_row.balance_sec if bal_row else 0
 
-    if balance <= 0:
+    if balance <= 0 and not ROY_OPEN_DOOR:
         return {"success": False, "reason": "no_balance", "balance_sec": 0, "pool": []}
 
     pool_filter = [
@@ -511,7 +515,7 @@ async def get_pool(
         select(RoyPool).where(*pool_filter).order_by(RoyPool.updated_at.desc()).limit(50)
     )).scalars().all()
 
-    if consume and bal_row:
+    if consume and bal_row and not ROY_OPEN_DOOR:
         async with db.begin():
             bal_row.balance_sec = max(0, bal_row.balance_sec - POOL_COST_SEC)
             bal_row.updated_at  = now
@@ -530,6 +534,33 @@ async def get_pool(
             for e in entries
         ],
     }
+
+
+# ── GET /roy/public-pool ──────────────────────────────────────────────────────
+
+@router.get("/public-pool")
+async def public_pool(db: AsyncSession = Depends(get_db)):
+    """Биржи 1.0 для сайта — только пока открыта дверь (ROY_OPEN_DOOR). Живые, не выкупленные,
+    без hwid. Тот же фильтр, что у /pool, но без лимита 50: сайт показывает всё."""
+    if not ROY_OPEN_DOOR:
+        return {"pool": []}
+    now = datetime.now(timezone.utc)
+    entries = (await db.execute(
+        select(RoyPool)
+        .where(RoyPool.expires_at > now, RoyPool.percent < PERCENT_THRESHOLD)
+        .order_by(RoyPool.updated_at.desc())
+    )).scalars().all()
+    return {"pool": [
+        {
+            "kingdom":    e.kingdom,
+            "x":          e.x,
+            "y":          e.y,
+            "percent":    e.percent,
+            "updated_at": e.updated_at.isoformat() if e.updated_at else None,
+            "expires_at": e.expires_at.isoformat(),
+        }
+        for e in entries
+    ]}
 
 
 # ── GET /roy/balance/{hwid} ───────────────────────────────────────────────────
