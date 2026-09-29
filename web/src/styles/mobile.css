@@ -287,11 +287,11 @@
      (владелец 2026-09-28); общая плашка ПК скрыта */
   .public-targets-desktop { display: none !important; }
   .public-targets-mobile { display: inline-block !important; }
-  .public-targets-break { display: block !important; flex-basis: 100% !important; height: 0 !important; margin-top: -6px !important; }
-
-  /* Сезонная инфо-строка: бейджи переносятся */
+  /* Сезонная инфо-строка: каждая плашка своей строкой с одинаковым отступом (владелец 2026-09-29) —
+     прежние нулевые «разрывы» во flex давали лишний gap, и строки целей стояли реже остальных */
   .public-season-info {
-    flex-wrap: wrap !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
     gap: 6px !important;
   }
   /* Кнопка «Ввести состав» — вся ширина, своя строка */
