@@ -101,9 +101,25 @@ const LIGHT_AZURE = 'linear-gradient(180deg, #D8F0FF, #7FC4FF 55%, #2F6FC4)'
 const SILVER_THREAD = '#DCE3EE'
 const FIELD_BLUE = '#0B2A6B'
 // поле течёт: плитка 200% без стыка
-const fieldTile = b => `linear-gradient(90deg, ${FIELD_BLUE} 0%, ${b} 25%, ${FIELD_BLUE} 50%, ${b} 75%, ${FIELD_BLUE} 100%)`
-const FIELD_SKY = fieldTile('#1F5FC4')
-const FIELD_INDIGO = fieldTile('#3A1F8C')
+const fieldTile = (a, b) => `linear-gradient(90deg, ${a} 0%, ${b} 25%, ${a} 50%, ${b} 75%, ${a} 100%)`
+// Поле у каждого звания своё (владелец 2026-09-29). IV–IX — холодная гамма под золотую раму,
+// от лазури к фиолету; с X поле в тон своего камня. Все тёмные — радужное имя должно читаться.
+const LEGEND_FIELDS = [
+  fieldTile(FIELD_BLUE, '#1F5FC4'), // IV   лазурь
+  fieldTile('#0A2A5E', '#0E7490'),  // V    морская волна
+  fieldTile('#0B1F4D', '#2D4FD8'),  // VI   ультрамарин
+  fieldTile('#0E1B45', '#5B3FC4'),  // VII  аметист
+  fieldTile('#0A2540', '#0F8A7A'),  // VIII бирюза
+  fieldTile('#101A3A', '#7A2E9E'),  // IX   фиолет
+  fieldTile(FIELD_BLUE, '#7A1030'), // X    синий → рубин
+  fieldTile('#1E0B3A', '#6B1E7A'),  // XI   пурпур
+  fieldTile('#062A2A', '#0F6B55'),  // XII  изумруд
+  fieldTile('#0A0C12', '#2A3040'),  // XIII обсидиан
+  fieldTile('#2A0E08', '#8A3A10'),  // XIV  тлеющий огонь
+  fieldTile('#0A1238', '#2B4FC8'),  // XV   сапфир
+  fieldTile('#3A2410', '#1F6FB0'),  // XVI  бронза → лазурь
+  fieldTile('#1A0C4A', '#5B3FD0'),  // XVII индиго
+]
 // камни X и выше — по порядку званий
 const LEGEND_STONES = [
   { outer: GOLD, stone: 'linear-gradient(180deg, #F0475E, #A3102A 55%, #4E0512)', halo: '#FF7A8A' },     // X рубин
@@ -113,14 +129,14 @@ const LEGEND_STONES = [
   { outer: GOLD, stone: 'linear-gradient(180deg, #FFC15A, #E0561F 55%, #7A1A08)', halo: '#FFD08A' },     // XIV огонь
   { outer: PLATINUM, stone: 'linear-gradient(180deg, #4A6BD8, #1A2E80 55%, #0A1238)', halo: '#B8CCFF' }, // XV сапфир
   { outer: BRONZE, stone: LIGHT_AZURE, halo: '#9FD6FF' },                                                // XVI бронза и лазурь
-  { outer: LIGHT_AZURE, stone: 'linear-gradient(180deg, #6A4FD0, #3A1F8C 55%, #1A0C4A)', halo: '#B9A8FF', field: FIELD_INDIGO }, // XVII индиго
+  { outer: LIGHT_AZURE, stone: 'linear-gradient(180deg, #6A4FD0, #3A1F8C 55%, #1A0C4A)', halo: '#B9A8FF' },  // XVII индиго
 ]
 
 function legendBanner(tier) {
   if (tier <= 2) return null
   if (tier <= 8) {
     return {
-      shape: tier <= 4 ? 'flag' : 'tail', flow: false, field: FIELD_SKY,
+      shape: tier <= 4 ? 'flag' : 'tail', flow: false, field: LEGEND_FIELDS[tier - 3],
       border: tier >= 7 ? [[GOLD, 2], [FIELD_BLUE, 1], [SILVER_THREAD, 1]] : [[GOLD, 2]],
     }
   }
@@ -128,7 +144,7 @@ function legendBanner(tier) {
   let border = [[st.outer, 2], [st.stone, 3], [GOLD, 1]]
   if (tier >= 10) border = [[st.halo, 1], ...border]
   if (tier >= 15) border = [[GOLD, 1], ...border]
-  return { shape: 'tail', flow: true, field: st.field || FIELD_SKY, border }
+  return { shape: 'tail', flow: true, field: LEGEND_FIELDS[Math.min(tier - 3, LEGEND_FIELDS.length - 1)], border }
 }
 
 function ImperialBanner({ spec, children }) {
