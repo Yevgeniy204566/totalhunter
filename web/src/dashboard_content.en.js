@@ -121,11 +121,11 @@ export const DASHBOARD = {
     claimBtn: 'Become a manager',
     managerJoinTitle: 'Were you invited to help run a clan roster?',
     managerJoinNickPlaceholder: '1. Your in-game nickname',
-    managerJoinHint: 'Fill this in only if the roster owner (the one whose bot sends the clan's chests) sent you an invite code.
+    managerJoinHint: `Fill this in only if the roster owner (the one whose bot sends the clan's chests) sent you an invite code.
 1. Enter your in-game nickname: the owner will see who you are by it.
 2. Enter the code they sent you.
 3. Press "Become a manager": the clan appears in your dashboard.
-If you are the owner of your own roster, you do not need this block.',
+If you are the owner of your own roster, you do not need this block.`,
     managerJoined: 'Done: you are now a manager of this roster',
     managerJoinError: 'The code did not work: it is wrong, already used, or this is your own roster',
     managerLeave: 'Stop being a manager',
