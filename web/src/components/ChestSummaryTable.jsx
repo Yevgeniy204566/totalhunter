@@ -423,7 +423,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                 <th className="public-sortable" onClick={() => toggleSort('hero')}>{tt.heroCol}{sortMark('hero')}</th>
               )}
               <th>#</th>
-              <th className="public-sortable" onClick={() => toggleSort('name')}>{tt.player}{sortMark('name')}</th>
+              <th className="public-sortable public-name-cell" onClick={() => toggleSort('name')}>{tt.player}{sortMark('name')}</th>
               {editMode && <th>{tt.rank}</th>}
               {editMode && <th>{tt.troops}</th>}
               {editMode && <th></th>}
@@ -449,7 +449,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                 <tr key={p.name}>
                   {showHero && <td style={{ textAlign: 'center' }}>{p.hero_level ?? '—'}</td>}
                   <td>{pointsRank[p.name]}</td>
-                  <td title={p.name} translate="no" className="notranslate">
+                  <td title={p.name} translate="no" className="notranslate public-name-cell">
                     {renderPlayerName(p, targets)}
                   </td>
                   {editMode && (
