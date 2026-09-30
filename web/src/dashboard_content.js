@@ -275,7 +275,6 @@ export const DASHBOARD = {
     nickPlaceholder: 'Ваш ник в Total Battle',
     nickSave: 'Сохранить',
     nickSaved: 'Ник сохранён',
-    nickHint: 'Его видят другие вместо вашей почты — например, хозяин ростера и руководители в Сундуках.',
   },
 
   collected: {

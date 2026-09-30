@@ -172,7 +172,7 @@ function GameNickField({ user, D, onRefresh }) {
         <button className="chest-pill-btn chest-pill-btn--primary" onClick={save}
           disabled={busy || nick.trim() === (user.game_nick || '')}>{D.profile.nickSave}</button>
       </div>
-      <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginTop: 6 }}>{msg || D.profile.nickHint}</div>
+      {msg && <div style={{ fontSize: 13, color: 'var(--on-surface2)', marginTop: 6 }}>{msg}</div>}
     </div>
   )
 }

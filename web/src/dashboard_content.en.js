@@ -274,7 +274,6 @@ export const DASHBOARD = {
     nickPlaceholder: 'Your nickname in Total Battle',
     nickSave: 'Save',
     nickSaved: 'Nickname saved',
-    nickHint: 'Others see it instead of your email, for example the roster owner and managers in Chests.',
   },
 
   collected: {
