@@ -117,10 +117,15 @@ export const DASHBOARD = {
     saved: 'Saved',
     publicLink: 'Clan public page',
     generateToken: 'Invite a manager',
-    claimPlaceholder: 'Invite code',
+    claimPlaceholder: '2. Code from the roster owner',
     claimBtn: 'Become a manager',
-    managerJoinTitle: "Help manage someone else's roster",
-    managerJoinHint: 'The roster owner presses "Invite a manager" and sends you a code. Enter it here and the roster appears in your dashboard.',
+    managerJoinTitle: 'Were you invited to help run a clan roster?',
+    managerJoinNickPlaceholder: '1. Your in-game nickname',
+    managerJoinHint: 'Fill this in only if the roster owner (the one whose bot sends the clan's chests) sent you an invite code.
+1. Enter your in-game nickname: the owner will see who you are by it.
+2. Enter the code they sent you.
+3. Press "Become a manager": the clan appears in your dashboard.
+If you are the owner of your own roster, you do not need this block.',
     managerJoined: 'Done: you are now a manager of this roster',
     managerJoinError: 'The code did not work: it is wrong, already used, or this is your own roster',
     managerLeave: 'Stop being a manager',
@@ -128,7 +133,7 @@ export const DASHBOARD = {
     managerOwnerOnlyNote: 'The season, season quotas, deleting the roster and the list of managers are set by the owner.',
     managersTitle: 'Managers',
     managerCodeLabel: 'Invite code:',
-    managerCodeHint: `Send the code to your clanmate. They enter it in their dashboard under "Help manage someone else's roster". The code works once. You stay the owner; only your bot sends chests to this roster.`,
+    managerCodeHint: `Send the code to your clanmate. They enter it in their dashboard under "Were you invited to help run a clan roster?". The code works once. You stay the owner; only your bot sends chests to this roster.`,
     managerRemove: 'Remove',
     managerRemoveConfirm: 'Remove this manager?',
     managerRemoveYes: 'Yes, remove',

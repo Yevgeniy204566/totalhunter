@@ -439,7 +439,7 @@ export default function ChestsPage() {
 
       <div className="card" style={{ marginBottom: 24, maxWidth: 520, borderRadius: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{cx.managerJoinTitle}</div>
-        <div style={{ fontSize: 14, color: 'var(--on-surface2)', marginBottom: 10 }}>{cx.managerJoinHint}</div>
+        <div style={{ fontSize: 15, color: 'var(--on-surface2)', marginBottom: 10, lineHeight: 1.55, whiteSpace: 'pre-line' }}>{cx.managerJoinHint}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input
             className="input-dark"
@@ -447,7 +447,7 @@ export default function ChestsPage() {
             maxLength={32}
             translate="no"
             onChange={e => setJoinNick(e.target.value)}
-            placeholder={cx.nickPlaceholder}
+            placeholder={cx.managerJoinNickPlaceholder}
             style={{ flex: '1 1 160px' }}
           />
           <input
