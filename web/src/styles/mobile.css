@@ -285,6 +285,15 @@
     width: 33.333vw !important; min-width: 33.333vw !important; max-width: 33.333vw !important;
     overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
   }
+  /* …и закреплена слева при прокрутке вправо (владелец 2026-09-30; отменяет прежнее
+     «не прилипает» выше — двойной класс нужен, чтобы перебить nth-child-правила) */
+  .public-table.public-table td.public-name-cell {
+    position: sticky !important; left: 0 !important; z-index: 3 !important;
+    background: var(--card);
+  }
+  .public-table.public-table thead th.public-name-cell {
+    position: sticky !important; left: 0 !important; z-index: 5 !important;
+  }
 
   /* Меньший шрифт ячеек — больше колонок видно без скролла */
   .public-table th,
