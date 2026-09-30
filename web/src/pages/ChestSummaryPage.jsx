@@ -15,7 +15,7 @@ const TXT = {
     targetTitle: 'Цели сезона',
     pointsWord: 'очков',
     tz: 'Часовой пояс',
-    editOpen: '✏️ Ввести состав', editClose: '✕ Закрыть',
+    editOpen: '✏️ Войска', editClose: '✕ Закрыть',
     updated: 'Последнее обновление',
     tabCurrent: 'Текущий сезон', tabHistory: 'История',
     historyEmpty: 'Архив пока пуст — сезоны появятся здесь после первого автозакрытия.',
@@ -29,7 +29,7 @@ const TXT = {
     targetTitle: 'Season targets',
     pointsWord: 'points',
     tz: 'Time zone',
-    editOpen: '✏️ Enter troops', editClose: '✕ Close',
+    editOpen: '✏️ Troops', editClose: '✕ Close',
     updated: 'Last update',
     tabCurrent: 'Current season', tabHistory: 'History',
     historyEmpty: 'The archive is empty — seasons will appear here after the first auto-close.',
@@ -292,7 +292,7 @@ export default function ChestSummaryPage() {
             editMode={editMode}
             collectorSlug={internalSlug}
             lang={lang}
-            // «Ввести состав» — рядом с «Герой» над таблицей (владелец 2026-09-28)
+            // «Войска» — рядом с «Герой» над таблицей (владелец 2026-09-28)
             editButton={
               <button
                 className="chest-pill-btn chest-pill-btn--sm"

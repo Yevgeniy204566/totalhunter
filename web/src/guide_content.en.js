@@ -171,7 +171,7 @@ export const GUIDE = {
       { title: 'Season quotas', desc: 'Up to 3 quotas at once, e.g. "Epic Crypts" and "EMC" (Epic Monster Chests). Each has a name and a target: how many chests of that kind a player must collect per season.' },
       { title: 'Players', desc: '"Players" tab: if the bot misread a nickname, set the "Correct Name" — all variants merge into one player. You can also add a player manually and fill in rank, troops and Hero level.' },
       { title: 'Season', desc: 'Set the clan time zone, period start and end and the points target, then press "Save". Dates and targets can be changed after the start — the table recalculates.' },
-      { title: 'Public page', desc: 'The clan gets its own link like total-hunter.com/c/450/hot. Members open it from a phone without registering: sort by any column, Russian/English. With "Enter troops" players fill in their rank, troops and Hero level themselves.' },
+      { title: 'Public page', desc: 'The clan gets its own link like total-hunter.com/c/450/hot. Members open it from a phone without registering: sort by any column, Russian/English. With the "Troops" button players fill in their rank, troops and Hero level themselves.' },
       { title: 'End of season', desc: 'On the end date the season moves to "History" automatically (kept for 90 days) and the next season of the same length starts. To finish earlier use "Close Season Early". "Download statistics (CSV)" exports all seasons for analysis in Excel/Google Sheets.' },
     ],
     exampleLabel: 'Example: points and quotas',

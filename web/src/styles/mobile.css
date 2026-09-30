@@ -326,7 +326,7 @@
     align-items: flex-start !important;
     gap: 6px !important;
   }
-  /* Кнопка «Ввести состав» — вся ширина, своя строка */
+  /* Кнопка «Войска» — вся ширина, своя строка */
   .public-season-info .btn-secondary {
     margin-left: 0 !important;
     width: 100% !important;
