@@ -7,6 +7,7 @@ import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import ChestGuide from '../components/ChestGuide.jsx'
 import EmcQuotaTab from '../components/EmcQuotaTab.jsx'
+import { DEFAULT_SETTINGS } from '../lib/emcQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['5', '6', '7', '8', '9']
@@ -64,8 +65,15 @@ function accountingOrder(rows, dir) {
    квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали.
    Карточки в один ряд; цвет карточки = цвет этой квоты в списке «Учёт», чтобы было видно,
    какие сундуки в какую квоту идут. */
-function QuotaEditor({ quotas, cx, onChange }) {
+function QuotaEditor({ quotas, cx, onChange, onOpenEmc }) {
   const set = (i, field, value) => onChange(quotas.map((q, j) => (j === i ? { ...q, [field]: value } : q)))
+  // Личная цель — переключатель «вкл/выкл»: включение даёт модель EMC с множителями 1.00
+  // (настраивается во вкладке «Расчёт EMC»); старая формульная квота (per_player) остаётся
+  // как есть, пока владелец сам не переключит её.
+  const setPersonal = (i, on) => onChange(quotas.map((q, j) => {
+    if (j !== i) return q
+    return on ? { ...q, mode: 'emc_table', emc: q.emc || structuredClone(DEFAULT_SETTINGS) } : { ...q, mode: 'fixed' }
+  }))
   const add = () => {
     const used = new Set(quotas.map(q => q.slot))
     const slot = [1, 2, 3].find(n => !used.has(n))
@@ -76,54 +84,44 @@ function QuotaEditor({ quotas, cx, onChange }) {
     <div className="quota-block">
       <div className="season-subtitle">{cx.quotasLabel}</div>
       <div className="quota-grid">
-        {quotas.map((q, i) => (
-          <div key={q.slot} className={`quota-card quota-card--${q.slot}`}>
-            <div className="quota-card-head">
-              <span>{cx.accLegendQuotaShort} {q.slot}</span>
-              <button type="button" className="quota-del" title={cx.quotaDelete}
-                onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
-            </div>
-            <label className="quota-row">
-              <span>{cx.quotaName}</span>
-              <input className="input-dark" placeholder={cx.quotaNameHint} maxLength={40}
-                value={q.name} onChange={e => set(i, 'name', e.target.value)} />
-            </label>
-            <label className="quota-row">
-              <span>{cx.quotaTarget}</span>
-              <input className="input-dark" type="number" min={0} placeholder={cx.quotaTargetHint}
-                value={q.target} onChange={e => set(i, 'target', e.target.value)} />
-            </label>
-            {q.mode === 'emc_table' ? (
-              <div className="quota-hero">
-                <small>{cx.quotaEmcNote}</small>
-                <button type="button" className="chest-pill-btn chest-pill-btn--sm"
-                  onClick={() => set(i, 'mode', 'fixed')}>{cx.quotaEmcOff}</button>
+        {quotas.map((q, i) => {
+          const personal = q.mode === 'emc_table' || q.mode === 'per_player'
+          return (
+            <div key={q.slot} className={`quota-card quota-card--${q.slot}`}>
+              <div className="quota-card-head">
+                <span>{cx.accLegendQuotaShort} {q.slot}</span>
+                <button type="button" className="quota-del" title={cx.quotaDelete}
+                  onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
               </div>
-            ) : (
+              <label className="quota-row">
+                <span>{cx.quotaName}</span>
+                <input className="input-dark" placeholder={cx.quotaNameHint} maxLength={40}
+                  value={q.name} onChange={e => set(i, 'name', e.target.value)} />
+              </label>
+              {!personal && (
+                <label className="quota-row">
+                  <span>{cx.quotaTarget}</span>
+                  <input className="input-dark" type="number" min={0} placeholder={cx.quotaTargetHint}
+                    value={q.target} onChange={e => set(i, 'target', e.target.value)} />
+                </label>
+              )}
               <label className="quota-check">
-                <input type="checkbox" checked={q.mode === 'per_player'}
-                  onChange={e => set(i, 'mode', e.target.checked ? 'per_player' : 'fixed')} />
+                <input type="checkbox" checked={personal} onChange={e => setPersonal(i, e.target.checked)} />
                 {cx.perPlayer}
               </label>
-            )}
-            {q.mode === 'per_player' && (
-              <div className="quota-hero">
-                <label className="quota-row">
-                  <span>{cx.heroK}</span>
-                  <input className="input-dark" type="number" min={-100} max={100}
-                    value={q.hero_k} onChange={e => set(i, 'hero_k', e.target.value)} />
-                  <small>{cx.heroKHelp}</small>
-                </label>
-                <label className="quota-row">
-                  <span>{cx.heroH0}</span>
-                  <input className="input-dark" type="number" min={1} max={999}
-                    value={q.hero_h0} onChange={e => set(i, 'hero_h0', e.target.value)} />
-                  <small>{cx.heroH0Help}</small>
-                </label>
-              </div>
-            )}
-          </div>
-        ))}
+              {personal && (
+                <div className="quota-hero">
+                  <small>{q.mode === 'per_player' ? cx.quotaPersonalLegacy : cx.quotaPersonalHint}</small>
+                  {q.mode === 'emc_table' && (
+                    <button type="button" className="chest-pill-btn chest-pill-btn--sm" onClick={onOpenEmc}>
+                      {cx.openEmcTab}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
         {quotas.length < 3 && (
           <button type="button" className="quota-add" onClick={add}>{cx.addQuota}</button>
         )}
@@ -627,6 +625,7 @@ export default function ChestsPage() {
               quotas={seasonByCollector[collector.slug]?.quotas || []}
               cx={cx}
               onChange={q => updateSeasonField(collector.slug, 'quotas', q)}
+              onOpenEmc={() => setTab(collector.slug, 'emc')}
             />
             <div className="season-actions">
               <button className="chest-pill-btn chest-pill-btn--green" onClick={() => saveSeason(collector.slug)}>

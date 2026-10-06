@@ -99,7 +99,6 @@ export default function EmcQuotaTab({ cx, lang, quotas = [], onApply }) {
       <h3 className="emc-title">{t.title}</h3>
       <p className="emc-text">{t.intro}</p>
       <p className="emc-text emc-period"><b>{t.period}</b></p>
-      <p className="emc-text emc-formula">{t.formula}</p>
 
       <div className="emc-levers">
         <div className="emc-lever-card">
@@ -212,6 +211,7 @@ export default function EmcQuotaTab({ cx, lang, quotas = [], onApply }) {
       <p className="emc-text"><small>{t.changedHint} {t.estimatedHint}</small></p>
       <details className="emc-notes">
         <summary>{t.notesTitle}</summary>
+        <p className="emc-text emc-formula">{t.formula}</p>
         <ul>
           {EXTRAPOLATION_NOTES[lang === 'ru' ? 'ru' : 'en'].map(n => <li key={n}>{n}</li>)}
         </ul>
