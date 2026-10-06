@@ -70,7 +70,7 @@ export const DASHBOARD = {
     emcTab: 'EMC calculator',
     emc: {
       title: 'Personal Epic Monster Chests (EMC) calculation',
-      intro: "A player's full-season quota by Hero level: how many chests from Hydra, Undead, Arachna and Shadow City. Change the multipliers and the table recalculates instantly. With every multiplier at 1.00 you see the original base quota.",
+      intro: "A player's full-season (2 weeks) quota by Hero level: how many chests from Hydra, Undead, Arachna and Shadow City. Change the multipliers and the table recalculates instantly. With every multiplier at 1.00 you see the original base quota.",
       formula: 'Final per monster = Base × Level multiplier × Monster multiplier × Global multiplier, rounded once at the end. EMC = sum of the four monsters.',
       leversTitle: 'Levers',
       globalLabel: 'Global EMC multiplier',
@@ -91,6 +91,7 @@ export const DASHBOARD = {
       monsterK: 'Monster ×',
       globalK: 'Global ×',
       final: 'Final',
+      period: 'All values are chests per player per 2-week (14-day) season.',
       emcCol: 'EMC',
       changedHint: 'Highlighted values differ from the base quota.',
       estimatedHint: 'Faded rows (below 360 and from 450) are assumptions, not a real sample.',

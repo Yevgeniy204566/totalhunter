@@ -76,6 +76,7 @@ export default function EmcQuotaTab({ cx, lang }) {
     <div className="emc-tab">
       <h3 className="emc-title">{t.title}</h3>
       <p className="emc-text">{t.intro}</p>
+      <p className="emc-text emc-period"><b>{t.period}</b></p>
       <p className="emc-text emc-formula">{t.formula}</p>
 
       <div className="emc-levers">
@@ -137,7 +138,7 @@ export default function EmcQuotaTab({ cx, lang }) {
               <th rowSpan={2}>{t.levelK}</th>
               <th rowSpan={2}>{t.monsterK}<br /><small>H / U / A / S</small></th>
               <th rowSpan={2}>{t.globalK}</th>
-              <th colSpan={4}>{t.final}</th>
+              <th colSpan={4}>{t.final} <small>{lang === "ru" ? "/ 2 нед." : "/ 2 wk"}</small></th>
               <th rowSpan={2} className="emc-emc-col">{t.emcCol}</th>
             </tr>
             <tr>
