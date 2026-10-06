@@ -4,6 +4,7 @@ import {
   clampMultiplier, computeTable,
 } from '../lib/emcQuota.js'
 import { downloadQuotaCsv } from '../lib/downloadCsv.js'
+import EmcGuide from './EmcGuide.jsx'
 
 const STORAGE_KEY = 'emc_quota_settings_v1'
 const MONSTERS = [
@@ -209,6 +210,8 @@ export default function EmcQuotaTab({ cx, lang, quotas = [], onApply }) {
       </div>
 
       <p className="emc-text"><small>{t.changedHint} {t.estimatedHint}</small></p>
+      <EmcGuide lang={lang} />
+
       <details className="emc-notes">
         <summary>{t.notesTitle}</summary>
         <p className="emc-text emc-formula">{t.formula}</p>

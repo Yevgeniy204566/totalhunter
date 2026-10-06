@@ -757,3 +757,12 @@ a:hover { color: var(--on-surface); }
 .emc-table--public { min-width: 520px; }
 .emc-table-wrap--public { max-height: 65vh; }
 .emc-public { padding-top: 6px; }
+
+.emc-guide { margin: 22px 0 8px; padding: 14px 18px; border: 1px solid var(--outline); border-radius: 12px; background: var(--accent-faint); }
+.emc-guide-title { font-size: 19px; margin: 0 0 8px; }
+.emc-guide-item { border-top: 1px solid var(--outline); padding: 10px 0; }
+.emc-guide-item:first-of-type { border-top: none; }
+.emc-guide-item summary { cursor: pointer; font-size: 17px; font-weight: 700; }
+.emc-guide-item .emc-text { margin: 8px 0 0; }
+.emc-guide-cases { margin: 10px 0 0; padding-left: 20px; font-size: 16px; line-height: 1.55; }
+.emc-guide-cases li { margin: 8px 0; }
