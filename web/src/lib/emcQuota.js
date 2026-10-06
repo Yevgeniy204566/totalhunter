@@ -1,5 +1,5 @@
 // Квота Epic Monster Chests (EMC) по уровню Героя — базовая модель + множители-рычаги.
-// База — ELDORADO229, сезон 24.09–08.10.2026 (окно ±10, ×1,19 до полного сезона), зона 360–440
+// База — реальные данные клана за полный сезон (окно ±10, пересчёт до полного сезона), зона 360–440
 // опирается на реальную выборку; ниже/выше — допущения (см. EXTRAPOLATION_NOTES).
 // Порядок расчёта фиксирован: база → множитель уровня → множитель монстра → общий → округление.
 
@@ -89,13 +89,13 @@ export function computeTable(settings = DEFAULT_SETTINGS) {
 
 export const EXTRAPOLATION_NOTES = {
   ru: [
-    '360–440 — реальная выборка ELDORADO229 (окно ±10, ×1,19 до полного сезона, сглажено и не убывает).',
+    '360–440 — по реальным данным клана (окно ±10 уровней Героя, пересчёт до полного сезона, сглажено, не убывает).',
     '300–360 — линейно к точке 300: среднее 18 игроков с Героем 290–359.',
     '100–300 — допущение: линейно вниз до 25% значения на 300 (данных ниже 270 нет).',
     '440–600 — допущение: продолжение с наклоном верхней зоны 400→440 (игроков с Героем выше 456 в выборке нет).',
   ],
   en: [
-    '360–440 — real ELDORADO229 sample (±10 window, ×1.19 to a full season, smoothed, non-decreasing).',
+    '360–440 — based on real clan data (±10 Hero-level window, scaled to a full season, smoothed, non-decreasing).',
     '300–360 — linear to the 300 point: average of 18 players with Hero 290–359.',
     '100–300 — assumption: linear down to 25% of the value at 300 (no data below 270).',
     '440–600 — assumption: continue with the slope of the 400→440 zone (no players above Hero 456 in the sample).',
