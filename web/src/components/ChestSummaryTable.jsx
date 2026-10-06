@@ -254,27 +254,27 @@ function isEpicColumn(typeName) {
 
 // Среднее по участникам таблицы (входящие п.5): сумма столбца / число игроков в таблице,
 // нули входят в расчёт; от сортировки не зависит.
-// Полоса прогресса (владелец 2026-10-06): без градиента. Заливка = принесено/цель; цвет один,
-// спокойный, зависит от выполнения: почти пусто — тускло-красный, к ста процентам плавно
-// зеленеет; выполненная квота — полная зелёная полоса. Подсветка мягкая, не «вырви глаз».
+// Полоса прогресса (владелец 2026-10-06): без градиента, как условное форматирование в Excel —
+// подчёркивает данные, а не привлекает взгляд. Заливка = принесено/цель; цвет один, тёмный и
+// приглушённый: почти пусто — тусклый красный, к ста процентам зеленеет; выполненная квота —
+// полная тёмно-зелёная полоса. Без подсветки; цифры — обычным начертанием, не светлым цветом.
 function barColor(pct) {
   const hue = Math.round((Math.min(Math.max(pct, 0), 100) / 100) * 125)
-  return `hsl(${hue} 52% 44%)`
+  return `hsl(${hue} 38% 30%)`
 }
 function ProgressCell({ value, target, partial, className = 'public-epic-cell', minWidth = 96 }) {
   const pct = target ? Math.round((value / target) * 100) : 100
   const done = pct >= 100
-  const color = barColor(pct)
   // 1–3% были бы невидимы: любой ненулевой прогресс показываем хотя бы узкой полоской
   const fill = done ? 100 : pct > 0 ? Math.max(pct, 4) : 0
   return (
     <td className={className} style={{ minWidth }} title={partial ? '?' : ''}>
-      <div style={{ fontSize: 13, marginBottom: 3, whiteSpace: 'nowrap' }}>
-        {value}/{target ?? '—'}{partial ? ' ?' : ''} · <b>{pct}%</b>
+      <div style={{ fontSize: 13, marginBottom: 3, whiteSpace: 'nowrap', fontWeight: 400, color: 'var(--on-surface2)' }}>
+        {value}/{target ?? '—'}{partial ? ' ?' : ''} · {pct}%
       </div>
-      <div style={{ height: 7, borderRadius: 4, background: 'rgba(255,255,255,0.08)' }}>
-        <div style={{ width: `${fill}%`, height: '100%', borderRadius: 4, transition: 'width 0.4s, background 0.4s',
-                      background: color, boxShadow: `0 0 6px ${color.replace(')', ' / 0.45)')}` }} />
+      <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.05)' }}>
+        <div style={{ width: `${fill}%`, height: '100%', borderRadius: 3, transition: 'width 0.4s, background 0.4s',
+                      background: barColor(pct) }} />
       </div>
     </td>
   )
