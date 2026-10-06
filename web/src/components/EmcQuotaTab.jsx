@@ -3,6 +3,7 @@ import {
   DEFAULT_SETTINGS, EXTRAPOLATION_NOTES, MULTIPLIER_MAX, MULTIPLIER_MIN,
   clampMultiplier, computeTable,
 } from '../lib/emcQuota.js'
+import { downloadQuotaCsv } from '../lib/downloadCsv.js'
 
 const STORAGE_KEY = 'emc_quota_settings_v1'
 const MONSTERS = [
@@ -162,6 +163,8 @@ export default function EmcQuotaTab({ cx, lang, quotas = [], onApply }) {
 
       <div className="emc-toolbar">
         <small>{t.limitHint}</small>
+        <button type="button" className="chest-pill-btn chest-pill-btn--sm"
+          onClick={() => downloadQuotaCsv(table, lang)}>{t.download}</button>
         <button type="button" className="chest-pill-btn chest-pill-btn--sm" disabled={!modified}
           onClick={() => update(structuredClone(DEFAULT_SETTINGS))}>{t.reset}</button>
       </div>

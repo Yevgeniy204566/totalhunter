@@ -96,6 +96,7 @@ export const DASHBOARD = {
       changedHint: 'Highlighted values differ from the base quota.',
       estimatedHint: 'Faded rows (below 360 and from 450) are assumptions, not a real sample.',
       notesTitle: 'Where the base comes from',
+      download: '⬇ Download table (CSV)',
       applyTo: 'Apply to quota',
       apply: 'Apply to season',
       applyNote: 'After applying, the quota becomes personal by this table and every player gets a progress bar on the public page.',

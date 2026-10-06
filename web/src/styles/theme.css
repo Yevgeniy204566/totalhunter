@@ -753,3 +753,7 @@ a:hover { color: var(--on-surface); }
 .emc-apply-pick { display: flex; align-items: center; gap: 8px; font-size: 16px; }
 .emc-apply-pick select { width: auto; }
 .emc-apply small { font-size: 14px; color: var(--on-surface2); flex-basis: 100%; }
+
+.emc-table--public { min-width: 520px; }
+.emc-table-wrap--public { max-height: 65vh; }
+.emc-public { padding-top: 6px; }

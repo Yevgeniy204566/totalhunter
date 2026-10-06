@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
+import EmcQuotaPublic from '../components/EmcQuotaPublic.jsx'
 
 // Публичная таблица: RU/EN со своим переключателем (владелец 2026-09-26). Адрес /c/... не
 // несёт язык, поэтому общий useLang тут всегда дал бы 'en'. Остальные языки — переводчик
@@ -17,7 +18,7 @@ const TXT = {
     tz: 'Часовой пояс',
     editOpen: '✏️ Войска', editClose: '✕ Закрыть',
     updated: 'Последнее обновление',
-    tabCurrent: 'Текущий сезон', tabHistory: 'История',
+    tabCurrent: 'Текущий сезон', tabHistory: 'История', tabEmc: 'Квота EMC',
     historyEmpty: 'Архив пока пуст — сезоны появятся здесь после первого автозакрытия.',
     points: 'очков', back: '← Назад к списку сезонов',
   },
@@ -31,7 +32,7 @@ const TXT = {
     tz: 'Time zone',
     editOpen: '✏️ Troops', editClose: '✕ Close',
     updated: 'Last update',
-    tabCurrent: 'Current season', tabHistory: 'History',
+    tabCurrent: 'Current season', tabHistory: 'History', tabEmc: 'EMC quota',
     historyEmpty: 'The archive is empty — seasons will appear here after the first auto-close.',
     points: 'points', back: '← Back to seasons',
   },
@@ -163,6 +164,8 @@ export default function ChestSummaryPage() {
     : '—'
 
   const targets = data.targets || { points: null, chests: null }
+  // Вкладка с таблицей квоты — только если лидер применил модель EMC к одной из квот
+  const emcQuota = (targets.quotas || []).find(q => q.mode === 'emc_table')
   // Все цели сезона (владелец 2026-09-26): очки + каждая квота со своей целью; архив до
   // квот — прежняя одна цель по сундукам.
   // Число цели выделено цветом и жирным; на телефоне цели — столбиком (владелец 2026-09-28).
@@ -281,7 +284,17 @@ export default function ChestSummaryPage() {
         >
           {t.tabHistory}
         </button>
+        {emcQuota && (
+          <button
+            className={`chest-tab chest-tab--pill ${tab === 'emc' ? 'chest-tab--active' : ''}`}
+            onClick={() => setTab('emc')}
+          >
+            {t.tabEmc}
+          </button>
+        )}
       </div>
+
+      {tab === 'emc' && emcQuota && <EmcQuotaPublic model={emcQuota.emc || {}} lang={lang} />}
 
       {tab === 'current' && (
         <>

@@ -87,6 +87,17 @@ export function computeTable(settings = DEFAULT_SETTINGS) {
   return HERO_LEVELS.map(h => computeRow(h, settings))
 }
 
+// Подпись строки: ступень N действует на уровни N…N+9 (последняя, 600, — один уровень).
+export const heroRangeLabel = hero => (hero >= 600 ? '600' : `${hero}-${hero + 9}`)
+
+// CSV для Excel/Google Таблиц: «;» (русская локаль) и BOM, чтобы кириллица открылась верно.
+export function quotaCsv(table, lang = 'ru') {
+  const head = [lang === 'ru' ? 'Герой' : 'Hero', 'Hydra', 'Undead', 'Arachna', 'Shadow City', 'EMC']
+  const lines = [head.join(';')].concat(table.map(r =>
+    [heroRangeLabel(r.hero), r.finalH, r.finalU, r.finalA, r.finalS, r.emc].join(';')))
+  return '\uFEFF' + lines.join('\r\n') + '\r\n'
+}
+
 export const EXTRAPOLATION_NOTES = {
   ru: [
     '360–440 — по реальным данным клана (окно ±10 уровней Героя, пересчёт до полного сезона, сглажено, не убывает).',

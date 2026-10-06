@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  DEFAULT_SETTINGS, HERO_LEVELS, baseAt, computeRow, computeTable,
+  DEFAULT_SETTINGS, HERO_LEVELS, baseAt, computeRow, computeTable, quotaCsv,
 } from './emcQuota.js'
 
 const row = (hero, settings = DEFAULT_SETTINGS) => computeRow(hero, settings)
@@ -82,4 +82,20 @@ test('плохие значения множителей считаются ка
 
 test('при пустом поле множителя (строка "") берётся 1.00', () => {
   assert.equal(row(400, { ...DEFAULT_SETTINGS, global: '' }).emc, row(400).emc)
+})
+
+test('CSV: заголовок, 51 строка, итоги совпадают с таблицей, разделитель ; и BOM для Excel', () => {
+  const csv = quotaCsv(computeTable(DEFAULT_SETTINGS), 'ru')
+  assert.ok(csv.startsWith('\uFEFF'))
+  const lines = csv.slice(1).trim().split('\r\n')
+  assert.equal(lines.length, 52)
+  assert.equal(lines[0], 'Герой;Hydra;Undead;Arachna;Shadow City;EMC')
+  assert.equal(lines[1], '100-109;1;1;0;1;3')
+  assert.equal(lines[31], '400-409;19;10;3;4;36')
+  assert.equal(lines[51], '600;26;13;7;6;52')
+})
+
+test('CSV: английский заголовок', () => {
+  const csv = quotaCsv(computeTable(DEFAULT_SETTINGS), 'en')
+  assert.equal(csv.slice(1).split('\r\n')[0], 'Hero;Hydra;Undead;Arachna;Shadow City;EMC')
 })
