@@ -710,3 +710,40 @@ a:hover { color: var(--on-surface); }
 /* Публичная таблица сундуков — вдвое шире общего контейнера 900px: у таблицы десятки столбцов
    (владелец 2026-09-26). Общий .page-content не трогаем — он для текстовых страниц. */
 .page-content.public-summary-page { max-width: 1800px; }
+
+/* Вкладка «Расчёт EMC» (персональная квота по уровню Героя) */
+.emc-title { font-size: 20px; margin: 4px 0 8px; }
+.emc-text { font-size: 16px; line-height: 1.55; color: var(--on-surface); margin: 0 0 10px; }
+.emc-formula { color: var(--on-surface2); }
+.emc-levers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 14px; margin: 14px 0; align-items: start; }
+.emc-lever-card {
+  border: 1px solid var(--outline); border-radius: 12px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px; background: var(--accent-faint);
+}
+.emc-lever-card--wide { grid-column: 1 / -1; }
+.emc-monster-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.emc-k-input { width: 110px; font-size: 17px; }
+.emc-level-input { width: 90px; font-size: 17px; }
+.emc-range-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; }
+.emc-range-actions { display: flex; gap: 8px; }
+.emc-lever-card small { font-size: 14px; color: var(--on-surface2); }
+.emc-warn { color: #F87171 !important; }
+.emc-toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.emc-toolbar small { font-size: 14px; color: var(--on-surface2); }
+.emc-table-wrap { overflow-x: auto; border: 1px solid var(--outline); border-radius: 12px; max-height: 70vh; overflow-y: auto; }
+.emc-table { min-width: 980px; font-size: 16px; }
+.emc-table th, .emc-table td { text-align: center; white-space: nowrap; padding: 7px 10px; }
+.emc-table thead th { position: sticky; top: 0; background: var(--surface, var(--bg)); z-index: 2; }
+.emc-table thead tr:nth-child(2) th { top: 38px; }
+.emc-sticky { position: sticky; left: 0; background: var(--surface, var(--bg)); z-index: 1; }
+.emc-table thead .emc-sticky { z-index: 3; }
+.emc-emc-col { background: rgba(74, 222, 128, 0.10); }
+.emc-row--est td:not(.emc-changed) { opacity: 0.55; }
+.emc-changed { color: #4ADE80; }
+.emc-notes { margin-top: 6px; font-size: 15px; }
+.emc-notes summary { cursor: pointer; font-weight: 600; }
+.emc-notes li { margin: 4px 0; line-height: 1.5; }
+@media (max-width: 900px) {
+  .emc-levers { grid-template-columns: 1fr; }
+  .emc-monster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

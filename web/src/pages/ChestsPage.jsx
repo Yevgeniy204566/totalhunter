@@ -6,6 +6,7 @@ import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import ChestGuide from '../components/ChestGuide.jsx'
+import EmcQuotaTab from '../components/EmcQuotaTab.jsx'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['5', '6', '7', '8', '9']
@@ -641,6 +642,8 @@ export default function ChestsPage() {
               onClick={() => setTab(collector.slug, 'players')}>{cx.playersTab}</button>
             <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'history')}>{cx.historyTab}</button>
+            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'emc' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'emc')}>{cx.emcTab}</button>
           </div>
 
           {activeTab(collector.slug) === 'chests' && (
@@ -922,6 +925,8 @@ export default function ChestsPage() {
             </div>
             )
           })()}
+
+          {activeTab(collector.slug) === 'emc' && <EmcQuotaTab cx={cx} lang={lang} />}
 
           {activeTab(collector.slug) === 'history' && (
             <div>
