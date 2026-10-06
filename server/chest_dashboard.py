@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -566,15 +566,57 @@ async def update_language(slug: str, payload: LanguagePayload,
     return {"ok": True}
 
 
+class EmcMonsters(BaseModel):
+    hydra: float = Field(default=1.0, ge=0.1, le=3.0)
+    undead: float = Field(default=1.0, ge=0.1, le=3.0)
+    arachna: float = Field(default=1.0, ge=0.1, le=3.0)
+    shadow: float = Field(default=1.0, ge=0.1, le=3.0)
+
+
+class EmcRange(BaseModel):
+    # «from» — зарезервированное слово Python, поэтому через alias (в JSON ключ именно from/to)
+    from_level: int = Field(alias="from", ge=100, le=600)
+    to_level: int = Field(alias="to", ge=100, le=600)
+    k: float = Field(default=1.0, ge=0.1, le=3.0)
+    model_config = {"populate_by_name": True}
+
+    @model_validator(mode="after")
+    def _ordered(self):
+        if self.from_level > self.to_level:
+            raise ValueError("range from > to")
+        return self
+
+
+class EmcSettings(BaseModel):
+    """Рычаги квоты emc_table. Саму цель считает страница (web/src/lib/emcQuota.js) — здесь
+    только хранение и границы множителей 0.1…3.0, чтобы опечатка не раздула квоту."""
+    global_k: float = Field(default=1.0, alias="global", ge=0.1, le=3.0)
+    monsters: EmcMonsters = Field(default_factory=EmcMonsters)
+    ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
+    model_config = {"populate_by_name": True}
+
+
 class QuotaIn(BaseModel):
     slot: int = Field(ge=1, le=3)
     name: str = Field(min_length=1, max_length=40)
     target: Optional[int] = Field(default=None, ge=0)
     # fixed — одна цель на всех; per_player — личная цель по уровню Героя (спека 02),
     # все коэффициенты правит лидер: формула будет уточняться по статистике.
-    mode: Literal["fixed", "per_player"] = "fixed"
+    # emc_table — личная цель EMC по таблице уровней Героя × множители (поле emc)
+    mode: Literal["fixed", "per_player", "emc_table"] = "fixed"
+    emc: Optional[EmcSettings] = None
     hero_k: float = Field(default=0, ge=-100, le=100)     # % цели на 100 уровней Героя
     hero_h0: int = Field(default=400, ge=1, le=999)       # «средний» уровень Героя
+
+
+def _quota_to_json(q: "QuotaIn") -> dict:
+    if q.mode == "per_player":
+        return q.model_dump(exclude={"emc"})
+    if q.mode == "emc_table":
+        emc = (q.emc or EmcSettings()).model_dump(by_alias=True)
+        # цели в JSON хранятся под ключами from/to/global — как их читает страница
+        return {**q.model_dump(include={"slot", "name", "target", "mode"}), "emc": emc}
+    return q.model_dump(include={"slot", "name", "target", "mode"})
 
 
 class SeasonSettingsPayload(BaseModel):
@@ -652,11 +694,7 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
         collector.target_chests = payload.target_chests
     if payload.quotas is not None:
         # коэффициенты храним только у персональных квот — у fixed они ни на что не влияют
-        collector.quotas = [
-            q.model_dump() if q.mode == "per_player"
-            else q.model_dump(include={"slot", "name", "target", "mode"})
-            for q in sorted(payload.quotas, key=lambda q: q.slot)
-        ]
+        collector.quotas = [_quota_to_json(q) for q in sorted(payload.quotas, key=lambda q: q.slot)]
     if payload.period_start is not None or payload.period_end is not None:
         collector.stopped_at = None
 

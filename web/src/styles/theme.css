@@ -747,3 +747,9 @@ a:hover { color: var(--on-surface); }
   .emc-levers { grid-template-columns: 1fr; }
   .emc-monster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.emc-apply { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 12px; padding: 10px 14px;
+  border: 1px solid rgba(74, 222, 128, 0.4); border-radius: 12px; background: rgba(74, 222, 128, 0.06); }
+.emc-apply-pick { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.emc-apply-pick select { width: auto; }
+.emc-apply small { font-size: 14px; color: var(--on-surface2); flex-basis: 100%; }

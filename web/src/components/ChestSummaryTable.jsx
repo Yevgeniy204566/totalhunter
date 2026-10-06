@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
+import { computeRow } from '../lib/emcQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['', '5', '6', '7', '8', '9']
@@ -213,15 +214,35 @@ function pointsHitTarget(player, targets) {
 }
 // Столбцы квот (владелец 2026-09-26): по одному на квоту из targets.quotas; архив, закрытый
 // до квот (нет targets.quotas), — прежний один столбец «Epic-склепы» из quota_chests.
+// Игрок без указанного Героя считается по «типичному» Герою 400 со знаком «?» (как у per_player).
+const EMC_DEFAULT_HERO = 400
+function emcModel(targets) {
+  const q = (targets?.quotas || []).find(x => x.mode === 'emc_table')
+  return q ? (q.emc || {}) : null
+}
+// Столбец сундука → индекс монстра в модели EMC (Hydra, Undead, Arachna/Arachne, Shadow City).
+function monsterIndex(typeName) {
+  const n = typeName.toLowerCase()
+  if (n.includes('hydra')) return 0
+  if (n.includes('undead')) return 1
+  if (n.includes('arach')) return 2
+  if (n.includes('shadow')) return 3
+  return -1
+}
+function emcRowOf(player, model) {
+  return computeRow(player.hero_level || EMC_DEFAULT_HERO, model)
+}
 export function quotaColumns(targets, epicLabel) {
   if (Array.isArray(targets?.quotas)) {
     return targets.quotas.map(q => ({
       key: `quota:${q.slot}`, name: q.name, target: q.target,
-      personal: q.mode === 'per_player',
+      personal: q.mode === 'per_player' || q.mode === 'emc_table',
       get: p => p.quotas?.[String(q.slot)] ?? 0,
-      // личная цель игрока (per_player): считает сервер по уровню Героя
-      targetOf: p => (q.mode === 'per_player' ? p.quota_targets?.[String(q.slot)] : q.target),
-      partialOf: p => !!p.quota_targets_partial?.[String(q.slot)],
+      // личная цель игрока: per_player — считает сервер по уровню Героя,
+      // emc_table — страница по таблице уровней и рычагам клана (lib/emcQuota.js)
+      targetOf: p => (q.mode === 'emc_table' ? emcRowOf(p, q.emc || {}).emc
+        : q.mode === 'per_player' ? p.quota_targets?.[String(q.slot)] : q.target),
+      partialOf: p => (q.mode === 'emc_table' ? !p.hero_level : !!p.quota_targets_partial?.[String(q.slot)]),
     }))
   }
   return [{ key: 'quota:legacy', name: epicLabel, target: targets?.chests ?? null,
@@ -233,6 +254,25 @@ function isEpicColumn(typeName) {
 
 // Среднее по участникам таблицы (входящие п.5): сумма столбца / число игроков в таблице,
 // нули входят в расчёт; от сортировки не зависит.
+// Полоса прогресса: заливка = принесено/цель (до 100%), цвет от красного через жёлтый к зелёному.
+// Градиент растянут на всю шкалу — видна его часть до текущего процента.
+function ProgressCell({ value, target, partial, className = 'public-epic-cell', minWidth = 96 }) {
+  const pct = target ? Math.round((value / target) * 100) : 100
+  const fill = Math.min(pct, 100)
+  return (
+    <td className={className} style={{ minWidth }} title={partial ? '?' : ''}>
+      <div style={{ fontSize: 13, marginBottom: 3, whiteSpace: 'nowrap' }}>
+        {value}/{target ?? '—'}{partial ? ' ?' : ''} · <b>{pct}%</b>
+      </div>
+      <div style={{ height: 7, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+        <div style={{ width: `${fill}%`, height: '100%', borderRadius: 4, transition: 'width 0.4s',
+                      background: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e)',
+                      backgroundSize: `${fill ? 10000 / fill : 100}% 100%` }} />
+      </div>
+    </td>
+  )
+}
+
 export function columnAverage(players, getValue) {
   if (!players.length) return 0
   return players.reduce((sum, p) => sum + (getValue(p) || 0), 0) / players.length
@@ -266,6 +306,7 @@ const TABLE_TXT = {
 export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic), [targets, tt.epic])
+  const emc = useMemo(() => emcModel(targets), [targets])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
   const pointsRank = useMemo(() => {
@@ -526,25 +567,8 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                   {quotaCols.map(c => {
                     const v = c.get(p)
                     if (c.personal) {
-                      // Личная цель EM (владелец 2026-09-26): прогресс-бар, % выполнения,
-                      // цвет от красного (0%) к зелёному (100%+).
-                      const tgt = c.targetOf(p)
-                      const pct = tgt ? Math.round((v / tgt) * 100) : (v > 0 ? 100 : 0)
-                      const fill = Math.min(pct, 100)
-                      return (
-                        <td key={c.key} className="public-epic-cell" style={{ minWidth: 120 }}
-                            title={c.partialOf(p) ? '?' : ''}>
-                          <div style={{ fontSize: 12, marginBottom: 3, whiteSpace: 'nowrap' }}>
-                            {v}/{tgt ?? '—'}{c.partialOf(p) ? ' ?' : ''} · <b>{pct}%</b>
-                          </div>
-                          <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                            {/* градиент на всю шкалу: видна его часть до текущего процента */}
-                            <div style={{ width: `${fill}%`, height: '100%', borderRadius: 3, transition: 'width 0.4s',
-                                          background: 'linear-gradient(90deg, #ef4444, #f59e0b, #22c55e)',
-                                          backgroundSize: `${fill ? 10000 / fill : 100}% 100%` }} />
-                          </div>
-                        </td>
-                      )
+                      return <ProgressCell key={c.key} value={v} target={c.targetOf(p)} partial={c.partialOf(p)}
+                                           minWidth={120} />
                     }
                     return (
                       <td key={c.key} className={[
@@ -558,6 +582,12 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                   })}
                   {chestTypes.map(t => {
                     const value = p.counts[t] || 0
+                    const mi = emc ? monsterIndex(t) : -1
+                    if (mi >= 0) {
+                      const row = emcRowOf(p, emc)
+                      return <ProgressCell key={t} value={value} partial={!p.hero_level}
+                                           target={[row.finalH, row.finalU, row.finalA, row.finalS][mi]} />
+                    }
                     return (
                       <td key={t} className={[
                         isEpicColumn(t) && 'public-epic-cell',

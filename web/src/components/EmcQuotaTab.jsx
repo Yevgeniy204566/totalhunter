@@ -39,10 +39,31 @@ function MultiplierInput({ value, onChange, label }) {
   )
 }
 
-export default function EmcQuotaTab({ cx, lang }) {
+// Что реально уходит на сервер: числа в границах 0.1…3.0, только корректные диапазоны 100–600.
+function sanitize(s) {
+  const ranges = (s.ranges || [])
+    .map(r => ({ from: Math.round(Number(r.from)), to: Math.round(Number(r.to)), k: clampMultiplier(r.k) }))
+    .filter(r => r.from >= 100 && r.to <= 600 && r.from <= r.to)
+    .slice(0, 10)
+  return {
+    global: clampMultiplier(s.global),
+    monsters: Object.fromEntries(MONSTERS.map(m => [m.key, clampMultiplier(s.monsters?.[m.key])])),
+    ranges,
+  }
+}
+
+export default function EmcQuotaTab({ cx, lang, quotas = [], onApply }) {
   const t = cx.emc
-  const [settings, setSettings] = useState(loadSettings)
+  // Применённые к сезону рычаги важнее локальных черновиков браузера.
+  const applied = quotas.find(q => q.mode === 'emc_table')
+  const [settings, setSettings] = useState(() => (applied?.emc ? { ...structuredClone(DEFAULT_SETTINGS), ...applied.emc } : loadSettings()))
+  const [slot, setSlot] = useState(() => (applied || quotas.find(q => /e\s?m\s?c/i.test(q.name || '')) || quotas[quotas.length - 1] || {}).slot)
+  const [applying, setApplying] = useState(false)
   const update = next => { setSettings(next); saveSettings(next) }
+  const apply = async () => {
+    setApplying(true)
+    try { await onApply(Number(slot), sanitize(settings)) } finally { setApplying(false) }
+  }
 
   const table = useMemo(() => computeTable(settings), [settings])
   const defaults = useMemo(() => computeTable(DEFAULT_SETTINGS), [])
@@ -121,6 +142,22 @@ export default function EmcQuotaTab({ cx, lang }) {
           {overlap && <small className="emc-warn">{t.rangeOverlap}</small>}
           {!overlap && gaps && <small>{t.rangeGap}</small>}
         </div>
+      </div>
+
+      <div className="emc-apply">
+        {quotas.length > 0 ? (
+          <>
+            <label className="emc-apply-pick">
+              <span>{t.applyTo}</span>
+              <select className="input-dark" value={slot ?? ''} onChange={e => setSlot(e.target.value)}>
+                {quotas.map(q => <option key={q.slot} value={q.slot}>{`${q.slot}. ${q.name}`}</option>)}
+              </select>
+            </label>
+            <button type="button" className="chest-pill-btn chest-pill-btn--green" disabled={applying || !slot}
+              onClick={apply}>{t.apply}</button>
+            <small>{applied ? t.appliedNote.replace('{name}', applied.name) : t.applyNote}</small>
+          </>
+        ) : <small>{t.noQuotas}</small>}
       </div>
 
       <div className="emc-toolbar">

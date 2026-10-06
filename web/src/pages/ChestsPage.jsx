@@ -93,11 +93,19 @@ function QuotaEditor({ quotas, cx, onChange }) {
               <input className="input-dark" type="number" min={0} placeholder={cx.quotaTargetHint}
                 value={q.target} onChange={e => set(i, 'target', e.target.value)} />
             </label>
-            <label className="quota-check">
-              <input type="checkbox" checked={q.mode === 'per_player'}
-                onChange={e => set(i, 'mode', e.target.checked ? 'per_player' : 'fixed')} />
-              {cx.perPlayer}
-            </label>
+            {q.mode === 'emc_table' ? (
+              <div className="quota-hero">
+                <small>{cx.quotaEmcNote}</small>
+                <button type="button" className="chest-pill-btn chest-pill-btn--sm"
+                  onClick={() => set(i, 'mode', 'fixed')}>{cx.quotaEmcOff}</button>
+              </div>
+            ) : (
+              <label className="quota-check">
+                <input type="checkbox" checked={q.mode === 'per_player'}
+                  onChange={e => set(i, 'mode', e.target.checked ? 'per_player' : 'fixed')} />
+                {cx.perPlayer}
+              </label>
+            )}
             {q.mode === 'per_player' && (
               <div className="quota-hero">
                 <label className="quota-row">
@@ -178,7 +186,8 @@ export default function ChestsPage() {
           period_end: c.period_end ? c.period_end.slice(0, 16) : '',
           target_points: c.target_points,
           quotas: (c.quotas || []).map(q => ({ slot: q.slot, name: q.name, target: q.target ?? '',
-                                               mode: q.mode || 'fixed', hero_k: q.hero_k ?? 0, hero_h0: q.hero_h0 ?? 400 })),
+                                               mode: q.mode || 'fixed', hero_k: q.hero_k ?? 0, hero_h0: q.hero_h0 ?? 400,
+                                               ...(q.emc ? { emc: q.emc } : {}) })),
         }
         nextLeader[c.slug] = c.leader_canonical_name || null
         nextLeaderExcluded[c.slug] = c.leader_excluded_catalog_ids || []
@@ -326,7 +335,7 @@ export default function ChestsPage() {
     }))
   }
 
-  async function saveSeason(slug) {
+  async function saveSeason(slug, quotasOverride) {
     const s = seasonByCollector[slug]
     const payload = {
       timezone_offset_minutes: s.timezone_offset_minutes === '' || s.timezone_offset_minutes == null
@@ -335,19 +344,29 @@ export default function ChestsPage() {
       period_end: s.period_end ? s.period_end + ':00' : null,
       target_points: s.target_points === '' || s.target_points == null ? null : Number(s.target_points),
       // квота без названия = удалена; сундуки удалённой квоты остаются «в учёте» (сервер)
-      quotas: (s.quotas || [])
+      quotas: (quotasOverride || s.quotas || [])
         .filter(q => (q.name || '').trim())
         .map(q => ({ slot: q.slot, name: q.name.trim(),
                      target: q.target === '' || q.target == null ? null : Number(q.target),
                      mode: q.mode || 'fixed',
                      ...(q.mode === 'per_player'
-                       ? { hero_k: Number(q.hero_k) || 0, hero_h0: Number(q.hero_h0) || 400 } : {}) })),
+                       ? { hero_k: Number(q.hero_k) || 0, hero_h0: Number(q.hero_h0) || 400 } : {}),
+                     ...(q.mode === 'emc_table' && q.emc ? { emc: q.emc } : {}) })),
     }
     try {
       await api.dashboardChestsSeason(slug, payload)
       setMsg(cx.saved)
       await refresh()
     } catch (e) { setMsg(e.message) }
+  }
+
+  // «Применить к сезону» на вкладке «Расчёт EMC»: выбранная квота переходит в режим emc_table
+  // с рычагами; остальные квоты и период сезона остаются как есть.
+  async function applyEmc(slug, slot, emc) {
+    const quotas = (seasonByCollector[slug]?.quotas || []).map(q =>
+      q.slot === slot ? { ...q, mode: 'emc_table', emc } : q)
+    updateSeasonField(slug, 'quotas', quotas)
+    await saveSeason(slug, quotas)
   }
 
   // Руководители (2026-09-27): хозяин всегда один; руководитель помогает вести его ростер
@@ -926,7 +945,10 @@ export default function ChestsPage() {
             )
           })()}
 
-          {activeTab(collector.slug) === 'emc' && <EmcQuotaTab cx={cx} lang={lang} />}
+          {activeTab(collector.slug) === 'emc' && (
+            <EmcQuotaTab cx={cx} lang={lang} quotas={seasonByCollector[collector.slug]?.quotas || []}
+              onApply={(slot, emc) => applyEmc(collector.slug, slot, emc)} />
+          )}
 
           {activeTab(collector.slug) === 'history' && (
             <div>
