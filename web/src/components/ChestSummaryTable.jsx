@@ -262,20 +262,21 @@ function barColor(pct) {
   const hue = Math.round((Math.min(Math.max(pct, 0), 100) / 100) * 125)
   return `hsl(${hue} 38% 30%)`
 }
-function ProgressCell({ value, target, partial, className = 'public-epic-cell', minWidth = 96 }) {
+// Заливка всей ячейки (владелец 2026-10-19): без полоски; в итоговом столбце квоты «5/15» сверху
+// и процент по центру строкой ниже, в столбцах монстров (Hydra, Undead…) — только «5/15».
+function ProgressCell({ value, target, partial, showPct = false, className = 'public-epic-cell', minWidth = 96 }) {
   const pct = target ? Math.round((value / target) * 100) : 100
-  const done = pct >= 100
-  // 1–3% были бы невидимы: любой ненулевой прогресс показываем хотя бы узкой полоской
-  const fill = done ? 100 : pct > 0 ? Math.max(pct, 4) : 0
   return (
-    <td className={className} style={{ minWidth }} title={partial ? '?' : ''}>
-      <div style={{ fontSize: 13, marginBottom: 3, whiteSpace: 'nowrap', fontWeight: 400, color: 'var(--on-surface2)' }}>
-        {value}/{target ?? '—'}{partial ? ' ?' : ''} · {pct}%
+    <td className={className} title={partial ? '?' : ''}
+        style={{ minWidth, textAlign: 'center', background: barColor(pct), transition: 'background 0.4s' }}>
+      <div style={{ fontSize: 14, whiteSpace: 'nowrap', fontWeight: 400, color: 'var(--on-surface)' }}>
+        {value}/{target ?? '—'}{partial ? ' ?' : ''}
       </div>
-      <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.05)' }}>
-        <div style={{ width: `${fill}%`, height: '100%', borderRadius: 3, transition: 'width 0.4s, background 0.4s',
-                      background: barColor(pct) }} />
-      </div>
+      {showPct && (
+        <div style={{ fontSize: 12, marginTop: 2, fontWeight: 400, letterSpacing: '0.3px', color: 'var(--on-surface2)' }}>
+          {pct}%
+        </div>
+      )}
     </td>
   )
 }
@@ -575,7 +576,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                     const v = c.get(p)
                     if (c.personal) {
                       return <ProgressCell key={c.key} value={v} target={c.targetOf(p)} partial={c.partialOf(p)}
-                                           minWidth={120} />
+                                           showPct minWidth={120} />
                     }
                     return (
                       <td key={c.key} className={[
