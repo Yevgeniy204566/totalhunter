@@ -54,9 +54,17 @@ function accountingRank(row) {
   return row.is_in_pattern ? 10 : 20
 }
 
-function accountingOrder(rows, dir) {
+// Столбцы «Очки» и «Итого» сортируются тем же снимком порядка, что и «Учёт» (владелец 2026-10-19)
+const ROSTER_SORT_VALUE = {
+  acc:    accountingRank,
+  points: row => row.points || 0,
+  total:  row => row.total_ever || 0,
+}
+
+function accountingOrder(rows, dir, key = 'acc') {
   const sign = dir === 'desc' ? -1 : 1
-  return rows.map((row, i) => ({ i, r: accountingRank(row) }))
+  const value = ROSTER_SORT_VALUE[key] || accountingRank
+  return rows.map((row, i) => ({ i, r: value(row) }))
     .sort((a, b) => sign * (a.r - b.r))
     .map(x => x.i)
 }
@@ -195,7 +203,7 @@ export default function ChestsPage() {
       setAccSortByCollector(prev => {
         const next = {}
         for (const [slug, s] of Object.entries(prev)) {
-          if (s && nextRows[slug]) next[slug] = { dir: s.dir, order: accountingOrder(nextRows[slug], s.dir) }
+          if (s && nextRows[slug]) next[slug] = { key: s.key, dir: s.dir, order: accountingOrder(nextRows[slug], s.dir, s.key) }
         }
         return next
       })
@@ -275,11 +283,17 @@ export default function ChestsPage() {
     })
   }
 
-  function toggleAccSort(slug) {
+  function toggleAccSort(slug, key = 'acc') {
     setAccSortByCollector(prev => {
-      const dir = prev[slug]?.dir === 'asc' ? 'desc' : 'asc'
-      return { ...prev, [slug]: { dir, order: accountingOrder(rowsByCollector[slug] || [], dir) } }
+      const cur = prev[slug]
+      const dir = cur?.key === key && cur.dir === 'asc' ? 'desc' : 'asc'
+      return { ...prev, [slug]: { key, dir, order: accountingOrder(rowsByCollector[slug] || [], dir, key) } }
     })
+  }
+
+  const accArrow = (slug, key) => {
+    const s = accSortByCollector[slug]
+    return s?.key === key ? (s.dir === 'asc' ? ' ↑' : ' ↓') : ''
   }
 
   // Индексы строк в порядке снимка; строки, добавленные после клика, — в конец
@@ -700,15 +714,19 @@ export default function ChestsPage() {
                     <th style={{ minWidth: 220 }}>{cx.rawCol}</th>
                     <th style={{ minWidth: 240 }}>{cx.catalogCol}</th>
                     <th className="chest-secondary-col" style={{ minWidth: 130 }}>{cx.customNameCol}</th>
-                    <th style={{ minWidth: 70 }}>{cx.pointsCol}</th>
+                    <th style={{ minWidth: 70, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleAccSort(collector.slug, 'points')}>
+                      {cx.pointsCol}{accArrow(collector.slug, 'points')}
+                    </th>
                     <th style={{ minWidth: 170, cursor: 'pointer', userSelect: 'none' }}
                         title={cx.accountingTooltip}
-                        onClick={() => toggleAccSort(collector.slug)}>
-                      {cx.accountingCol}
-                      {accSortByCollector[collector.slug]?.dir === 'asc' ? ' ↑'
-                        : accSortByCollector[collector.slug]?.dir === 'desc' ? ' ↓' : ''}
+                        onClick={() => toggleAccSort(collector.slug, 'acc')}>
+                      {cx.accountingCol}{accArrow(collector.slug, 'acc')}
                     </th>
-                    <th style={{ minWidth: 60 }}>{cx.totalEverCol}</th>
+                    <th style={{ minWidth: 60, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleAccSort(collector.slug, 'total')}>
+                      {cx.totalEverCol}{accArrow(collector.slug, 'total')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
