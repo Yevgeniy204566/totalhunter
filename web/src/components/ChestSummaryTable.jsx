@@ -258,25 +258,25 @@ function isEpicColumn(typeName) {
 // подчёркивает данные, а не привлекает взгляд. Заливка = принесено/цель; цвет один, тёмный и
 // приглушённый: почти пусто — тусклый красный, к ста процентам зеленеет; выполненная квота —
 // полная тёмно-зелёная полоса. Без подсветки; цифры — обычным начертанием, не светлым цветом.
-// Заливка всей ячейки (владелец 2026-10-19: «вырви глаз»): чем меньше выполнено, тем темнее и тише —
-// ноль почти сливается с фоном (тёмно-бордовый), к ста процентам светлеет и зеленеет, но остаётся
-// приглушённым; чистое сочное красное/зелёное на колонку ячеек резало бы глаз.
+// Заливка всей ячейки (владелец 2026-10-19): палитра от фиолетового к неоново-зелёному
+// (красный «вырви глаз»). Ноль — тёмный тихий фиолет, почти фон; к ста процентам светлеет и
+// насыщается через синий и бирюзовый до неоново-зелёного.
 function barColor(pct) {
   const k = Math.min(Math.max(pct, 0), 100) / 100
-  const hue = Math.round(k * 125)
-  const sat = Math.round(30 + k * 8)
-  const light = Math.round(14 + k * 12)
+  const hue = Math.round(270 - k * 130)
+  const sat = Math.round(35 + k * 45)
+  const light = Math.round(16 + k * 20)
   return `hsl(${hue} ${sat}% ${light}%)`
 }
 // Заливка всей ячейки (владелец 2026-10-19): без полоски; в итоговом столбце квоты «5/15» сверху
 // и процент по центру строкой ниже, в столбцах монстров (Hydra, Undead…) — только «5/15».
-function ProgressCell({ value, target, partial, showPct = false, className = 'public-epic-cell', minWidth = 96 }) {
+function ProgressCell({ value, target, partial, hint = '', showPct = false, className = 'public-epic-cell', minWidth = 96 }) {
   const pct = target ? Math.round((value / target) * 100) : 100
   return (
-    <td className={className} title={partial ? '?' : ''}
+    <td className={className} title={partial ? hint : ''}
         style={{ minWidth, textAlign: 'center', background: barColor(pct), transition: 'background 0.4s' }}>
       <div style={{ fontSize: 14, whiteSpace: 'nowrap', fontWeight: 400, color: 'var(--on-surface)' }}>
-        {value}/{target ?? '—'}{partial ? ' ?' : ''}
+        {value}/{target ?? '—'}{partial ? <span style={{ opacity: 0.6 }}>*</span> : ''}
       </div>
       {showPct && (
         <div style={{ fontSize: 12, marginTop: 2, fontWeight: 400, letterSpacing: '0.3px', color: 'var(--on-surface2)' }}>
@@ -311,10 +311,10 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 const TABLE_TXT = {
   ru: { player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
         hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ',
-        heroCol: 'Герой' },
+        heroCol: 'Герой', partialHint: 'Уровень Героя не указан — цель посчитана по Герою 400' },
   en: { player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
         hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ',
-        heroCol: 'Hero' },
+        heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
 }
 
 export default function ChestSummaryTable({ chestTypes, players, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
@@ -581,7 +581,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                   {quotaCols.map(c => {
                     const v = c.get(p)
                     if (c.personal) {
-                      return <ProgressCell key={c.key} value={v} target={c.targetOf(p)} partial={c.partialOf(p)}
+                      return <ProgressCell key={c.key} value={v} target={c.targetOf(p)} partial={c.partialOf(p)} hint={tt.partialHint}
                                            showPct minWidth={120} />
                     }
                     return (
@@ -599,7 +599,7 @@ export default function ChestSummaryTable({ chestTypes, players, targets, editMo
                     const mi = emc ? monsterIndex(t) : -1
                     if (mi >= 0) {
                       const row = emcRowOf(p, emc)
-                      return <ProgressCell key={t} value={value} partial={!p.hero_level}
+                      return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint}
                                            target={[row.finalH, row.finalU, row.finalA, row.finalS][mi]} />
                     }
                     return (
