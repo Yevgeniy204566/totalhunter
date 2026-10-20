@@ -71,11 +71,11 @@ test('общая норма: опоры Старта и ЭДО — факт, С�
   assert.equal(normAt(413), 16000)
 })
 
-test('общая норма растёт с уровнем Героя, не ниже 1000, кратна 100', () => {
+test('общая норма на всём диапазоне 100–600: растёт с уровнем, положительна, кратна 100, без обрезки', () => {
   let prev = 0
   for (const h of HERO_LEVELS) {
     const n = normAt(h)
-    assert.ok(n >= prev && n >= 1000, `@${h}`)
+    assert.ok(n >= prev && n > 0, `@${h}`)
     assert.equal(n % 100, 0, `@${h}`)
     prev = n
   }
@@ -154,4 +154,11 @@ test('доля EMC в норме: штуки таблицы × вес монст
 
 test('цель Crypts не уходит ниже нуля', () => {
   assert.equal(cryptsNormAt(100, undefined, { ...DEFAULT_SETTINGS, norm: 0.1 }) >= 0, true)
+})
+
+test('края диапазона: 100 и 600 заданы продолжением наклона крайних отрезков', () => {
+  assert.equal(normAt(100), 2300)
+  assert.equal(normAt(600), 30700)
+  assert.equal(epicRefAt(100), 23)
+  assert.equal(epicRefAt(600), 617)
 })

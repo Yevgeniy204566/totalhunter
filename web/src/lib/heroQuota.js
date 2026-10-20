@@ -106,12 +106,12 @@ function curve(points, h) {
 }
 
 export function normAt(hero, settings = DEFAULT_SETTINGS) {
-  const base = Math.max(1000, curve(NORM, hero))
+  const base = curve(NORM, hero) // без обрезки: шкала задана на всём диапазоне 100–600 (владелец 2026-10-20)
   return round100(base * rangeK(hero, settings.ranges) * clampMultiplier(settings.norm))
 }
 
 export function epicRefAt(hero) {
-  return Math.round(Math.max(10, curve(EPIC, hero)))
+  return Math.round(curve(EPIC, hero))
 }
 
 const ANCHOR_LEVELS = new Set([P, E, B])
