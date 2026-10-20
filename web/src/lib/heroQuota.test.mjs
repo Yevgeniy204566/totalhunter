@@ -98,11 +98,11 @@ test('множители зажимаются в 0.01…1000', () => {
   assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99999 }), 14000000)
 })
 
-test('ориентир по эпикам: опоры 50 / 200 / 250 / 40', () => {
+test('ориентир по эпикам: опоры 50 / 200 / 40, выше 388 привязан к норме в очках', () => {
   assert.equal(epicRefAt(279), 50)
   assert.equal(epicRefAt(387.5), 200)
-  assert.equal(epicRefAt(413), 250)
   assert.equal(epicRefAt(213.5), 40)
+  assert.equal(epicRefAt(413), 229)
 })
 
 test('weightKey: цитадели Cursed/Elven делят общую строку', () => {
@@ -161,7 +161,7 @@ test('края диапазона: 100 и 600 заданы продолжени�
   assert.equal(normAt(100), 2300)
   assert.equal(normAt(600), 30700)
   assert.equal(epicRefAt(100), 23)
-  assert.equal(epicRefAt(600), 617)
+  assert.equal(epicRefAt(600), 438)
 })
 
 // ---- пульт: фейдеры по типам и ступеням Героя ----
@@ -269,9 +269,9 @@ test('тип вне шкалы: очки клана × фейдер, mute обн
   assert.equal(scoreOf({ 'Тыква': 3 }, meta, 300, off).score, 0)
 })
 
-test('итоговая норма эпик-склепов: ЭДО ≥ 200, Герой 456 → 334, а не доля типа', () => {
+test('итоговая норма эпик-склепов: ЭДО ≥ 200, Герой 456 → 277, а не доля типа', () => {
   assert.equal(epicCountTotal(387.5), 200)
-  assert.equal(epicCountTotal(456), 334)
+  assert.equal(epicCountTotal(456), 277)
   assert.ok(epicCountTotal(400) >= 200)
   assert.equal(epicCountTotal(279), 50)
 })
@@ -289,4 +289,56 @@ test('эпик-склепы игрока: суммируются по id тип�
     'Редкий 30': { id: 'Rare Crypt 30', slot: 1 }, 'Hydra': { id: 'Epic Fire Hydra', slot: 2 },
   }
   assert.equal(epicCryptsOf({ 'Эпик 35': 10, 'Эпик 25': 5, 'Редкий 30': 40, Hydra: 7 }, meta), 15)
+})
+
+test('согласованность по всей шкале: очки эпиков держатся около нормы (80–106%: у Старта 81%, у ЭДО 102%) на уровнях 100–600', () => {
+  const ids = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
+  for (let h = 100; h <= 600; h += 10) {
+    const pts = ids.reduce((sum, id) => sum + countAt(id, h) * weightAt(id, h), 0)
+    const ratio = pts / normAt(h)
+    assert.ok(ratio > 0.8 && ratio < 1.06, `@${h}: ${(ratio * 100).toFixed(0)}%`)
+  }
+})
+
+// ---- «Очки» = сумма всех сундуков в учёте: норму можно закрыть склепами, EMC или смесью ----
+const META = {
+  'Эпик 35': { id: 'Epic Crypt 35', points: 135, slot: 1 },
+  'Hydra': { id: 'Epic Fire Hydra', points: 1, slot: 2 },
+  'Shadow City': { id: 'Epic Shadow City', points: 1, slot: 2 },
+  'Тыква': { id: 'Pumpkin Chest', points: 12, slot: null },
+}
+
+test('очки: склепы и EMC складываются в одну сумму по весам шкалы Героя', () => {
+  const h = 413
+  const a = scoreOf({ 'Эпик 35': 10 }, META, h).score
+  const b = scoreOf({ Hydra: 10 }, META, h).score
+  const both = scoreOf({ 'Эпик 35': 10, Hydra: 10 }, META, h).score
+  assert.equal(a, 1350)                // 135 × 10
+  assert.equal(b, 300)                 // 30 × 10: вес Hydra из шкалы, а не «1» из ручных очков клана
+  assert.equal(both, a + b)
+})
+
+test('очки: норму можно закрыть только склепами, только EMC или смесью — важна сумма', () => {
+  const h = 413
+  const norm = normAt(h)
+  const per = id => weightAt(id, h)
+  const onlyCrypts = Math.ceil(norm / per('Epic Crypt 35'))
+  const onlyEmc = Math.ceil(norm / per('Epic Shadow City'))
+  assert.ok(scoreOf({ 'Эпик 35': onlyCrypts }, META, h).score >= norm)
+  assert.ok(scoreOf({ 'Shadow City': onlyEmc }, META, h).score >= norm)
+  const half = scoreOf({ 'Эпик 35': Math.ceil(onlyCrypts / 2), 'Shadow City': Math.ceil(onlyEmc / 2) }, META, h).score
+  assert.ok(half >= norm)
+})
+
+test('очки EMC правятся пультом: поставили очки за монстра — сумма меняется', () => {
+  const h = 413
+  const base = scoreOf({ Hydra: 10 }, META, h).score
+  const up = scoreOf({ Hydra: 10 }, META, h, { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Fire Hydra': { all: 2 } } } }).score
+  const off = scoreOf({ Hydra: 10 }, META, h, { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Fire Hydra': { on: false } } } }).score
+  assert.equal(up, base * 2)
+  assert.equal(off, 0)
+})
+
+test('очки: тип вне шкалы (свой) входит в сумму по очкам клана', () => {
+  assert.equal(scoreOf({ 'Тыква': 5 }, META, 300).score, 60)
 })

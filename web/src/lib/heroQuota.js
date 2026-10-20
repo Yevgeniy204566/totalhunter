@@ -38,8 +38,10 @@ const W = {
 
 // Общая норма за 14 дней: Старт 5000 и ЭДО 14000 — стены; Сарацины 4000 и Берсерки 16000 — расчёт.
 const NORM = [[213.5, 4000], [279, 5000], [E, 14000], [B, 16000]]
-// Ориентир по эпик-склепам: Старт 50, ЭДО 200 — стены; Сарацины 40, Берсерки 250 — расчёт.
-const EPIC = [[213.5, 40], [279, 50], [E, 200], [B, 250]]
+// Ориентир по эпик-склепам: Старт 50, ЭДО 200 — стены; Сарацины 40 — расчёт. Выше Героя 387.5 цель
+// привязана к норме в очках с тем же соотношением, что у ЭДО (эпики × средние очки эпика = 102% нормы),
+// иначе она росла бы быстрее нормы (владелец 2026-10-21).
+const EPIC = [[213.5, 40], [279, 50], [E, 200]]
 
 export const HERO_LEVELS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 export const DEFAULT_SETTINGS = { norm: 1, weights: 1, ranges: [] }
@@ -117,8 +119,20 @@ export function normAt(hero, settings = DEFAULT_SETTINGS) {
   return round100(base * rangeK(hero, settings.ranges) * clampMultiplier(settings.norm))
 }
 
+function avgEpicWeight(hero) {
+  return ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
+    .reduce((sum, id) => sum + baseWeight(id, hero), 0) / 4
+}
+
+function epicBase(hero) {
+  if (hero <= E) return curve(EPIC, hero)
+  // отношение «очки эпиков / норма» берём у ЭДО (в точке 387.5 цель = 200) и держим выше
+  const ratio = (curve(EPIC, E) * avgEpicWeight(E)) / curve(NORM, E)
+  return (curve(NORM, hero) * ratio) / avgEpicWeight(hero)
+}
+
 export function epicRefAt(hero, settings = DEFAULT_SETTINGS) {
-  return Math.round(curve(EPIC, hero) * mixFactor(settings.mix?.epic, hero))
+  return Math.round(epicBase(hero) * mixFactor(settings.mix?.epic, hero))
 }
 
 const ANCHOR_LEVELS = new Set([P, E, B])
