@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { posToK, kToPos, MIXER_MIN, MIXER_MAX } from '../lib/mixer.js'
 import { DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, bandKey, clampMultiplier } from '../lib/emcQuota.js'
 import {
-  DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, weightAt, normAt, cryptsNormAt, epicRefAt,
+  DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, weightAt, normAt, cryptsNormAt, countAt,
 } from '../lib/heroQuota.js'
 
 // «Пульт» (владелец 2026-10-20): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
@@ -20,11 +20,11 @@ const TXT = {
     enable: 'Персонализированный учёт по уровню Героя',
     off: 'Сейчас выключен: цели фиксированные, из настроек сезона. Включите, чтобы пользоваться пультом.',
     sample: 'Пример для Героя',
-    base: 'расчёт', now: 'сейчас',
+    base: 'расчёт', now: 'сейчас', calc: 'расчёт',
     reset: 'Двойной щелчок по фейдеру — вернуть ×1',
     mute: 'Вкл/выкл: выключенный тип не считается',
-    epicOnly: 'Эпик-склепы, шт.',
-    countNote: 'Для склепов в режиме «Количество» есть только ориентир по эпик-склепам; остальные типы считаются в очках.',
+    countNote: 'Количество по типам: норма Crypts делится поровну между включёнными типами и пересчитывается в штуки по очкам за сундук. Фейдер правит штуки; выключенный тип в деление не входит.',
+    abs: 'Значение (можно вписать число)',
     save: '💾 Сохранить', saved: 'Нажмите «Сохранить», чтобы применить к сезону.',
     summary: 'Герой {h}: норма «Всего» {total} · Crypts {crypts} · EMC {emc} шт.',
     allNote: '«Все уровни» меняет значение на каждой ступени пропорционально её расчёту.',
@@ -39,11 +39,11 @@ const TXT = {
     enable: 'Personalized accounting by Hero level',
     off: 'Currently off: targets are fixed from the season settings. Turn it on to use the mixer.',
     sample: 'Example for Hero',
-    base: 'calculated', now: 'now',
+    base: 'calculated', now: 'now', calc: 'calc.',
     reset: 'Double-click a fader to reset to ×1',
     mute: 'On/off: a muted type is not counted',
-    epicOnly: 'Epic crypts, pcs',
-    countNote: "For crypts in 'Count' mode there is only the epic crypts guideline; other types are counted in points.",
+    countNote: 'Count by type: the Crypts norm is split equally between enabled types and converted to pieces by points per chest. The fader adjusts the pieces; a muted type is left out of the split.',
+    abs: 'Value (you can type a number)',
     save: '💾 Save', saved: "Press 'Save' to apply to the season.",
     summary: 'Hero {h}: Total norm {total} · Crypts {crypts} · EMC {emc} pcs',
     allNote: "'All levels' changes the value on every step in proportion to its calculation.",
@@ -58,7 +58,7 @@ const MIN = MIXER_MIN
 const MAX = MIXER_MAX
 const fmt = n => Number(n).toLocaleString('ru-RU')
 
-function Fader({ k, onK, on, onToggle, title, sub, disabled, tt }) {
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, tt }) {
   return (
     <div className={`mixer-col${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}>
       <div className="mixer-name" title={title}>{title}</div>
@@ -70,10 +70,9 @@ function Fader({ k, onK, on, onToggle, title, sub, disabled, tt }) {
         <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k)} disabled={disabled}
           onChange={e => onK(posToK(Number(e.target.value)))} onDoubleClick={() => onK(1)} />
       </div>
-      <input className="input-dark mixer-k" type="number" min={MIN} max={MAX} step={0.01} value={k}
-        disabled={disabled} title={tt.mult}
-        onChange={e => onK(e.target.value === '' ? 1 : clampMultiplier(e.target.value))} />
-      <div className="mixer-sub">{sub}</div>
+      <input className="input-dark mixer-k" type="number" min={0} step={1} value={abs} disabled={disabled}
+        title={tt.abs} onChange={e => onAbs(e.target.value)} />
+      <div className="mixer-sub">{tt.calc} {calc}</div>
     </div>
   )
 }
@@ -96,9 +95,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const setPersonal = patch => onPersonal({ ...personal, ...patch })
   const setEmc = next => onQuotas(quotas.map(q => (q.slot === 2 ? { ...q, emc: next } : q)))
   const setMixEntry = (path, id, patch) => {
-    const cur = path === 'epic' ? (mix.epic || {}) : (mix.w?.[id] || {})
-    const next = { ...cur, ...patch }
-    setPersonal({ mix: { ...mix, ...(path === 'epic' ? { epic: next } : { w: { ...(mix.w || {}), [id]: next } }) } })
+    const next = { ...(mix[path]?.[id] || {}), ...patch }
+    setPersonal({ mix: { ...mix, [path]: { ...(mix[path] || {}), [id]: next } } })
   }
 
   // значение фейдера «этой» ступени: all или поправка конкретной ступени
@@ -106,61 +104,68 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const withK = (entry, k) => (band === 'all' ? { ...(entry || {}), all: k }
     : { ...(entry || {}), bands: { ...(entry?.bands || {}), [band]: k } })
 
-  const cols = []
-  if (tab === 'crypts' && mode === 'points') {
-    for (const id of CRYPT_TYPES) {
-      const e = mix.w?.[id]
-      cols.push({
-        key: id, title: id, on: e?.on !== false, k: entryK(e),
-        onK: k => setMixEntry('w', id, withK(e, k)),
-        onToggle: () => setMixEntry('w', id, { on: e?.on === false }),
-        sub: `${weightAt(id, exHero, SCALE_DEFAULTS)} → ${weightAt(id, exHero, scale)}`,
-      })
-    }
-  } else if (tab === 'crypts') {
-    const e = mix.epic
-    cols.push({
-      key: 'epic', title: t.epicOnly, on: e?.on !== false, k: entryK(e),
-      onK: k => setMixEntry('epic', null, withK(e, k)),
-      onToggle: () => setMixEntry('epic', null, { on: e?.on === false }),
-      sub: `${epicRefAt(exHero)} → ${epicRefAt(exHero, scale)}`,
-    })
-  } else if (mode === 'points') {
-    for (const id of EMC_TYPES) {
-      const e = mix.w?.[id]
-      cols.push({
-        key: id, title: id.replace(/^Epic /, ''), on: e?.on !== false, k: entryK(e),
-        onK: k => setMixEntry('w', id, withK(e, k)),
-        onToggle: () => setMixEntry('w', id, { on: e?.on === false }),
-        sub: `${weightAt(id, exHero, SCALE_DEFAULTS)} → ${weightAt(id, exHero, scale)}`,
-      })
-    }
-  } else {
+  // Колонка: k — положение фейдера, calc(k) — абсолютный результат при Герое-примере (штуки или очки);
+  // вписанное число переводится обратно в множитель: k = число ÷ результат при ×1.
+  const pointsCol = (id, title) => {
+    const e = mix.w?.[id]
+    return { id, title, e, path: 'w',
+      calc: k => weightAt(id, exHero, { ...scale, mix: { ...mix, w: { ...(mix.w || {}), [id]: withK(e, k) } } }),
+      base: weightAt(id, exHero, SCALE_DEFAULTS) }
+  }
+  const countCol = id => {
+    const e = mix.c?.[id]
+    return { id, title: id, e, path: 'c',
+      calc: k => countAt(id, exHero, { ...scale, mix: { ...mix, c: { ...(mix.c || {}), [id]: withK(e, k) } } }, emc),
+      base: countAt(id, exHero, SCALE_DEFAULTS, emc) }
+  }
+  const raw = []
+  if (tab === 'crypts' && mode === 'points') raw.push(...CRYPT_TYPES.map(id => pointsCol(id, id)))
+  else if (tab === 'crypts') raw.push(...CRYPT_TYPES.map(countCol))
+  else if (mode === 'points') raw.push(...EMC_TYPES.map(id => pointsCol(id, id.replace(/^Epic /, ''))))
+
+  const cols = raw.map(c => ({
+    key: c.id, title: c.title, on: c.e?.on !== false, k: entryK(c.e), calc: c.calc, base: c.base,
+    onK: k => setMixEntry(c.path, c.id, withK(c.e, k)),
+    onToggle: () => setMixEntry(c.path, c.id, { on: c.e?.on === false }),
+  }))
+  if (tab === 'emc' && mode === 'count') {
     const keys = ['finalH', 'finalU', 'finalA', 'finalS']
     const baseRow = computeRow(exHero)
-    const nowRow = computeRow(exHero, emc)
     MONSTERS.forEach(([key, label], i) => {
       const isOff = (emc.off || []).includes(key)
-      const curK = band === 'all' ? emc.monsters?.[key] ?? 1 : emc.cells?.[key]?.[band] ?? 1
+      const withEmcK = k => (band === 'all'
+        ? { ...emc, monsters: { ...emc.monsters, [key]: k } }
+        : { ...emc, cells: { ...(emc.cells || {}), [key]: { ...(emc.cells?.[key] || {}), [band]: k } } })
       cols.push({
-        key, title: label, on: !isOff, k: curK,
-        onK: k => setEmc(band === 'all'
-          ? { ...emc, monsters: { ...emc.monsters, [key]: k } }
-          : { ...emc, cells: { ...(emc.cells || {}), [key]: { ...(emc.cells?.[key] || {}), [band]: k } } }),
+        key, title: label, on: !isOff,
+        k: band === 'all' ? emc.monsters?.[key] ?? 1 : emc.cells?.[key]?.[band] ?? 1,
+        calc: k => computeRow(exHero, withEmcK(k))[keys[i]], base: baseRow[keys[i]],
+        onK: k => setEmc(withEmcK(k)),
         onToggle: () => setEmc({ ...emc, off: isOff ? emc.off.filter(x => x !== key) : [...(emc.off || []), key] }),
-        sub: `${baseRow[keys[i]]} → ${nowRow[keys[i]]}`,
       })
     })
   }
 
-  // общий фейдер: Crypts/«Очки» — норма; EMC/«Количество» — общий множитель; остальное недоступно
-  const master = tab === 'crypts' && mode === 'points'
+  // общий фейдер: Crypts — норма (и в «Очках», и в «Количестве»); EMC/«Количество» — общий множитель монстров;
+  // EMC/«Очки» общего нет
+  const master = tab === 'crypts'
     ? { title: t.masterCryptsPoints, k: personal.norm ?? 1, onK: k => setPersonal({ norm: k }),
-        sub: `${fmt(normAt(exHero, SCALE_DEFAULTS))} → ${fmt(normAt(exHero, scale))}` }
-    : tab === 'emc' && mode === 'count'
+        calc: k => normAt(exHero, { ...scale, norm: k }), base: normAt(exHero, SCALE_DEFAULTS), fmt: true }
+    : mode === 'count'
       ? { title: t.masterEmcCount, k: emc.global ?? 1, onK: k => setEmc({ ...emc, global: k }),
-          sub: `${computeRow(exHero).emc} → ${computeRow(exHero, emc).emc}` }
+          calc: k => computeRow(exHero, { ...emc, global: k }).emc, base: computeRow(exHero).emc }
       : null
+
+  const absProps = c => ({
+    abs: c.calc(c.k),
+    onAbs: v => {
+      const one = c.calc(1)
+      const num = Number(v)
+      if (v === '' || !Number.isFinite(num)) return c.onK(1)
+      c.onK(one > 0 ? Math.min(MAX, Math.max(MIN, Math.round((num / one) * 100) / 100)) : 1)
+    },
+    calcText: c.fmt ? fmt(c.base) : c.base,
+  })
 
   const emcRow = computeRow(exHero, emc)
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
@@ -208,14 +213,21 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
       <div className={`mixer-board${enabled ? '' : ' mixer-board--off'}`}>
         <div className="mixer-cols">
-          {cols.map(c => (
-            <Fader key={c.key} tt={t} title={c.title} k={c.k} onK={c.onK} on={c.on} onToggle={c.onToggle}
-              sub={c.sub} disabled={!enabled} />
-          ))}
+          {cols.map(c => {
+            const a = absProps(c)
+            return (
+              <Fader key={c.key} tt={t} title={c.title} k={c.k} onK={c.onK} on={c.on} onToggle={c.onToggle}
+                abs={a.abs} onAbs={a.onAbs} calc={a.calcText} disabled={!enabled} />
+            )
+          })}
         </div>
         <div className="mixer-master">
           {master
-            ? <Fader tt={t} title={master.title} k={master.k} onK={master.onK} sub={master.sub} disabled={!enabled} />
+            ? (() => {
+              const a = absProps(master)
+              return <Fader tt={t} title={master.title} k={master.k} onK={master.onK} abs={a.abs} onAbs={a.onAbs}
+                calc={a.calcText} disabled={!enabled} />
+            })()
             : <div className="mixer-name">{t.master}</div>}
         </div>
       </div>

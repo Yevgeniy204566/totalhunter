@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { computeRow } from '../lib/emcQuota.js'
-import { scoreOf, normAt, cryptsNormAt, DEFAULT_HERO } from '../lib/heroQuota.js'
+import { scoreOf, normAt, cryptsNormAt, countAt, weightKey, CRYPT_TYPES, DEFAULT_HERO } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['', '5', '6', '7', '8', '9']
@@ -348,6 +348,11 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta, tt.total), [targets, tt.epic, chestTypeMeta, tt.total])
   const emc = useMemo(() => emcModel(targets), [targets])
+  const typeMeta = chestTypeMeta
+  const pers = targets?.personal || {}
+  const personalCrypts = !!pers.crypts
+  const scale = useMemo(() => ({ norm: pers.norm, weights: pers.weights, ranges: pers.ranges, mix: pers.mix }), [pers])
+  const emcLevers = (targets?.quotas || []).find(q => q.slot === 2)?.emc
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
   const pointsRank = useMemo(() => {
@@ -623,6 +628,14 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   })}
                   {chestTypes.map(t => {
                     const value = p.counts[t] || 0
+                    // персональная квота Crypts: штуки по типу склепа при Герое игрока (пульт, «Количество»)
+                    const meta = typeMeta?.[t]
+                    if (personalCrypts && meta && CRYPT_TYPES.includes(weightKey(meta.id))) {
+                      const need = countAt(meta.id, p.hero_level || DEFAULT_HERO, scale, emcLevers)
+                      if (need > 0) {
+                        return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint} target={need} />
+                      }
+                    }
                     const mi = emc ? monsterIndex(t) : -1
                     if (mi >= 0) {
                       const row = emcRowOf(p, emc)

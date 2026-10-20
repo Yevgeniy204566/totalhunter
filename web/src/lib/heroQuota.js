@@ -171,3 +171,16 @@ export function cryptsNormAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
 export const CRYPT_TYPES = ['Common Crypt 20', 'Common Crypt 25', 'Rare Crypt 20', 'Rare Crypt 25', 'Rare Crypt 30',
   'Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35', 'Citadel 20', 'Citadel 25', 'Citadel 30']
 export const EMC_TYPES = [...EMC_IDS, 'Dark Omens Chest', 'Epic Briareus', 'Yogwai', 'Epic Basilisk', 'Epic Chimera', 'Epic Hellforge']
+
+// Количество склепов по типам (режим «Количество» пульта). Базы по типам в данных нет, поэтому модель
+// математическая: норма Crypts (очки) делится поровну между включёнными типами, штук = доля ÷ очки за
+// сундук этого типа при Герое игрока. Фейдер правит штуки поверх (mix.c — как у очков), mute исключает
+// тип из деления. Меняете очки за сундук (mix.w) — база количества пересчитывается сама.
+export function countAt(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
+  const key = weightKey(id)
+  const mixC = settings.mix?.c || {}
+  const active = CRYPT_TYPES.filter(t => mixC[t]?.on !== false && (weightAt(t, hero, settings) || 0) > 0)
+  if (!active.includes(key)) return 0
+  const share = cryptsNormAt(hero, emcModel, settings) / active.length
+  return Math.round(share / weightAt(key, hero, settings) * mixFactor({ ...mixC[key], on: true }, hero))
+}

@@ -146,6 +146,7 @@ async def test_row_in_missing_quota_slot_creates_default_quota(db_session):
 
 MIX = {"w": {"Epic Crypt 35": {"on": True, "all": 1.2, "bands": {"380": 0.5}},
              "Common Crypt 25": {"on": False}},
+       "c": {"Epic Crypt 30": {"all": 1.4, "bands": {"300": 2.0}}},
        "epic": {"all": 1.5}}
 
 
@@ -160,6 +161,7 @@ async def test_mixer_values_saved_and_exposed(db_session):
     assert r.status_code == 200
     assert t["personal"]["mix"]["w"]["Epic Crypt 35"]["bands"] == {"380": 0.5}
     assert t["personal"]["mix"]["w"]["Common Crypt 25"]["on"] is False
+    assert t["personal"]["mix"]["c"]["Epic Crypt 30"]["bands"] == {"300": 2.0}
     q2 = next(q for q in t["quotas"] if q["slot"] == 2)
     assert q2["emc"]["cells"] == {"hydra": {"400": 0.5}} and q2["emc"]["off"] == ["undead"]
 
@@ -173,6 +175,8 @@ async def test_mixer_values_saved_and_exposed(db_session):
     {"w": {"Epic Crypt 35": {"bands": {"400": 9}}}},
     {"w": {"x" * 61: {"all": 1}}},
     {"w": {f"T{i}": {"all": 1} for i in range(41)}},
+    {"c": {"Epic Crypt 30": {"all": 9}}},
+    {"c": {"Epic Crypt 30": {"bands": {"305": 1}}}},
 ])
 async def test_mixer_invalid_values_422(db_session, bad_mix):
     c, h = await _owner(db_session, f"ps12{secrets.token_hex(3)}@example.com")

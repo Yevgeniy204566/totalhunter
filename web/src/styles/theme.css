@@ -768,13 +768,17 @@ a:hover { color: var(--on-surface); }
 .emc-guide-cases li { margin: 8px 0; }
 
 /* Пульт (владелец 2026-10-20): колонки-фейдеры по типам сундуков, общий фейдер справа */
+.mixer { max-width: 100%; min-width: 0; }
 .mixer-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 14px 0 8px; }
 .mixer-switch { display: flex; gap: 6px; }
 .mixer-pick { display: flex; align-items: center; gap: 8px; font-size: 16px; }
-.mixer-board { display: flex; align-items: stretch; gap: 10px; padding: 12px 8px 14px;
+.mixer-board { display: flex; align-items: stretch; gap: 10px; padding: 12px 8px 14px; overflow: hidden; max-width: 100%;
   border: 1px solid var(--outline); border-radius: 12px; background: var(--surface2, rgba(255,255,255,0.03)); }
 .mixer-board--off { opacity: 0.5; }
-.mixer-cols { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; overflow-x: auto; padding-bottom: 6px; }
+.mixer-cols { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; overflow-x: scroll; overflow-y: hidden; padding-bottom: 10px; scrollbar-width: auto; scrollbar-color: #38bdf8 rgba(255,255,255,0.08); }
+.mixer-cols::-webkit-scrollbar { height: 12px; }
+.mixer-cols::-webkit-scrollbar-track { background: rgba(255,255,255,0.08); border-radius: 6px; }
+.mixer-cols::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 6px; }
 .mixer-master { flex: 0 0 112px; display: flex; justify-content: center; border-left: 1px solid var(--outline); padding-left: 10px; }
 .mixer-col { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 84px; flex: 0 0 84px; }
 .mixer-name { font-size: 14px; line-height: 1.2; min-height: 34px; text-align: center; color: var(--on-surface); word-break: break-word; }

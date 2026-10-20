@@ -80,7 +80,6 @@ const DEFAULT_QUOTAS = [{ slot: 1, name: 'Crypts', target: '', mode: 'fixed' }, 
 function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) {
   const set = (slot, field, value) => onChange(quotas.map(q => (q.slot === slot ? { ...q, [field]: value } : q)))
   const flag = { 1: 'crypts', 2: 'emc' }
-  const any = personal.crypts || personal.emc
   return (
     <div className="quota-block">
       <div className="season-subtitle">{cx.quotasLabel}</div>
@@ -121,20 +120,6 @@ function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) 
           )
         })}
       </div>
-      {any && (
-        <div className="quota-card" style={{ marginTop: 10 }}>
-          <div className="quota-card-head"><span>{cx.personalScaleTitle}</span></div>
-          <small>{cx.personalScaleHint}</small>
-          {[['norm', cx.heroNormK], ['weights', cx.heroWeightK]].map(([key, label]) => (
-            <label key={key} className="quota-row">
-              <span>{label}</span>
-              <input className="input-dark emc-k-input" type="number" min={0.1} max={3} step={0.05}
-                value={personal[key] ?? 1}
-                onChange={e => onPersonal({ ...personal, [key]: e.target.value === '' ? 1 : Number(e.target.value) })} />
-            </label>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

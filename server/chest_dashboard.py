@@ -681,9 +681,11 @@ class Mix(BaseModel):
     # w — очки за сундук по id шкалы («Epic Crypt 35», «Citadel 25», «Epic Fire Hydra»…);
     # epic — фейдер ориентира по эпик-склепам (режим «Количество» вкладки Crypts)
     w: Dict[str, MixEntry] = Field(default_factory=dict, max_length=40)
+    # c — штуки по типам склепов (режим «Количество» вкладки Crypts), те же ключи, что у w
+    c: Dict[str, MixEntry] = Field(default_factory=dict, max_length=40)
     epic: Optional[MixEntry] = None
 
-    @field_validator("w")
+    @field_validator("w", "c")
     @classmethod
     def _keys_ok(cls, v):
         for key in v:

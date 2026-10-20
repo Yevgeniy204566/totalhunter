@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt,
 } from './heroQuota.js'
 
 const w = (id, hero, s = DEFAULT_SETTINGS) => weightAt(id, hero, s)
@@ -212,4 +212,36 @@ test('EMC: множитель монстра на ступень (cells) и вы
   const off = computeRow(400, { off: ['undead'] })
   assert.equal(off.finalU, 0)
   assert.equal(off.emc, base.emc - base.finalU)
+})
+
+test('количество склепов: доля нормы Crypts поровну по включённым типам ÷ очки за сундук', () => {
+  const h = 300
+  const active = ['Rare Crypt 20', 'Rare Crypt 25', 'Rare Crypt 30', 'Common Crypt 20', 'Common Crypt 25',
+    'Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35', 'Citadel 20', 'Citadel 25', 'Citadel 30']
+  const share = cryptsNormAt(h) / active.length
+  assert.equal(countAt('Epic Crypt 35', h), Math.round(share / weightAt('Epic Crypt 35', h)))
+  // дешёвый сундук требуется чаще дорогого
+  assert.ok(countAt('Common Crypt 25', h) > countAt('Epic Crypt 35', h))
+})
+
+test('количество: фейдер c правит штуки, mute исключает тип и перераспределяет долю', () => {
+  const h = 300
+  const base = countAt('Epic Crypt 30', h)
+  const up = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 30': { all: 2 } } } }
+  assert.ok(Math.abs(countAt('Epic Crypt 30', h, up) - base * 2) <= 1) // округление до целого
+  const off = ['Epic Crypt 35', 'Rare Crypt 20', 'Rare Crypt 25', 'Common Crypt 20', 'Common Crypt 25', 'Citadel 20']
+  const muted = { ...DEFAULT_SETTINGS, mix: { c: Object.fromEntries(off.map(id => [id, { on: false }])) } }
+  assert.equal(countAt('Epic Crypt 35', h, muted), 0)
+  assert.ok(countAt('Epic Crypt 30', h, muted) > base) // доля делится на меньшее число типов
+})
+
+test('количество: тип с нулевыми очками (например обычный склеп с 400) не требуется', () => {
+  assert.equal(countAt('Common Crypt 25', 450), 0)
+})
+
+test('количество зависит от очков: подняли очки за тип — штук нужно меньше', () => {
+  const h = 300
+  const base = countAt('Epic Crypt 30', h)
+  const richer = { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Crypt 30': { all: 2 } } } }
+  assert.ok(countAt('Epic Crypt 30', h, richer) < base)
 })
