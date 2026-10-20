@@ -235,7 +235,7 @@ function monsterIndex(typeName) {
 function emcRowOf(player, model) {
   return computeRow(player.hero_level || EMC_DEFAULT_HERO, model)
 }
-export function quotaColumns(targets, epicLabel, typeMeta = null, totalLabel = 'Total') {
+export function quotaColumns(targets, epicLabel, typeMeta = null) {
   if (Array.isArray(targets?.quotas)) {
     // «Персонализированный учёт по Герою» — тумблер на каждой квоте (targets.personal.crypts/emc);
     // шкала очков — lib/heroQuota.js. У архива без chest_type_meta веса неизвестны: Crypts — как
@@ -260,14 +260,6 @@ export function quotaColumns(targets, epicLabel, typeMeta = null, totalLabel = '
           : !!p.quota_targets_partial?.[String(q.slot)]),
       }
     })
-    if ((pers.crypts || pers.emc) && typeMeta) {
-      cols.push({
-        key: 'quota:total', name: totalLabel, target: null, personal: true,
-        get: p => scoreOf(p.counts, typeMeta, p.hero_level, scale).score,
-        targetOf: p => normAt(p.hero_level || DEFAULT_HERO, scale),
-        partialOf: p => !p.hero_level,
-      })
-    }
     return cols
   }
   return [{ key: 'quota:legacy', name: epicLabel, target: targets?.chests ?? null,
@@ -347,9 +339,9 @@ const TABLE_TXT = {
         heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
 }
 
-export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
+export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
-  const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta, tt.total), [targets, tt.epic, chestTypeMeta, tt.total])
+  const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta), [targets, tt.epic, chestTypeMeta])
   const emc = useMemo(() => emcModel(targets), [targets])
   const typeMeta = chestTypeMeta
   const pers = targets?.personal || {}
@@ -357,6 +349,18 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
   const personalEmc = !!pers.emc
   const scale = useMemo(() => ({ norm: pers.norm, weights: pers.weights, ranges: pers.ranges, mix: pers.mix }), [pers])
   const emcLevers = (targets?.quotas || []).find(q => q.slot === 2)?.emc
+  // Столбец «Очки» — единая сумма всех сундуков в учёте (склепы + EMC + прочие). Когда включена
+  // персонализация (владелец 2026-10-21), считаем её по шкале очков для Героя игрока и сравниваем с
+  // нормой по Герою; иначе — прежние очки клана и общая цель сезона.
+  const pointsPersonal = (personalCrypts || personalEmc) && !!typeMeta
+  const players = useMemo(() => {
+    if (!pointsPersonal) return rawPlayers
+    return rawPlayers.map(p => ({
+      ...p, clanPoints: p.points,
+      points: scoreOf(p.counts, typeMeta, p.hero_level, scale).score,
+      pointsTarget: normAt(p.hero_level || DEFAULT_HERO, scale),
+    })).sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+  }, [rawPlayers, pointsPersonal, typeMeta, scale])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
   const pointsRank = useMemo(() => {
@@ -541,7 +545,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   {showHero && <td style={{ textAlign: 'center' }}>{p.hero_level ?? '—'}</td>}
                   <td className="public-num-cell">{pointsRank[p.name]}</td>
                   <td title={p.name} translate="no" className="notranslate public-name-cell">
-                    {renderPlayerName(p, targets)}
+                    {renderPlayerName(p, pointsPersonal ? { ...targets, points: p.pointsTarget } : targets)}
                   </td>
                   {editMode && (
                     <td>
@@ -611,9 +615,14 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                       </button>
                     </td>
                   )}
-                  <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
-                    {fmtNum(p.points)}
-                  </td>
+                  {pointsPersonal
+                    ? <ProgressCell value={p.points} target={p.pointsTarget} partial={!p.hero_level} hint={tt.partialHint}
+                                    showPct minWidth={120} className="public-points-cell" />
+                    : (
+                      <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
+                        {fmtNum(p.points)}
+                      </td>
+                    )}
                   {quotaCols.map(c => {
                     const v = c.get(p)
                     if (c.personal) {
