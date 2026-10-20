@@ -276,13 +276,17 @@ function barColor(pct) {
   const light = Math.round(16 + k * 20)
   return `hsl(${hue} ${sat}% ${light}%)`
 }
-// Заливка всей ячейки (владелец 2026-10-19): без полоски; в итоговом столбце квоты «5/15» сверху
-// и процент по центру строкой ниже, в столбцах монстров (Hydra, Undead…) — только «5/15».
+// Ячейка = целый прогресс-бар (владелец 2026-10-20): заливка слева направо на pct% ширины всей
+// ячейки, остальное — тёмный фон; цвет заливки по той же палитре, что и раньше.
+function barBackground(pct) {
+  const w = Math.min(Math.max(pct, 0), 100)
+  return `linear-gradient(to right, ${barColor(pct)} ${w}%, rgba(255,255,255,0.04) ${w}%)`
+}
 function ProgressCell({ value, target, partial, hint = '', showPct = false, className = 'public-epic-cell', minWidth = 96 }) {
   const pct = target ? Math.round((value / target) * 100) : 100
   return (
     <td className={className} title={partial ? hint : ''}
-        style={{ minWidth, textAlign: 'center', background: barColor(pct), transition: 'background 0.4s' }}>
+        style={{ minWidth, textAlign: 'center', background: barBackground(pct), transition: 'background 0.4s' }}>
       <div style={{ fontSize: 14, whiteSpace: 'nowrap', fontWeight: 400, color: 'var(--on-surface)' }}>
         {value}/{target ?? '—'}{partial ? <span style={{ opacity: 0.6 }}>*</span> : ''}
       </div>
