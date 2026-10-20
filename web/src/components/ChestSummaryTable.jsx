@@ -318,7 +318,7 @@ export function columnAverage(players, getValue) {
 export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
   const qcol = quotaCols.find(c => c.key === sort.key)
   const value = p => sort.key === 'name' ? p.name.toLowerCase()
-    : sort.key === 'points' ? p.points
+    : sort.key === 'points' ? (p.pointsPct ?? p.points)
     : sort.key === 'hero' ? (p.hero_level ?? -1)
     : qcol ? qcol.get(p)
     : (p.counts[sort.key] || 0)
@@ -327,7 +327,7 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
     const va = value(a), vb = value(b)
     if (va < vb) return -dir
     if (va > vb) return dir
-    return b.points - a.points || a.name.localeCompare(b.name)
+    return (b.pointsPct ?? b.points) - (a.pointsPct ?? a.points) || b.points - a.points || a.name.localeCompare(b.name)
   })
 }
 
@@ -360,7 +360,9 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
       ...p, clanPoints: p.points,
       points: scoreOf(p.counts, typeMeta, p.hero_level, scale).score,
       pointsTarget: normAt(p.hero_level || DEFAULT_HERO, scale),
-    })).sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+    })).map(p => ({ ...p, pointsPct: p.pointsTarget ? p.points / p.pointsTarget : 0 }))
+      // порядок и место «#» — по успешности игрока для его Героя (очки / норма), а не по абсолютным очкам
+      .sort((a, b) => b.pointsPct - a.pointsPct || b.points - a.points || a.name.localeCompare(b.name))
   }, [rawPlayers, pointsPersonal, typeMeta, scale])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
