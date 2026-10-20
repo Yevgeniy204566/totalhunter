@@ -5,7 +5,7 @@ import {
 import { posToK, kToPos } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
-  weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal,
+  weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, typeTab,
 } from '../lib/heroQuota.js'
 
 // «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
@@ -109,13 +109,6 @@ function sortTypes(list, tab) {
   })
 }
 
-// Вкладка типа: квота из «Учёта» (слот 1 — Crypts, 2 — EMC); без слота — по названию.
-function tabOf(type) {
-  if (type.slot === 1) return 'crypts'
-  if (type.slot === 2) return 'emc'
-  return /Crypt|Citadel/.test(type.id) ? 'crypts' : 'emc'
-}
-
 function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
@@ -200,7 +193,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   // Типы клана для вкладки; нет сундуков группы — типы шкалы по умолчанию
   const own = useMemo(() => {
     const seen = new Set()
-    return types.filter(x => tabOf(x) === tab).map(x => ({ ...x, key: weightKey(x.id) }))
+    return types.filter(x => typeTab(x.id, x.slot) === tab).map(x => ({ ...x, key: weightKey(x.id) }))
       .filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
   }, [types, tab])
   const fallback = own.length === 0
@@ -317,7 +310,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     setNote(t.loaded)
   }
 
-  const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: tabOf(x) === 'emc' ? 2 : x.slot }]))
+  const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
   const emcTotal = computeRow(exHero, emc).emc + emcOthersTotal(emcMeta, exHero, scale, emc)
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
     .replace('{crypts}', fmt(cryptsNormAt(exHero, emc, scale))).replace('{emc}', emcTotal)

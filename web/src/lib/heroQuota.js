@@ -226,10 +226,18 @@ export function emcCountAt(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
   return Math.round(mean * mixFactor({ ...entry, on: true }, hero))
 }
 
-// Цель по штукам для эпик-монстров вне четырёх известных, которые клан держит в слоте EMC.
+// К какой вкладке пульта относится тип — единое правило для пульта и публичной страницы (полная синхронизация,
+// владелец 2026-10-20): квота из «Учёта» (1 — Crypts, 2 — EMC); без квоты — по названию.
+export function typeTab(id, slot) {
+  if (slot === 1) return 'crypts'
+  if (slot === 2) return 'emc'
+  return /Crypt|Citadel/.test(id) ? 'crypts' : 'emc'
+}
+
+// Цель по штукам для типов слота EMC вне четырёх известных монстров (в том числе свои события, «Тыква»).
 export function emcOthersTotal(typeMeta, hero, settings = DEFAULT_SETTINGS, emcModel) {
   return Object.values(typeMeta || {})
-    .filter(m => m.slot === 2 && m.id.startsWith('Epic ') && !(m.id in EMC_FOUR) && !m.id.includes('Crypt'))
+    .filter(m => m.slot === 2 && !(m.id in EMC_FOUR))
     .reduce((sum, m) => sum + emcCountAt(m.id, hero, settings, emcModel), 0)
 }
 

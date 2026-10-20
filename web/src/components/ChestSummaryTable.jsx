@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { computeRow } from '../lib/emcQuota.js'
 import {
-  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcCountAt, emcOthersTotal, EMC_FOUR, DEFAULT_HERO,
+  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcCountAt, emcOthersTotal, countAt, typeTab, weightKey,
+  EPIC_CRYPTS, EMC_FOUR, DEFAULT_HERO,
 } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
@@ -645,10 +646,18 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   {chestTypes.map(t => {
                     const value = p.counts[t] || 0
                     const meta = typeMeta?.[t]
-                    // прочие эпические монстры (вне четырёх с историей): среднее четырёх, правится пультом
-                    if (personalEmc && meta?.slot === 2 && meta.id.startsWith('Epic ') && !meta.id.includes('Crypt')
-                        && !(meta.id in EMC_FOUR)) {
-                      const need = emcCountAt(meta.id, p.hero_level || DEFAULT_HERO, scale, emcLevers)
+                    // Типы с целью по штукам из пульта (те же правила, что во вкладке «Пульт»): склепы вне эпиков —
+                    // если число задано вручную; эпические монстры вне четырёх и свои события слота EMC
+                    // (эпик-склепы идут итогом в колонке Crypts, четыре монстра — ниже по своей таблице)
+                    if (meta) {
+                      const kind = typeTab(meta.id, meta.slot)
+                      const hero = p.hero_level || DEFAULT_HERO
+                      let need = 0
+                      if (personalCrypts && kind === 'crypts' && !EPIC_CRYPTS.includes(weightKey(meta.id))) {
+                        need = countAt(meta.id, hero, scale)
+                      } else if (personalEmc && kind === 'emc' && !(meta.id in EMC_FOUR)) {
+                        need = emcCountAt(meta.id, hero, scale, emcLevers)
+                      }
                       if (need > 0) {
                         return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint} target={need} />
                       }

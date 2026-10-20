@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf, typeTab,
 } from './heroQuota.js'
 
 const w = (id, hero, s = DEFAULT_SETTINGS) => weightAt(id, hero, s)
@@ -255,9 +255,9 @@ test('EMC: четыре известных монстра — по истори�
 test('EMC: цель «прочих» монстров слота 2 суммируется отдельно', () => {
   const meta = {
     A: { id: 'Epic Briareus', points: 45, slot: 2 }, B: { id: 'Epic Fire Hydra', points: 30, slot: 2 },
-    C: { id: 'Yogwai', points: 40, slot: 1 }, D: { id: 'Epic Crypt 35', points: 135, slot: 2 },
+    C: { id: 'Yogwai', points: 40, slot: 1 },
   }
-  assert.equal(emcOthersTotal(meta, 400), 9) // только Briareus; Hydra — из четырёх, Crypt — не монстр
+  assert.equal(emcOthersTotal(meta, 400), 9) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
 })
 
 test('тип вне шкалы: очки клана × фейдер, mute обнуляет', () => {
@@ -341,4 +341,14 @@ test('очки EMC правятся пультом: поставили очки 
 
 test('очки: тип вне шкалы (свой) входит в сумму по очкам клана', () => {
   assert.equal(scoreOf({ 'Тыква': 5 }, META, 300).score, 60)
+})
+
+test('синхронизация пульта и публичной страницы: тип относится к вкладке по квоте, свои события слота EMC входят в цель', () => {
+  assert.equal(typeTab('Pumpkin Chest', 2), 'emc')
+  assert.equal(typeTab('Epic Crypt 30', 1), 'crypts')
+  assert.equal(typeTab('Rare Crypt 25', null), 'crypts')
+  assert.equal(typeTab('Yogwai', null), 'emc')
+  const meta = { 'Тыква': { id: 'Pumpkin Chest', points: 1, slot: 2 }, Hydra: { id: 'Epic Fire Hydra', points: 1, slot: 2 } }
+  assert.equal(emcOthersTotal(meta, 400), 9)         // «Тыква» = среднее четырёх, как в пульте
+  assert.equal(emcCountAt('Pumpkin Chest', 400), 9)
 })
