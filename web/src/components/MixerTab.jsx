@@ -137,9 +137,8 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
           onDoubleClick={() => onK(1)} />
       </div>
       <input className="input-dark mixer-k" type="text" inputMode="decimal" value={draft ?? abs} disabled={disabled}
-        title={manual ? tt.manual : tt.abs} onChange={type} onFocus={e => e.target.select()}
+        title={manual ? tt.manual : `${tt.abs} · ${tt.calc}: ${calc}`} onChange={type} onFocus={e => e.target.select()}
         onBlur={() => setDraft(null)} />
-      <div className="mixer-sub" title={tt.calc}>{calc}</div>
     </div>
   )
 }
