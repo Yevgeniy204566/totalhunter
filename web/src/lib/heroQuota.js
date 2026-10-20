@@ -181,15 +181,19 @@ export const EMC_TYPES = [...EMC_IDS, 'Dark Omens Chest', 'Epic Briareus', 'Yogw
 // Проверка по данным: эпики × средние очки эпика = 102% нормы ЭДО, 81% Старта.
 export const EPIC_CRYPTS = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
 
-export function countAt(id, hero, settings = DEFAULT_SETTINGS) {
+function countRaw(id, hero, settings) {
   const key = weightKey(id)
   const mixC = settings.mix?.c || {}
   const entry = mixC[key]
   if (entry?.on === false) return 0
-  if (entry?.set != null) return Math.max(0, Math.round(entry.set))
+  if (entry?.set != null) return Math.max(0, entry.set)
   if (!EPIC_CRYPTS.includes(key)) return 0
   const active = EPIC_CRYPTS.filter(t => mixC[t]?.on !== false)
-  return Math.round(epicRefAt(hero) / active.length * mixFactor({ ...entry, on: true }, hero))
+  return epicRefAt(hero) / active.length * mixFactor({ ...entry, on: true }, hero)
+}
+
+export function countAt(id, hero, settings = DEFAULT_SETTINGS) {
+  return Math.round(countRaw(id, hero, settings))
 }
 
 // Прочие эпические монстры (нет истории штук): база = простое среднее штук четырёх известных монстров
@@ -213,4 +217,21 @@ export function emcOthersTotal(typeMeta, hero, settings = DEFAULT_SETTINGS, emcM
   return Object.values(typeMeta || {})
     .filter(m => m.slot === 2 && m.id.startsWith('Epic ') && !(m.id in EMC_FOUR) && !m.id.includes('Crypt'))
     .reduce((sum, m) => sum + emcCountAt(m.id, hero, settings, emcModel), 0)
+}
+
+// Обязательная норма клана — эпик-склепы суммой (любой уровень 20–35): Старт 50, ЭДО 200 — факт, выше/ниже —
+// интерполяция (Герой 456 → 334). Сумма долей типов, поэтому фейдеры и mute пульта её меняют.
+export function epicCountTotal(hero, settings = DEFAULT_SETTINGS) {
+  // сумма до округления: четыре доли по 83.5 дают 334, а не 336
+  return Math.round(EPIC_CRYPTS.reduce((sum, id) => sum + countRaw(id, hero, settings), 0))
+}
+
+// Сколько эпик-склепов (20–35) набрал игрок: по id типов из мета-данных сводки.
+export function epicCryptsOf(counts, meta) {
+  let n = 0
+  for (const [name, c] of Object.entries(counts || {})) {
+    const m = meta?.[name]
+    if (m && EPIC_CRYPTS.includes(weightKey(m.id))) n += c || 0
+  }
+  return n
 }

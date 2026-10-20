@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { computeRow } from '../lib/emcQuota.js'
 import {
-  scoreOf, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, weightKey, CRYPT_TYPES, EMC_FOUR, DEFAULT_HERO,
+  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcCountAt, emcOthersTotal, EMC_FOUR, DEFAULT_HERO,
 } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
@@ -242,25 +242,25 @@ export function quotaColumns(targets, epicLabel, typeMeta = null, totalLabel = '
     // обычная квота (по штукам), «Всего» не показываем.
     const pers = targets.personal || {}
     const scale = { norm: pers.norm, weights: pers.weights, ranges: pers.ranges }
-    const emcModel = (targets.quotas.find(x => x.slot === 2) || {}).emc
     const cols = targets.quotas.map(q => {
-      const cryptsPersonal = q.slot === 1 && !!pers.crypts && !!typeMeta
+      // Crypts при персонализации — эпик-склепы суммой (обязательная норма клана): цель по Герою из шкалы,
+      // фейдеры пульта её меняют (владелец 2026-10-21). Очки сезона остаются отдельным столбцом «Очки».
+      const epicPersonal = q.slot === 1 && !!pers.crypts && !!typeMeta
       return {
         key: `quota:${q.slot}`, name: q.name, target: q.target,
-        personal: cryptsPersonal || q.mode === 'per_player' || q.mode === 'emc_table',
-        get: p => (cryptsPersonal ? scoreOf(p.counts, typeMeta, p.hero_level, scale, 1).score
-          : p.quotas?.[String(q.slot)] ?? 0),
-        // личная цель игрока: Crypts — очки (норма «Всего» минус доля EMC), EMC — штуки по таблице
-        // уровней и рычагам клана (lib/emcQuota.js), per_player — старые архивы (считал сервер)
-        targetOf: p => (cryptsPersonal ? cryptsNormAt(p.hero_level || DEFAULT_HERO, emcModel, scale)
+        personal: epicPersonal || q.mode === 'per_player' || q.mode === 'emc_table',
+        get: p => (epicPersonal ? epicCryptsOf(p.counts, typeMeta) : p.quotas?.[String(q.slot)] ?? 0),
+        // личная цель игрока: Crypts — штуки эпик-склепов по Герою, EMC — штуки по таблице уровней и
+        // рычагам клана (lib/emcQuota.js), per_player — старые архивы (считал сервер)
+        targetOf: p => (epicPersonal ? epicCountTotal(p.hero_level || DEFAULT_HERO, scale)
           : q.mode === 'emc_table' ? emcRowOf(p, q.emc || {}).emc
             + (typeMeta ? emcOthersTotal(typeMeta, p.hero_level || DEFAULT_HERO, scale, q.emc) : 0)
           : q.mode === 'per_player' ? p.quota_targets?.[String(q.slot)] : q.target),
-        partialOf: p => (cryptsPersonal || q.mode === 'emc_table' ? !p.hero_level
+        partialOf: p => (epicPersonal || q.mode === 'emc_table' ? !p.hero_level
           : !!p.quota_targets_partial?.[String(q.slot)]),
       }
     })
-    if (pers.crypts && pers.emc && typeMeta) {
+    if ((pers.crypts || pers.emc) && typeMeta) {
       cols.push({
         key: 'quota:total', name: totalLabel, target: null, personal: true,
         get: p => scoreOf(p.counts, typeMeta, p.hero_level, scale).score,
@@ -289,9 +289,9 @@ function isEpicColumn(typeName) {
 function barColor(pct) {
   const k = Math.min(Math.max(pct, 0), 100) / 100
   const hue = Math.round(270 - k * 130)
-  const sat = Math.round(35 + k * 25)
-  // у 100% зелёный тёмный (владелец 2026-10-20): светлый текст и проценты на нём должны читаться
-  const light = Math.round(16 + k * 10)
+  const sat = Math.round(30 + k * 20)
+  // у 100% зелёный ОЧЕНЬ тёмный (владелец 2026-10-21): светлый текст и проценты на нём читаются
+  const light = Math.round(14 + k * 7)
   return `hsl(${hue} ${sat}% ${light}%)`
 }
 // Ячейка = целый прогресс-бар (владелец 2026-10-20): заливка слева направо на pct% ширины всей
@@ -632,14 +632,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   })}
                   {chestTypes.map(t => {
                     const value = p.counts[t] || 0
-                    // персональная квота Crypts: штуки по типу склепа при Герое игрока (пульт, «Количество»)
                     const meta = typeMeta?.[t]
-                    if (personalCrypts && meta && CRYPT_TYPES.includes(weightKey(meta.id))) {
-                      const need = countAt(meta.id, p.hero_level || DEFAULT_HERO, scale)
-                      if (need > 0) {
-                        return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint} target={need} />
-                      }
-                    }
                     // прочие эпические монстры (вне четырёх с историей): среднее четырёх, правится пультом
                     if (personalEmc && meta?.slot === 2 && meta.id.startsWith('Epic ') && !meta.id.includes('Crypt')
                         && !(meta.id in EMC_FOUR)) {

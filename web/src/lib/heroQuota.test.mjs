@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf,
 } from './heroQuota.js'
 
 const w = (id, hero, s = DEFAULT_SETTINGS) => weightAt(id, hero, s)
@@ -267,4 +267,26 @@ test('тип вне шкалы: очки клана × фейдер, mute обн
   assert.equal(scoreOf({ 'Тыква': 3 }, meta, 300, up).score, 72)
   const off = { ...DEFAULT_SETTINGS, mix: { w: { 'Pumpkin Chest': { on: false } } } }
   assert.equal(scoreOf({ 'Тыква': 3 }, meta, 300, off).score, 0)
+})
+
+test('итоговая норма эпик-склепов: ЭДО ≥ 200, Герой 456 → 334, а не доля типа', () => {
+  assert.equal(epicCountTotal(387.5), 200)
+  assert.equal(epicCountTotal(456), 334)
+  assert.ok(epicCountTotal(400) >= 200)
+  assert.equal(epicCountTotal(279), 50)
+})
+
+test('норма эпиков следует за фейдерами пульта: mute типа и множитель', () => {
+  const muted = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 20': { on: false } } } }
+  assert.equal(epicCountTotal(387.5, muted), 200) // 200 ÷ 3 на каждый из трёх оставшихся типов
+  const up = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 35': { all: 2 } } } }
+  assert.equal(epicCountTotal(387.5, up), 250)
+})
+
+test('эпик-склепы игрока: суммируются по id типов 20–35, прочие не входят', () => {
+  const meta = {
+    'Эпик 35': { id: 'Epic Crypt 35', slot: 1 }, 'Эпик 25': { id: 'Epic Crypt 25', slot: 1 },
+    'Редкий 30': { id: 'Rare Crypt 30', slot: 1 }, 'Hydra': { id: 'Epic Fire Hydra', slot: 2 },
+  }
+  assert.equal(epicCryptsOf({ 'Эпик 35': 10, 'Эпик 25': 5, 'Редкий 30': 40, Hydra: 7 }, meta), 15)
 })
