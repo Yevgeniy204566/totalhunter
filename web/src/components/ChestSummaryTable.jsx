@@ -280,17 +280,18 @@ function isEpicColumn(typeName) {
 // насыщается через синий и бирюзовый до неоново-зелёного.
 function barColor(pct) {
   const k = Math.min(Math.max(pct, 0), 100) / 100
-  const hue = Math.round(270 - k * 130)
-  const sat = Math.round(30 + k * 20)
-  // у 100% зелёный ОЧЕНЬ тёмный (владелец 2026-10-21): светлый текст и проценты на нём читаются
-  const light = Math.round(14 + k * 7)
+  // Заливка еле заметная (владелец 2026-10-21): чуть светлее фона строки, чтобы таблица читалась;
+  // от тихого фиолетового к тихому зелёному, насыщенность и яркость минимальны
+  const hue = Math.round(260 - k * 110)
+  const sat = Math.round(18 + k * 10)
+  const light = Math.round(12 + k * 4)
   return `hsl(${hue} ${sat}% ${light}%)`
 }
 // Ячейка = целый прогресс-бар (владелец 2026-10-20): заливка слева направо на pct% ширины всей
 // ячейки, остальное — тёмный фон; цвет заливки по той же палитре, что и раньше.
 function barBackground(pct) {
   const w = Math.min(Math.max(pct, 0), 100)
-  return `linear-gradient(to right, ${barColor(pct)} ${w}%, rgba(255,255,255,0.04) ${w}%)`
+  return `linear-gradient(to right, ${barColor(pct)} ${w}%, rgba(255,255,255,0.025) ${w}%)`
 }
 function ProgressCell({ value, target, partial, hint = '', showPct = false, className = 'public-epic-cell', minWidth = 96 }) {
   const pct = target ? Math.round((value / target) * 100) : 100
