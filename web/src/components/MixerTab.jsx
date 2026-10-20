@@ -40,7 +40,7 @@ const TXT = {
     helpText: [
       'Вкладка «Сундуки» — быстрая ручная настройка клана: названия, очки за сундук, «Учёт». Она остаётся всегда и питает колонку «Очки» в таблице игроков.',
       'Пульт включается тумблером «Персонализированный учёт по уровню Героя» на квоте Crypts и/или EMC. Тогда цели игрока считаются по уровню его Героя: чем ниже Герой, тем больше очков за сундук и меньше норма, и наоборот. Шкала построена по данным реальных замеров в королевстве и интерполирована на уровни Героя 100–600. Ориентировочный учёт ведётся за 2 недели (сезон — 14 дней).',
-      'В пульте — те сундуки, которые клан держит в «Учёте». Склепы и цитадели — вкладка Crypts, эпические монстры — EMC. Для типов вне шкалы (например, свои события) базой служат очки из вкладки «Сундуки».',
+      'В пульте — те сундуки, которые клан держит в «Учёте». Вкладка EMC — только сундуки со статусом «Квота 2»; вкладка Crypts — «Квота 1» и «В учёте» (учитываются без квоты). Для типов вне шкалы (например, свои события) базой служат очки из вкладки «Сундуки».',
       'Фейдер: середина — рассчитанное значение, вверх — больше, вниз — меньше (от ×0,1 до ×3). Внизу — абсолютное число: сотрите его и впишите любое своё (0 выключает тип). Зелёная точка тоже выключает тип.',
       '«Очки» — сколько очков даёт сундук. «Количество» — сколько штук ждут от игрока: у эпик-склепов — ориентир клана, у эпических монстров — история клана (четыре монстра) или их среднее (остальные).',
       'Ступени Героя: отметьте одну или несколько — правка пойдёт только в них. «Все уровни» меняет значение пропорционально на каждой ступени.',
@@ -72,7 +72,7 @@ const TXT = {
     helpText: [
       "The 'Chests' tab is the clan's quick manual setup: names, points per chest, accounting. It always stays and feeds the 'Points' column of the player table.",
       "The mixer is turned on by the 'Personalized accounting by Hero level' switch on the Crypts and/or EMC quota. Player targets are then calculated by the player's Hero level: the lower the Hero, the more points per chest and the smaller the norm, and vice versa. The scale is built from real measurements in the kingdom and interpolated to Hero levels 100–600. The estimated accounting covers 2 weeks (a season is 14 days).",
-      "The mixer shows the chests the clan keeps in accounting. Crypts and citadels are on the Crypts tab, epic monsters on EMC. For types outside the scale (e.g. custom events) the base is the points from the 'Chests' tab.",
+      "The mixer shows the chests the clan keeps in accounting. The EMC tab holds only chests with the 'Quota 2' status; the Crypts tab holds 'Quota 1' and 'Counted' (counted without a quota). For types outside the scale (e.g. custom events) the base is the points from the 'Chests' tab.",
       'Fader: the middle is the calculated value, up is more, down is less (×0.1 to ×3). The absolute number below is free to type: erase it and enter any number of your own (0 turns the type off). The green dot also turns a type off.',
       "'Points' is how many points a chest gives. 'Count' is how many pieces are expected: epic crypts — the clan guideline, epic monsters — clan history (four monsters) or their average (the rest).",
       "Hero steps: tick one or several — the edit goes only into them. 'All levels' changes the value proportionally on every step.",
@@ -190,7 +190,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const withK = (entry, k) => (isAll ? { ...(entry || {}), all: k }
     : { ...(entry || {}), bands: { ...(entry?.bands || {}), ...Object.fromEntries(bands.map(b => [b, k])) } })
 
-  // Типы клана для вкладки; нет сундуков группы — типы шкалы по умолчанию
+  // Типы клана для вкладки (EMC — только «Квота 2»; Crypts — «Квота 1» и «В учёте»); нет сундуков группы —
+  // типы шкалы по умолчанию
   const own = useMemo(() => {
     const seen = new Set()
     return types.filter(x => typeTab(x.id, x.slot) === tab).map(x => ({ ...x, key: weightKey(x.id) }))

@@ -343,11 +343,12 @@ test('очки: тип вне шкалы (свой) входит в сумму �
   assert.equal(scoreOf({ 'Тыква': 5 }, META, 300).score, 60)
 })
 
-test('синхронизация пульта и публичной страницы: тип относится к вкладке по квоте, свои события слота EMC входят в цель', () => {
+test('синхронизация пульта и публичной страницы: EMC — только «Квота 2», остальное учитываемое — Crypts', () => {
   assert.equal(typeTab('Pumpkin Chest', 2), 'emc')
   assert.equal(typeTab('Epic Crypt 30', 1), 'crypts')
   assert.equal(typeTab('Rare Crypt 25', null), 'crypts')
-  assert.equal(typeTab('Yogwai', null), 'emc')
+  assert.equal(typeTab('Yogwai', null), 'crypts')            // без «Квоты 2» — не EMC, как бы ни назывался
+  assert.equal(typeTab('Epic Fire Hydra', 1), 'crypts')
   const meta = { 'Тыква': { id: 'Pumpkin Chest', points: 1, slot: 2 }, Hydra: { id: 'Epic Fire Hydra', points: 1, slot: 2 } }
   assert.equal(emcOthersTotal(meta, 400), 9)         // «Тыква» = среднее четырёх, как в пульте
   assert.equal(emcCountAt('Pumpkin Chest', 400), 9)
