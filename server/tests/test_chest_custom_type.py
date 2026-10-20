@@ -98,24 +98,3 @@ async def test_custom_type_whitespace_is_normalised(db_session):
         rows = (await _mine(client, c, h))["rows"]
     assert r.status_code == 200
     assert any(x["catalog_id"] == "Pumpkin Chest" for x in rows)
-
-
-@pytest.mark.asyncio
-async def test_rows_expose_official_name_from_localization(db_session):
-    """Пульт подписывает типы названием из вкладки «Сундуки»: своё → официальное (перевод на языке клана)."""
-    from models import ChestLocalization
-    c, h = await _owner(db_session, f"cu8{secrets.token_hex(2)}@example.com")
-    c.language = "ru"
-    db_session.add(ChestLocalization(canonical_type="Epic Crypt 30", language="ru",
-                                     display_text="Эпический склеп 30 уровня"))
-    await db_session.commit()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        await _post(client, c, h, [
-            {"raw_type": "сырой ocr", "catalog_id": "Epic Crypt 30", "custom_name": None, "points": 80,
-             "is_in_pattern": True},
-            {"raw_type": "Тыква", "catalog_id": "Pumpkin Chest", "custom_name": "Тыква!", "points": 12,
-             "is_in_pattern": True, "is_custom": True}])
-        rows = {r["catalog_id"]: r for r in (await _mine(client, c, h))["rows"]}
-    assert rows["Epic Crypt 30"]["official_name"] == "Эпический склеп 30 уровня"
-    assert rows["Pumpkin Chest"]["official_name"] is None       # перевода нет — подпись решит фронт
-    assert rows["Pumpkin Chest"]["custom_name"] == "Тыква!"

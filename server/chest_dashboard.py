@@ -207,15 +207,8 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
         })
 
     known_ids = await _load_known_catalog_ids(db)
-    # официальное название — перевод на языке клана (то же, что подпись столбца на публичной странице);
-    # «Пульт» подписывает типы по цепочке: своё название → официальное → каноническое, но не сырой OCR
-    official = {canonical: text for canonical, text in (await db.execute(
-        select(ChestLocalization.canonical_type, ChestLocalization.display_text)
-        .where(ChestLocalization.language == collector.language)
-    )).all()}
     for r in rows:
         r["is_custom"] = bool(r["catalog_id"]) and r["catalog_id"] not in known_ids
-        r["official_name"] = official.get(r["catalog_id"]) if r["catalog_id"] else None
     return rows
 
 

@@ -89,9 +89,25 @@ const GROUPS = [100, 200, 300, 400, 500].map(g => ({
 const fmt = n => Number(n).toLocaleString('ru-RU')
 const bandLabel = h => { const n = Number(h); return n >= 600 ? `${n}` : `${n}–${n + 9}` }
 
-// Название колонки — как в игре (из вкладки «Сундуки»: своё название или название из бота); только
-// каноническое английское имя сокращаем («Epic »), чтобы колонка не ломалась.
-const titleOf = x => (x.label === x.id ? x.label.replace(/^Epic /, '') : x.label)
+// Название колонки — полностью, как во вкладке «Сундуки»: «Своё название», иначе «Официальный сундук».
+const titleOf = x => x.label
+
+// Порядок колонок по группам (владелец 2026-10-21): эпические, редкие, цитадели, обычные, прочие;
+// внутри группы — уровень по убыванию. Эпические монстры: четыре с историей, затем остальные по названию.
+const GROUP_RANK = id => (/^Epic Crypt/.test(id) ? 0 : /^Rare Crypt/.test(id) ? 1 : /Citadel/.test(id) ? 2
+  : /^Common Crypt/.test(id) ? 3 : 4)
+const levelOf = id => Number((id.match(/(\d+)\s*$/) || [0, 0])[1])
+const FOUR_ORDER = ['Epic Fire Hydra', 'Epic Undead', 'Epic Arachne', 'Epic Shadow City']
+function sortTypes(list, tab) {
+  return [...list].sort((a, b) => {
+    if (tab === 'emc') {
+      const ia = FOUR_ORDER.indexOf(a.id), ib = FOUR_ORDER.indexOf(b.id)
+      if (ia !== ib) return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)
+      return a.label.localeCompare(b.label)
+    }
+    return GROUP_RANK(a.id) - GROUP_RANK(b.id) || levelOf(b.id) - levelOf(a.id) || a.label.localeCompare(b.label)
+  })
+}
 
 // Вкладка типа: квота из «Учёта» (слот 1 — Crypts, 2 — EMC); без слота — по названию.
 function tabOf(type) {
@@ -126,7 +142,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
       <input className="input-dark mixer-k" type="text" inputMode="decimal" value={draft ?? abs} disabled={disabled}
         title={manual ? tt.manual : tt.abs} onChange={type} onFocus={e => e.target.select()}
         onBlur={() => setDraft(null)} />
-      <div className="mixer-sub">{tt.calc} {calc}</div>
+      <div className="mixer-sub" title={tt.calc}>{calc}</div>
     </div>
   )
 }
@@ -188,9 +204,9 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       .filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
   }, [types, tab])
   const fallback = own.length === 0
-  const list = fallback
+  const list = sortTypes(fallback
     ? (tab === 'crypts' ? CRYPT_TYPES : EMC_TYPES).map(id => ({ id, key: id, label: id, points: 0 }))
-    : own
+    : own, tab)
 
   const pointsCol = x => {
     const e = mix.w?.[x.key]
