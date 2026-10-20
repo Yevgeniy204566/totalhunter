@@ -74,10 +74,11 @@ test('порядок: округление один раз в конце, про
   assert.equal(row(400, s).finalA, 4)
 })
 
-test('плохие значения множителей считаются как 1.00 / ограничиваются 0.1..3.0', () => {
+test('плохие значения множителей считаются как 1.00 / ограничиваются 0.01..1000', () => {
   assert.equal(row(400, { ...DEFAULT_SETTINGS, global: NaN }).emc, row(400).emc)
-  assert.equal(row(400, { ...DEFAULT_SETTINGS, global: 12 }).globalK, 3)
-  assert.equal(row(400, { ...DEFAULT_SETTINGS, global: 0 }).globalK, 0.1)
+  assert.equal(row(400, { ...DEFAULT_SETTINGS, global: 12 }).globalK, 12)
+  assert.equal(row(400, { ...DEFAULT_SETTINGS, global: 99999 }).globalK, 1000)
+  assert.equal(row(400, { ...DEFAULT_SETTINGS, global: 0 }).globalK, 0.01)
 })
 
 test('при пустом поле множителя (строка "") берётся 1.00', () => {

@@ -597,17 +597,17 @@ async def update_language(slug: str, payload: LanguagePayload,
 
 
 class EmcMonsters(BaseModel):
-    hydra: float = Field(default=1.0, ge=0.1, le=3.0)
-    undead: float = Field(default=1.0, ge=0.1, le=3.0)
-    arachna: float = Field(default=1.0, ge=0.1, le=3.0)
-    shadow: float = Field(default=1.0, ge=0.1, le=3.0)
+    hydra: float = Field(default=1.0, ge=0.01, le=1000.0)
+    undead: float = Field(default=1.0, ge=0.01, le=1000.0)
+    arachna: float = Field(default=1.0, ge=0.01, le=1000.0)
+    shadow: float = Field(default=1.0, ge=0.01, le=1000.0)
 
 
 class EmcRange(BaseModel):
     # «from» — зарезервированное слово Python, поэтому через alias (в JSON ключ именно from/to)
     from_level: int = Field(alias="from", ge=100, le=600)
     to_level: int = Field(alias="to", ge=100, le=600)
-    k: float = Field(default=1.0, ge=0.1, le=3.0)
+    k: float = Field(default=1.0, ge=0.01, le=1000.0)
     model_config = {"populate_by_name": True}
 
     @model_validator(mode="after")
@@ -625,8 +625,8 @@ def _check_bands(bands: dict) -> dict:
     for band, k in bands.items():
         if band not in _BAND_KEYS:
             raise ValueError(f"unknown hero band {band!r}")
-        if not 0.1 <= k <= 3.0:
-            raise ValueError("multiplier must be 0.1…3.0")
+        if not 0.01 <= k <= 1000.0:
+            raise ValueError("multiplier must be 0.01…1000")
     return bands
 
 
@@ -638,15 +638,15 @@ def _check_bands(bands: dict) -> dict:
     for band, k in bands.items():
         if band not in _BAND_KEYS:
             raise ValueError(f"unknown hero band {band!r}")
-        if not 0.1 <= k <= 3.0:
-            raise ValueError("multiplier must be 0.1…3.0")
+        if not 0.01 <= k <= 1000.0:
+            raise ValueError("multiplier must be 0.01…1000")
     return bands
 
 
 class EmcSettings(BaseModel):
     """Рычаги квоты emc_table. Саму цель считает страница (web/src/lib/emcQuota.js) — здесь
-    только хранение и границы множителей 0.1…3.0, чтобы опечатка не раздула квоту."""
-    global_k: float = Field(default=1.0, alias="global", ge=0.1, le=3.0)
+    только хранение и границы множителей 0.01…1000 (число можно вписать руками; фейдер ходит в 0.1…3)."""
+    global_k: float = Field(default=1.0, alias="global", ge=0.01, le=1000.0)
     monsters: EmcMonsters = Field(default_factory=EmcMonsters)
     ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
     # пульт (2026-10-20): множитель монстра на ступень Героя и выключенные монстры
@@ -668,7 +668,7 @@ class MixEntry(BaseModel):
     """Фейдер пульта на один тип сундука: on — не mute; all — множитель «на все уровни»;
     bands — поправка отдельных ступеней Героя поверх него."""
     on: bool = True
-    all: float = Field(default=1.0, ge=0.1, le=3.0)
+    all: float = Field(default=1.0, ge=0.01, le=1000.0)
     bands: Dict[str, float] = Field(default_factory=dict, max_length=51)
     # set — число штук, заданное вручную (для типов, у которых клан штук не называет)
     set: Optional[int] = Field(default=None, ge=0, le=9999)
@@ -700,8 +700,8 @@ class MixerPreset(BaseModel):
     """Пресет пульта (слот 1–3): положения всех фейдеров + рычаги EMC, чтобы клан мог переключаться
     между наборами настроек («мягкий», «строгий», «на сезон»…)."""
     name: str = Field(default="", max_length=30)
-    norm: float = Field(default=1.0, ge=0.1, le=3.0)
-    weights: float = Field(default=1.0, ge=0.1, le=3.0)
+    norm: float = Field(default=1.0, ge=0.01, le=1000.0)
+    weights: float = Field(default=1.0, ge=0.01, le=1000.0)
     mix: "Mix" = Field(default_factory=lambda: Mix())
     emc: Optional[EmcSettings] = None
     model_config = {"populate_by_name": True}
@@ -711,11 +711,11 @@ class PersonalScale(BaseModel):
     """«Персонализированный учёт по Герою»: тумблер отдельно на каждой квоте (crypts — слот 1,
     emc — слот 2; клан вправе взять только часть) + рычаги шкалы (norm — множитель нормы,
     weights — множитель очков за сундук, ranges — множители нормы по диапазонам Героев).
-    Саму шкалу считает страница (web/src/lib/heroQuota.js) — здесь хранение и границы 0.1…3.0."""
+    Саму шкалу считает страница (web/src/lib/heroQuota.js) — здесь хранение и границы 0.01…1000."""
     crypts: bool = False
     emc: bool = False
-    norm: float = Field(default=1.0, ge=0.1, le=3.0)
-    weights: float = Field(default=1.0, ge=0.1, le=3.0)
+    norm: float = Field(default=1.0, ge=0.01, le=1000.0)
+    weights: float = Field(default=1.0, ge=0.01, le=1000.0)
     ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
     mix: Mix = Field(default_factory=Mix)
     presets: Dict[Literal["1", "2", "3"], MixerPreset] = Field(default_factory=dict)

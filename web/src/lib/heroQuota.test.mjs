@@ -93,8 +93,9 @@ test('рычаг по диапазону Героев меняет только 
   assert.equal(normAt(279, s), 5000)
 })
 
-test('множители зажимаются в 0.1…3', () => {
-  assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99 }), 42000)
+test('множители зажимаются в 0.01…1000', () => {
+  assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99 }), 1386000)
+  assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99999 }), 14000000)
 })
 
 test('ориентир по эпикам: опоры 50 / 200 / 250 / 40', () => {

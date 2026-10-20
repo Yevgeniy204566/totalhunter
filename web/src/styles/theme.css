@@ -808,3 +808,18 @@ a:hover { color: var(--on-surface); }
 .mixer-presets .input-dark { width: 160px; }
 .mixer-preset { display: flex; align-items: center; gap: 6px; font-size: 14px; border: 1px solid var(--outline); border-radius: 10px; padding: 4px 8px; }
 @media (max-width: 720px) { .mixer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mixer-help-text { font-size: 17px; line-height: 1.6; }
+.mixer-help summary { font-size: 17px; }
+.mixer-presets select { min-width: 190px; }
+@media (max-width: 560px) {
+  .mixer-name { font-size: 12px; word-break: normal; overflow-wrap: break-word; hyphens: auto; }
+  .mixer-bar { gap: 10px; }
+  .mixer-presets { gap: 8px; }
+  .mixer-presets select, .mixer-presets .input-dark { width: 100%; min-width: 0; }
+  .mixer-board { padding: 10px 4px 12px; gap: 6px; }
+  .mixer-master { flex-basis: 84px; padding-left: 6px; }
+  .mixer-col { width: 68px; flex-basis: 68px; }
+  .mixer-k { width: 62px; font-size: 14px; }
+  .mixer-rail { height: 180px; }
+  .mixer-range { width: 180px; }
+}

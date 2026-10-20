@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
-import { DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier } from '../lib/emcQuota.js'
-import { posToK, kToPos, MIXER_MIN, MIXER_MAX } from '../lib/mixer.js'
+import {
+  DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
+} from '../lib/emcQuota.js'
+import { posToK, kToPos } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
   weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal,
@@ -23,7 +25,7 @@ const TXT = {
     sample: 'Пример для Героя',
     reset: 'Двойной щелчок по фейдеру — вернуть ×1',
     mute: 'Вкл/выкл: выключенный тип не считается',
-    abs: 'Значение (можно вписать число)',
+    abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
     manual: 'В нормах клана штук для этого типа нет — впишите число вручную (пусто = 0)',
     calc: 'расчёт',
     countNote: 'Эпик-склепы: ориентир клана ÷ число включённых эпик-типов. Rare/Common/Citadel: в нормах клана штук нет — впишите число вручную при желании.',
@@ -33,12 +35,13 @@ const TXT = {
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
     presets: 'Пресеты', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить', load: 'Загрузить',
     loaded: 'Пресет загружен. Нажмите «Сохранить», чтобы применить к сезону.',
+    savedPreset: 'Пресет сохранён.',
     help: 'Как работает пульт',
     helpText: [
       'Вкладка «Сундуки» — быстрая ручная настройка клана: названия, очки за сундук, «Учёт». Она остаётся всегда и питает колонку «Очки» в таблице игроков.',
-      'Пульт включается тумблером «Персонализированный учёт по уровню Героя» на квоте Crypts и/или EMC. Тогда цели игрока считаются по уровню его Героя: чем ниже Герой, тем больше очков за сундук и меньше норма, и наоборот. Шкала выведена из норм кланов (Старт, Феникс, ЭДО, Берсерки, Сарацины) и таблицы T9, интерполирована на уровни 100–600.',
+      'Пульт включается тумблером «Персонализированный учёт по уровню Героя» на квоте Crypts и/или EMC. Тогда цели игрока считаются по уровню его Героя: чем ниже Герой, тем больше очков за сундук и меньше норма, и наоборот. Шкала построена по данным реальных замеров в королевстве и интерполирована на уровни Героя 100–600. Ориентировочный учёт ведётся за 2 недели (сезон — 14 дней).',
       'В пульте — те сундуки, которые клан держит в «Учёте». Склепы и цитадели — вкладка Crypts, эпические монстры — EMC. Для типов вне шкалы (например, свои события) базой служат очки из вкладки «Сундуки».',
-      'Фейдер: середина — рассчитанное значение, вверх — больше, вниз — меньше (от ×0,1 до ×3). Внизу — абсолютное число, его можно вписать. Зелёная точка выключает тип.',
+      'Фейдер: середина — рассчитанное значение, вверх — больше, вниз — меньше (от ×0,1 до ×3). Внизу — абсолютное число: сотрите его и впишите любое своё (0 выключает тип). Зелёная точка тоже выключает тип.',
       '«Очки» — сколько очков даёт сундук. «Количество» — сколько штук ждут от игрока: у эпик-склепов — ориентир клана, у эпических монстров — история клана (четыре монстра) или их среднее (остальные).',
       'Ступени Героя: отметьте одну или несколько — правка пойдёт только в них. «Все уровни» меняет значение пропорционально на каждой ступени.',
       'Пресеты — 3 слота: сохраните набор положений фейдеров и загрузите позже.',
@@ -54,7 +57,7 @@ const TXT = {
     sample: 'Example for Hero',
     reset: 'Double-click a fader to reset to ×1',
     mute: 'On/off: a muted type is not counted',
-    abs: 'Value (you can type a number)',
+    abs: 'Value: erase and type your own number (0 turns the type off)',
     manual: 'The clan norms give no count for this type — type a number (empty = 0)',
     calc: 'calc.',
     countNote: 'Epic crypts: the clan guideline ÷ number of enabled epic types. Rare/Common/Citadel: the clan norms give no counts — type a number if you wish.',
@@ -64,12 +67,13 @@ const TXT = {
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
     presets: 'Presets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save', load: 'Load',
     loaded: "Preset loaded. Press 'Save' to apply to the season.",
+    savedPreset: 'Preset saved.',
     help: 'How the mixer works',
     helpText: [
       "The 'Chests' tab is the clan's quick manual setup: names, points per chest, accounting. It always stays and feeds the 'Points' column of the player table.",
-      "The mixer is turned on by the 'Personalized accounting by Hero level' switch on the Crypts and/or EMC quota. Player targets are then calculated by the player's Hero level: the lower the Hero, the more points per chest and the smaller the norm, and vice versa. The scale is derived from clan norms (Start, Phoenix, EDO, Berserkers, Saracens) and the T9 table, interpolated to levels 100–600.",
+      "The mixer is turned on by the 'Personalized accounting by Hero level' switch on the Crypts and/or EMC quota. Player targets are then calculated by the player's Hero level: the lower the Hero, the more points per chest and the smaller the norm, and vice versa. The scale is built from real measurements in the kingdom and interpolated to Hero levels 100–600. The estimated accounting covers 2 weeks (a season is 14 days).",
       "The mixer shows the chests the clan keeps in accounting. Crypts and citadels are on the Crypts tab, epic monsters on EMC. For types outside the scale (e.g. custom events) the base is the points from the 'Chests' tab.",
-      'Fader: the middle is the calculated value, up is more, down is less (×0.1 to ×3). The absolute number below can be typed in. The green dot turns a type off.',
+      'Fader: the middle is the calculated value, up is more, down is less (×0.1 to ×3). The absolute number below is free to type: erase it and enter any number of your own (0 turns the type off). The green dot also turns a type off.',
       "'Points' is how many points a chest gives. 'Count' is how many pieces are expected: epic crypts — the clan guideline, epic monsters — clan history (four monsters) or their average (the rest).",
       "Hero steps: tick one or several — the edit goes only into them. 'All levels' changes the value proportionally on every step.",
       'Presets — 3 slots: save a set of fader positions and load it later.',
@@ -82,8 +86,6 @@ const MONSTERS = [['hydra', 'Hydra', 'Epic Fire Hydra'], ['undead', 'Undead', 'E
 const GROUPS = [100, 200, 300, 400, 500].map(g => ({
   g, bands: Array.from({ length: g === 500 ? 11 : 10 }, (_, i) => g + i * 10),
 }))
-const MIN = MIXER_MIN
-const MAX = MIXER_MAX
 const fmt = n => Number(n).toLocaleString('ru-RU')
 const bandLabel = h => { const n = Number(h); return n >= 600 ? `${n}` : `${n}–${n + 9}` }
 
@@ -99,6 +101,16 @@ function tabOf(type) {
 }
 
 function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt }) {
+  // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
+  // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
+  const [draft, setDraft] = useState(null)
+  const type = e => {
+    const v = e.target.value.replace(',', '.')
+    if (!/^\d*\.?\d*$/.test(v)) return
+    setDraft(v)
+    if (v === '') { if (manual) onAbs(''); return }
+    if (v !== '.') onAbs(Number(v))
+  }
   return (
     <div className={`mixer-col${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}>
       <div className="mixer-name" title={title}>{title}</div>
@@ -111,8 +123,9 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
           disabled={disabled || manual} onChange={e => onK(posToK(Number(e.target.value)))}
           onDoubleClick={() => onK(1)} />
       </div>
-      <input className="input-dark mixer-k" type="number" min={0} step={1} value={abs} disabled={disabled}
-        title={manual ? tt.manual : tt.abs} onChange={e => onAbs(e.target.value)} />
+      <input className="input-dark mixer-k" type="text" inputMode="decimal" value={draft ?? abs} disabled={disabled}
+        title={manual ? tt.manual : tt.abs} onChange={type} onFocus={e => e.target.select()}
+        onBlur={() => setDraft(null)} />
       <div className="mixer-sub">{tt.calc} {calc}</div>
     </div>
   )
@@ -125,6 +138,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const [sel, setSel] = useState(() => new Set(['all']))
   const [sample, setSample] = useState(400)
   const [presetName, setPresetName] = useState('')
+  const [presetSlot, setPresetSlot] = useState('1')
   const [note, setNote] = useState('')
 
   const emcQ = quotas.find(q => q.slot === 2)
@@ -212,7 +226,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const cols = raw.map(c => ({
     key: c.key, title: c.title, on: c.e?.on !== false, k: entryK(c.e), calc: c.calc, base: c.base,
     mixed: isMixed(c.e), manual: c.manual, manualValue: c.e?.set,
-    onK: k => setMixEntry(c.path, c.key, withK(c.e, k)),
+    onK: k => setMixEntry(c.path, c.key, { ...withK(c.e, k), ...(c.e?.on === false ? { on: true } : {}) }),
     onToggle: () => setMixEntry(c.path, c.key, { on: c.e?.on === false }),
     onSet: v => setMixEntry(c.path, c.key, { set: v }),
   }))
@@ -233,7 +247,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       four.push({
         key, title: label, on: !isOff, k: valsOf()[0], mixed: new Set(valsOf()).size > 1,
         calc: k => computeRow(exHero, withEmcK(k))[keys[i]], base: baseRow[keys[i]],
-        onK: k => setEmc(withEmcK(k)),
+        onK: k => setEmc({ ...withEmcK(k), off: (emc.off || []).filter(x => x !== key) }),
         onToggle: () => setEmc({ ...emc, off: isOff ? emc.off.filter(x => x !== key) : [...(emc.off || []), key] }),
       })
     })
@@ -255,29 +269,32 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     }
     return {
       abs: c.calc(c.k),
-      onAbs: v => {
+      onAbs: num => {
+        if (num === 0) { if (c.on !== false && c.onToggle) c.onToggle(); return }
         const one = c.calc(1)
-        const num = Number(v)
-        if (v === '' || !Number.isFinite(num)) return c.onK(1)
-        c.onK(one > 0 ? Math.min(MAX, Math.max(MIN, Math.round((num / one) * 100) / 100)) : 1)
+        if (!(one > 0)) return
+        c.onK(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, Math.round((num / one) * 10000) / 10000)))
       },
       calcText: c.fmt ? fmt(c.base) : c.base,
     }
   }
 
   const presets = personal.presets || {}
-  const savePreset = slot => {
+  const slotLabel = slot => `${slot}. ${presets[slot]?.name || t.empty}`
+  const pickSlot = slot => { setPresetSlot(slot); setPresetName(presets[slot]?.name || ''); setNote('') }
+  const savePreset = () => {
+    const slot = presetSlot
     const next = {
       ...personal,
-      presets: { ...presets, [slot]: { name: (presetName || presets[slot]?.name || `${t.slot} ${slot}`).slice(0, 30),
+      presets: { ...presets, [slot]: { name: (presetName.trim() || presets[slot]?.name || `${t.slot} ${slot}`).slice(0, 30),
         norm: personal.norm ?? 1, weights: personal.weights ?? 1, mix, emc } },
     }
     onPersonal(next)
-    setNote('')
+    setNote(t.savedPreset)
     onSave(next)
   }
-  const loadPreset = slot => {
-    const p = presets[slot]
+  const loadPreset = () => {
+    const p = presets[presetSlot]
     if (!p) return
     onPersonal({ ...personal, norm: p.norm ?? 1, weights: p.weights ?? 1, mix: p.mix || {} })
     if (p.emc) setEmc({ ...structuredClone(EMC_DEFAULTS), ...p.emc })
@@ -294,7 +311,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     <div className="mixer">
       <details className="mixer-help">
         <summary>{t.help}</summary>
-        {t.helpText.map((line, i) => <p key={i} className="emc-text"><small>{line}</small></p>)}
+        {t.helpText.map((line, i) => <p key={i} className="emc-text mixer-help-text">{line}</p>)}
       </details>
 
       <div className="chest-tabs chest-tabs--pill">
@@ -382,16 +399,15 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
       <div className="mixer-presets">
         <b>{t.presets}</b>
+        <select className="input-dark" value={presetSlot} onChange={e => pickSlot(e.target.value)}>
+          {['1', '2', '3'].map(slot => <option key={slot} value={slot}>{slotLabel(slot)}</option>)}
+        </select>
         <input className="input-dark" maxLength={30} placeholder={t.presetName} value={presetName}
           onChange={e => setPresetName(e.target.value)} />
-        {['1', '2', '3'].map(slot => (
-          <div key={slot} className="mixer-preset">
-            <span>{slot}. {presets[slot]?.name || t.empty}</span>
-            <button type="button" className="chest-pill-btn chest-pill-btn--sm" onClick={() => savePreset(slot)}>{t.saveSlot}</button>
-            <button type="button" className="chest-pill-btn chest-pill-btn--sm" disabled={!presets[slot]}
-              onClick={() => loadPreset(slot)}>{t.load}</button>
-          </div>
-        ))}
+        <button type="button" className="chest-pill-btn chest-pill-btn--sm" disabled={!presets[presetSlot]}
+          onClick={loadPreset}>{t.load}</button>
+        <button type="button" className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--green"
+          onClick={savePreset}>{t.saveSlot}</button>
       </div>
       {note && <p className="emc-text"><small>{note}</small></p>}
 

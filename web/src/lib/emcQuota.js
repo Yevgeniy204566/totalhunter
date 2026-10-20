@@ -21,8 +21,10 @@ export const ANCHORS = [
 
 export const HERO_LEVELS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 
-export const MULTIPLIER_MIN = 0.1
-export const MULTIPLIER_MAX = 3
+// Границы — защита от нуля и бесконечности: числа в пульте вписываются руками (владелец 2026-10-21),
+// поэтому потолок не ×3; фейдер ходит только в 0.1…3 (lib/mixer.js)
+export const MULTIPLIER_MIN = 0.01
+export const MULTIPLIER_MAX = 1000
 
 export const DEFAULT_SETTINGS = {
   global: 1,
@@ -35,7 +37,7 @@ export const DEFAULT_SETTINGS = {
   ],
 }
 
-// Пустое/нечисловое поле = 1.00 (рычаг не задан), остальное зажимается в 0.1…3.0,
+// Пустое/нечисловое поле = 1.00 (рычаг не задан), остальное зажимается в 0.01…1000,
 // чтобы опечатка («12» вместо «1.2») не раздула квоту.
 export function clampMultiplier(value) {
   if (value === '' || value == null) return 1

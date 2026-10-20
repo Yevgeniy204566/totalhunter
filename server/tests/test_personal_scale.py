@@ -112,7 +112,7 @@ async def test_old_modes_rejected(db_session):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("bad", [{"norm": 3.5}, {"weights": 0.05},
+@pytest.mark.parametrize("bad", [{"norm": 1500}, {"weights": 0.001},
                                  {"ranges": [{"from": 500, "to": 300, "k": 1}]}])
 async def test_personal_levers_validated(db_session, bad):
     c, h = await _owner(db_session, f"ps6{secrets.token_hex(3)}@example.com")
@@ -168,14 +168,14 @@ async def test_mixer_values_saved_and_exposed(db_session):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad_mix", [
-    {"w": {"Epic Crypt 35": {"all": 3.5}}},
-    {"w": {"Epic Crypt 35": {"all": 0.05}}},
+    {"w": {"Epic Crypt 35": {"all": 1500}}},
+    {"w": {"Epic Crypt 35": {"all": 0.001}}},
     {"w": {"Epic Crypt 35": {"bands": {"385": 1.0}}}},        # ступень — только 100,110…600
     {"w": {"Epic Crypt 35": {"bands": {"650": 1.0}}}},
-    {"w": {"Epic Crypt 35": {"bands": {"400": 9}}}},
+    {"w": {"Epic Crypt 35": {"bands": {"400": 1500}}}},
     {"w": {"x" * 61: {"all": 1}}},
     {"w": {f"T{i}": {"all": 1} for i in range(81)}},
-    {"c": {"Epic Crypt 30": {"all": 9}}},
+    {"c": {"Epic Crypt 30": {"all": 1500}}},
     {"c": {"Epic Crypt 30": {"bands": {"305": 1}}}},
 ])
 async def test_mixer_invalid_values_422(db_session, bad_mix):
@@ -189,7 +189,7 @@ async def test_mixer_invalid_values_422(db_session, bad_mix):
 @pytest.mark.parametrize("bad_emc", [
     {"cells": {"dragon": {"400": 1.0}}},
     {"cells": {"hydra": {"405": 1.0}}},
-    {"cells": {"hydra": {"400": 5}}},
+    {"cells": {"hydra": {"400": 1500}}},
     {"off": ["dragon"]},
 ])
 async def test_emc_cells_invalid_422(db_session, bad_emc):
@@ -224,7 +224,7 @@ async def test_presets_saved_in_three_slots(db_session):
 @pytest.mark.parametrize("bad", [
     {"4": PRESET},                                   # слотов только 3
     {"1": {**PRESET, "name": "x" * 31}},
-    {"1": {**PRESET, "norm": 9}},
+    {"1": {**PRESET, "norm": 1500}},
     {"1": {**PRESET, "mix": {"c": {"A": {"set": -1}}}}},
     {"1": {**PRESET, "mix": {"c": {"A": {"set": 100000}}}}},
 ])

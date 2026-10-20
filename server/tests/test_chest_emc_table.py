@@ -73,12 +73,12 @@ async def test_emc_without_settings_uses_defaults_when_saved(db_session):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bad", [
-    {"global": 3.5},
-    {"global": 0.05},
-    {"monsters": {"hydra": 1, "undead": 1, "arachna": 1, "shadow": 9}},
+    {"global": 1500},
+    {"global": 0.001},
+    {"monsters": {"hydra": 1, "undead": 1, "arachna": 1, "shadow": 1500}},
     {"ranges": [{"from": 50, "to": 300, "k": 1}]},
     {"ranges": [{"from": 500, "to": 300, "k": 1}]},
-    {"ranges": [{"from": 100, "to": 600, "k": 7}]},
+    {"ranges": [{"from": 100, "to": 600, "k": 1500}]},
     {"ranges": [{"from": 100 + i, "to": 100 + i, "k": 1} for i in range(11)]},
 ])
 async def test_emc_invalid_settings_422(db_session, bad):
