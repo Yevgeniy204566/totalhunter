@@ -78,7 +78,8 @@ const DEFAULT_PERSONAL = { crypts: false, emc: false, norm: 1, weights: 1, range
 const DEFAULT_QUOTAS = [{ slot: 1, name: 'Crypts', target: '', mode: 'fixed' }, { slot: 2, name: 'EMC', target: '', mode: 'fixed' }]
 
 // Типы для «Пульта» — из вкладки «Сундуки» (главная, задаёт правила): сундуки в учёте с каталожным
-// именем; подпись — своё название или название из игры (raw), иначе каноническое. Считается на лету,
+// именем; подпись — своё название, иначе официальное (перевод на языке клана), иначе каноническое;
+// сырой OCR из бота (raw_type) в подпись не берём. Считается на лету,
 // поэтому правки вкладки «Сундуки» видны в пульте сразу, ещё до сохранения.
 function mixerTypes(rows) {
   const seen = new Set()
@@ -86,7 +87,7 @@ function mixerTypes(rows) {
   for (const r of rows) {
     if (!r.catalog_id || !(r.is_in_pattern || r.quota_slot) || seen.has(r.catalog_id)) continue
     seen.add(r.catalog_id)
-    out.push({ id: r.catalog_id, label: r.custom_name || r.raw_type || r.catalog_id,
+    out.push({ id: r.catalog_id, label: r.custom_name || r.official_name || r.catalog_id,
                points: Number(r.points) || 0, slot: r.quota_slot || null })
   }
   return out
