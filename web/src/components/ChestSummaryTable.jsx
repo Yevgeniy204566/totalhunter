@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { computeRow } from '../lib/emcQuota.js'
-import { scoreOf, normAt, cryptsNormAt, countAt, weightKey, CRYPT_TYPES, DEFAULT_HERO } from '../lib/heroQuota.js'
+import {
+  scoreOf, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, weightKey, CRYPT_TYPES, EMC_FOUR, DEFAULT_HERO,
+} from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['', '5', '6', '7', '8', '9']
@@ -252,6 +254,7 @@ export function quotaColumns(targets, epicLabel, typeMeta = null, totalLabel = '
         // уровней и рычагам клана (lib/emcQuota.js), per_player — старые архивы (считал сервер)
         targetOf: p => (cryptsPersonal ? cryptsNormAt(p.hero_level || DEFAULT_HERO, emcModel, scale)
           : q.mode === 'emc_table' ? emcRowOf(p, q.emc || {}).emc
+            + (typeMeta ? emcOthersTotal(typeMeta, p.hero_level || DEFAULT_HERO, scale, q.emc) : 0)
           : q.mode === 'per_player' ? p.quota_targets?.[String(q.slot)] : q.target),
         partialOf: p => (cryptsPersonal || q.mode === 'emc_table' ? !p.hero_level
           : !!p.quota_targets_partial?.[String(q.slot)]),
@@ -351,6 +354,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
   const typeMeta = chestTypeMeta
   const pers = targets?.personal || {}
   const personalCrypts = !!pers.crypts
+  const personalEmc = !!pers.emc
   const scale = useMemo(() => ({ norm: pers.norm, weights: pers.weights, ranges: pers.ranges, mix: pers.mix }), [pers])
   const emcLevers = (targets?.quotas || []).find(q => q.slot === 2)?.emc
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
@@ -631,7 +635,15 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                     // персональная квота Crypts: штуки по типу склепа при Герое игрока (пульт, «Количество»)
                     const meta = typeMeta?.[t]
                     if (personalCrypts && meta && CRYPT_TYPES.includes(weightKey(meta.id))) {
-                      const need = countAt(meta.id, p.hero_level || DEFAULT_HERO, scale, emcLevers)
+                      const need = countAt(meta.id, p.hero_level || DEFAULT_HERO, scale)
+                      if (need > 0) {
+                        return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint} target={need} />
+                      }
+                    }
+                    // прочие эпические монстры (вне четырёх с историей): среднее четырёх, правится пультом
+                    if (personalEmc && meta?.slot === 2 && meta.id.startsWith('Epic ') && !meta.id.includes('Crypt')
+                        && !(meta.id in EMC_FOUR)) {
+                      const need = emcCountAt(meta.id, p.hero_level || DEFAULT_HERO, scale, emcLevers)
                       if (need > 0) {
                         return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint} target={need} />
                       }

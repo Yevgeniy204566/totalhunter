@@ -174,7 +174,7 @@ async def test_mixer_values_saved_and_exposed(db_session):
     {"w": {"Epic Crypt 35": {"bands": {"650": 1.0}}}},
     {"w": {"Epic Crypt 35": {"bands": {"400": 9}}}},
     {"w": {"x" * 61: {"all": 1}}},
-    {"w": {f"T{i}": {"all": 1} for i in range(41)}},
+    {"w": {f"T{i}": {"all": 1} for i in range(81)}},
     {"c": {"Epic Crypt 30": {"all": 9}}},
     {"c": {"Epic Crypt 30": {"bands": {"305": 1}}}},
 ])
@@ -198,3 +198,48 @@ async def test_emc_cells_invalid_422(db_session, bad_emc):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         r = await _patch(client, c, h, {"quotas": [{**Q2, "emc": emc}]})
     assert r.status_code == 422
+
+
+PRESET = {"name": "Мой клан", "norm": 1.1, "weights": 0.9,
+          "mix": {"w": {"Epic Crypt 35": {"all": 1.2}}, "c": {"Rare Crypt 30": {"set": 25}}},
+          "emc": {"global": 1.2, "monsters": {"hydra": 1, "undead": 1, "arachna": 1, "shadow": 1},
+                  "ranges": [], "cells": {}, "off": []}}
+
+
+@pytest.mark.asyncio
+async def test_presets_saved_in_three_slots(db_session):
+    c, h = await _owner(db_session, f"ps14{secrets.token_hex(2)}@example.com")
+    body = {"personal": {**ON, "presets": {"1": PRESET, "3": {**PRESET, "name": "Строгий"}}}}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, body)
+        data = (await client.get("/web/dashboard/chests", headers=h)).json()
+    mine = next(x for x in data["collectors"] if x["slug"] == c.slug)
+    assert r.status_code == 200
+    pre = mine["personal_scale"]["presets"]
+    assert set(pre) == {"1", "3"} and pre["3"]["name"] == "Строгий"
+    assert pre["1"]["mix"]["c"]["Rare Crypt 30"]["set"] == 25 and pre["1"]["emc"]["global"] == 1.2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad", [
+    {"4": PRESET},                                   # слотов только 3
+    {"1": {**PRESET, "name": "x" * 31}},
+    {"1": {**PRESET, "norm": 9}},
+    {"1": {**PRESET, "mix": {"c": {"A": {"set": -1}}}}},
+    {"1": {**PRESET, "mix": {"c": {"A": {"set": 100000}}}}},
+])
+async def test_presets_invalid_422(db_session, bad):
+    c, h = await _owner(db_session, f"ps15{secrets.token_hex(3)}@example.com")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"personal": {**ON, "presets": bad}})
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_mixer_accepts_up_to_80_types(db_session):
+    c, h = await _owner(db_session, f"ps16{secrets.token_hex(2)}@example.com")
+    mix = {"w": {f"Type {i}": {"all": 1.1} for i in range(80)}}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        ok = await _patch(client, c, h, {"personal": {**ON, "mix": mix}})
+        too_many = await _patch(client, c, h, {"personal": {**ON, "mix": {"w": {f"T{i}": {} for i in range(81)}}}})
+    assert ok.status_code == 200 and too_many.status_code == 422

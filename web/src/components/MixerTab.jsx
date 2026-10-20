@@ -1,64 +1,104 @@
 import { useMemo, useState } from 'react'
+import { DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier } from '../lib/emcQuota.js'
 import { posToK, kToPos, MIXER_MIN, MIXER_MAX } from '../lib/mixer.js'
-import { DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, bandKey, clampMultiplier } from '../lib/emcQuota.js'
 import {
-  DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, weightAt, normAt, cryptsNormAt, countAt,
+  DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
+  weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal,
 } from '../lib/heroQuota.js'
 
-// «Пульт» (владелец 2026-10-20): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
-// тип сундука, фейдер: середина = рассчитанное значение (×1), вверх — больше, вниз — меньше; зелёная
-// точка — вкл/выкл тип. Меню над фейдерами выбирает, чьи ступени Героя правим: «все уровни» — множитель
-// пропорционально на каждую ступень, конкретная ступень — поправка поверх. Переключатель «Очки/Количество»
-// меняет, что именно двигают фейдеры. Фейдер логарифмический: ×0.1 … ×1 … ×3, вверх и вниз ход одинаков.
+// «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
+// тип сундука из «Учёта» клана, фейдер: середина = рассчитанное значение (×1), вверх — больше, вниз —
+// меньше; зелёная точка — вкл/выкл тип. Слева выбираются ступени Героя (можно несколько): правка
+// применяется ко всем отмеченным; «Все уровни» — множитель пропорционально на каждую ступень.
+// Переключатель «Очки/Количество» меняет, что двигают фейдеры. Фейдер логарифмический: ×0.1 … ×1 … ×3.
 
 const TXT = {
   ru: {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Очки', count: 'Количество',
-    levels: 'Уровни Героя', allLevels: 'Все уровни Героя', hero: 'Герой',
+    allLevels: 'Все уровни', hero: 'Герой',
     master: 'Общий', masterCryptsPoints: 'Норма', masterEmcCount: 'Все монстры',
     enable: 'Персонализированный учёт по уровню Героя',
     off: 'Сейчас выключен: цели фиксированные, из настроек сезона. Включите, чтобы пользоваться пультом.',
     sample: 'Пример для Героя',
-    base: 'расчёт', now: 'сейчас', calc: 'расчёт',
     reset: 'Двойной щелчок по фейдеру — вернуть ×1',
     mute: 'Вкл/выкл: выключенный тип не считается',
-    countNote: 'Количество по типам: норма Crypts делится поровну между включёнными типами и пересчитывается в штуки по очкам за сундук. Фейдер правит штуки; выключенный тип в деление не входит.',
     abs: 'Значение (можно вписать число)',
+    manual: 'В нормах клана штук для этого типа нет — впишите число вручную (пусто = 0)',
+    calc: 'расчёт',
+    countNote: 'Эпик-склепы: ориентир клана ÷ число включённых эпик-типов. Rare/Common/Citadel: в нормах клана штук нет — впишите число вручную при желании.',
     save: '💾 Сохранить', saved: 'Нажмите «Сохранить», чтобы применить к сезону.',
     summary: 'Герой {h}: норма «Всего» {total} · Crypts {crypts} · EMC {emc} шт.',
-    allNote: '«Все уровни» меняет значение на каждой ступени пропорционально её расчёту.',
-    bandNote: 'Поправка только для этой ступени — поверх «Всех уровней».',
-    mult: 'множитель',
+    editing: 'Правим: {what}', mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
+    noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
+    presets: 'Пресеты', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить', load: 'Загрузить',
+    loaded: 'Пресет загружен. Нажмите «Сохранить», чтобы применить к сезону.',
+    help: 'Как работает пульт',
+    helpText: [
+      'Вкладка «Сундуки» — быстрая ручная настройка клана: названия, очки за сундук, «Учёт». Она остаётся всегда и питает колонку «Очки» в таблице игроков.',
+      'Пульт включается тумблером «Персонализированный учёт по уровню Героя» на квоте Crypts и/или EMC. Тогда цели игрока считаются по уровню его Героя: чем ниже Герой, тем больше очков за сундук и меньше норма, и наоборот. Шкала выведена из норм кланов (Старт, Феникс, ЭДО, Берсерки, Сарацины) и таблицы T9, интерполирована на уровни 100–600.',
+      'В пульте — те сундуки, которые клан держит в «Учёте». Склепы и цитадели — вкладка Crypts, эпические монстры — EMC. Для типов вне шкалы (например, свои события) базой служат очки из вкладки «Сундуки».',
+      'Фейдер: середина — рассчитанное значение, вверх — больше, вниз — меньше (от ×0,1 до ×3). Внизу — абсолютное число, его можно вписать. Зелёная точка выключает тип.',
+      '«Очки» — сколько очков даёт сундук. «Количество» — сколько штук ждут от игрока: у эпик-склепов — ориентир клана, у эпических монстров — история клана (четыре монстра) или их среднее (остальные).',
+      'Ступени Героя: отметьте одну или несколько — правка пойдёт только в них. «Все уровни» меняет значение пропорционально на каждой ступени.',
+      'Пресеты — 3 слота: сохраните набор положений фейдеров и загрузите позже.',
+    ],
   },
   en: {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Points', count: 'Count',
-    levels: 'Hero levels', allLevels: 'All Hero levels', hero: 'Hero',
+    allLevels: 'All levels', hero: 'Hero',
     master: 'Master', masterCryptsPoints: 'Norm', masterEmcCount: 'All monsters',
     enable: 'Personalized accounting by Hero level',
     off: 'Currently off: targets are fixed from the season settings. Turn it on to use the mixer.',
     sample: 'Example for Hero',
-    base: 'calculated', now: 'now', calc: 'calc.',
     reset: 'Double-click a fader to reset to ×1',
     mute: 'On/off: a muted type is not counted',
-    countNote: 'Count by type: the Crypts norm is split equally between enabled types and converted to pieces by points per chest. The fader adjusts the pieces; a muted type is left out of the split.',
     abs: 'Value (you can type a number)',
+    manual: 'The clan norms give no count for this type — type a number (empty = 0)',
+    calc: 'calc.',
+    countNote: 'Epic crypts: the clan guideline ÷ number of enabled epic types. Rare/Common/Citadel: the clan norms give no counts — type a number if you wish.',
     save: '💾 Save', saved: "Press 'Save' to apply to the season.",
     summary: 'Hero {h}: Total norm {total} · Crypts {crypts} · EMC {emc} pcs',
-    allNote: "'All levels' changes the value on every step in proportion to its calculation.",
-    bandNote: "A correction for this step only, on top of 'All levels'.",
-    mult: 'multiplier',
+    editing: 'Editing: {what}', mixed: 'selected steps have different values — the fader will set them equal',
+    noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
+    presets: 'Presets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save', load: 'Load',
+    loaded: "Preset loaded. Press 'Save' to apply to the season.",
+    help: 'How the mixer works',
+    helpText: [
+      "The 'Chests' tab is the clan's quick manual setup: names, points per chest, accounting. It always stays and feeds the 'Points' column of the player table.",
+      "The mixer is turned on by the 'Personalized accounting by Hero level' switch on the Crypts and/or EMC quota. Player targets are then calculated by the player's Hero level: the lower the Hero, the more points per chest and the smaller the norm, and vice versa. The scale is derived from clan norms (Start, Phoenix, EDO, Berserkers, Saracens) and the T9 table, interpolated to levels 100–600.",
+      "The mixer shows the chests the clan keeps in accounting. Crypts and citadels are on the Crypts tab, epic monsters on EMC. For types outside the scale (e.g. custom events) the base is the points from the 'Chests' tab.",
+      'Fader: the middle is the calculated value, up is more, down is less (×0.1 to ×3). The absolute number below can be typed in. The green dot turns a type off.',
+      "'Points' is how many points a chest gives. 'Count' is how many pieces are expected: epic crypts — the clan guideline, epic monsters — clan history (four monsters) or their average (the rest).",
+      "Hero steps: tick one or several — the edit goes only into them. 'All levels' changes the value proportionally on every step.",
+      'Presets — 3 slots: save a set of fader positions and load it later.',
+    ],
   },
 }
 
-const MONSTERS = [['hydra', 'Hydra'], ['undead', 'Undead'], ['arachna', 'Arachna'], ['shadow', 'Shadow City']]
-const BANDS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
+const MONSTERS = [['hydra', 'Hydra', 'Epic Fire Hydra'], ['undead', 'Undead', 'Epic Undead'],
+  ['arachna', 'Arachna', 'Epic Arachne'], ['shadow', 'Shadow City', 'Epic Shadow City']]
+const GROUPS = [100, 200, 300, 400, 500].map(g => ({
+  g, bands: Array.from({ length: g === 500 ? 11 : 10 }, (_, i) => g + i * 10),
+}))
 const MIN = MIXER_MIN
 const MAX = MIXER_MAX
 const fmt = n => Number(n).toLocaleString('ru-RU')
+const bandLabel = h => { const n = Number(h); return n >= 600 ? `${n}` : `${n}–${n + 9}` }
 
-function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, tt }) {
+// Название колонки — как в игре (из вкладки «Сундуки»: своё название или название из бота); только
+// каноническое английское имя сокращаем («Epic »), чтобы колонка не ломалась.
+const titleOf = x => (x.label === x.id ? x.label.replace(/^Epic /, '') : x.label)
+
+// Вкладка типа: квота из «Учёта» (слот 1 — Crypts, 2 — EMC); без слота — по названию.
+function tabOf(type) {
+  if (type.slot === 1) return 'crypts'
+  if (type.slot === 2) return 'emc'
+  return /Crypt|Citadel/.test(type.id) ? 'crypts' : 'emc'
+}
+
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt }) {
   return (
     <div className={`mixer-col${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}>
       <div className="mixer-name" title={title}>{title}</div>
@@ -66,88 +106,141 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, tt }) 
         ? <button type="button" className={`mixer-dot${on === false ? ' mixer-dot--off' : ''}`} title={tt.mute}
             onClick={onToggle} disabled={disabled} />
         : <span className="mixer-dot-gap" />}
-      <div className="mixer-rail" title={tt.reset}>
-        <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k)} disabled={disabled}
-          onChange={e => onK(posToK(Number(e.target.value)))} onDoubleClick={() => onK(1)} />
+      <div className="mixer-rail" title={manual ? tt.manual : tt.reset}>
+        <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k)}
+          disabled={disabled || manual} onChange={e => onK(posToK(Number(e.target.value)))}
+          onDoubleClick={() => onK(1)} />
       </div>
       <input className="input-dark mixer-k" type="number" min={0} step={1} value={abs} disabled={disabled}
-        title={tt.abs} onChange={e => onAbs(e.target.value)} />
+        title={manual ? tt.manual : tt.abs} onChange={e => onAbs(e.target.value)} />
       <div className="mixer-sub">{tt.calc} {calc}</div>
     </div>
   )
 }
 
-export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave }) {
+export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [] }) {
   const t = TXT[lang] || TXT.ru
   const [tab, setTab] = useState('crypts')
   const [mode, setMode] = useState('points')
-  const [band, setBand] = useState('all')
+  const [sel, setSel] = useState(() => new Set(['all']))
   const [sample, setSample] = useState(400)
+  const [presetName, setPresetName] = useState('')
+  const [note, setNote] = useState('')
 
   const emcQ = quotas.find(q => q.slot === 2)
   const emc = useMemo(() => ({ ...structuredClone(EMC_DEFAULTS), ...(emcQ?.emc || {}) }), [emcQ])
   const mix = personal.mix || {}
   const flag = tab === 'crypts' ? 'crypts' : 'emc'
   const enabled = !!personal[flag]
-  const exHero = band === 'all' ? Number(sample) || 400 : Number(band) + 5
+  const isAll = sel.has('all')
+  const bands = [...sel].filter(x => x !== 'all').sort((a, b) => a - b)
+  const exHero = isAll ? Number(sample) || 400 : Number(bands[0] ?? 400) + 5
   const scale = { ...SCALE_DEFAULTS, norm: personal.norm, weights: personal.weights, ranges: personal.ranges, mix }
 
   const setPersonal = patch => onPersonal({ ...personal, ...patch })
   const setEmc = next => onQuotas(quotas.map(q => (q.slot === 2 ? { ...q, emc: next } : q)))
   const setMixEntry = (path, id, patch) => {
     const next = { ...(mix[path]?.[id] || {}), ...patch }
+    if (next.set === null) delete next.set
     setPersonal({ mix: { ...mix, [path]: { ...(mix[path] || {}), [id]: next } } })
   }
 
-  // значение фейдера «этой» ступени: all или поправка конкретной ступени
-  const entryK = entry => (band === 'all' ? entry?.all ?? 1 : entry?.bands?.[band] ?? 1)
-  const withK = (entry, k) => (band === 'all' ? { ...(entry || {}), all: k }
-    : { ...(entry || {}), bands: { ...(entry?.bands || {}), [band]: k } })
+  // Выбор ступеней Героя: «Все уровни» исключает конкретные ступени и наоборот
+  const toggleBand = h => setSel(prev => {
+    const n = new Set([...prev].filter(x => x !== 'all'))
+    const key = String(h)
+    if (n.has(key)) n.delete(key); else n.add(key)
+    return n.size ? n : new Set(['all'])
+  })
+  const toggleGroup = group => setSel(prev => {
+    const keys = group.bands.map(String)
+    const n = new Set([...prev].filter(x => x !== 'all'))
+    const full = keys.every(k => n.has(k))
+    keys.forEach(k => (full ? n.delete(k) : n.add(k)))
+    return n.size ? n : new Set(['all'])
+  })
 
-  // Колонка: k — положение фейдера, calc(k) — абсолютный результат при Герое-примере (штуки или очки);
-  // вписанное число переводится обратно в множитель: k = число ÷ результат при ×1.
-  const pointsCol = (id, title) => {
-    const e = mix.w?.[id]
-    return { id, title, e, path: 'w',
-      calc: k => weightAt(id, exHero, { ...scale, mix: { ...mix, w: { ...(mix.w || {}), [id]: withK(e, k) } } }),
-      base: weightAt(id, exHero, SCALE_DEFAULTS) }
+  // значение фейдера для текущего выбора ступеней
+  const entryVals = entry => (isAll ? [entry?.all ?? 1] : bands.map(b => entry?.bands?.[b] ?? 1))
+  const entryK = entry => entryVals(entry)[0]
+  const isMixed = entry => new Set(entryVals(entry)).size > 1
+  const withK = (entry, k) => (isAll ? { ...(entry || {}), all: k }
+    : { ...(entry || {}), bands: { ...(entry?.bands || {}), ...Object.fromEntries(bands.map(b => [b, k])) } })
+
+  // Типы клана для вкладки; нет сундуков группы — типы шкалы по умолчанию
+  const own = useMemo(() => {
+    const seen = new Set()
+    return types.filter(x => tabOf(x) === tab).map(x => ({ ...x, key: weightKey(x.id) }))
+      .filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
+  }, [types, tab])
+  const fallback = own.length === 0
+  const list = fallback
+    ? (tab === 'crypts' ? CRYPT_TYPES : EMC_TYPES).map(id => ({ id, key: id, label: id, points: 0 }))
+    : own
+
+  const pointsCol = x => {
+    const e = mix.w?.[x.key]
+    const clan = x.points || 0
+    const calc = k => {
+      const entry = withK(e, k)
+      const m = { ...mix, w: { ...(mix.w || {}), [x.key]: entry } }
+      const scaled = weightAt(x.key, exHero, { ...scale, mix: m })
+      if (scaled != null) return scaled
+      // тип вне шкалы: базой служат очки клана из «Сундуков»
+      return Math.round(clan * clampMultiplier(entry.all) * clampMultiplier(entry.bands?.[bands[0]]))
+    }
+    return { key: x.key, title: titleOf(x), e, path: 'w', calc,
+      base: weightAt(x.key, exHero, SCALE_DEFAULTS) ?? clan }
   }
-  const countCol = id => {
-    const e = mix.c?.[id]
-    return { id, title: id, e, path: 'c',
-      calc: k => countAt(id, exHero, { ...scale, mix: { ...mix, c: { ...(mix.c || {}), [id]: withK(e, k) } } }, emc),
-      base: countAt(id, exHero, SCALE_DEFAULTS, emc) }
+  const countCol = x => {
+    const e = mix.c?.[x.key]
+    const isEmc = tab === 'emc'
+    const fn = isEmc ? emcCountAt : countAt
+    const zeroBase = !isEmc && !EPIC_CRYPTS.includes(x.key)
+    return {
+      key: x.key, title: titleOf(x), e, path: 'c', manual: zeroBase,
+      calc: k => fn(x.key, exHero, { ...scale, mix: { ...mix, c: { ...(mix.c || {}), [x.key]: withK(e, k) } } }, emc),
+      base: fn(x.key, exHero, SCALE_DEFAULTS, emc),
+    }
   }
+
   const raw = []
-  if (tab === 'crypts' && mode === 'points') raw.push(...CRYPT_TYPES.map(id => pointsCol(id, id)))
-  else if (tab === 'crypts') raw.push(...CRYPT_TYPES.map(countCol))
-  else if (mode === 'points') raw.push(...EMC_TYPES.map(id => pointsCol(id, id.replace(/^Epic /, ''))))
+  if (mode === 'points') raw.push(...list.map(pointsCol))
+  else if (tab === 'crypts') raw.push(...list.map(countCol))
+  else raw.push(...list.filter(x => !(x.key in EMC_FOUR)).map(countCol))
 
   const cols = raw.map(c => ({
-    key: c.id, title: c.title, on: c.e?.on !== false, k: entryK(c.e), calc: c.calc, base: c.base,
-    onK: k => setMixEntry(c.path, c.id, withK(c.e, k)),
-    onToggle: () => setMixEntry(c.path, c.id, { on: c.e?.on === false }),
+    key: c.key, title: c.title, on: c.e?.on !== false, k: entryK(c.e), calc: c.calc, base: c.base,
+    mixed: isMixed(c.e), manual: c.manual, manualValue: c.e?.set,
+    onK: k => setMixEntry(c.path, c.key, withK(c.e, k)),
+    onToggle: () => setMixEntry(c.path, c.key, { on: c.e?.on === false }),
+    onSet: v => setMixEntry(c.path, c.key, { set: v }),
   }))
+
+  // четыре монстра с историей клана — рычаги EMC (монстр × ступень), остальные — mix.c
   if (tab === 'emc' && mode === 'count') {
     const keys = ['finalH', 'finalU', 'finalA', 'finalS']
     const baseRow = computeRow(exHero)
-    MONSTERS.forEach(([key, label], i) => {
+    const present = new Set(list.map(x => x.key))
+    const four = []
+    MONSTERS.forEach(([key, label, id], i) => {
+      if (!fallback && !present.has(id)) return
       const isOff = (emc.off || []).includes(key)
-      const withEmcK = k => (band === 'all'
+      const valsOf = () => (isAll ? [emc.monsters?.[key] ?? 1] : bands.map(b => emc.cells?.[key]?.[b] ?? 1))
+      const withEmcK = k => (isAll
         ? { ...emc, monsters: { ...emc.monsters, [key]: k } }
-        : { ...emc, cells: { ...(emc.cells || {}), [key]: { ...(emc.cells?.[key] || {}), [band]: k } } })
-      cols.push({
-        key, title: label, on: !isOff,
-        k: band === 'all' ? emc.monsters?.[key] ?? 1 : emc.cells?.[key]?.[band] ?? 1,
+        : { ...emc, cells: { ...(emc.cells || {}), [key]: { ...(emc.cells?.[key] || {}), ...Object.fromEntries(bands.map(b => [b, k])) } } })
+      four.push({
+        key, title: label, on: !isOff, k: valsOf()[0], mixed: new Set(valsOf()).size > 1,
         calc: k => computeRow(exHero, withEmcK(k))[keys[i]], base: baseRow[keys[i]],
         onK: k => setEmc(withEmcK(k)),
         onToggle: () => setEmc({ ...emc, off: isOff ? emc.off.filter(x => x !== key) : [...(emc.off || []), key] }),
       })
     })
+    cols.unshift(...four)
   }
 
-  // общий фейдер: Crypts — норма (и в «Очках», и в «Количестве»); EMC/«Количество» — общий множитель монстров;
-  // EMC/«Очки» общего нет
+  // Общий фейдер: Crypts — норма; EMC/«Количество» — общий множитель монстров; EMC/«Очки» общего нет
   const master = tab === 'crypts'
     ? { title: t.masterCryptsPoints, k: personal.norm ?? 1, onK: k => setPersonal({ norm: k }),
         calc: k => normAt(exHero, { ...scale, norm: k }), base: normAt(exHero, SCALE_DEFAULTS), fmt: true }
@@ -156,23 +249,54 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           calc: k => computeRow(exHero, { ...emc, global: k }).emc, base: computeRow(exHero).emc }
       : null
 
-  const absProps = c => ({
-    abs: c.calc(c.k),
-    onAbs: v => {
-      const one = c.calc(1)
-      const num = Number(v)
-      if (v === '' || !Number.isFinite(num)) return c.onK(1)
-      c.onK(one > 0 ? Math.min(MAX, Math.max(MIN, Math.round((num / one) * 100) / 100)) : 1)
-    },
-    calcText: c.fmt ? fmt(c.base) : c.base,
-  })
+  const absProps = c => {
+    if (c.manual) {
+      return { abs: c.manualValue ?? '', calcText: c.base, onAbs: v => c.onSet(v === '' ? null : Math.max(0, Number(v) || 0)) }
+    }
+    return {
+      abs: c.calc(c.k),
+      onAbs: v => {
+        const one = c.calc(1)
+        const num = Number(v)
+        if (v === '' || !Number.isFinite(num)) return c.onK(1)
+        c.onK(one > 0 ? Math.min(MAX, Math.max(MIN, Math.round((num / one) * 100) / 100)) : 1)
+      },
+      calcText: c.fmt ? fmt(c.base) : c.base,
+    }
+  }
 
-  const emcRow = computeRow(exHero, emc)
+  const presets = personal.presets || {}
+  const savePreset = slot => {
+    const next = {
+      ...personal,
+      presets: { ...presets, [slot]: { name: (presetName || presets[slot]?.name || `${t.slot} ${slot}`).slice(0, 30),
+        norm: personal.norm ?? 1, weights: personal.weights ?? 1, mix, emc } },
+    }
+    onPersonal(next)
+    setNote('')
+    onSave(next)
+  }
+  const loadPreset = slot => {
+    const p = presets[slot]
+    if (!p) return
+    onPersonal({ ...personal, norm: p.norm ?? 1, weights: p.weights ?? 1, mix: p.mix || {} })
+    if (p.emc) setEmc({ ...structuredClone(EMC_DEFAULTS), ...p.emc })
+    setNote(t.loaded)
+  }
+
+  const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: tabOf(x) === 'emc' ? 2 : x.slot }]))
+  const emcTotal = computeRow(exHero, emc).emc + emcOthersTotal(emcMeta, exHero, scale, emc)
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
-    .replace('{crypts}', fmt(cryptsNormAt(exHero, emc, scale))).replace('{emc}', emcRow.emc)
+    .replace('{crypts}', fmt(cryptsNormAt(exHero, emc, scale))).replace('{emc}', emcTotal)
+  const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
 
   return (
     <div className="mixer">
+      <details className="mixer-help">
+        <summary>{t.help}</summary>
+        {t.helpText.map((line, i) => <p key={i} className="emc-text"><small>{line}</small></p>)}
+      </details>
+
       <div className="chest-tabs chest-tabs--pill">
         {[['crypts', t.tabCrypts], ['emc', t.tabEmc]].map(([id, label]) => (
           <button key={id} type="button" className={`chest-tab chest-tab--pill ${tab === id ? 'chest-tab--active' : ''}`}
@@ -191,14 +315,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
               onClick={() => setMode(id)}>{label}</button>
           ))}
         </div>
-        <label className="mixer-pick">
-          <span>{t.levels}</span>
-          <select className="input-dark" value={band} onChange={e => setBand(e.target.value)}>
-            <option value="all">{t.allLevels}</option>
-            {BANDS.map(h => <option key={h} value={String(h)}>{h >= 600 ? `${t.hero} 600` : `${t.hero} ${h}–${h + 9}`}</option>)}
-          </select>
-        </label>
-        {band === 'all' && (
+        {isAll && (
           <label className="mixer-pick">
             <span>{t.sample}</span>
             <input className="input-dark emc-level-input" type="number" min={100} max={600} value={sample}
@@ -207,8 +324,37 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         )}
       </div>
 
+      <div className="mixer-levels">
+        <label className="mixer-all">
+          <input type="checkbox" checked={isAll} onChange={() => setSel(new Set(['all']))} />
+          <b>{t.allLevels}</b>
+        </label>
+        <div className="mixer-grid">
+          {GROUPS.map(group => {
+            const keys = group.bands.map(String)
+            const full = !isAll && keys.every(k => sel.has(k))
+            return (
+              <div key={group.g} className="mixer-group">
+                <label className="mixer-group-head">
+                  <input type="checkbox" checked={full} onChange={() => toggleGroup(group)} />
+                  <b>{group.g}+</b>
+                </label>
+                {group.bands.map(h => (
+                  <label key={h} className="mixer-band">
+                    <input type="checkbox" checked={!isAll && sel.has(String(h))} onChange={() => toggleBand(h)} />
+                    <span>{bandLabel(h)}</span>
+                  </label>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       {!enabled && <p className="emc-text"><small>{t.off}</small></p>}
-      <p className="emc-text"><small>{band === 'all' ? t.allNote : t.bandNote}</small></p>
+      {fallback && <p className="emc-text"><small>{t.noTypes}</small></p>}
+      <p className="emc-text"><small>{t.editing.replace('{what}', editing)}</small></p>
+      {cols.some(c => c.mixed) && <p className="emc-text"><small>⚠ {t.mixed}</small></p>}
       {tab === 'crypts' && mode === 'count' && <p className="emc-text"><small>{t.countNote}</small></p>}
 
       <div className={`mixer-board${enabled ? '' : ' mixer-board--off'}`}>
@@ -217,7 +363,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
             const a = absProps(c)
             return (
               <Fader key={c.key} tt={t} title={c.title} k={c.k} onK={c.onK} on={c.on} onToggle={c.onToggle}
-                abs={a.abs} onAbs={a.onAbs} calc={a.calcText} disabled={!enabled} />
+                abs={a.abs} onAbs={a.onAbs} calc={a.calcText} manual={c.manual} disabled={!enabled} />
             )
           })}
         </div>
@@ -233,8 +379,24 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       </div>
 
       <p className="emc-text">{summary}</p>
+
+      <div className="mixer-presets">
+        <b>{t.presets}</b>
+        <input className="input-dark" maxLength={30} placeholder={t.presetName} value={presetName}
+          onChange={e => setPresetName(e.target.value)} />
+        {['1', '2', '3'].map(slot => (
+          <div key={slot} className="mixer-preset">
+            <span>{slot}. {presets[slot]?.name || t.empty}</span>
+            <button type="button" className="chest-pill-btn chest-pill-btn--sm" onClick={() => savePreset(slot)}>{t.saveSlot}</button>
+            <button type="button" className="chest-pill-btn chest-pill-btn--sm" disabled={!presets[slot]}
+              onClick={() => loadPreset(slot)}>{t.load}</button>
+          </div>
+        ))}
+      </div>
+      {note && <p className="emc-text"><small>{note}</small></p>}
+
       <div className="season-actions">
-        <button type="button" className="chest-pill-btn chest-pill-btn--green" onClick={onSave}>{t.save}</button>
+        <button type="button" className="chest-pill-btn chest-pill-btn--green" onClick={() => onSave()}>{t.save}</button>
         <small>{t.saved}</small>
       </div>
     </div>

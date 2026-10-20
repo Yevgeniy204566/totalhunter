@@ -146,7 +146,9 @@ export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS, slot = 
     if (slot != null && m?.slot !== slot) continue
     const scaled = m ? weightAt(m.id, h, settings) : null
     if (scaled == null) {
-      score += n * (m?.points || 0)
+      // тип вне шкалы: очки клана из «Учёта»; фейдер пульта (mix.w) множит их, mute обнуляет
+      const f = m ? mixFactor(settings.mix?.w?.[m.id], h) : 1
+      score += n * Math.round((m?.points || 0) * f)
       fallback.push(name)
     } else {
       score += n * scaled
@@ -172,15 +174,43 @@ export const CRYPT_TYPES = ['Common Crypt 20', 'Common Crypt 25', 'Rare Crypt 20
   'Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35', 'Citadel 20', 'Citadel 25', 'Citadel 30']
 export const EMC_TYPES = [...EMC_IDS, 'Dark Omens Chest', 'Epic Briareus', 'Yogwai', 'Epic Basilisk', 'Epic Chimera', 'Epic Hellforge']
 
-// Количество склепов по типам (режим «Количество» пульта). Базы по типам в данных нет, поэтому модель
-// математическая: норма Crypts (очки) делится поровну между включёнными типами, штук = доля ÷ очки за
-// сундук этого типа при Герое игрока. Фейдер правит штуки поверх (mix.c — как у очков), mute исключает
-// тип из деления. Меняете очки за сундук (mix.w) — база количества пересчитывается сама.
-export function countAt(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
+// Количество склепов по типам (режим «Количество» пульта) — по данным кланов (владелец 2026-10-21):
+// клан требует N эпик-склепов любого уровня 20–35 (Старт 50, ЭДО 200 — факт; 40 и 250 — расчёт) — это
+// epicRefAt(Герой). Делим поровну между включёнными эпик-типами (клан уровни не различает). Для Rare/Common/
+// Citadel клан штук не называет — база 0 (они считаются только в очках); число можно задать вручную (set).
+// Проверка по данным: эпики × средние очки эпика = 102% нормы ЭДО, 81% Старта.
+export const EPIC_CRYPTS = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
+
+export function countAt(id, hero, settings = DEFAULT_SETTINGS) {
   const key = weightKey(id)
   const mixC = settings.mix?.c || {}
-  const active = CRYPT_TYPES.filter(t => mixC[t]?.on !== false && (weightAt(t, hero, settings) || 0) > 0)
-  if (!active.includes(key)) return 0
-  const share = cryptsNormAt(hero, emcModel, settings) / active.length
-  return Math.round(share / weightAt(key, hero, settings) * mixFactor({ ...mixC[key], on: true }, hero))
+  const entry = mixC[key]
+  if (entry?.on === false) return 0
+  if (entry?.set != null) return Math.max(0, Math.round(entry.set))
+  if (!EPIC_CRYPTS.includes(key)) return 0
+  const active = EPIC_CRYPTS.filter(t => mixC[t]?.on !== false)
+  return Math.round(epicRefAt(hero) / active.length * mixFactor({ ...entry, on: true }, hero))
+}
+
+// Прочие эпические монстры (нет истории штук): база = простое среднее штук четырёх известных монстров
+// на этом Герое (владелец 2026-10-21: все события примерно равны по затратам), правится фейдером.
+export const EMC_FOUR = { 'Epic Fire Hydra': 0, 'Epic Undead': 1, 'Epic Arachne': 2, 'Epic Shadow City': 3 }
+const EMC_FINALS = ['finalH', 'finalU', 'finalA', 'finalS']
+
+export function emcCountAt(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
+  const entry = settings.mix?.c?.[id]
+  if (entry?.on === false) return 0
+  if (entry?.set != null) return Math.max(0, Math.round(entry.set))
+  const row = computeRow(hero, emcModel || undefined)
+  if (id in EMC_FOUR) return row[EMC_FINALS[EMC_FOUR[id]]]
+  const base = computeRow(hero)
+  const mean = EMC_FINALS.reduce((sum, k) => sum + base[k], 0) / 4
+  return Math.round(mean * mixFactor({ ...entry, on: true }, hero))
+}
+
+// Цель по штукам для эпик-монстров вне четырёх известных, которые клан держит в слоте EMC.
+export function emcOthersTotal(typeMeta, hero, settings = DEFAULT_SETTINGS, emcModel) {
+  return Object.values(typeMeta || {})
+    .filter(m => m.slot === 2 && m.id.startsWith('Epic ') && !(m.id in EMC_FOUR) && !m.id.includes('Crypt'))
+    .reduce((sum, m) => sum + emcCountAt(m.id, hero, settings, emcModel), 0)
 }

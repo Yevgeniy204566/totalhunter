@@ -670,6 +670,8 @@ class MixEntry(BaseModel):
     on: bool = True
     all: float = Field(default=1.0, ge=0.1, le=3.0)
     bands: Dict[str, float] = Field(default_factory=dict, max_length=51)
+    # set — число штук, заданное вручную (для типов, у которых клан штук не называет)
+    set: Optional[int] = Field(default=None, ge=0, le=9999)
 
     @field_validator("bands")
     @classmethod
@@ -680,9 +682,9 @@ class MixEntry(BaseModel):
 class Mix(BaseModel):
     # w — очки за сундук по id шкалы («Epic Crypt 35», «Citadel 25», «Epic Fire Hydra»…);
     # epic — фейдер ориентира по эпик-склепам (режим «Количество» вкладки Crypts)
-    w: Dict[str, MixEntry] = Field(default_factory=dict, max_length=40)
+    w: Dict[str, MixEntry] = Field(default_factory=dict, max_length=80)
     # c — штуки по типам склепов (режим «Количество» вкладки Crypts), те же ключи, что у w
-    c: Dict[str, MixEntry] = Field(default_factory=dict, max_length=40)
+    c: Dict[str, MixEntry] = Field(default_factory=dict, max_length=80)
     epic: Optional[MixEntry] = None
 
     @field_validator("w", "c")
@@ -692,6 +694,17 @@ class Mix(BaseModel):
             if not key or len(key) > 60:
                 raise ValueError("bad mixer key")
         return v
+
+
+class MixerPreset(BaseModel):
+    """Пресет пульта (слот 1–3): положения всех фейдеров + рычаги EMC, чтобы клан мог переключаться
+    между наборами настроек («мягкий», «строгий», «на сезон»…)."""
+    name: str = Field(default="", max_length=30)
+    norm: float = Field(default=1.0, ge=0.1, le=3.0)
+    weights: float = Field(default=1.0, ge=0.1, le=3.0)
+    mix: "Mix" = Field(default_factory=lambda: Mix())
+    emc: Optional[EmcSettings] = None
+    model_config = {"populate_by_name": True}
 
 
 class PersonalScale(BaseModel):
@@ -705,6 +718,7 @@ class PersonalScale(BaseModel):
     weights: float = Field(default=1.0, ge=0.1, le=3.0)
     ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
     mix: Mix = Field(default_factory=Mix)
+    presets: Dict[Literal["1", "2", "3"], MixerPreset] = Field(default_factory=dict)
     model_config = {"populate_by_name": True}
 
 

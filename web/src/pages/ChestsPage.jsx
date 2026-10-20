@@ -77,6 +77,21 @@ function accountingOrder(rows, dir, key = 'acc') {
 const DEFAULT_PERSONAL = { crypts: false, emc: false, norm: 1, weights: 1, ranges: [] }
 const DEFAULT_QUOTAS = [{ slot: 1, name: 'Crypts', target: '', mode: 'fixed' }, { slot: 2, name: 'EMC', target: '', mode: 'fixed' }]
 
+// Типы для «Пульта» — из вкладки «Сундуки» (главная, задаёт правила): сундуки в учёте с каталожным
+// именем; подпись — своё название или название из игры (raw), иначе каноническое. Считается на лету,
+// поэтому правки вкладки «Сундуки» видны в пульте сразу, ещё до сохранения.
+function mixerTypes(rows) {
+  const seen = new Set()
+  const out = []
+  for (const r of rows) {
+    if (!r.catalog_id || !(r.is_in_pattern || r.quota_slot) || seen.has(r.catalog_id)) continue
+    seen.add(r.catalog_id)
+    out.push({ id: r.catalog_id, label: r.custom_name || r.raw_type || r.catalog_id,
+               points: Number(r.points) || 0, slot: r.quota_slot || null })
+  }
+  return out
+}
+
 function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) {
   const set = (slot, field, value) => onChange(quotas.map(q => (q.slot === slot ? { ...q, [field]: value } : q)))
   const flag = { 1: 'crypts', 2: 'emc' }
@@ -974,7 +989,8 @@ export default function ChestsPage() {
               onPersonal={p => updateSeasonField(collector.slug, 'personal', p)}
               quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
               onQuotas={q => updateSeasonField(collector.slug, 'quotas', q)}
-              onSave={() => saveSeason(collector.slug)} />
+              types={mixerTypes(rowsByCollector[collector.slug] || [], collector.catalog_options)}
+              onSave={p => saveSeason(collector.slug, undefined, p)} />
           )}
 
           {activeTab(collector.slug) === 'history' && (
