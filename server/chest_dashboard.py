@@ -596,6 +596,15 @@ class EmcSettings(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class HeroPointsSettings(BaseModel):
+    """Рычаги квоты hero_points («Общий учёт по Герою»). Вес сундуков и норму считает страница
+    (web/src/lib/heroQuota.js) — здесь только хранение и границы множителей 0.1…3.0."""
+    norm: float = Field(default=1.0, ge=0.1, le=3.0)
+    weights: float = Field(default=1.0, ge=0.1, le=3.0)
+    ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
+    model_config = {"populate_by_name": True}
+
+
 class QuotaIn(BaseModel):
     slot: int = Field(ge=1, le=3)
     name: str = Field(min_length=1, max_length=40)
@@ -603,15 +612,20 @@ class QuotaIn(BaseModel):
     # fixed — одна цель на всех; per_player — личная цель по уровню Героя (спека 02),
     # все коэффициенты правит лидер: формула будет уточняться по статистике.
     # emc_table — личная цель EMC по таблице уровней Героя × множители (поле emc)
-    mode: Literal["fixed", "per_player", "emc_table"] = "fixed"
+    # hero_points — общий учёт всех сундуков в очках: вес типа и норма по уровню Героя (поле hero)
+    mode: Literal["fixed", "per_player", "emc_table", "hero_points"] = "fixed"
     emc: Optional[EmcSettings] = None
+    hero: Optional[HeroPointsSettings] = None
     hero_k: float = Field(default=0, ge=-100, le=100)     # % цели на 100 уровней Героя
     hero_h0: int = Field(default=400, ge=1, le=999)       # «средний» уровень Героя
 
 
 def _quota_to_json(q: "QuotaIn") -> dict:
     if q.mode == "per_player":
-        return q.model_dump(exclude={"emc"})
+        return q.model_dump(exclude={"emc", "hero"})
+    if q.mode == "hero_points":
+        hero = (q.hero or HeroPointsSettings()).model_dump(by_alias=True)
+        return {**q.model_dump(include={"slot", "name", "target", "mode"}), "hero": hero}
     if q.mode == "emc_table":
         emc = (q.emc or EmcSettings()).model_dump(by_alias=True)
         # цели в JSON хранятся под ключами from/to/global — как их читает страница

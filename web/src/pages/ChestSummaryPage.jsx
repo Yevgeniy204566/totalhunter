@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChestHistorySeason } from '../api.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import EmcQuotaPublic from '../components/EmcQuotaPublic.jsx'
+import HeroPointsPublic from '../components/HeroPointsPublic.jsx'
 
 // Публичная таблица: RU/EN со своим переключателем (владелец 2026-09-26). Адрес /c/... не
 // несёт язык, поэтому общий useLang тут всегда дал бы 'en'. Остальные языки — переводчик
@@ -18,7 +19,7 @@ const TXT = {
     tz: 'Часовой пояс',
     editOpen: '✏️ Войска', editClose: '✕ Закрыть',
     updated: 'Последнее обновление',
-    tabCurrent: 'Текущий сезон', tabHistory: 'История', tabEmc: 'Квота EMC',
+    tabCurrent: 'Текущий сезон', tabHistory: 'История', tabEmc: 'Квота EMC', tabHero: 'Нормы по Герою',
     historyEmpty: 'Архив пока пуст — сезоны появятся здесь после первого автозакрытия.',
     points: 'очков', back: '← Назад к списку сезонов',
   },
@@ -32,7 +33,7 @@ const TXT = {
     tz: 'Time zone',
     editOpen: '✏️ Troops', editClose: '✕ Close',
     updated: 'Last update',
-    tabCurrent: 'Current season', tabHistory: 'History', tabEmc: 'EMC quota',
+    tabCurrent: 'Current season', tabHistory: 'History', tabEmc: 'EMC quota', tabHero: 'Hero norms',
     historyEmpty: 'The archive is empty — seasons will appear here after the first auto-close.',
     points: 'points', back: '← Back to seasons',
   },
@@ -166,6 +167,7 @@ export default function ChestSummaryPage() {
   const targets = data.targets || { points: null, chests: null }
   // Вкладка с таблицей квоты — только если лидер применил модель EMC к одной из квот
   const emcQuota = (targets.quotas || []).find(q => q.mode === 'emc_table')
+  const heroQuota = (targets.quotas || []).find(q => q.mode === 'hero_points')
   // Все цели сезона (владелец 2026-09-26): очки + каждая квота со своей целью; архив до
   // квот — прежняя одна цель по сундукам.
   // Число цели выделено цветом и жирным; на телефоне цели — столбиком (владелец 2026-09-28).
@@ -292,14 +294,27 @@ export default function ChestSummaryPage() {
             {t.tabEmc}
           </button>
         )}
+        {heroQuota && (
+          <button
+            className={`chest-tab chest-tab--pill ${tab === 'hero' ? 'chest-tab--active' : ''}`}
+            onClick={() => setTab('hero')}
+          >
+            {t.tabHero}
+          </button>
+        )}
       </div>
 
       {tab === 'emc' && emcQuota && <EmcQuotaPublic model={emcQuota.emc || {}} lang={lang} />}
+      {tab === 'hero' && heroQuota && (
+        <HeroPointsPublic model={heroQuota.hero || undefined} players={data.players}
+                          meta={data.chest_type_meta} lang={lang} />
+      )}
 
       {tab === 'current' && (
         <>
           <ChestSummaryTable
             chestTypes={data.chest_types}
+            chestTypeMeta={data.chest_type_meta}
             players={data.players}
             targets={targets}
             editMode={editMode}

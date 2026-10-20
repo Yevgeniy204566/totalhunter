@@ -8,6 +8,7 @@ import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import ChestGuide from '../components/ChestGuide.jsx'
 import EmcQuotaTab from '../components/EmcQuotaTab.jsx'
 import { DEFAULT_SETTINGS } from '../lib/emcQuota.js'
+import { DEFAULT_SETTINGS as HERO_DEFAULTS } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['5', '6', '7', '8', '9']
@@ -82,6 +83,11 @@ function QuotaEditor({ quotas, cx, onChange, onOpenEmc }) {
     if (j !== i) return q
     return on ? { ...q, mode: 'emc_table', emc: q.emc || structuredClone(DEFAULT_SETTINGS) } : { ...q, mode: 'fixed' }
   }))
+  // «Общий учёт по Герою» — взаимоисключающий с личной целью EMC: квота считает очки всех сундуков
+  const setHeroPoints = (i, on) => onChange(quotas.map((q, j) => {
+    if (j !== i) return q
+    return on ? { ...q, mode: 'hero_points', hero: q.hero || structuredClone(HERO_DEFAULTS) } : { ...q, mode: 'fixed' }
+  }))
   const add = () => {
     const used = new Set(quotas.map(q => q.slot))
     const slot = [1, 2, 3].find(n => !used.has(n))
@@ -94,6 +100,7 @@ function QuotaEditor({ quotas, cx, onChange, onOpenEmc }) {
       <div className="quota-grid">
         {quotas.map((q, i) => {
           const personal = q.mode === 'emc_table' || q.mode === 'per_player'
+          const heroPts = q.mode === 'hero_points'
           return (
             <div key={q.slot} className={`quota-card quota-card--${q.slot}`}>
               <div className="quota-card-head">
@@ -106,7 +113,7 @@ function QuotaEditor({ quotas, cx, onChange, onOpenEmc }) {
                 <input className="input-dark" placeholder={cx.quotaNameHint} maxLength={40}
                   value={q.name} onChange={e => set(i, 'name', e.target.value)} />
               </label>
-              {!personal && (
+              {!personal && !heroPts && (
                 <label className="quota-row">
                   <span>{cx.quotaTarget}</span>
                   <input className="input-dark" type="number" min={0} placeholder={cx.quotaTargetHint}
@@ -117,6 +124,25 @@ function QuotaEditor({ quotas, cx, onChange, onOpenEmc }) {
                 <input type="checkbox" checked={personal} onChange={e => setPersonal(i, e.target.checked)} />
                 {cx.perPlayer}
               </label>
+              {!personal && (
+                <label className="quota-check">
+                  <input type="checkbox" checked={heroPts} onChange={e => setHeroPoints(i, e.target.checked)} />
+                  {cx.heroPoints}
+                </label>
+              )}
+              {heroPts && (
+                <div className="quota-hero">
+                  <small>{cx.heroPointsHint}</small>
+                  {[['norm', cx.heroNormK], ['weights', cx.heroWeightK]].map(([key, label]) => (
+                    <label key={key} className="quota-row">
+                      <span>{label}</span>
+                      <input className="input-dark emc-k-input" type="number" min={0.1} max={3} step={0.05}
+                        value={q.hero?.[key] ?? 1}
+                        onChange={e => set(i, 'hero', { ...HERO_DEFAULTS, ...q.hero, [key]: e.target.value === '' ? 1 : Number(e.target.value) })} />
+                    </label>
+                  ))}
+                </div>
+              )}
               {personal && (
                 <div className="quota-hero">
                   <small>{q.mode === 'per_player' ? cx.quotaPersonalLegacy : cx.quotaPersonalHint}</small>
@@ -363,7 +389,8 @@ export default function ChestsPage() {
                      mode: q.mode || 'fixed',
                      ...(q.mode === 'per_player'
                        ? { hero_k: Number(q.hero_k) || 0, hero_h0: Number(q.hero_h0) || 400 } : {}),
-                     ...(q.mode === 'emc_table' && q.emc ? { emc: q.emc } : {}) })),
+                     ...(q.mode === 'emc_table' && q.emc ? { emc: q.emc } : {}),
+                     ...(q.mode === 'hero_points' && q.hero ? { hero: q.hero } : {}) })),
     }
     try {
       await api.dashboardChestsSeason(slug, payload)

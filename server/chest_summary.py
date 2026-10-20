@@ -38,6 +38,7 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
     seen_types = set()
     display_names: dict[str, str] = {}
     type_slot: dict[str, int] = {}   # квота типа — для порядка столбцов
+    type_points: dict[str, int] = {}  # очки клана за тип — запасной вес квоты hero_points
     per_player: dict[str, dict[str, int]] = {}
     player_points: dict[str, int] = {}
     # Квоты (2026-09-26): слот конфига засчитывается, только если такая квота есть у
@@ -52,6 +53,7 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
             continue
         if quota_slot and int(quota_slot) in quota_slots:
             type_slot[chest_type_en] = int(quota_slot)
+        type_points[chest_type_en] = points or 0
         if leader_name and sender == leader_name and chest_type_en in leader_excluded:
             # Excluded from leader score but still tracked in clan totals
             grand_total += count
@@ -104,6 +106,10 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
         "kingdom": kingdom,
         "clan": clan,
         "chest_types": chest_types,
+        # id каталога и очки клана по отображаемому имени: по ним страница считает «Общий учёт
+        # по Герою» (веса шкалы привязаны к id, столбцы — к локализованному имени)
+        "chest_type_meta": {display_names[t]: {"id": t, "points": type_points.get(t, 0)}
+                            for t in chest_type_order_sorted},
         "players": players,
         "totals": totals_out,
     }
