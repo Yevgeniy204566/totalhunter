@@ -29,12 +29,14 @@ const TXT = {
     manual: 'В нормах клана штук для этого типа нет — впишите число вручную (пусто = 0)',
     calc: 'расчёт',
     countNote: 'Эпик-склепы: ориентир клана ÷ число включённых эпик-типов. Rare/Common/Citadel: в нормах клана штук нет — впишите число вручную при желании.',
-    save: '💾 Сохранить', saved: 'Нажмите «Сохранить», чтобы применить к сезону.',
+    save: '💾 Сохранить настройки', saved: 'Сохраняет всё, что стоит в пульте сейчас, как настройку сезона по умолчанию — её видят игроки на публичной странице.',
+    dirtyOn: '● Есть несохранённые изменения', dirtyOff: '✓ Всё сохранено',
     summary: 'Герой {h}: норма «Всего» {total} · Crypts {crypts} · EMC {emc} шт.',
     editing: 'Правим: {what}', mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
-    presets: 'Пресеты', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить', load: 'Загрузить',
-    loaded: 'Пресет загружен. Нажмите «Сохранить», чтобы применить к сезону.',
+    presets: 'Пресеты (запасные наборы настроек)', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить в пресет', load: 'Загрузить пресет',
+    presetHint: 'Пресет — копия настроек в выбранном слоте. «Сохранить настройки» выше нужна, чтобы применить текущие значения к сезону; сохранение в пресет тоже записывает сезон.',
+    loaded: 'Пресет загружен в пульт. Нажмите «Сохранить настройки», чтобы применить к сезону.',
     savedPreset: 'Пресет сохранён.',
     help: 'Как работает пульт',
     helpText: [
@@ -61,12 +63,14 @@ const TXT = {
     manual: 'The clan norms give no count for this type — type a number (empty = 0)',
     calc: 'calc.',
     countNote: 'Epic crypts: the clan guideline ÷ number of enabled epic types. Rare/Common/Citadel: the clan norms give no counts — type a number if you wish.',
-    save: '💾 Save', saved: "Press 'Save' to apply to the season.",
+    save: '💾 Save settings', saved: 'Saves everything currently set in the mixer as the default season setting — players see it on the public page.',
+    dirtyOn: '● Unsaved changes', dirtyOff: '✓ All saved',
     summary: 'Hero {h}: Total norm {total} · Crypts {crypts} · EMC {emc} pcs',
     editing: 'Editing: {what}', mixed: 'selected steps have different values — the fader will set them equal',
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
-    presets: 'Presets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save', load: 'Load',
-    loaded: "Preset loaded. Press 'Save' to apply to the season.",
+    presets: 'Presets (spare sets of settings)', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save to preset', load: 'Load preset',
+    presetHint: "A preset is a copy of the settings in the chosen slot. 'Save settings' above applies the current values to the season; saving to a preset also saves the season.",
+    loaded: "Preset loaded into the mixer. Press 'Save settings' to apply it to the season.",
     savedPreset: 'Preset saved.',
     help: 'How the mixer works',
     helpText: [
@@ -140,7 +144,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
   )
 }
 
-export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [] }) {
+export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], dirty = false }) {
   const t = TXT[lang] || TXT.ru
   const [tab, setTab] = useState('crypts')
   const [mode, setMode] = useState('points')
@@ -407,6 +411,12 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
       <p className="emc-text">{summary}</p>
 
+      <div className="season-actions">
+        <button type="button" className="chest-pill-btn chest-pill-btn--green" onClick={() => onSave()}>{t.save}</button>
+        <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
+      </div>
+      <p className="emc-text"><small>{t.saved}</small></p>
+
       <div className="mixer-presets">
         <b>{t.presets}</b>
         <select className="input-dark" value={presetSlot} onChange={e => pickSlot(e.target.value)}>
@@ -419,12 +429,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <button type="button" className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--green"
           onClick={savePreset}>{t.saveSlot}</button>
       </div>
+      <p className="emc-text"><small>{t.presetHint}</small></p>
       {note && <p className="emc-text"><small>{note}</small></p>}
-
-      <div className="season-actions">
-        <button type="button" className="chest-pill-btn chest-pill-btn--green" onClick={() => onSave()}>{t.save}</button>
-        <small>{t.saved}</small>
-      </div>
     </div>
   )
 }

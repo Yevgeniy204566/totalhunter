@@ -93,6 +93,9 @@ function mixerTypes(rows) {
   return out
 }
 
+// Подпись настроек пульта (персонализация + рычаги EMC + названия/цели квот) для индикатора «не сохранено»
+const mixerSig = s => JSON.stringify([s?.personal, (s?.quotas || []).map(q => [q.slot, q.name, String(q.target ?? ''), q.emc])])
+
 function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) {
   const set = (slot, field, value) => onChange(quotas.map(q => (q.slot === slot ? { ...q, [field]: value } : q)))
   const flag = { 1: 'crypts', 2: 'emc' }
@@ -146,6 +149,8 @@ export default function ChestsPage() {
   const [playerRowsByCollector, setPlayerRowsByCollector] = useState({})
   const [activeTabByCollector, setActiveTabByCollector] = useState({})
   const [seasonByCollector, setSeasonByCollector] = useState({})
+  // подпись сохранённых настроек пульта — по ней видно, есть ли несохранённые изменения
+  const [savedSigByCollector, setSavedSigByCollector] = useState({})
   const [msg, setMsg] = useState('')
   const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
@@ -217,6 +222,7 @@ export default function ChestsPage() {
       })
       setPlayerRowsByCollector(nextPlayerRows)
       setSeasonByCollector(nextSeason)
+      setSavedSigByCollector(Object.fromEntries(Object.entries(nextSeason).map(([k, v]) => [k, mixerSig(v)])))
       setLeaderByCollector(nextLeader)
       setLeaderExcludedByCollector(nextLeaderExcluded)
     } catch (e) {
@@ -991,6 +997,7 @@ export default function ChestsPage() {
               quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
               onQuotas={q => updateSeasonField(collector.slug, 'quotas', q)}
               types={mixerTypes(rowsByCollector[collector.slug] || [], collector.catalog_options)}
+              dirty={mixerSig(seasonByCollector[collector.slug]) !== savedSigByCollector[collector.slug]}
               onSave={p => saveSeason(collector.slug, undefined, p)} />
           )}
 

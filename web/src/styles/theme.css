@@ -823,3 +823,5 @@ a:hover { color: var(--on-surface); }
   .mixer-rail { height: 180px; }
   .mixer-range { width: 180px; }
 }
+.mixer-dirty { color: #fbbf24; font-size: 15px; }
+.mixer-clean { color: #3fbf6a; font-size: 15px; }
