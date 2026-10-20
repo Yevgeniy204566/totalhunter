@@ -142,3 +142,55 @@ async def test_row_in_missing_quota_slot_creates_default_quota(db_session):
         t = await _public(client, c)
     assert r.status_code == 200
     assert t["quotas"] == [{"slot": 1, "name": "Crypts", "target": None, "mode": "fixed"}]
+
+
+MIX = {"w": {"Epic Crypt 35": {"on": True, "all": 1.2, "bands": {"380": 0.5}},
+             "Common Crypt 25": {"on": False}},
+       "epic": {"all": 1.5}}
+
+
+@pytest.mark.asyncio
+async def test_mixer_values_saved_and_exposed(db_session):
+    c, h = await _owner(db_session, f"ps11{secrets.token_hex(2)}@example.com")
+    emc = {"global": 1.0, "monsters": {"hydra": 1, "undead": 1, "arachna": 1, "shadow": 1}, "ranges": [],
+           "cells": {"hydra": {"400": 0.5}}, "off": ["undead"]}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"quotas": [Q1, {**Q2, "emc": emc}], "personal": {**ON, "mix": MIX}})
+        t = await _public(client, c)
+    assert r.status_code == 200
+    assert t["personal"]["mix"]["w"]["Epic Crypt 35"]["bands"] == {"380": 0.5}
+    assert t["personal"]["mix"]["w"]["Common Crypt 25"]["on"] is False
+    q2 = next(q for q in t["quotas"] if q["slot"] == 2)
+    assert q2["emc"]["cells"] == {"hydra": {"400": 0.5}} and q2["emc"]["off"] == ["undead"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad_mix", [
+    {"w": {"Epic Crypt 35": {"all": 3.5}}},
+    {"w": {"Epic Crypt 35": {"all": 0.05}}},
+    {"w": {"Epic Crypt 35": {"bands": {"385": 1.0}}}},        # ступень — только 100,110…600
+    {"w": {"Epic Crypt 35": {"bands": {"650": 1.0}}}},
+    {"w": {"Epic Crypt 35": {"bands": {"400": 9}}}},
+    {"w": {"x" * 61: {"all": 1}}},
+    {"w": {f"T{i}": {"all": 1} for i in range(41)}},
+])
+async def test_mixer_invalid_values_422(db_session, bad_mix):
+    c, h = await _owner(db_session, f"ps12{secrets.token_hex(3)}@example.com")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"personal": {**ON, "mix": bad_mix}})
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad_emc", [
+    {"cells": {"dragon": {"400": 1.0}}},
+    {"cells": {"hydra": {"405": 1.0}}},
+    {"cells": {"hydra": {"400": 5}}},
+    {"off": ["dragon"]},
+])
+async def test_emc_cells_invalid_422(db_session, bad_emc):
+    c, h = await _owner(db_session, f"ps13{secrets.token_hex(3)}@example.com")
+    emc = {"global": 1.0, "monsters": {"hydra": 1, "undead": 1, "arachna": 1, "shadow": 1}, "ranges": [], **bad_emc}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"quotas": [{**Q2, "emc": emc}]})
+    assert r.status_code == 422

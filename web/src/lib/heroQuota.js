@@ -8,7 +8,7 @@
 // выше последней — постоянный. Всё, что не стена клана, — РАСЧЁТ, не требование клана.
 // Очки за сундук округляются до кратных 5, общая норма — до сотен.
 
-import { clampMultiplier, computeRow } from './emcQuota.js'
+import { clampMultiplier, computeRow, bandKey } from './emcQuota.js'
 
 const P = 298
 const E = 387.5
@@ -80,10 +80,17 @@ function baseWeight(key, h) {
   return lerp(pts, h)
 }
 
+// Фейдер пульта на тип: «все уровни» × ступень Героя; on === false — тип не считается (mute).
+function mixFactor(entry, hero) {
+  if (entry?.on === false) return 0
+  return clampMultiplier(entry?.all) * clampMultiplier(entry?.bands?.[bandKey(hero)])
+}
+
 export function weightAt(id, hero, settings = DEFAULT_SETTINGS) {
-  const base = baseWeight(weightKey(id), hero)
+  const key = weightKey(id)
+  const base = baseWeight(key, hero)
   if (base == null) return null
-  return round5(base * clampMultiplier(settings.weights))
+  return round5(base * clampMultiplier(settings.weights) * mixFactor(settings.mix?.w?.[key], hero))
 }
 
 function rangeK(hero, ranges) {
@@ -110,8 +117,8 @@ export function normAt(hero, settings = DEFAULT_SETTINGS) {
   return round100(base * rangeK(hero, settings.ranges) * clampMultiplier(settings.norm))
 }
 
-export function epicRefAt(hero) {
-  return Math.round(curve(EPIC, hero))
+export function epicRefAt(hero, settings = DEFAULT_SETTINGS) {
+  return Math.round(curve(EPIC, hero) * mixFactor(settings.mix?.epic, hero))
 }
 
 const ANCHOR_LEVELS = new Set([P, E, B])
@@ -159,3 +166,8 @@ export function emcPointsAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
 export function cryptsNormAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
   return Math.max(0, normAt(hero, settings) - emcPointsAt(hero, emcModel, settings))
 }
+
+// Типы для пульта: Crypts — склепы и цитадели, EMC — эпические монстры (очки за сундук).
+export const CRYPT_TYPES = ['Common Crypt 20', 'Common Crypt 25', 'Rare Crypt 20', 'Rare Crypt 25', 'Rare Crypt 30',
+  'Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35', 'Citadel 20', 'Citadel 25', 'Citadel 30']
+export const EMC_TYPES = [...EMC_IDS, 'Dark Omens Chest', 'Epic Briareus', 'Yogwai', 'Epic Basilisk', 'Epic Chimera', 'Epic Hellforge']

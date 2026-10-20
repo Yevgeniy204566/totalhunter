@@ -6,7 +6,7 @@ import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import ChestGuide from '../components/ChestGuide.jsx'
-import EmcQuotaTab from '../components/EmcQuotaTab.jsx'
+import MixerTab from '../components/MixerTab.jsx'
 import { DEFAULT_SETTINGS } from '../lib/emcQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
@@ -380,17 +380,6 @@ export default function ChestsPage() {
     } catch (e) { setMsg(e.message) }
   }
 
-  // «Применить к сезону» на вкладке «Расчёт EMC»: рычаги EMC (слот 2) и тумблер EMC включаются;
-  // остальные настройки сезона остаются как есть.
-  async function applyEmc(slug, emc) {
-    const s = seasonByCollector[slug] || {}
-    const quotas = (s.quotas || []).map(q => (q.slot === 2 ? { ...q, emc } : q))
-    const personal = { ...DEFAULT_PERSONAL, ...(s.personal || {}), emc: true }
-    updateSeasonField(slug, 'quotas', quotas)
-    updateSeasonField(slug, 'personal', personal)
-    await saveSeason(slug, quotas, personal)
-  }
-
   // Руководители (2026-09-27): хозяин всегда один; руководитель помогает вести его ростер
   const isOwner = slug => (collectors.find(c => c.slug === slug)?.role ?? 'owner') === 'owner'
 
@@ -651,7 +640,7 @@ export default function ChestsPage() {
               cx={cx}
               onChange={q => updateSeasonField(collector.slug, 'quotas', q)}
               onPersonal={p => updateSeasonField(collector.slug, 'personal', p)}
-              onOpenEmc={() => setTab(collector.slug, 'emc')}
+              onOpenEmc={() => setTab(collector.slug, 'mixer')}
             />
             <div className="season-actions">
               <button className="chest-pill-btn chest-pill-btn--green" onClick={() => saveSeason(collector.slug)}>
@@ -682,12 +671,12 @@ export default function ChestsPage() {
           <div className="chest-tabs chest-tabs--pill">
             <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'chests')}>{cx.chestsTab}</button>
+            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'mixer' ? 'chest-tab--active' : ''}`}
+              onClick={() => setTab(collector.slug, 'mixer')}>{cx.mixerTab}</button>
             <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'players')}>{cx.playersTab}</button>
             <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'history')}>{cx.historyTab}</button>
-            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'emc' ? 'chest-tab--active' : ''}`}
-              onClick={() => setTab(collector.slug, 'emc')}>{cx.emcTab}</button>
           </div>
 
           {activeTab(collector.slug) === 'chests' && (
@@ -994,9 +983,13 @@ export default function ChestsPage() {
             )
           })()}
 
-          {activeTab(collector.slug) === 'emc' && (
-            <EmcQuotaTab cx={cx} lang={lang} quotas={seasonByCollector[collector.slug]?.quotas || []}
-              onApply={emc => applyEmc(collector.slug, emc)} />
+          {activeTab(collector.slug) === 'mixer' && (
+            <MixerTab lang={lang}
+              personal={seasonByCollector[collector.slug]?.personal || DEFAULT_PERSONAL}
+              onPersonal={p => updateSeasonField(collector.slug, 'personal', p)}
+              quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
+              onQuotas={q => updateSeasonField(collector.slug, 'quotas', q)}
+              onSave={() => saveSeason(collector.slug)} />
           )}
 
           {activeTab(collector.slug) === 'history' && (

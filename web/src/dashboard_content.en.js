@@ -67,7 +67,7 @@ export const DASHBOARD = {
     chestsTab: 'Chests',
     playersTab: 'Players',
     historyTab: 'History',
-    emcTab: 'EMC calculator',
+    mixerTab: 'Mixer',
     emc: {
       title: 'Personal Epic Monster Chests (EMC) calculation',
       intro: "A player's full-season (2 weeks) quota by Hero level: how many chests from Hydra, Undead, Arachna and Shadow City. Change the multipliers and the table recalculates instantly. With every multiplier at 1.00 you see the original base quota.",
@@ -147,7 +147,7 @@ export const DASHBOARD = {
     personalScaleHint: 'Multipliers adjust the scale for the whole clan: the Total norm and points per chest. 1 = no adjustment.',
     quotaPersonalHint: "Each player's target depends on their Hero level: the higher the Hero, the more chests are expected. Targets by level and multipliers are set in the 'EMC calculator' tab below.",
     quotaPersonalLegacy: 'The previous personal target is on. To switch to the "EMC calculator" table below, turn the switch off and on again.',
-    openEmcTab: 'Open "EMC calculator" ↓',
+    openEmcTab: 'Open "Mixer" ↓',
     quotaNameHint: 'Column name',
     quotaTargetHint: 'Chests per season',
     statsBtn: '⬇ Download statistics (CSV)',

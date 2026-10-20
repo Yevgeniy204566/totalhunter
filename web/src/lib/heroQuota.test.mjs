@@ -162,3 +162,54 @@ test('края диапазона: 100 и 600 заданы продолжени�
   assert.equal(epicRefAt(100), 23)
   assert.equal(epicRefAt(600), 617)
 })
+
+// ---- пульт: фейдеры по типам и ступеням Героя ----
+import { computeRow, bandKey } from './emcQuota.js'
+
+test('ступень Героя: 310–319 → "310", края 100…600', () => {
+  assert.equal(bandKey(319), '310')
+  assert.equal(bandKey(310), '310')
+  assert.equal(bandKey(50), '100')
+  assert.equal(bandKey(999), '600')
+})
+
+test('фейдер «все уровни» умножает очки типа на каждой ступени пропорционально', () => {
+  const s = { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Crypt 35': { all: 1.2 } } } }
+  assert.equal(w('Epic Crypt 35', 387.5, s), 160) // 135×1.2=162 → 160
+  assert.equal(w('Epic Crypt 35', 298, s), 180)   // 150×1.2
+  assert.equal(w('Epic Crypt 30', 298, s), 90)    // другие типы не затронуты
+})
+
+test('фейдер ступени правит только свою ступень, поверх «всех уровней»', () => {
+  const s = { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Crypt 35': { all: 1.2, bands: { 380: 0.5 } } } } }
+  assert.equal(w('Epic Crypt 35', 385, s), 80)    // 135×1.2×0.5=81 → 80
+  assert.equal(w('Epic Crypt 35', 395, s), 160)   // соседняя ступень — только «все уровни»
+})
+
+test('mute (on:false) обнуляет тип', () => {
+  const s = { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Crypt 35': { on: false } } } }
+  assert.equal(w('Epic Crypt 35', 300, s), 0)
+  assert.equal(w('Epic Crypt 30', 300, s), 90)
+})
+
+test('цитадели Cursed/Elven делят один фейдер', () => {
+  const s = { ...DEFAULT_SETTINGS, mix: { w: { 'Citadel 25': { all: 2 } } } }
+  assert.equal(w('Cursed Citadel 25', 298, s), 70)
+  assert.equal(w('Elven Citadel 25', 298, s), 70)
+})
+
+test('ориентир по эпикам: фейдер и mute', () => {
+  assert.equal(epicRefAt(387.5, { ...DEFAULT_SETTINGS, mix: { epic: { all: 1.5 } } }), 300)
+  assert.equal(epicRefAt(387.5, { ...DEFAULT_SETTINGS, mix: { epic: { on: false } } }), 0)
+})
+
+test('EMC: множитель монстра на ступень (cells) и выключатель (off)', () => {
+  const base = computeRow(400)
+  const cell = computeRow(400, { cells: { hydra: { 400: 0.5 } } })
+  assert.equal(cell.finalH, Math.floor(base.base[0] * 0.5 + 0.5 + 1e-9))
+  assert.equal(cell.finalU, base.finalU)
+  assert.equal(computeRow(400, { cells: { hydra: { 400: 0.5 } } }).finalH === computeRow(410, { cells: { hydra: { 400: 0.5 } } }).finalH, false)
+  const off = computeRow(400, { off: ['undead'] })
+  assert.equal(off.finalU, 0)
+  assert.equal(off.emc, base.emc - base.finalU)
+})

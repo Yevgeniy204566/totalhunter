@@ -11,7 +11,7 @@ and the global Chest Catalog/Localizations Sheets are untouched (see design doc)
 import re
 import secrets
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -617,13 +617,79 @@ class EmcRange(BaseModel):
         return self
 
 
+_BAND_KEYS = {str(h) for h in range(100, 601, 10)}   # ступени Героя пульта: «310» = Герой 310–319
+_MONSTERS = ("hydra", "undead", "arachna", "shadow")
+
+
+def _check_bands(bands: dict) -> dict:
+    for band, k in bands.items():
+        if band not in _BAND_KEYS:
+            raise ValueError(f"unknown hero band {band!r}")
+        if not 0.1 <= k <= 3.0:
+            raise ValueError("multiplier must be 0.1…3.0")
+    return bands
+
+
+_BAND_KEYS = {str(h) for h in range(100, 601, 10)}   # ступени Героя пульта: «310» = Герой 310–319
+_MONSTERS = ("hydra", "undead", "arachna", "shadow")
+
+
+def _check_bands(bands: dict) -> dict:
+    for band, k in bands.items():
+        if band not in _BAND_KEYS:
+            raise ValueError(f"unknown hero band {band!r}")
+        if not 0.1 <= k <= 3.0:
+            raise ValueError("multiplier must be 0.1…3.0")
+    return bands
+
+
 class EmcSettings(BaseModel):
     """Рычаги квоты emc_table. Саму цель считает страница (web/src/lib/emcQuota.js) — здесь
     только хранение и границы множителей 0.1…3.0, чтобы опечатка не раздула квоту."""
     global_k: float = Field(default=1.0, alias="global", ge=0.1, le=3.0)
     monsters: EmcMonsters = Field(default_factory=EmcMonsters)
     ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
+    # пульт (2026-10-20): множитель монстра на ступень Героя и выключенные монстры
+    cells: Dict[str, Dict[str, float]] = Field(default_factory=dict)
+    off: List[Literal["hydra", "undead", "arachna", "shadow"]] = Field(default_factory=list, max_length=4)
     model_config = {"populate_by_name": True}
+
+    @field_validator("cells")
+    @classmethod
+    def _cells_ok(cls, v):
+        for monster, bands in v.items():
+            if monster not in _MONSTERS:
+                raise ValueError(f"unknown monster {monster!r}")
+            _check_bands(bands)
+        return v
+
+
+class MixEntry(BaseModel):
+    """Фейдер пульта на один тип сундука: on — не mute; all — множитель «на все уровни»;
+    bands — поправка отдельных ступеней Героя поверх него."""
+    on: bool = True
+    all: float = Field(default=1.0, ge=0.1, le=3.0)
+    bands: Dict[str, float] = Field(default_factory=dict, max_length=51)
+
+    @field_validator("bands")
+    @classmethod
+    def _bands_ok(cls, v):
+        return _check_bands(v)
+
+
+class Mix(BaseModel):
+    # w — очки за сундук по id шкалы («Epic Crypt 35», «Citadel 25», «Epic Fire Hydra»…);
+    # epic — фейдер ориентира по эпик-склепам (режим «Количество» вкладки Crypts)
+    w: Dict[str, MixEntry] = Field(default_factory=dict, max_length=40)
+    epic: Optional[MixEntry] = None
+
+    @field_validator("w")
+    @classmethod
+    def _keys_ok(cls, v):
+        for key in v:
+            if not key or len(key) > 60:
+                raise ValueError("bad mixer key")
+        return v
 
 
 class PersonalScale(BaseModel):
@@ -636,6 +702,7 @@ class PersonalScale(BaseModel):
     norm: float = Field(default=1.0, ge=0.1, le=3.0)
     weights: float = Field(default=1.0, ge=0.1, le=3.0)
     ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
+    mix: Mix = Field(default_factory=Mix)
     model_config = {"populate_by_name": True}
 
 

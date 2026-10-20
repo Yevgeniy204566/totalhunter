@@ -57,6 +57,11 @@ export function baseAt(hero) {
   return ANCHORS[ANCHORS.length - 1][1].slice()
 }
 
+// Ступень Героя 100…600 с шагом 10 (в пульте — «Герой 310–319»); ключ ступени — её начало.
+export const bandKey = hero => String(Math.min(600, Math.max(100, Math.floor(hero / 10) * 10)))
+
+const MONSTER_KEYS = ['hydra', 'undead', 'arachna', 'shadow']
+
 function levelMultiplier(hero, ranges) {
   const r = (ranges || []).find(x => hero >= Number(x.from) && hero <= Number(x.to))
   return r ? clampMultiplier(r.k) : 1
@@ -71,7 +76,12 @@ export function computeRow(hero, settings = DEFAULT_SETTINGS) {
   const m = settings.monsters || {}
   const monsterK = [m.hydra, m.undead, m.arachna, m.shadow].map(clampMultiplier)
   const globalK = clampMultiplier(settings.global)
-  const fin = base.map((b, k) => round(b * levelK * monsterK[k] * globalK))
+  // пульт: множитель монстра на конкретную ступень Героя (cells) и «выкл» (off) — поверх прежних рычагов
+  const band = bandKey(hero)
+  const cellK = MONSTER_KEYS.map(key => clampMultiplier(settings.cells?.[key]?.[band]))
+  const off = settings.off || []
+  const fin = base.map((b, k) => (off.includes(MONSTER_KEYS[k]) ? 0
+    : round(b * levelK * monsterK[k] * cellK[k] * globalK)))
   return {
     hero,
     base,

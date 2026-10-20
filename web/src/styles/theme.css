@@ -766,3 +766,27 @@ a:hover { color: var(--on-surface); }
 .emc-guide-item .emc-text { margin: 8px 0 0; }
 .emc-guide-cases { margin: 10px 0 0; padding-left: 20px; font-size: 16px; line-height: 1.55; }
 .emc-guide-cases li { margin: 8px 0; }
+
+/* Пульт (владелец 2026-10-20): колонки-фейдеры по типам сундуков, общий фейдер справа */
+.mixer-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 14px 0 8px; }
+.mixer-switch { display: flex; gap: 6px; }
+.mixer-pick { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.mixer-board { display: flex; align-items: stretch; gap: 10px; padding: 12px 8px 14px;
+  border: 1px solid var(--outline); border-radius: 12px; background: var(--surface2, rgba(255,255,255,0.03)); }
+.mixer-board--off { opacity: 0.5; }
+.mixer-cols { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; overflow-x: auto; padding-bottom: 6px; }
+.mixer-master { flex: 0 0 112px; display: flex; justify-content: center; border-left: 1px solid var(--outline); padding-left: 10px; }
+.mixer-col { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 84px; flex: 0 0 84px; }
+.mixer-name { font-size: 14px; line-height: 1.2; min-height: 34px; text-align: center; color: var(--on-surface); word-break: break-word; }
+.mixer-dot, .mixer-dot-gap { width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto; }
+.mixer-dot { border: 2px solid #2f8f4f; background: #3fbf6a; cursor: pointer; padding: 0; }
+.mixer-dot--off { background: transparent; border-color: var(--outline); }
+.mixer-col--muted .mixer-rail, .mixer-col--muted .mixer-k, .mixer-col--muted .mixer-sub { opacity: 0.4; }
+.mixer-rail { position: relative; width: 44px; height: 220px; flex: 0 0 auto;
+  background: linear-gradient(to bottom, transparent calc(50% - 1px), var(--outline) calc(50% - 1px), var(--outline) calc(50% + 1px), transparent calc(50% + 1px)); }
+.mixer-range { position: absolute; left: 50%; top: 50%; width: 220px; height: 30px; margin: 0;
+  transform: translate(-50%, -50%) rotate(-90deg); cursor: pointer; accent-color: #38bdf8; }
+.mixer-k { width: 72px; font-size: 15px; text-align: center; padding: 4px 2px; }
+.mixer-sub { font-size: 13px; color: var(--on-surface2); text-align: center; line-height: 1.25; }
+.mixer-col--disabled { pointer-events: none; }
+@media (max-width: 640px) { .mixer-col { width: 72px; flex-basis: 72px; } }
