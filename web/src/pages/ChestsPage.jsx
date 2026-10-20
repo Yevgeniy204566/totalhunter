@@ -12,6 +12,7 @@ import { DEFAULT_SETTINGS as HERO_DEFAULTS } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['5', '6', '7', '8', '9']
+const CUSTOM_TYPE = '__custom__'
 
 function parseTroop(troop_level) {
   if (!troop_level) return { g: '', s: '', m: '' }
@@ -761,16 +762,36 @@ export default function ChestsPage() {
                     <tr key={i}>
                       <td style={{ whiteSpace: 'nowrap' }}>{row.raw_type || '—'}</td>
                       <td>
-                        <select
-                          className="input-dark"
-                          value={row.catalog_id || ''}
-                          onChange={e => updateRow(collector.slug, i, 'catalog_id', e.target.value || null)}
-                        >
-                          <option value="">{cx.noCatalog}</option>
-                          {collector.catalog_options.map(o => (
-                            <option key={o.catalog_id} value={o.catalog_id}>{o.label}</option>
-                          ))}
-                        </select>
+                        {row.is_custom ? (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <input className="input-dark" maxLength={60} placeholder={cx.customTypePlaceholder}
+                              value={row.catalog_id || ''}
+                              onChange={e => updateRow(collector.slug, i, 'catalog_id',
+                                e.target.value.replace(/[^A-Za-z0-9 '-]/g, '') || null)} />
+                            <button type="button" className="chest-pill-btn chest-pill-btn--sm" title={cx.customTypeBack}
+                              onClick={() => setRowsByCollector(prev => ({ ...prev, [collector.slug]: prev[collector.slug]
+                                .map((r, j) => (j === i ? { ...r, is_custom: false, catalog_id: null } : r)) }))}>↩</button>
+                          </div>
+                        ) : (
+                          <select
+                            className="input-dark"
+                            value={row.catalog_id || ''}
+                            onChange={e => {
+                              if (e.target.value === CUSTOM_TYPE) {
+                                setRowsByCollector(prev => ({ ...prev, [collector.slug]: prev[collector.slug]
+                                  .map((r, j) => (j === i ? { ...r, is_custom: true, catalog_id: null } : r)) }))
+                              } else {
+                                updateRow(collector.slug, i, 'catalog_id', e.target.value || null)
+                              }
+                            }}
+                          >
+                            <option value="">{cx.noCatalog}</option>
+                            <option value={CUSTOM_TYPE}>{cx.customType}</option>
+                            {collector.catalog_options.map(o => (
+                              <option key={o.catalog_id} value={o.catalog_id}>{o.label}</option>
+                            ))}
+                          </select>
+                        )}
                       </td>
                       <td className="chest-secondary-col">
                         <input

@@ -8,6 +8,7 @@ Phase 4: replaces the Google Sheets + ADMIN_TOKEN workflow for chest_type_aliase
 chest_configurations with a UI any clan can use without owner involvement. Player Aliases
 and the global Chest Catalog/Localizations Sheets are untouched (see design doc).
 """
+import re
 import secrets
 from datetime import datetime
 from typing import List, Literal, Optional
@@ -82,9 +83,11 @@ async def _load_known_catalog_ids(db: AsyncSession) -> set:
     return set(reference_ids) | set(catalog_ids) | set(localization_ids)
 
 
-async def _load_catalog_options(db: AsyncSession) -> list:
-    known_ids = sorted(await _load_known_catalog_ids(db))
-    return [{"catalog_id": cid, "label": cid} for cid in known_ids]
+async def _load_catalog_options(db: AsyncSession, own_rows: list | None = None) -> list:
+    known = await _load_known_catalog_ids(db)
+    # свои типы клана (не из общего каталога) — только в списке этого клана
+    custom = {r["catalog_id"] for r in (own_rows or []) if r.get("is_custom")}
+    return [{"catalog_id": cid, "label": cid} for cid in sorted(known | custom)]
 
 
 @router.get("/presets")
@@ -203,6 +206,9 @@ async def _collector_rows(db: AsyncSession, collector: ChestCollector) -> list:
             "total_ever": _total_ever_for_catalog(config.catalog_id, aliases, raw_counts),
         })
 
+    known_ids = await _load_known_catalog_ids(db)
+    for r in rows:
+        r["is_custom"] = bool(r["catalog_id"]) and r["catalog_id"] not in known_ids
     return rows
 
 
@@ -311,14 +317,15 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
         _raw_url = f"https://total-hunter.com/chests/{collector.slug}"
         _public = public_url(collector.kingdom, collector.clan, collector.custom_slug, collector.slug)
         _nice_url = _public if _public != _raw_url else None
+        own_rows = await _collector_rows(db, collector)
         result.append({
             "slug": collector.slug, "kingdom": collector.kingdom, "clan": collector.clan,
             "language": collector.language,
             "public_url": _nice_url or _raw_url,
             "short_url": _raw_url if _nice_url else None,
-            "rows": await _collector_rows(db, collector),
+            "rows": own_rows,
             "player_alias_rows": await _player_alias_rows(db, collector, global_alias_map),
-            "catalog_options": await _load_catalog_options(db),
+            "catalog_options": await _load_catalog_options(db, own_rows),
             "timezone_offset_minutes": collector.timezone_offset_minutes,
             "period_start": collector.period_start,
             "period_end": collector.period_end,
@@ -343,6 +350,13 @@ class RowIn(BaseModel):
     is_in_pattern: bool = False
     counts_toward_quota: bool = False   # устарело (старый сайт в окне деплоя) — игнорируется
     quota_slot: Optional[int] = Field(default=None, ge=1, le=3)
+    # свой тип клана: канонического английского имени нет в общем каталоге (владелец 2026-10-20,
+    # «Тыква»). Без флага неизвестный catalog_id по-прежнему отклоняется — защита от опечаток.
+    is_custom: bool = False
+
+
+# Английское имя своего типа: латиница, цифры, пробел, дефис, апостроф; не пустое, до 60 знаков.
+_CUSTOM_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 '\-]{0,59}$")
 
 
 class RowsPayload(BaseModel):
@@ -389,9 +403,12 @@ async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web
 
     known_ids = await _load_known_catalog_ids(db)
     for row in payload.rows:
+        if row.is_custom and row.catalog_id is not None:
+            row.catalog_id = " ".join(row.catalog_id.split())   # «Pumpkin  Chest » → «Pumpkin Chest»
         if row.catalog_id is not None and row.catalog_id not in known_ids:
-            raise HTTPException(status_code=400,
-                                detail=f"Unknown catalog_id: {row.catalog_id!r}")
+            if not (row.is_custom and _CUSTOM_ID_RE.match(row.catalog_id)):
+                raise HTTPException(status_code=400,
+                                    detail=f"Unknown catalog_id: {row.catalog_id!r}")
 
     await db.execute(delete(ChestTypeAlias).where(ChestTypeAlias.collector_id == collector.id))
     await db.execute(delete(ChestConfiguration).where(
