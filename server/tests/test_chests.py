@@ -1057,7 +1057,8 @@ async def test_summary_includes_season_metadata_when_configured(db_session):
     assert body["period_end"] == "2026-07-05T00:00:00"
     assert body["timezone_offset_minutes"] == 180
     assert body["targets"] == {"points": 5000, "chests": 50,
-                               "quotas": [{"slot": 1, "name": "Epic Crypts", "target": 50, "mode": "fixed"}]}
+                               "quotas": [{"slot": 1, "name": "Epic Crypts", "target": 50, "mode": "fixed"}],
+                               "personal": None}
 
 
 @pytest.mark.asyncio
@@ -1088,7 +1089,7 @@ async def test_summary_season_metadata_is_null_when_unconfigured(db_session):
     assert body["period_start"] is None
     assert body["period_end"] is None
     assert body["timezone_offset_minutes"] is None
-    assert body["targets"] == {"points": None, "chests": None, "quotas": []}
+    assert body["targets"] == {"points": None, "chests": None, "quotas": [], "personal": None}
 
 
 @pytest.mark.asyncio

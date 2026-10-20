@@ -57,14 +57,13 @@ function sanitize(s) {
 export default function EmcQuotaTab({ cx, lang, quotas = [], onApply }) {
   const t = cx.emc
   // Применённые к сезону рычаги важнее локальных черновиков браузера.
-  const applied = quotas.find(q => q.mode === 'emc_table')
+  const applied = quotas.find(q => q.slot === 2 && q.emc)
   const [settings, setSettings] = useState(() => (applied?.emc ? { ...structuredClone(DEFAULT_SETTINGS), ...applied.emc } : loadSettings()))
-  const [slot, setSlot] = useState(() => (applied || quotas.find(q => /e\s?m\s?c/i.test(q.name || '')) || quotas[quotas.length - 1] || {}).slot)
   const [applying, setApplying] = useState(false)
   const update = next => { setSettings(next); saveSettings(next) }
   const apply = async () => {
     setApplying(true)
-    try { await onApply(Number(slot), sanitize(settings)) } finally { setApplying(false) }
+    try { await onApply(sanitize(settings)) } finally { setApplying(false) }
   }
 
   const table = useMemo(() => computeTable(settings), [settings])
@@ -146,19 +145,9 @@ export default function EmcQuotaTab({ cx, lang, quotas = [], onApply }) {
       </div>
 
       <div className="emc-apply">
-        {quotas.length > 0 ? (
-          <>
-            <label className="emc-apply-pick">
-              <span>{t.applyTo}</span>
-              <select className="input-dark" value={slot ?? ''} onChange={e => setSlot(e.target.value)}>
-                {quotas.map(q => <option key={q.slot} value={q.slot}>{`${q.slot}. ${q.name}`}</option>)}
-              </select>
-            </label>
-            <button type="button" className="chest-pill-btn chest-pill-btn--green" disabled={applying || !slot}
-              onClick={apply}>{t.apply}</button>
-            <small>{applied ? t.appliedNote.replace('{name}', applied.name) : t.applyNote}</small>
-          </>
-        ) : <small>{t.noQuotas}</small>}
+        <button type="button" className="chest-pill-btn chest-pill-btn--green" disabled={applying}
+          onClick={apply}>{t.apply}</button>
+        <small>{applied ? t.appliedNote.replace('{name}', applied.name) : t.applyNote}</small>
       </div>
 
       <div className="emc-toolbar">

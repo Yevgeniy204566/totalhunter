@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { HERO_LEVELS, DEFAULT_HERO, weightTable, weightAt, normAt, epicRefAt, scoreOf } from '../lib/heroQuota.js'
+import { HERO_LEVELS, DEFAULT_HERO, weightTable, weightAt, normAt, cryptsNormAt, epicRefAt, scoreOf } from '../lib/heroQuota.js'
 
 // Публичные нормы «Общего учёта» по уровню Героя — только чтение: игрок находит свой уровень,
 // видит вес каждого типа сундука и сравнивает свой результат с личной нормой. Считаем по тем же
@@ -13,6 +13,7 @@ const TXT = {
     none: '— не выбран —',
     norm: 'Норма за сезон (14 дней), очков',
     epicRef: 'Ориентир по эпик-склепам, шт.',
+    cryptsPart: 'из них Crypts',
     yours: 'Ваш результат',
     type: 'Тип сундука',
     weight: 'Очков за сундук',
@@ -33,6 +34,7 @@ const TXT = {
     none: '— none —',
     norm: 'Season norm (14 days), points',
     epicRef: 'Epic crypts guideline, pcs',
+    cryptsPart: 'of which Crypts',
     yours: 'Your result',
     type: 'Chest type',
     weight: 'Points per chest',
@@ -50,7 +52,7 @@ const TXT = {
 // Колонки общей таблицы — основные типы; полный список весов виден в блоке «Ваш уровень».
 const TABLE_TYPES = ['Epic Crypt 35', 'Epic Crypt 30', 'Epic Crypt 25', 'Epic Crypt 20', 'Rare Crypt 30', 'Rare Crypt 25', 'Common Crypt 25', 'Citadel 30', 'Citadel 25']
 
-export default function HeroPointsPublic({ model = {}, players = [], meta = null, lang = 'ru' }) {
+export default function HeroPointsPublic({ model = {}, emcModel, players = [], meta = null, lang = 'ru' }) {
   const t = TXT[lang] || TXT.en
   const [heroInput, setHeroInput] = useState('')
   const [playerName, setPlayerName] = useState('')
@@ -60,6 +62,7 @@ export default function HeroPointsPublic({ model = {}, players = [], meta = null
   const rows = useMemo(() => weightTable(level, model), [level, model])
   const mine = player ? scoreOf(player.counts, meta, player.hero_level, model) : null
   const norm = normAt(level, model)
+  const cryptsNorm = cryptsNormAt(level, emcModel, model)
   const table = useMemo(() => HERO_LEVELS.map(h => ({
     hero: h, norm: normAt(h, model), w: TABLE_TYPES.map(id => weightAt(id, h, model)),
   })), [model])
@@ -88,7 +91,7 @@ export default function HeroPointsPublic({ model = {}, players = [], meta = null
       </div>
 
       <p className="emc-text">
-        {t.hero} <b>{level}</b>{hero ? '' : ' *'} · {t.norm}: <b>{norm.toLocaleString('ru-RU')}</b> · {t.epicRef}: <b>{epicRefAt(level)}</b>
+        {t.hero} <b>{level}</b>{hero ? '' : ' *'} · {t.norm}: <b>{norm.toLocaleString('ru-RU')}</b> ({t.cryptsPart}: <b>{cryptsNorm.toLocaleString('ru-RU')}</b>) · {t.epicRef}: <b>{epicRefAt(level)}</b>
         {mine && <> · {t.yours}: <b>{mine.score.toLocaleString('ru-RU')}</b> ({norm ? Math.round(mine.score / norm * 100) : 0}%)</>}
       </p>
       {mine?.fallback.length > 0 && (

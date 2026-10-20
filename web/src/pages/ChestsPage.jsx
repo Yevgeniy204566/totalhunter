@@ -8,7 +8,6 @@ import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import ChestGuide from '../components/ChestGuide.jsx'
 import EmcQuotaTab from '../components/EmcQuotaTab.jsx'
 import { DEFAULT_SETTINGS } from '../lib/emcQuota.js'
-import { DEFAULT_SETTINGS as HERO_DEFAULTS } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['5', '6', '7', '8', '9']
@@ -71,83 +70,47 @@ function accountingOrder(rows, dir, key = 'acc') {
     .map(x => x.i)
 }
 
-/* Квоты сезона (владелец 2026-09-26): до 3 штук, у каждой название и цель. Номер (slot) у
-   квоты постоянный — новые берут наименьший свободный, чтобы отметки сундуков не съезжали.
-   Карточки в один ряд; цвет карточки = цвет этой квоты в списке «Учёт», чтобы было видно,
-   какие сундуки в какую квоту идут. */
-function QuotaEditor({ quotas, cx, onChange, onOpenEmc }) {
-  const set = (i, field, value) => onChange(quotas.map((q, j) => (j === i ? { ...q, [field]: value } : q)))
-  // Личная цель — переключатель «вкл/выкл»: включение даёт модель EMC с множителями 1.00
-  // (настраивается во вкладке «Расчёт EMC»); старая формульная квота (per_player) остаётся
-  // как есть, пока владелец сам не переключит её.
-  const setPersonal = (i, on) => onChange(quotas.map((q, j) => {
-    if (j !== i) return q
-    return on ? { ...q, mode: 'emc_table', emc: q.emc || structuredClone(DEFAULT_SETTINGS) } : { ...q, mode: 'fixed' }
-  }))
-  // «Общий учёт по Герою» — взаимоисключающий с личной целью EMC: квота считает очки всех сундуков
-  const setHeroPoints = (i, on) => onChange(quotas.map((q, j) => {
-    if (j !== i) return q
-    return on ? { ...q, mode: 'hero_points', hero: q.hero || structuredClone(HERO_DEFAULTS) } : { ...q, mode: 'fixed' }
-  }))
-  const add = () => {
-    const used = new Set(quotas.map(q => q.slot))
-    const slot = [1, 2, 3].find(n => !used.has(n))
-    if (slot) onChange([...quotas, { slot, name: '', target: '', mode: 'fixed', hero_k: 0, hero_h0: 400 }]
-      .sort((a, b) => a.slot - b.slot))
-  }
+/* Квот две (владелец 2026-10-20): слот 1 «Crypts» (склепы и цитадели), слот 2 «EMC» (эпические
+   монстры); «Всего» — не квота, а итог по обеим на странице. «Персонализированный учёт по уровню
+   Героя» включается отдельно на каждой квоте: клан вправе взять только часть. Цвет карточки =
+   цвет этой квоты в списке «Учёт». Рычаги шкалы (множитель нормы / очков) — общие. */
+const DEFAULT_PERSONAL = { crypts: false, emc: false, norm: 1, weights: 1, ranges: [] }
+const DEFAULT_QUOTAS = [{ slot: 1, name: 'Crypts', target: '', mode: 'fixed' }, { slot: 2, name: 'EMC', target: '', mode: 'fixed' }]
+
+function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) {
+  const set = (slot, field, value) => onChange(quotas.map(q => (q.slot === slot ? { ...q, [field]: value } : q)))
+  const flag = { 1: 'crypts', 2: 'emc' }
+  const any = personal.crypts || personal.emc
   return (
     <div className="quota-block">
       <div className="season-subtitle">{cx.quotasLabel}</div>
       <div className="quota-grid">
-        {quotas.map((q, i) => {
-          const personal = q.mode === 'emc_table' || q.mode === 'per_player'
-          const heroPts = q.mode === 'hero_points'
+        {quotas.map(q => {
+          const on = !!personal[flag[q.slot]]
           return (
             <div key={q.slot} className={`quota-card quota-card--${q.slot}`}>
-              <div className="quota-card-head">
-                <span>{cx.accLegendQuotaShort} {q.slot}</span>
-                <button type="button" className="quota-del" title={cx.quotaDelete}
-                  onClick={() => onChange(quotas.filter((_, j) => j !== i))}>🗑</button>
-              </div>
+              <div className="quota-card-head"><span>{cx.accLegendQuotaShort} {q.slot}</span></div>
               <label className="quota-row">
                 <span>{cx.quotaName}</span>
-                <input className="input-dark" placeholder={cx.quotaNameHint} maxLength={40}
-                  value={q.name} onChange={e => set(i, 'name', e.target.value)} />
+                <input className="input-dark" maxLength={40}
+                  value={q.name} onChange={e => set(q.slot, 'name', e.target.value)} />
               </label>
-              {!personal && !heroPts && (
+              {!on && (
                 <label className="quota-row">
                   <span>{cx.quotaTarget}</span>
                   <input className="input-dark" type="number" min={0} placeholder={cx.quotaTargetHint}
-                    value={q.target} onChange={e => set(i, 'target', e.target.value)} />
+                    value={q.target} onChange={e => set(q.slot, 'target', e.target.value)} />
                 </label>
               )}
               <label className="quota-check">
-                <input type="checkbox" checked={personal} onChange={e => setPersonal(i, e.target.checked)} />
-                {cx.perPlayer}
+                <input type="checkbox" checked={on}
+                  onChange={e => onPersonal({ ...personal, [flag[q.slot]]: e.target.checked })} />
+                {cx.personalByHero}
               </label>
-              {!personal && (
-                <label className="quota-check">
-                  <input type="checkbox" checked={heroPts} onChange={e => setHeroPoints(i, e.target.checked)} />
-                  {cx.heroPoints}
-                </label>
-              )}
-              {heroPts && (
+              {on && (
                 <div className="quota-hero">
-                  <small>{cx.heroPointsHint}</small>
-                  {[['norm', cx.heroNormK], ['weights', cx.heroWeightK]].map(([key, label]) => (
-                    <label key={key} className="quota-row">
-                      <span>{label}</span>
-                      <input className="input-dark emc-k-input" type="number" min={0.1} max={3} step={0.05}
-                        value={q.hero?.[key] ?? 1}
-                        onChange={e => set(i, 'hero', { ...HERO_DEFAULTS, ...q.hero, [key]: e.target.value === '' ? 1 : Number(e.target.value) })} />
-                    </label>
-                  ))}
-                </div>
-              )}
-              {personal && (
-                <div className="quota-hero">
-                  <small>{q.mode === 'per_player' ? cx.quotaPersonalLegacy : cx.quotaPersonalHint}</small>
-                  {q.mode === 'emc_table' && (
+                  <small>{q.slot === 1 ? cx.personalCryptsHint : cx.quotaPersonalHint}</small>
+                  {q.slot === 2 && (
                     <button type="button" className="chest-pill-btn chest-pill-btn--sm" onClick={onOpenEmc}>
                       {cx.openEmcTab}
                     </button>
@@ -157,10 +120,21 @@ function QuotaEditor({ quotas, cx, onChange, onOpenEmc }) {
             </div>
           )
         })}
-        {quotas.length < 3 && (
-          <button type="button" className="quota-add" onClick={add}>{cx.addQuota}</button>
-        )}
       </div>
+      {any && (
+        <div className="quota-card" style={{ marginTop: 10 }}>
+          <div className="quota-card-head"><span>{cx.personalScaleTitle}</span></div>
+          <small>{cx.personalScaleHint}</small>
+          {[['norm', cx.heroNormK], ['weights', cx.heroWeightK]].map(([key, label]) => (
+            <label key={key} className="quota-row">
+              <span>{label}</span>
+              <input className="input-dark emc-k-input" type="number" min={0.1} max={3} step={0.05}
+                value={personal[key] ?? 1}
+                onChange={e => onPersonal({ ...personal, [key]: e.target.value === '' ? 1 : Number(e.target.value) })} />
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -218,9 +192,15 @@ export default function ChestsPage() {
           period_start: c.period_start ? c.period_start.slice(0, 16) : '',
           period_end: c.period_end ? c.period_end.slice(0, 16) : '',
           target_points: c.target_points,
-          quotas: (c.quotas || []).map(q => ({ slot: q.slot, name: q.name, target: q.target ?? '',
-                                               mode: q.mode || 'fixed', hero_k: q.hero_k ?? 0, hero_h0: q.hero_h0 ?? 400,
-                                               ...(q.emc ? { emc: q.emc } : {}) })),
+          // две квоты всегда: недостающую подставляем со стандартным названием (persisted —
+          // уже была на сервере; новая уходит на сервер, только если её реально используют)
+          quotas: [1, 2].map(slot => {
+            const q = (c.quotas || []).find(x => x.slot === slot)
+            const d = DEFAULT_QUOTAS[slot - 1]
+            return q ? { slot, name: q.name, target: q.target ?? '', mode: q.mode || 'fixed', persisted: true,
+                         ...(q.emc ? { emc: q.emc } : {}) } : { ...d }
+          }),
+          personal: { ...DEFAULT_PERSONAL, ...(c.personal_scale || {}) },
         }
         nextLeader[c.slug] = c.leader_canonical_name || null
         nextLeaderExcluded[c.slug] = c.leader_excluded_catalog_ids || []
@@ -374,7 +354,7 @@ export default function ChestsPage() {
     }))
   }
 
-  async function saveSeason(slug, quotasOverride) {
+  async function saveSeason(slug, quotasOverride, personalOverride) {
     const s = seasonByCollector[slug]
     const payload = {
       timezone_offset_minutes: s.timezone_offset_minutes === '' || s.timezone_offset_minutes == null
@@ -382,16 +362,16 @@ export default function ChestsPage() {
       period_start: s.period_start ? s.period_start + ':00' : null,
       period_end: s.period_end ? s.period_end + ':00' : null,
       target_points: s.target_points === '' || s.target_points == null ? null : Number(s.target_points),
-      // квота без названия = удалена; сундуки удалённой квоты остаются «в учёте» (сервер)
+      // квота уходит на сервер, если у неё есть цель/тумблер/сундуки или она там уже была
       quotas: (quotasOverride || s.quotas || [])
-        .filter(q => (q.name || '').trim())
+        .filter(q => (q.name || '').trim() && (q.persisted || (q.target !== '' && q.target != null)
+          || (s.personal || {})[q.slot === 1 ? 'crypts' : 'emc']
+          || (rowsByCollector[slug] || []).some(r => r.quota_slot === q.slot)))
         .map(q => ({ slot: q.slot, name: q.name.trim(),
                      target: q.target === '' || q.target == null ? null : Number(q.target),
                      mode: q.mode || 'fixed',
-                     ...(q.mode === 'per_player'
-                       ? { hero_k: Number(q.hero_k) || 0, hero_h0: Number(q.hero_h0) || 400 } : {}),
-                     ...(q.mode === 'emc_table' && q.emc ? { emc: q.emc } : {}),
-                     ...(q.mode === 'hero_points' && q.hero ? { hero: q.hero } : {}) })),
+                     ...(q.emc ? { emc: q.emc } : {}) })),
+      personal: { ...DEFAULT_PERSONAL, ...(personalOverride || s.personal || {}) },
     }
     try {
       await api.dashboardChestsSeason(slug, payload)
@@ -400,13 +380,15 @@ export default function ChestsPage() {
     } catch (e) { setMsg(e.message) }
   }
 
-  // «Применить к сезону» на вкладке «Расчёт EMC»: выбранная квота переходит в режим emc_table
-  // с рычагами; остальные квоты и период сезона остаются как есть.
-  async function applyEmc(slug, slot, emc) {
-    const quotas = (seasonByCollector[slug]?.quotas || []).map(q =>
-      q.slot === slot ? { ...q, mode: 'emc_table', emc } : q)
+  // «Применить к сезону» на вкладке «Расчёт EMC»: рычаги EMC (слот 2) и тумблер EMC включаются;
+  // остальные настройки сезона остаются как есть.
+  async function applyEmc(slug, emc) {
+    const s = seasonByCollector[slug] || {}
+    const quotas = (s.quotas || []).map(q => (q.slot === 2 ? { ...q, emc } : q))
+    const personal = { ...DEFAULT_PERSONAL, ...(s.personal || {}), emc: true }
     updateSeasonField(slug, 'quotas', quotas)
-    await saveSeason(slug, quotas)
+    updateSeasonField(slug, 'personal', personal)
+    await saveSeason(slug, quotas, personal)
   }
 
   // Руководители (2026-09-27): хозяин всегда один; руководитель помогает вести его ростер
@@ -664,9 +646,11 @@ export default function ChestsPage() {
               </label>
             </div>
             <QuotaEditor
-              quotas={seasonByCollector[collector.slug]?.quotas || []}
+              quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
+              personal={seasonByCollector[collector.slug]?.personal || DEFAULT_PERSONAL}
               cx={cx}
               onChange={q => updateSeasonField(collector.slug, 'quotas', q)}
+              onPersonal={p => updateSeasonField(collector.slug, 'personal', p)}
               onOpenEmc={() => setTab(collector.slug, 'emc')}
             />
             <div className="season-actions">
@@ -821,7 +805,7 @@ export default function ChestsPage() {
                         >
                           <option value="off">{cx.accOff}</option>
                           <option value="on">{cx.accOn}</option>
-                          {(collector.quotas || []).map(q => (
+                          {(seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS).map(q => (
                             <option key={q.slot} value={String(q.slot)}>{q.name}</option>
                           ))}
                         </select>
@@ -1012,7 +996,7 @@ export default function ChestsPage() {
 
           {activeTab(collector.slug) === 'emc' && (
             <EmcQuotaTab cx={cx} lang={lang} quotas={seasonByCollector[collector.slug]?.quotas || []}
-              onApply={(slot, emc) => applyEmc(collector.slug, slot, emc)} />
+              onApply={emc => applyEmc(collector.slug, emc)} />
           )}
 
           {activeTab(collector.slug) === 'history' && (

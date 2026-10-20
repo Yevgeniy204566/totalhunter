@@ -325,3 +325,39 @@ async def test_game_nick_saved_in_profile_and_returned_by_me(db_session):
         assert (await c.get("/web/me", headers=h)).json()["game_nick"] is None
         mine = (await c.get(BASE, headers=h)).json()
         assert "my_nick" in mine
+
+
+@pytest.mark.asyncio
+async def test_manager_survives_season_close_archive_and_new_season(db_session):
+    """Владелец 2026-10-19: руководитель привязан к ростеру, а не к сезону — пока хозяин не уберёт."""
+    from datetime import datetime, timedelta
+    from chest_history import run_archive_tick
+
+    owner, owner_h = await _user(db_session, "owner@x.com")
+    vasya, vasya_h = await _user(db_session, "vasya@x.com")
+    col = await _collector(db_session, owner.id, "roster-1")
+    col.period_start = datetime.utcnow() - timedelta(days=14)
+    col.period_end = datetime.utcnow() + timedelta(days=1)
+    await db_session.commit()
+
+    async with _client() as c:
+        await _make_manager(c, owner_h, vasya_h, "roster-1")
+
+        # 1) досрочное закрытие сезона хозяином
+        assert (await c.post(f"{BASE}/roster-1/close-season", headers=owner_h)).status_code == 200
+        # 2) новый сезон
+        now = datetime.utcnow()
+        r = await c.patch(f"{BASE}/roster-1/season", headers=owner_h, json={
+            "period_start": now.isoformat(), "period_end": (now + timedelta(days=14)).isoformat()})
+        assert r.status_code == 200, r.text
+        # 3) автоархив просроченного сезона
+        await db_session.refresh(col)
+        col.period_end = datetime.utcnow() - timedelta(minutes=1)
+        await db_session.commit()
+        assert await run_archive_tick(db_session) == 1
+
+        slugs = {x["slug"]: x["role"] for x in (await c.get(BASE, headers=vasya_h)).json()["collectors"]}
+
+    assert slugs == {"roster-1": "manager"}
+    rows = (await db_session.execute(select(ChestManager))).scalars().all()
+    assert [(m.collector_id, m.user_id) for m in rows] == [(col.id, vasya.id)]

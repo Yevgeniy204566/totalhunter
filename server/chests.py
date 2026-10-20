@@ -259,7 +259,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
     result["stopped_at"] = collector.stopped_at.isoformat() if collector.stopped_at else None
     result["timezone_offset_minutes"] = collector.timezone_offset_minutes
-    result["targets"] = targets_of(collector.target_points, collector.quotas)
+    result["targets"] = targets_of(collector.target_points, collector.quotas, collector.personal_scale)
     return result
 
 
@@ -386,7 +386,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
     result["stopped_at"] = collector.stopped_at.isoformat() if collector.stopped_at else None
     result["timezone_offset_minutes"] = collector.timezone_offset_minutes
-    result["targets"] = targets_of(collector.target_points, collector.quotas)
+    result["targets"] = targets_of(collector.target_points, collector.quotas, collector.personal_scale)
     return result
 
 

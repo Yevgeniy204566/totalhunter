@@ -8,7 +8,7 @@
 // выше последней — постоянный. Всё, что не стена клана, — РАСЧЁТ, не требование клана.
 // Очки за сундук округляются до кратных 5, общая норма — до сотен.
 
-import { clampMultiplier } from './emcQuota.js'
+import { clampMultiplier, computeRow } from './emcQuota.js'
 
 const P = 298
 const E = 387.5
@@ -43,6 +43,9 @@ const EPIC = [[213.5, 40], [279, 50], [E, 200], [B, 250]]
 
 export const HERO_LEVELS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 export const DEFAULT_SETTINGS = { norm: 1, weights: 1, ranges: [] }
+
+// Монстры таблицы EMC → id сундуков шкалы очков (для доли EMC в общей норме).
+const EMC_IDS = ['Epic Fire Hydra', 'Epic Undead', 'Epic Arachne', 'Epic Shadow City']
 
 // Общий коэффициент «слабее Герой — больше очков за сундук».
 function g(h) {
@@ -125,7 +128,7 @@ export const DEFAULT_HERO = 400
 
 // Счёт игрока: Σ штук × вес типа при его Герое. Тип вне шкалы — очки клана из «Учёта»
 // (запасной вариант, перечислен в fallback). Нет Героя — считаем по 400 и ставим partial.
-export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS) {
+export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS, slot = null) {
   const partial = !hero
   const h = hero || DEFAULT_HERO
   let score = 0
@@ -133,6 +136,7 @@ export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS) {
   for (const [name, n] of Object.entries(counts || {})) {
     if (!n) continue
     const m = meta?.[name]
+    if (slot != null && m?.slot !== slot) continue
     const scaled = m ? weightAt(m.id, h, settings) : null
     if (scaled == null) {
       score += n * (m?.points || 0)
@@ -142,4 +146,16 @@ export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS) {
     }
   }
   return { score, partial, fallback }
+}
+
+// Очки, которые закладываются на EMC при Герое hero: штуки по таблице EMC × вес монстра шкалы.
+// Это «доля EMC» в общей норме; Crypts получает остаток (норма «Всего» − доля EMC, не меньше 0).
+export function emcPointsAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
+  const row = computeRow(hero, emcModel || undefined)
+  const counts = [row.finalH, row.finalU, row.finalA, row.finalS]
+  return EMC_IDS.reduce((sum, id, k) => sum + counts[k] * (weightAt(id, hero, settings) || 0), 0)
+}
+
+export function cryptsNormAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
+  return Math.max(0, normAt(hero, settings) - emcPointsAt(hero, emcModel, settings))
 }

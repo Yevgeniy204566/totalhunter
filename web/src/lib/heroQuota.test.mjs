@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt,
 } from './heroQuota.js'
 
 const w = (id, hero, s = DEFAULT_SETTINGS) => weightAt(id, hero, s)
@@ -131,4 +131,27 @@ test('таблица весов по уровню: строки для всех 
   assert.equal(t.find(r => r.id === 'Epic Crypt 35').points, 150)
   assert.ok(t.length >= 20)
   assert.ok(t.every(r => ['FACT', 'CALC'].includes(r.origin)))
+})
+
+test('счёт по слоту: Crypts (слот 1) и EMC (слот 2) считаются раздельно', () => {
+  const meta = {
+    'Эпик 35': { id: 'Epic Crypt 35', points: 135, slot: 1 },
+    'Hydra': { id: 'Epic Fire Hydra', points: 30, slot: 2 },
+    'Прочее': { id: 'Epic Crypt 25', points: 45, slot: null },
+  }
+  const counts = { 'Эпик 35': 2, 'Hydra': 3, 'Прочее': 1 }
+  assert.equal(scoreOf(counts, meta, 413, DEFAULT_SETTINGS, 1).score, 270)
+  assert.equal(scoreOf(counts, meta, 413, DEFAULT_SETTINGS, 2).score, 90)
+  assert.equal(scoreOf(counts, meta, 413).score, 270 + 90 + 45)
+})
+
+test('доля EMC в норме: штуки таблицы × вес монстра; Crypts = норма − доля EMC', () => {
+  const h = 400
+  const emc = emcPointsAt(h)
+  assert.ok(emc > 0 && emc < normAt(h))
+  assert.equal(cryptsNormAt(h), normAt(h) - emc)
+})
+
+test('цель Crypts не уходит ниже нуля', () => {
+  assert.equal(cryptsNormAt(100, undefined, { ...DEFAULT_SETTINGS, norm: 0.1 }) >= 0, true)
 })

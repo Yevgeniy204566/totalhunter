@@ -167,7 +167,7 @@ export default function ChestSummaryPage() {
   const targets = data.targets || { points: null, chests: null }
   // Вкладка с таблицей квоты — только если лидер применил модель EMC к одной из квот
   const emcQuota = (targets.quotas || []).find(q => q.mode === 'emc_table')
-  const heroQuota = (targets.quotas || []).find(q => q.mode === 'hero_points')
+  const heroQuota = targets.personal
   // Все цели сезона (владелец 2026-09-26): очки + каждая квота со своей целью; архив до
   // квот — прежняя одна цель по сундукам.
   // Число цели выделено цветом и жирным; на телефоне цели — столбиком (владелец 2026-09-28).
@@ -306,7 +306,7 @@ export default function ChestSummaryPage() {
 
       {tab === 'emc' && emcQuota && <EmcQuotaPublic model={emcQuota.emc || {}} lang={lang} />}
       {tab === 'hero' && heroQuota && (
-        <HeroPointsPublic model={heroQuota.hero || undefined} players={data.players}
+        <HeroPointsPublic model={heroQuota} emcModel={(targets.quotas || []).find(q => q.slot === 2)?.emc} players={data.players}
                           meta={data.chest_type_meta} lang={lang} />
       )}
 

@@ -332,6 +332,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "target_points": collector.target_points,
             "target_chests": collector.target_chests,
             "quotas": collector.quotas or [],
+            "personal_scale": collector.personal_scale,
             "leader_canonical_name": collector.leader_canonical_name,
             "leader_excluded_catalog_ids": collector.leader_excluded_catalog_ids or [],
             # Руководители (2026-09-27): кабинет прячет у руководителя настройки хозяина
@@ -349,7 +350,7 @@ class RowIn(BaseModel):
     points: int = 0
     is_in_pattern: bool = False
     counts_toward_quota: bool = False   # устарело (старый сайт в окне деплоя) — игнорируется
-    quota_slot: Optional[int] = Field(default=None, ge=1, le=3)
+    quota_slot: Optional[int] = Field(default=None, ge=1, le=2)
     # свой тип клана: канонического английского имени нет в общем каталоге (владелец 2026-10-20,
     # «Тыква»). Без флага неизвестный catalog_id по-прежнему отклоняется — защита от опечаток.
     is_custom: bool = False
@@ -427,6 +428,18 @@ async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web
                                       # квота ⇒ в учёте (CHECK ck_chest_config_slot_in_account)
                                       is_in_pattern=row.is_in_pattern or row.quota_slot is not None,
                                       quota_slot=row.quota_slot))
+
+    # Квот две всегда: сундук, отнесённый к слоту, которого у клана ещё нет, создаёт квоту
+    # со стандартным названием — иначе pivot молча игнорирует слот (quota_slots)
+    used = {r.quota_slot for r in payload.rows if r.quota_slot}
+    have = {q["slot"] for q in (collector.quotas or [])}
+    missing = used - have
+    if missing:
+        defaults = {1: "Crypts", 2: "EMC"}
+        collector.quotas = sorted(
+            [*(collector.quotas or []),
+             *({"slot": sl, "name": defaults[sl], "target": None, "mode": "fixed"} for sl in missing)],
+            key=lambda q: q["slot"])
 
     await db.commit()
     return {"ok": True}
@@ -613,9 +626,13 @@ class EmcSettings(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-class HeroPointsSettings(BaseModel):
-    """Рычаги квоты hero_points («Общий учёт по Герою»). Вес сундуков и норму считает страница
-    (web/src/lib/heroQuota.js) — здесь только хранение и границы множителей 0.1…3.0."""
+class PersonalScale(BaseModel):
+    """«Персонализированный учёт по Герою»: тумблер отдельно на каждой квоте (crypts — слот 1,
+    emc — слот 2; клан вправе взять только часть) + рычаги шкалы (norm — множитель нормы,
+    weights — множитель очков за сундук, ranges — множители нормы по диапазонам Героев).
+    Саму шкалу считает страница (web/src/lib/heroQuota.js) — здесь хранение и границы 0.1…3.0."""
+    crypts: bool = False
+    emc: bool = False
     norm: float = Field(default=1.0, ge=0.1, le=3.0)
     weights: float = Field(default=1.0, ge=0.1, le=3.0)
     ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
@@ -623,31 +640,22 @@ class HeroPointsSettings(BaseModel):
 
 
 class QuotaIn(BaseModel):
-    slot: int = Field(ge=1, le=3)
+    # Квот две: слот 1 «Crypts» (склепы и цитадели), слот 2 «EMC» (эпические монстры). «Всего» —
+    # производная, не слот. emc_table у слота 2 выставляет тумблер personal (см. PATCH /season);
+    # рычаги emc хранятся и при fixed, чтобы выключение тумблера не стирало настройку.
+    slot: int = Field(ge=1, le=2)
     name: str = Field(min_length=1, max_length=40)
     target: Optional[int] = Field(default=None, ge=0)
-    # fixed — одна цель на всех; per_player — личная цель по уровню Героя (спека 02),
-    # все коэффициенты правит лидер: формула будет уточняться по статистике.
-    # emc_table — личная цель EMC по таблице уровней Героя × множители (поле emc)
-    # hero_points — общий учёт всех сундуков в очках: вес типа и норма по уровню Героя (поле hero)
-    mode: Literal["fixed", "per_player", "emc_table", "hero_points"] = "fixed"
+    mode: Literal["fixed", "emc_table"] = "fixed"
     emc: Optional[EmcSettings] = None
-    hero: Optional[HeroPointsSettings] = None
-    hero_k: float = Field(default=0, ge=-100, le=100)     # % цели на 100 уровней Героя
-    hero_h0: int = Field(default=400, ge=1, le=999)       # «средний» уровень Героя
 
 
 def _quota_to_json(q: "QuotaIn") -> dict:
-    if q.mode == "per_player":
-        return q.model_dump(exclude={"emc", "hero"})
-    if q.mode == "hero_points":
-        hero = (q.hero or HeroPointsSettings()).model_dump(by_alias=True)
-        return {**q.model_dump(include={"slot", "name", "target", "mode"}), "hero": hero}
-    if q.mode == "emc_table":
-        emc = (q.emc or EmcSettings()).model_dump(by_alias=True)
+    out = q.model_dump(include={"slot", "name", "target", "mode"})
+    if q.emc is not None or q.mode == "emc_table":
         # цели в JSON хранятся под ключами from/to/global — как их читает страница
-        return {**q.model_dump(include={"slot", "name", "target", "mode"}), "emc": emc}
-    return q.model_dump(include={"slot", "name", "target", "mode"})
+        out["emc"] = (q.emc or EmcSettings()).model_dump(by_alias=True)
+    return out
 
 
 class SeasonSettingsPayload(BaseModel):
@@ -656,7 +664,8 @@ class SeasonSettingsPayload(BaseModel):
     period_end: Optional[datetime] = None
     target_points: Optional[int] = None
     target_chests: Optional[int] = None
-    quotas: Optional[List[QuotaIn]] = Field(default=None, max_length=3)
+    quotas: Optional[List[QuotaIn]] = Field(default=None, max_length=2)
+    personal: Optional[PersonalScale] = None
 
     @field_validator("quotas")
     @classmethod
@@ -726,6 +735,21 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
     if payload.quotas is not None:
         # коэффициенты храним только у персональных квот — у fixed они ни на что не влияют
         collector.quotas = [_quota_to_json(q) for q in sorted(payload.quotas, key=lambda q: q.slot)]
+    if payload.personal is not None:
+        collector.personal_scale = payload.personal.model_dump(by_alias=True)
+    # Тумблер EMC — единственный источник личной цели слота 2: emc_table ⇔ включён (слот
+    # создаётся, если его не было; рычаги EMC при выключении сохраняются). Тумблер Crypts
+    # хранится только в personal_scale — страница считает личную цель слота 1 сама.
+    emc_on = bool((collector.personal_scale or {}).get("emc"))
+    quotas = [dict(q) for q in (collector.quotas or [])]
+    if emc_on and not any(q["slot"] == 2 for q in quotas):
+        quotas.append({"slot": 2, "name": "EMC", "target": None, "mode": "fixed"})
+    for q in quotas:
+        if q["slot"] == 2:
+            q["mode"] = "emc_table" if emc_on else "fixed"
+            if emc_on and "emc" not in q:
+                q["emc"] = EmcSettings().model_dump(by_alias=True)
+    collector.quotas = sorted(quotas, key=lambda q: q["slot"])
     if payload.period_start is not None or payload.period_end is not None:
         collector.stopped_at = None
 

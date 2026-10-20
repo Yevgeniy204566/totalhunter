@@ -32,8 +32,10 @@ async def _owner(db, email):
     return c, {"Authorization": f"Bearer {create_jwt(user.id, email)}"}
 
 
-async def _patch(client, c, h, quota):
-    return await client.patch(f"/web/dashboard/chests/{c.slug}/season", headers=h, json={"quotas": [quota]})
+async def _patch(client, c, h, quota, emc_on=True):
+    # режим emc_table слот 2 получает от тумблера personal.emc (спека 2026-10-20), не из тела квоты
+    return await client.patch(f"/web/dashboard/chests/{c.slug}/season", headers=h,
+                              json={"quotas": [quota], "personal": {"emc": emc_on}})
 
 
 @pytest.mark.asyncio
@@ -50,13 +52,13 @@ async def test_emc_settings_saved_and_exposed_publicly(db_session):
 
 
 @pytest.mark.asyncio
-async def test_switching_back_to_fixed_drops_emc_settings(db_session):
+async def test_switching_back_to_fixed_keeps_emc_levers(db_session):
     c, h = await _owner(db_session, f"emc2{secrets.token_hex(2)}@example.com")
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         await _patch(client, c, h, Q)
-        await _patch(client, c, h, {"slot": 2, "name": "EMC", "target": 50, "mode": "fixed"})
+        await _patch(client, c, h, Q, emc_on=False)
         q = (await client.get(f"/api/v1/chests/summary/{c.slug}")).json()["targets"]["quotas"][0]
-    assert q["mode"] == "fixed" and "emc" not in q
+    assert q["mode"] == "fixed" and q["emc"]["global"] == 1.2
 
 
 @pytest.mark.asyncio

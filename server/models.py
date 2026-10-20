@@ -466,6 +466,9 @@ class ChestCollector(Base):
     target_chests           = Column(Integer, nullable=True)   # устарело: цель теперь в quotas[slot 1]
     # До 3 квот сезона: [{"slot": 1, "name": "Склепы", "target": 200, "mode": "fixed"}, ...]
     quotas                  = Column(JSON, nullable=False, server_default=text("'[]'"))
+    # «Персонализированный учёт по Герою» — один тумблер клана: {"enabled", "norm", "weights",
+    # "ranges"}; NULL = выключено. Саму шкалу считает страница (web/src/lib/heroQuota.js).
+    personal_scale          = Column(JSON, nullable=True)
     stopped_at              = Column(TIMESTAMP(timezone=True), nullable=True)
     # Последняя отправка сундуков из бота. Не Chest.collected_at: сырые сундуки удаляются при
     # архивации сезона, а collected_at — игровое время клиента, не момент заливки.

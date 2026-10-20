@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { computeRow } from '../lib/emcQuota.js'
-import { scoreOf, normAt, DEFAULT_HERO } from '../lib/heroQuota.js'
+import { scoreOf, normAt, cryptsNormAt, DEFAULT_HERO } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['', '5', '6', '7', '8', '9']
@@ -233,25 +233,39 @@ function monsterIndex(typeName) {
 function emcRowOf(player, model) {
   return computeRow(player.hero_level || EMC_DEFAULT_HERO, model)
 }
-export function quotaColumns(targets, epicLabel, typeMeta = null) {
+export function quotaColumns(targets, epicLabel, typeMeta = null, totalLabel = 'Total') {
   if (Array.isArray(targets?.quotas)) {
-    return targets.quotas.map(q => {
-      // hero_points — «Общий учёт»: очки по весам шкалы для Героя игрока (lib/heroQuota.js);
-      // у архива без chest_type_meta веса неизвестны — показываем очки клана
-      const hero = q.mode === 'hero_points'
+    // «Персонализированный учёт по Герою» — тумблер на каждой квоте (targets.personal.crypts/emc);
+    // шкала очков — lib/heroQuota.js. У архива без chest_type_meta веса неизвестны: Crypts — как
+    // обычная квота (по штукам), «Всего» не показываем.
+    const pers = targets.personal || {}
+    const scale = { norm: pers.norm, weights: pers.weights, ranges: pers.ranges }
+    const emcModel = (targets.quotas.find(x => x.slot === 2) || {}).emc
+    const cols = targets.quotas.map(q => {
+      const cryptsPersonal = q.slot === 1 && !!pers.crypts && !!typeMeta
       return {
         key: `quota:${q.slot}`, name: q.name, target: q.target,
-        personal: q.mode === 'per_player' || q.mode === 'emc_table' || hero,
-        get: p => (hero ? (typeMeta ? scoreOf(p.counts, typeMeta, p.hero_level, q.hero || undefined).score : p.points)
+        personal: cryptsPersonal || q.mode === 'per_player' || q.mode === 'emc_table',
+        get: p => (cryptsPersonal ? scoreOf(p.counts, typeMeta, p.hero_level, scale, 1).score
           : p.quotas?.[String(q.slot)] ?? 0),
-        // личная цель игрока: per_player — считает сервер по уровню Героя,
-        // emc_table / hero_points — страница по таблице уровней и рычагам клана
-        targetOf: p => (hero ? normAt(p.hero_level || DEFAULT_HERO, q.hero || undefined)
+        // личная цель игрока: Crypts — очки (норма «Всего» минус доля EMC), EMC — штуки по таблице
+        // уровней и рычагам клана (lib/emcQuota.js), per_player — старые архивы (считал сервер)
+        targetOf: p => (cryptsPersonal ? cryptsNormAt(p.hero_level || DEFAULT_HERO, emcModel, scale)
           : q.mode === 'emc_table' ? emcRowOf(p, q.emc || {}).emc
           : q.mode === 'per_player' ? p.quota_targets?.[String(q.slot)] : q.target),
-        partialOf: p => (q.mode === 'emc_table' || hero ? !p.hero_level : !!p.quota_targets_partial?.[String(q.slot)]),
+        partialOf: p => (cryptsPersonal || q.mode === 'emc_table' ? !p.hero_level
+          : !!p.quota_targets_partial?.[String(q.slot)]),
       }
     })
+    if (pers.crypts && pers.emc && typeMeta) {
+      cols.push({
+        key: 'quota:total', name: totalLabel, target: null, personal: true,
+        get: p => scoreOf(p.counts, typeMeta, p.hero_level, scale).score,
+        targetOf: p => normAt(p.hero_level || DEFAULT_HERO, scale),
+        partialOf: p => !p.hero_level,
+      })
+    }
+    return cols
   }
   return [{ key: 'quota:legacy', name: epicLabel, target: targets?.chests ?? null,
             get: p => p.quota_chests ?? 0 }]
@@ -321,17 +335,17 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 }
 
 const TABLE_TXT = {
-  ru: { player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
+  ru: { total: 'Всего', player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
         hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ',
         heroCol: 'Герой', partialHint: 'Уровень Героя не указан — цель посчитана по Герою 400' },
-  en: { player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
+  en: { total: 'Total', player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
         hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ',
         heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
 }
 
 export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
-  const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta), [targets, tt.epic, chestTypeMeta])
+  const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta, tt.total), [targets, tt.epic, chestTypeMeta, tt.total])
   const emc = useMemo(() => emcModel(targets), [targets])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
