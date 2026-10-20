@@ -286,8 +286,9 @@ function isEpicColumn(typeName) {
 function barColor(pct) {
   const k = Math.min(Math.max(pct, 0), 100) / 100
   const hue = Math.round(270 - k * 130)
-  const sat = Math.round(35 + k * 45)
-  const light = Math.round(16 + k * 20)
+  const sat = Math.round(35 + k * 25)
+  // у 100% зелёный тёмный (владелец 2026-10-20): светлый текст и проценты на нём должны читаться
+  const light = Math.round(16 + k * 10)
   return `hsl(${hue} ${sat}% ${light}%)`
 }
 // Ячейка = целый прогресс-бар (владелец 2026-10-20): заливка слева направо на pct% ширины всей
@@ -302,7 +303,7 @@ function ProgressCell({ value, target, partial, hint = '', showPct = false, clas
     <td className={className} title={partial ? hint : ''}
         style={{ minWidth, textAlign: 'center', background: barBackground(pct), transition: 'background 0.4s' }}>
       <div style={{ fontSize: 14, whiteSpace: 'nowrap', fontWeight: 400, color: 'var(--on-surface)' }}>
-        {value}/{target ?? '—'}{partial ? <span style={{ opacity: 0.6 }}>*</span> : ''}
+        {fmtNum(value)}/{target == null ? '—' : fmtNum(target)}{partial ? <span style={{ opacity: 0.6 }}>*</span> : ''}
       </div>
       {showPct && (
         <div style={{ fontSize: 12, marginTop: 2, fontWeight: 400, letterSpacing: '0.3px', color: 'var(--on-surface2)' }}>
@@ -512,7 +513,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               {quotaCols.map(c => (
                 <th key={c.key} className="public-epic-cell public-sortable" onClick={() => toggleSort(c.key)}>
                   <span translate="no" className="notranslate">{c.name}</span>
-                  {c.target != null && !c.personal && <span style={{ opacity: 0.6 }}> /{c.target}</span>}
+                  {c.target != null && !c.personal && <span style={{ opacity: 0.6 }}> /{fmtNum(c.target)}</span>}
                   {sortMark(c.key)}
                 </th>
               ))}

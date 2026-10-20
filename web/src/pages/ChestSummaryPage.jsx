@@ -228,7 +228,7 @@ export default function ChestSummaryPage() {
                 {targetParts.map((part, i) => (
                   <span key={part.key}>
                     {i > 0 && ' · '}
-                    {part.before}<b className="public-target-num">{part.value}</b>{part.after}
+                    {part.before}<b className="public-target-num">{Number(part.value).toLocaleString('ru-RU')}</b>{part.after}
                   </span>
                 ))}
               </span>
@@ -244,7 +244,7 @@ export default function ChestSummaryPage() {
                       {row.map((part, i) => (
                         <span key={part.key}>
                           {i > 0 && ' · '}
-                          {part.before}<b className="public-target-num">{part.value}</b>{part.after}
+                          {part.before}<b className="public-target-num">{Number(part.value).toLocaleString('ru-RU')}</b>{part.after}
                         </span>
                       ))}
                     </span>
