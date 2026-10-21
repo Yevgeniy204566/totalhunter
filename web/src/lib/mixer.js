@@ -24,6 +24,7 @@ export function kToPos(k) {
 export function solveK(calc, want, kMin, kMax) {
   if (calc(kMax) < want) return kMax
   if (calc(kMin) >= want) return kMin
+  if (calc(1) === want) return 1 // уже совпадает со шкалой — оставляем честное ×1
   const bisect = ok => {
     let lo = kMin, hi = kMax
     for (let i = 0; i < 60; i++) {
@@ -36,4 +37,22 @@ export function solveK(calc, want, kMin, kMax) {
   if (calc(first) !== want) return first
   const last = bisect(k => calc(k) > want)
   return Math.round(Math.sqrt(first * last) * 1e6) / 1e6
+}
+
+// Загрузка пресета клана (T5–T9 из «Сундуков») в пульт: пресет хранит очки за сундук, пульт — множители от
+// шкалы, поэтому для каждого типа клана, который есть в пресете, подбираем множитель, при котором очки при
+// выбранном Герое равны пресетным. Остальные типы не трогаем; типы пресета, которых нет в «Учёте» клана, пропускаем.
+// calcFor(x) → k ⇒ очки; withK(entry, k) → запись mix.w с учётом выбора ступеней Героя.
+export function presetMixW(items, types, w, { calcFor, withK, keyOf }) {
+  const next = { ...(w || {}) }
+  for (const item of items || []) {
+    const key = keyOf(item.catalog_id)
+    const x = types.find(t => t.key === key)
+    if (!x || !(item.points > 0)) continue
+    const calc = calcFor(x)
+    if (!(calc(1000) > 0)) continue // при этом Герое шкала даёт 0 (тип не засчитывается) — множителем не поправить
+    const k = solveK(calc, item.points, 0.01, 1000)
+    next[key] = { ...withK(next[key], k), on: true }
+  }
+  return next
 }

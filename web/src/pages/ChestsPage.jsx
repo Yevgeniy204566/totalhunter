@@ -997,6 +997,7 @@ export default function ChestsPage() {
               quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
               onQuotas={q => updateSeasonField(collector.slug, 'quotas', q)}
               types={mixerTypes(rowsByCollector[collector.slug] || [], collector.catalog_options)}
+              clanPresets={presets}
               dirty={mixerSig(seasonByCollector[collector.slug]) !== savedSigByCollector[collector.slug]}
               onSave={p => saveSeason(collector.slug, undefined, p)} />
           )}

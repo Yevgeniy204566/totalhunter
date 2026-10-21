@@ -52,3 +52,31 @@ test('solveK: недостижимое число упирается в гран
   const { solveK } = await import('./mixer.js')
   assert.equal(solveK(k => Math.round(k), 5000, 0.01, 1000), 1000)
 })
+
+test('presetMixW: очки типов клана становятся пресетными, прочие и чужие типы не трогаются', async () => {
+  const { presetMixW } = await import('./mixer.js')
+  const base = { A: 10, B: 40 }
+  const types = [{ key: 'A' }, { key: 'B' }, { key: 'C' }]
+  const calcFor = x => k => Math.round((base[x.key] ?? 7) * k)
+  const withK = (e, k) => ({ ...(e || {}), all: k })
+  const w = presetMixW(
+    [{ catalog_id: 'A', points: 25 }, { catalog_id: 'Zzz', points: 99 }, { catalog_id: 'B', points: 0 }],
+    types, { C: { all: 2, on: false } }, { calcFor, withK, keyOf: id => id })
+  assert.equal(calcFor({ key: 'A' })(w.A.all), 25)
+  assert.equal(w.A.on, true)
+  assert.equal('Zzz' in w, false)   // нет в «Учёте» клана
+  assert.equal('B' in w, false)     // 0 очков в пресете — пропуск
+  assert.deepEqual(w.C, { all: 2, on: false })
+})
+
+test('presetMixW: тип с нулём в шкале при этом Герое пропускается, а не уходит в ×1000', async () => {
+  const { presetMixW } = await import('./mixer.js')
+  const w = presetMixW([{ catalog_id: 'Z', points: 5 }], [{ key: 'Z' }], {},
+    { calcFor: () => k => Math.round(0 * k), withK: (e, k) => ({ ...(e || {}), all: k }), keyOf: id => id })
+  assert.equal('Z' in w, false)
+})
+
+test('solveK: если при ×1 уже получается нужное число — возвращает ровно 1', async () => {
+  const { solveK } = await import('./mixer.js')
+  assert.equal(solveK(k => Math.round(135 * k), 135, 0.01, 1000), 1)
+})

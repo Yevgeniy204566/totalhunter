@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
 } from '../lib/emcQuota.js'
-import { posToK, kToPos, solveK } from '../lib/mixer.js'
+import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
   weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, typeTab,
@@ -37,6 +37,9 @@ const TXT = {
     presets: 'Пресеты (запасные наборы настроек)', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить в пресет', load: 'Загрузить пресет',
     presetHint: 'Пресет — копия настроек в выбранном слоте. «Сохранить настройки» выше нужна, чтобы применить текущие значения к сезону; сохранение в пресет тоже записывает сезон.',
     loaded: 'Пресет загружен в пульт. Нажмите «Сохранить настройки», чтобы применить к сезону.',
+    clanPresetTitle: 'Пресет клана (T5–T9, как на вкладке «Сундуки»)', clanPresetLoad: 'Загрузить в пульт',
+    clanPresetHint: 'Ставит очки за сундук из пресета для отмеченных выше ступеней Героя («Все уровни» — на все): пульт сам подбирает множитель так, чтобы при примерном Герое очки равнялись пресетным. Затем правьте фейдерами и нажмите «Сохранить настройки». Затрагиваются только типы, которые есть в «Учёте» клана.',
+    clanPresetDone: 'Пресет {n} загружен: типов — {c}. Проверьте значения и нажмите «Сохранить настройки».',
     savedPreset: 'Пресет сохранён.',
     help: 'Как работает пульт',
     helpText: [
@@ -71,6 +74,9 @@ const TXT = {
     presets: 'Presets (spare sets of settings)', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save to preset', load: 'Load preset',
     presetHint: "A preset is a copy of the settings in the chosen slot. 'Save settings' above applies the current values to the season; saving to a preset also saves the season.",
     loaded: "Preset loaded into the mixer. Press 'Save settings' to apply it to the season.",
+    clanPresetTitle: "Clan preset (T5–T9, as on the 'Chests' tab)", clanPresetLoad: 'Load into mixer',
+    clanPresetHint: "Sets points per chest from the preset for the Hero steps ticked above ('All levels' = every step): the mixer picks a multiplier so that at the sample Hero the points equal the preset's. Then adjust with the faders and press 'Save settings'. Only types the clan keeps in accounting are affected.",
+    clanPresetDone: 'Preset {n} loaded: {c} types. Check the values and press Save settings.',
     savedPreset: 'Preset saved.',
     help: 'How the mixer works',
     helpText: [
@@ -143,7 +149,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
   )
 }
 
-export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], dirty = false }) {
+export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], dirty = false, clanPresets = null }) {
   const t = TXT[lang] || TXT.ru
   const [tab, setTab] = useState('crypts')
   const [mode, setMode] = useState('points')
@@ -152,6 +158,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const [presetName, setPresetName] = useState('')
   const [presetSlot, setPresetSlot] = useState('1')
   const [note, setNote] = useState('')
+  const [clanPreset, setClanPreset] = useState('')
 
   const emcQ = quotas.find(q => q.slot === 2)
   const emc = useMemo(() => ({ ...structuredClone(EMC_DEFAULTS), ...(emcQ?.emc || {}) }), [emcQ])
@@ -313,6 +320,21 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     setNote(t.loaded)
   }
 
+  // Пресет клана → очки за сундук (владелец 2026-10-21): по всем типам «Учёта», обеих вкладок
+  const clanPresetNames = Object.keys(clanPresets || {})
+  const chosenClanPreset = clanPreset || clanPresetNames[0] || ''
+  const loadClanPreset = () => {
+    const items = clanPresets?.[chosenClanPreset]
+    if (!items) return
+    const seen = new Set()
+    const all = types.map(x => ({ ...x, key: weightKey(x.id) })).filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
+    const calcFor = x => pointsCol(x).calc
+    const w = presetMixW(items, all, mix.w, { calcFor, withK, keyOf: weightKey })
+    const changed = Object.keys(w).filter(k => w[k] !== mix.w?.[k]).length
+    setPersonal({ mix: { ...mix, w } })
+    setNote(t.clanPresetDone.replace('{n}', chosenClanPreset).replace('{c}', changed))
+  }
+
   const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
   const emcTotal = computeRow(exHero, emc).emc + emcOthersTotal(emcMeta, exHero, scale, emc)
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
@@ -414,6 +436,18 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
       </div>
       <p className="emc-text"><small>{t.saved}</small></p>
+
+      {clanPresetNames.length > 0 && (
+        <div className="mixer-presets">
+          <b>{t.clanPresetTitle}</b>
+          <select className="input-dark" value={chosenClanPreset} onChange={e => setClanPreset(e.target.value)}>
+            {clanPresetNames.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <button type="button" className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--green"
+            onClick={loadClanPreset}>{t.clanPresetLoad}</button>
+        </div>
+      )}
+      {clanPresetNames.length > 0 && <p className="emc-text"><small>{t.clanPresetHint}</small></p>}
 
       <div className="mixer-presets">
         <b>{t.presets}</b>
