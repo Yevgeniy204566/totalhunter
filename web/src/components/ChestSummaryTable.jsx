@@ -324,7 +324,7 @@ function MainIcon({ kind }) {
   const common = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2,
     strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: 'public-main-icon' }
   if (kind === 'star') return <svg {...common} fill="currentColor"><path d="M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18l-6.5 4 1.7-7.4-5.7-5 7.5-.7z" /></svg>
-  if (kind === 'skull') return <svg {...common}><path d="M12 3a8 8 0 0 0-8 8c0 2.6 1.2 4.4 3 5.5V20h10v-3.5c1.8-1.1 3-2.9 3-5.5a8 8 0 0 0-8-8z" /><circle cx="9" cy="11.5" r="1.4" /><circle cx="15" cy="11.5" r="1.4" /></svg>
+  if (kind === 'chest') return <svg {...common}><path d="M4 11V8a8 8 0 0 1 16 0v3" /><rect x="3" y="11" width="18" height="9.5" rx="1.5" /><path d="M3 14.5h18" /><rect x="10.2" y="12.8" width="3.6" height="4.4" rx="0.8" fill="currentColor" /></svg>
   return <svg {...common}><path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z" /></svg>
 }
 function BarCell({ value, target, partial, hint = '' }) {
@@ -356,9 +356,18 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
     : sort.key === 'hero' ? (p.hero_level ?? -1)
     : qcol ? qcol.get(p)
     : (p.counts[sort.key] || 0)
+  // Три главных столбца (владелец 2026-10-21): две сортировки — «успеваемость» (sort.mode 'pct': факт / цель
+  // игрока) и «абсолютная» (sort.mode 'abs': максимум по числу). Без mode — прежнее поведение.
+  const main = sort.mode && (sort.key === 'points' || qcol)
+  const get = sort.key === 'points' ? (p => p.points) : qcol?.get
+  const ratio = p => {
+    const t = sort.key === 'points' ? p.pointsTarget : qcol.targetOf?.(p)
+    return t ? get(p) / t : 0
+  }
+  const val = main ? (sort.mode === 'abs' ? get : ratio) : value
   const dir = sort.dir === 'asc' ? 1 : -1
   return [...players].sort((a, b) => {
-    const va = value(a), vb = value(b)
+    const va = val(a), vb = val(b)
     if (va < vb) return -dir
     if (va > vb) return dir
     return (b.pointsPct ?? b.points) - (a.pointsPct ?? a.points) || b.points - a.points || a.name.localeCompare(b.name)
@@ -368,10 +377,10 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 const TABLE_TXT = {
   ru: { total: 'Всего', player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
         hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ',
-        heroCol: 'Герой', partialHint: 'Уровень Героя не указан — цель посчитана по Герою 400' },
+        sortPct: 'Сортировка по успеваемости: выполнение нормы своего Героя, %', sortAbs: 'Сортировка по абсолютному значению: максимум в числах', abs: 'абс.', heroCol: 'Герой', partialHint: 'Уровень Героя не указан — цель посчитана по Герою 400' },
   en: { total: 'Total', player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
         hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ',
-        heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
+        sortPct: 'Sort by performance: % of the own Hero norm', sortAbs: 'Sort by absolute value: highest numbers', abs: 'abs.', heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
 }
 
 export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
@@ -404,7 +413,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     if (!pointsPersonal) return null
     return [
       { key: 'points', name: tt.points, icon: 'star', get: p => p.points, targetOf: p => p.pointsTarget, partialOf: p => !p.hero_level },
-      ...quotaCols.map(c => ({ ...c, icon: c.key === 'quota:2' ? 'skull' : 'crypt' })),
+      ...quotaCols.map(c => ({ ...c, icon: c.key === 'quota:2' ? 'chest' : 'crypt' })),
     ]
   }, [pointsPersonal, quotaCols, tt])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
@@ -418,15 +427,15 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     () => (sort ? sortPlayers(players, sort, chestTypes, quotaCols) : players),
     [players, sort, chestTypes, quotaCols],
   )
-  function toggleSort(key) {
+  function toggleSort(key, mode) {
     setSort(prev => {
       const firstDir = key === 'name' ? 'asc' : 'desc'
-      if (!prev || prev.key !== key) return { key, dir: firstDir }
-      return { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
+      if (!prev || prev.key !== key || prev.mode !== mode) return { key, mode, dir: firstDir }
+      return { key, mode, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
     })
   }
-  function sortMark(key) {
-    if (!sort || sort.key !== key) return <span className="public-sort-mark"> ⇅</span>
+  function sortMark(key, mode) {
+    if (!sort || sort.key !== key || sort.mode !== mode) return <span className="public-sort-mark"> ⇅</span>
     return <span className="public-sort-mark public-sort-mark--on">{sort.dir === 'desc' ? ' ▼' : ' ▲'}</span>
   }
   const fmtAvg = v => v.toFixed(1)
@@ -574,9 +583,16 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               {editMode && <th></th>}
               {mainCols
                 ? mainCols.map(c => (
-                  <th key={c.key} className="public-main-th public-sortable" onClick={() => toggleSort(c.key)}>
-                    <MainIcon kind={c.icon} />
-                    <span translate="no" className="notranslate">{c.name}</span>{sortMark(c.key)}
+                  <th key={c.key} className="public-main-th">
+                    <div className="public-main-head">
+                      <span className="public-sortable" title={tt.sortPct} onClick={() => toggleSort(c.key, 'pct')}>
+                        <MainIcon kind={c.icon} />
+                        <span translate="no" className="notranslate">{c.name}</span>{sortMark(c.key, 'pct')}
+                      </span>
+                      <span className="public-sortable public-main-abs" title={tt.sortAbs} onClick={() => toggleSort(c.key, 'abs')}>
+                        {tt.abs}{sortMark(c.key, 'abs')}
+                      </span>
+                    </div>
                   </th>
                 ))
                 : <>

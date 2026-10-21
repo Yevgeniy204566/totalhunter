@@ -522,6 +522,8 @@ a:hover { color: var(--on-surface); }
 .public-cell-zero { color: var(--on-surface2); }
 /* Три главных столбца (макет «Лидерборд», 2026-10-21): ширина ≈ трём обычным столбцам */
 .public-table th.public-main-th { text-align: left; min-width: 320px; font-size: 13px; color: var(--accent); }
+.public-main-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.public-main-abs { font-size: 12px; color: var(--on-surface2); }
 .public-main-icon { vertical-align: -3px; margin-right: 8px; }
 .public-table td.public-bar-cell { min-width: 320px; text-align: left; padding: 8px 18px 8px 14px; }
 .public-bar-top { font-size: 16px; line-height: 1.25; }
