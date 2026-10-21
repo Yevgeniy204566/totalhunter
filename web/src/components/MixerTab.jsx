@@ -167,7 +167,18 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const enabled = !!personal[flag]
   const isAll = sel.has('all')
   const bands = [...sel].filter(x => x !== 'all').sort((a, b) => a - b)
-  const exHero = isAll ? Number(sample) || 400 : Number(bands[0] ?? 400) + 5
+  // Опорный Герой: для «Все уровни» — поле «Пример»; для одной ступени — её середина (+5); для группы — среднее
+  // по отмеченным ступеням (200–299 → 250); если среднее попало в неотмеченную ступень (несмежный выбор) —
+  // ближайшая отмеченная.
+  const exHero = (() => {
+    if (isAll) return Number(sample) || 400
+    const nums = bands.map(Number)
+    if (!nums.length) return 405
+    if (nums.length === 1) return nums[0] + 5
+    const mean = nums.reduce((a, b) => a + b, 0) / nums.length + 5
+    if (nums.includes(Math.floor(mean / 10) * 10)) return Math.round(mean)
+    return nums.reduce((best, n) => (Math.abs(n + 5 - mean) < Math.abs(best + 5 - mean) ? n : best), nums[0]) + 5
+  })()
   const scale = { ...SCALE_DEFAULTS, norm: personal.norm, weights: personal.weights, ranges: personal.ranges, mix }
 
   const setPersonal = patch => onPersonal({ ...personal, ...patch })
