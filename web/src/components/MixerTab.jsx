@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
 } from '../lib/emcQuota.js'
-import { posToK, kToPos } from '../lib/mixer.js'
+import { posToK, kToPos, solveK } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
   weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, typeTab,
@@ -284,9 +284,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       abs: c.calc(c.k),
       onAbs: num => {
         if (num === 0) { if (c.on !== false && c.onToggle) c.onToggle(); return }
-        const one = c.calc(1)
-        if (!(one > 0)) return
-        c.onK(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, Math.round((num / one) * 10000) / 10000)))
+        if (!(c.calc(MULTIPLIER_MAX) > 0)) return
+        c.onK(solveK(c.calc, num, MULTIPLIER_MIN, MULTIPLIER_MAX))
       },
       calcText: c.fmt ? fmt(c.base) : c.base,
     }
