@@ -311,6 +311,39 @@ function ProgressCell({ value, target, partial, hint = '', showPct = false, clas
   )
 }
 
+// Три главных столбца (владелец 2026-10-21, макет «Лидерборд»): широкая ячейка «факт / цель», под ней тонкая
+// полоса и процент справа. Цвет заливки — прежний путь от фиолетового к зелёному по проценту, на 100% и выше
+// — #287A50 (HSL 147 51% 32%). Ширина заливки обрезается на 100%, сам процент показывается как есть.
+const BAR_DONE = '#287A50'
+function barFillColor(pct) {
+  const k = Math.min(Math.max(pct, 0), 100) / 100
+  if (k >= 1) return BAR_DONE
+  return `hsl(${Math.round(260 - k * 113)} ${Math.round(45 + k * 6)}% ${Math.round(40 - k * 8)}%)`
+}
+function MainIcon({ kind }) {
+  const common = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2,
+    strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: 'public-main-icon' }
+  if (kind === 'star') return <svg {...common} fill="currentColor"><path d="M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18l-6.5 4 1.7-7.4-5.7-5 7.5-.7z" /></svg>
+  if (kind === 'skull') return <svg {...common}><path d="M12 3a8 8 0 0 0-8 8c0 2.6 1.2 4.4 3 5.5V20h10v-3.5c1.8-1.1 3-2.9 3-5.5a8 8 0 0 0-8-8z" /><circle cx="9" cy="11.5" r="1.4" /><circle cx="15" cy="11.5" r="1.4" /></svg>
+  return <svg {...common}><path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z" /></svg>
+}
+function BarCell({ value, target, partial, hint = '' }) {
+  const pct = target ? Math.round((value / target) * 100) : 0
+  const w = Math.min(Math.max(pct, 0), 100)
+  return (
+    <td className="public-bar-cell" title={partial ? hint : ''}>
+      <div className="public-bar-top">
+        <span className="public-bar-val">{fmtNum(value)}</span>
+        <span className="public-bar-tgt"> / {target == null ? '—' : fmtNum(target)}{partial ? '*' : ''}</span>
+      </div>
+      <div className="public-bar-row">
+        <div className="public-bar-track"><div className="public-bar-fill" style={{ width: `${w}%`, background: barFillColor(pct) }} /></div>
+        <span className="public-bar-pct">{target ? `${pct}%` : ''}</span>
+      </div>
+    </td>
+  )
+}
+
 export function columnAverage(players, getValue) {
   if (!players.length) return 0
   return players.reduce((sum, p) => sum + (getValue(p) || 0), 0) / players.length
@@ -365,6 +398,15 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
       // порядок и место «#» — по успешности игрока для его Героя (очки / норма), а не по абсолютным очкам
       .sort((a, b) => b.pointsPct - a.pointsPct || b.points - a.points || a.name.localeCompare(b.name))
   }, [rawPlayers, pointsPersonal, typeMeta, scale])
+  // Три главных столбца = прежние «Очки», Crypts-квота и EMC в прежнем порядке (владелец 2026-10-21);
+  // меняется только вид ячейки. Столбцы типов сундуков идут после них.
+  const mainCols = useMemo(() => {
+    if (!pointsPersonal) return null
+    return [
+      { key: 'points', name: tt.points, icon: 'star', get: p => p.points, targetOf: p => p.pointsTarget, partialOf: p => !p.hero_level },
+      ...quotaCols.map(c => ({ ...c, icon: c.key === 'quota:2' ? 'skull' : 'crypt' })),
+    ]
+  }, [pointsPersonal, quotaCols, tt])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
   const [sort, setSort] = useState(null)
   const pointsRank = useMemo(() => {
@@ -507,10 +549,14 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               {editMode && <th></th>}
               {editMode && <th></th>}
               {editMode && <th></th>}
-              <th></th>
-              {quotaCols.map(c => (
-                <th key={c.key} className="public-epic-cell">{fmtAvg(columnAverage(players, c.get))}</th>
-              ))}
+              {mainCols
+                ? mainCols.map(c => <th key={c.key} className="public-main-th">{fmtAvg(columnAverage(players, c.get))}</th>)
+                : <>
+                  <th></th>
+                  {quotaCols.map(c => (
+                    <th key={c.key} className="public-epic-cell">{fmtAvg(columnAverage(players, c.get))}</th>
+                  ))}
+                </>}
               {chestTypes.map(t => (
                 <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''}>
                   {fmtAvg(columnAverage(players, p => p.counts[t]))}
@@ -526,14 +572,23 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               {editMode && <th>{tt.rank}</th>}
               {editMode && <th>{tt.troops}</th>}
               {editMode && <th></th>}
-              <th className="public-sortable" onClick={() => toggleSort('points')}>{tt.points}{sortMark('points')}</th>
-              {quotaCols.map(c => (
-                <th key={c.key} className="public-epic-cell public-sortable" onClick={() => toggleSort(c.key)}>
-                  <span translate="no" className="notranslate">{c.name}</span>
-                  {c.target != null && !c.personal && <span style={{ opacity: 0.6 }}> /{fmtNum(c.target)}</span>}
-                  {sortMark(c.key)}
-                </th>
-              ))}
+              {mainCols
+                ? mainCols.map(c => (
+                  <th key={c.key} className="public-main-th public-sortable" onClick={() => toggleSort(c.key)}>
+                    <MainIcon kind={c.icon} />
+                    <span translate="no" className="notranslate">{c.name}</span>{sortMark(c.key)}
+                  </th>
+                ))
+                : <>
+                  <th className="public-sortable" onClick={() => toggleSort('points')}>{tt.points}{sortMark('points')}</th>
+                  {quotaCols.map(c => (
+                    <th key={c.key} className="public-epic-cell public-sortable" onClick={() => toggleSort(c.key)}>
+                      <span translate="no" className="notranslate">{c.name}</span>
+                      {c.target != null && !c.personal && <span style={{ opacity: 0.6 }}> /{fmtNum(c.target)}</span>}
+                      {sortMark(c.key)}
+                    </th>
+                  ))}
+                </>}
               {chestTypes.map(t => (
                 <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
                     onClick={() => toggleSort(t)}>
@@ -619,30 +674,36 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                       </button>
                     </td>
                   )}
-                  {pointsPersonal
-                    ? <ProgressCell value={p.points} target={p.pointsTarget} partial={!p.hero_level} hint={tt.partialHint}
-                                    showPct minWidth={120} className="public-points-cell" />
-                    : (
-                      <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
-                        {fmtNum(p.points)}
-                      </td>
-                    )}
-                  {quotaCols.map(c => {
-                    const v = c.get(p)
-                    if (c.personal) {
-                      return <ProgressCell key={c.key} value={v} target={c.targetOf(p)} partial={c.partialOf(p)} hint={tt.partialHint}
-                                           showPct minWidth={120} />
-                    }
-                    return (
-                      <td key={c.key} className={[
-                        'public-epic-cell',
-                        c.target != null && v >= c.target && 'public-cell-hit-target',
-                        v === 0 && 'public-cell-zero',
-                      ].filter(Boolean).join(' ')}>
-                        {v}
-                      </td>
-                    )
-                  })}
+                  {mainCols
+                    ? mainCols.map(c => (
+                      <BarCell key={c.key} value={c.get(p)} target={c.targetOf(p)} partial={c.partialOf(p)} hint={tt.partialHint} />
+                    ))
+                    : <>
+                      {pointsPersonal
+                        ? <ProgressCell value={p.points} target={p.pointsTarget} partial={!p.hero_level} hint={tt.partialHint}
+                                        showPct minWidth={120} className="public-points-cell" />
+                        : (
+                          <td className={`public-points-cell ${pointsHitTarget(p, targets) ? 'public-cell-hit-target' : ''}`}>
+                            {fmtNum(p.points)}
+                          </td>
+                        )}
+                      {quotaCols.map(c => {
+                        const v = c.get(p)
+                        if (c.personal) {
+                          return <ProgressCell key={c.key} value={v} target={c.targetOf(p)} partial={c.partialOf(p)} hint={tt.partialHint}
+                                               showPct minWidth={120} />
+                        }
+                        return (
+                          <td key={c.key} className={[
+                            'public-epic-cell',
+                            c.target != null && v >= c.target && 'public-cell-hit-target',
+                            v === 0 && 'public-cell-zero',
+                          ].filter(Boolean).join(' ')}>
+                            {v}
+                          </td>
+                        )
+                      })}
+                    </>}
                   {chestTypes.map(t => {
                     const value = p.counts[t] || 0
                     const meta = typeMeta?.[t]

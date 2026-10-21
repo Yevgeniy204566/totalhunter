@@ -520,6 +520,17 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
 .public-table tbody tr:hover td { background: var(--accent-glow); }
 .public-cell-zero { color: var(--on-surface2); }
+/* Три главных столбца (макет «Лидерборд», 2026-10-21): ширина ≈ трём обычным столбцам */
+.public-table th.public-main-th { text-align: left; min-width: 320px; font-size: 13px; color: var(--accent); }
+.public-main-icon { vertical-align: -3px; margin-right: 8px; }
+.public-table td.public-bar-cell { min-width: 320px; text-align: left; padding: 8px 18px 8px 14px; }
+.public-bar-top { font-size: 16px; line-height: 1.25; }
+.public-bar-val { color: var(--on-surface); font-weight: 700; }
+.public-bar-tgt { color: var(--on-surface2); }
+.public-bar-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.public-bar-track { flex: 1; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.public-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+.public-bar-pct { min-width: 42px; text-align: right; font-size: 13px; color: var(--on-surface2); }
 .public-points-cell { color: var(--credits-gold); font-weight: 700; }
 .public-cell-hit-target { color: #50C878 !important; font-weight: 700; }
 /* Свечение — только в шапке (владелец 2026-09-28): тройной text-shadow на каждой ячейке
