@@ -58,23 +58,37 @@ export default function RoyPage() {
   const isRu = lang === 'ru'
   const esRef = useRef(null)
 
+  // Поток статусов открыт только пока вкладка видна: скрытая вкладка не держит соединение с
+  // сервером (лимит nginx на соединения с одного IP общий) и не получает данные, которые никто не видит.
   useEffect(() => {
-    fetch(`${API_BASE}/roy/kingdoms`)
-      .then(r => r.json())
-      .then(d => setKingdoms(d.kingdoms || []))
-      .catch(() => {})
+    const loadKingdoms = () =>
+      fetch(`${API_BASE}/roy/kingdoms`)
+        .then(r => r.json())
+        .then(d => setKingdoms(d.kingdoms || []))
+        .catch(() => {})
 
-    const es = new EventSource(`${API_BASE}/roy/status-stream`)
-    esRef.current = es
-    es.onopen    = () => setConnected(true)
-    es.onerror   = () => setConnected(false)
-    es.onmessage = (e) => {
-      try {
-        setKingdoms(JSON.parse(e.data))
-        setConnected(true)
-      } catch {}
+    const open = () => {
+      if (esRef.current) return              // уже открыт — второй поток не создаём
+      loadKingdoms()
+      const es = new EventSource(`${API_BASE}/roy/status-stream`)
+      esRef.current = es
+      es.onopen    = () => setConnected(true)
+      es.onerror   = () => setConnected(false)
+      es.onmessage = (e) => {
+        try {
+          setKingdoms(JSON.parse(e.data))
+          setConnected(true)
+        } catch {}
+      }
     }
-    return () => { es.close(); esRef.current = null }
+    const close = () => {
+      if (esRef.current) { esRef.current.close(); esRef.current = null }
+    }
+    const onVisibility = () => { document.hidden ? close() : open() }
+
+    if (!document.hidden) open()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { document.removeEventListener('visibilitychange', onVisibility); close() }
   }, [])
 
   const loadFinds = () => {
@@ -88,12 +102,27 @@ export default function RoyPage() {
       .then(d => setPool(d.pool || []))
       .catch(() => setPool([]))
   }
-  // находки подтягиваются сами раз в 30 с; таймер тикает каждую секунду
+  // находки подтягиваются сами раз в 30 с; таймер тикает каждую секунду.
+  // Скрытая вкладка таймеры останавливает; при возвращении — сразу обновление и по одному таймеру.
   useEffect(() => {
-    loadFinds()
-    const poll = setInterval(loadFinds, 30000)
-    const tick = setInterval(() => setNow(Date.now()), 1000)
-    return () => { clearInterval(poll); clearInterval(tick) }
+    let poll = null
+    let tick = null
+    const start = () => {
+      if (poll || tick) return               // защита от параллельных циклов
+      loadFinds()
+      setNow(Date.now())
+      poll = setInterval(loadFinds, 30000)
+      tick = setInterval(() => setNow(Date.now()), 1000)
+    }
+    const stop = () => {
+      clearInterval(poll); clearInterval(tick)
+      poll = null; tick = null
+    }
+    const onVisibility = () => { document.hidden ? stop() : start() }
+
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { document.removeEventListener('visibilitychange', onVisibility); stop() }
   }, [])
 
   async function onCopy(f, key) {
