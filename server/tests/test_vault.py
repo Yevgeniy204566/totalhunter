@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import pytest
 from httpx import AsyncClient, ASGITransport
 
+import vault
 from main import app
 from models import User
 from vault import notify_balance_changed
@@ -105,18 +106,70 @@ async def test_balance_sync_backfills_session_started_at_when_null_even_if_recen
 
 
 @pytest.mark.asyncio
-async def test_balance_sync_returns_zero_for_unknown_hwid_without_crashing(db_session):
+async def test_balance_sync_unknown_hwid_gets_fast_404_without_waiting(db_session):
+    """Неизвестный HWID не держит соединение 50 с. 404, а не 200: бот переподключается после 200
+    без паузы (бесконечный цикл), после ошибки — через BALANCE_RETRY_PAUSE_SEC."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await asyncio.wait_for(client.get("/vault/sync/0123456789ABCDEF"), timeout=2.0)
+
+    assert resp.status_code == 404
+    assert "0123456789ABCDEF" not in vault._notifiers
+
+
+@pytest.mark.asyncio
+async def test_balance_sync_known_hwid_still_waits_for_wakeup(db_session):
+    """Регрессия действующего клиента: зарегистрированный HWID по-прежнему ждёт пробуждения."""
+    u = User(hwid="ABCDEF0123456789", credits=7, ref_code="vault9")
+    db_session.add(u)
+    await db_session.commit()
+
     async def _call():
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            return await client.get("/vault/sync/doesnotexist000")
+            return await client.get(f"/vault/sync/{u.hwid}")
 
     task = asyncio.create_task(_call())
-    await asyncio.sleep(0.05)
-    notify_balance_changed("doesnotexist000")
+    await asyncio.sleep(0.2)
+    assert not task.done()                      # не отвечает сразу — long-poll
+    assert u.hwid in vault._notifiers
+    notify_balance_changed(u.hwid)
     resp = await task
 
     assert resp.status_code == 200
-    assert resp.json() == {"credits": 0, "ref_credits": 0, "linked": False}
+    assert resp.json() == {"credits": 7, "ref_credits": 0, "linked": False}
+
+
+@pytest.mark.asyncio
+async def test_balance_sync_releases_connection_before_long_wait(db_session, monkeypatch):
+    """SELECT проверки HWID не должен держать соединение пула все 50 с ожидания."""
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    u = User(hwid="1111222233334444", credits=1, ref_code="vault8")
+    db_session.add(u)
+    await db_session.commit()
+
+    rollbacks = []
+    orig_rollback = AsyncSession.rollback
+
+    async def _spy_rollback(self):
+        rollbacks.append(1)
+        return await orig_rollback(self)
+
+    monkeypatch.setattr(AsyncSession, "rollback", _spy_rollback)
+
+    rollbacks_at_wait = []
+    orig_wait_for = vault.asyncio.wait_for
+
+    async def _spy_wait_for(aw, timeout):
+        rollbacks_at_wait.append(len(rollbacks))
+        return await orig_wait_for(aw, timeout=0.01)   # не ждать 50 с
+
+    monkeypatch.setattr(vault.asyncio, "wait_for", _spy_wait_for)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(f"/vault/sync/{u.hwid}")
+
+    assert resp.status_code == 200
+    assert rollbacks_at_wait and rollbacks_at_wait[0] >= 1   # откат выполнен ДО ожидания
 
 
 @pytest.mark.asyncio

@@ -9,8 +9,8 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Dict
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import case, update
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import case, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -33,6 +33,13 @@ async def balance_sync(hwid: str, db: AsyncSession = Depends(get_db)):
     Long-poll: держит соединение до изменения баланса или 50-секундного timeout.
     Бот переподключается сразу после каждого ответа.
     """
+    # Неизвестный HWID не держит соединение 50 с: 404 — клиент сам ждёт 5 с и повторяет
+    # (200 дал бы бесконечный цикл: бот переподключается после 200 без паузы).
+    exists = (await db.execute(select(User.id).where(User.hwid == hwid))).first()
+    await db.rollback()  # вернуть соединение в пул до долгого ожидания и до db.begin() ниже
+    if not exists:
+        raise HTTPException(status_code=404, detail="unknown_hwid")
+
     event = asyncio.Event()
     _notifiers[hwid] = event
 
