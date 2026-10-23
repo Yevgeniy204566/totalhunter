@@ -133,7 +133,7 @@ Set-Location "C:\BattleBot"
 
 **Сервер:**
 - FastAPI + PostgreSQL (asyncpg) + SQLAlchemy async + Alembic
-- GCP Compute Engine `34.68.86.57:8000` | Ubuntu 22.04 | systemd
+- GCP Compute Engine `34.68.86.57` (API только через `https://api.total-hunter.com`; порты 8000/8001 закрыты с 2026-10-24) | Ubuntu 22.04 | systemd
 
 ---
 
