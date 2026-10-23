@@ -20,7 +20,7 @@ class HwidRequest(BaseModel):
 class UseCreditsRequest(BaseModel):
     """Списание кредитов. amount зависит от типа находки."""
     hwid: str
-    amount: int = 1          # exchange=5, crypt=1; дефолт 1 для обратной совместимости
+    amount: int = Field(default=1, ge=0, le=1000)  # поле осталось для совместимости: цену задаёт сервер (CREDIT_COST), не запрос
     hunt_type: str = "crypt" # exchange / crypt — пишется в таблицу hunts
 
 

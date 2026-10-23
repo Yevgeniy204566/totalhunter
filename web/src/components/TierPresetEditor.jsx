@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { normAt, epicRefAt } from '../lib/heroQuota.js'
 import { computeRow, emcChimeraAt, emcTotalAt, round } from '../lib/emcQuota.js'
-import { BERSERK_COLUMNS, BERSERK_ROWS } from '../lib/berserkActivity.js'
 
 // Редактор пресетов T5–T9 в «Пульте» (владелец 2026-10-23): очки за сундук (общий пресет сервера + правки клана),
 // квоты за 2 недели (очки, эпик-склепы, EMC), загрузка в пульт, справка по замеру активности Берсерков.
@@ -20,17 +19,12 @@ const TXT = {
     applyHint: 'Загружает очки выбранного пресета в учёт ростера для выбранных выше уровней Героя. По ним считаются очки игроков. Затем нажмите «Сохранить настройки».',
     loaded: 'Пресет {n} загружен в учёт ростера (изменено сундуков: {c}). Нажмите «Сохранить настройки», чтобы применить к сезону.',
     info: 'Как это работает',
-    basis: 'Основа ступени',
-    emcSum: 'EMC за 2 недели (сумма трёх колонок)',
+    basis: 'Основа',
     help: [
       'Выберите пресет T5–T9. Очки сундуков и квоты можно поменять — это ваш вариант, общий пресет остаётся прежним. Кнопки − и + меняют очки на 1, «×» убирает сундук, «+ Добавить сундук» добавляет. Изменённое выделено жёлтой рамкой.',
       '«Загрузить пресет в ростер» ставит очки пресета в учёт ростера для выбранных выше уровней Героя («Все уровни» — для всех). Затрагиваются только сундуки из «Учёта» клана.',
       'Чтобы применить к сезону, нажмите «Сохранить настройки» выше.',
     ],
-    statTitle: 'Замер активности клана Берсерки (T9): 2 недели, {n} игроков',
-    col: 'Столбец', median: 'Медиана', mean: 'Среднее', max: 'Максимум',
-    reach: 'Выполнили минимум эпик-склепов',
-    statHint: 'Данные без имён. Минимум берётся из поля выбранной ступени (если пусто — из шкалы).',
   },
   en: {
     title: 'Preset editor', tier: 'Tier',
@@ -42,17 +36,12 @@ const TXT = {
     applyHint: "Loads the points of the chosen preset into the roster accounting for the Hero levels chosen above. Player points are counted by them. Then press 'Save settings'.",
     loaded: "Preset {n} loaded into the roster accounting (chests changed: {c}). Press 'Save settings' to apply it to the season.",
     info: 'How it works',
-    basis: 'Tier basis',
-    emcSum: 'EMC per 2 weeks (sum of three columns)',
+    basis: 'Basis',
     help: [
       "Choose a T5–T9 preset. You can change chest points and quotas — this is your variant, the shared preset stays as it is. The − and + buttons change points by 1, '×' removes a chest, '+ Add chest' adds one. Edited items have a yellow frame.",
       "'Load preset into roster' puts the preset points into the roster accounting for the Hero levels chosen above ('All levels' = all of them). Only chests from the clan's accounting are affected.",
       "To apply it to the season, press 'Save settings' above.",
     ],
-    statTitle: 'Activity sample, clan Berserki (T9): 2 weeks, {n} players',
-    col: 'Column', median: 'Median', mean: 'Mean', max: 'Max',
-    reach: 'Players at or above the epic crypts minimum',
-    statHint: 'No names. The minimum comes from the chosen tier field (scale value if empty).',
   },
 }
 
@@ -65,35 +54,22 @@ const STEP = 1 // шаг кнопок ± (владелец 2026-10-23: по 1, �
 // hero — уровень, на котором стоит стена клана для нормы и эпик-склепов; emcHero — средний Герой клана в данных EMC.
 const BASES = {
   T9: { hero: 450, emcHero: 450, norm: () => 25000, epic: () => 300,
-        ru: 'Берсерки (Герой в среднем 450): очки, эпик-склепы и EMC — данные клана (EMC — сумма трёх колонок замера, среднее по клану).',
-        en: 'Berserki (average Hero 450): points, epic crypts and EMC are clan data (EMC is the sum of three sample columns, clan average).' },
+        ru: 'Данные взяты из реального клана за 2 недели.',
+        en: 'Data are taken from a real clan over 2 weeks.' },
   T8: { hero: 387.5, emcHero: 383, norm: () => 14000, epic: () => 200,
-        ru: 'ЭДО / ELDORADO (Герой 383–387.5): очки, норма и эпик-склепы — стена клана; EMC — столбец EMC из истории сезона (45,6 на игрока, все эпик-монстры).',
-        en: 'ELDORADO (Hero 383–387.5): points, norm and epic crypts are the clan wall; EMC is the EMC column of the season history (45.6 per player, all epic monsters).' },
+        ru: 'Данные взяты из реального клана за 2 недели.',
+        en: 'Data are taken from a real clan over 2 weeks.' },
   T7: { hero: 298, emcHero: 298, norm: () => normAt(298), epic: () => epicRefAt(298),
-        ru: 'Феникс (Герой 298): очки за сундук — стена клана; норма, эпик-склепы и EMC — расчёт шкалы.',
-        en: 'Phoenix (Hero 298): points per chest are the clan wall; norm, epic crypts and EMC are scale calculations.' },
+        ru: 'Очки за сундук взяты из реального клана; остальное рассчитано по шкале на основе данных реальных кланов.',
+        en: 'Points per chest are taken from a real clan; the rest is calculated on a scale built from real clan data.' },
   T6: { hero: 279, emcHero: 279, emcFixed: 0, norm: () => 5000, epic: () => 50,
-        ru: 'Старт (Герой 279): норма 5 000 и 50 эпик-склепов — стена клана; очки за сундук — расчёт шкалы. Старту не хватает мощи бить эпических монстров — EMC 0.',
-        en: 'Start (Hero 279): norm 5,000 and 50 epic crypts are the clan wall; points per chest are a scale calculation. Start lacks the power to kill epic monsters — EMC 0.' },
+        ru: 'Норма и эпик-склепы взяты из реального клана; очки за сундук рассчитаны по шкале. Слабые Герои эпических монстров не бьют — EMC 0.',
+        en: 'Norm and epic crypts are taken from a real clan; points per chest are calculated on the scale. Weak Heroes do not kill epic monsters — EMC 0.' },
 }
 
 const fmt = n => Number(n).toLocaleString('ru-RU')
 const num = v => (v === '' || v == null ? null : Math.max(0, Number(String(v).replace(',', '.')) || 0))
 const isCrypt = id => /Crypt|Citadel/i.test(id)
-
-const median = arr => {
-  const v = [...arr].sort((a, b) => a - b)
-  const mid = v.length >> 1
-  return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2
-}
-
-function stats(col) {
-  const v = BERSERK_ROWS.map(r => r[col]).sort((a, b) => a - b)
-  const mid = v.length >> 1
-  const median = v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2
-  return { median, mean: Math.round(v.reduce((a, b) => a + b, 0) / v.length), max: v[v.length - 1] }
-}
 
 export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, onPersonal, onLoad, catalogItems = [], sets = null, setsTitle = '', setsHint = '', setsNote = '' }) {
   const t = TXT[lang] || TXT.ru
@@ -158,7 +134,6 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
   // EMC — все эпик-монстры вместе (модель lib/emcQuota.js), показываем и разбивку по монстрам
   const emcRow = basis && basis.emcFixed == null ? computeRow(basis.emcHero) : null
   const defEmc = basis ? (basis.emcFixed ?? round(emcTotalAt(basis.emcHero))) : null
-  const epicWant = own.epic ?? defEpic
   const edited = Object.keys(own.points || {}).length > 0 || (own.removed || []).length > 0
     || own.norm != null || own.epic != null || own.emc != null
 
@@ -266,26 +241,6 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
         {t.help.map((line, i) => <p key={i}>{line}</p>)}
       </details>
 
-      <details className="pult-note">
-        <summary>{t.statTitle.replace('{n}', BERSERK_ROWS.length)}</summary>
-        <table className="tier-presets-table">
-          <thead><tr><th>{t.col}</th><th>{t.median}</th><th>{t.mean}</th><th>{t.max}</th></tr></thead>
-          <tbody>
-            {BERSERK_COLUMNS.map((name, i) => {
-              const s = stats(i)
-              return <tr key={name}><td>{name}</td><td>{fmt(s.median)}</td><td>{fmt(s.mean)}</td><td>{fmt(s.max)}</td></tr>
-            })}
-            {(() => {
-              const sums = BERSERK_ROWS.map(r => r[1] + r[2] + r[3])
-              return <tr><td>{t.emcSum}</td><td>{fmt(median(sums))}</td><td>{fmt(Math.round(sums.reduce((a, b) => a + b, 0) / sums.length))}</td><td>{fmt(Math.max(...sums))}</td></tr>
-            })()}
-          </tbody>
-        </table>
-        {epicWant > 0 && (
-          <p>{t.reach} ({fmt(epicWant)}): {BERSERK_ROWS.filter(r => r[0] >= epicWant).length} / {BERSERK_ROWS.length}</p>
-        )}
-        <p>{t.statHint}</p>
-      </details>
     </section>
   )
 }

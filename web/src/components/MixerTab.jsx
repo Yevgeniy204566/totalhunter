@@ -32,7 +32,7 @@ const TXT = {
     countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. Для Rare, Common и Citadel штук в норме нет — впишите число сами, если нужно.',
     save: '💾 Сохранить настройки', saved: 'Применяет настройки этой вкладки к сезону. Игроки видят результат на публичной странице.',
     dirtyOn: '● Есть несохранённые изменения', dirtyOff: '✓ Всё сохранено',
-    summary: 'Герой {h}: норма «Всего» {total} · Crypts {crypts} · EMC {emc} шт.',
+    summary: 'Герой {h}: норма «Всего» {total} очков = склепы и цитадели {crypts} очков + эпические монстры (EMC) {emcpts} очков ({emc} шт.)',
     editing: 'Правим: {what}',
     scopeAllTitle: 'Вы правите: «Все уровни»',
     scopeAllText: 'Число (очки или количество) вы задаёте для уровня Героя из поля «Пример для Героя» ({h}). Остальные уровни меняются в той же пропорции. Пример: на Герое 400 сундук даёт 135 очков, на Герое 300 — 150. Вы поставили 160 на Герое 400 — на Герое 300 станет 180.',
@@ -71,7 +71,7 @@ const TXT = {
     countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel have no counts in the norm — type a number yourself if needed.',
     save: '💾 Save settings', saved: 'Applies this tab\'s settings to the season. Players see the result on the public page.',
     dirtyOn: '● Unsaved changes', dirtyOff: '✓ All saved',
-    summary: 'Hero {h}: Total norm {total} · Crypts {crypts} · EMC {emc} pcs',
+    summary: 'Hero {h}: total norm {total} points = crypts and citadels {crypts} points + epic monsters (EMC) {emcpts} points ({emc} pcs)',
     editing: 'Editing: {what}',
     scopeAllTitle: 'You are editing: All levels',
     scopeAllText: 'You set the number (points or count) for the Hero level from the "Example for Hero" field ({h}). Other levels change in the same proportion. Example: a chest gives 135 points at Hero 400 and 150 at Hero 300. You set 160 at Hero 400 — at Hero 300 it becomes 180.',
@@ -366,8 +366,10 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
   const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
   const emcTotal = computeRow(exHero, emc).emc + emcOthersTotal(emcMeta, exHero, scale, emc)
-  const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
-    .replace('{crypts}', fmt(cryptsNormAt(exHero, emc, scale))).replace('{emc}', emcTotal)
+  const totalNorm = normAt(exHero, scale)
+  const cryptsNorm = cryptsNormAt(exHero, emc, scale)
+  const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(totalNorm))
+    .replace('{crypts}', fmt(cryptsNorm)).replace('{emcpts}', fmt(Math.max(0, totalNorm - cryptsNorm))).replace('{emc}', emcTotal)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
   const summaryNode = summary
 

@@ -309,6 +309,13 @@ async def use_credit(req: UseCreditsRequest, db: AsyncSession = Depends(get_db))
     Атомарный UPDATE: credits = credits - cost WHERE credits >= cost.
     Исключает race condition без SELECT FOR UPDATE.
     """
+    # Цена — только из таблицы CREDIT_COST. Раньше для неизвестного hunt_type бралась сумма из запроса, и
+    # отрицательная сумма НАЧИСЛЯЛА алмазы (аудит 2026-10-23). Проверка стоит до rate limit: мусорные типы
+    # не должны раздувать таблицу ограничений.
+    cost = CREDIT_COST.get(req.hunt_type)
+    if cost is None:
+        raise HTTPException(status_code=400, detail="Unknown hunt_type")
+
     # Rate limit: один расход на HWID+тип раз в 2 сек — защита от retry-шторма.
     # Ключ включает hunt_type: если вдруг за 2 с найдены склеп И биржа — оба проходят.
     now = _time.monotonic()
@@ -316,8 +323,6 @@ async def use_credit(req: UseCreditsRequest, db: AsyncSession = Depends(get_db))
     if now - _credit_ratelimit.get(rl_key, 0.0) < _CREDIT_COOLDOWN_SEC:
         raise HTTPException(status_code=429, detail="Too many requests")
     _credit_ratelimit[rl_key] = now
-
-    cost = CREDIT_COST.get(req.hunt_type, req.amount)
 
     async with db.begin():
         # Одна атомарная операция — читаем и списываем одновременно
