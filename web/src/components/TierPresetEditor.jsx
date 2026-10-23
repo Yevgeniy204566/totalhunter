@@ -15,7 +15,7 @@ const TXT = {
     quotas: 'Квоты за 2 недели', norm: 'Очки', epic: 'Эпик-склепы (минимум)', emc: 'EMC, штук',
     groupCrypts: 'Склепы и цитадели', groupEmc: 'Эпические монстры (EMC)',
     points: 'Очки за сундук', less: 'Меньше', more: 'Больше', remove: 'Убрать сундук из пресета',
-    add: '+ Добавить сундук', addPick: 'Выберите сундук', addPoints: 'очки', addOk: 'Добавить', addCancel: 'Отмена',
+    add: '+ Добавить сундук', addPick: 'Выберите сундук', addNone: 'Все сундуки уже в пресете', addPoints: 'очки', addOk: 'Добавить', addCancel: 'Отмена',
     load: 'Загрузить в пульт', reset: 'Сбросить к общему', edited: 'изменено',
     loaded: 'Пресет {n} загружен в пульт, изменено типов: {c}. Проверьте значения и нажмите «Сохранить настройки».',
     info: 'Как это работает',
@@ -23,7 +23,7 @@ const TXT = {
     emcData: 'EMC Берсерков за 2 недели — штуки: среднее по клану ({n} игроков) = Undead {u} + Arachna {a} + Shadow City {s}. Hydra в замере нет.',
     emcSum: 'EMC за 2 недели (сумма трёх колонок)',
     help: [
-      'Очки за сундук и квоты — это ваш вариант пресета ступени. Кнопки − и + меняют очки на 5, «×» убирает сундук из пресета, «+ Добавить сундук» возвращает убранный или добавляет новый. Изменённое выделено жёлтой рамкой.',
+      'Очки за сундук и квоты — это ваш вариант пресета ступени. Кнопки − и + меняют очки на 1, «×» убирает сундук из пресета, «+ Добавить сундук» возвращает убранный или добавляет новый. Изменённое выделено жёлтой рамкой.',
       '«Загрузить в пульт» ставит очки за сундук из пресета для ступеней Героя, отмеченных в пульте выше («Все уровни» — на все): пульт сам подбирает множитель, чтобы при примерном Герое очки равнялись пресетным. Затрагиваются только типы из «Учёта» клана.',
       'Правки в редакторе сохраняются кнопкой «Сохранить настройки» выше.',
     ],
@@ -37,7 +37,7 @@ const TXT = {
     quotas: '2-week quotas', norm: 'Points', epic: 'Epic crypts (minimum)', emc: 'EMC, pcs',
     groupCrypts: 'Crypts and citadels', groupEmc: 'Epic monsters (EMC)',
     points: 'Points per chest', less: 'Less', more: 'More', remove: 'Remove chest from preset',
-    add: '+ Add chest', addPick: 'Pick a chest', addPoints: 'points', addOk: 'Add', addCancel: 'Cancel',
+    add: '+ Add chest', addPick: 'Pick a chest', addNone: 'All chests are already in the preset', addPoints: 'points', addOk: 'Add', addCancel: 'Cancel',
     load: 'Load into mixer', reset: 'Reset to shared', edited: 'edited',
     loaded: "Preset {n} loaded into the mixer, types changed: {c}. Check the values and press 'Save settings'.",
     info: 'How it works',
@@ -45,7 +45,7 @@ const TXT = {
     emcData: 'Berserki EMC per 2 weeks, pieces: clan average ({n} players) = Undead {u} + Arachna {a} + Shadow City {s}. No Hydra in the sample.',
     emcSum: 'EMC per 2 weeks (sum of three columns)',
     help: [
-      "Points per chest and the quotas are your version of the tier preset. The − and + buttons change points by 5, '×' removes a chest from the preset, '+ Add chest' brings back a removed one or adds a new one. Edited items have a yellow frame.",
+      "Points per chest and the quotas are your version of the tier preset. The − and + buttons change points by 1, '×' removes a chest from the preset, '+ Add chest' brings back a removed one or adds a new one. Edited items have a yellow frame.",
       "'Load into mixer' sets points per chest from the preset for the Hero steps ticked in the mixer above ('All levels' = every step): the mixer picks a multiplier so that at the sample Hero the points equal the preset's. Only types the clan keeps in accounting are affected.",
       "Press 'Save settings' above to keep the editor changes.",
     ],
@@ -57,7 +57,7 @@ const TXT = {
 }
 
 const TIERS = ['T5', 'T6', 'T7', 'T8', 'T9']
-const STEP = 5 // очки за сундук в шкале кратны 5
+const STEP = 1 // шаг кнопок ± (владелец 2026-10-23: по 1, а не по 5)
 
 // Основа ступеней (владелец 2026-10-23): T9 — Берсерки (Герой 450 в среднем), T8 — ЭДО (387.5), T7 — Феникс (298),
 // T6 — Старт (279). Очки за сундук лежат в общих пресетах сервера. Квоты по умолчанию: «стена» — записанное число
@@ -102,12 +102,12 @@ function stats(col) {
   return { median, mean: Math.round(v.reduce((a, b) => a + b, 0) / v.length), max: v[v.length - 1] }
 }
 
-export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, onPersonal, onLoad, catalogIds = [] }) {
+export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, onPersonal, onLoad, catalogItems = [] }) {
   const t = TXT[lang] || TXT.ru
   const names = TIERS.filter(n => clanPresets?.[n])
   const [tier, setTier] = useState('')
   const [note, setNote] = useState('')
-  const [adding, setAdding] = useState(null) // { group, id, points }
+  const [adding, setAdding] = useState(null) // { id, points }
   if (!names.length) return null
   const cur = names.includes(tier) ? tier : names[names.length - 1]
   const base = clanPresets[cur]
@@ -175,8 +175,10 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
   ]
   // что можно добавить в группу: известные типы, которых сейчас нет в пресете
   const present = new Set(list.map(x => x.id))
-  const everyId = [...new Set([...catalogIds, ...Object.values(clanPresets).flat().map(x => x.catalog_id)])]
-  const addable = gid => everyId.filter(id => !present.has(id) && isCrypt(id) === (gid === 'crypts')).sort()
+  // все сундуки клана из вкладки «Сундуки» + типы общих пресетов; уже стоящие в пресете не предлагаем
+  const labels = new Map(catalogItems.map(x => [x.id, x.label || x.id]))
+  for (const x of Object.values(clanPresets).flat()) if (!labels.has(x.catalog_id)) labels.set(x.catalog_id, x.catalog_id)
+  const addable = [...labels].filter(([id]) => !present.has(id)).sort((a, b) => a[1].localeCompare(b[1]))
 
   return (
     <section className="pult-card">
@@ -242,22 +244,23 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
               )
             })}
           </div>
-          {adding?.group === gid ? (
-            <div className="pult-add">
-              <select className="input-dark" value={adding.id} onChange={e => setAdding({ ...adding, id: e.target.value })}>
-                <option value="">{t.addPick}</option>
-                {addable(gid).map(id => <option key={id} value={id}>{id}</option>)}
-              </select>
-              <input className="input-dark pult-num" inputMode="decimal" placeholder={t.addPoints} value={adding.points}
-                onChange={e => setAdding({ ...adding, points: e.target.value })} />
-              <button type="button" className="chest-pill-btn" disabled={!adding.id} onClick={addChest}>{t.addOk}</button>
-              <button type="button" className="pult-link-btn" onClick={() => setAdding(null)}>{t.addCancel}</button>
-            </div>
-          ) : (
-            <button type="button" className="pult-link-btn" onClick={() => setAdding({ group: gid, id: '', points: '' })}>{t.add}</button>
-          )}
         </div>
       ))}
+
+      {adding ? (
+        <div className="pult-add">
+          <select className="input-dark" value={adding.id} onChange={e => setAdding({ ...adding, id: e.target.value })}>
+            <option value="">{addable.length ? t.addPick : t.addNone}</option>
+            {addable.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
+          <input className="input-dark pult-num" inputMode="decimal" placeholder={t.addPoints} value={adding.points}
+            onChange={e => setAdding({ ...adding, points: e.target.value })} />
+          <button type="button" className="chest-pill-btn" disabled={!adding.id} onClick={addChest}>{t.addOk}</button>
+          <button type="button" className="pult-link-btn" onClick={() => setAdding(null)}>{t.addCancel}</button>
+        </div>
+      ) : (
+        <button type="button" className="chest-pill-btn pult-add-btn" onClick={() => setAdding({ id: '', points: '' })}>{t.add}</button>
+      )}
 
       <details className="pult-note">
         <summary>{t.info}</summary>

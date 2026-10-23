@@ -150,7 +150,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
   )
 }
 
-export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], dirty = false, clanPresets = null }) {
+export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], allChestTypes = null, dirty = false, clanPresets = null }) {
   const t = TXT[lang] || TXT.ru
   const [tab, setTab] = useState('crypts')
   const [mode, setMode] = useState('points')
@@ -349,6 +349,11 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
     .replace('{crypts}', fmt(cryptsNormAt(exHero, emc, scale))).replace('{emc}', emcTotal)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
+  // «Герой 400» в сводке выделяем: это уровень, для которого посчитаны все числа ниже
+  const [summaryHead, ...summaryTail] = summary.split(': ')
+  const summaryNode = summaryTail.length
+    ? <><b className="pult-hero-num">{summaryHead}</b>: {summaryTail.join(': ')}</>
+    : summary
 
   return (
     <div className="mixer">
@@ -438,8 +443,20 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         </div>
       </div>
 
-      <section className="pult-card">
-        <div className="pult-summary">{summary}</div>
+      <section className="pult-card pult-card--main">
+        <div className="pult-hero">
+          <span className="pult-hero-label">{t.hero}</span>
+          {isAll ? (
+            <input className="input-dark pult-hero-input" type="number" min={100} max={600} value={sample}
+              aria-label={t.sample} onChange={e => setSample(e.target.value)} />
+          ) : (
+            <>
+              <b className="pult-hero-badge">{editing}</b>
+              <button type="button" className="pult-link-btn" onClick={() => setSel(new Set(['all']))}>{t.allLevels}</button>
+            </>
+          )}
+        </div>
+        <div className="pult-summary">{summaryNode}</div>
         <div className="pult-actions">
           <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
           <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
@@ -464,7 +481,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
       <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal}
         onLoad={loadClanPreset}
-        catalogIds={[...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)]} />
+        catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
     </div>
   )
 }

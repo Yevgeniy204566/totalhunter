@@ -843,7 +843,14 @@ a:hover { color: var(--on-surface); }
 .pult-card { border: 1px solid var(--outline); border-radius: 14px; background: var(--card); padding: 18px 20px; margin: 18px 0; }
 .pult-card h3 { font-size: 18px; margin: 0 0 12px; color: var(--on-surface); }
 .pult-card-head { display: flex; align-items: center; gap: 12px; }
-.pult-summary { font-size: 17px; line-height: 1.5; margin-bottom: 12px; color: var(--on-surface); }
+.pult-summary { font-size: 18px; line-height: 1.5; margin-bottom: 12px; color: var(--on-surface); }
+.pult-card--main { border: 2px solid var(--accent); background: var(--accent-faint); box-shadow: 0 0 22px var(--accent-glow); }
+.pult-hero { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.pult-hero-label { font-size: 16px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+.pult-hero-input { width: 110px; font-size: 22px; font-weight: 800; color: #FFFFFF; text-align: center; padding: 8px 6px; border-color: var(--accent); }
+.pult-hero-badge { font-size: 20px; color: #FFFFFF; background: var(--accent); border-radius: 999px; padding: 6px 16px; }
+.pult-hero-num { font-size: 22px; font-weight: 800; color: #FFFFFF; background: var(--accent); border-radius: 8px; padding: 2px 10px; }
+.pult-add-btn { margin-top: 16px; }
 .pult-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pult-select { width: 200px; }
 .pult-name { width: 200px; }

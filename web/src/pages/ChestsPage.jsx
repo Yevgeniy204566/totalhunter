@@ -93,6 +93,18 @@ function mixerTypes(rows) {
   return out
 }
 
+// Все типы сундуков клана для кнопки «+ Добавить сундук» в редакторе пресета: полный каталог клана
+// (catalog_options, включая «Свои типы») и все строки вкладки «Сундуки», не только те, что в учёте.
+function allChestTypes(rows, catalogOptions) {
+  const out = new Map()
+  for (const o of catalogOptions || []) if (o.catalog_id) out.set(o.catalog_id, o.label || o.catalog_id)
+  for (const r of rows) {
+    if (!r.catalog_id) continue
+    out.set(r.catalog_id, r.custom_name ? `${r.custom_name} (${r.catalog_id})` : (out.get(r.catalog_id) || r.catalog_id))
+  }
+  return [...out].map(([id, label]) => ({ id, label }))
+}
+
 // Подпись настроек пульта (персонализация + рычаги EMC + названия/цели квот) для индикатора «не сохранено»
 const mixerSig = s => JSON.stringify([s?.personal, (s?.quotas || []).map(q => [q.slot, q.name, String(q.target ?? ''), q.emc])])
 
@@ -997,6 +1009,7 @@ export default function ChestsPage() {
               quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
               onQuotas={q => updateSeasonField(collector.slug, 'quotas', q)}
               types={mixerTypes(rowsByCollector[collector.slug] || [], collector.catalog_options)}
+              allChestTypes={allChestTypes(rowsByCollector[collector.slug] || [], collector.catalog_options)}
               clanPresets={presets}
               dirty={mixerSig(seasonByCollector[collector.slug]) !== savedSigByCollector[collector.slug]}
               onSave={p => saveSeason(collector.slug, undefined, p)} />
