@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { normAt, epicRefAt } from '../lib/heroQuota.js'
+import { normAt } from '../lib/heroQuota.js'
 import { BERSERK_COLUMNS, BERSERK_ROWS } from '../lib/berserkActivity.js'
 
 // Редактор пресетов T5–T9 в «Пульте» (владелец 2026-10-23): очки за сундук (общий пресет сервера + правки клана),
@@ -9,29 +9,31 @@ import { BERSERK_COLUMNS, BERSERK_ROWS } from '../lib/berserkActivity.js'
 const TXT = {
   ru: {
     title: 'Редактор пресетов T5–T9',
-    hint: 'Правьте очки за сундук, норму очков за 2 недели и ожидаемое число эпик-склепов. Пустое поле = значение общего пресета. После правок нажмите «Сохранить настройки» выше.',
-    tier: 'Пресет', chest: 'Сундук', points: 'Очки', norm: 'Норма очков за 2 недели', epic: 'Ожидаемо эпик-склепов',
+    hint: 'Правьте очки за сундук и квоты за 2 недели: очки, эпик-склепы, EMC. Пустое поле = значение общего пресета. После правок нажмите «Сохранить настройки» выше.',
+    tier: 'Пресет', chest: 'Сундук', points: 'Очки', norm: 'Норма очков за 2 недели', epic: 'Эпик-склепов (минимум)', emc: 'EMC, штук',
     reset: 'Сбросить пресет к общему', load: 'Загрузить в пульт',
     loaded: 'Пресет {n} загружен в пульт. Проверьте значения и нажмите «Сохранить настройки».',
     defNorm: 'Справка: шкала для Героя 413 — норма {v} очков.', edited: 'изменено',
     statTitle: 'Замер активности клана Берсерки (T9), 2 недели, {n} игроков',
-    col: 'Столбец', median: 'Медиана', mean: 'Среднее', max: 'Максимум', reach: 'Эпик-склепов не меньше ожидаемого',
-    statHint: 'Данные без имён. Ожидаемое число берётся из поля выбранного пресета (если пусто — из шкалы).',
+    col: 'Столбец', median: 'Медиана', mean: 'Среднее', max: 'Максимум', reach: 'Выполнили минимум эпик-склепов',
+    statHint: 'Данные без имён. Минимум берётся из поля выбранного пресета (если пусто — из шкалы).',
   },
   en: {
     title: 'T5–T9 preset editor',
-    hint: "Edit points per chest, the 2-week points norm and expected epic crypts. Empty = shared preset value. Press 'Save settings' above afterwards.",
-    tier: 'Preset', chest: 'Chest', points: 'Points', norm: '2-week points norm', epic: 'Expected epic crypts',
+    hint: "Edit points per chest and the 2-week quotas: points, epic crypts, EMC. Empty = shared preset value. Press 'Save settings' above afterwards.",
+    tier: 'Preset', chest: 'Chest', points: 'Points', norm: '2-week points norm', epic: 'Epic crypts (minimum)', emc: 'EMC, pcs',
     reset: 'Reset preset to shared', load: 'Load into mixer',
     loaded: "Preset {n} loaded into the mixer. Check the values and press 'Save settings'.",
     defNorm: 'Reference: the scale at Hero 413 gives a norm of {v} points.', edited: 'edited',
     statTitle: 'Activity sample, clan Berserki (T9), 2 weeks, {n} players',
-    col: 'Column', median: 'Median', mean: 'Mean', max: 'Max', reach: 'Players at or above expected epic crypts',
-    statHint: 'No names. The expected number comes from the chosen preset field (scale value if empty).',
+    col: 'Column', median: 'Median', mean: 'Mean', max: 'Max', reach: 'Players at or above the epic crypts minimum',
+    statHint: 'No names. The minimum comes from the chosen preset field (scale value if empty).',
   },
 }
 
 const TIERS = ['T5', 'T6', 'T7', 'T8', 'T9']
+// Квоты по умолчанию (владелец 2026-10-23): Берсерки, T9 — не меньше 300 эпик-склепов 30/35 и 25 000 очков за 2 недели.
+// Для T5–T8 и EMC данных нет — поля пустые.
 const fmt = n => Number(n).toLocaleString('ru-RU')
 const num = v => (v === '' || v == null ? null : Math.max(0, Number(String(v).replace(',', '.')) || 0))
 
@@ -70,10 +72,11 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
   const load = () => { onLoad(cur, items); setNote(t.loaded.replace('{n}', cur)) }
 
   // справка по шкале есть только для T9 (Берсерки, Герой 413); для T5–T8 данных нет — поля пустые
-  const refNorm = cur === 'T9' ? normAt(413) : null
-  const refEpic = cur === 'T9' ? epicRefAt(413) : null
-  const epicWant = own.epic ?? refEpic
-  const edited = Object.keys(own.points || {}).length > 0 || own.norm != null || own.epic != null
+  const scaleNorm = cur === 'T9' ? normAt(413) : null
+  const defNorm = cur === 'T9' ? 25000 : null
+  const defEpic = cur === 'T9' ? 300 : null
+  const epicWant = own.epic ?? defEpic
+  const edited = Object.keys(own.points || {}).length > 0 || own.norm != null || own.epic != null || own.emc != null
 
   return (
     <div className="tier-presets">
@@ -92,15 +95,19 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
 
       <div className="mixer-presets">
         <label>{t.norm}{' '}
-          <input className="input-dark" inputMode="decimal" value={own.norm ?? ''} placeholder={refNorm ?? '—'}
+          <input className="input-dark" inputMode="decimal" value={own.norm ?? ''} placeholder={defNorm ?? '—'}
             onChange={e => setOwn({ norm: num(e.target.value) })} />
         </label>
         <label>{t.epic}{' '}
-          <input className="input-dark" inputMode="decimal" value={own.epic ?? ''} placeholder={refEpic ?? '—'}
+          <input className="input-dark" inputMode="decimal" value={own.epic ?? ''} placeholder={defEpic ?? '—'}
             onChange={e => setOwn({ epic: num(e.target.value) })} />
         </label>
+        <label>{t.emc}{' '}
+          <input className="input-dark" inputMode="decimal" value={own.emc ?? ''} placeholder="—"
+            onChange={e => setOwn({ emc: num(e.target.value) })} />
+        </label>
       </div>
-      {refNorm != null && <p className="emc-text"><small>{t.defNorm.replace('{v}', fmt(refNorm))}</small></p>}
+      {scaleNorm != null && <p className="emc-text"><small>{t.defNorm.replace('{v}', fmt(scaleNorm))}</small></p>}
 
       <table className="tier-presets-table">
         <thead><tr><th>{t.chest}</th><th>{t.points}</th></tr></thead>
