@@ -163,3 +163,19 @@ async def test_all_or_nothing_is_kept_when_credits_are_short(db_session):
     col = (await db_session.execute(select(ChestCollector).where(ChestCollector.user_id == user.id))).scalar_one_or_none()
     if col is not None:
         assert (await db_session.execute(select(Chest).where(Chest.collector_id == col.id))).first() is None
+
+
+@pytest.mark.asyncio
+async def test_clock_shift_of_one_hour_stays_inside_the_range(db_session):
+    """Переход зимнее/летнее время: метки смещаются на ±1 час. Запись на час раньше/позже границ батча
+    всё ещё читается (запас 24 ч), поэтому ложных «новых» из-за сдвига часов не появляется."""
+    user = await _create_user(db_session, "range0000000009", credits=100)
+    await db_session.commit()
+    await _post(_payload(user.hwid, items=[_item("2026-10-25T01:30:00", "Dst"), _item("2026-10-25T03:30:00", "Dst2")]))
+    col = await _collector(db_session, user)
+    lo, hi = chests_module._batch_range([type("I", (), {"timestamp": "2026-10-25T02:30:00"})()])
+    keys = await chests_module._load_existing_keys(col.id, db_session, lo, hi)
+    assert len(keys) == 2                                  # обе записи в ±1 час от метки батча найдены
+    # повтор того же батча после перевода часов (метки те же) — по-прежнему дубли
+    again = await _post(_payload(user.hwid, items=[_item("2026-10-25T01:30:00", "Dst"), _item("2026-10-25T03:30:00", "Dst2")]))
+    assert again.json()["count"] == 0
