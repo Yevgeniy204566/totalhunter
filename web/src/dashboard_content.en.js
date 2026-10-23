@@ -65,6 +65,8 @@ export const DASHBOARD = {
     loadPresetBtn: 'Load Preset',
     presetLoaded: 'Preset applied — remember to save',
     chestsTab: 'Chests',
+    modeClanTitle: 'Clan-wide norms', modeClanSub: 'Quick setup',
+    modePersonalTitle: 'Personal player norms', modePersonalSub: 'Norms by Hero',
     playersTab: 'Players',
     historyTab: 'History',
     mixerTab: 'Mixer',

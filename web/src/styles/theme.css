@@ -852,6 +852,21 @@ a:hover { color: var(--on-surface); }
 .mixer-band--touched { background: rgba(251, 191, 36, 0.18); border-radius: 6px; color: #fbbf24; }
 .mixer-touched-mark { font-size: 13px; color: #fbbf24; font-weight: 600; }
 .pult-add-btn { margin-top: 16px; }
+
+/* Переключатель способа настройки норм: «Общие нормы клана / Быстрая настройка» и «Личные нормы игроков / Нормы по Героям» */
+.mode-switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--outline); border-radius: 16px; overflow: hidden;
+  background: var(--card); margin: 4px 0 16px; }
+.mode-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 12px; border: none; background: transparent;
+  color: var(--on-surface2); font-family: inherit; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.mode-btn + .mode-btn { border-left: 1px solid var(--outline); }
+.mode-btn:hover { background: var(--accent-faint); color: var(--on-surface); }
+.mode-btn--active, .mode-btn--active:hover { background: var(--accent); color: #FFFFFF; }
+.mode-btn-title { font-size: 19px; font-weight: 700; line-height: 1.25; }
+.mode-btn-sub { font-size: 15px; opacity: 0.85; }
+@media (max-width: 560px) {
+  .mode-switch { grid-template-columns: 1fr; }
+  .mode-btn + .mode-btn { border-left: none; border-top: 1px solid var(--outline); }
+}
 .pult-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pult-select { width: 200px; }
 .pult-name { width: 200px; }

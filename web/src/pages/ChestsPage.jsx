@@ -687,14 +687,21 @@ export default function ChestsPage() {
             </div>
           </div>}
 
-          <div className="chest-tabs chest-tabs--pill">
-            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'chests' ? 'chest-tab--active' : ''}`}
-              onClick={() => setTab(collector.slug, 'chests')}>{cx.chestsTab}</button>
-            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'mixer' ? 'chest-tab--active' : ''}`}
-              onClick={() => setTab(collector.slug, 'mixer')}>{cx.mixerTab}</button>
-            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
+          {/* Два способа настроить нормы — переключатель; «Игроки» и «История» — отдельные вкладки ниже (владелец 2026-10-23) */}
+          <div className="mode-switch" role="tablist">
+            {[['chests', cx.modeClanTitle, cx.modeClanSub], ['mixer', cx.modePersonalTitle, cx.modePersonalSub]].map(([id, title, sub]) => (
+              <button key={id} type="button" role="tab" aria-selected={activeTab(collector.slug) === id}
+                className={`mode-btn ${activeTab(collector.slug) === id ? 'mode-btn--active' : ''}`}
+                onClick={() => setTab(collector.slug, id)}>
+                <span className="mode-btn-title">{title}</span>
+                <span className="mode-btn-sub">{sub}</span>
+              </button>
+            ))}
+          </div>
+          <div className="chest-tabs">
+            <button className={`chest-tab ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'players')}>{cx.playersTab}</button>
-            <button className={`chest-tab chest-tab--pill ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
+            <button className={`chest-tab ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'history')}>{cx.historyTab}</button>
           </div>
 

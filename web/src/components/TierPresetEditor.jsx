@@ -175,7 +175,7 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
   ]
   // что можно добавить в группу: известные типы, которых сейчас нет в пресете
   const present = new Set(list.map(x => x.id))
-  // все сундуки клана из вкладки «Сундуки» + типы общих пресетов; уже стоящие в пресете не предлагаем
+  // все сундуки клана из вкладки «Общие нормы клана» + типы общих пресетов; уже стоящие в пресете не предлагаем
   const labels = new Map(catalogItems.map(x => [x.id, x.label || x.id]))
   for (const x of Object.values(clanPresets).flat()) if (!labels.has(x.catalog_id)) labels.set(x.catalog_id, x.catalog_id)
   const addable = [...labels].filter(([id]) => !present.has(id)).sort((a, b) => a[1].localeCompare(b[1]))
