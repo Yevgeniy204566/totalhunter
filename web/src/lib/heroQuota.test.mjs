@@ -64,12 +64,23 @@ test('неизвестный тип сундука — нет веса шкал�
   assert.equal(w('Some New Chest', 300), null)
 })
 
-test('общая норма: опоры Старта, ЭДО и Берсерков (Герой 450, 25 000) — факт, Сарацины — расчёт', () => {
+test('общая норма: кривая проходит ровно через стены Старта, ЭДО и Берсерков (Герой 450, 25 000)', () => {
   assert.equal(normAt(279), 5000)
   assert.equal(normAt(387.5), 14000)
-  assert.equal(normAt(213.5), 4000)
   assert.equal(normAt(450), 25000)
-  assert.equal(normAt(413), 18500) // между ЭДО и Берсерками линейно
+})
+
+test('общая норма гладкая: рост на каждые 10 уровней Героя почти постоянный (≈×1.10), без изломов в стыках', () => {
+  for (let h = 230; h <= 450; h += 10) { // ниже норма в тысячах — округление до сотен даёт шум в процентах
+    const k = normAt(h) / normAt(h - 10)
+    assert.ok(k > 1.06 && k < 1.14, `@${h}: ×${k.toFixed(3)}`) // запас на округление до сотен
+  }
+  // нет скачка наклона на опорах: рост до и после стыка отличается меньше, чем на округление
+  for (const h of [279, 387.5, 450]) {
+    const before = normAt(h) / normAt(h - 20)
+    const after = normAt(h + 20) / normAt(h)
+    assert.ok(Math.abs(after - before) < 0.06, `@${h}: ×${before.toFixed(3)} → ×${after.toFixed(3)}`)
+  }
 })
 
 test('общая норма на всём диапазоне 100–600: растёт с уровнем, положительна, кратна 100, без обрезки', () => {
@@ -99,12 +110,16 @@ test('множители зажимаются в 0.01…1000', () => {
   assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99999 }), 14000000)
 })
 
-test('ориентир по эпикам: опоры 50 / 200 / 40, выше 388 привязан к норме в очках', () => {
+test('ориентир по эпикам: проходит через стены 50 / 200 / 300, монотонно растёт на всём диапазоне', () => {
   assert.equal(epicRefAt(279), 50)
   assert.equal(epicRefAt(387.5), 200)
-  assert.equal(epicRefAt(213.5), 40)
   assert.equal(epicRefAt(450), 300) // Берсерки: 300 эпик-склепов на Герое 450
-  assert.equal(epicRefAt(413), 241)
+  let prev = -1
+  for (let h = 100; h <= 600; h += 10) {
+    const e = epicRefAt(h)
+    assert.ok(e >= prev, `@${h}: ${e} < ${prev}`)
+    prev = e
+  }
 })
 
 test('weightKey: цитадели Cursed/Elven делят общую строку', () => {
@@ -159,11 +174,11 @@ test('цель Crypts не уходит ниже нуля', () => {
   assert.equal(cryptsNormAt(100, undefined, { ...DEFAULT_SETTINGS, norm: 0.1 }) >= 0, true)
 })
 
-test('края диапазона: 100 и 600 заданы продолжением наклона крайних отрезков', () => {
-  assert.equal(normAt(100), 2300)
-  assert.equal(normAt(600), 51400) // наклон отрезка ЭДО→Берсерки (176 очков на уровень) продолжается
-  assert.equal(epicRefAt(100), 23)
-  assert.equal(epicRefAt(600), 617) // выше 450 цель растёт вместе с нормой
+test('края диапазона: ниже Старта — та же экспонента, выше Берсерков — прямая с тем же наклоном', () => {
+  assert.equal(normAt(100), 900)
+  assert.equal(normAt(600), 59500)
+  assert.equal(epicRefAt(100), 7)
+  assert.equal(epicRefAt(600), 714) // выше 450 цель растёт вместе с нормой
 })
 
 // ---- пульт: фейдеры по типам и ступеням Героя ----
@@ -271,10 +286,10 @@ test('тип вне шкалы: очки клана × фейдер, mute обн
   assert.equal(scoreOf({ 'Тыква': 3 }, meta, 300, off).score, 0)
 })
 
-test('итоговая норма эпик-склепов: ЭДО ≥ 200, Берсерки 450 → 300, Герой 456 → 313, а не доля типа', () => {
+test('итоговая норма эпик-склепов: ЭДО ≥ 200, Берсерки 450 → 300, Герой 456 → 317, а не доля типа', () => {
   assert.equal(epicCountTotal(387.5), 200)
   assert.equal(epicCountTotal(450), 300)
-  assert.equal(epicCountTotal(456), 313)
+  assert.equal(epicCountTotal(456), 317)
   assert.ok(epicCountTotal(400) >= 200)
   assert.equal(epicCountTotal(279), 50)
 })
@@ -294,12 +309,12 @@ test('эпик-склепы игрока: суммируются по id тип�
   assert.equal(epicCryptsOf({ 'Эпик 35': 10, 'Эпик 25': 5, 'Редкий 30': 40, Hydra: 7 }, meta), 15)
 })
 
-test('согласованность по всей шкале: очки эпиков держатся около нормы (80–106%: у Старта 81%, у ЭДО 102%) на уровнях 100–600', () => {
+test('согласованность по всей шкале: очки эпиков держатся около нормы (75–110%: у Старта 81%, у ЭДО 102%, у Берсерков 86%) на уровнях 100–600', () => {
   const ids = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
-  for (let h = 100; h <= 600; h += 10) {
+  for (let h = 150; h <= 600; h += 10) { // ниже 150 штуки эпиков в единицах — округление по типам дробит процент
     const pts = ids.reduce((sum, id) => sum + countAt(id, h) * weightAt(id, h), 0)
     const ratio = pts / normAt(h)
-    assert.ok(ratio > 0.8 && ratio < 1.06, `@${h}: ${(ratio * 100).toFixed(0)}%`)
+    assert.ok(ratio > 0.75 && ratio < 1.1, `@${h}: ${(ratio * 100).toFixed(0)}%`)
   }
 })
 

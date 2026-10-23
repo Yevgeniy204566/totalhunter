@@ -37,11 +37,28 @@ const W = {
   'Epic Hellforge': [[B, 20]],
 }
 
-// Общая норма за 14 дней: Старт 5000, ЭДО 14000 и Берсерки 25000 (на среднем Герое 450) — стены; Сарацины 4000 — расчёт.
-const NORM = [[213.5, 4000], [279, 5000], [E, 14000], [B, 25000]]
-// Ориентир по эпик-склепам: Старт 50, ЭДО 200, Берсерки 300 (на Герое 450) — стены; Сарацины 40 — расчёт.
-// Между опорами линейно; выше Героя 450 цель растёт вместе с нормой в очках (иначе она отстала бы от нормы).
-const EPIC = [[213.5, 40], [279, 50], [E, 200], [B, 300]]
+// Общая норма за 14 дней — стены кланов: Старт (Герой 279) 5000, ЭДО (387.5) 14000, Берсерки (450) 25000.
+// По этим трём точкам норма растёт почти идеальной экспонентой (на уровень Героя ×1.0095 и ×1.0093, то есть вдвое за
+// ~74 уровня), поэтому кривая — парабола в логарифме нормы: ровно через все три стены, без изломов (владелец 2026-10-23:
+// шкала должна быть гладкой от самых слабых кланов до Берсерков). Ниже Старта — продолжение той же экспоненты,
+// выше Берсерков — прямая с тем же наклоном (без взрыва экспоненты в 500–600). Прежняя точка «Сарацины 4000» была
+// моим расчётом, не стеной — её заменила сама кривая.
+const NORM_LOW = 279
+const NORM_Y = [5000, 14000, 25000].map(Math.log)
+const NORM_F01 = (NORM_Y[1] - NORM_Y[0]) / (E - NORM_LOW)
+const NORM_F12 = (NORM_Y[2] - NORM_Y[1]) / (B - E)
+const NORM_C = (NORM_F12 - NORM_F01) / (B - NORM_LOW)
+const lnNorm = h => NORM_Y[0] + NORM_F01 * (h - NORM_LOW) + NORM_C * (h - NORM_LOW) * (h - E)
+const lnNormSlope = h => NORM_F01 + NORM_C * (2 * h - NORM_LOW - E)
+function normBase(h) {
+  if (h < NORM_LOW) return 5000 * Math.exp(lnNormSlope(NORM_LOW) * (h - NORM_LOW))
+  if (h > B) return 25000 * (1 + lnNormSlope(B) * (h - B))
+  return Math.exp(lnNorm(h))
+}
+
+// Ориентир по эпик-склепам — стены: Старт 50, ЭДО 200, Берсерки 300 (на Герое 450). Между стенами — гладкая кубическая
+// кривая (монотонная, с общими касательными в стыках); ниже Старта и выше Берсерков цель идёт вместе с нормой в очках.
+const EPIC_WALLS = [[NORM_LOW, 50], [E, 200], [B, 300]]
 
 export const HERO_LEVELS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 export const DEFAULT_SETTINGS = { norm: 1, weights: 1, ranges: [] }
@@ -74,12 +91,47 @@ export function weightKey(id) {
   return String(id || '').replace(/^(Cursed|Elven) Citadel /, 'Citadel ')
 }
 
+// Монотонная кубическая интерполяция (PCHIP) через опорные точки клана: без изломов в стыках и без выбросов за значения
+// стен. Для двух точек — просто прямая.
+function smoothLerp(points, h) {
+  const n = points.length
+  if (n < 3) return lerp(points, h)
+  if (h >= points[n - 1][0]) return points[n - 1][1]
+  const dx = (i) => points[i + 1][0] - points[i][0]
+  const d = points.slice(0, -1).map((_, i) => (points[i + 1][1] - points[i][1]) / dx(i))
+  const m = new Array(n)
+  for (let i = 1; i < n - 1; i++) {
+    if (d[i - 1] * d[i] <= 0) { m[i] = 0; continue }
+    const w1 = 2 * dx(i) + dx(i - 1)
+    const w2 = dx(i) + 2 * dx(i - 1)
+    m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+  }
+  const edge = (h0, h1, d0, d1) => {
+    const v = ((2 * h0 + h1) * d0 - h0 * d1) / (h0 + h1)
+    if (v * d0 <= 0) return 0
+    return d0 * d1 <= 0 && Math.abs(v) > 3 * Math.abs(d0) ? 3 * d0 : v
+  }
+  m[0] = edge(dx(0), dx(1), d[0], d[1])
+  m[n - 1] = edge(dx(n - 2), dx(n - 3), d[n - 2], d[n - 3])
+  for (let i = 0; i < n - 1; i++) {
+    if (h >= points[i][0] && h <= points[i + 1][0]) {
+      const [x0, y0] = points[i]
+      const [x1, y1] = points[i + 1]
+      const t = (h - x0) / (x1 - x0)
+      const t2 = t * t
+      const t3 = t2 * t
+      return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * (x1 - x0) * m[i] + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * (x1 - x0) * m[i + 1]
+    }
+  }
+  return null
+}
+
 function baseWeight(key, h) {
   const pts = W[key]
   if (!pts) return null
   const [x0, y0] = pts[0]
   if (h < x0) return y0 * g(h) / g(x0)
-  return lerp(pts, h)
+  return smoothLerp(pts, h)
 }
 
 // Фейдер пульта на тип: «все уровни» × ступень Героя; on === false — тип не считается (mute).
@@ -100,22 +152,8 @@ function rangeK(hero, ranges) {
   return r ? clampMultiplier(r.k) : 1
 }
 
-function curve(points, h) {
-  const [x0, y0] = points[0]
-  if (h >= x0) {
-    if (h > points[points.length - 1][0]) {
-      const [xa, ya] = points[points.length - 2]
-      const [xb, yb] = points[points.length - 1]
-      return yb + (h - xb) * (yb - ya) / (xb - xa)
-    }
-    return lerp(points, h)
-  }
-  const [x1, y1] = points[1]
-  return y0 - (x0 - h) * (y1 - y0) / (x1 - x0)
-}
-
 export function normAt(hero, settings = DEFAULT_SETTINGS) {
-  const base = curve(NORM, hero) // без обрезки: шкала задана на всём диапазоне 100–600 (владелец 2026-10-20)
+  const base = normBase(hero) // без обрезки: шкала задана на всём диапазоне 100–600 (владелец 2026-10-20)
   return round100(base * rangeK(hero, settings.ranges) * clampMultiplier(settings.norm))
 }
 
@@ -124,11 +162,30 @@ function avgEpicWeight(hero) {
     .reduce((sum, id) => sum + baseWeight(id, hero), 0) / 4
 }
 
+// Кубический Эрмит между двумя точками с заданными касательными
+function hermite(x0, y0, m0, x1, y1, m1, x) {
+  const d = x1 - x0
+  const t = (x - x0) / d
+  const t2 = t * t
+  const t3 = t2 * t
+  return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * d * m0 + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * d * m1
+}
+
 function epicBase(hero) {
-  if (hero <= B) return curve(EPIC, hero)
-  // выше Героя 450 цель растёт вместе с нормой в очках с тем же соотношением «очки эпиков / норма», что у Берсерков
-  const ratio = (curve(EPIC, B) * avgEpicWeight(B)) / curve(NORM, B)
-  return (curve(NORM, hero) * ratio) / avgEpicWeight(hero)
+  const [[xa, ya], [xb, yb], [xc, yc]] = EPIC_WALLS
+  // касательные на краях согласованы с хвостами за пределами стен (там цель пропорциональна норме)
+  const mLeft = ya * lnNormSlope(xa)
+  const mRight = yc * lnNormSlope(xc)
+  // средняя касательная — гармоническое среднее наклонов отрезков (стандартный монотонный PCHIP)
+  const d0 = (yb - ya) / (xb - xa)
+  const d1 = (yc - yb) / (xc - xb)
+  const w1 = 2 * (xc - xb) + (xb - xa)
+  const w2 = (xc - xb) + 2 * (xb - xa)
+  const mMid = (w1 + w2) / (w1 / d0 + w2 / d1)
+  if (hero < xa) return (ya * normBase(hero) * avgEpicWeight(xa)) / (normBase(xa) * avgEpicWeight(hero))
+  if (hero <= xb) return hermite(xa, ya, mLeft, xb, yb, mMid, hero)
+  if (hero <= xc) return hermite(xb, yb, mMid, xc, yc, mRight, hero)
+  return (yc * normBase(hero) * avgEpicWeight(xc)) / (normBase(xc) * avgEpicWeight(hero))
 }
 
 export function epicRefAt(hero, settings = DEFAULT_SETTINGS) {
