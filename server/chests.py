@@ -111,12 +111,36 @@ def _normalize_ts(value) -> datetime:
     return value
 
 
-async def _load_existing_keys(collector_id: int, db: AsyncSession):
+# Запас вокруг диапазона батча: шире любого часового пояса (максимум ±14 ч), чтобы расхождение
+# между _normalize_ts и тем, как драйвер сохраняет naive-время в timestamptz, не выкинуло дубль из выборки.
+IMPORT_RANGE_MARGIN = timedelta(hours=24)
+
+
+def _as_utc(value: datetime) -> datetime:
+    """naive граница — это UTC (так её дала _normalize_ts); aware-значение для timestamptz однозначно."""
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+
+
+def _batch_range(items):
+    """(lo, hi) — самая ранняя и самая поздняя метки батча в naive UTC (та же нормализация, что у ключей
+    дедупликации, поэтому aware и naive формы одного момента дают одну границу), плюс запас."""
+    stamps = [_normalize_ts(item.timestamp) for item in items]
+    return min(stamps) - IMPORT_RANGE_MARGIN, max(stamps) + IMPORT_RANGE_MARGIN
+
+
+async def _load_existing_keys(collector_id: int, db: AsyncSession, lo=None, hi=None):
+    """Ключи уже сохранённых сундуков клана. С lo/hi читает только этот интервал (основной путь импорта);
+    без них — весь реестр (путь повтора после IntegrityError). Три колонки без ORM-объектов:
+    у крупного клана реестр — тысячи строк."""
+    query = select(Chest.sender_raw, Chest.chest_type_raw, Chest.collected_at).where(
+        Chest.collector_id == collector_id)
+    if lo is not None:
+        query = query.where(Chest.collected_at >= _as_utc(lo))
+    if hi is not None:
+        query = query.where(Chest.collected_at <= _as_utc(hi))
     return {
-        (row.sender_raw, row.chest_type_raw, _normalize_ts(row.collected_at))
-        for row in (await db.execute(
-            select(Chest).where(Chest.collector_id == collector_id)
-        )).scalars().all()
+        (sender, chest_type, _normalize_ts(collected_at))
+        for sender, chest_type, collected_at in (await db.execute(query)).all()
     }
 
 
@@ -196,7 +220,8 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
     collector_slug = collector.slug
 
     player_aliases, type_aliases = await _load_aliases(collector_id, db)
-    existing_keys = await _load_existing_keys(collector_id, db)
+    lo, hi = _batch_range(payload.items)
+    existing_keys = await _load_existing_keys(collector_id, db, lo, hi)
     new_items = _dedupe(payload.items, existing_keys)
 
     if not new_items:

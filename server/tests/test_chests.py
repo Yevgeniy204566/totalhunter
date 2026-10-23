@@ -423,11 +423,11 @@ async def test_concurrent_duplicate_recovers_without_500(db_session, monkeypatch
     real_load = chests_module._load_existing_keys
     calls = {"n": 0}
 
-    async def flaky_load(collector_id, db):
+    async def flaky_load(collector_id, db, lo=None, hi=None):
         calls["n"] += 1
         if calls["n"] == 1:
             return set()
-        return await real_load(collector_id, db)
+        return await real_load(collector_id, db, lo, hi)
 
     monkeypatch.setattr(chests_module, "_load_existing_keys", flaky_load)
 
