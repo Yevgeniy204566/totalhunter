@@ -354,6 +354,17 @@ export default function BalancePage() {
         </p>
       </div>
 
+      {/* Платёж зачисляется по совпадению email аккаунта и email оплаты (BlackSea не передаёт наш идентификатор) */}
+      <p style={{
+        maxWidth: 640, margin: '0 auto 24px', padding: '14px 18px', textAlign: 'center',
+        fontSize: 17, fontWeight: 600, lineHeight: 1.4, color: '#FFD166',
+        border: '1px solid rgba(255,209,102,0.4)', borderRadius: 12, background: 'rgba(255,209,102,0.08)',
+      }}>
+        {lang === 'ru'
+          ? 'Оплачивайте тем же email, с которым вы зарегистрированы на сайте.'
+          : 'Pay with the same email you registered with on the site.'}
+      </p>
+
       {/* Package cards */}
       <div style={{
         display: 'flex', gap: 16, flexWrap: 'wrap',

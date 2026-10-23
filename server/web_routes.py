@@ -26,7 +26,8 @@ from sqlalchemy import select, update, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import CrashReport, Feedback, Hunt, HwidHistory, LinkCode, Transaction, User
+from models import (AncientEditor, AncientInviteCode, BlackSeaSale, ChestCollector, ChestManager, CrashReport,
+                    Feedback, Hunt, HwidHistory, LinkCode, Order, Transaction, User)
 from schemas import ChestLinksPayload, GameNickPayload
 from schemas import (
     BasicResponse,
@@ -421,6 +422,34 @@ async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get
 TRIAL_CREDITS    = 300  # как кнопка «Получить 300 попыток» в боте (владелец 2026-09-26)
 REFERRAL_REWARD  = 50
 
+async def _absorb_bot_rows(db: AsyncSession, bot_user: User, web_user: User) -> None:
+    """Переносит на аккаунт сайта ВСЕ строки, ссылающиеся на бот-аккаунт, прежде чем его удалить: иначе внешний
+    ключ рвёт DELETE и привязка отвечает 500 (живой случай 2026-10-23: у бот-аккаунта был ростер сундуков).
+    Ростер сундуков — единица с уникальностью по клану, поэтому при ростерах на обеих сторонах не сливаем
+    молча, а отказываем (409): решать, какой оставить, должен человек."""
+    b, w = bot_user.id, web_user.id
+    if web_user.invited_by_id in (b, w):
+        # после слияния приглашение от самого себя бессмысленно (и ссылалось бы на удаляемую строку)
+        web_user.invited_by_id = None
+    has_bot_roster = (await db.execute(
+        select(ChestCollector.id).where(ChestCollector.user_id == b).limit(1))).first() is not None
+    has_web_roster = (await db.execute(
+        select(ChestCollector.id).where(ChestCollector.user_id == w).limit(1))).first() is not None
+    if has_bot_roster and has_web_roster:
+        raise HTTPException(status_code=409, detail="Both accounts have a chest roster — contact support")
+
+    for model in (HwidHistory, Feedback, Order, BlackSeaSale, ChestCollector):
+        await db.execute(update(model).where(model.user_id == b).values(user_id=w))
+    await db.execute(update(User).where(User.invited_by_id == b).values(invited_by_id=w))
+    await db.execute(update(AncientInviteCode).where(AncientInviteCode.used_by_user_id == b)
+                     .values(used_by_user_id=w))
+    # доступ руководителя/редактора уникален по (ростер, пользователь): повтор у аккаунта сайта не переносим
+    for model in (ChestManager, AncientEditor):
+        have = select(model.collector_id).where(model.user_id == w)
+        await db.execute(model.__table__.delete().where(model.user_id == b, model.collector_id.in_(have)))
+        await db.execute(update(model).where(model.user_id == b).values(user_id=w))
+
+
 @router.post("/link/verify", response_model=BasicResponse)
 async def link_verify(
     req: LinkVerifyRequest,
@@ -469,6 +498,7 @@ async def link_verify(
                 skip_ref_welcome = True
             await db.execute(update(Hunt).where(Hunt.user_id == bot_user.id).values(user_id=web_user.id))
             await db.execute(update(Transaction).where(Transaction.user_id == bot_user.id).values(user_id=web_user.id))
+            await _absorb_bot_rows(db, bot_user, web_user)
             await db.delete(bot_user)
             await db.flush()  # DELETE bot_user до UPDATE web_user.hwid — иначе unique constraint падает
 

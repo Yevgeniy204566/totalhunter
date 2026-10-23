@@ -347,13 +347,15 @@ async def blacksea_webhook(
                      "the verified sale, possible forgery", sale_id, reason)
         return JSONResponse({"status": "ok"})
 
-    uah_amount = Decimal(price_kopecks) / 100
+    uah_amount = Decimal(price_kopecks) / 100  # имя историческое: на деле сумма в валюте товара (USD)
+    currency_raw = form.get("currency")
+    currency = (currency_raw if isinstance(currency_raw, str) and currency_raw else "usd").upper()
 
     if quantity != "1":
         logger.warning("[BLACKSEA] sale %s has quantity=%r — manual review", sale_id, quantity)
         background_tasks.add_task(
             send_manual_review_alert, reason=f"quantity={quantity}",
-            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount),
+            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount), currency=currency,
         )
         return JSONResponse({"status": "ok"})
 
@@ -369,7 +371,7 @@ async def blacksea_webhook(
                        sale["email"], sale_id)
         background_tasks.add_task(
             send_manual_review_alert, reason="email_not_found",
-            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount),
+            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount), currency=currency,
         )
         return JSONResponse({"status": "ok"})
 
@@ -381,7 +383,7 @@ async def blacksea_webhook(
                        user.id, sale["email"], sale_id)
         background_tasks.add_task(
             send_manual_review_alert, reason="user_banned",
-            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount),
+            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount), currency=currency,
         )
         return JSONResponse({"status": "ok"})
 

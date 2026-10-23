@@ -76,7 +76,7 @@ async def send_purchase_alert(
 
 
 async def send_manual_review_alert(
-    *, reason: str, sale_id: str, email: str, uah_amount: str,
+    *, reason: str, sale_id: str, email: str, uah_amount: str, currency: str = "USD",
 ) -> None:
     """Fire-and-forget: продажа BlackSea, которую нельзя начислить автоматически.
     Не бросает исключений."""
@@ -87,6 +87,6 @@ async def send_manual_review_alert(
         f"❓ Причина: {reason}\n"
         f"📧 Email: {email}\n"
         f"🧾 sale_id: {sale_id}\n"
-        f"💳 Сумма: {uah_amount} UAH"
+        f"💳 Сумма: {uah_amount} {currency}"
     )
     await asyncio.to_thread(_send_debug_sync, text)
