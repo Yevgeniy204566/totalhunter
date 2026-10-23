@@ -839,9 +839,41 @@ a:hover { color: var(--on-surface); }
 .mixer-dirty { color: #fbbf24; font-size: 15px; }
 .mixer-clean { color: #3fbf6a; font-size: 15px; }
 
-.tier-presets { margin-top: 28px; }
-.tier-presets label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.tier-presets .input-dark { width: 130px; }
-.tier-presets-table { border-collapse: collapse; margin: 10px 0 16px; }
-.tier-presets-table th, .tier-presets-table td { padding: 6px 14px 6px 0; text-align: left; font-size: 16px; }
-@media (max-width: 640px) { .tier-presets .input-dark { width: 100px; } }
+/* Пульт: карточки «сохранить», «запасные наборы», «редактор пресета» (владелец 2026-10-23) */
+.pult-card { border: 1px solid var(--outline); border-radius: 14px; background: var(--card); padding: 18px 20px; margin: 18px 0; }
+.pult-card h3 { font-size: 18px; margin: 0 0 12px; color: var(--on-surface); }
+.pult-card-head { display: flex; align-items: center; gap: 12px; }
+.pult-summary { font-size: 17px; line-height: 1.5; margin-bottom: 12px; color: var(--on-surface); }
+.pult-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pult-select { width: 200px; }
+.pult-name { width: 200px; }
+.pult-actions .chest-pill-btn { font-size: 15px; padding: 10px 20px; }
+.pult-link-btn { background: none; border: none; padding: 8px 4px; font-size: 15px; font-family: inherit; color: var(--on-surface2);
+  text-decoration: underline; cursor: pointer; }
+.pult-link-btn:hover:not(:disabled) { color: var(--on-surface); }
+.pult-link-btn:disabled { opacity: 0.4; cursor: not-allowed; text-decoration: none; }
+.pult-badge { font-size: 14px; color: #fbbf24; border: 1px solid #fbbf24; border-radius: 999px; padding: 2px 12px; margin-bottom: 12px; }
+.pult-flash { font-size: 15px; line-height: 1.5; color: #3fbf6a; margin: 10px 0 0; }
+.pult-note { margin-top: 14px; }
+.pult-note summary { cursor: pointer; font-size: 15px; color: var(--on-surface2); }
+.pult-note p { font-size: 15px; line-height: 1.55; color: var(--on-surface2); margin: 8px 0 0; }
+.pult-quotas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; padding: 14px 16px; margin: 16px 0 14px;
+  border: 1px solid var(--accent); background: var(--accent-faint); border-radius: 12px; }
+.pult-quotas-title { grid-column: 1 / -1; font-size: 15px; font-weight: 700; color: var(--accent); }
+.pult-quotas label { display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: var(--on-surface); }
+.pult-quotas .input-dark { font-size: 18px; padding: 9px 10px; }
+.pult-group { font-size: 16px; font-weight: 700; color: var(--accent); margin: 22px 0 8px; }
+.pult-chests { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 28px; }
+.pult-chest { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 16px;
+  padding: 5px 0; border-bottom: 1px solid var(--separator); color: var(--on-surface); }
+.pult-chest .input-dark { width: 84px; flex: 0 0 84px; text-align: center; font-size: 16px; padding: 6px 4px; }
+.pult-chest--edited .input-dark { border-color: #fbbf24; }
+.tier-presets-table { border-collapse: collapse; margin: 10px 0; }
+.tier-presets-table th, .tier-presets-table td { padding: 6px 18px 6px 0; text-align: left; font-size: 15px; color: var(--on-surface2); }
+@media (max-width: 900px) { .pult-chests { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .pult-card { padding: 14px 12px; }
+  .pult-chests { grid-template-columns: 1fr; }
+  .pult-quotas { grid-template-columns: 1fr; }
+  .pult-select, .pult-name { width: 100%; }
+}

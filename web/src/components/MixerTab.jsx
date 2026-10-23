@@ -36,6 +36,7 @@ const TXT = {
     editing: 'Правим: {what}', mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
     presets: 'Пресеты (запасные наборы настроек)', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить в пресет', load: 'Загрузить пресет',
+    info: 'Подробнее',
     presetHint: 'Пресет — копия настроек в выбранном слоте. «Сохранить настройки» выше нужна, чтобы применить текущие значения к сезону; сохранение в пресет тоже записывает сезон.',
     loaded: 'Пресет загружен в пульт. Нажмите «Сохранить настройки», чтобы применить к сезону.',
     clanPresetTitle: 'Пресет клана (T5–T9, как на вкладке «Сундуки»)', clanPresetLoad: 'Загрузить в пульт',
@@ -73,6 +74,7 @@ const TXT = {
     editing: 'Editing: {what}', mixed: 'selected steps have different values — the fader will set them equal',
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
     presets: 'Presets (spare sets of settings)', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save to preset', load: 'Load preset',
+    info: 'More',
     presetHint: "A preset is a copy of the settings in the chosen slot. 'Save settings' above applies the current values to the season; saving to a preset also saves the season.",
     loaded: "Preset loaded into the mixer. Press 'Save settings' to apply it to the season.",
     clanPresetTitle: "Clan preset (T5–T9, as on the 'Chests' tab)", clanPresetLoad: 'Load into mixer',
@@ -159,7 +161,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const [presetName, setPresetName] = useState('')
   const [presetSlot, setPresetSlot] = useState('1')
   const [note, setNote] = useState('')
-  const [clanPreset, setClanPreset] = useState('')
 
   const emcQ = quotas.find(q => q.slot === 2)
   const emc = useMemo(() => ({ ...structuredClone(EMC_DEFAULTS), ...(emcQ?.emc || {}) }), [emcQ])
@@ -333,21 +334,16 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   }
 
   // Пресет клана → очки за сундук (владелец 2026-10-21): по всем типам «Учёта», обеих вкладок
-  const mergedPreset = name => clanPresets?.[name]?.map(x => ({
-    ...x, points: personal.tier_presets?.[name]?.points?.[x.catalog_id] ?? x.points }))
-  const clanPresetNames = Object.keys(clanPresets || {})
-  const chosenClanPreset = clanPreset || clanPresetNames[0] || ''
-  const loadClanPreset = (name = chosenClanPreset, given = null) => {
-    // правки клана (редактор ниже) накладываются на общий пресет
-    const items = given || mergedPreset(name)
-    if (!items) return
+  // items — пресет вместе с правками клана из редактора ниже; возвращает, сколько типов изменено
+  const loadClanPreset = items => {
+    if (!items) return 0
     const seen = new Set()
     const all = types.map(x => ({ ...x, key: weightKey(x.id) })).filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
     const calcFor = x => pointsCol(x).calc
     const w = presetMixW(items, all, mix.w, { calcFor, withK, keyOf: weightKey })
     const changed = Object.keys(w).filter(k => w[k] !== mix.w?.[k]).length
     setPersonal({ mix: { ...mix, w } })
-    setNote(t.clanPresetDone.replace('{n}', name).replace('{c}', changed))
+    return changed
   }
 
   const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
@@ -444,43 +440,32 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         </div>
       </div>
 
-      <p className="emc-text">{summary}</p>
-
-      <div className="season-actions">
-        <button type="button" className="chest-pill-btn chest-pill-btn--green" onClick={() => onSave()}>{t.save}</button>
-        <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
-      </div>
-      <p className="emc-text"><small>{t.saved}</small></p>
-
-      {clanPresetNames.length > 0 && (
-        <div className="mixer-presets">
-          <b>{t.clanPresetTitle}</b>
-          <select className="input-dark" value={chosenClanPreset} onChange={e => setClanPreset(e.target.value)}>
-            {clanPresetNames.map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
-          <button type="button" className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--green"
-            onClick={() => loadClanPreset()}>{t.clanPresetLoad}</button>
+      <section className="pult-card">
+        <div className="pult-summary">{summary}</div>
+        <div className="pult-actions">
+          <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
+          <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
         </div>
-      )}
-      {clanPresetNames.length > 0 && <p className="emc-text"><small>{t.clanPresetHint}</small></p>}
+        <details className="pult-note"><summary>{t.info}</summary><p>{t.saved}</p></details>
+      </section>
 
-      <div className="mixer-presets">
-        <b>{t.presets}</b>
-        <select className="input-dark" value={presetSlot} onChange={e => pickSlot(e.target.value)}>
-          {['1', '2', '3'].map(slot => <option key={slot} value={slot}>{slotLabel(slot)}</option>)}
-        </select>
-        <input className="input-dark" maxLength={30} placeholder={t.presetName} value={presetName}
-          onChange={e => setPresetName(e.target.value)} />
-        <button type="button" className="chest-pill-btn chest-pill-btn--sm" disabled={!presets[presetSlot]}
-          onClick={loadPreset}>{t.load}</button>
-        <button type="button" className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--green"
-          onClick={savePreset}>{t.saveSlot}</button>
-      </div>
-      <p className="emc-text"><small>{t.presetHint}</small></p>
-      {note && <p className="emc-text"><small>{note}</small></p>}
+      <section className="pult-card">
+        <h3>{t.presets}</h3>
+        <div className="pult-actions">
+          <select className="input-dark pult-select" value={presetSlot} onChange={e => pickSlot(e.target.value)}>
+            {['1', '2', '3'].map(slot => <option key={slot} value={slot}>{slotLabel(slot)}</option>)}
+          </select>
+          <input className="input-dark pult-name" maxLength={30} placeholder={t.presetName} value={presetName}
+            onChange={e => setPresetName(e.target.value)} />
+          <button type="button" className="chest-pill-btn" disabled={!presets[presetSlot]} onClick={loadPreset}>{t.load}</button>
+          <button type="button" className="chest-pill-btn" onClick={savePreset}>{t.saveSlot}</button>
+        </div>
+        <details className="pult-note"><summary>{t.info}</summary><p>{t.presetHint}</p></details>
+        {note && <p className="pult-flash">{note}</p>}
+      </section>
 
       <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal}
-        onLoad={(name, items) => loadClanPreset(name, items)} />
+        onLoad={loadClanPreset} />
     </div>
   )
 }
