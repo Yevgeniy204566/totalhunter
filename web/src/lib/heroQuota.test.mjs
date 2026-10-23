@@ -54,8 +54,8 @@ test('типы 20 уровня (в стене ЭДО их нет) к 387.5 ух�
   }
 })
 
-test('монстры EMC (T9, опора 413): на высоких уровнях значения T9, ниже — растут', () => {
-  assert.equal(w('Epic Shadow City', 413), 55)
+test('монстры EMC (T9, опора 450): на высоких уровнях значения T9, ниже — растут', () => {
+  assert.equal(w('Epic Shadow City', 450), 55)
   assert.equal(w('Epic Shadow City', 500), 55)
   assert.ok(w('Epic Shadow City', 200) > 55)
 })
@@ -64,11 +64,12 @@ test('неизвестный тип сундука — нет веса шкал�
   assert.equal(w('Some New Chest', 300), null)
 })
 
-test('общая норма: опоры Старта и ЭДО — факт, Сарацины/Берсерки — расчёт', () => {
+test('общая норма: опоры Старта, ЭДО и Берсерков (Герой 450, 25 000) — факт, Сарацины — расчёт', () => {
   assert.equal(normAt(279), 5000)
   assert.equal(normAt(387.5), 14000)
   assert.equal(normAt(213.5), 4000)
-  assert.equal(normAt(413), 16000)
+  assert.equal(normAt(450), 25000)
+  assert.equal(normAt(413), 18500) // между ЭДО и Берсерками линейно
 })
 
 test('общая норма на всём диапазоне 100–600: растёт с уровнем, положительна, кратна 100, без обрезки', () => {
@@ -102,7 +103,8 @@ test('ориентир по эпикам: опоры 50 / 200 / 40, выше 388
   assert.equal(epicRefAt(279), 50)
   assert.equal(epicRefAt(387.5), 200)
   assert.equal(epicRefAt(213.5), 40)
-  assert.equal(epicRefAt(413), 229)
+  assert.equal(epicRefAt(450), 300) // Берсерки: 300 эпик-склепов на Герое 450
+  assert.equal(epicRefAt(413), 241)
 })
 
 test('weightKey: цитадели Cursed/Elven делят общую строку', () => {
@@ -159,9 +161,9 @@ test('цель Crypts не уходит ниже нуля', () => {
 
 test('края диапазона: 100 и 600 заданы продолжением наклона крайних отрезков', () => {
   assert.equal(normAt(100), 2300)
-  assert.equal(normAt(600), 30700)
+  assert.equal(normAt(600), 51400) // наклон отрезка ЭДО→Берсерки (176 очков на уровень) продолжается
   assert.equal(epicRefAt(100), 23)
-  assert.equal(epicRefAt(600), 438)
+  assert.equal(epicRefAt(600), 617) // выше 450 цель растёт вместе с нормой
 })
 
 // ---- пульт: фейдеры по типам и ступеням Героя ----
@@ -269,9 +271,10 @@ test('тип вне шкалы: очки клана × фейдер, mute обн
   assert.equal(scoreOf({ 'Тыква': 3 }, meta, 300, off).score, 0)
 })
 
-test('итоговая норма эпик-склепов: ЭДО ≥ 200, Герой 456 → 277, а не доля типа', () => {
+test('итоговая норма эпик-склепов: ЭДО ≥ 200, Берсерки 450 → 300, Герой 456 → 313, а не доля типа', () => {
   assert.equal(epicCountTotal(387.5), 200)
-  assert.equal(epicCountTotal(456), 277)
+  assert.equal(epicCountTotal(450), 300)
+  assert.equal(epicCountTotal(456), 313)
   assert.ok(epicCountTotal(400) >= 200)
   assert.equal(epicCountTotal(279), 50)
 })
