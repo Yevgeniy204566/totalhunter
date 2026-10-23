@@ -16,8 +16,9 @@ const TXT = {
     groupCrypts: 'Склепы и цитадели', groupEmc: 'Эпические монстры (EMC)',
     points: 'Очки за сундук', less: 'Меньше', more: 'Больше', remove: 'Убрать сундук из пресета',
     add: '+ Добавить сундук', addPick: 'Выберите сундук', addNone: 'Все сундуки уже в пресете', addPoints: 'очки', addOk: 'Добавить', addCancel: 'Отмена',
-    load: 'Загрузить в пульт', reset: 'Сбросить к общему', edited: 'изменено',
-    loaded: 'Пресет {n} загружен в пульт, изменено типов: {c}. Проверьте значения и нажмите «Сохранить настройки».',
+    load: 'Загрузить пресет в ростер (для учёта)', reset: 'Сбросить к общему', edited: 'изменено',
+    applyHint: 'Это не правка пресета: по загруженному пресету клан ведёт учёт очков игроков. После загрузки нажмите «Сохранить настройки».',
+    loaded: 'Пресет {n} загружен в учёт ростера (изменено типов: {c}). По нему будет вестись учёт — нажмите «Сохранить настройки».',
     info: 'Как это работает',
     basis: 'Основа ступени',
     emcData: 'EMC Берсерков за 2 недели — штуки: среднее по клану ({n} игроков) = Undead {u} + Arachna {a} + Shadow City {s}. Hydra в замере нет.',
@@ -38,8 +39,9 @@ const TXT = {
     groupCrypts: 'Crypts and citadels', groupEmc: 'Epic monsters (EMC)',
     points: 'Points per chest', less: 'Less', more: 'More', remove: 'Remove chest from preset',
     add: '+ Add chest', addPick: 'Pick a chest', addNone: 'All chests are already in the preset', addPoints: 'points', addOk: 'Add', addCancel: 'Cancel',
-    load: 'Load into mixer', reset: 'Reset to shared', edited: 'edited',
-    loaded: "Preset {n} loaded into the mixer, types changed: {c}. Check the values and press 'Save settings'.",
+    load: 'Load preset into roster (for accounting)', reset: 'Reset to shared', edited: 'edited',
+    applyHint: "This is not editing the preset: the clan keeps player accounting by the loaded preset. Press 'Save settings' after loading.",
+    loaded: "Preset {n} loaded into the roster accounting (types changed: {c}). Accounting will follow it — press 'Save settings'.",
     info: 'How it works',
     basis: 'Tier basis',
     emcData: 'Berserki EMC per 2 weeks, pieces: clan average ({n} players) = Undead {u} + Arachna {a} + Shadow City {s}. No Hydra in the sample.',
@@ -102,7 +104,7 @@ function stats(col) {
   return { median, mean: Math.round(v.reduce((a, b) => a + b, 0) / v.length), max: v[v.length - 1] }
 }
 
-export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, onPersonal, onLoad, catalogItems = [] }) {
+export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, onPersonal, onLoad, catalogItems = [], sets = null, setsTitle = '', setsHint = '', setsNote = '' }) {
   const t = TXT[lang] || TXT.ru
   const names = TIERS.filter(n => clanPresets?.[n])
   const [tier, setTier] = useState('')
@@ -217,12 +219,6 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
         )}
       </div>
 
-      <div className="pult-actions">
-        <button type="button" className="chest-pill-btn" onClick={load}>{t.load}</button>
-        <button type="button" className="pult-link-btn" disabled={!edited} onClick={reset}>{t.reset}</button>
-      </div>
-      {note && <p className="pult-flash">{note}</p>}
-
       {groups.map(([gid, title, rows]) => (
         <div key={gid}>
           <h4 className="pult-group">{title}</h4>
@@ -261,6 +257,21 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
       ) : (
         <button type="button" className="chest-pill-btn pult-add-btn" onClick={() => setAdding({ id: '', points: '' })}>{t.add}</button>
       )}
+
+      {/* Нижняя строка, как в классических окнах: выбор пресета, наборы «Сохранить / Загрузить», главная кнопка справа */}
+      <div className="pult-footer">
+        <label className="pult-footer-field"><span>{t.tier}</span>
+          <select className="input-dark" value={cur} onChange={e => { setTier(e.target.value); setNote(''); setAdding(null) }}>
+            {names.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+        {sets}
+        <button type="button" className="pult-link-btn" disabled={!edited} onClick={reset}>{t.reset}</button>
+        <button type="button" className="chest-pill-btn chest-pill-btn--primary pult-apply" onClick={load}>{t.load}</button>
+      </div>
+      <p className="pult-hint">{t.applyHint}</p>
+      {setsHint && <p className="pult-hint"><b>{setsTitle}.</b> {setsHint}</p>}
+      {(note || setsNote) && <p className="pult-flash">{note || setsNote}</p>}
 
       <details className="pult-note">
         <summary>{t.info}</summary>

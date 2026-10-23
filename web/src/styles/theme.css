@@ -849,9 +849,20 @@ a:hover { color: var(--on-surface); }
 .pult-hero-label { font-size: 16px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
 .pult-hero-input { width: 110px; font-size: 22px; font-weight: 800; color: #FFFFFF; text-align: center; padding: 8px 6px; border-color: var(--accent); }
 .pult-hero-badge { font-size: 20px; color: #FFFFFF; background: var(--accent); border-radius: 999px; padding: 6px 16px; }
-.mixer-band--touched { background: rgba(251, 191, 36, 0.18); border-radius: 6px; color: #fbbf24; }
-.mixer-touched-mark { font-size: 13px; color: #fbbf24; font-weight: 600; }
 .pult-add-btn { margin-top: 16px; }
+.pult-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--outline); }
+.pult-footer-field { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--on-surface); }
+.pult-footer-field .input-dark { width: 90px; }
+.pult-footer .pult-select { width: 170px; }
+.pult-footer .pult-name { width: 170px; }
+.pult-footer .pult-apply { margin-left: auto; }
+@media (max-width: 720px) {
+  .pult-footer .pult-apply { margin-left: 0; width: 100%; }
+  .pult-footer .pult-select, .pult-footer .pult-name { width: 100%; }
+}
+.mixer-pick { padding: 6px 14px; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent-faint); }
+.mixer-pick > span { font-size: 17px; font-weight: 700; color: var(--accent); }
+.mixer-pick .emc-level-input { width: 110px; font-size: 24px; font-weight: 800; color: #FFFFFF; text-align: center; padding: 6px; border-color: var(--accent); }
 
 /* Переключатель способа настройки норм: «Общие нормы клана / Быстрая настройка» и «Личные нормы игроков / Нормы по Героям» */
 .mode-switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--outline); border-radius: 16px; overflow: hidden;

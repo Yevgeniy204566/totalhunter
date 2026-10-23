@@ -24,8 +24,6 @@ const TXT = {
     enable: 'Персонализированный учёт по уровню Героя',
     off: 'Сейчас выключен: цели фиксированные, из настроек сезона. Включите, чтобы пользоваться пультом.',
     sample: 'Пример для Героя',
-    touchedLegend: 'Жёлтым подсвечены уровни Героя, для которых вы что-то изменили в пульте.',
-    touchedAll: 'изменено на все уровни',
     reset: 'Двойной щелчок по фейдеру — вернуть ×1',
     mute: 'Вкл/выкл: выключенный тип не считается',
     abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
@@ -37,13 +35,13 @@ const TXT = {
     summary: 'Герой {h}: норма «Всего» {total} · Crypts {crypts} · EMC {emc} шт.',
     editing: 'Правим: {what}', mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
-    presets: 'Наборы настроек очков', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить в пресет', load: 'Загрузить пресет',
+    presets: 'Наборы настроек очков', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить набор', load: 'Загрузить набор',
     presetHint: 'Набор сохраняет всё, что вы настроили: положения фейдеров, рычаги EMC и свои правки пресетов T5–T9. Общие пресеты T5–T9 не меняются никогда: ваши правки лежат отдельно, в трёх слотах можно держать три своих варианта. «Сохранить настройки» выше применяет текущие значения к сезону; сохранение в набор тоже записывает сезон.',
-    loaded: 'Пресет загружен в пульт. Нажмите «Сохранить настройки», чтобы применить к сезону.',
+    loaded: 'Набор загружен. Нажмите «Сохранить настройки», чтобы применить к сезону.',
     clanPresetTitle: 'Пресет клана (T5–T9, как на вкладке «Сундуки»)', clanPresetLoad: 'Загрузить в пульт',
     clanPresetHint: 'Ставит очки за сундук из пресета для отмеченных выше ступеней Героя («Все уровни» — на все): пульт сам подбирает множитель так, чтобы при примерном Герое очки равнялись пресетным. Затем правьте фейдерами и нажмите «Сохранить настройки». Затрагиваются только типы, которые есть в «Учёте» клана.',
     clanPresetDone: 'Пресет {n} загружен: типов — {c}. Проверьте значения и нажмите «Сохранить настройки».',
-    savedPreset: 'Пресет сохранён.',
+    savedPreset: 'Набор сохранён.',
     help: 'Как работает пульт',
     helpText: [
       'Вкладка «Общие нормы клана» (быстрая настройка) — ручная настройка клана: названия, очки за сундук, «Учёт». Она остаётся всегда и питает колонку «Очки» в таблице игроков.',
@@ -63,8 +61,6 @@ const TXT = {
     enable: 'Personalized accounting by Hero level',
     off: 'Currently off: targets are fixed from the season settings. Turn it on to use the mixer.',
     sample: 'Example for Hero',
-    touchedLegend: 'Highlighted in yellow are the Hero levels you have changed in the mixer.',
-    touchedAll: 'changed for all levels',
     reset: 'Double-click a fader to reset to ×1',
     mute: 'On/off: a muted type is not counted',
     abs: 'Value: erase and type your own number (0 turns the type off)',
@@ -76,7 +72,7 @@ const TXT = {
     summary: 'Hero {h}: Total norm {total} · Crypts {crypts} · EMC {emc} pcs',
     editing: 'Editing: {what}', mixed: 'selected steps have different values — the fader will set them equal',
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
-    presets: 'Point settings sets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save to preset', load: 'Load preset',
+    presets: 'Point settings sets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save set', load: 'Load set',
     presetHint: "A set stores everything you configured: fader positions, EMC levers and your edits of the T5–T9 presets. The shared T5–T9 presets never change: your edits are kept separately, and the three slots hold three of your own variants. 'Save settings' above applies the current values to the season; saving to a set also saves the season.",
     loaded: "Preset loaded into the mixer. Press 'Save settings' to apply it to the season.",
     clanPresetTitle: "Clan preset (T5–T9, as on the 'Chests' tab)", clanPresetLoad: 'Load into mixer',
@@ -350,30 +346,25 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     return changed
   }
 
+  // Нижняя строка редактора пресета (как в классических окнах): выбор набора, название, «Сохранить» / «Загрузить»
+  const hasTiers = ['T5', 'T6', 'T7', 'T8', 'T9'].some(n => clanPresets?.[n])
+  const setsControls = (
+    <>
+      <select className="input-dark pult-select" value={presetSlot} aria-label={t.presets} onChange={e => pickSlot(e.target.value)}>
+        {['1', '2', '3'].map(slot => <option key={slot} value={slot}>{slotLabel(slot)}</option>)}
+      </select>
+      <input className="input-dark pult-name" maxLength={30} placeholder={t.presetName} value={presetName}
+        onChange={e => setPresetName(e.target.value)} />
+      <button type="button" className="chest-pill-btn" onClick={savePreset}>{t.saveSlot}</button>
+      <button type="button" className="chest-pill-btn" disabled={!presets[presetSlot]} onClick={loadPreset}>{t.load}</button>
+    </>
+  )
+
   const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
   const emcTotal = computeRow(exHero, emc).emc + emcOthersTotal(emcMeta, exHero, scale, emc)
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
     .replace('{crypts}', fmt(cryptsNormAt(exHero, emc, scale))).replace('{emc}', emcTotal)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
-  // Уровни Героя, для которых что-то изменено (подсветка в сетке): поправки фейдеров по ступеням, диапазоны нормы и EMC;
-  // «на все уровни» — общие множители. Общий пресет сервера этим не затрагивается.
-  const touched = (() => {
-    const set = new Set()
-    let all = (personal.norm ?? 1) !== 1 || (personal.weights ?? 1) !== 1
-    for (const path of ['w', 'c']) {
-      for (const e of Object.values(mix[path] || {})) {
-        if (e.on === false || (e.all ?? 1) !== 1) all = true
-        for (const [b, k] of Object.entries(e.bands || {})) if (Number(k) !== 1) set.add(String(b))
-      }
-    }
-    if ((mix.epic?.all ?? 1) !== 1) all = true
-    const ranges = [...(personal.ranges || []), ...(emc.ranges || [])].filter(r => Number(r.k) !== 1)
-    for (const g of GROUPS) for (const h of g.bands) {
-      if (ranges.some(r => h <= r.to && h + 9 >= r.from)) set.add(String(h))
-    }
-    if ((emc.global ?? 1) !== 1 || Object.values(emc.monsters || {}).some(k => Number(k) !== 1)) all = true
-    return { set, all }
-  })()
   const summaryNode = summary
 
   return (
@@ -414,7 +405,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <label className="mixer-all">
           <input type="checkbox" checked={isAll} onChange={() => setSel(new Set(['all']))} />
           <b>{t.allLevels}</b>
-          {touched.all && <span className="mixer-touched-mark">{t.touchedAll}</span>}
         </label>
         <div className="mixer-grid">
           {GROUPS.map(group => {
@@ -427,7 +417,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   <b>{group.g}+</b>
                 </label>
                 {group.bands.map(h => (
-                  <label key={h} className={`mixer-band${touched.set.has(String(h)) ? ' mixer-band--touched' : ''}`}>
+                  <label key={h} className="mixer-band">
                     <input type="checkbox" checked={!isAll && sel.has(String(h))} onChange={() => toggleBand(h)} />
                     <span>{bandLabel(h)}</span>
                   </label>
@@ -438,7 +428,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         </div>
       </div>
 
-      <p className="pult-hint">{t.touchedLegend}</p>
       {!enabled && <p className="emc-text"><small>{t.off}</small></p>}
       {fallback && <p className="emc-text"><small>{t.noTypes}</small></p>}
       <p className="emc-text"><small>{t.editing.replace('{what}', editing)}</small></p>
@@ -487,23 +476,18 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <p className="pult-hint">{t.saved}</p>
       </section>
 
-      <section className="pult-card">
-        <h3>{t.presets}</h3>
-        <div className="pult-actions">
-          <select className="input-dark pult-select" value={presetSlot} onChange={e => pickSlot(e.target.value)}>
-            {['1', '2', '3'].map(slot => <option key={slot} value={slot}>{slotLabel(slot)}</option>)}
-          </select>
-          <input className="input-dark pult-name" maxLength={30} placeholder={t.presetName} value={presetName}
-            onChange={e => setPresetName(e.target.value)} />
-          <button type="button" className="chest-pill-btn" disabled={!presets[presetSlot]} onClick={loadPreset}>{t.load}</button>
-          <button type="button" className="chest-pill-btn" onClick={savePreset}>{t.saveSlot}</button>
-        </div>
-        <p className="pult-hint">{t.presetHint}</p>
-        {note && <p className="pult-flash">{note}</p>}
-      </section>
+      {!hasTiers && (
+        <section className="pult-card">
+          <h3>{t.presets}</h3>
+          <div className="pult-actions">{setsControls}</div>
+          <p className="pult-hint">{t.presetHint}</p>
+          {note && <p className="pult-flash">{note}</p>}
+        </section>
+      )}
 
       <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal}
         onLoad={loadClanPreset}
+        sets={setsControls} setsTitle={t.presets} setsHint={t.presetHint} setsNote={note}
         catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
     </div>
   )
