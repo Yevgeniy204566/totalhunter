@@ -55,6 +55,21 @@ def build_text(method: str, path: str, exc: BaseException, repeats: int = 0) -> 
     return head + tb
 
 
+async def supervised_loop(name: str, sleep_sec: float, tick) -> None:
+    """Бесконечный фоновый цикл: tick() вызывается раз в sleep_sec. Исключение в тике логируется, уходит владельцу в
+    Telegram (с подавлением повторов, как у 500) и цикл ПРОДОЛЖАЕТСЯ — раньше любое исключение молча убивало
+    задачу до перезапуска сервиса (аудит 2026-10-23: архивация сезонов и автоудаление кланов переставали работать)."""
+    while True:
+        await asyncio.sleep(sleep_sec)
+        try:
+            await tick()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("background loop %s failed", name)
+            await notify_server_error("BG", name, exc)
+
+
 async def notify_server_error(method: str, path: str, exc: BaseException) -> None:
     """Не бросает исключений: сбой уведомления не должен ломать ответ клиенту."""
     try:

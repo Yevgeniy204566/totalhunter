@@ -5,9 +5,11 @@ All /web/* endpoints. JWT auth for protected routes.
 Bot calls /web/link/generate (no JWT). Frontend calls everything else.
 """
 
+import asyncio
 import os
 import random
 import string
+import time
 
 _REF_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 from datetime import datetime, timedelta, timezone
@@ -28,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models import (AncientEditor, AncientInviteCode, BlackSeaSale, ChestCollector, ChestManager, CrashReport,
                     Feedback, Hunt, HwidHistory, LinkCode, Order, Transaction, User)
+from tg_channel import send_security_alert
 from schemas import ChestLinksPayload, GameNickPayload
 from schemas import (
     BasicResponse,
@@ -103,7 +106,28 @@ async def get_web_user(
 
 
 def _generate_link_code() -> str:
-    return "".join(random.choices(string.digits, k=6))
+    # secrets, а не random: код — единственный секрет привязки устройства (аудит 2026-10-23)
+    return "".join(_secrets.choice(string.digits) for _ in range(6))
+
+
+# Лимит неверных кодов на /link/verify — по аккаунту сайта. По IP нельзя: запросы сайта идут через прокси Vercel, у всех
+# пользователей общие адреса. Срок жизни кода (10 лет) по решению владельца не меняется, поэтому защита — лимит попыток
+# и одноразовость: после успешной привязки код удаляется.
+LINK_FAIL_LIMIT  = 10
+LINK_FAIL_WINDOW = 3600  # секунд
+_link_fails: dict[int, list[float]] = {}
+_alert_tasks: set = set()
+
+
+def _link_recent_fails(user_id: int, now: float) -> list[float]:
+    stamps = [t for t in _link_fails.get(user_id, []) if now - t < LINK_FAIL_WINDOW]
+    _link_fails[user_id] = stamps
+    return stamps
+
+
+def _link_error(status: int, code: str, message: str) -> HTTPException:
+    # code — для перевода сообщения на сайте (DevicesPage), message — запасной английский текст
+    return HTTPException(status_code=status, detail={"code": code, "message": message})
 
 
 def _verify_google_token(token: str) -> dict:
@@ -414,6 +438,13 @@ async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get
         existing = await db.execute(select(LinkCode).where(LinkCode.hwid == req.hwid))
         for row in existing.scalars().all():
             await db.delete(row)
+        await db.flush()
+        # код уникален (unique=True): при совпадении с чужим живым кодом берём другой, а не отвечаем 500
+        for _ in range(20):
+            taken = (await db.execute(select(LinkCode.id).where(LinkCode.code == code))).first()
+            if taken is None:
+                break
+            code = _generate_link_code()
         db.add(LinkCode(hwid=req.hwid, code=code, expires_at=expires_at))
 
     return LinkGenerateResponse(code=code, expires_in_seconds=int(timedelta(days=3650).total_seconds()))
@@ -435,18 +466,20 @@ MERGE_USER_FKS = {
 async def _absorb_bot_rows(db: AsyncSession, bot_user: User, web_user: User) -> None:
     """Переносит на аккаунт сайта ВСЕ строки, ссылающиеся на бот-аккаунт, прежде чем его удалить: иначе внешний
     ключ рвёт DELETE и привязка отвечает 500 (живой случай 2026-10-23: у бот-аккаунта был ростер сундуков).
-    Ростер сундуков — единица с уникальностью по клану, поэтому при ростерах на обеих сторонах не сливаем
-    молча, а отказываем (409): решать, какой оставить, должен человек."""
+    Ростер сундуков — единица с уникальностью по клану: отказываем (409) только если у обоих аккаунтов есть ростер
+    ОДНОГО клана; ростеры разных кланов спокойно переезжают на аккаунт сайта."""
     b, w = bot_user.id, web_user.id
     if web_user.invited_by_id in (b, w):
         # после слияния приглашение от самого себя бессмысленно (и ссылалось бы на удаляемую строку)
         web_user.invited_by_id = None
-    has_bot_roster = (await db.execute(
-        select(ChestCollector.id).where(ChestCollector.user_id == b).limit(1))).first() is not None
-    has_web_roster = (await db.execute(
-        select(ChestCollector.id).where(ChestCollector.user_id == w).limit(1))).first() is not None
-    if has_bot_roster and has_web_roster:
-        raise HTTPException(status_code=409, detail="Both accounts have a chest roster — contact support")
+    pairs = {}
+    for uid in (b, w):
+        rows = (await db.execute(
+            select(ChestCollector.kingdom, ChestCollector.clan).where(ChestCollector.user_id == uid))).all()
+        pairs[uid] = {((k or "").lower(), (c or "").lower()) for k, c in rows}
+    if pairs[b] & pairs[w]:
+        # один и тот же клан у обоих аккаунтов: какой ростер оставить, решает человек. Разные кланы переносятся.
+        raise _link_error(409, "roster_conflict", "Both accounts have a roster of the same clan — contact support")
 
     for model in (HwidHistory, Feedback, Order, BlackSeaSale, ChestCollector):
         await db.execute(update(model).where(model.user_id == b).values(user_id=w))
@@ -467,6 +500,10 @@ async def link_verify(
     web_user: User = Depends(get_web_user),
 ):
     now = datetime.now(timezone.utc)
+    now_ts = time.time()
+    fails = _link_recent_fails(web_user.id, now_ts)
+    if len(fails) >= LINK_FAIL_LIMIT:
+        raise _link_error(429, "too_many_attempts", "Too many wrong codes. Try again in an hour.")
 
     result = await db.execute(
         select(LinkCode).where(
@@ -476,9 +513,20 @@ async def link_verify(
     )
     link = result.scalar_one_or_none()
     if not link:
-        raise HTTPException(status_code=404, detail="Code not found or expired")
+        fails.append(now_ts)
+        if len(fails) == LINK_FAIL_LIMIT:
+            # фоновые задачи FastAPI при ответе-ошибке не выполняются, поэтому — отдельная задача (ссылку держим)
+            _alert_tasks.add(t := asyncio.create_task(send_security_alert(
+                title="Подбор кода привязки?",
+                detail=f"Аккаунт сайта #{web_user.id}: {LINK_FAIL_LIMIT} неверных кодов за час — дальше блок на час.")))
+            t.add_done_callback(_alert_tasks.discard)
+        raise _link_error(404, "code_not_found", "Code not found or expired")
 
     hwid = link.hwid
+    if web_user.hwid and web_user.hwid != hwid:
+        # к аккаунту уже привязано другое устройство: сначала «Отвязать» (раз в 7 дней), затем новый код. Код не тратится.
+        raise _link_error(409, "device_already_linked",
+                          "Another device is already linked. Unlink it first (once per 7 days), then enter the new code.")
 
     # Check if this HWID has ever been used for bonuses
     history_result = await db.execute(
@@ -488,6 +536,10 @@ async def link_verify(
 
     bot_result = await db.execute(select(User).where(User.hwid == hwid))
     bot_user = bot_result.scalar_one_or_none()
+    if bot_user and bot_user.id != web_user.id and bot_user.email:
+        # это устройство уже привязано к ДРУГОМУ аккаунту сайта (с email): автоматически сливать два аккаунта сайта нельзя
+        raise _link_error(409, "device_linked_to_other_account",
+                          "This device is linked to another site account. Sign in with that account or contact support.")
 
     async with db.begin_nested():
         await db.delete(link)

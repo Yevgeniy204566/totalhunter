@@ -21,7 +21,11 @@ async function request(method, path, body) {
 
   let data
   try { data = await res.json() } catch { throw new Error('Server error') }
-  if (!res.ok) throw new Error(data.detail?.message || data.detail || 'Request failed')
+  if (!res.ok) {
+    const err = new Error(data.detail?.message || data.detail || 'Request failed')
+    err.code = data.detail?.code  // код отказа сервера — для перевода сообщения на странице
+    throw err
+  }
   return data
 }
 

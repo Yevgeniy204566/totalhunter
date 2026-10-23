@@ -28,7 +28,7 @@ export default function DevicesPage() {
       const res = await api.linkVerify(code)
       setMsg(res.message); setCode('')
       await refresh()
-    } catch (e) { setMsg(e.message) }
+    } catch (e) { setMsg(dv.errors?.[e.code] || e.message) }
     finally { setLoading(false) }
   }
 

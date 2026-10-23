@@ -15,6 +15,8 @@ docs/superpowers/specs/2026-07-01-ancient-collector-retention-design.md
 ancients_dashboard.py.
 """
 import asyncio
+
+from error_alerts import supervised_loop
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -95,8 +97,8 @@ def ensure_background_tasks() -> None:
 
 
 async def _retention_loop() -> None:
-    while True:
-        await asyncio.sleep(RETENTION_TICK_SEC)
+    async def tick() -> None:
         async with AsyncSessionLocal() as db:
             await run_ancient_retention_tick(db)
             await run_manual_entry_expiry_tick(db)
+    await supervised_loop("ancient_retention", RETENTION_TICK_SEC, tick)

@@ -39,6 +39,13 @@ export const DASHBOARD = {
     title:       'Devices',
     linked:      'Linked device',
     unlink:      'Unlink device (reset HWID)',
+    errors: {
+      code_not_found:                 'Code not found. Get a new code in the bot, on the "Profile" tab.',
+      too_many_attempts:              'Too many wrong codes. Wait an hour and try again.',
+      device_already_linked:          'A device is already linked to this account. Press "Unlink device" first (available once per 7 days), then enter the new code from the bot.',
+      device_linked_to_other_account: 'This device is already linked to another site account. Sign in with that account or contact support.',
+      roster_conflict:                'Both accounts have a roster of the same clan. Contact support — we will merge them manually.',
+    },
     nextReset:   'Next reset available:',
     linkTitle:   'Link your device',
     linkSteps:   [

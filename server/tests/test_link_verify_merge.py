@@ -16,7 +16,8 @@ from web_routes import create_jwt
 
 
 async def _user(db, email=None, hwid=None):
-    user = User(hwid=hwid or secrets.token_hex(8).upper(), ref_code=secrets.token_urlsafe(6), email=email)
+    # аккаунт сайта без привязанного бота не имеет hwid (привязка к нему выдаёт его); у бот-аккаунта hwid есть всегда
+    user = User(hwid=None if email else (hwid or secrets.token_hex(8).upper()), ref_code=secrets.token_urlsafe(6), email=email)
     db.add(user)
     await db.flush()
     return user
@@ -56,11 +57,11 @@ async def test_link_moves_chest_roster_and_other_rows_of_bot_account(db_session)
 
 
 @pytest.mark.asyncio
-async def test_link_refuses_when_both_accounts_have_chest_rosters(db_session):
+async def test_link_refuses_when_both_accounts_have_a_roster_of_the_same_clan(db_session):
     bot = await _user(db_session)
     web = await _user(db_session, email=f"web{secrets.token_hex(3)}@example.com")
-    await _collector(db_session, bot, "BotClan")
-    await _collector(db_session, web, "WebClan")
+    await _collector(db_session, bot, "SameClan")
+    await _collector(db_session, web, "SameClan")
     await db_session.commit()
     bot_id, hwid = bot.id, bot.hwid
 

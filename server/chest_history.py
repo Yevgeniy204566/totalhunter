@@ -18,6 +18,8 @@ RETENTION_DAYS (3 месяца), считая от closed_at (момент ар�
 period_end.
 """
 import asyncio
+
+from error_alerts import supervised_loop
 import logging
 from datetime import datetime, timedelta
 
@@ -214,21 +216,21 @@ def ensure_background_tasks() -> None:
 
 
 async def _archive_loop() -> None:
-    while True:
-        await asyncio.sleep(ARCHIVE_TICK_SEC)
+    async def tick() -> None:
         async with AsyncSessionLocal() as db:
             await run_archive_tick(db)
+    await supervised_loop("chest_history.archive", ARCHIVE_TICK_SEC, tick)
 
 
 async def _retention_loop() -> None:
-    while True:
-        await asyncio.sleep(RETENTION_TICK_SEC)
+    async def tick() -> None:
         async with AsyncSessionLocal() as db:
             await run_retention_tick(db)
+    await supervised_loop("chest_history.retention", RETENTION_TICK_SEC, tick)
 
 
 async def _inactive_collector_retention_loop() -> None:
-    while True:
-        await asyncio.sleep(RETENTION_TICK_SEC)
+    async def tick() -> None:
         async with AsyncSessionLocal() as db:
             await run_inactive_collector_tick(db)
+    await supervised_loop("chest_history.inactive_collectors", RETENTION_TICK_SEC, tick)
