@@ -35,8 +35,7 @@ const TXT = {
     summary: 'Герой {h}: норма «Всего» {total} · Crypts {crypts} · EMC {emc} шт.',
     editing: 'Правим: {what}', mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
-    presets: 'Пресеты (запасные наборы настроек)', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить в пресет', load: 'Загрузить пресет',
-    info: 'Подробнее',
+    presets: 'Наборы настроек очков', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить в пресет', load: 'Загрузить пресет',
     presetHint: 'Пресет — копия настроек в выбранном слоте. «Сохранить настройки» выше нужна, чтобы применить текущие значения к сезону; сохранение в пресет тоже записывает сезон.',
     loaded: 'Пресет загружен в пульт. Нажмите «Сохранить настройки», чтобы применить к сезону.',
     clanPresetTitle: 'Пресет клана (T5–T9, как на вкладке «Сундуки»)', clanPresetLoad: 'Загрузить в пульт',
@@ -73,8 +72,7 @@ const TXT = {
     summary: 'Hero {h}: Total norm {total} · Crypts {crypts} · EMC {emc} pcs',
     editing: 'Editing: {what}', mixed: 'selected steps have different values — the fader will set them equal',
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
-    presets: 'Presets (spare sets of settings)', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save to preset', load: 'Load preset',
-    info: 'More',
+    presets: 'Point settings sets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save to preset', load: 'Load preset',
     presetHint: "A preset is a copy of the settings in the chosen slot. 'Save settings' above applies the current values to the season; saving to a preset also saves the season.",
     loaded: "Preset loaded into the mixer. Press 'Save settings' to apply it to the season.",
     clanPresetTitle: "Clan preset (T5–T9, as on the 'Chests' tab)", clanPresetLoad: 'Load into mixer',
@@ -446,7 +444,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
           <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
         </div>
-        <details className="pult-note"><summary>{t.info}</summary><p>{t.saved}</p></details>
+        <p className="pult-hint">{t.saved}</p>
       </section>
 
       <section className="pult-card">
@@ -460,12 +458,13 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           <button type="button" className="chest-pill-btn" disabled={!presets[presetSlot]} onClick={loadPreset}>{t.load}</button>
           <button type="button" className="chest-pill-btn" onClick={savePreset}>{t.saveSlot}</button>
         </div>
-        <details className="pult-note"><summary>{t.info}</summary><p>{t.presetHint}</p></details>
+        <p className="pult-hint">{t.presetHint}</p>
         {note && <p className="pult-flash">{note}</p>}
       </section>
 
       <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal}
-        onLoad={loadClanPreset} />
+        onLoad={loadClanPreset}
+        catalogIds={[...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)]} />
     </div>
   )
 }

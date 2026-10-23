@@ -243,3 +243,45 @@ async def test_mixer_accepts_up_to_80_types(db_session):
         ok = await _patch(client, c, h, {"personal": {**ON, "mix": mix}})
         too_many = await _patch(client, c, h, {"personal": {**ON, "mix": {"w": {f"T{i}": {} for i in range(81)}}}})
     assert ok.status_code == 200 and too_many.status_code == 422
+
+
+def test_tier_presets_follow_clan_bases_t8_eldorado_t7_phoenix_t6_start():
+    """Основа ступеней (владелец 2026-10-23): T8 — ЭДО, T7 — Феникс, T6 — Старт; id уникальны, очки кратны 5."""
+    from chest_dashboard import CHEST_PRESETS
+
+    def pts(tier, cid):
+        return next(x["points"] for x in CHEST_PRESETS[tier] if x["catalog_id"] == cid)
+
+    assert (pts("T8", "Epic Crypt 35"), pts("T7", "Epic Crypt 35"), pts("T6", "Epic Crypt 35")) == (135, 150, 155)
+    assert (pts("T8", "Epic Crypt 30"), pts("T7", "Epic Crypt 30")) == (80, 90)
+    for tier, items in CHEST_PRESETS.items():
+        ids = [x["catalog_id"] for x in items]
+        assert len(ids) == len(set(ids)), tier
+        assert all(x["points"] % 5 == 0 for x in items), tier
+
+
+@pytest.mark.asyncio
+async def test_tier_presets_saved_with_removed_and_added_chests(db_session):
+    c, h = await _owner(db_session, f"tp{secrets.token_hex(2)}@example.com")
+    tp = {"T9": {"points": {"Epic Crypt 35": 140, "My Custom Chest": 10}, "removed": ["Common Crypt 25"],
+                 "norm": 24000, "epic": 310, "emc": 200}}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"personal": {**ON, "tier_presets": tp}})
+        pub = await _public(client, c)
+    assert r.status_code == 200
+    assert pub["personal"]["tier_presets"]["T9"]["removed"] == ["Common Crypt 25"]
+    assert pub["personal"]["tier_presets"]["T9"]["points"]["My Custom Chest"] == 10
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad", [
+    {"T9": {"points": {"X": -1}}},
+    {"T9": {"points": {"": 5}}},
+    {"T9": {"removed": [""]}},
+    {"T4": {"points": {"X": 5}}},
+])
+async def test_tier_presets_invalid_422(db_session, bad):
+    c, h = await _owner(db_session, f"tq{secrets.token_hex(2)}@example.com")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"personal": {**ON, "tier_presets": bad}})
+    assert r.status_code == 422

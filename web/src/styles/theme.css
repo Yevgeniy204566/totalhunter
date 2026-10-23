@@ -861,13 +861,25 @@ a:hover { color: var(--on-surface); }
   border: 1px solid var(--accent); background: var(--accent-faint); border-radius: 12px; }
 .pult-quotas-title { grid-column: 1 / -1; font-size: 15px; font-weight: 700; color: var(--accent); }
 .pult-quotas label { display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: var(--on-surface); }
-.pult-quotas .input-dark { font-size: 18px; padding: 9px 10px; }
+.pult-quotas .input-dark { font-size: 20px; font-weight: 700; color: #FFFFFF; padding: 9px 10px; }
 .pult-group { font-size: 16px; font-weight: 700; color: var(--accent); margin: 22px 0 8px; }
 .pult-chests { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 28px; }
 .pult-chest { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 16px;
   padding: 5px 0; border-bottom: 1px solid var(--separator); color: var(--on-surface); }
-.pult-chest .input-dark { width: 84px; flex: 0 0 84px; text-align: center; font-size: 16px; padding: 6px 4px; }
+.pult-chest-name { min-width: 0; overflow-wrap: anywhere; }
+.pult-stepper { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.pult-num { width: 78px; text-align: center; font-size: 18px; font-weight: 700; color: #FFFFFF; padding: 6px 4px; }
+.pult-num::placeholder, .pult-quotas .input-dark::placeholder { color: #E6EEFF; opacity: 1; font-weight: 700; }
+.pult-step { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--outline); background: var(--elevated); color: var(--on-surface);
+  font-size: 20px; line-height: 1; font-family: inherit; cursor: pointer; padding: 0; }
+.pult-step:hover { border-color: var(--accent); color: #FFFFFF; }
+.pult-step--del { color: var(--error-text); }
+.pult-step--del:hover { border-color: #F87171; color: #F87171; }
 .pult-chest--edited .input-dark { border-color: #fbbf24; }
+.pult-add { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.pult-add select { width: 240px; }
+.pult-hint { font-size: 15px; line-height: 1.55; color: var(--on-surface2); margin: 10px 0 0; }
+.pult-quotas-sub { grid-column: 1 / -1; font-size: 14px; color: var(--on-surface2); }
 .tier-presets-table { border-collapse: collapse; margin: 10px 0; }
 .tier-presets-table th, .tier-presets-table td { padding: 6px 18px 6px 0; text-align: left; font-size: 15px; color: var(--on-surface2); }
 @media (max-width: 900px) { .pult-chests { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

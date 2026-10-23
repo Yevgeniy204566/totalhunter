@@ -47,10 +47,31 @@ _T5_T8 = [
     {"catalog_id": "Rare Crypt 30",     "points": 65,  "is_in_pattern": True},
 ]
 
+# T7 — стена Феникса (Герой 298): очки за сундук клана. Типы те же, что в шаблоне, плюс Rare/Common 20 (у Феникса
+# они засчитываются, у ЭДО нет).
+_T7_PHOENIX = [
+    {"catalog_id": "Common Crypt 20",   "points": 20,  "is_in_pattern": True},
+    {"catalog_id": "Common Crypt 25",   "points": 40,  "is_in_pattern": True},
+    {"catalog_id": "Cursed Citadel 25", "points": 35,  "is_in_pattern": True},
+    {"catalog_id": "Elven Citadel 25",  "points": 35,  "is_in_pattern": True},
+    {"catalog_id": "Elven Citadel 30",  "points": 50,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 20",     "points": 30,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 25",     "points": 50,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 30",     "points": 90,  "is_in_pattern": True},
+    {"catalog_id": "Epic Crypt 35",     "points": 150, "is_in_pattern": True},
+    {"catalog_id": "Rare Crypt 20",     "points": 25,  "is_in_pattern": True},
+    {"catalog_id": "Rare Crypt 25",     "points": 45,  "is_in_pattern": True},
+    {"catalog_id": "Rare Crypt 30",     "points": 80,  "is_in_pattern": True},
+]
+
+# T6 — Старт (Герой 279). Стена Старта по очкам за сундук не записана (известны только норма 5000 и 50 эпик-склепов),
+# поэтому очки — расчёт шкалы пульта (web/src/lib/heroQuota.js) для Героя 279: как у Феникса, эпик 35 уровня 155.
+_T6_START = [dict(x, points=155) if x["catalog_id"] == "Epic Crypt 35" else dict(x) for x in _T7_PHOENIX]
+
 CHEST_PRESETS = {
     "T5": _T5_T8,
-    "T6": _T5_T8,
-    "T7": _T5_T8,
+    "T6": _T6_START,
+    "T7": _T7_PHOENIX,
     "T8": _T5_T8,
     "T9": [
         {"catalog_id": "Epic Crypt 35", "points": 135, "is_in_pattern": True},
@@ -714,6 +735,15 @@ class TierPreset(BaseModel):
     norm: Optional[float] = Field(default=None, ge=0, le=1000000)
     epic: Optional[float] = Field(default=None, ge=0, le=100000)
     emc: Optional[float] = Field(default=None, ge=0, le=100000)
+    # сундуки общего пресета, которые клан убрал из своего варианта; добавленные клан хранит прямо в points
+    removed: List[str] = Field(default_factory=list, max_length=60)
+
+    @field_validator("removed")
+    @classmethod
+    def _removed_ok(cls, v):
+        if any((not key or len(key) > 60) for key in v):
+            raise ValueError("bad preset removed")
+        return v
 
     @field_validator("points")
     @classmethod
