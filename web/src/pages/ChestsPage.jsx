@@ -157,6 +157,15 @@ function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) 
 
 export default function ChestsPage() {
   const [collectors, setCollectors] = useState(null)
+  // Свёрнутые ростеры (стрелка в шапке): остаётся полоса с названием клана. Только удобство просмотра, хранится в браузере.
+  const [collapsedByCollector, setCollapsedByCollector] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('chest_collapsed_rosters') || '{}') } catch { return {} }
+  })
+  const toggleCollapsed = slug => setCollapsedByCollector(prev => {
+    const next = { ...prev, [slug]: !prev[slug] }
+    try { localStorage.setItem('chest_collapsed_rosters', JSON.stringify(next)) } catch { /* приватный режим */ }
+    return next
+  })
   const [rowsByCollector, setRowsByCollector] = useState({})
   const [playerRowsByCollector, setPlayerRowsByCollector] = useState({})
   const [activeTabByCollector, setActiveTabByCollector] = useState({})
@@ -515,12 +524,18 @@ export default function ChestsPage() {
       {collectors.length === 0 && <div className="text-muted" style={{ marginTop: 12 }}>{cx.noCollectors}</div>}
 
       {collectors.map(collector => (
-        <div className="collector-card" key={collector.slug}>
+        <div className={`collector-card${collapsedByCollector[collector.slug] ? ' collector-card--collapsed' : ''}`} key={collector.slug}>
           {/* Header: identity left | links + destructive/transfer actions right */}
           <div className="collector-header">
-            <div className="collector-identity">
-              <span className="collector-clan-name">{collector.clan}</span>
-              <span className="collector-kingdom-tag">{collector.kingdom}</span>
+            <div className="collector-title">
+              <button type="button" className="collector-toggle" aria-expanded={!collapsedByCollector[collector.slug]}
+                title={collapsedByCollector[collector.slug] ? cx.expandRoster : cx.collapseRoster}
+                aria-label={collapsedByCollector[collector.slug] ? cx.expandRoster : cx.collapseRoster}
+                onClick={() => toggleCollapsed(collector.slug)}>▾</button>
+              <div className="collector-identity" onClick={() => toggleCollapsed(collector.slug)} style={{ cursor: 'pointer' }}>
+                <span className="collector-clan-name">{collector.clan}</span>
+                <span className="collector-kingdom-tag">{collector.kingdom}</span>
+              </div>
             </div>
 
             <div className="collector-links">

@@ -65,6 +65,7 @@ export const DASHBOARD = {
     loadPresetBtn: 'Загрузить пресет',
     presetLoaded: 'Пресет применён, не забудь сохранить',
     chestsTab: 'Сундуки',
+    collapseRoster: 'Свернуть ростер', expandRoster: 'Развернуть ростер',
     modeClanTitle: 'Общие нормы клана', modeClanSub: 'Быстрая настройка',
     modePersonalTitle: 'Личные нормы игроков', modePersonalSub: 'Нормы по Героям',
     playersTab: 'Игроки',

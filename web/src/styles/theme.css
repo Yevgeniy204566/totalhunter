@@ -406,7 +406,18 @@ a:hover { color: var(--on-surface); }
   padding-bottom: 18px; margin-bottom: 18px;
   border-bottom: 1px solid var(--outline);
 }
+.collector-title { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.collector-toggle { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--outline); background: var(--elevated);
+  color: var(--on-surface); font-size: 22px; line-height: 1; font-family: inherit; cursor: pointer; padding: 0; transition: transform 0.2s, border-color 0.15s; }
+.collector-toggle:hover { border-color: var(--accent); color: #FFFFFF; }
 .collector-identity { display: flex; flex-direction: column; gap: 8px; }
+/* Свёрнутый ростер: только полоса с названием клана */
+.collector-card--collapsed { padding-top: 14px; padding-bottom: 14px; }
+.collector-card--collapsed > :not(.collector-header) { display: none; }
+.collector-card--collapsed .collector-links { display: none; }
+.collector-card--collapsed .collector-header { border-bottom: none; margin-bottom: 0; padding-bottom: 0; align-items: center; }
+.collector-card--collapsed .collector-identity { flex-direction: row; align-items: center; gap: 12px; }
+.collector-card--collapsed .collector-toggle { transform: rotate(-90deg); }
 .collector-clan-name { font-size: 25px; font-weight: 800; color: var(--on-surface); letter-spacing: 0.2px; line-height: 1.15; }
 .collector-kingdom-tag {
   display: inline-flex; align-items: center; gap: 6px; width: fit-content;
