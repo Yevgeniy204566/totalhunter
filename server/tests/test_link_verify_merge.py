@@ -70,3 +70,12 @@ async def test_link_refuses_when_both_accounts_have_chest_rosters(db_session):
     assert r.status_code == 409
     db_session.expire_all()
     assert await db_session.get(User, bot_id) is not None  # ничего не удалено
+
+
+def test_every_foreign_key_to_users_is_handled_by_the_merge():
+    """Сторож: новая таблица со ссылкой на users.id ломает привязку бота (FK при DELETE), пока её не добавят в слияние."""
+    from models import Base
+    from web_routes import MERGE_USER_FKS
+    found = {f"{t.name}.{fk.parent.name}" for t in Base.metadata.tables.values()
+             for fk in t.foreign_keys if fk.column.table.name == "users"}
+    assert found == MERGE_USER_FKS, f"не учтено слиянием: {found - MERGE_USER_FKS}, лишнее: {MERGE_USER_FKS - found}"

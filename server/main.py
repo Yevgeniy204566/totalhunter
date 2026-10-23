@@ -38,7 +38,7 @@ _CREDIT_COOLDOWN_SEC = 2.0
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBasic, HTTPBasicCredentials, HTTPBearer
 from sqlalchemy import Integer, case, func, select, update, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -99,6 +99,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def _unhandled_error(request, exc):
+    # Starlette после этого обработчика всё равно пишет traceback в журнал; здесь — только уведомление владельцу
+    from error_alerts import notify_server_error
+    await notify_server_error(request.method, request.url.path, exc)
+    return JSONResponse({"detail": "Internal Server Error"}, status_code=500)
+
 
 app.include_router(web_router)
 app.include_router(payments_router)

@@ -422,6 +422,16 @@ async def link_generate(req: LinkGenerateRequest, db: AsyncSession = Depends(get
 TRIAL_CREDITS    = 300  # как кнопка «Получить 300 попыток» в боте (владелец 2026-09-26)
 REFERRAL_REWARD  = 50
 
+# Все колонки с внешним ключом на users.id, которые слияние бот-аккаунта обязано переносить (hunts/transactions
+# переносятся в link_verify, остальные — в _absorb_bot_rows). Сторож tests/test_link_verify_merge.py падает, если
+# в моделях появилась новая ссылка на users, которой здесь нет.
+MERGE_USER_FKS = {
+    "hunts.user_id", "transactions.user_id", "hwid_history.user_id", "feedback.user_id", "orders.user_id",
+    "blacksea_sales.user_id", "chest_collectors.user_id", "chest_managers.user_id", "ancient_editors.user_id",
+    "ancient_invite_codes.used_by_user_id", "users.invited_by_id",
+}
+
+
 async def _absorb_bot_rows(db: AsyncSession, bot_user: User, web_user: User) -> None:
     """Переносит на аккаунт сайта ВСЕ строки, ссылающиеся на бот-аккаунт, прежде чем его удалить: иначе внешний
     ключ рвёт DELETE и привязка отвечает 500 (живой случай 2026-10-23: у бот-аккаунта был ростер сундуков).
