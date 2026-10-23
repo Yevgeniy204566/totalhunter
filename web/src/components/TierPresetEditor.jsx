@@ -24,7 +24,7 @@ const TXT = {
     emcSum: 'EMC за 2 недели (сумма трёх колонок)',
     help: [
       'Очки за сундук и квоты — это ваш вариант пресета ступени. Кнопки − и + меняют очки на 1, «×» убирает сундук из пресета, «+ Добавить сундук» возвращает убранный или добавляет новый. Изменённое выделено жёлтой рамкой.',
-      '«Загрузить в пульт» ставит очки за сундук из пресета для ступеней Героя, отмеченных в пульте выше («Все уровни» — на все): пульт сам подбирает множитель, чтобы при примерном Герое очки равнялись пресетным. Затрагиваются только типы из «Учёта» клана.',
+      '«Загрузить пресет в ростер (для учёта)» ставит очки за сундук из пресета для уровней Героя, отмеченных выше на этой вкладке («Все уровни» — для всех): на выбранном «Примере для Героя» очки станут равны пресетным. Затрагиваются только сундуки из «Учёта» клана.',
       'Правки в редакторе сохраняются кнопкой «Сохранить настройки» выше.',
     ],
     statTitle: 'Замер активности клана Берсерки (T9): 2 недели, {n} игроков',
@@ -46,7 +46,7 @@ const TXT = {
     emcSum: 'EMC per 2 weeks (sum of three columns)',
     help: [
       "Points per chest and the quotas are your version of the tier preset. The − and + buttons change points by 1, '×' removes a chest from the preset, '+ Add chest' brings back a removed one or adds a new one. Edited items have a yellow frame.",
-      "'Load into mixer' sets points per chest from the preset for the Hero steps ticked in the mixer above ('All levels' = every step): the mixer picks a multiplier so that at the sample Hero the points equal the preset's. Only types the clan keeps in accounting are affected.",
+      "'Load preset into roster (for accounting)' sets points per chest from the preset for the Hero levels ticked above on this tab ('All levels' = every level): at the chosen 'Example for Hero' the points become equal to the preset's. Only chests the clan keeps in accounting are affected.",
       "Press 'Save settings' above to keep the editor changes.",
     ],
     statTitle: 'Activity sample, clan Berserki (T9): 2 weeks, {n} players',
