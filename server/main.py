@@ -976,6 +976,20 @@ async def admin_logs(db: AsyncSession = Depends(get_db), limit: int = 50):
     ]
 
 
+# ── GET /admin/chests/rosters ─────────────────────────────────────────────────
+
+@app.get("/admin/chests/rosters", dependencies=[Depends(require_admin)])
+async def admin_chests_rosters(q: str | None = None, owner_id: int | None = None,
+                               sort: str = "week", order: str = "desc",
+                               db: AsyncSession = Depends(get_db)):
+    """Таблица ростеров сундуков: счётчики за сегодня (Киев), 7 суток и «в базе» (см. admin_chests.py)."""
+    from admin_chests import rosters_report
+    try:
+        return await rosters_report(db, q=q, owner_id=owner_id, sort=sort, order=order)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="bad sort")
+
+
 # ── GET /admin/activity/{metric} ──────────────────────────────────────────────
 
 async def _activity_finance_summary(db: AsyncSession, user_ids: list) -> dict:
