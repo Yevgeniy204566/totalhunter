@@ -861,6 +861,9 @@ a:hover { color: var(--on-surface); }
 .pult-hero-input { width: 110px; font-size: 22px; font-weight: 800; color: #FFFFFF; text-align: center; padding: 8px 6px; border-color: var(--accent); }
 .pult-hero-badge { font-size: 20px; color: #FFFFFF; background: var(--accent); border-radius: 999px; padding: 6px 16px; }
 .pult-add-btn { margin-top: 16px; }
+.pult-scope { margin: 12px 0; padding: 12px 16px; border-left: 4px solid var(--accent); background: var(--accent-faint); border-radius: 8px; }
+.pult-scope b { display: block; font-size: 17px; color: #FFFFFF; margin-bottom: 4px; }
+.pult-scope p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--on-surface); }
 .pult-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--outline); }
 .pult-footer-field { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--on-surface); }
 .pult-footer-field .input-dark { width: 90px; }

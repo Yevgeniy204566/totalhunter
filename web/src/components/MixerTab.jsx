@@ -33,7 +33,12 @@ const TXT = {
     save: '💾 Сохранить настройки', saved: 'Сохраняет всё, что стоит в пульте сейчас, как настройку сезона по умолчанию — её видят игроки на публичной странице.',
     dirtyOn: '● Есть несохранённые изменения', dirtyOff: '✓ Всё сохранено',
     summary: 'Герой {h}: норма «Всего» {total} · Crypts {crypts} · EMC {emc} шт.',
-    editing: 'Правим: {what}', mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
+    editing: 'Правим: {what}',
+    scopeAllTitle: 'Правка: ВСЕ уровни Героя',
+    scopeAllText: 'Любое изменение применяется ко всем уровням сразу и в одно и то же число раз: например, ×1,2 — на каждом уровне на 20% больше. Форма шкалы сохраняется: слабым Героям по-прежнему меньше, сильным больше. Число в нижнем поле считается для уровня «Пример для Героя» ({h}), а на остальных уровнях пересчитывается пропорционально. Одинаково для «Очки» и «Количество».',
+    scopeDivTitle: 'Правка: только {what}',
+    scopeDivText: 'Изменение касается только выбранных ступеней Героя; остальные уровни не меняются, поэтому на границе с соседней ступенью получится «ступенька». Если «Все уровни» тоже изменены, множители перемножаются. Число в нижнем поле — итоговое значение именно для выбранных ступеней. Одинаково для «Очки» и «Количество».',
+    mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
     presets: 'Наборы настроек очков', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить набор', load: 'Загрузить набор',
     presetHint: 'Набор сохраняет всё, что вы настроили: положения фейдеров, рычаги EMC и свои правки пресетов T5–T9. Общие пресеты T5–T9 не меняются никогда: ваши правки лежат отдельно, в трёх слотах можно держать три своих варианта. «Сохранить настройки» выше применяет текущие значения к сезону; сохранение в набор тоже записывает сезон.',
@@ -49,7 +54,7 @@ const TXT = {
       'В пульте — те сундуки, которые клан держит в «Учёте». Вкладка EMC — только сундуки со статусом «Квота 2»; вкладка Crypts — «Квота 1» и «В учёте» (учитываются без квоты). Для типов вне шкалы (например, свои события) базой служат очки из вкладки «Общие нормы клана».',
       'Фейдер: середина — рассчитанное значение, вверх — больше, вниз — меньше (от ×0,1 до ×3). Внизу — абсолютное число: сотрите его и впишите любое своё (0 выключает тип). Зелёная точка тоже выключает тип.',
       '«Очки» — сколько очков даёт сундук. «Количество» — сколько штук ждут от игрока: у эпик-склепов — ориентир клана, у эпических монстров — история клана (четыре монстра) или их среднее (остальные).',
-      'Ступени Героя: отметьте одну или несколько — правка пойдёт только в них. «Все уровни» меняет значение пропорционально на каждой ступени.',
+      'Два способа править. «Все уровни» — всё сразу в одно и то же число раз, форма шкалы сохраняется. Одна или несколько ступеней Героя — меняются только они, остальные уровни не затрагиваются (на границе будет ступенька). Если изменены оба способа, множители перемножаются. Работает одинаково для «Очки» и «Количество».',
       'Пресеты — 3 слота: сохраните набор положений фейдеров и загрузите позже.',
     ],
   },
@@ -70,7 +75,12 @@ const TXT = {
     save: '💾 Save settings', saved: 'Saves everything currently set in the mixer as the default season setting — players see it on the public page.',
     dirtyOn: '● Unsaved changes', dirtyOff: '✓ All saved',
     summary: 'Hero {h}: Total norm {total} · Crypts {crypts} · EMC {emc} pcs',
-    editing: 'Editing: {what}', mixed: 'selected steps have different values — the fader will set them equal',
+    editing: 'Editing: {what}',
+    scopeAllTitle: 'Editing: ALL Hero levels',
+    scopeAllText: 'Any change applies to all levels at once and by the same factor: for example ×1.2 means 20% more on every level. The shape of the scale is kept: weaker Heroes still get less, stronger ones more. The number in the lower field is for the "Example Hero" level ({h}); other levels are recalculated proportionally. Same for Points and Count.',
+    scopeDivTitle: 'Editing: only {what}',
+    scopeDivText: 'The change affects only the chosen Hero steps; other levels stay as they are, so there will be a step at the border with the neighbouring step. If "All levels" is also changed, the factors multiply. The number in the lower field is the final value for the chosen steps. Same for Points and Count.',
+    mixed: 'selected steps have different values — the fader will set them equal',
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
     presets: 'Point settings sets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save set', load: 'Load set',
     presetHint: "A set stores everything you configured: fader positions, EMC levers and your edits of the T5–T9 presets. The shared T5–T9 presets never change: your edits are kept separately, and the three slots hold three of your own variants. 'Save settings' above applies the current values to the season; saving to a set also saves the season.",
@@ -430,7 +440,10 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
       {!enabled && <p className="emc-text"><small>{t.off}</small></p>}
       {fallback && <p className="emc-text"><small>{t.noTypes}</small></p>}
-      <p className="emc-text"><small>{t.editing.replace('{what}', editing)}</small></p>
+      <div className="pult-scope" role="note">
+        <b>{isAll ? t.scopeAllTitle : t.scopeDivTitle.replace('{what}', `${t.hero} ${editing}`)}</b>
+        <p>{isAll ? t.scopeAllText.replace('{h}', exHero) : t.scopeDivText}</p>
+      </div>
       {cols.some(c => c.mixed) && <p className="emc-text"><small>⚠ {t.mixed}</small></p>}
       {tab === 'crypts' && mode === 'count' && <p className="emc-text"><small>{t.countNote}</small></p>}
 
