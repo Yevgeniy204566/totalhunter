@@ -160,7 +160,7 @@ export const GUIDE = {
     botHow: [
       { title: 'Choose the clan', desc: 'In the bot "Chests" tab pick a saved "kingdom · clan" pair from the list, or type the kingdom number and clan name and save it with 💾. Chests go to the clan selected at the moment you press START.' },
       { title: 'START', desc: 'Open the clan gifts tab in the game and press START. The bot collects chests to the end of the list. Collected chests are stored on your PC until they are sent.' },
-      { title: 'Sending', desc: '"SEND TO SERVER" sends everything collected as one batch — 10 diamonds per send, no matter how many chests are in it. With "Auto-send" on, the bot sends by itself when the list ends or 5000 chests are collected. After a successful send the records are removed from the PC.' },
+      { title: 'Sending', desc: '"SEND TO SERVER" sends everything collected as one batch — 1 diamond per 100 chests (rounded to the nearest hundred: 149 — 1, 150 — 2; minimum 1 diamond per send). With "Auto-send" on, the bot sends by itself when the list ends or 5000 chests are collected. After a successful send the records are removed from the PC.' },
     ],
     webLabel: 'Step 2. Set up on the site (Dashboard → Chests)',
     webSteps: [
@@ -293,7 +293,7 @@ export const GUIDE = {
     spendRows: [
       { label: 'Exchange Found (sound triggered)', cost: '−10 diamonds', color: '#00CFFF' },
       { label: 'Successfully Sent to Crypt',       cost: '−1 diamond',   color: '#B060FF' },
-      { label: 'Uploaded chests to the site (per batch)', cost: '−10 diamonds', color: '#F59E0B' },
+      { label: 'Uploaded chests to the site (per 100 chests, rounded to the nearest hundred, min. 1)', cost: '−1 diamond', color: '#F59E0B' },
       { label: 'Searched but found nothing',       cost: 'Free',         color: 'var(--on-surface2)' },
       { label: 'Registration (Trial)',             cost: '+300 diamonds', color: 'var(--credits-gold)' },
     ],

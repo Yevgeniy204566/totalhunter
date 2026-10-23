@@ -14,7 +14,7 @@ const FAQ_ITEMS_RU = [
   { q: 'Что такое Total Hunter?',
     a: 'Total Hunter — десктопный бот для автоматизации Total Battle. Ищет биржи наёмников, отправляет Картера в склепы и собирает сундуки клана, а сайт ведёт таблицу клана и калькулятор Древнего. Бот имитирует действия реального игрока.' },
   { q: 'Сколько стоит Total Hunter?',
-    a: 'Первые 300 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп, −10 за отправку пакета сундуков на сайт.' },
+    a: 'Первые 300 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп, −1 за каждые 100 сундуков, отправленных на сайт (округление до ближайшей сотни, минимум 1).' },
   { q: 'Работает ли бот с браузером и клиентом Total Battle?',
     a: 'Да. Total Hunter поддерживает браузерную версию (Chrome, Firefox) и официальный клиент Total Battle. Настройки сохраняются в профилях.' },
   { q: 'Могут ли меня забанить за использование бота?',
@@ -31,7 +31,7 @@ const FAQ_ITEMS_EN = [
   { q: 'What is Total Hunter?',
     a: 'Total Hunter is a desktop bot for Total Battle automation. It finds mercenary exchanges, sends Carter to crypts and collects clan chests, while the website keeps the clan table and the Ancient calculator. The bot imitates real player actions.' },
   { q: 'How much does Total Hunter cost?',
-    a: 'First 300 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected, −10 per chest batch uploaded to the site.' },
+    a: 'First 300 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected, −1 per 100 chests uploaded to the site (rounded to the nearest hundred, minimum 1).' },
   { q: 'Does it work with both browser and client versions of Total Battle?',
     a: 'Yes. Total Hunter supports both browser (Chrome, Firefox) and the official Total Battle client. Settings are saved in profiles.' },
   { q: 'Can I get banned for using the bot?',
@@ -705,8 +705,8 @@ export default function LandingPage() {
           </p>
           <p style={{ textAlign: 'center', color: 'var(--on-surface2)', fontSize: 13, marginBottom: 56 }}>
             {lang === 'en'
-              ? '−10 ◆ per Exchange found · −1 ◆ per Crypt gathered · −10 ◆ per chest batch · 0 ◆ if nothing found'
-              : '−10 ◆ за биржу · −1 ◆ за склеп · −10 ◆ за пакет сундуков · 0 ◆ если ничего не найдено'}
+              ? '−10 ◆ per Exchange found · −1 ◆ per Crypt gathered · −1 ◆ per 100 chests · 0 ◆ if nothing found'
+              : '−10 ◆ за биржу · −1 ◆ за склеп · −1 ◆ за 100 сундуков · 0 ◆ если ничего не найдено'}
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 400, margin: '0 auto' }}>

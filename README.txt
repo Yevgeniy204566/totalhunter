@@ -96,7 +96,8 @@
       collects chests to the end of the list. Collected chests are
       stored on your PC until they are sent.
    3. "SEND TO SERVER" sends everything collected as one batch -
-      10 diamonds per send, no matter how many chests are in it.
+      1 diamond per 100 chests (rounded to the nearest hundred: 149 - 1,
+      150 - 2; minimum 1 diamond per send).
       With "Auto-send" on, the bot sends by itself when the list ends
       or 5000 chests are collected. After a successful send the
       records are removed from the PC.
@@ -308,7 +309,8 @@ Support    : totalhunter.support@gmail.com
       собирает сундуки до конца списка. Собранное хранится на твоём
       ПК, пока не будет отправлено.
    3. «ОТПРАВИТЬ НА СЕРВЕР» отправляет всё собранное одним пакетом —
-      10 алмазов за отправку, сколько бы сундуков в ней ни было.
+      1 алмаз за каждые 100 сундуков (до ближайшей сотни: 149 — 1, 150 — 2;
+      минимум 1 алмаз за отправку).
       С включённой «Авто-отправкой» бот отправляет сам, когда список
       закончился или набралось 5000 сундуков. После успешной отправки
       записи на ПК удаляются.

@@ -30,11 +30,18 @@ from models import (
     PlayerAlias, PlayerProfile, Transaction, User,
 )
 
+from vault import notify_balance_changed
+
 router = APIRouter(prefix="/api/v1/chests", tags=["chests"])
 
-# Стоимость одной отправки батча (флэт, не за штуку) — отдельная константа от
-# CREDIT_COST в main.py, чтобы не создавать циклический импорт main<->chests.
-CHEST_IMPORT_COST = 10
+# Тариф (владелец 2026-10-23): 1 алмаз = 100 сундуков, считается по числу НОВЫХ (реально записанных)
+# сундуков в запросе. Округление до ближайшего (149 → 1, 150 → 2), но не меньше 1 алмаза за любую отправку,
+# иначе мелкие порции уходили бы бесплатно. Повторная отправка того же пакета новых записей не даёт — не списывается.
+CHESTS_PER_DIAMOND = 100
+
+
+def chest_import_cost(count: int) -> int:
+    return max(1, (count + CHESTS_PER_DIAMOND // 2) // CHESTS_PER_DIAMOND)
 
 
 class ChestItemIn(BaseModel):
@@ -141,12 +148,13 @@ def _build_chest_rows(collector_id: int, items, player_aliases, type_aliases):
     ]
 
 
-async def _charge_chest_import(user_id: int, db: AsyncSession):
-    """Атомарно списывает CHEST_IMPORT_COST. Поднимает 402, если кредитов не хватает."""
+async def _charge_chest_import(user_id: int, db: AsyncSession, chests: int):
+    """Атомарно списывает chest_import_cost(chests). Поднимает 402, если кредитов не хватает."""
+    cost = chest_import_cost(chests)
     row = (await db.execute(
         update(User)
-        .where(User.id == user_id, User.credits >= CHEST_IMPORT_COST)
-        .values(credits=User.credits - CHEST_IMPORT_COST)
+        .where(User.id == user_id, User.credits >= cost)
+        .values(credits=User.credits - cost)
         .returning(User.id, User.credits)
     )).first()
     if not row:
@@ -158,11 +166,11 @@ async def _charge_chest_import(user_id: int, db: AsyncSession):
             detail={
                 "message": "Недостаточно кредитов. Пополни баланс.",
                 "credits": current,
-                "required": CHEST_IMPORT_COST,
+                "required": cost,
             },
         )
-    db.add(Transaction(user_id=user_id, type="credit_use", amount=-CHEST_IMPORT_COST,
-                       meta={"hunt_type": "chest"}))
+    db.add(Transaction(user_id=user_id, type="credit_use", amount=-cost,
+                       meta={"hunt_type": "chest", "chests": chests}))
     db.add(Hunt(user_id=user_id, hunt_type="chest"))
 
 
@@ -195,7 +203,7 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
         await db.commit()   # сохранить last_import_at
         return {"ok": True, "count": 0, "collector_slug": collector_slug}
 
-    await _charge_chest_import(user_id, db)
+    await _charge_chest_import(user_id, db, len(new_items))
     for row in _build_chest_rows(collector_id, new_items, player_aliases, type_aliases):
         db.add(row)
 
@@ -216,11 +224,12 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
         if not new_items:
             await db.commit()   # сохранить last_import_at
             return {"ok": True, "count": 0, "collector_slug": collector_slug}
-        await _charge_chest_import(user_id, db)
+        await _charge_chest_import(user_id, db, len(new_items))
         for row in _build_chest_rows(collector_id, new_items, player_aliases, type_aliases):
             db.add(row)
         await db.commit()
 
+    notify_balance_changed(payload.hwid)  # только после commit: бот сразу увидит новый баланс
     return {"ok": True, "count": len(new_items), "collector_slug": collector_slug}
 
 

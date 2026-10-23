@@ -1,7 +1,7 @@
 """Tests for chests.py — tenant isolation, alias dictionary, idempotent import."""
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -11,8 +11,18 @@ from httpx import AsyncClient, ASGITransport
 from main import app, CREDIT_COST
 
 
-def test_credit_cost_chest_is_10():
-    assert CREDIT_COST["chest"] == 10
+def test_chest_has_no_flat_price_in_use_credit_table():
+    # цена сундуков считается только в /chests/import по числу сундуков (владелец 2026-10-23)
+    assert "chest" not in CREDIT_COST
+
+
+@pytest.mark.parametrize("count,cost", [
+    (1, 1), (49, 1), (50, 1), (99, 1), (100, 1), (149, 1), (150, 2), (249, 2), (250, 3),
+    (500, 5), (1000, 10), (5000, 50),
+])
+def test_chest_import_cost_rounds_to_nearest_hundred_min_one(count, cost):
+    from chests import chest_import_cost
+    assert chest_import_cost(count) == cost
 
 
 from chest_summary import pivot_summary as _pivot
@@ -306,7 +316,7 @@ def test_dedupe_recognizes_resend_of_already_committed_row():
 
 
 @pytest.mark.asyncio
-async def test_import_charges_10_credits_on_new_data(db_session):
+async def test_import_charges_by_chest_count_not_flat(db_session):
     user = await _create_user(db_session, "chargeuser000a", credits=100)
     await db_session.commit()
 
@@ -320,13 +330,14 @@ async def test_import_charges_10_credits_on_new_data(db_session):
     assert resp.json()["count"] == 2
 
     await db_session.refresh(user)
-    assert user.credits == 90  # списано один раз за батч, не за штуку
+    assert user.credits == 99  # 2 сундука → минимум 1 алмаз
 
     txns = (await db_session.execute(
         select(Transaction).where(Transaction.user_id == user.id)
     )).scalars().all()
     assert len(txns) == 1
-    assert txns[0].amount == -10
+    assert txns[0].amount == -1
+    assert txns[0].meta["chests"] == 2
 
     hunts = (await db_session.execute(
         select(Hunt).where(Hunt.user_id == user.id, Hunt.hunt_type == "chest")
@@ -336,17 +347,17 @@ async def test_import_charges_10_credits_on_new_data(db_session):
 
 @pytest.mark.asyncio
 async def test_import_insufficient_credits_returns_402(db_session):
-    user = await _create_user(db_session, "poorerguy0000", credits=5)
+    user = await _create_user(db_session, "poorerguy0000", credits=0)
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post("/api/v1/chests/import", json=_payload(user.hwid))
     assert resp.status_code == 402
-    assert resp.json()["detail"]["required"] == 10
-    assert resp.json()["detail"]["credits"] == 5
+    assert resp.json()["detail"]["required"] == 1
+    assert resp.json()["detail"]["credits"] == 0
 
     await db_session.refresh(user)
-    assert user.credits == 5  # не списано
+    assert user.credits == 0  # не списано
 
     chests = (await db_session.execute(select(Chest))).scalars().all()
     assert len(chests) == 0  # ничего не записано
@@ -368,7 +379,7 @@ async def test_resend_full_duplicate_does_not_charge_again(db_session):
     assert second.json()["count"] == 0
 
     await db_session.refresh(user)
-    assert user.credits == 90  # списано один раз, повторная отправка бесплатна
+    assert user.credits == 99  # 1 сундук = 1 алмаз (минимум); повторная отправка бесплатна
 
 
 @pytest.mark.asyncio
@@ -388,7 +399,7 @@ async def test_partial_duplicate_charges_once_not_per_item(db_session):
 
     assert second.json()["count"] == 1
     await db_session.refresh(user)
-    assert user.credits == 80  # 10 за первый запрос + 10 за второй (флэт за батч, не за штуку)
+    assert user.credits == 98  # по 1 алмазу за каждый запрос: платим только за НОВЫЕ сундуки
 
 
 @pytest.mark.asyncio
@@ -427,7 +438,7 @@ async def test_concurrent_duplicate_recovers_without_500(db_session, monkeypatch
     assert second.json()["count"] == 0
 
     await db_session.refresh(user)
-    assert user.credits == 90  # заряжен один раз за первый (настоящий) импорт, не за гонку
+    assert user.credits == 99  # заряжен один раз за первый (настоящий) импорт, не за гонку
 
 
 @pytest.mark.asyncio
@@ -1557,3 +1568,61 @@ async def test_by_kingdom_returns_readable_public_url(db_session):
         await client.post("/api/v1/chests/import", json=_payload(user.hwid, kingdom="778", clan="Феникс"))
         resp = await client.get("/api/v1/chests/by/778/Феникс")
     assert resp.json()["public_url"] == "https://total-hunter.com/c/778/feniks"
+
+
+def _many(n, start_minute=0):
+    base = datetime(2026, 6, 20, 0, 0, 0)
+    return [{"chest_type": "A", "sender": f"P{i}", "timestamp": (base + timedelta(seconds=i + start_minute)).isoformat()}
+            for i in range(n)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("n,cost", [(149, 1), (150, 2), (500, 5)])
+async def test_import_charges_rounded_cost_for_batch(db_session, n, cost):
+    user = await _create_user(db_session, f"cnt{n}user000000"[:16], credits=100)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/import", json=_payload(user.hwid, items=_many(n)))
+    assert resp.status_code == 200 and resp.json()["count"] == n
+    await db_session.refresh(user)
+    assert user.credits == 100 - cost
+
+
+@pytest.mark.asyncio
+async def test_import_insufficient_for_large_batch_returns_402_and_writes_nothing(db_session):
+    user = await _create_user(db_session, "bigpoor0000000", credits=1)
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/chests/import", json=_payload(user.hwid, items=_many(150)))
+    assert resp.status_code == 402
+    assert resp.json()["detail"]["required"] == 2 and resp.json()["detail"]["credits"] == 1
+    await db_session.refresh(user)
+    assert user.credits == 1
+    assert (await db_session.execute(select(Chest))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_resend_of_large_batch_is_free(db_session):
+    user = await _create_user(db_session, "resendbig00000", credits=100)
+    await db_session.commit()
+    payload = _payload(user.hwid, items=_many(250))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        first = await client.post("/api/v1/chests/import", json=payload)
+        second = await client.post("/api/v1/chests/import", json=payload)
+    assert first.json()["count"] == 250 and second.json()["count"] == 0
+    await db_session.refresh(user)
+    assert user.credits == 97  # 3 алмаза один раз, повтор бесплатен
+
+
+@pytest.mark.asyncio
+async def test_import_notifies_balance_changed_after_charge(db_session, monkeypatch):
+    import chests as chests_module
+    user = await _create_user(db_session, "notifychest0000", credits=100)
+    await db_session.commit()
+    hwid = user.hwid
+    seen = []
+    monkeypatch.setattr(chests_module, "notify_balance_changed", seen.append)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/chests/import", json=_payload(hwid, items=_many(3)))
+        await client.post("/api/v1/chests/import", json=_payload(hwid, items=_many(3)))  # повтор: без списания
+    assert seen == [hwid]
