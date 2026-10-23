@@ -717,17 +717,6 @@ class Mix(BaseModel):
         return v
 
 
-class MixerPreset(BaseModel):
-    """Пресет пульта (слот 1–3): положения всех фейдеров + рычаги EMC, чтобы клан мог переключаться
-    между наборами настроек («мягкий», «строгий», «на сезон»…)."""
-    name: str = Field(default="", max_length=30)
-    norm: float = Field(default=1.0, ge=0.01, le=1000.0)
-    weights: float = Field(default=1.0, ge=0.01, le=1000.0)
-    mix: "Mix" = Field(default_factory=lambda: Mix())
-    emc: Optional[EmcSettings] = None
-    model_config = {"populate_by_name": True}
-
-
 class TierPreset(BaseModel):
     """Свой вариант пресета T5–T9 в пульте: очки за сундук поверх общего пресета (CHEST_PRESETS),
     норма очков за 2 недели, минимум эпик-склепов и число EMC (None = не задано)."""
@@ -752,6 +741,19 @@ class TierPreset(BaseModel):
             if not key or len(key) > 60 or not (0 <= val <= 100000):
                 raise ValueError("bad preset points")
         return v
+
+
+class MixerPreset(BaseModel):
+    """Пресет пульта (слот 1–3): положения всех фейдеров + рычаги EMC, чтобы клан мог переключаться
+    между наборами настроек («мягкий», «строгий», «на сезон»…)."""
+    name: str = Field(default="", max_length=30)
+    norm: float = Field(default=1.0, ge=0.01, le=1000.0)
+    weights: float = Field(default=1.0, ge=0.01, le=1000.0)
+    mix: "Mix" = Field(default_factory=lambda: Mix())
+    emc: Optional[EmcSettings] = None
+    # правки пресетов T5–T9 клана на момент сохранения набора (общие пресеты сервера не меняются никогда)
+    tier_presets: Dict[Literal["T5", "T6", "T7", "T8", "T9"], TierPreset] = Field(default_factory=dict)
+    model_config = {"populate_by_name": True}
 
 
 class PersonalScale(BaseModel):

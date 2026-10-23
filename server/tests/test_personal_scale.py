@@ -285,3 +285,19 @@ async def test_tier_presets_invalid_422(db_session, bad):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         r = await _patch(client, c, h, {"personal": {**ON, "tier_presets": bad}})
     assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_slot_preset_keeps_tier_preset_edits(db_session):
+    """Набор настроек (слот 1–3) хранит и правки пресетов T5–T9 клана; общий CHEST_PRESETS при этом не меняется."""
+    from chest_dashboard import CHEST_PRESETS
+    before = [dict(x) for x in CHEST_PRESETS["T9"]]
+    c, h = await _owner(db_session, f"sl{secrets.token_hex(2)}@example.com")
+    slot = {"name": "Мой", "norm": 1, "weights": 1, "mix": {}, "tier_presets": {"T9": {"points": {"Epic Crypt 35": 140}, "removed": ["Yogwai"]}}}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"personal": {**ON, "presets": {"1": slot}}})
+        pub = await _public(client, c)
+    assert r.status_code == 200
+    saved = pub["personal"]["presets"]["1"]["tier_presets"]["T9"]
+    assert saved["points"]["Epic Crypt 35"] == 140 and saved["removed"] == ["Yogwai"]
+    assert CHEST_PRESETS["T9"] == before

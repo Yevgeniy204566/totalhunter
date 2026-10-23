@@ -24,6 +24,8 @@ const TXT = {
     enable: 'Персонализированный учёт по уровню Героя',
     off: 'Сейчас выключен: цели фиксированные, из настроек сезона. Включите, чтобы пользоваться пультом.',
     sample: 'Пример для Героя',
+    touchedLegend: 'Жёлтым подсвечены уровни Героя, для которых вы что-то изменили в пульте.',
+    touchedAll: 'изменено на все уровни',
     reset: 'Двойной щелчок по фейдеру — вернуть ×1',
     mute: 'Вкл/выкл: выключенный тип не считается',
     abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
@@ -36,7 +38,7 @@ const TXT = {
     editing: 'Правим: {what}', mixed: 'у выбранных ступеней значения разные — фейдер зададит одинаковое',
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
     presets: 'Наборы настроек очков', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить в пресет', load: 'Загрузить пресет',
-    presetHint: 'Пресет — копия настроек в выбранном слоте. «Сохранить настройки» выше нужна, чтобы применить текущие значения к сезону; сохранение в пресет тоже записывает сезон.',
+    presetHint: 'Набор сохраняет всё, что вы настроили: положения фейдеров, рычаги EMC и свои правки пресетов T5–T9. Общие пресеты T5–T9 не меняются никогда: ваши правки лежат отдельно, в трёх слотах можно держать три своих варианта. «Сохранить настройки» выше применяет текущие значения к сезону; сохранение в набор тоже записывает сезон.',
     loaded: 'Пресет загружен в пульт. Нажмите «Сохранить настройки», чтобы применить к сезону.',
     clanPresetTitle: 'Пресет клана (T5–T9, как на вкладке «Сундуки»)', clanPresetLoad: 'Загрузить в пульт',
     clanPresetHint: 'Ставит очки за сундук из пресета для отмеченных выше ступеней Героя («Все уровни» — на все): пульт сам подбирает множитель так, чтобы при примерном Герое очки равнялись пресетным. Затем правьте фейдерами и нажмите «Сохранить настройки». Затрагиваются только типы, которые есть в «Учёте» клана.',
@@ -61,6 +63,8 @@ const TXT = {
     enable: 'Personalized accounting by Hero level',
     off: 'Currently off: targets are fixed from the season settings. Turn it on to use the mixer.',
     sample: 'Example for Hero',
+    touchedLegend: 'Highlighted in yellow are the Hero levels you have changed in the mixer.',
+    touchedAll: 'changed for all levels',
     reset: 'Double-click a fader to reset to ×1',
     mute: 'On/off: a muted type is not counted',
     abs: 'Value: erase and type your own number (0 turns the type off)',
@@ -73,7 +77,7 @@ const TXT = {
     editing: 'Editing: {what}', mixed: 'selected steps have different values — the fader will set them equal',
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
     presets: 'Point settings sets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save to preset', load: 'Load preset',
-    presetHint: "A preset is a copy of the settings in the chosen slot. 'Save settings' above applies the current values to the season; saving to a preset also saves the season.",
+    presetHint: "A set stores everything you configured: fader positions, EMC levers and your edits of the T5–T9 presets. The shared T5–T9 presets never change: your edits are kept separately, and the three slots hold three of your own variants. 'Save settings' above applies the current values to the season; saving to a set also saves the season.",
     loaded: "Preset loaded into the mixer. Press 'Save settings' to apply it to the season.",
     clanPresetTitle: "Clan preset (T5–T9, as on the 'Chests' tab)", clanPresetLoad: 'Load into mixer',
     clanPresetHint: "Sets points per chest from the preset for the Hero steps ticked above ('All levels' = every step): the mixer picks a multiplier so that at the sample Hero the points equal the preset's. Then adjust with the faders and press 'Save settings'. Only types the clan keeps in accounting are affected.",
@@ -317,7 +321,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     const next = {
       ...personal,
       presets: { ...presets, [slot]: { name: (presetName.trim() || presets[slot]?.name || `${t.slot} ${slot}`).slice(0, 30),
-        norm: personal.norm ?? 1, weights: personal.weights ?? 1, mix, emc } },
+        norm: personal.norm ?? 1, weights: personal.weights ?? 1, mix, emc, tier_presets: personal.tier_presets || {} } },
     }
     onPersonal(next)
     setNote(t.savedPreset)
@@ -326,7 +330,9 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const loadPreset = () => {
     const p = presets[presetSlot]
     if (!p) return
-    onPersonal({ ...personal, norm: p.norm ?? 1, weights: p.weights ?? 1, mix: p.mix || {} })
+    // набор, сохранённый до появления правок пресетов, их не трогает
+    onPersonal({ ...personal, norm: p.norm ?? 1, weights: p.weights ?? 1, mix: p.mix || {},
+      tier_presets: p.tier_presets ?? personal.tier_presets ?? {} })
     if (p.emc) setEmc({ ...structuredClone(EMC_DEFAULTS), ...p.emc })
     setNote(t.loaded)
   }
@@ -349,11 +355,26 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(normAt(exHero, scale)))
     .replace('{crypts}', fmt(cryptsNormAt(exHero, emc, scale))).replace('{emc}', emcTotal)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
-  // «Герой 400» в сводке выделяем: это уровень, для которого посчитаны все числа ниже
-  const [summaryHead, ...summaryTail] = summary.split(': ')
-  const summaryNode = summaryTail.length
-    ? <><b className="pult-hero-num">{summaryHead}</b>: {summaryTail.join(': ')}</>
-    : summary
+  // Уровни Героя, для которых что-то изменено (подсветка в сетке): поправки фейдеров по ступеням, диапазоны нормы и EMC;
+  // «на все уровни» — общие множители. Общий пресет сервера этим не затрагивается.
+  const touched = (() => {
+    const set = new Set()
+    let all = (personal.norm ?? 1) !== 1 || (personal.weights ?? 1) !== 1
+    for (const path of ['w', 'c']) {
+      for (const e of Object.values(mix[path] || {})) {
+        if (e.on === false || (e.all ?? 1) !== 1) all = true
+        for (const [b, k] of Object.entries(e.bands || {})) if (Number(k) !== 1) set.add(String(b))
+      }
+    }
+    if ((mix.epic?.all ?? 1) !== 1) all = true
+    const ranges = [...(personal.ranges || []), ...(emc.ranges || [])].filter(r => Number(r.k) !== 1)
+    for (const g of GROUPS) for (const h of g.bands) {
+      if (ranges.some(r => h <= r.to && h + 9 >= r.from)) set.add(String(h))
+    }
+    if ((emc.global ?? 1) !== 1 || Object.values(emc.monsters || {}).some(k => Number(k) !== 1)) all = true
+    return { set, all }
+  })()
+  const summaryNode = summary
 
   return (
     <div className="mixer">
@@ -393,6 +414,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <label className="mixer-all">
           <input type="checkbox" checked={isAll} onChange={() => setSel(new Set(['all']))} />
           <b>{t.allLevels}</b>
+          {touched.all && <span className="mixer-touched-mark">{t.touchedAll}</span>}
         </label>
         <div className="mixer-grid">
           {GROUPS.map(group => {
@@ -405,7 +427,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   <b>{group.g}+</b>
                 </label>
                 {group.bands.map(h => (
-                  <label key={h} className="mixer-band">
+                  <label key={h} className={`mixer-band${touched.set.has(String(h)) ? ' mixer-band--touched' : ''}`}>
                     <input type="checkbox" checked={!isAll && sel.has(String(h))} onChange={() => toggleBand(h)} />
                     <span>{bandLabel(h)}</span>
                   </label>
@@ -416,6 +438,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         </div>
       </div>
 
+      <p className="pult-hint">{t.touchedLegend}</p>
       {!enabled && <p className="emc-text"><small>{t.off}</small></p>}
       {fallback && <p className="emc-text"><small>{t.noTypes}</small></p>}
       <p className="emc-text"><small>{t.editing.replace('{what}', editing)}</small></p>
