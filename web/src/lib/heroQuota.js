@@ -9,11 +9,12 @@
 // выше последней — постоянный. Всё, что не стена клана, — РАСЧЁТ, не требование клана.
 // Очки за сундук округляются до кратных 5, общая норма — до сотен.
 
-import { clampMultiplier, computeRow, bandKey } from './emcQuota.js'
+import { clampMultiplier, computeRow, bandKey, emcChimeraAt } from './emcQuota.js'
+import { NORM_LOW, normBase, lnNormSlope } from './normCurve.js'
 
 const P = 298
 const E = 387.5
-const B = 450
+const B = 450 // Берсерки: средний Герой клана
 const EPIC_RATIO = 1.116 // средние очки эпик-склепов Феникса / ЭДО на 25–35 ур.
 
 // id → [[Герой, очки], …]; 0 на 387.5 = «в стене ЭДО такого типа нет — не засчитывается».
@@ -36,20 +37,6 @@ const W = {
   'Epic Basilisk': [[B, 30]], 'Epic Undead': [[B, 25]], 'Epic Chimera': [[B, 20]],
   'Epic Hellforge': [[B, 20]],
 }
-
-// Общая норма за 14 дней — стены кланов: Старт (Герой 279) 5000, ЭДО (387.5) 14000, Берсерки (450) 25000.
-// По этим трём точкам норма растёт почти идеальной экспонентой (на уровень Героя ×1.0095 и ×1.0093, то есть вдвое за
-// ~74 уровня), поэтому кривая — одна формула на всю шкалу 100–600: парабола в логарифме нормы, ровно через все три стены,
-// без изломов и без искусственных обрезаний хвостов — вверх и вниз та же закономерность (владелец 2026-10-23).
-// Прежняя точка «Сарацины 4000» была моим расчётом, не стеной — её заменила сама кривая.
-const NORM_LOW = 279
-const NORM_Y = [5000, 14000, 25000].map(Math.log)
-const NORM_F01 = (NORM_Y[1] - NORM_Y[0]) / (E - NORM_LOW)
-const NORM_F12 = (NORM_Y[2] - NORM_Y[1]) / (B - E)
-const NORM_C = (NORM_F12 - NORM_F01) / (B - NORM_LOW)
-const lnNorm = h => NORM_Y[0] + NORM_F01 * (h - NORM_LOW) + NORM_C * (h - NORM_LOW) * (h - E)
-const lnNormSlope = h => NORM_F01 + NORM_C * (2 * h - NORM_LOW - E)
-const normBase = h => Math.exp(lnNorm(h))
 
 // Ориентир по эпик-склепам — стены: Старт 50, ЭДО 200, Берсерки 300 (на Герое 450). Между стенами — гладкая кубическая
 // кривая (монотонная, с общими касательными в стыках); ниже Старта и выше Берсерков цель идёт вместе с нормой в очках.
@@ -228,7 +215,9 @@ export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS, slot = 
 export function emcPointsAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
   const row = computeRow(hero, emcModel || undefined)
   const counts = [row.finalH, row.finalU, row.finalA, row.finalS]
-  return EMC_IDS.reduce((sum, id, k) => sum + counts[k] * (weightAt(id, hero, settings) || 0), 0)
+  const four = EMC_IDS.reduce((sum, id, k) => sum + counts[k] * (weightAt(id, hero, settings) || 0), 0)
+  // Chimera — пятый эпик-монстр (больше половины всего EMC у ELDORADO), считается со своей базой, а не как «прочий»
+  return four + emcChimeraAt(hero) * (weightAt('Epic Chimera', hero, settings) || 0)
 }
 
 export function cryptsNormAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
@@ -273,6 +262,7 @@ export function emcCountAt(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
   if (entry?.set != null) return Math.max(0, Math.round(entry.set))
   const row = computeRow(hero, emcModel || undefined)
   if (id in EMC_FOUR) return row[EMC_FINALS[EMC_FOUR[id]]]
+  if (id === 'Epic Chimera') return emcChimeraAt(hero, mixFactor({ ...entry, on: true }, hero))
   const base = computeRow(hero)
   const mean = EMC_FINALS.reduce((sum, k) => sum + base[k], 0) / 4
   return Math.round(mean * mixFactor({ ...entry, on: true }, hero))

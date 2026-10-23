@@ -268,9 +268,12 @@ test('количество эпиков: фейдер, mute (доля остал
 test('EMC: четыре известных монстра — по истории, прочие — среднее четырёх', () => {
   assert.equal(emcCountAt('Epic Fire Hydra', 400), 19)
   assert.equal(emcCountAt('Epic Shadow City', 400), 4)
-  // среднее по 19/10/3/4 = 9
-  assert.equal(emcCountAt('Epic Briareus', 400), 9)
-  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 18)
+  // среднее по 19/7/3/4 = 8.25 -> 8
+  assert.equal(emcCountAt('Epic Briareus', 400), 8)
+  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 17) // 8.25 × 2 = 16.5 -> 17
+  // Chimera — пятый эпик-монстр ELDORADO со своей базой (52% всего EMC), а не «прочий»
+  assert.equal(emcCountAt('Epic Chimera', 400), 35)
+  assert.equal(emcCountAt('Epic Chimera', 450), 112)
   assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { on: false } } } }), 0)
 })
 
@@ -279,7 +282,7 @@ test('EMC: цель «прочих» монстров слота 2 суммир�
     A: { id: 'Epic Briareus', points: 45, slot: 2 }, B: { id: 'Epic Fire Hydra', points: 30, slot: 2 },
     C: { id: 'Yogwai', points: 40, slot: 1 },
   }
-  assert.equal(emcOthersTotal(meta, 400), 9) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
+  assert.equal(emcOthersTotal(meta, 400), 8) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
 })
 
 test('тип вне шкалы: очки клана × фейдер, mute обнуляет', () => {
@@ -373,6 +376,6 @@ test('синхронизация пульта и публичной страни
   assert.equal(typeTab('Yogwai', null), 'crypts')            // без «Квоты 2» — не EMC, как бы ни назывался
   assert.equal(typeTab('Epic Fire Hydra', 1), 'crypts')
   const meta = { 'Тыква': { id: 'Pumpkin Chest', points: 1, slot: 2 }, Hydra: { id: 'Epic Fire Hydra', points: 1, slot: 2 } }
-  assert.equal(emcOthersTotal(meta, 400), 9)         // «Тыква» = среднее четырёх, как в пульте
-  assert.equal(emcCountAt('Pumpkin Chest', 400), 9)
+  assert.equal(emcOthersTotal(meta, 400), 8)         // «Тыква» = среднее четырёх, как в пульте
+  assert.equal(emcCountAt('Pumpkin Chest', 400), 8)
 })

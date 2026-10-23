@@ -31,6 +31,14 @@ test('kToPos зажимает значения вне диапазона', () =>
 })
 
 // Баг 2026-10-21: вписали 20, а получилось 17 — множитель считали как число / округлённое calc(1).
+// Есть ли множитель, при котором calc(k) даёт ровно want (частая сетка по логарифму 0.01…1000)
+function reach(calc, want) {
+  for (let i = 0; i <= 20000; i++) {
+    if (calc(0.01 * Math.exp((Math.log(1000 / 0.01) * i) / 20000)) === want) return true
+  }
+  return false
+}
+
 test('solveK: вписанное число даёт ровно это число там, где оно достижимо', async () => {
   const { solveK } = await import('./mixer.js')
   const { computeRow, DEFAULT_SETTINGS } = await import('./emcQuota.js')
@@ -40,11 +48,13 @@ test('solveK: вписанное число даёт ровно это числ�
     names.forEach((n, i) => {
       const calc = k => computeRow(h + 5, { ...DEFAULT_SETTINGS, monsters: { ...DEFAULT_SETTINGS.monsters, [n]: k } })[keys[i]]
       for (const want of [1, 5, 17, 20, 40]) {
-        assert.equal(calc(solveK(calc, want, 0.01, 1000)), want, `${n} герой ${h} хочу ${want}`)
+        // число достижимо, если найдётся множитель, дающий ровно его (у суммы округлённых монстров бывают перескоки через число)
+        const reachable = reach(calc, want)
+        if (reachable) assert.equal(calc(solveK(calc, want, 0.01, 1000)), want, `${n} герой ${h} хочу ${want}`)
       }
     })
     const master = k => computeRow(h + 5, { ...DEFAULT_SETTINGS, global: k }).emc
-    assert.equal(master(solveK(master, 20, 0.01, 1000)), 20, `общий герой ${h}`)
+    if (reach(master, 20)) assert.equal(master(solveK(master, 20, 0.01, 1000)), 20, `общий герой ${h}`)
   }
 })
 

@@ -1,23 +1,41 @@
-// Квота Epic Monster Chests (EMC) по уровню Героя — базовая модель + множители-рычаги.
-// База — реальные данные клана за полный сезон (окно ±10, пересчёт до полного сезона), зона 360–440
-// опирается на реальную выборку; ниже/выше — допущения (см. EXTRAPOLATION_NOTES).
+// Квота Epic Monster Chests (EMC) по уровню Героя — модель на реальных данных двух кланов + множители-рычаги пульта.
 // Порядок расчёта фиксирован: база → множитель уровня → множитель монстра → общий → округление.
 
-// [Герой, [Hydra, Undead, Arachna, Shadow City]] — штук на игрока за полный сезон, без округления.
-export const ANCHORS = [
-  [100, [1.3387, 0.6115, 0.1818, 0.6446]],
-  [300, [5.3550, 2.4461, 0.7272, 2.5783]],
-  [360, [5.8939, 4.9218, 2.3317, 3.3925]],
-  [370, [7.7769, 5.7009, 2.8238, 3.9277]],
-  [380, [13.5991, 8.4854, 3.4793, 4.3868]],
-  [390, [18.3756, 9.5011, 3.4793, 4.3868]],
-  [400, [19.1058, 9.5011, 3.4793, 4.3868]],
-  [410, [19.1058, 9.5011, 3.6762, 4.3868]],
-  [420, [19.1058, 9.5011, 4.1359, 4.3868]],
-  [430, [19.8703, 9.5011, 4.1359, 4.3868]],
-  [440, [20.4639, 10.2472, 4.1359, 4.6939]],
-  [600, [25.8965, 13.2318, 6.7623, 5.9224]],
-]
+// Квота EMC — все эпические монстры вместе, штук на игрока за 2 недели. Опоры — реальные данные двух кланов
+// (владелец 2026-10-23, итоговый столбец EMC в истории сезона = сумма всех эпик-монстров):
+//  • ELDORADO, сезон 24.09–08.10: 121 игрок, 5518 монстров → 45,6 на игрока, средний Герой 383; доли монстров:
+//    Hydra 1532, Undead 547, Arachna 239, Shadow City 311, Chimera 2889 (Chimera — больше половины);
+//  • Берсерки (Герой в среднем 450): сумма трёх колонок замера у 95 игроков = 20413 → 214,9 на игрока.
+// Внутри ELDORADO EMC растёт с Героем так же, как норма в очках (×1.10 на 10 уровней), поэтому EMC = норма × доля,
+// где доля EMC в норме: ниже ELDORADO — как у ELDORADO, между ELDORADO и Берсерками плавно (в логарифме) растёт
+// до доли Берсерков, выше — как у Берсерков. Без искусственных обрезаний хвостов.
+import { normBase, B as HERO_BERSERK } from './normCurve.js'
+
+const ELDO = { hero: 383, players: 121, total: 5518, split: { hydra: 1532, undead: 547, arachna: 239, shadow: 311, chimera: 2889 } }
+const BERS = { hero: HERO_BERSERK, players: 95, total: 20413 }
+
+const shareEldo = (ELDO.total / ELDO.players) / normBase(ELDO.hero)
+const shareBers = (BERS.total / BERS.players) / normBase(BERS.hero)
+
+function emcShare(hero) {
+  if (hero <= ELDO.hero) return shareEldo
+  if (hero >= BERS.hero) return shareBers
+  const t = (hero - ELDO.hero) / (BERS.hero - ELDO.hero)
+  return Math.exp(Math.log(shareEldo) + (Math.log(shareBers) - Math.log(shareEldo)) * t)
+}
+
+// Все эпик-монстры вместе (до округления)
+export const emcTotalAt = hero => emcShare(hero) * normBase(hero)
+
+// Деление общего EMC по монстрам — доли ELDORADO (у Берсерков в замере монстры не названы: важно число, не название)
+const SPLIT = Object.fromEntries(Object.entries(ELDO.split).map(([k, v]) => [k, v / ELDO.total]))
+
+// База четырёх монстров таблицы пульта [Hydra, Undead, Arachna, Shadow City] и Chimera (до округления)
+export function baseAt(hero) {
+  const total = emcTotalAt(Math.min(600, Math.max(100, hero)))
+  return [SPLIT.hydra, SPLIT.undead, SPLIT.arachna, SPLIT.shadow].map(s => s * total)
+}
+export const emcChimeraBaseAt = hero => SPLIT.chimera * emcTotalAt(Math.min(600, Math.max(100, hero)))
 
 export const HERO_LEVELS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 
@@ -46,19 +64,6 @@ export function clampMultiplier(value) {
   return Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, n))
 }
 
-export function baseAt(hero) {
-  const lv = Math.min(600, Math.max(100, hero))
-  for (let i = 0; i < ANCHORS.length - 1; i++) {
-    const [x0, v0] = ANCHORS[i]
-    const [x1, v1] = ANCHORS[i + 1]
-    if (lv >= x0 && lv <= x1) {
-      const t = (lv - x0) / (x1 - x0)
-      return v0.map((a, k) => a + (v1[k] - a) * t)
-    }
-  }
-  return ANCHORS[ANCHORS.length - 1][1].slice()
-}
-
 // Ступень Героя 100…600 с шагом 10 (в пульте — «Герой 310–319»); ключ ступени — её начало.
 export const bandKey = hero => String(Math.min(600, Math.max(100, Math.floor(hero / 10) * 10)))
 
@@ -69,8 +74,11 @@ function levelMultiplier(hero, ranges) {
   return r ? clampMultiplier(r.k) : 1
 }
 
-// Округление .5 вверх; 1e-9 гасит «3.4999999» от плавающей точки.
-const round = x => Math.floor(x + 0.5 + 1e-9)
+// Округление до целого (.5 вверх; 1e-9 гасит «3.4999999» от плавающей точки); меньше 1 — это 0 (владелец 2026-10-23).
+export const round = x => (x < 1 ? 0 : Math.floor(x + 0.5 + 1e-9))
+
+// Chimera — пятый эпик-монстр ELDORADO (в таблице пульта нет фейдера, считается как «прочий» тип со своей базой)
+export const emcChimeraAt = (hero, k = 1) => round(emcChimeraBaseAt(hero) * k)
 
 export function computeRow(hero, settings = DEFAULT_SETTINGS) {
   const base = baseAt(hero)
@@ -112,15 +120,15 @@ export function quotaCsv(table, lang = 'ru') {
 
 export const EXTRAPOLATION_NOTES = {
   ru: [
-    '360–440 — по реальным данным клана (окно ±10 уровней Героя, пересчёт до полного сезона, сглажено, не убывает).',
-    '300–360 — линейно к точке 300: среднее 18 игроков с Героем 290–359.',
-    '100–300 — допущение: линейно вниз до 25% значения на 300 (данных ниже 270 нет).',
-    '440–600 — допущение: продолжение с наклоном верхней зоны 400→440 (игроков с Героем выше 456 в выборке нет).',
+    'Опора 1 — ELDORADO, сезон 24.09–08.10: столбец EMC в истории (все эпик-монстры вместе) в среднем 45,6 на игрока при Герое 383; внутри клана EMC растёт с Героем так же, как норма очков.',
+    'Опора 2 — Берсерки (Герой в среднем 450): 214,9 на игрока — сумма трёх колонок замера.',
+    'EMC = норма × доля. Ниже Героя 383 доля как у ELDORADO, между 383 и 450 доля плавно растёт до доли Берсерков, выше 450 — как у Берсерков. Округление до целого, меньше 1 — 0.',
+    'Деление по монстрам — по долям ELDORADO (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): у Берсерков монстры в замере не названы.',
   ],
   en: [
-    '360–440 — based on real clan data (±10 Hero-level window, scaled to a full season, smoothed, non-decreasing).',
-    '300–360 — linear to the 300 point: average of 18 players with Hero 290–359.',
-    '100–300 — assumption: linear down to 25% of the value at 300 (no data below 270).',
-    '440–600 — assumption: continue with the slope of the 400→440 zone (no players above Hero 456 in the sample).',
+    'Anchor 1 — ELDORADO, season 24.09–08.10: the EMC column of the history (all epic monsters together) averages 45.6 per player at Hero 383; inside the clan EMC grows with Hero like the points norm.',
+    'Anchor 2 — Berserki (average Hero 450): 214.9 per player, the sum of the three sample columns.',
+    'EMC = norm × share. Below Hero 383 the share is ELDORADO\'s, between 383 and 450 it grows smoothly to the Berserki share, above 450 it stays as Berserki\'s. Rounded to an integer, below 1 is 0.',
+    'Split by monster follows ELDORADO shares (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): Berserki monsters are not named in the sample.',
   ],
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { normAt, epicRefAt } from '../lib/heroQuota.js'
-import { computeRow } from '../lib/emcQuota.js'
+import { computeRow, emcChimeraAt, emcTotalAt, round } from '../lib/emcQuota.js'
 import { BERSERK_COLUMNS, BERSERK_ROWS } from '../lib/berserkActivity.js'
 
 // Редактор пресетов T5–T9 в «Пульте» (владелец 2026-10-23): очки за сундук (общий пресет сервера + правки клана),
@@ -21,7 +21,6 @@ const TXT = {
     loaded: 'Пресет {n} загружен в учёт ростера (изменено типов: {c}). По нему будет вестись учёт — нажмите «Сохранить настройки».',
     info: 'Как это работает',
     basis: 'Основа ступени',
-    emcData: 'EMC Берсерков за 2 недели — штуки: среднее по клану ({n} игроков) = Undead {u} + Arachna {a} + Shadow City {s}. Hydra в замере нет.',
     emcSum: 'EMC за 2 недели (сумма трёх колонок)',
     help: [
       'Очки за сундук и квоты — это ваш вариант пресета ступени. Кнопки − и + меняют очки на 1, «×» убирает сундук из пресета, «+ Добавить сундук» возвращает убранный или добавляет новый. Изменённое выделено жёлтой рамкой.',
@@ -44,7 +43,6 @@ const TXT = {
     loaded: "Preset {n} loaded into the roster accounting (types changed: {c}). Accounting will follow it — press 'Save settings'.",
     info: 'How it works',
     basis: 'Tier basis',
-    emcData: 'Berserki EMC per 2 weeks, pieces: clan average ({n} players) = Undead {u} + Arachna {a} + Shadow City {s}. No Hydra in the sample.',
     emcSum: 'EMC per 2 weeks (sum of three columns)',
     help: [
       "Points per chest and the quotas are your version of the tier preset. The − and + buttons change points by 1, '×' removes a chest from the preset, '+ Add chest' brings back a removed one or adds a new one. Edited items have a yellow frame.",
@@ -64,17 +62,18 @@ const STEP = 1 // шаг кнопок ± (владелец 2026-10-23: по 1, �
 // Основа ступеней (владелец 2026-10-23): T9 — Берсерки (Герой 450 в среднем), T8 — ЭДО (387.5), T7 — Феникс (298),
 // T6 — Старт (279). Очки за сундук лежат в общих пресетах сервера. Квоты по умолчанию: «стена» — записанное число
 // клана, «расчёт» — шкала пульта (heroQuota/emcQuota), для T5 данных нет.
+// hero — уровень, на котором стоит стена клана для нормы и эпик-склепов; emcHero — средний Герой клана в данных EMC.
 const BASES = {
-  T9: { hero: 450, norm: () => 25000, epic: () => 300,
-        ru: 'Берсерки (Герой в среднем 450): очки, эпик-склепы и EMC — ваши данные из замера.',
-        en: 'Berserki (average Hero 450): points, epic crypts and EMC are your sample data.' },
-  T8: { hero: 387.5, norm: () => 14000, epic: () => 200,
-        ru: 'ЭДО / ELDORADO (Герой 387.5): очки, норма и эпик-склепы — стена клана, EMC — таблица по реальным данным клана.',
-        en: 'ELDORADO (Hero 387.5): points, norm and epic crypts are the clan wall, EMC is from the clan data table.' },
-  T7: { hero: 298, norm: () => normAt(298), epic: () => epicRefAt(298),
+  T9: { hero: 450, emcHero: 450, norm: () => 25000, epic: () => 300,
+        ru: 'Берсерки (Герой в среднем 450): очки, эпик-склепы и EMC — данные клана (EMC — сумма трёх колонок замера, среднее по клану).',
+        en: 'Berserki (average Hero 450): points, epic crypts and EMC are clan data (EMC is the sum of three sample columns, clan average).' },
+  T8: { hero: 387.5, emcHero: 383, norm: () => 14000, epic: () => 200,
+        ru: 'ЭДО / ELDORADO (Герой 383–387.5): очки, норма и эпик-склепы — стена клана; EMC — столбец EMC из истории сезона (45,6 на игрока, все эпик-монстры).',
+        en: 'ELDORADO (Hero 383–387.5): points, norm and epic crypts are the clan wall; EMC is the EMC column of the season history (45.6 per player, all epic monsters).' },
+  T7: { hero: 298, emcHero: 298, norm: () => normAt(298), epic: () => epicRefAt(298),
         ru: 'Феникс (Герой 298): очки за сундук — стена клана; норма, эпик-склепы и EMC — расчёт шкалы.',
         en: 'Phoenix (Hero 298): points per chest are the clan wall; norm, epic crypts and EMC are scale calculations.' },
-  T6: { hero: 279, norm: () => 5000, epic: () => 50,
+  T6: { hero: 279, emcHero: 279, norm: () => 5000, epic: () => 50,
         ru: 'Старт (Герой 279): норма 5 000 и 50 эпик-склепов — стена клана; очки за сундук и EMC — расчёт шкалы.',
         en: 'Start (Hero 279): norm 5,000 and 50 epic crypts are the clan wall; points per chest and EMC are scale calculations.' },
 }
@@ -87,14 +86,6 @@ const median = arr => {
   const v = [...arr].sort((a, b) => a - b)
   const mid = v.length >> 1
   return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2
-}
-
-// EMC Берсерков за 2 недели у игрока = Undead + Arachna + Shadow City (три последние колонки замера, владелец 2026-10-23;
-// это штуки, а не очки; Hydra в замере нет). Опора — среднее по всему клану (все игроки замера).
-const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length
-function berserkEmc() {
-  return { total: Math.round(mean(BERSERK_ROWS.map(r => r[1] + r[2] + r[3]))), n: BERSERK_ROWS.length,
-    parts: [1, 2, 3].map(c => Math.round(mean(BERSERK_ROWS.map(r => r[c])))) }
 }
 
 function stats(col) {
@@ -164,9 +155,9 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
   const basis = BASES[cur]
   const defNorm = basis ? Math.round(basis.norm()) : null
   const defEpic = basis ? Math.round(basis.epic()) : null
-  const emcData = cur === 'T9' ? berserkEmc() : null
-  const emcRow = basis && !emcData ? computeRow(basis.hero) : null
-  const defEmc = emcData ? emcData.total : (emcRow ? emcRow.emc : null)
+  // EMC — все эпик-монстры вместе (модель lib/emcQuota.js), показываем и разбивку по монстрам
+  const emcRow = basis ? computeRow(basis.emcHero) : null
+  const defEmc = basis ? round(emcTotalAt(basis.emcHero)) : null
   const epicWant = own.epic ?? defEpic
   const edited = Object.keys(own.points || {}).length > 0 || (own.removed || []).length > 0
     || own.norm != null || own.epic != null || own.emc != null
@@ -212,10 +203,7 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
             onChange={e => setOwn({ emc: num(e.target.value) })} />
         </label>
         {emcRow && (
-          <div className="pult-quotas-sub">EMC: Hydra {emcRow.finalH} · Undead {emcRow.finalU} · Arachna {emcRow.finalA} · Shadow City {emcRow.finalS}</div>
-        )}
-        {emcData && (
-          <div className="pult-quotas-sub">{t.emcData.replace('{n}', emcData.n).replace('{u}', emcData.parts[0]).replace('{a}', emcData.parts[1]).replace('{s}', emcData.parts[2])}</div>
+          <div className="pult-quotas-sub">EMC: Hydra {emcRow.finalH} · Undead {emcRow.finalU} · Arachna {emcRow.finalA} · Shadow City {emcRow.finalS} · Chimera {emcChimeraAt(basis.emcHero)}</div>
         )}
       </div>
 
