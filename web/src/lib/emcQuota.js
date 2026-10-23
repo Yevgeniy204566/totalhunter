@@ -24,8 +24,12 @@ function emcShare(hero) {
   return Math.exp(Math.log(shareEldo) + (Math.log(shareBers) - Math.log(shareEldo)) * t)
 }
 
+// Слабые Герои не бьют эпических монстров вовсе (владелец 2026-10-23: у Сарацинов и Старта мощи не хватает) — ниже этого
+// уровня EMC равен 0.
+export const EMC_MIN_HERO = 200
+
 // Все эпик-монстры вместе (до округления)
-export const emcTotalAt = hero => emcShare(hero) * normBase(hero)
+export const emcTotalAt = hero => (hero < EMC_MIN_HERO ? 0 : emcShare(hero) * normBase(hero))
 
 // Деление общего EMC по монстрам — доли ELDORADO (у Берсерков в замере монстры не названы: важно число, не название)
 const SPLIT = Object.fromEntries(Object.entries(ELDO.split).map(([k, v]) => [k, v / ELDO.total]))
@@ -122,13 +126,13 @@ export const EXTRAPOLATION_NOTES = {
   ru: [
     'Опора 1 — ELDORADO, сезон 24.09–08.10: столбец EMC в истории (все эпик-монстры вместе) в среднем 45,6 на игрока при Герое 383; внутри клана EMC растёт с Героем так же, как норма очков.',
     'Опора 2 — Берсерки (Герой в среднем 450): 214,9 на игрока — сумма трёх колонок замера.',
-    'EMC = норма × доля. Ниже Героя 383 доля как у ELDORADO, между 383 и 450 доля плавно растёт до доли Берсерков, выше 450 — как у Берсерков. Округление до целого, меньше 1 — 0.',
+    'EMC = норма × доля. Ниже Героя 383 доля как у ELDORADO, между 383 и 450 доля плавно растёт до доли Берсерков, выше 450 — как у Берсерков. Округление до целого, меньше 1 — 0. Ниже Героя 200 эпических монстров не бьют — EMC 0.',
     'Деление по монстрам — по долям ELDORADO (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): у Берсерков монстры в замере не названы.',
   ],
   en: [
     'Anchor 1 — ELDORADO, season 24.09–08.10: the EMC column of the history (all epic monsters together) averages 45.6 per player at Hero 383; inside the clan EMC grows with Hero like the points norm.',
     'Anchor 2 — Berserki (average Hero 450): 214.9 per player, the sum of the three sample columns.',
-    'EMC = norm × share. Below Hero 383 the share is ELDORADO\'s, between 383 and 450 it grows smoothly to the Berserki share, above 450 it stays as Berserki\'s. Rounded to an integer, below 1 is 0.',
+    'EMC = norm × share. Below Hero 383 the share is ELDORADO\'s, between 383 and 450 it grows smoothly to the Berserki share, above 450 it stays as Berserki\'s. Rounded to an integer, below 1 is 0. Below Hero 200 epic monsters are not killed at all, EMC is 0.',
     'Split by monster follows ELDORADO shares (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): Berserki monsters are not named in the sample.',
   ],
 }

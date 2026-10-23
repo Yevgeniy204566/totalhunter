@@ -28,9 +28,18 @@ test('EMC растёт с уровнем Героя без провалов и �
   let prev = -1
   for (let h = 100; h <= 600; h += 10) {
     const t = emcTotalAt(h)
-    assert.ok(t > prev, `@${h}`)
+    assert.ok(h < 200 ? t === 0 : t > prev, `@${h}`)
     prev = t
   }
+})
+
+test('слабые Герои (ниже 200) эпических монстров не бьют: EMC равен 0, включая Chimera', () => {
+  for (const h of [100, 150, 199]) {
+    assert.equal(emcTotalAt(h), 0)
+    assert.equal(emcChimeraAt(h), 0)
+    assert.equal(row(h).emc, 0)
+  }
+  assert.ok(emcTotalAt(200) > 0)
 })
 
 test('округление: меньше 1 — это 0, от 1 — до целого', () => {

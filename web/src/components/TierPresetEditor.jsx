@@ -73,9 +73,9 @@ const BASES = {
   T7: { hero: 298, emcHero: 298, norm: () => normAt(298), epic: () => epicRefAt(298),
         ru: 'Феникс (Герой 298): очки за сундук — стена клана; норма, эпик-склепы и EMC — расчёт шкалы.',
         en: 'Phoenix (Hero 298): points per chest are the clan wall; norm, epic crypts and EMC are scale calculations.' },
-  T6: { hero: 279, emcHero: 279, norm: () => 5000, epic: () => 50,
-        ru: 'Старт (Герой 279): норма 5 000 и 50 эпик-склепов — стена клана; очки за сундук и EMC — расчёт шкалы.',
-        en: 'Start (Hero 279): norm 5,000 and 50 epic crypts are the clan wall; points per chest and EMC are scale calculations.' },
+  T6: { hero: 279, emcHero: 279, emcFixed: 0, norm: () => 5000, epic: () => 50,
+        ru: 'Старт (Герой 279): норма 5 000 и 50 эпик-склепов — стена клана; очки за сундук — расчёт шкалы. Старту не хватает мощи бить эпических монстров — EMC 0.',
+        en: 'Start (Hero 279): norm 5,000 and 50 epic crypts are the clan wall; points per chest are a scale calculation. Start lacks the power to kill epic monsters — EMC 0.' },
 }
 
 const fmt = n => Number(n).toLocaleString('ru-RU')
@@ -156,8 +156,8 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
   const defNorm = basis ? Math.round(basis.norm()) : null
   const defEpic = basis ? Math.round(basis.epic()) : null
   // EMC — все эпик-монстры вместе (модель lib/emcQuota.js), показываем и разбивку по монстрам
-  const emcRow = basis ? computeRow(basis.emcHero) : null
-  const defEmc = basis ? round(emcTotalAt(basis.emcHero)) : null
+  const emcRow = basis && basis.emcFixed == null ? computeRow(basis.emcHero) : null
+  const defEmc = basis ? (basis.emcFixed ?? round(emcTotalAt(basis.emcHero))) : null
   const epicWant = own.epic ?? defEpic
   const edited = Object.keys(own.points || {}).length > 0 || (own.removed || []).length > 0
     || own.norm != null || own.epic != null || own.emc != null
