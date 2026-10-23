@@ -9,21 +9,23 @@ sale_id через BlackSea API, а не тело запроса.
 """
 
 import httpx
+import json
 import logging
 import os
+import secrets
 import time
 import urllib.parse
 
 from decimal import Decimal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from models import AppSetting, BlackSeaSale, Transaction, User
+from models import AppSetting, BlackSeaSale, Log, Transaction, User
 from payments import PACKAGES, _apply_referral_cascade
 from tg_channel import send_manual_review_alert, send_purchase_alert
 from vault import notify_balance_changed
@@ -40,10 +42,14 @@ KEY_REFRESH_TOKEN = "blacksea_refresh_token"
 
 MAX_SALE_ID_LEN = 50   # == длина колонки BlackSeaSale.sale_id
 
-RATE_LIMIT_SEC = 10   # минимальный интервал вебхуков с одного IP (паттерн roy.py)
+# Защита от флуда: не больше WEBHOOK_BURST вебхуков с одного IP за WEBHOOK_WINDOW_SEC. Раньше было «один запрос в 10 секунд»,
+# и вторая настоящая продажа в этом окне молча терялась (аудит 2026-10-23); теперь настоящих продаж проходит много, а
+# отброшенный по лимиту вебхук не пропадает бесследно — владелец получает уведомление с sale_id.
+WEBHOOK_BURST = 20
+WEBHOOK_WINDOW_SEC = 60
 
-# in-memory rate limiter: IP → unix timestamp последнего запроса
-_webhook_rate: dict[str, float] = {}
+# in-memory rate limiter: IP → времена последних запросов (unix, внутри окна)
+_webhook_rate: dict[str, list[float]] = {}
 _UNKNOWN_IP = "unknown"   # request.client бывает None у некоторых ASGI-транспортов
 
 CLIENT_ID          = os.environ.get("BLACKSEA_CLIENT_ID", "")
@@ -189,7 +195,7 @@ def sale_matches_webhook(sale: dict, *, sale_id: str, email: str,
     if refunded:
         return "refunded"
 
-    if api_email != email:
+    if api_email.lower() != email.lower():  # BlackSea присылает email как ввёл покупатель — регистр не различаем
         return "email_mismatch"
     if api_price != price_kopecks:
         return "price_mismatch"
@@ -278,65 +284,67 @@ def _form_str(form, key: str) -> str:
     return value if isinstance(value, str) else ""
 
 
-@router.post("/webhook")
-async def blacksea_webhook(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
-):
-    # Вебхук публичный и без подписи (см. докстринг модуля) — флуд синтаксически
-    # валидными телами иначе дёргает fetch_blacksea_sale (реальный HTTP к API
-    # BlackSea) без ограничений. Rate limit — первым делом, до form(): нет смысла
-    # даже парсить тело запроса, который всё равно будет отброшен по IP.
-    client_ip = request.client.host if request.client else _UNKNOWN_IP
-    now_ts = time.time()
-    if now_ts - _webhook_rate.get(client_ip, 0) < RATE_LIMIT_SEC:
-        logger.error("[BLACKSEA] webhook rate-limited for IP %s", client_ip)
-        return JSONResponse({"status": "ok"})
-    _webhook_rate[client_ip] = now_ts
+def _allow_webhook(client_ip: str, now_ts: float) -> bool:
+    stamps = [t for t in _webhook_rate.get(client_ip, []) if now_ts - t < WEBHOOK_WINDOW_SEC]
+    if len(stamps) >= WEBHOOK_BURST:
+        _webhook_rate[client_ip] = stamps
+        return False
+    stamps.append(now_ts)
+    _webhook_rate[client_ip] = stamps
+    return True
 
-    form = await request.form()
 
-    sale_id    = _form_str(form, "sale_id")
-    email      = _form_str(form, "email")
-    price_raw  = _form_str(form, "price")
-    product_id = _form_str(form, "product_id")
-
-    if not sale_id or not email or not price_raw or not product_id:
-        raise HTTPException(status_code=400, detail="Malformed webhook body")
-    if len(sale_id) > MAX_SALE_ID_LEN:
-        raise HTTPException(status_code=400, detail="Malformed webhook body")
+async def _hold(db: AsyncSession, background_tasks: BackgroundTasks, *, reason: str, sale_id: str, email: str,
+                price_kopecks: int | None, product_id: str, currency: str, alert: bool = True) -> None:
+    """Продажа не начислена: фиксируем в журнале (таблица logs, без миграции) и сообщаем владельцу в Telegram.
+    Ничего не теряется молча — по sale_id из уведомления продажу можно перепроверить:
+    POST /web/payment/blacksea/recheck/{sale_id} (админский токен)."""
+    amount = str(Decimal(price_kopecks) / 100) if price_kopecks is not None else "?"
     try:
-        price_kopecks = int(price_raw)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Malformed webhook body")
+        db.add(Log(hwid=None, event_type="blacksea_hold", payload=json.dumps({
+            "reason": reason, "sale_id": sale_id, "email": email, "price": price_kopecks,
+            "product_id": product_id, "currency": currency,
+        }, ensure_ascii=False)))
+        await db.commit()
+    except Exception:  # журнал не должен ломать ответ BlackSea
+        logger.exception("[BLACKSEA] could not record hold for sale %s", sale_id)
+        await db.rollback()
+    if alert:
+        background_tasks.add_task(
+            send_manual_review_alert, reason=reason, sale_id=sale_id, email=email,
+            uah_amount=amount, currency=currency,
+        )
 
-    logger.info("[BLACKSEA] webhook sale=%s price_kopecks=%s", sale_id, price_kopecks)
 
-    quantity_raw = form.get("quantity")
-    if quantity_raw is None:
-        logger.warning("[BLACKSEA] sale %s came without quantity — treating as '1'", sale_id)
-        quantity = "1"
-    else:
-        quantity = quantity_raw if isinstance(quantity_raw, str) else ""
-
+async def _process_sale(
+    db: AsyncSession, background_tasks: BackgroundTasks, *, sale_id: str, email: str,
+    price_kopecks: int, product_id: str, quantity: str, currency: str, verified: dict | None = None,
+) -> str:
+    """Общее ядро для вебхука и ручной перепроверки: возвращает 'credited' | 'already' | 'held'.
+    verified — уже полученный от API BlackSea ответ по продаже (ручная перепроверка), чтобы не ходить в API дважды."""
     existing = (await db.execute(
         select(BlackSeaSale.id).where(BlackSeaSale.sale_id == sale_id)
     )).scalar_one_or_none()
     if existing is not None:
         logger.info("[BLACKSEA] sale %s already credited — no-op", sale_id)
-        return JSONResponse({"status": "ok"})
+        return "already"
 
     package_key = PRODUCTS.get(product_id)
     if package_key is None:
+        # другие товары магазина (в том числе чужие проекты владельца) — только журнал, без шума в Telegram
         logger.info("[BLACKSEA] webhook for foreign product %s — ignored", product_id)
-        return JSONResponse({"status": "ok"})
+        await _hold(db, background_tasks, reason="foreign_product", sale_id=sale_id, email=email,
+                    price_kopecks=price_kopecks, product_id=product_id, currency=currency, alert=False)
+        return "held"
 
     try:
-        sale = await _verify_sale(db, sale_id)
+        sale = verified if verified is not None else await _verify_sale(db, sale_id)
     except (BlackSeaApiError, httpx.HTTPError) as exc:
         logger.error("[BLACKSEA] verification failed for sale %s: %s", sale_id, exc)
-        return JSONResponse({"status": "ok"})
+        # Повторной доставки вебхука может не быть, поэтому продажа фиксируется и уходит владельцу на перепроверку.
+        await _hold(db, background_tasks, reason="api_unavailable (не подтверждено, email из вебхука)", sale_id=sale_id,
+                    email=email, price_kopecks=price_kopecks, product_id=product_id, currency=currency)
+        return "held"
 
     reason = sale_matches_webhook(
         sale, sale_id=sale_id, email=email,
@@ -345,35 +353,37 @@ async def blacksea_webhook(
     if reason is not None:
         logger.error("[BLACKSEA] sale %s rejected (%s) — webhook body does not match "
                      "the verified sale, possible forgery", sale_id, reason)
-        return JSONResponse({"status": "ok"})
+        await _hold(db, background_tasks, reason=f"rejected:{reason}", sale_id=sale_id, email=email,
+                    price_kopecks=price_kopecks, product_id=product_id, currency=currency)
+        return "held"
 
     uah_amount = Decimal(price_kopecks) / 100  # имя историческое: на деле сумма в валюте товара (USD)
-    currency_raw = form.get("currency")
-    currency = (currency_raw if isinstance(currency_raw, str) and currency_raw else "usd").upper()
 
     if quantity != "1":
         logger.warning("[BLACKSEA] sale %s has quantity=%r — manual review", sale_id, quantity)
-        background_tasks.add_task(
-            send_manual_review_alert, reason=f"quantity={quantity}",
-            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount), currency=currency,
-        )
-        return JSONResponse({"status": "ok"})
+        await _hold(db, background_tasks, reason=f"quantity={quantity}", sale_id=sale_id, email=sale["email"],
+                    price_kopecks=price_kopecks, product_id=product_id, currency=currency)
+        return "held"
 
-    # email берётся из ВЕРИФИЦИРОВАННОГО ответа API, не из тела вебхука.
-    # with_for_update() держит строку покупателя до commit: user.credits += ...
-    # это read-modify-write, две одновременные продажи одного покупателя без
-    # лока могли бы прочитать один стартовый баланс и потерять одно начисление.
-    user = (await db.execute(
-        select(User).where(User.email == sale["email"]).with_for_update()
-    )).scalar_one_or_none()
+    # email берётся из ВЕРИФИЦИРОВАННОГО ответа API, не из тела вебхука; сравнение без учёта регистра (аудит 2026-10-23:
+    # на проде у части пользователей email с заглавными буквами, а BlackSea присылает его как ввёл покупатель).
+    # with_for_update() держит строку покупателя до commit: user.credits += ... это read-modify-write, две
+    # одновременные продажи одного покупателя без лока могли бы прочитать один стартовый баланс и потерять начисление.
+    users = (await db.execute(
+        select(User).where(func.lower(User.email) == sale["email"].lower()).with_for_update()
+    )).scalars().all()
+    if len(users) > 1:
+        logger.warning("[BLACKSEA] several users match email %s for sale %s — manual review", sale["email"], sale_id)
+        await _hold(db, background_tasks, reason="email_ambiguous", sale_id=sale_id, email=sale["email"],
+                    price_kopecks=price_kopecks, product_id=product_id, currency=currency)
+        return "held"
+    user = users[0] if users else None
     if user is None:
         logger.warning("[BLACKSEA] no user with email %s for sale %s — manual review",
                        sale["email"], sale_id)
-        background_tasks.add_task(
-            send_manual_review_alert, reason="email_not_found",
-            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount), currency=currency,
-        )
-        return JSONResponse({"status": "ok"})
+        await _hold(db, background_tasks, reason="email_not_found", sale_id=sale_id, email=sale["email"],
+                    price_kopecks=price_kopecks, product_id=product_id, currency=currency)
+        return "held"
 
     if user.is_banned:
         # Тот же путь ручного разбора, что и email_not_found выше — владелец
@@ -381,11 +391,9 @@ async def blacksea_webhook(
         # вторую платёжку: NOWPayments (payments.py) уже отказывает забаненным.
         logger.warning("[BLACKSEA] user %s (email %s) is banned — manual review, sale %s",
                        user.id, sale["email"], sale_id)
-        background_tasks.add_task(
-            send_manual_review_alert, reason="user_banned",
-            sale_id=sale_id, email=sale["email"], uah_amount=str(uah_amount), currency=currency,
-        )
-        return JSONResponse({"status": "ok"})
+        await _hold(db, background_tasks, reason="user_banned", sale_id=sale_id, email=sale["email"],
+                    price_kopecks=price_kopecks, product_id=product_id, currency=currency)
+        return "held"
 
     credits = PACKAGES[package_key]["credits"]
 
@@ -403,7 +411,7 @@ async def blacksea_webhook(
             await db.flush()
     except IntegrityError:
         logger.info("[BLACKSEA] concurrent webhook already credited sale %s", sale_id)
-        return JSONResponse({"status": "ok"})
+        return "already"
 
     user.credits += credits
     db.add(Transaction(
@@ -432,4 +440,102 @@ async def blacksea_webhook(
         ip=user_ip, bot_version=bot_version,
     )
     logger.info("[BLACKSEA] sale %s credited %s to user %s", sale_id, credits, user.id)
+    return "credited"
+
+
+@router.post("/webhook")
+async def blacksea_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    # Вебхук публичный и без подписи (см. докстринг модуля) — флуд синтаксически
+    # валидными телами иначе дёргает fetch_blacksea_sale (реальный HTTP к API
+    # BlackSea) без ограничений. Лимит — первым делом, до проверки продажи. Отброшенный по лимиту вебхук
+    # не пропадает молча: если тело читается, владельцу уходит уведомление с sale_id (см. _hold).
+    client_ip = request.client.host if request.client else _UNKNOWN_IP
+    limited = not _allow_webhook(client_ip, time.time())
+
+    form = await request.form()
+
+    sale_id    = _form_str(form, "sale_id")
+    email      = _form_str(form, "email")
+    price_raw  = _form_str(form, "price")
+    product_id = _form_str(form, "product_id")
+    currency_raw = form.get("currency")
+    currency = (currency_raw if isinstance(currency_raw, str) and currency_raw else "usd").upper()
+
+    if limited:
+        logger.error("[BLACKSEA] webhook rate-limited for IP %s (sale %s)", client_ip, sale_id or "?")
+        if sale_id and len(sale_id) <= MAX_SALE_ID_LEN:
+            try:
+                price_limited = int(price_raw)
+            except ValueError:
+                price_limited = None
+            await _hold(db, background_tasks, reason=f"rate_limited (IP {client_ip})", sale_id=sale_id,
+                        email=email or "?", price_kopecks=price_limited, product_id=product_id, currency=currency)
+        return JSONResponse({"status": "ok"})
+
+    if not sale_id or not email or not price_raw or not product_id:
+        raise HTTPException(status_code=400, detail="Malformed webhook body")
+    if len(sale_id) > MAX_SALE_ID_LEN:
+        raise HTTPException(status_code=400, detail="Malformed webhook body")
+    try:
+        price_kopecks = int(price_raw)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Malformed webhook body")
+
+    logger.info("[BLACKSEA] webhook sale=%s price_kopecks=%s", sale_id, price_kopecks)
+
+    quantity_raw = form.get("quantity")
+    if quantity_raw is None:
+        logger.warning("[BLACKSEA] sale %s came without quantity — treating as '1'", sale_id)
+        quantity = "1"
+    else:
+        quantity = quantity_raw if isinstance(quantity_raw, str) else ""
+
+    await _process_sale(
+        db, background_tasks, sale_id=sale_id, email=email, price_kopecks=price_kopecks,
+        product_id=product_id, quantity=quantity, currency=currency,
+    )
     return JSONResponse({"status": "ok"})
+
+
+def _require_admin(authorization: str | None) -> None:
+    token = os.environ.get("ADMIN_TOKEN", "")
+    given = (authorization or "").removeprefix("Bearer ").strip()
+    if not token or not secrets.compare_digest(given.encode(), token.encode()):
+        raise HTTPException(status_code=403, detail="Invalid admin token")
+
+
+@router.post("/recheck/{sale_id}")
+async def recheck_sale(
+    sale_id: str,
+    background_tasks: BackgroundTasks,
+    authorization: str | None = Header(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Ручная перепроверка продажи (владелец, админский токен): данные берутся из API BlackSea по sale_id, затем
+    тот же путь, что у вебхука. Идемпотентно: уже начисленная продажа повторно не начисляется."""
+    _require_admin(authorization)
+    if not sale_id or len(sale_id) > MAX_SALE_ID_LEN:
+        raise HTTPException(status_code=400, detail="Bad sale_id")
+    if (await db.execute(select(BlackSeaSale.id).where(BlackSeaSale.sale_id == sale_id))).scalar_one_or_none() is not None:
+        return {"result": "already"}   # уже начислена — в API не ходим
+    try:
+        sale = await _verify_sale(db, sale_id)
+    except (BlackSeaApiError, httpx.HTTPError) as exc:
+        raise HTTPException(status_code=502, detail=f"BlackSea API: {exc}")
+    price = sale.get("price")
+    email = sale.get("email")
+    product_id = sale.get("product_id")
+    if not isinstance(price, int) or isinstance(price, bool) or not isinstance(email, str) or not isinstance(product_id, str):
+        raise HTTPException(status_code=422, detail="BlackSea returned an unexpected sale object")
+    currency_raw = sale.get("currency")
+    currency = (currency_raw if isinstance(currency_raw, str) and currency_raw else "usd").upper()
+    quantity = str(sale.get("quantity", "1"))
+    result = await _process_sale(
+        db, background_tasks, sale_id=sale_id, email=email, price_kopecks=price,
+        product_id=product_id, quantity=quantity, currency=currency, verified=sale,
+    )
+    return {"result": result}

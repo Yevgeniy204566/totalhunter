@@ -75,6 +75,16 @@ async def send_purchase_alert(
     await asyncio.to_thread(_send_debug_sync, text)
 
 
+async def send_payment_alert(*, source: str, reason: str, ref: str, detail: str = "") -> None:
+    """Fire-and-forget: проблемный платёж (недоплата, отказ, неизвестный заказ). Не бросает исключений."""
+    if not _DEBUG_TOKEN or not _DEBUG_CHAT_ID:
+        return
+    text = f"⚠️ {source} — проблемный платёж\n❓ Причина: {reason}\n🧾 Ссылка: {ref}"
+    if detail:
+        text += f"\n📝 {detail}"
+    await asyncio.to_thread(_send_debug_sync, text)
+
+
 async def send_manual_review_alert(
     *, reason: str, sale_id: str, email: str, uah_amount: str, currency: str = "USD",
 ) -> None:

@@ -22,7 +22,7 @@ from sqlalchemy.exc import IntegrityError
 import blacksea
 from main import app
 from database import get_db
-from models import AppSetting, BlackSeaSale, Transaction, User
+from models import AppSetting, BlackSeaSale, Log, Transaction, User
 
 
 async def _create_user(db, email, credits=0, invited_by_id=None, is_banned=False):
@@ -1030,23 +1030,23 @@ SECOND_SALE_ID = "SECONDsale0000000000=="
 
 
 @pytest.mark.asyncio
-async def test_webhook_second_request_same_ip_is_rate_limited_without_second_api_call(
-    db_session, monkeypatch
-):
-    """Второй вебхук с того же IP в течение 10 сек короткого замыкается ДО вызова
-    fetch_blacksea_sale — стаб отдаёт ровно один ответ, второй вызов уронил бы
-    тест AssertionError'ом из _stub_fetch, если бы rate-limit не сработал."""
+async def test_webhook_two_real_sales_in_a_row_from_one_ip_are_both_credited(db_session, monkeypatch):
+    """Регрессия аудита 2026-10-23: раньше второй вебхук с того же IP в течение 10 сек молча отбрасывался,
+    и вторая настоящая покупка оставалась без алмазов."""
     await _create_user(db_session, BUYER_EMAIL)
     await _seed_tokens(db_session)
-    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale()})])
+    _stub_fetch(monkeypatch, [
+        (200, {"success": True, "sale": _api_sale()}),
+        (200, {"success": True, "sale": _api_sale(id=SECOND_SALE_ID)}),
+    ])
     _stub_alerts(monkeypatch)
 
     first  = await _post_webhook(_form(), ip="5.5.5.5")
     second = await _post_webhook(_form(sale_id=SECOND_SALE_ID), ip="5.5.5.5")
 
     assert (first.status_code, second.status_code) == (200, 200)
-    assert await _credits_of(BUYER_EMAIL) == 5000   # только первый вебхук начислил
-    assert len(await _sales_rows()) == 1
+    assert await _credits_of(BUYER_EMAIL) == 10000   # обе продажи начислены
+    assert len(await _sales_rows()) == 2
 
 
 @pytest.mark.asyncio
@@ -1131,3 +1131,179 @@ async def test_webhook_non_banned_user_happy_path_still_credits(db_session, monk
     assert await _credits_of(BUYER_EMAIL) == 5000
     assert sent["manual"] == []
     assert len(sent["purchase"]) == 1
+
+
+# ── Аудит 2026-10-23: ничего не теряется молча, email без учёта регистра, ручная перепроверка ──────────────
+
+async def _logs(event_type):
+    async for db in app.dependency_overrides[get_db]():
+        return (await db.execute(select(Log).where(Log.event_type == event_type))).scalars().all()
+
+
+@pytest.mark.asyncio
+async def test_flood_over_the_limit_is_rejected_with_an_alert_per_dropped_sale(db_session, monkeypatch):
+    """Больше WEBHOOK_BURST вебхуков с одного IP за окно не обрабатываются (без обращения к API), но каждый
+    отброшенный фиксируется в журнале и уходит владельцу в Telegram с sale_id."""
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [])           # любое обращение к API — провал
+    sent = _stub_alerts(monkeypatch)
+
+    over = 5
+    for i in range(blacksea.WEBHOOK_BURST + over):
+        r = await _post_webhook(_form(sale_id=f"flood-{i:03d}", product_id="foreign"), ip="9.9.9.9")
+        assert r.status_code == 200
+
+    limited = [a for a in sent["manual"] if a["reason"].startswith("rate_limited")]
+    assert len(limited) == over
+    assert {a["sale_id"] for a in limited} == {f"flood-{i:03d}" for i in range(blacksea.WEBHOOK_BURST, blacksea.WEBHOOK_BURST + over)}
+    held = [__import__("json").loads(r.payload) for r in await _logs("blacksea_hold")]
+    assert sum(1 for h in held if h["reason"].startswith("rate_limited")) == over
+
+
+@pytest.mark.asyncio
+async def test_after_the_window_the_ip_is_allowed_again(db_session, monkeypatch):
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [])
+    sent = _stub_alerts(monkeypatch)
+    fake_now = {"ts": 2_000_000.0}
+    monkeypatch.setattr(blacksea.time, "time", lambda: fake_now["ts"])
+
+    for i in range(blacksea.WEBHOOK_BURST + 1):
+        await _post_webhook(_form(sale_id=f"w-{i:03d}", product_id="foreign"), ip="8.8.8.8")
+    assert len([a for a in sent["manual"] if a["reason"].startswith("rate_limited")]) == 1
+
+    fake_now["ts"] += blacksea.WEBHOOK_WINDOW_SEC + 1
+    await _post_webhook(_form(sale_id="w-after", product_id="foreign"), ip="8.8.8.8")
+    assert len([a for a in sent["manual"] if a["reason"].startswith("rate_limited")]) == 1   # новых отказов нет
+
+
+@pytest.mark.asyncio
+async def test_api_failure_is_recorded_and_alerted_not_swallowed(db_session, monkeypatch):
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    sent = _stub_alerts(monkeypatch)
+
+    async def _boom(sale_id, access_token):
+        raise httpx.ConnectError("blacksea unreachable")
+
+    monkeypatch.setattr(blacksea, "fetch_blacksea_sale", _boom)
+
+    resp = await _post_webhook(_form())
+
+    assert resp.status_code == 200          # ответ BlackSea не меняем (503 — только после подтверждения их поведения)
+    assert await _credits_of(BUYER_EMAIL) == 0
+    assert len(sent["manual"]) == 1 and sent["manual"][0]["reason"].startswith("api_unavailable")
+    assert sent["manual"][0]["sale_id"] == SALE_ID
+    rows = await _logs("blacksea_hold")
+    assert len(rows) == 1 and SALE_ID in rows[0].payload
+
+
+@pytest.mark.asyncio
+async def test_sale_rejected_by_verification_is_alerted(db_session, monkeypatch):
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale(price=100)})])
+    sent = _stub_alerts(monkeypatch)
+
+    await _post_webhook(_form())
+
+    assert await _credits_of(BUYER_EMAIL) == 0
+    assert [a["reason"] for a in sent["manual"]] == ["rejected:price_mismatch"]
+
+
+@pytest.mark.asyncio
+async def test_foreign_product_is_logged_but_does_not_spam_telegram(db_session, monkeypatch):
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [])
+    sent = _stub_alerts(monkeypatch)
+
+    await _post_webhook(_form(product_id="some-other-product-of-the-owner"))
+
+    assert sent["manual"] == []
+    assert len(await _logs("blacksea_hold")) == 1
+
+
+@pytest.mark.asyncio
+async def test_email_is_compared_case_insensitively(db_session, monkeypatch):
+    """У части пользователей email с заглавными буквами, а BlackSea присылает email как ввёл покупатель."""
+    await _create_user(db_session, "Blacksea_Buyer@Test.com")
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale()})])
+    sent = _stub_alerts(monkeypatch)
+
+    await _post_webhook(_form())
+
+    assert len(await _sales_rows()) == 1
+    assert sent["manual"] == []
+    async for db in app.dependency_overrides[get_db]():
+        user = (await db.execute(select(User).where(User.email == "Blacksea_Buyer@Test.com"))).scalar_one()
+        assert user.credits == 5000
+
+
+@pytest.mark.asyncio
+async def test_two_accounts_differing_only_by_case_go_to_manual_review(db_session, monkeypatch):
+    await _create_user(db_session, "blacksea_buyer@test.com")
+    await _create_user(db_session, "BLACKSEA_BUYER@test.com")
+    await _seed_tokens(db_session)
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale()})])
+    sent = _stub_alerts(monkeypatch)
+
+    resp = await _post_webhook(_form())
+
+    assert resp.status_code == 200
+    assert await _sales_rows() == []
+    assert [a["reason"] for a in sent["manual"]] == ["email_ambiguous"]
+
+
+async def _post_recheck(sale_id, token="__admin__"):
+    import urllib.parse
+    headers = {}
+    if token == "__admin__":
+        headers = {"Authorization": f"Bearer {os.environ['ADMIN_TOKEN']}"}
+    elif token:
+        headers = {"Authorization": f"Bearer {token}"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        return await client.post(f"/web/payment/blacksea/recheck/{urllib.parse.quote(sale_id, safe='')}", headers=headers)
+
+
+@pytest.mark.asyncio
+async def test_recheck_requires_admin_token(db_session, monkeypatch):
+    _stub_fetch(monkeypatch, [])
+    assert (await _post_recheck(SALE_ID, token=None)).status_code == 403
+    assert (await _post_recheck(SALE_ID, token="wrong")).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_recheck_credits_a_sale_that_was_held_and_is_idempotent(db_session, monkeypatch):
+    """Продажа не прошла при сбое API (фиксация + тревога) → позже API доступен → перепроверка начисляет ровно один раз."""
+    await _create_user(db_session, BUYER_EMAIL)
+    await _seed_tokens(db_session)
+    _stub_alerts(monkeypatch)
+
+    async def _boom(sale_id, access_token):
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(blacksea, "fetch_blacksea_sale", _boom)
+    await _post_webhook(_form())
+    assert await _credits_of(BUYER_EMAIL) == 0
+
+    _stub_fetch(monkeypatch, [(200, {"success": True, "sale": _api_sale()})])   # второй вызов не должен ходить в API
+    first = await _post_recheck(SALE_ID)
+    second = await _post_recheck(SALE_ID)
+
+    assert first.status_code == 200 and first.json() == {"result": "credited"}
+    assert second.status_code == 200 and second.json() == {"result": "already"}
+    assert await _credits_of(BUYER_EMAIL) == 5000
+    assert len(await _sales_rows()) == 1
+
+
+@pytest.mark.asyncio
+async def test_recheck_reports_when_blacksea_api_is_down(db_session, monkeypatch):
+    await _seed_tokens(db_session)
+
+    async def _boom(sale_id, access_token):
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(blacksea, "fetch_blacksea_sale", _boom)
+    resp = await _post_recheck(SALE_ID)
+    assert resp.status_code == 502

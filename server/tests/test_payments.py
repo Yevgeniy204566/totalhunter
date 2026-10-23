@@ -340,3 +340,114 @@ async def test_leaderboard_returns_ranked_list():
     assert data["items"][0]["rank"] == 1
     assert data["items"][1]["hunts_total"] == 2
     assert data["items"][1]["rank"] == 2
+
+
+# ── Аудит 2026-10-23: проблемные платежи не теряются молча ──────────────────────────────────────────────────
+
+async def _np_order(email, credits=300, status="pending", banned=False):
+    async for db in app.dependency_overrides[get_db]():
+        from models import Order
+        import secrets as _s
+        user = User(email=email, username=email.split("@")[0], ref_code=_s.token_urlsafe(6), is_banned=banned)
+        db.add(user)
+        await db.flush()
+        order = Order(user_id=user.id, package="lite", usd_amount="1.00", credits_total=credits,
+                      nowpayments_payment_id=f"NP-{_s.token_hex(4)}", status=status, idempotency_key=str(uuid.uuid4()))
+        db.add(order)
+        await db.commit()
+        return order.id, user.id
+
+
+async def _np_post(order_pk, status, amount="1.00"):
+    body = _make_np_body(str(order_pk), status=status, amount=amount)
+    sig = _make_np_sig(body)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        return await client.post(
+            "/web/payment/webhook", content=json.dumps(body, sort_keys=True).encode(),
+            headers={"x-nowpayments-sig": sig, "content-type": "application/json"},
+        )
+
+
+async def _np_state(order_pk, user_pk):
+    async for db in app.dependency_overrides[get_db]():
+        from models import Order
+        from sqlalchemy import select as _sel
+        o = (await db.execute(_sel(Order).where(Order.id == order_pk))).scalar_one()
+        u = (await db.execute(_sel(User).where(User.id == user_pk))).scalar_one()
+        return o.status, u.credits
+
+
+@pytest.fixture
+def np_alerts(monkeypatch):
+    import payments
+    sent = []
+
+    async def _fake(**kwargs):
+        sent.append(kwargs)
+
+    monkeypatch.setattr(payments, "send_payment_alert", _fake)
+    return sent
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("np_status,stored", [("partially_paid", "partial"), ("failed", "failed"),
+                                              ("expired", "expired"), ("refunded", "refunded")])
+async def test_problem_status_is_stored_and_alerted_once(np_env, np_alerts, np_status, stored):
+    order_pk, user_pk = await _np_order(f"p_{np_status}@test.com")
+
+    assert (await _np_post(order_pk, np_status)).status_code == 200
+    assert (await _np_post(order_pk, np_status)).status_code == 200   # повторная доставка того же вебхука
+
+    assert await _np_state(order_pk, user_pk) == (stored, 0)          # недоплата отличима от брошенного «pending»
+    assert len(np_alerts) == 1                                        # уведомление только при смене статуса
+    assert np_alerts[0]["source"] == "NOWPayments" and np_alerts[0]["reason"] == np_status
+
+
+@pytest.mark.asyncio
+async def test_finished_after_partial_payment_credits_exactly_once(np_env, np_alerts):
+    order_pk, user_pk = await _np_order("topup@test.com", credits=300)
+    await _np_post(order_pk, "partially_paid")
+    assert await _np_state(order_pk, user_pk) == ("partial", 0)
+
+    assert (await _np_post(order_pk, "finished")).status_code == 200
+    assert (await _np_post(order_pk, "finished")).status_code == 200  # повторный вебхук: двойного начисления нет
+    assert await _np_state(order_pk, user_pk) == ("paid", 300)
+
+
+@pytest.mark.asyncio
+async def test_problem_status_after_paid_does_not_touch_order_but_alerts(np_env, np_alerts):
+    order_pk, user_pk = await _np_order("paidfirst@test.com", credits=300)
+    await _np_post(order_pk, "finished")
+    assert await _np_state(order_pk, user_pk) == ("paid", 300)
+
+    await _np_post(order_pk, "refunded")
+
+    assert await _np_state(order_pk, user_pk) == ("paid", 300)        # статус и баланс не трогаем — решает владелец
+    assert [a["reason"] for a in np_alerts] == ["refunded_after_paid"]
+
+
+@pytest.mark.asyncio
+async def test_finished_for_unknown_order_returns_200_and_alerts(np_env, np_alerts):
+    resp = await _np_post(987654321, "finished")
+    assert resp.status_code == 200                                    # раньше 400: провайдер повторял вхолостую, владелец не знал
+    assert [a["reason"] for a in np_alerts] == ["order_not_found"]
+
+
+@pytest.mark.asyncio
+async def test_finished_for_banned_user_returns_200_alerts_and_does_not_credit(np_env, np_alerts):
+    order_pk, user_pk = await _np_order("banned_np@test.com", credits=300, banned=True)
+    resp = await _np_post(order_pk, "finished")
+    assert resp.status_code == 200
+    assert await _np_state(order_pk, user_pk) == ("pending", 0)
+    assert [a["reason"] for a in np_alerts] == ["user_banned_or_missing"]
+
+
+@pytest.mark.asyncio
+async def test_non_numeric_order_id_is_alerted_not_500(np_env, np_alerts):
+    body = _make_np_body("not-a-number", status="finished")
+    sig = _make_np_sig(body)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/web/payment/webhook", content=json.dumps(body, sort_keys=True).encode(),
+                                 headers={"x-nowpayments-sig": sig, "content-type": "application/json"})
+    assert resp.status_code == 200
+    assert [a["reason"] for a in np_alerts] == ["bad order_id"]

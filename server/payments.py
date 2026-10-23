@@ -24,7 +24,7 @@ from models import Order, Transaction, User
 from schemas import PaymentCreateRequest, PaymentCreateResponse
 from web_routes import get_web_user
 from vault import notify_balance_changed
-from tg_channel import send_purchase_alert
+from tg_channel import send_payment_alert, send_purchase_alert
 
 router = APIRouter(prefix="/web", tags=["payments"])
 
@@ -163,6 +163,36 @@ async def payment_create(
     return PaymentCreateResponse(redirect_url=invoice_url)
 
 
+# Статусы NOWPayments, при которых деньги не дошли полностью. Значения короткие: колонка orders.status — String(10).
+_PROBLEM_STATUS = {"partially_paid": "partial", "failed": "failed", "expired": "expired", "refunded": "refunded"}
+
+
+async def _record_problem_status(db, background_tasks, order_id_raw, status: str, data: dict) -> None:
+    try:
+        order_id = int(order_id_raw)
+    except (TypeError, ValueError):
+        background_tasks.add_task(send_payment_alert, source="NOWPayments", reason=f"{status}, bad order_id",
+                                  ref=str(order_id_raw), detail=f"payment_id={data.get('payment_id')}")
+        return
+    short = _PROBLEM_STATUS[status]
+    alert = None
+    async with db.begin():
+        order = (await db.execute(select(Order).where(Order.id == order_id).with_for_update())).scalar_one_or_none()
+        if order is None:
+            alert = ("order_not_found", f"{status}, payment_id={data.get('payment_id')}")
+        elif order.status == "paid":
+            # деньги уже зачтены, а провайдер сообщает о проблеме (например, возврат) — статус не трогаем, решает владелец
+            alert = (f"{status}_after_paid", f"order_id={order_id}, payment_id={data.get('payment_id')}")
+        elif order.status != short:
+            order.status = short   # уведомляем только при смене статуса — повторные вебхуки не спамят
+            alert = (status, f"order_id={order_id}, paid {data.get('actually_paid')} of {data.get('pay_amount')} "
+                             f"{data.get('pay_currency')}, payment_id={data.get('payment_id')}")
+    logger.warning("[PAYMENT] NP problem status %s for order %s", status, order_id)
+    if alert is not None:
+        background_tasks.add_task(send_payment_alert, source="NOWPayments", reason=alert[0],
+                                  ref=f"order {order_id}", detail=alert[1])
+
+
 @router.post("/payment/webhook")
 async def payment_webhook(
     request: Request,
@@ -173,6 +203,8 @@ async def payment_webhook(
     sig  = request.headers.get("x-nowpayments-sig", "")
 
     if not verify_nowpayments_sig(body, sig):
+        # Неверная подпись у ВСЕХ вебхуков = сменился/не задан NOWPAYMENTS_IPN_SECRET: ни одна оплата не начислится.
+        logger.warning("[PAYMENT] NP webhook with invalid signature (check NOWPAYMENTS_IPN_SECRET)")
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     data     = json.loads(body)
@@ -181,11 +213,24 @@ async def payment_webhook(
 
     logger.info("[PAYMENT] Received NP webhook for order %s, status: %s", order_id_raw, status)
 
+    # Проблемные статусы фиксируем в заказе (колонка status, String(10) — без миграции) и сообщаем владельцу: раньше
+    # недоплата/сбой не записывались никуда, и 43 заказа «pending» было не отличить от брошенных (аудит 2026-10-23).
+    if status in _PROBLEM_STATUS:
+        await _record_problem_status(db, background_tasks, order_id_raw, status, data)
+        return JSONResponse({"status": "ok"})
+
     # Only "finished" triggers crediting; accept everything else silently
     if status != "finished":
         return JSONResponse({"status": "ok"})
 
-    order_id = int(order_id_raw)
+    try:
+        order_id = int(order_id_raw)
+    except (TypeError, ValueError):
+        background_tasks.add_task(send_payment_alert, source="NOWPayments", reason="bad order_id",
+                                  ref=str(order_id_raw), detail=f"payment_id={data.get('payment_id')}")
+        return JSONResponse({"status": "ok"})
+
+    problem = None   # (reason, detail) — платёж пришёл, но начислить нельзя: 200 (повторы не помогут) + уведомление
 
     async with db.begin():
         # with_for_update() блокирует строку до конца транзакции —
@@ -195,15 +240,28 @@ async def payment_webhook(
         )
         order = order_result.scalar_one_or_none()
         if not order:
-            raise HTTPException(status_code=400, detail="Order not found")
+            problem = ("order_not_found", f"order_id={order_id}, payment_id={data.get('payment_id')}")
+        elif order.status == "paid":
+            return JSONResponse({"status": "ok"})
+        else:
+            user_result = await db.execute(select(User).where(User.id == order.user_id))
+            user = user_result.scalar_one_or_none()
+            if not user or user.is_banned:
+                problem = ("user_banned_or_missing", f"order_id={order_id}, payment_id={data.get('payment_id')}")
 
+    if problem is not None:
+        logger.error("[PAYMENT] NP finished payment not credited: %s (%s)", problem[0], problem[1])
+        background_tasks.add_task(send_payment_alert, source="NOWPayments", reason=problem[0],
+                                  ref=f"order {order_id}", detail=problem[1])
+        return JSONResponse({"status": "ok"})
+
+    async with db.begin():
+        order = (await db.execute(
+            select(Order).where(Order.id == order_id).with_for_update()
+        )).scalar_one()
         if order.status == "paid":
             return JSONResponse({"status": "ok"})
-
-        user_result = await db.execute(select(User).where(User.id == order.user_id))
-        user = user_result.scalar_one_or_none()
-        if not user or user.is_banned:
-            raise HTTPException(status_code=400, detail="User not found or banned")
+        user = (await db.execute(select(User).where(User.id == order.user_id))).scalar_one()
 
         user.credits += order.credits_total
         db.add(Transaction(
