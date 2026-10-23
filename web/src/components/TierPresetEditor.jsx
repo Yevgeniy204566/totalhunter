@@ -20,7 +20,7 @@ const TXT = {
     loaded: 'Пресет {n} загружен в пульт, изменено типов: {c}. Проверьте значения и нажмите «Сохранить настройки».',
     info: 'Как это работает',
     basis: 'Основа ступени',
-    emcData: 'EMC Берсерков за 2 недели = Undead + Arachna + Shadow City (медианы {n} игроков, выполнивших минимум эпик-склепов: {u} + {a} + {s}). Hydra в замере нет.',
+    emcData: 'EMC Берсерков за 2 недели — штуки: среднее по клану ({n} игроков) = Undead {u} + Arachna {a} + Shadow City {s}. Hydra в замере нет.',
     emcSum: 'EMC за 2 недели (сумма трёх колонок)',
     help: [
       'Очки за сундук и квоты — это ваш вариант пресета ступени. Кнопки − и + меняют очки на 5, «×» убирает сундук из пресета, «+ Добавить сундук» возвращает убранный или добавляет новый. Изменённое выделено жёлтой рамкой.',
@@ -42,7 +42,7 @@ const TXT = {
     loaded: "Preset {n} loaded into the mixer, types changed: {c}. Check the values and press 'Save settings'.",
     info: 'How it works',
     basis: 'Tier basis',
-    emcData: 'Berserki EMC per 2 weeks = Undead + Arachna + Shadow City (medians of the {n} players who met the epic crypts minimum: {u} + {a} + {s}). No Hydra in the sample.',
+    emcData: 'Berserki EMC per 2 weeks, pieces: clan average ({n} players) = Undead {u} + Arachna {a} + Shadow City {s}. No Hydra in the sample.',
     emcSum: 'EMC per 2 weeks (sum of three columns)',
     help: [
       "Points per chest and the quotas are your version of the tier preset. The − and + buttons change points by 5, '×' removes a chest from the preset, '+ Add chest' brings back a removed one or adds a new one. Edited items have a yellow frame.",
@@ -88,12 +88,11 @@ const median = arr => {
 }
 
 // EMC Берсерков за 2 недели у игрока = Undead + Arachna + Shadow City (три последние колонки замера, владелец 2026-10-23;
-// Hydra в замере нет). Опора — медиана среди тех, кто выполнил минимум эпик-склепов, а не среди всех 95.
-function berserkEmc(minEpic) {
-  const ok = BERSERK_ROWS.filter(r => r[0] >= minEpic)
-  const rows = ok.length ? ok : BERSERK_ROWS
-  return { total: Math.round(median(rows.map(r => r[1] + r[2] + r[3]))), n: rows.length,
-    parts: [1, 2, 3].map(c => Math.round(median(rows.map(r => r[c])))) }
+// это штуки, а не очки; Hydra в замере нет). Опора — среднее по всему клану (все игроки замера).
+const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length
+function berserkEmc() {
+  return { total: Math.round(mean(BERSERK_ROWS.map(r => r[1] + r[2] + r[3]))), n: BERSERK_ROWS.length,
+    parts: [1, 2, 3].map(c => Math.round(mean(BERSERK_ROWS.map(r => r[c])))) }
 }
 
 function stats(col) {
@@ -163,7 +162,7 @@ export default function TierPresetEditor({ lang = 'ru', clanPresets, personal, o
   const basis = BASES[cur]
   const defNorm = basis ? Math.round(basis.norm()) : null
   const defEpic = basis ? Math.round(basis.epic()) : null
-  const emcData = cur === 'T9' ? berserkEmc(own.epic ?? defEpic) : null
+  const emcData = cur === 'T9' ? berserkEmc() : null
   const emcRow = basis && !emcData ? computeRow(basis.hero) : null
   const defEmc = emcData ? emcData.total : (emcRow ? emcRow.emc : null)
   const epicWant = own.epic ?? defEpic
