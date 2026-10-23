@@ -707,6 +707,23 @@ class MixerPreset(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TierPreset(BaseModel):
+    """Свой вариант пресета T5–T9 в пульте: очки за сундук поверх общего пресета (CHEST_PRESETS),
+    норма очков за 2 недели, минимум эпик-склепов и число EMC (None = не задано)."""
+    points: Dict[str, float] = Field(default_factory=dict, max_length=60)
+    norm: Optional[float] = Field(default=None, ge=0, le=1000000)
+    epic: Optional[float] = Field(default=None, ge=0, le=100000)
+    emc: Optional[float] = Field(default=None, ge=0, le=100000)
+
+    @field_validator("points")
+    @classmethod
+    def _points_ok(cls, v):
+        for key, val in v.items():
+            if not key or len(key) > 60 or not (0 <= val <= 100000):
+                raise ValueError("bad preset points")
+        return v
+
+
 class PersonalScale(BaseModel):
     """«Персонализированный учёт по Герою»: тумблер отдельно на каждой квоте (crypts — слот 1,
     emc — слот 2; клан вправе взять только часть) + рычаги шкалы (norm — множитель нормы,
@@ -719,6 +736,7 @@ class PersonalScale(BaseModel):
     ranges: List[EmcRange] = Field(default_factory=list, max_length=10)
     mix: Mix = Field(default_factory=Mix)
     presets: Dict[Literal["1", "2", "3"], MixerPreset] = Field(default_factory=dict)
+    tier_presets: Dict[Literal["T5", "T6", "T7", "T8", "T9"], TierPreset] = Field(default_factory=dict)
     model_config = {"populate_by_name": True}
 
 

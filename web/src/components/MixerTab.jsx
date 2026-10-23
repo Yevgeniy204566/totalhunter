@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import {
   DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
 } from '../lib/emcQuota.js'
+import TierPresetEditor from './TierPresetEditor.jsx'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
@@ -332,10 +333,13 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   }
 
   // Пресет клана → очки за сундук (владелец 2026-10-21): по всем типам «Учёта», обеих вкладок
+  const mergedPreset = name => clanPresets?.[name]?.map(x => ({
+    ...x, points: personal.tier_presets?.[name]?.points?.[x.catalog_id] ?? x.points }))
   const clanPresetNames = Object.keys(clanPresets || {})
   const chosenClanPreset = clanPreset || clanPresetNames[0] || ''
-  const loadClanPreset = () => {
-    const items = clanPresets?.[chosenClanPreset]
+  const loadClanPreset = (name = chosenClanPreset, given = null) => {
+    // правки клана (редактор ниже) накладываются на общий пресет
+    const items = given || mergedPreset(name)
     if (!items) return
     const seen = new Set()
     const all = types.map(x => ({ ...x, key: weightKey(x.id) })).filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
@@ -343,7 +347,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     const w = presetMixW(items, all, mix.w, { calcFor, withK, keyOf: weightKey })
     const changed = Object.keys(w).filter(k => w[k] !== mix.w?.[k]).length
     setPersonal({ mix: { ...mix, w } })
-    setNote(t.clanPresetDone.replace('{n}', chosenClanPreset).replace('{c}', changed))
+    setNote(t.clanPresetDone.replace('{n}', name).replace('{c}', changed))
   }
 
   const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
@@ -455,7 +459,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
             {clanPresetNames.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
           <button type="button" className="chest-pill-btn chest-pill-btn--sm chest-pill-btn--green"
-            onClick={loadClanPreset}>{t.clanPresetLoad}</button>
+            onClick={() => loadClanPreset()}>{t.clanPresetLoad}</button>
         </div>
       )}
       {clanPresetNames.length > 0 && <p className="emc-text"><small>{t.clanPresetHint}</small></p>}
@@ -474,6 +478,9 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       </div>
       <p className="emc-text"><small>{t.presetHint}</small></p>
       {note && <p className="emc-text"><small>{note}</small></p>}
+
+      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal}
+        onLoad={(name, items) => loadClanPreset(name, items)} />
     </div>
   )
 }

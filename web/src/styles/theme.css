@@ -838,3 +838,10 @@ a:hover { color: var(--on-surface); }
 }
 .mixer-dirty { color: #fbbf24; font-size: 15px; }
 .mixer-clean { color: #3fbf6a; font-size: 15px; }
+
+.tier-presets { margin-top: 28px; }
+.tier-presets label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tier-presets .input-dark { width: 130px; }
+.tier-presets-table { border-collapse: collapse; margin: 10px 0 16px; }
+.tier-presets-table th, .tier-presets-table td { padding: 6px 14px 6px 0; text-align: left; font-size: 16px; }
+@media (max-width: 640px) { .tier-presets .input-dark { width: 100px; } }
