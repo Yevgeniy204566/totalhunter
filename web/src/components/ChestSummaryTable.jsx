@@ -296,10 +296,10 @@ function barBackground(pct) {
 }
 // Уровень Героя на щите: заливка слева направо, свой градиент на каждую сотню (владелец 2026-10-24).
 const HERO_BANDS = [
-  { max: 300, from: '#F2C94C', to: '#8B5A2B', dark: '#4A2D10', light: '#FFF0B3' },
-  { max: 400, from: '#B8E04A', to: '#1F6B3A', dark: '#0E3A1D', light: '#E3F7A6' },
-  { max: 500, from: '#7DD3FC', to: '#1E3A8A', dark: '#0E1F52', light: '#B9E6FD' },
-  { max: 600, from: '#E91E8C', to: '#3B0F6B', dark: '#200640', light: '#F7A3D4' },
+  { max: 300, from: '#C9A227', to: '#5C3A17', dark: '#3A220B', light: '#E0C25A' },
+  { max: 400, from: '#7FA82E', to: '#174D2A', dark: '#0A2C14', light: '#A6CB5C' },
+  { max: 500, from: '#4FA3D6', to: '#172A66', dark: '#0A1640', light: '#82BFE6' },
+  { max: 600, from: '#B3186E', to: '#2A0B4F', dark: '#16032B', light: '#D45FA2' },
 ]
 function heroBand(level) {
   if (!level || level < 100) return -1
@@ -317,7 +317,7 @@ function HeroShieldDefs() {
           </linearGradient>
         ))}
         <linearGradient id="hero-shield-none" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#6B7280" /><stop offset="1" stopColor="#374151" />
+          <stop offset="0" stopColor="#4B5563" /><stop offset="1" stopColor="#1F2937" />
         </linearGradient>
       </defs>
     </svg>
@@ -327,7 +327,7 @@ function HeroShield({ level }) {
   const band = heroBand(level)
   // рамка щита — светлее заливки в её тоне; контур цифр — тёмный тон того же цвета (владелец 2026-10-24)
   const dark = band === -1 ? '#1F2937' : HERO_BANDS[band].dark
-  const light = band === -1 ? '#9CA3AF' : HERO_BANDS[band].light
+  const light = band === -1 ? '#6B7280' : HERO_BANDS[band].light
   const fill = band === -1 ? 'url(#hero-shield-none)' : `url(#hero-shield-${band})`
   return (
     <svg className="hero-shield" viewBox="0 0 40 46" role="img" aria-label={level ? String(level) : '—'}>
