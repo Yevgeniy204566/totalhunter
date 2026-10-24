@@ -25,8 +25,8 @@ const TXT = {
     mastersAt: 'Значения для Героя {h}',
     fineTip: 'Точная подстройка: −/+ 1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
     liveTitle: 'Итог сейчас',
-    resetMaster: 'Сброс ×1', resetMasterTip: 'Вернуть этот фейдер к расчётному значению (×1)',
-    resetAll: '↺ Сбросить главные к расчёту', resetAllTip: 'Все три главных фейдера — в ×1. Детальные настройки ниже не трогает',
+    resetMaster: 'Сброс', resetMasterTip: 'Вернуть этот фейдер к расчётному значению',
+    resetAll: 'Сбросить главные к расчёту', resetAllTip: 'Все три главных фейдера — к расчётному значению. Детальные настройки ниже не трогает',
     mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): множитель и число штук на игрока',
     mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): множитель и число штук на игрока',
     mPoints: 'Очки', mPointsTip: 'Итоговая норма очков за сезон: множитель и число очков на игрока',
@@ -73,8 +73,8 @@ const TXT = {
     mastersAt: 'Values for Hero {h}',
     fineTip: 'Fine tuning: −/+ 1% of the current multiplier; hold a button to keep going',
     liveTitle: 'Result now',
-    resetMaster: 'Reset ×1', resetMasterTip: 'Return this fader to the calculated value (×1)',
-    resetAll: '↺ Reset masters to calculated', resetAllTip: 'All three master faders back to ×1. The detailed settings below are not touched',
+    resetMaster: 'Reset', resetMasterTip: 'Return this fader to the calculated value',
+    resetAll: 'Reset masters to calculated', resetAllTip: 'All three master faders back to the calculated value. The detailed settings below are not touched',
     mCrypts: 'Crypts', mCryptsTip: 'Epic crypts norm (all crypt types together): multiplier and pieces per player',
     mEmc: 'EMC', mEmcTip: 'EMC norm (all epic monsters together, including Chimera): multiplier and pieces per player',
     mPoints: 'Points', mPointsTip: 'Total season points norm: multiplier and points per player',
@@ -202,7 +202,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
       {master && <FineKnobs k={k} onK={onK} disabled={disabled} tt={tt} />}
       {master && onReset && (
         <button type="button" className="mixer-fine-btn mixer-reset-btn" title={tt.resetMasterTip}
-          disabled={disabled || Math.abs(k - 1) < 1e-9} onClick={onReset}>↺ {tt.resetMaster}</button>
+          disabled={disabled || Math.abs(k - 1) < 1e-9} onClick={onReset}>{tt.resetMaster}</button>
       )}
     </div>
   )
