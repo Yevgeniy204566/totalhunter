@@ -296,10 +296,10 @@ function barBackground(pct) {
 }
 // Уровень Героя на щите: заливка слева направо, свой градиент на каждую сотню (владелец 2026-10-24).
 const HERO_BANDS = [
-  { max: 300, from: '#F2C94C', to: '#8B5A2B' },
-  { max: 400, from: '#B8E04A', to: '#1F6B3A' },
-  { max: 500, from: '#7DD3FC', to: '#1E3A8A' },
-  { max: 600, from: '#E91E8C', to: '#3B0F6B' },
+  { max: 300, from: '#F2C94C', to: '#8B5A2B', dark: '#4A2D10' },
+  { max: 400, from: '#B8E04A', to: '#1F6B3A', dark: '#0E3A1D' },
+  { max: 500, from: '#7DD3FC', to: '#1E3A8A', dark: '#0E1F52' },
+  { max: 600, from: '#E91E8C', to: '#3B0F6B', dark: '#200640' },
 ]
 function heroBand(level) {
   if (!level || level < 100) return -1
@@ -325,15 +325,16 @@ function HeroShieldDefs() {
 }
 function HeroShield({ level }) {
   const band = heroBand(level)
+  const dark = band === -1 ? '#1F2937' : HERO_BANDS[band].dark   // обводка и контур цифр — тёмный тон своего цвета
   const fill = band === -1 ? 'url(#hero-shield-none)' : `url(#hero-shield-${band})`
   return (
     <svg className="hero-shield" viewBox="0 0 40 46" role="img" aria-label={level ? String(level) : '—'}>
       <path d="M20 1.5 L37.5 7.5 V23 C37.5 33 29.5 40 20 44.5 C10.5 40 2.5 33 2.5 23 V7.5 Z"
-            fill={fill} stroke="rgba(255,255,255,0.75)" strokeWidth="1.6" strokeLinejoin="round" />
+            fill={fill} stroke={dark} strokeWidth="2" strokeLinejoin="round" />
       <path d="M20 6 L33.5 10.5 V23 C33.5 31 27 36.8 20 40.4 C13 36.8 6.5 31 6.5 23 V10.5 Z"
-            fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1" />
+            fill="none" stroke={dark} strokeOpacity="0.45" strokeWidth="1" />
       <text x="20" y="27" textAnchor="middle" fontSize={level >= 100 ? 14 : 16} fontWeight="800"
-            fill="#fff" stroke="rgba(0,0,0,0.75)" strokeWidth="2.4" paintOrder="stroke"
+            fill="#fff" stroke={dark} strokeWidth="2" strokeLinejoin="round" paintOrder="stroke"
             style={{ fontFamily: 'inherit' }}>{level || '—'}</text>
     </svg>
   )

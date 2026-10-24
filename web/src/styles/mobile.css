@@ -273,22 +273,22 @@
   .public-table th.public-hero-cell,
   .public-table td.public-hero-cell {
     box-sizing: border-box !important;
-    width: 46px !important; min-width: 46px !important; max-width: 46px !important;
+    width: 38px !important; min-width: 38px !important; max-width: 38px !important;
     left: 32px !important; padding-left: 2px !important; padding-right: 2px !important;
   }
   .public-table th.public-name-cell,
   .public-table td.public-name-cell {
     box-sizing: border-box !important;
     width: 30vw !important; min-width: 30vw !important; max-width: 30vw !important;
-    left: 78px !important;
+    left: 70px !important;
     overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
   }
   .public-table thead th.public-num-cell,
   .public-table thead th.public-hero-cell,
   .public-table thead th.public-name-cell { z-index: 5 !important; }
-  .hero-shield { width: 34px; height: 39px; }
+  .hero-shield { width: 28px; height: 32px; }
   /* Заголовок «Герой» в узком столбце: мельче, без значка сортировки, чтобы не обрезался */
-  .public-table th.public-hero-cell { font-size: 10px !important; padding-left: 0 !important; padding-right: 0 !important; overflow: hidden !important; }
+  .public-table th.public-hero-cell { font-size: 8px !important; padding-left: 0 !important; padding-right: 0 !important; overflow: hidden !important; }
   .public-table th.public-hero-cell .public-sort-mark { display: none; }
 
   /* Три главные ячейки (ранее 320px — почти весь экран) */
@@ -297,8 +297,8 @@
 
   /* Меньший шрифт ячеек — больше колонок видно без скролла */
   .public-table th,
-  .public-table td { font-size: 14px !important; padding: 6px 8px !important; }
-  .public-table { --public-name-base: 16px; }
+  .public-table td { font-size: 10px !important; padding: 5px 6px !important; }
+  .public-table { --public-name-base: 12px; }
   /* Зум пальцами не блокируем (владелец 2026-10-24) */
   .public-table-wrap { touch-action: pan-x pan-y pinch-zoom; }
 
