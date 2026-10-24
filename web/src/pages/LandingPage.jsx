@@ -95,45 +95,49 @@ function Screenshot3D({ src, alt, rotY, rotX, glowColor, extraStyle = {} }) {
 }
 
 // Блок «Учёт сундуков клана»: скриншот публичной таблицы в неоновой рамке (владелец 2026-10-24).
-// Только факты о том, что страница клана показывает на самом деле.
+// Только факты о том, что страница клана показывает на самом деле; без внутренних сокращений (EMC) — игрок их не знает.
 function ChestAccounting({ lang }) {
   const en = lang === 'en'
   const items = en ? [
-    { icon: '🏆', color: '#FBBF24', title: 'Points, Epic Crypts and EMC',
-      desc: "Every player has progress bars toward the season goals: points, Epic Crypts and EMC, plus the count of each chest type." },
-    { icon: '🛡', color: '#4ADE80', title: 'Goals by Hero level',
-      desc: "A shield with the Hero level stands next to each name. The leader can switch on personal goals calculated from that level." },
-    { icon: '📅', color: '#60A5FA', title: 'Seasons and history',
-      desc: "Season dates, a countdown to the end and an archive of past seasons." },
-    { icon: '📱', color: '#F472B6', title: 'Works on a phone',
-      desc: "The page opens in a browser: scroll the table and pinch to zoom." },
+    { title: 'All clan chests counted',
+      desc: 'Crypts, citadels, epic monster chests and every other type: how many each player has opened.' },
+    { title: 'Season goals for every player',
+      desc: 'Progress bars for points, epic crypts and epic monster chests.' },
+    { title: 'Personal norms by Hero level',
+      desc: "The norm for each player is calculated from the level of their Hero. The level is shown in the table. The leader turns this on in the settings." },
+    { title: 'Seasons and history',
+      desc: 'Season dates, time left and an archive of past seasons.' },
+    { title: 'Works on a phone',
+      desc: 'The page opens in a browser. Scroll the table and pinch to zoom.' },
   ] : [
-    { icon: '🏆', color: '#FBBF24', title: 'Очки, склепы и EMC',
-      desc: 'У каждого игрока полосы выполнения целей сезона: очки, Epic Crypts и EMC, а также число сундуков каждого типа.' },
-    { icon: '🛡', color: '#4ADE80', title: 'Цели по уровню Героя',
-      desc: 'Рядом с именем стоит щит с уровнем Героя. Лидер может включить личные цели, рассчитанные от этого уровня.' },
-    { icon: '📅', color: '#60A5FA', title: 'Сезоны и история',
-      desc: 'Даты сезона, таймер до конца и архив прошлых сезонов.' },
-    { icon: '📱', color: '#F472B6', title: 'Работает на телефоне',
-      desc: 'Страница открывается в браузере: таблицу можно листать и увеличивать пальцами.' },
+    { title: 'Учёт всех сундуков клана',
+      desc: 'Склепы, цитадели, сундуки эпических монстров и остальные типы: сколько открыл каждый игрок.' },
+    { title: 'Цели сезона для каждого игрока',
+      desc: 'Полосы выполнения по очкам, эпическим склепам и сундукам эпических монстров.' },
+    { title: 'Личные нормы по уровню Героя',
+      desc: 'Норма каждого игрока считается по уровню его Героя. Уровень виден в таблице. Лидер включает это в настройках.' },
+    { title: 'Сезоны и история',
+      desc: 'Даты сезона, сколько осталось времени и архив прошлых сезонов.' },
+    { title: 'Работает на телефоне',
+      desc: 'Страница открывается в браузере. Таблицу можно листать и увеличивать пальцами.' },
   ]
   return (
     <section className="cq-section">
       <div className="cq-inner">
         <div className="cq-text">
-          <p className="cq-label">{en ? 'Clan chest accounting' : 'Учёт сундуков клана'}</p>
+          <p className="cq-label">{en ? 'Public clan page' : 'Публичная страница клана'}</p>
           <h2 className="cq-title">
-            {en ? "Every player's contribution on one page" : 'Вклад каждого игрока — на одной странице'}
+            {en ? 'Chest accounting for the whole clan' : 'Учёт сундуков всего клана'}
           </h2>
           <p className="cq-lead">
             {en
-              ? 'The bot opens the clan gifts and sends the list of chests to the site. The leader shares a public link to the table, and players see their own numbers without manual counting.'
-              : 'Бот открывает подарки клана и отправляет список сундуков на сайт. Лидер даёт клану публичную ссылку на таблицу, и игроки видят свои цифры сами, без ручного подсчёта.'}
+              ? 'The bot opens the clan gifts and sends the chests to the site. The leader gives the clan a link to the table, and every player sees their own results without manual counting.'
+              : 'Бот открывает подарки клана и отправляет сундуки на сайт. Лидер даёт клану ссылку на таблицу, и каждый игрок видит свои результаты без ручного подсчёта.'}
           </p>
           <ul className="cq-list">
             {items.map(it => (
               <li key={it.title} className="cq-item">
-                <span className="cq-item-icon" style={{ '--cq-c': it.color }}>{it.icon}</span>
+                <span className="cq-item-icon" aria-hidden="true">✓</span>
                 <span>
                   <strong>{it.title}</strong>
                   <span className="cq-item-desc">{it.desc}</span>
@@ -146,8 +150,8 @@ function ChestAccounting({ lang }) {
           <div className="cq-frame">
             <img
               src="/img/chest-accounting.png" width="1810" height="1441" loading="lazy"
-              alt={en ? 'Public clan table: points, Epic Crypts and EMC progress bars, Hero level shields'
-                      : 'Публичная таблица клана: полосы очков, Epic Crypts и EMC, щиты с уровнем Героя'}
+              alt={en ? 'Public clan table: chest counts, season goal progress bars and Hero levels'
+                      : 'Публичная таблица клана: сундуки игроков, полосы выполнения целей сезона и уровни Героев'}
             />
           </div>
         </div>

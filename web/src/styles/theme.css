@@ -955,10 +955,10 @@ a:hover { color: var(--on-surface); }
 .cq-item strong { display: block; color: #fff; font-size: 18px; margin-bottom: 2px; }
 .cq-item-desc { display: block; color: #B8C8E4; }
 .cq-item-icon {
-  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px;
-  background: color-mix(in srgb, var(--cq-c) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cq-c) 55%, transparent);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--cq-c) 35%, transparent);
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 18px; font-weight: 800; color: #4ADE80; margin-top: 2px;
+  background: rgba(74, 222, 128, 0.14); border: 2px solid rgba(74, 222, 128, 0.7);
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.35);
 }
 .cq-frame-wrap { perspective: 1500px; }
 /* Неоновая рамка: бегущий градиент по контуру + многослойное свечение; лёгкий разворот в 3D, при наведении выравнивается */
