@@ -1034,3 +1034,7 @@ a:hover { color: var(--on-surface); }
 .mixer-hero-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
 .mixer-hero-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .mixer-hero-card .mixer-levels { margin: 0; }
+.mixer-reset-btn { margin-top: 6px; width: 100%; }
+.mixer-masters-tools { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--outline); }
+.mixer-sets { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.mixer-sets > b { font-size: 15px; color: var(--on-surface2); }

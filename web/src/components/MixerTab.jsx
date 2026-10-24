@@ -25,6 +25,8 @@ const TXT = {
     mastersAt: 'Значения для Героя {h}',
     fineTip: 'Точная подстройка: −/+ 1% и 0,1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
     liveTitle: 'Итог сейчас',
+    resetMaster: 'Сброс ×1', resetMasterTip: 'Вернуть этот фейдер к расчётному значению (×1)',
+    resetAll: '↺ Сбросить главные к расчёту', resetAllTip: 'Все три главных фейдера — в ×1. Детальные настройки ниже не трогает',
     mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): множитель и число штук на игрока',
     mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): множитель и число штук на игрока',
     mPoints: 'Очки', mPointsTip: 'Итоговая норма очков за сезон: множитель и число очков на игрока',
@@ -71,6 +73,8 @@ const TXT = {
     mastersAt: 'Values for Hero {h}',
     fineTip: 'Fine tuning: −/+ 1% and 0.1% of the current multiplier; hold a button to keep going',
     liveTitle: 'Result now',
+    resetMaster: 'Reset ×1', resetMasterTip: 'Return this fader to the calculated value (×1)',
+    resetAll: '↺ Reset masters to calculated', resetAllTip: 'All three master faders back to ×1. The detailed settings below are not touched',
     mCrypts: 'Crypts', mCryptsTip: 'Epic crypts norm (all crypt types together): multiplier and pieces per player',
     mEmc: 'EMC', mEmcTip: 'EMC norm (all epic monsters together, including Chimera): multiplier and pieces per player',
     mPoints: 'Points', mPointsTip: 'Total season points norm: multiplier and points per player',
@@ -168,7 +172,7 @@ function FineKnobs({ k, onK, disabled, tt }) {
   )
 }
 
-function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip }) {
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
   const [draft, setDraft] = useState(null)
@@ -196,6 +200,10 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
         title={manual ? tt.manual : `${tt.abs} · ${tt.calc}: ${calc}`} onChange={type} onFocus={e => e.target.select()}
         onBlur={() => setDraft(null)} />
       {master && <FineKnobs k={k} onK={onK} disabled={disabled} tt={tt} />}
+      {master && onReset && (
+        <button type="button" className="mixer-fine-btn mixer-reset-btn" title={tt.resetMasterTip}
+          disabled={disabled || Math.abs(k - 1) < 1e-9} onClick={onReset}>↺ {tt.resetMaster}</button>
+      )}
     </div>
   )
 }
@@ -416,15 +424,25 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const masters = [
     { id: 'crypts', title: t.mCrypts, tip: t.mCryptsTip, accent: 'var(--epic-purple)', disabled: !personal.crypts,
       k: mixEpic.all ?? 1, onK: k => setPersonal({ mix: { ...mix, epic: { ...mixEpic, all: k } } }),
+      onReset: () => { const { epic, ...rest } = mix; setPersonal({ mix: rest }) },
       calc: k => epicCountTotal(exHero, { ...scale, mix: { ...mix, epic: { ...mixEpic, all: k } } }),
       base: epicCountTotal(exHero, SCALE_DEFAULTS) },
     { id: 'emc', title: t.mEmc, tip: t.mEmcTip, accent: '#4ADE80', disabled: !personal.emc,
       k: emc.global ?? 1, onK: k => setEmc({ ...emc, global: k }),
+      onReset: () => setEmc({ ...emc, global: 1 }),
       calc: k => emcAll({ ...emc, global: k }, scale), base: emcAll(EMC_DEFAULTS, SCALE_DEFAULTS) },
     { id: 'points', title: t.mPoints, tip: t.mPointsTip, accent: 'var(--credits-gold)', disabled: !(personal.crypts || personal.emc),
       k: personal.norm ?? 1, onK: k => setPersonal({ norm: k }),
+      onReset: () => setPersonal({ norm: 1 }),
       calc: k => normAt(exHero, { ...scale, norm: k }), base: normAt(exHero, SCALE_DEFAULTS), fmt: true },
   ]
+  // «Сбросить главные»: три множителя — в ×1 (mix.epic убирается целиком, emc.global и norm = 1); детальные не трогаем
+  const resetMasters = () => {
+    const { epic, ...rest } = mix
+    onPersonal({ ...personal, norm: 1, mix: rest })
+    setEmc({ ...emc, global: 1 })
+  }
+  const mastersAtDefault = masters.every(m => Math.abs(m.k - 1) < 1e-9)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
   const summaryNode = summary
 
@@ -491,9 +509,17 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           {masters.map(m => {
             const a = absProps(m)
             return <Fader key={m.id} tt={t} master accent={m.accent} tip={m.tip} title={m.title} k={m.k} onK={m.onK}
-              abs={a.abs} onAbs={a.onAbs} calc={a.calcText} disabled={m.disabled} />
+              abs={a.abs} onAbs={a.onAbs} calc={a.calcText} disabled={m.disabled} onReset={m.onReset} />
           })}
         </div>
+        <div className="mixer-masters-tools">
+          <button type="button" className="chest-pill-btn" title={t.resetAllTip} disabled={mastersAtDefault} onClick={resetMasters}>{t.resetAll}</button>
+          <div className="mixer-sets" role="group" aria-label={t.presets}>
+            <b>{t.presets}:</b>
+            {setsControls}
+          </div>
+        </div>
+        {note && <p className="pult-flash">{note}</p>}
         <div className="mixer-live" role="status" aria-live="polite"><b>{t.liveTitle}:</b> {summaryNode}</div>
       </section>
 
@@ -546,18 +572,9 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <p className="pult-hint">{t.saved}</p>
       </section>
 
-      {!hasTiers && (
-        <section className="pult-card">
-          <h3>{t.presets}</h3>
-          <div className="pult-actions">{setsControls}</div>
-          <p className="pult-hint">{t.presetHint}</p>
-          {note && <p className="pult-flash">{note}</p>}
-        </section>
-      )}
-
       <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal}
         onLoad={loadClanPreset}
-        sets={setsControls} setsTitle={t.presets} setsHint={t.presetHint} setsNote={note}
+        setsTitle={t.presets} setsHint={t.presetHint}
         catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
     </div>
   )
