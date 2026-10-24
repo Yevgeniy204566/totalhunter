@@ -447,10 +447,10 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 const TABLE_TXT = {
   ru: { total: 'Всего', player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
         hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ',
-        sortPct: 'Сортировка по успеваемости: выполнение нормы своего Героя, %', sortAbs: 'Сортировка по абсолютному значению: максимум в числах', abs: 'абс.', heroCol: 'Герой', partialHint: 'Уровень Героя не указан — цель посчитана по Герою 400' },
+        sortPct: 'Сортировка по успеваемости: выполнение нормы своего Героя, %', sortAbs: 'Сортировка по абсолютному значению: максимум в числах', abs: 'абс.', pctShort: '% нормы', heroCol: 'Герой', partialHint: 'Уровень Героя не указан — цель посчитана по Герою 400' },
   en: { total: 'Total', player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
         hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ',
-        sortPct: 'Sort by performance: % of the own Hero norm', sortAbs: 'Sort by absolute value: highest numbers', abs: 'abs.', heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
+        sortPct: 'Sort by performance: % of the own Hero norm', sortAbs: 'Sort by absolute value: highest numbers', abs: 'abs.', pctShort: '% of norm', heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
 }
 
 export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
@@ -496,7 +496,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     ]
   }, [pointsPersonal, quotaCols, tt])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
-  const [sort, setSort] = useState(null)
+  const [sort, setSort] = useState(() => (pointsPersonal ? { key: 'points', mode: 'abs', dir: 'desc' } : null))
   const pointsRank = useMemo(() => {
     const m = {}
     players.forEach((p, i) => { m[p.name] = i + 1 })
@@ -646,12 +646,12 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                 ? mainCols.map(c => (
                   <th key={c.key} className="public-main-th">
                     <div className="public-main-head">
-                      <span className="public-sortable" title={tt.sortPct} onClick={() => toggleSort(c.key, 'pct')}>
+                      <span className="public-sortable" title={tt.sortAbs} onClick={() => toggleSort(c.key, 'abs')}>
                         <MainIcon kind={c.icon} />
-                        <span translate="no" className="notranslate">{c.name}</span>{sortMark(c.key, 'pct')}
+                        <span translate="no" className="notranslate">{c.name}</span>{sortMark(c.key, 'abs')}
                       </span>
-                      <span className="public-sortable public-main-abs" title={tt.sortAbs} onClick={() => toggleSort(c.key, 'abs')}>
-                        {tt.abs}{sortMark(c.key, 'abs')}
+                      <span className="public-sortable public-main-abs" title={tt.sortPct} onClick={() => toggleSort(c.key, 'pct')}>
+                        {tt.pctShort}{sortMark(c.key, 'pct')}
                       </span>
                     </div>
                   </th>
