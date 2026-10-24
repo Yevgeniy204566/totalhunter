@@ -288,6 +288,7 @@
   .public-table thead th.public-name-cell { z-index: 5 !important; }
   .hero-shield { width: 28px; height: 32px; }
   .public-main-icon { margin-right: 4px; }
+  .public-main-chest, .public-main-dragon { width: 22px; height: 22px; vertical-align: -6px; }
   .public-main-head { gap: 6px; }
   .public-table td.public-bar-cell { padding: 5px 8px 5px 6px !important; }
   .public-bar-row { gap: 6px; }

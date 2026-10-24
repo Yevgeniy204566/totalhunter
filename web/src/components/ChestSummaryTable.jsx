@@ -372,19 +372,28 @@ function MainIcon({ kind }) {
   const common = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2,
     strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: 'public-main-icon' }
   if (kind === 'star') return <svg {...common} fill="currentColor"><path d="M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18l-6.5 4 1.7-7.4-5.7-5 7.5-.7z" /></svg>
-  // Цветные значки (владелец 2026-10-24): сундук нарисован с золотыми полосами и замком, дракончик — эмодзи 🐲
+  // Цветные значки (владелец 2026-10-24): сундук с драгоценностями нарисован здесь, дракончик — Twemoji 🐲
+  // (CC-BY 4.0, https://github.com/jdecked/twemoji), файл public/icons/dragon.svg
   if (kind === 'chest') return (
-    <svg {...common} fill="none" strokeWidth="1.2">
-      <path d="M3 11V9a9 6.5 0 0 1 18 0v2z" fill="#D18A45" stroke="#4A2D10" />
-      <rect x="3" y="11" width="18" height="9.5" rx="1.5" fill="#9A5F2A" stroke="#4A2D10" />
-      <rect x="3" y="11" width="18" height="2.4" fill="#F2C94C" stroke="#4A2D10" />
-      <rect x="6.2" y="6.2" width="2" height="14.3" fill="#F2C94C" stroke="#4A2D10" strokeWidth="0.8" />
-      <rect x="15.8" y="6.2" width="2" height="14.3" fill="#F2C94C" stroke="#4A2D10" strokeWidth="0.8" />
-      <rect x="10" y="12" width="4" height="5" rx="0.9" fill="#FFE27A" stroke="#4A2D10" />
-      <circle cx="12" cy="14.2" r="0.7" fill="#4A2D10" stroke="none" />
+    <svg className="public-main-icon public-main-chest" viewBox="0 0 32 32" aria-hidden="true"
+         strokeLinejoin="round" strokeLinecap="round" strokeWidth="1.1" stroke="#3B220C">
+      <path d="M5.5 15 L7.5 5 H24.5 L26.5 15 Z" fill="#7A4A1E" />
+      <ellipse cx="16" cy="15" rx="11.5" ry="3" fill="#FFD54A" />
+      <polygon points="9,13 12,8.5 15,13 12,16" fill="#E0245E" />
+      <polygon points="15,12 18,6.5 21,12 18,15.5" fill="#2EA8FF" />
+      <polygon points="20,13.5 22.5,10 25,13.5 22.5,16.5" fill="#2EC46A" />
+      <circle cx="7.5" cy="14.5" r="2" fill="#FFE27A" />
+      <circle cx="26" cy="14.8" r="1.8" fill="#FFE27A" />
+      <path d="M4 15.5 H28 V27 a2 2 0 0 1 -2 2 H6 a2 2 0 0 1 -2 -2 Z" fill="#A0652D" />
+      <rect x="4" y="15.5" width="24" height="3.6" fill="#F2C94C" />
+      <rect x="7.5" y="19" width="2.6" height="10" fill="#F2C94C" />
+      <rect x="21.9" y="19" width="2.6" height="10" fill="#F2C94C" />
+      <rect x="13" y="17.5" width="6" height="7" rx="1.2" fill="#FFE27A" />
+      <circle cx="16" cy="20.6" r="1.1" fill="#3B220C" stroke="none" />
+      <rect x="15.4" y="21" width="1.2" height="2.6" fill="#3B220C" stroke="none" />
     </svg>
   )
-  if (kind === 'dragon') return <span className="public-main-icon public-main-emoji" aria-hidden="true">🐲</span>
+  if (kind === 'dragon') return <img className="public-main-icon public-main-dragon" src="/icons/dragon.svg" alt="" aria-hidden="true" />
   return <svg {...common}><path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z" /></svg>
 }
 function BarCell({ value, target, partial, hint = '' }) {
