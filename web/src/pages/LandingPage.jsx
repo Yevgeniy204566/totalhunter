@@ -160,6 +160,93 @@ function ChestAccounting({ lang }) {
   )
 }
 
+// Блок «О проекте»: весь функционал по группам (владелец 2026-10-24). Только то, что есть в программе и на сайте.
+function AboutProject({ lang }) {
+  const en = lang === 'en'
+  const groups = en ? [
+    { title: 'Mercenary exchanges', items: [
+      '"Snake" mode walks along the coast and sounds an alert when an exchange is found.',
+      '"Scanner 2.0" captures the map fast while the YOLO neural network processes the frames in the background.',
+      'SWARM: exchange coordinates found by hunters of the kingdom go into a shared pool and appear on the site in real time.',
+    ] },
+    { title: 'Crypts', items: [
+      'You choose the crypt types. The bot finds a crypt, sends Carter, calculates the march return time and repeats the cycle.',
+      'Auto-stop by number of crypts or by time.',
+    ] },
+    { title: 'Clan chests', items: [
+      'The bot opens the clan gifts one by one, recognizes the sender, the chest type and the time, and sends the list to the site.',
+      'Public clan table: points, season goals, progress bars, ranking and the history of seasons.',
+      'Personal norms for each player by Hero level.',
+      'The leader merges different spellings of one name, excludes chest types from the count and appoints assistants.',
+    ] },
+    { title: 'Ancient', items: [
+      'Clan roster with ranks and troop composition.',
+      'Calculator of the damage norm for Ancients.',
+      'Public roster page for the clan.',
+    ] },
+    { title: 'For everyone', items: [
+      'Works from the screen image on top of the browser or the official game client. No game login or password is needed.',
+      'Two-point calibration for any monitor.',
+      'The bot interface is available in 19 languages and updates itself.',
+      'The first 300 diamonds are free at registration.',
+      'Referral program with three levels: 10%, 5% and 1% of the purchases of invited players.',
+    ] },
+  ] : [
+    { title: 'Биржи наёмников', items: [
+      'Режим «Змейка» идёт вдоль берега и подаёт звуковой сигнал, когда находит биржу.',
+      '«Сканер 2.0» быстро снимает карту, а нейросеть YOLO разбирает кадры в фоне.',
+      'РОЙ: координаты бирж, найденные охотниками королевства, попадают в общий пул и видны на сайте в реальном времени.',
+    ] },
+    { title: 'Склепы', items: [
+      'Вы выбираете типы склепов. Бот находит склеп, отправляет Картера, считает время возвращения марша и повторяет цикл.',
+      'Автостоп по количеству склепов или по времени.',
+    ] },
+    { title: 'Сундуки клана', items: [
+      'Бот открывает подарки клана по одному, распознаёт отправителя, тип сундука и время и отправляет список на сайт.',
+      'Публичная таблица клана: очки, цели сезона, полосы выполнения, рейтинг и история сезонов.',
+      'Личные нормы для каждого игрока по уровню Героя.',
+      'Лидер объединяет разные написания одного имени, исключает типы сундуков из зачёта и назначает помощников.',
+    ] },
+    { title: 'Древний', items: [
+      'Ростер клана со званиями и составом войск.',
+      'Калькулятор нормы урона по Древним.',
+      'Публичная страница ростера для клана.',
+    ] },
+    { title: 'Для всех', items: [
+      'Работает по картинке экрана поверх браузера или официального клиента. Логин и пароль от игры не нужны.',
+      'Калибровка по двум точкам под любой монитор.',
+      'Интерфейс бота на 19 языках, обновляется сам.',
+      'Первые 300 алмазов бесплатно при регистрации.',
+      'Реферальная программа в три уровня: 10%, 5% и 1% от покупок приглашённых игроков.',
+    ] },
+  ]
+  return (
+    <section className="ab-section">
+      <div className="ab-inner">
+        <p className="ab-label">{en ? 'About the project' : 'О проекте'}</p>
+        <h2 className="ab-title">{en ? 'Built by a player, for players' : 'Сделано игроком для игроков'}</h2>
+        <p className="ab-lead">
+          {en
+            ? 'Total Hunter was made by a Total Battle player who spent hours hunting exchanges by hand. Here is everything the program and the site can do.'
+            : 'Total Hunter сделал игрок Total Battle, который сам часами искал биржи вручную. Вот всё, что умеют программа и сайт.'}
+        </p>
+        <div className="ab-grid">
+          {groups.map(g => (
+            <div key={g.title} className="ab-card">
+              <h3 className="ab-card-title">{g.title}</h3>
+              <ul className="ab-list">
+                {g.items.map(t => (
+                  <li key={t}><span className="ab-check" aria-hidden="true">✓</span><span>{t}</span></li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function StatCard({ label, color, rawValue }) {
   const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
   const display  = typeof rawValue === 'number' ? animated.toLocaleString() : '—'
@@ -738,29 +825,8 @@ export default function LandingPage() {
       {/* ── Video Guides ───────────────────────────────────────── */}
       <VideoGuides lang={lang} />
 
-      {/* ── About / Solo Dev ───────────────────────────────────── */}
-      <section style={{ padding: '88px 24px', background: 'var(--bg)', borderTop: '1px solid var(--outline)' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '2.5px', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 14 }}>
-            {lang === 'en' ? 'About the project' : 'О проекте'}
-          </p>
-          <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 40 }}>
-            {lang === 'en' ? 'Built by a player, for players' : 'Сделано игроком для игроков'}
-          </h2>
-          <div style={{
-            background: 'var(--card)', border: '1px solid var(--outline)',
-            borderRadius: 18, padding: '40px 48px', textAlign: 'left',
-            boxShadow: '0 0 40px rgba(61,127,255,0.06)',
-          }}>
-            <div style={{ fontSize: 40, marginBottom: 20 }}>👨‍💻</div>
-            <p style={{ fontSize: 17, color: '#C8D8F0', lineHeight: 1.85, margin: 0 }}>
-              {lang === 'en'
-                ? "Hey, I'm the solo developer behind Total Hunter. Like you, I spent hours manually hunting exchanges in Total Battle — and constantly missed them while sleeping. So I decided to automate it. But instead of a basic clicker, I built a real algorithm: a coastal snake navigator, a neural network that sees exchanges and crypts on the screen like a human does, and the SWARM system so the whole community scans the map together. Total Hunter is my solution to a problem I faced myself as a player."
-                : 'Привет, я — соло-разработчик и создатель Total Hunter. Как и вы, я часами вручную охотился за биржами в Total Battle — и постоянно упускал их пока спал. Решил автоматизировать. Но вместо обычного кликера написал настоящий алгоритм: навигатор-змейка вдоль берега, нейросеть, которая видит биржи и склепы на экране как человек, и система РОЙ — чтобы всё комьюнити майнило карту вместе. Total Hunter — это моё решение задачи, с которой я сам столкнулся как игрок.'}
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* ── О проекте: весь функционал ───────────────────────────── */}
+      <AboutProject lang={lang} />
 
       {/* ── Pricing ────────────────────────────────────────────── */}
       <section id="pricing" style={{ padding: '88px 24px', background: 'var(--bg)', borderTop: '1px solid var(--outline)' }}>
