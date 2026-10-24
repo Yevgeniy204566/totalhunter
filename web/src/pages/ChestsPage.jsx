@@ -898,7 +898,6 @@ export default function ChestsPage() {
                         onClick={() => toggleSort(collector.slug, 'troop')}>
                       Состав{sortArrow('troop')}
                     </th>
-                    <th>Глава</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -946,34 +945,21 @@ export default function ChestsPage() {
                               </span>
                             : <span style={{ fontSize: 12, color: '#6c7086', marginLeft: 6 }}>—</span>
                           }
+                          <span style={{ marginLeft: 32, fontSize: 14, fontWeight: 600, color: '#cdd6f4', whiteSpace: 'nowrap' }}>
+                            {cx.heroLabel}
+                          </span>
                           <input className="input-dark" type="number" min={1} max={999}
-                            placeholder={cx.heroPlaceholder} style={{ width: 70, marginLeft: 6 }}
+                            placeholder="—" style={{ width: 70, marginLeft: 6 }}
+                            aria-label={cx.heroPlaceholder}
                             value={row.hero_level ?? ''}
                             onChange={e => updatePlayerRow(collector.slug, origIdx, 'hero_level',
                               e.target.value.replace(/\D/g, '').slice(0, 3))} />
                         </div>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input
-                          type="radio"
-                          name={`leader-${collector.slug}`}
-                          disabled={collector.role === 'manager'}
-                          checked={leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name)}
-                          onClick={() => {
-                            if (collector.role === 'manager') return
-                            const name = row.canonical_name || row.raw_name
-                            setLeaderByCollector(prev => ({
-                              ...prev,
-                              [collector.slug]: prev[collector.slug] === name ? null : name,
-                            }))
-                          }}
-                          onChange={() => {}}
-                        />
-                      </td>
                     </tr>
                     {leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name) && (
                       <tr key={`leader-excl-${origIdx}`}>
-                        <td colSpan={6} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
+                        <td colSpan={5} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
                           <div style={{ fontSize: 13, color: '#a6adc8', marginBottom: 6 }}>
                             Не считать в статистику:
                           </div>

@@ -909,9 +909,10 @@ a:hover { color: var(--on-surface); }
 .pult-quotas .input-dark { font-size: 20px; font-weight: 700; color: #FFFFFF; padding: 9px 10px; }
 .pult-group { font-size: 16px; font-weight: 700; color: var(--accent); margin: 22px 0 8px; }
 .pult-chests { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 28px; }
-.pult-chest { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 16px;
+.pult-chest { display: flex; align-items: center; justify-content: flex-start; gap: 12px; font-size: 16px;
   padding: 5px 0; border-bottom: 1px solid var(--separator); color: var(--on-surface); }
-.pult-chest-name { min-width: 0; overflow-wrap: anywhere; }
+/* Название стоит сразу перед полем значения (владелец 2026-10-24: «слишком далеко») — столбец имени фиксированной ширины, поля выровнены */
+.pult-chest-name { flex: 0 1 170px; min-width: 0; overflow-wrap: anywhere; }
 .pult-stepper { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
 .pult-num { width: 78px; text-align: center; font-size: 18px; font-weight: 700; color: #FFFFFF; padding: 6px 4px; }
 .pult-num::placeholder, .pult-quotas .input-dark::placeholder { color: #E6EEFF; opacity: 1; font-weight: 700; }

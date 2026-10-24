@@ -144,6 +144,7 @@ export const DASHBOARD = {
     accountingTooltip: 'Not counted — hidden, no points. Counted — gives points. Quota — gives points and counts in its quota column.',
     accOff: 'Not counted',
     heroPlaceholder: 'Hero',
+    heroLabel: 'Hero',
     accOn: 'Counted',
     quotasLabel: 'Season quotas',
     quotaName: 'Quota name',
