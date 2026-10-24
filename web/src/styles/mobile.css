@@ -296,6 +296,9 @@
   .public-table th.public-hero-cell { font-size: 7px !important; padding-left: 0 !important; padding-right: 0 !important; overflow: hidden !important; }
   .public-table th.public-hero-cell .public-sort-mark { display: none; }
 
+  /* Подпись «% нормы» в шапке главных столбцов: свой размер 12px выделялся рядом с заголовками по 8px — на телефоне мельче их (владелец 2026-10-24) */
+  .public-table .public-main-abs { font-size: 6px !important; letter-spacing: 0 !important; opacity: 0.85; }
+
   /* Три главные ячейки (ранее 320px — почти весь экран) */
   .public-table th.public-main-th,
   .public-table td.public-bar-cell { min-width: 150px !important; }
