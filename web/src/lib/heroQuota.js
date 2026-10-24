@@ -205,7 +205,7 @@ export function emcPointsAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
   const counts = [row.finalH, row.finalU, row.finalA, row.finalS]
   const four = EMC_IDS.reduce((sum, id, k) => sum + counts[k] * (weightAt(id, hero, settings) || 0), 0)
   // Chimera — пятый эпик-монстр (больше половины всего EMC у ELDORADO), считается со своей базой, а не как «прочий»
-  return four + emcChimeraAt(hero) * (weightAt('Epic Chimera', hero, settings) || 0)
+  return four + emcChimeraAt(hero, clampMultiplier(emcModel?.global)) * (weightAt('Epic Chimera', hero, settings) || 0)
 }
 
 export function cryptsNormAt(hero, emcModel, settings = DEFAULT_SETTINGS) {
@@ -232,7 +232,7 @@ function countRaw(id, hero, settings) {
   if (entry?.set != null) return Math.max(0, entry.set)
   if (!EPIC_CRYPTS.includes(key)) return 0
   const active = EPIC_CRYPTS.filter(t => mixC[t]?.on !== false)
-  return epicRefAt(hero) / active.length * mixFactor({ ...entry, on: true }, hero)
+  return epicRefAt(hero, settings) / active.length * mixFactor({ ...entry, on: true }, hero)
 }
 
 export function countAt(id, hero, settings = DEFAULT_SETTINGS) {
@@ -250,10 +250,12 @@ export function emcCountAt(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
   if (entry?.set != null) return Math.max(0, Math.round(entry.set))
   const row = computeRow(hero, emcModel || undefined)
   if (id in EMC_FOUR) return row[EMC_FINALS[EMC_FOUR[id]]]
-  if (id === 'Epic Chimera') return emcChimeraAt(hero, mixFactor({ ...entry, on: true }, hero))
+  // общий множитель «все EMC» (главный фейдер пульта, emc.global) — для ВСЕХ монстров, включая Chimera и прочих
+  const globalK = clampMultiplier(emcModel?.global)
+  if (id === 'Epic Chimera') return emcChimeraAt(hero, mixFactor({ ...entry, on: true }, hero) * globalK)
   const base = computeRow(hero)
   const mean = EMC_FINALS.reduce((sum, k) => sum + base[k], 0) / 4
-  return Math.round(mean * mixFactor({ ...entry, on: true }, hero))
+  return Math.round(mean * mixFactor({ ...entry, on: true }, hero) * globalK)
 }
 
 // К какой вкладке пульта относится тип — единое правило для пульта и публичной страницы (владелец 2026-10-20):

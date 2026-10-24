@@ -187,7 +187,7 @@ test('края диапазона: вверх и вниз та же законо
 })
 
 // ---- пульт: фейдеры по типам и ступеням Героя ----
-import { computeRow, bandKey } from './emcQuota.js'
+import { computeRow, bandKey, DEFAULT_SETTINGS as EMC_DEFAULTS } from './emcQuota.js'
 
 test('ступень Героя: 310–319 → "310", края 100…600', () => {
   assert.equal(bandKey(319), '310')
@@ -266,14 +266,14 @@ test('количество эпиков: фейдер, mute (доля остал
 })
 
 test('EMC: четыре известных монстра — по истории, прочие — среднее четырёх', () => {
-  assert.equal(emcCountAt('Epic Fire Hydra', 400), 15)
+  assert.equal(emcCountAt('Epic Fire Hydra', 400), 17)
   assert.equal(emcCountAt('Epic Shadow City', 400), 3)
-  // среднее по 15/5/2/3 = 6.25 -> 6
-  assert.equal(emcCountAt('Epic Briareus', 400), 6)
-  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 13) // 6.25 × 2 = 12.5 -> 13
+  // среднее по 17/6/3/3 = 7.25 -> 7
+  assert.equal(emcCountAt('Epic Briareus', 400), 7)
+  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 15) // 7.25 × 2 = 14.5 -> 15
   // Chimera — пятый эпик-монстр ELDORADO со своей базой (52% всего EMC), а не «прочий»
-  assert.equal(emcCountAt('Epic Chimera', 400), 28)
-  assert.equal(emcCountAt('Epic Chimera', 450), 44)
+  assert.equal(emcCountAt('Epic Chimera', 400), 32)
+  assert.equal(emcCountAt('Epic Chimera', 450), 112)
   assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { on: false } } } }), 0)
 })
 
@@ -282,7 +282,7 @@ test('EMC: цель «прочих» монстров слота 2 суммир�
     A: { id: 'Epic Briareus', points: 45, slot: 2 }, B: { id: 'Epic Fire Hydra', points: 30, slot: 2 },
     C: { id: 'Yogwai', points: 40, slot: 1 },
   }
-  assert.equal(emcOthersTotal(meta, 400), 6) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
+  assert.equal(emcOthersTotal(meta, 400), 7) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
 })
 
 test('тип вне шкалы: очки клана × фейдер, mute обнуляет', () => {
@@ -336,6 +336,24 @@ test('без горба: эпик-склепов на 1000 очков нормы
   }
 })
 
+test('главный фейдер «все EMC» (emc.global) двигает всех монстров, включая Chimera и прочих', () => {
+  const g2 = { ...EMC_DEFAULTS, global: 2 }
+  assert.ok(Math.abs(emcCountAt('Epic Chimera', 450, DEFAULT_SETTINGS, g2) - 2 * emcCountAt('Epic Chimera', 450)) <= 1) // округление после умножения
+  assert.equal(emcCountAt('Yogwai', 400, DEFAULT_SETTINGS, g2), Math.round(7.25 * 2))
+  assert.equal(emcCountAt('Epic Fire Hydra', 400, DEFAULT_SETTINGS, g2), 34) // 17.2 × 2 = 34.5 → 34 (округление после умножения)
+  // итог по всем монстрам (четыре + Chimera) вырос вдвое, не только четыре
+  const total = s => computeRow(450, s).emc + emcCountAt('Epic Chimera', 450, DEFAULT_SETTINGS, s)
+  assert.ok(Math.abs(total(g2) - 2 * total(EMC_DEFAULTS)) <= 2)
+})
+
+test('главный фейдер «склепы» (mix.epic.all) меняет норму эпик-склепов и штуки по типам', () => {
+  const x2 = { ...DEFAULT_SETTINGS, mix: { epic: { all: 2 } } }
+  assert.equal(epicCountTotal(450, x2), 2 * epicCountTotal(450))
+  assert.equal(countAt('Epic Crypt 30', 450, x2), 2 * countAt('Epic Crypt 30', 450))
+  const off = { ...DEFAULT_SETTINGS, mix: { epic: { on: false } } }
+  assert.equal(epicCountTotal(450, off), 0)
+})
+
 // ---- «Очки» = сумма всех сундуков в учёте: норму можно закрыть склепами, EMC или смесью ----
 const META = {
   'Эпик 35': { id: 'Epic Crypt 35', points: 135, slot: 1 },
@@ -386,6 +404,6 @@ test('синхронизация пульта и публичной страни
   assert.equal(typeTab('Yogwai', null), 'crypts')            // без «Квоты 2» — не EMC, как бы ни назывался
   assert.equal(typeTab('Epic Fire Hydra', 1), 'crypts')
   const meta = { 'Тыква': { id: 'Pumpkin Chest', points: 1, slot: 2 }, Hydra: { id: 'Epic Fire Hydra', points: 1, slot: 2 } }
-  assert.equal(emcOthersTotal(meta, 400), 6)         // «Тыква» = среднее четырёх, как в пульте
-  assert.equal(emcCountAt('Pumpkin Chest', 400), 6)
+  assert.equal(emcOthersTotal(meta, 400), 7)         // «Тыква» = среднее четырёх, как в пульте
+  assert.equal(emcCountAt('Pumpkin Chest', 400), 7)
 })

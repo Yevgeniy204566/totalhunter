@@ -6,7 +6,7 @@ import TierPresetEditor from './TierPresetEditor.jsx'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
-  weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, typeTab,
+  weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
 } from '../lib/heroQuota.js'
 
 // «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
@@ -20,7 +20,12 @@ const TXT = {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Очки', count: 'Количество',
     allLevels: 'Все уровни', hero: 'Герой',
-    master: 'Общий', masterCryptsPoints: 'Норма', masterEmcCount: 'Все монстры',
+    mastersTitle: 'Главные фейдеры',
+    mastersHint: 'Три главные цели клана — те же три столбца на публичной странице. Двигают всё сразу; ниже — детальные настройки по типам сундуков и уровням Героя.',
+    mastersAt: 'Значения для Героя {h}',
+    mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): множитель и число штук на игрока',
+    mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): множитель и число штук на игрока',
+    mPoints: 'Очки', mPointsTip: 'Итоговая норма очков за сезон: множитель и число очков на игрока',
     enable: 'Персонализированный учёт по уровню Героя',
     off: 'Выключено: нормы игроков фиксированные, из настроек сезона. Включите переключатель выше, чтобы настраивать нормы по уровням Героя.',
     sample: 'Пример для Героя',
@@ -59,7 +64,12 @@ const TXT = {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Points', count: 'Count',
     allLevels: 'All levels', hero: 'Hero',
-    master: 'Master', masterCryptsPoints: 'Norm', masterEmcCount: 'All monsters',
+    mastersTitle: 'Master faders',
+    mastersHint: 'The three main clan goals — the same three columns as on the public page. They move everything at once; below are the detailed settings by chest type and Hero level.',
+    mastersAt: 'Values for Hero {h}',
+    mCrypts: 'Crypts', mCryptsTip: 'Epic crypts norm (all crypt types together): multiplier and pieces per player',
+    mEmc: 'EMC', mEmcTip: 'EMC norm (all epic monsters together, including Chimera): multiplier and pieces per player',
+    mPoints: 'Points', mPointsTip: 'Total season points norm: multiplier and points per player',
     enable: 'Personalized accounting by Hero level',
     off: 'Off: player norms are fixed from the season settings. Turn the switch above on to set norms by Hero level.',
     sample: 'Example for Hero',
@@ -124,7 +134,7 @@ function sortTypes(list, tab) {
   })
 }
 
-function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt }) {
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
   const [draft, setDraft] = useState(null)
@@ -136,8 +146,9 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
     if (v !== '.') onAbs(Number(v))
   }
   return (
-    <div className={`mixer-col${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}>
-      <div className="mixer-name" title={title}>{title}</div>
+    <div className={`mixer-col${master ? ' mixer-col--master' : ''}${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}
+         style={accent ? { '--mc': accent } : undefined}>
+      <div className="mixer-name" title={tip || title}>{title}</div>
       {onToggle
         ? <button type="button" className={`mixer-dot${on === false ? ' mixer-dot--off' : ''}`} title={tt.mute}
             onClick={onToggle} disabled={disabled} />
@@ -289,15 +300,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     cols.unshift(...four)
   }
 
-  // Общий фейдер: Crypts — норма; EMC/«Количество» — общий множитель монстров; EMC/«Очки» общего нет
-  const master = tab === 'crypts'
-    ? { title: t.masterCryptsPoints, k: personal.norm ?? 1, onK: k => setPersonal({ norm: k }),
-        calc: k => normAt(exHero, { ...scale, norm: k }), base: normAt(exHero, SCALE_DEFAULTS), fmt: true }
-    : mode === 'count'
-      ? { title: t.masterEmcCount, k: emc.global ?? 1, onK: k => setEmc({ ...emc, global: k }),
-          calc: k => computeRow(exHero, { ...emc, global: k }).emc, base: computeRow(exHero).emc }
-      : null
-
   const absProps = c => {
     if (c.manual) {
       return { abs: c.manualValue ?? '', calcText: c.base, onAbs: v => c.onSet(v === '' ? null : Math.max(0, Number(v) || 0)) }
@@ -370,6 +372,24 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const cryptsNorm = cryptsNormAt(exHero, emc, scale)
   const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(totalNorm))
     .replace('{crypts}', fmt(cryptsNorm)).replace('{emcpts}', fmt(Math.max(0, totalNorm - cryptsNorm))).replace('{emc}', emcTotal)
+  // Три главных фейдера (владелец 2026-10-24) — те же три столбца публичной страницы: Склепы, EMC, Очки.
+  // Это вид сверху над уже существующими множителями: mix.epic.all (норма эпик-склепов, все типы склепов),
+  // emc.global (все эпические монстры, включая Chimera) и personal.norm (итоговая норма очков).
+  // Сколько штук/очков получается для Героя «Примера», показывает число под ползунком; можно вписать своё.
+  const mixEpic = mix.epic || {}
+  const emcAll = (model, sc) => computeRow(exHero, model).emc + emcOthersTotal(emcMeta, exHero, sc, model)
+  const masters = [
+    { id: 'crypts', title: t.mCrypts, tip: t.mCryptsTip, accent: 'var(--epic-purple)', disabled: !personal.crypts,
+      k: mixEpic.all ?? 1, onK: k => setPersonal({ mix: { ...mix, epic: { ...mixEpic, all: k } } }),
+      calc: k => epicCountTotal(exHero, { ...scale, mix: { ...mix, epic: { ...mixEpic, all: k } } }),
+      base: epicCountTotal(exHero, SCALE_DEFAULTS) },
+    { id: 'emc', title: t.mEmc, tip: t.mEmcTip, accent: '#4ADE80', disabled: !personal.emc,
+      k: emc.global ?? 1, onK: k => setEmc({ ...emc, global: k }),
+      calc: k => emcAll({ ...emc, global: k }, scale), base: emcAll(EMC_DEFAULTS, SCALE_DEFAULTS) },
+    { id: 'points', title: t.mPoints, tip: t.mPointsTip, accent: 'var(--credits-gold)', disabled: !(personal.crypts || personal.emc),
+      k: personal.norm ?? 1, onK: k => setPersonal({ norm: k }),
+      calc: k => normAt(exHero, { ...scale, norm: k }), base: normAt(exHero, SCALE_DEFAULTS), fmt: true },
+  ]
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
   const summaryNode = summary
 
@@ -379,6 +399,21 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <summary>{t.help}</summary>
         {t.helpText.map((line, i) => <p key={i} className="emc-text mixer-help-text">{line}</p>)}
       </details>
+
+      <section className="mixer-masters" aria-label={t.mastersTitle}>
+        <div className="mixer-masters-head">
+          <b>{t.mastersTitle}</b>
+          <span>{t.mastersAt.replace('{h}', exHero)}</span>
+        </div>
+        <p className="mixer-masters-hint">{t.mastersHint}</p>
+        <div className="mixer-masters-row">
+          {masters.map(m => {
+            const a = absProps(m)
+            return <Fader key={m.id} tt={t} master accent={m.accent} tip={m.tip} title={m.title} k={m.k} onK={m.onK}
+              abs={a.abs} onAbs={a.onAbs} calc={a.calcText} disabled={m.disabled} />
+          })}
+        </div>
+      </section>
 
       <div className="chest-tabs chest-tabs--pill">
         {[['crypts', t.tabCrypts], ['emc', t.tabEmc]].map(([id, label]) => (
@@ -452,15 +487,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                 abs={a.abs} onAbs={a.onAbs} calc={a.calcText} manual={c.manual} disabled={!enabled} />
             )
           })}
-        </div>
-        <div className="mixer-master">
-          {master
-            ? (() => {
-              const a = absProps(master)
-              return <Fader tt={t} title={master.title} k={master.k} onK={master.onK} abs={a.abs} onAbs={a.onAbs}
-                calc={a.calcText} disabled={!enabled} />
-            })()
-            : <div className="mixer-name">{t.master}</div>}
         </div>
       </div>
 
