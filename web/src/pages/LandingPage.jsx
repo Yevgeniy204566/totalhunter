@@ -94,6 +94,68 @@ function Screenshot3D({ src, alt, rotY, rotX, glowColor, extraStyle = {} }) {
   )
 }
 
+// Блок «Учёт сундуков клана»: скриншот публичной таблицы в неоновой рамке (владелец 2026-10-24).
+// Только факты о том, что страница клана показывает на самом деле.
+function ChestAccounting({ lang }) {
+  const en = lang === 'en'
+  const items = en ? [
+    { icon: '🏆', color: '#FBBF24', title: 'Points, Epic Crypts and EMC',
+      desc: "Every player has progress bars toward the season goals: points, Epic Crypts and EMC, plus the count of each chest type." },
+    { icon: '🛡', color: '#4ADE80', title: 'Goals by Hero level',
+      desc: "A shield with the Hero level stands next to each name. The leader can switch on personal goals calculated from that level." },
+    { icon: '📅', color: '#60A5FA', title: 'Seasons and history',
+      desc: "Season dates, a countdown to the end and an archive of past seasons." },
+    { icon: '📱', color: '#F472B6', title: 'Works on a phone',
+      desc: "The page opens in a browser: scroll the table and pinch to zoom." },
+  ] : [
+    { icon: '🏆', color: '#FBBF24', title: 'Очки, склепы и EMC',
+      desc: 'У каждого игрока полосы выполнения целей сезона: очки, Epic Crypts и EMC, а также число сундуков каждого типа.' },
+    { icon: '🛡', color: '#4ADE80', title: 'Цели по уровню Героя',
+      desc: 'Рядом с именем стоит щит с уровнем Героя. Лидер может включить личные цели, рассчитанные от этого уровня.' },
+    { icon: '📅', color: '#60A5FA', title: 'Сезоны и история',
+      desc: 'Даты сезона, таймер до конца и архив прошлых сезонов.' },
+    { icon: '📱', color: '#F472B6', title: 'Работает на телефоне',
+      desc: 'Страница открывается в браузере: таблицу можно листать и увеличивать пальцами.' },
+  ]
+  return (
+    <section className="cq-section">
+      <div className="cq-inner">
+        <div className="cq-text">
+          <p className="cq-label">{en ? 'Clan chest accounting' : 'Учёт сундуков клана'}</p>
+          <h2 className="cq-title">
+            {en ? "Every player's contribution on one page" : 'Вклад каждого игрока — на одной странице'}
+          </h2>
+          <p className="cq-lead">
+            {en
+              ? 'The bot opens the clan gifts and sends the list of chests to the site. The leader shares a public link to the table, and players see their own numbers without manual counting.'
+              : 'Бот открывает подарки клана и отправляет список сундуков на сайт. Лидер даёт клану публичную ссылку на таблицу, и игроки видят свои цифры сами, без ручного подсчёта.'}
+          </p>
+          <ul className="cq-list">
+            {items.map(it => (
+              <li key={it.title} className="cq-item">
+                <span className="cq-item-icon" style={{ '--cq-c': it.color }}>{it.icon}</span>
+                <span>
+                  <strong>{it.title}</strong>
+                  <span className="cq-item-desc">{it.desc}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="cq-frame-wrap">
+          <div className="cq-frame">
+            <img
+              src="/img/chest-accounting.png" width="1810" height="1441" loading="lazy"
+              alt={en ? 'Public clan table: points, Epic Crypts and EMC progress bars, Hero level shields'
+                      : 'Публичная таблица клана: полосы очков, Epic Crypts и EMC, щиты с уровнем Героя'}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function StatCard({ label, color, rawValue }) {
   const animated = useCounter(typeof rawValue === 'number' ? rawValue : null)
   const display  = typeof rawValue === 'number' ? animated.toLocaleString() : '—'
@@ -613,6 +675,10 @@ export default function LandingPage() {
       </section>
 
       </div>
+
+      {/* ── Учёт сундуков клана ───────────────────────────────── */}
+      <ChestAccounting lang={lang} />
+
       {/* ── Features: для игрока + для кланов + под капотом ───────── */}
       <section id="features" style={{
         padding: '64px 24px',
