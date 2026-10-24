@@ -372,8 +372,19 @@ function MainIcon({ kind }) {
   const common = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2,
     strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: 'public-main-icon' }
   if (kind === 'star') return <svg {...common} fill="currentColor"><path d="M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18l-6.5 4 1.7-7.4-5.7-5 7.5-.7z" /></svg>
-  if (kind === 'chest') return <svg {...common}><path d="M4 11V8a8 8 0 0 1 16 0v3" /><rect x="3" y="11" width="18" height="9.5" rx="1.5" /><path d="M3 14.5h18" /><rect x="10.2" y="12.8" width="3.6" height="4.4" rx="0.8" fill="currentColor" /></svg>
-  if (kind === 'dragon') return <svg {...common}><path d="M2 17 L6 13 L10 9 L13 5.5 H20 L22 9 L18.5 10 L15 12.5 L14.5 16.5 L15.5 21 H11 L10.5 17.5 H8 Z" /><circle cx="17.5" cy="8" r="0.9" fill="currentColor" stroke="none" /></svg>
+  // Цветные значки (владелец 2026-10-24): сундук нарисован с золотыми полосами и замком, дракончик — эмодзи 🐲
+  if (kind === 'chest') return (
+    <svg {...common} fill="none" strokeWidth="1.2">
+      <path d="M3 11V9a9 6.5 0 0 1 18 0v2z" fill="#D18A45" stroke="#4A2D10" />
+      <rect x="3" y="11" width="18" height="9.5" rx="1.5" fill="#9A5F2A" stroke="#4A2D10" />
+      <rect x="3" y="11" width="18" height="2.4" fill="#F2C94C" stroke="#4A2D10" />
+      <rect x="6.2" y="6.2" width="2" height="14.3" fill="#F2C94C" stroke="#4A2D10" strokeWidth="0.8" />
+      <rect x="15.8" y="6.2" width="2" height="14.3" fill="#F2C94C" stroke="#4A2D10" strokeWidth="0.8" />
+      <rect x="10" y="12" width="4" height="5" rx="0.9" fill="#FFE27A" stroke="#4A2D10" />
+      <circle cx="12" cy="14.2" r="0.7" fill="#4A2D10" stroke="none" />
+    </svg>
+  )
+  if (kind === 'dragon') return <span className="public-main-icon public-main-emoji" aria-hidden="true">🐲</span>
   return <svg {...common}><path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z" /></svg>
 }
 function BarCell({ value, target, partial, hint = '' }) {
