@@ -1002,3 +1002,9 @@ a:hover { color: var(--on-surface); }
   .ab-section { padding: 56px 16px; }
   .ab-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* «О проекте» — сплошной текст вместо карточек (владелец 2026-10-24) */
+.ab-text { max-width: 860px; margin: 0 auto; text-align: left; display: grid; gap: 20px; }
+.ab-text p { margin: 0; font-size: 18px; line-height: 1.75; color: #D5E1F5; }
+.ab-text strong { color: #fff; font-weight: 800; }
+@media (max-width: 520px) { .ab-text p { font-size: 17px; } }

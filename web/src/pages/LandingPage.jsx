@@ -107,8 +107,6 @@ function ChestAccounting({ lang }) {
       desc: "The norm for each player is calculated from the level of their Hero. The level is shown in the table. The leader turns this on in the settings." },
     { title: 'Seasons and history',
       desc: 'Season dates, time left and an archive of past seasons.' },
-    { title: 'Works on a phone',
-      desc: 'The page opens in a browser. Scroll the table and pinch to zoom.' },
   ] : [
     { title: 'Учёт всех сундуков клана',
       desc: 'Склепы, цитадели, сундуки эпических монстров и остальные типы: сколько открыл каждый игрок.' },
@@ -118,8 +116,6 @@ function ChestAccounting({ lang }) {
       desc: 'Норма каждого игрока считается по уровню его Героя. Уровень виден в таблице. Лидер включает это в настройках.' },
     { title: 'Сезоны и история',
       desc: 'Даты сезона, сколько осталось времени и архив прошлых сезонов.' },
-    { title: 'Работает на телефоне',
-      desc: 'Страница открывается в браузере. Таблицу можно листать и увеличивать пальцами.' },
   ]
   return (
     <section className="cq-section">
@@ -160,65 +156,32 @@ function ChestAccounting({ lang }) {
   )
 }
 
-// Блок «О проекте»: весь функционал по группам (владелец 2026-10-24). Только то, что есть в программе и на сайте.
+// Блок «О проекте»: весь функционал бота и сайта сплошным текстом, без списков (владелец 2026-10-24).
+// Только то, что есть в программе и на сайте.
 function AboutProject({ lang }) {
   const en = lang === 'en'
-  const groups = en ? [
-    { title: 'Mercenary exchanges', items: [
-      '"Snake" mode walks along the coast and sounds an alert when an exchange is found.',
-      '"Scanner 2.0" captures the map fast while the YOLO neural network processes the frames in the background.',
-      'SWARM: exchange coordinates found by hunters of the kingdom go into a shared pool and appear on the site in real time.',
-    ] },
-    { title: 'Crypts', items: [
-      'You choose the crypt types. The bot finds a crypt, sends Carter, calculates the march return time and repeats the cycle.',
-      'Auto-stop by number of crypts or by time.',
-    ] },
-    { title: 'Clan chests', items: [
-      'The bot opens the clan gifts one by one, recognizes the sender, the chest type and the time, and sends the list to the site.',
-      'Public clan table: points, season goals, progress bars, ranking and the history of seasons.',
-      'Personal norms for each player by Hero level.',
-      'The leader merges different spellings of one name, excludes chest types from the count and appoints assistants.',
-    ] },
-    { title: 'Ancient', items: [
-      'Clan roster with ranks and troop composition.',
-      'Calculator of the damage norm for Ancients.',
-      'Public roster page for the clan.',
-    ] },
-    { title: 'For everyone', items: [
-      'Works from the screen image on top of the browser or the official game client. No game login or password is needed.',
-      'Two-point calibration for any monitor.',
-      'The bot interface is available in 19 languages and updates itself.',
-      'The first 300 diamonds are free at registration.',
-      'Referral program with three levels: 10%, 5% and 1% of the purchases of invited players.',
-    ] },
+  const parts = en ? [
+    { title: 'Mercenary exchanges.',
+      text: 'The bot looks for mercenary exchanges in two modes. "Snake" walks along the coast and sounds an alert when an exchange is found. "Scanner 2.0" captures the map fast while the YOLO neural network processes the frames in the background. Coordinates of found exchanges go into the shared SWARM pool: hunters of the kingdom share their finds, and fresh exchanges appear on the site in real time.' },
+    { title: 'Crypts.',
+      text: 'You choose the crypt types, and the bot finds a crypt, sends Carter, calculates when the march returns and repeats the cycle. You can stop it by the number of crypts or by time.' },
+    { title: 'Clan chests.',
+      text: 'The bot opens the clan gifts one by one, recognizes the sender, the chest type and the time, and sends the list to the site. The clan gets a public table with points, season goals, progress bars, a ranking and the history of seasons. For each player you can turn on a personal norm based on the level of their Hero. The leader merges different spellings of one name, excludes chest types from the count and appoints assistants.' },
+    { title: 'Ancient.',
+      text: 'The clan gets a roster with ranks and troop composition, a calculator of the damage norm for Ancients and a public roster page.' },
+    { title: 'The program.',
+      text: 'The bot works from the screen image on top of the browser or the official game client, and no game password is needed. Two-point calibration fits any monitor. The interface is available in 19 languages, and updates install themselves. The first 300 diamonds are free at registration, and the referral program pays 10%, 5% and 1% of the purchases of invited players across three levels.' },
   ] : [
-    { title: 'Биржи наёмников', items: [
-      'Режим «Змейка» идёт вдоль берега и подаёт звуковой сигнал, когда находит биржу.',
-      '«Сканер 2.0» быстро снимает карту, а нейросеть YOLO разбирает кадры в фоне.',
-      'РОЙ: координаты бирж, найденные охотниками королевства, попадают в общий пул и видны на сайте в реальном времени.',
-    ] },
-    { title: 'Склепы', items: [
-      'Вы выбираете типы склепов. Бот находит склеп, отправляет Картера, считает время возвращения марша и повторяет цикл.',
-      'Автостоп по количеству склепов или по времени.',
-    ] },
-    { title: 'Сундуки клана', items: [
-      'Бот открывает подарки клана по одному, распознаёт отправителя, тип сундука и время и отправляет список на сайт.',
-      'Публичная таблица клана: очки, цели сезона, полосы выполнения, рейтинг и история сезонов.',
-      'Личные нормы для каждого игрока по уровню Героя.',
-      'Лидер объединяет разные написания одного имени, исключает типы сундуков из зачёта и назначает помощников.',
-    ] },
-    { title: 'Древний', items: [
-      'Ростер клана со званиями и составом войск.',
-      'Калькулятор нормы урона по Древним.',
-      'Публичная страница ростера для клана.',
-    ] },
-    { title: 'Для всех', items: [
-      'Работает по картинке экрана поверх браузера или официального клиента. Логин и пароль от игры не нужны.',
-      'Калибровка по двум точкам под любой монитор.',
-      'Интерфейс бота на 19 языках, обновляется сам.',
-      'Первые 300 алмазов бесплатно при регистрации.',
-      'Реферальная программа в три уровня: 10%, 5% и 1% от покупок приглашённых игроков.',
-    ] },
+    { title: 'Биржи наёмников.',
+      text: 'Бот ищет биржи наёмников в двух режимах. «Змейка» идёт вдоль берега и подаёт звуковой сигнал, когда находит биржу. «Сканер 2.0» быстро снимает карту, а нейросеть YOLO разбирает кадры в фоне. Координаты найденных бирж попадают в общий пул РОЙ: охотники королевства делятся находками, а свежие биржи видны на сайте в реальном времени.' },
+    { title: 'Склепы.',
+      text: 'Вы выбираете типы склепов, а бот сам находит склеп, отправляет Картера, считает, когда вернётся марш, и повторяет цикл. Остановить его можно по количеству склепов или по времени.' },
+    { title: 'Сундуки клана.',
+      text: 'Бот открывает подарки клана по одному, распознаёт отправителя, тип сундука и время и отправляет список на сайт. У клана появляется публичная таблица: очки, цели сезона, полосы выполнения, рейтинг и история сезонов. Для каждого игрока можно включить личную норму по уровню его Героя. Лидер объединяет разные написания одного имени, исключает типы сундуков из зачёта и назначает помощников.' },
+    { title: 'Древний.',
+      text: 'Для клана есть ростер со званиями и составом войск, калькулятор нормы урона по Древним и публичная страница ростера.' },
+    { title: 'Программа.',
+      text: 'Бот работает по картинке экрана поверх браузера или официального клиента игры, пароль от игры не нужен. Калибровка по двум точкам подходит для любого монитора. Интерфейс на 19 языках, обновления ставятся сами. Первые 300 алмазов бесплатно при регистрации, а реферальная программа платит 10%, 5% и 1% от покупок приглашённых игроков трёх уровней.' },
   ]
   return (
     <section className="ab-section">
@@ -227,19 +190,12 @@ function AboutProject({ lang }) {
         <h2 className="ab-title">{en ? 'Built by a player, for players' : 'Сделано игроком для игроков'}</h2>
         <p className="ab-lead">
           {en
-            ? 'Total Hunter was made by a Total Battle player who spent hours hunting exchanges by hand. Here is everything the program and the site can do.'
-            : 'Total Hunter сделал игрок Total Battle, который сам часами искал биржи вручную. Вот всё, что умеют программа и сайт.'}
+            ? 'Total Hunter was made by a Total Battle player who spent hours hunting exchanges by hand. It is a Windows program and a website that take over the routine in the game. Here is what they can do.'
+            : 'Total Hunter сделал игрок Total Battle, который сам часами искал биржи вручную. Это программа для Windows и сайт, которые берут на себя рутину в игре. Вот что в них есть.'}
         </p>
-        <div className="ab-grid">
-          {groups.map(g => (
-            <div key={g.title} className="ab-card">
-              <h3 className="ab-card-title">{g.title}</h3>
-              <ul className="ab-list">
-                {g.items.map(t => (
-                  <li key={t}><span className="ab-check" aria-hidden="true">✓</span><span>{t}</span></li>
-                ))}
-              </ul>
-            </div>
+        <div className="ab-text">
+          {parts.map(p => (
+            <p key={p.title}><strong>{p.title}</strong> {p.text}</p>
           ))}
         </div>
       </div>
