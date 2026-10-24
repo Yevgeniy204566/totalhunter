@@ -83,10 +83,14 @@ class TestVisualDispatchForKind:
             cal_visual_dispatch_for_kind(t["kind"])
 
     def test_unavailable_text_key_exists_in_every_language(self):
-        """Design 4.3 (файл 40): текст «статичное превью недоступно» для смещение-к-YOLO
-        (crypt_select) — видимый UI-элемент, не молчание, во всех 19 языках."""
+        """Design 4.3 (файл 40): вместо живого крестика для смещение-к-YOLO (crypt_select)
+        показывается описание («Что это / Как настроить», владелец 2026-10-24) — видимый
+        UI-элемент, не молчание, во всех 19 языках, обе части."""
+        assert len(LANGS) == 19
         for lang in LANGS:
-            assert "cal_tune_preview_unavailable" in LANGS[lang]
+            text = LANGS[lang]["cal_tune_crypt_select_desc"]
+            assert text.strip() and "\n\n" in text, lang
+            assert "cal_tune_preview_unavailable" not in LANGS[lang]
 
 
 class TestResolvePointPosition:
