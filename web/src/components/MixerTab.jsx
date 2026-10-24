@@ -23,7 +23,7 @@ const TXT = {
     mastersTitle: 'Главные фейдеры',
     mastersHint: 'Три главные цели клана — те же три столбца на публичной странице. Двигают всё сразу; ниже — детальные настройки по типам сундуков и уровням Героя.',
     mastersAt: 'Значения для Героя {h}',
-    fineTip: 'Точная подстройка: −/+ 1% и 0,1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
+    fineTip: 'Точная подстройка: −/+ 1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
     liveTitle: 'Итог сейчас',
     resetMaster: 'Сброс ×1', resetMasterTip: 'Вернуть этот фейдер к расчётному значению (×1)',
     resetAll: '↺ Сбросить главные к расчёту', resetAllTip: 'Все три главных фейдера — в ×1. Детальные настройки ниже не трогает',
@@ -71,7 +71,7 @@ const TXT = {
     mastersTitle: 'Master faders',
     mastersHint: 'The three main clan goals — the same three columns as on the public page. They move everything at once; below are the detailed settings by chest type and Hero level.',
     mastersAt: 'Values for Hero {h}',
-    fineTip: 'Fine tuning: −/+ 1% and 0.1% of the current multiplier; hold a button to keep going',
+    fineTip: 'Fine tuning: −/+ 1% of the current multiplier; hold a button to keep going',
     liveTitle: 'Result now',
     resetMaster: 'Reset ×1', resetMasterTip: 'Return this fader to the calculated value (×1)',
     resetAll: '↺ Reset masters to calculated', resetAllTip: 'All three master faders back to ×1. The detailed settings below are not touched',
@@ -142,7 +142,7 @@ function sortTypes(list, tab) {
   })
 }
 
-// Ручки точной подстройки главного фейдера (владелец 2026-10-24): шаг в процентах от текущего множителя,
+// Ручки точной подстройки главного фейдера (владелец 2026-10-24): ±1% от текущего множителя (0,1% убрано по просьбе),
 // при удержании кнопки — повтор. Актуальные k/onK берём из ref: за время удержания фейдер перерисовывается.
 function FineKnobs({ k, onK, disabled, tt }) {
   const ref = useRef({ k, onK })
@@ -160,7 +160,7 @@ function FineKnobs({ k, onK, disabled, tt }) {
     nudge(d)
     timers.current.start = setTimeout(() => { timers.current.tick = setInterval(() => nudge(d), 70) }, 380)
   }
-  const knobs = [['−1%', -0.01], ['+1%', 0.01], ['−0,1%', -0.001], ['+0,1%', 0.001]]
+  const knobs = [['−1%', -0.01], ['+1%', 0.01]]
   return (
     <div className="mixer-fine" title={tt.fineTip}>
       {knobs.map(([label, d]) => (
