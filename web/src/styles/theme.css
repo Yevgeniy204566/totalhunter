@@ -1030,3 +1030,7 @@ a:hover { color: var(--on-surface); }
 .mixer-fine-btn:active:not(:disabled) { transform: translateY(1px); }
 .mixer-live { margin-top: 14px; padding: 10px 12px; border-top: 1px dashed var(--outline); font-size: 16px; line-height: 1.5; color: #fff; }
 .mixer-live b { color: var(--accent); }
+.mixer-hero-card { margin: 14px 0; padding: 12px 14px 10px; border: 1px solid var(--outline); border-radius: 12px; background: var(--card); }
+.mixer-hero-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.mixer-hero-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mixer-hero-card .mixer-levels { margin: 0; }

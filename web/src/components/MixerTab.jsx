@@ -435,6 +435,52 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         {t.helpText.map((line, i) => <p key={i} className="emc-text mixer-help-text">{line}</p>)}
       </details>
 
+      {/* Герой — первым делом: выбрали Героя/ступени и сразу двигаем главные фейдеры ниже (владелец 2026-10-24) */}
+      <section className="mixer-hero-card">
+        <div className="mixer-hero-row">
+          <span className="pult-hero-label">{t.hero}</span>
+          {isAll ? (
+            <input className="input-dark pult-hero-input" type="number" min={100} max={600} value={sample}
+              aria-label={t.sample} title={t.sample} onChange={e => setSample(e.target.value)} />
+          ) : (
+            <>
+              <b className="pult-hero-badge">{editing}</b>
+              <button type="button" className="pult-link-btn" onClick={() => setSel(new Set(['all']))}>{t.allLevels}</button>
+            </>
+          )}
+          <div className="mixer-hero-actions">
+            <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
+            <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
+          </div>
+        </div>
+        <div className="mixer-levels">
+        <label className="mixer-all">
+          <input type="checkbox" checked={isAll} onChange={() => setSel(new Set(['all']))} />
+          <b>{t.allLevels}</b>
+        </label>
+        <div className="mixer-grid">
+          {GROUPS.map(group => {
+            const keys = group.bands.map(String)
+            const full = !isAll && keys.every(k => sel.has(k))
+            return (
+              <div key={group.g} className="mixer-group">
+                <label className="mixer-group-head">
+                  <input type="checkbox" checked={full} onChange={() => toggleGroup(group)} />
+                  <b>{group.g}+</b>
+                </label>
+                {group.bands.map(h => (
+                  <label key={h} className="mixer-band">
+                    <input type="checkbox" checked={!isAll && sel.has(String(h))} onChange={() => toggleBand(h)} />
+                    <span>{bandLabel(h)}</span>
+                  </label>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      </section>
+
       <section className="mixer-masters" aria-label={t.mastersTitle}>
         <div className="mixer-masters-head">
           <b>{t.mastersTitle}</b>
@@ -469,40 +515,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
               onClick={() => setMode(id)}>{label}</button>
           ))}
         </div>
-        {isAll && (
-          <label className="mixer-pick">
-            <span>{t.sample}</span>
-            <input className="input-dark emc-level-input" type="number" min={100} max={600} value={sample}
-              onChange={e => setSample(e.target.value)} />
-          </label>
-        )}
-      </div>
-
-      <div className="mixer-levels">
-        <label className="mixer-all">
-          <input type="checkbox" checked={isAll} onChange={() => setSel(new Set(['all']))} />
-          <b>{t.allLevels}</b>
-        </label>
-        <div className="mixer-grid">
-          {GROUPS.map(group => {
-            const keys = group.bands.map(String)
-            const full = !isAll && keys.every(k => sel.has(k))
-            return (
-              <div key={group.g} className="mixer-group">
-                <label className="mixer-group-head">
-                  <input type="checkbox" checked={full} onChange={() => toggleGroup(group)} />
-                  <b>{group.g}+</b>
-                </label>
-                {group.bands.map(h => (
-                  <label key={h} className="mixer-band">
-                    <input type="checkbox" checked={!isAll && sel.has(String(h))} onChange={() => toggleBand(h)} />
-                    <span>{bandLabel(h)}</span>
-                  </label>
-                ))}
-              </div>
-            )
-          })}
-        </div>
       </div>
 
       {!enabled && <p className="emc-text"><small>{t.off}</small></p>}
@@ -527,19 +539,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       </div>
 
       <section className="pult-card pult-card--main">
-        <div className="pult-hero">
-          <span className="pult-hero-label">{t.hero}</span>
-          {isAll ? (
-            <input className="input-dark pult-hero-input" type="number" min={100} max={600} value={sample}
-              aria-label={t.sample} onChange={e => setSample(e.target.value)} />
-          ) : (
-            <>
-              <b className="pult-hero-badge">{editing}</b>
-              <button type="button" className="pult-link-btn" onClick={() => setSel(new Set(['all']))}>{t.allLevels}</button>
-            </>
-          )}
-        </div>
-        <div className="pult-summary">{summaryNode}</div>
         <div className="pult-actions">
           <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
           <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
