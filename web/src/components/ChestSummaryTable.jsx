@@ -421,7 +421,7 @@ export function columnAverage(players, getValue) {
 export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
   const qcol = quotaCols.find(c => c.key === sort.key)
   const value = p => sort.key === 'name' ? p.name.toLowerCase()
-    : sort.key === 'points' ? (p.pointsPct ?? p.points)
+    : sort.key === 'points' ? p.points
     : sort.key === 'hero' ? (p.hero_level ?? -1)
     : qcol ? qcol.get(p)
     : (p.counts[sort.key] || 0)
@@ -439,7 +439,8 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
     const va = val(a), vb = val(b)
     if (va < vb) return -dir
     if (va > vb) return dir
-    return (b.pointsPct ?? b.points) - (a.pointsPct ?? a.points) || b.points - a.points || a.name.localeCompare(b.name)
+    // при равенстве — по абсолютным очкам, потом по проценту нормы (владелец 2026-10-24)
+    return b.points - a.points || (b.pointsPct ?? 0) - (a.pointsPct ?? 0) || a.name.localeCompare(b.name)
   })
 }
 
@@ -473,8 +474,9 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
       points: scoreOf(p.counts, typeMeta, p.hero_level, scale).score,
       pointsTarget: normAt(p.hero_level || DEFAULT_HERO, scale),
     })).map(p => ({ ...p, pointsPct: p.pointsTarget ? p.points / p.pointsTarget : 0 }))
-      // порядок и место «#» — по успешности игрока для его Героя (очки / норма), а не по абсолютным очкам
-      .sort((a, b) => b.pointsPct - a.pointsPct || b.points - a.points || a.name.localeCompare(b.name))
+      // порядок и место «#» — по АБСОЛЮТНЫМ очкам (владелец 2026-10-24): слабый Герой, перекрывший свою малую норму, не должен
+      // обгонять сильного — клану нужны богатые сундуки. «Успеваемость» (очки / норма) — отдельная сортировка по клику на заголовок.
+      .sort((a, b) => b.points - a.points || b.pointsPct - a.pointsPct || a.name.localeCompare(b.name))
   }, [rawPlayers, pointsPersonal, typeMeta, scale])
   // Три главных столбца = прежние «Очки», Crypts-квота и EMC в прежнем порядке (владелец 2026-10-21);
   // меняется только вид ячейки. Столбцы типов сундуков идут после них.
