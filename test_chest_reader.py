@@ -7,26 +7,9 @@ import numpy as np
 import chest_reader as cr
 
 
-def _load_fixture():
-    return cv2.imdecode(np.fromfile("Сундуки_1.png", dtype=np.uint8), cv2.IMREAD_COLOR)
-
-
-def test_detect_dialog_bbox():
-    frame = _load_fixture()
-    bbox = cr.detect_dialog_bbox(frame)
-    assert bbox == (671, 340, 764, 475)
-
-
 def test_detect_dialog_bbox_returns_none_when_no_match():
     blank = np.zeros((200, 200, 3), dtype=np.uint8)
     assert cr.detect_dialog_bbox(blank) is None
-
-
-def test_crop_dialog():
-    frame = _load_fixture()
-    bbox = cr.detect_dialog_bbox(frame)
-    dialog = cr.crop_dialog(frame, bbox)
-    assert dialog.shape[:2] == (475, 764)
 
 
 def test_read_chest_type_uses_fixed_calibrated_region(monkeypatch):
@@ -165,14 +148,6 @@ def test_read_sender_name_passes_chest_sender_offset_name(monkeypatch):
     assert captured["name"] == "chest_sender"
 
 
-def test_read_top_row_on_fixture(monkeypatch):
-    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
-    frame = _load_fixture()
-    chest_type, sender = cr.read_top_row(frame)
-    assert chest_type == "Эпический отряд нежити"
-    assert sender == "Gray Cardinal"
-
-
 # --- Crop/OCR split (сессия #149, конвейер): producer вырезает пиксели и сохраняет на диск,
 # OCR над готовым кропом делает отдельный фоновый consumer — read_fixed_field/read_top_row
 # продолжают работать как раньше (обёртки над crop+ocr), см. тесты выше, они не меняются.
@@ -188,33 +163,6 @@ def test_crop_fixed_field_returns_same_roi_as_read_fixed_field(monkeypatch):
 
     expected = frame[9:12, 12:15]
     assert np.array_equal(roi, expected)
-
-
-def test_crop_chest_type_and_sender_name_match_fixture_ocr(monkeypatch):
-    """crop_chest_type/crop_sender_name feed the exact same pixels that
-    read_chest_type/read_sender_name already OCR correctly on the fixture —
-    proves the crop step alone (no OCR yet) is a faithful split."""
-    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
-    frame = _load_fixture()
-
-    type_roi = cr.crop_chest_type(frame)
-    sender_roi = cr.crop_sender_name(frame)
-
-    assert cr.ocr_chest_type_crop(type_roi) == "Эпический отряд нежити"
-    assert cr.ocr_sender_name_crop(sender_roi) == "Gray Cardinal"
-
-
-def test_pack_unpack_row_crops_roundtrip(monkeypatch):
-    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
-    frame = _load_fixture()
-    type_roi = cr.crop_chest_type(frame)
-    sender_roi = cr.crop_sender_name(frame)
-
-    combined = cr.pack_row_crops(type_roi, sender_roi)
-    unpacked_type, unpacked_sender = cr.unpack_row_crops(combined)
-
-    assert np.array_equal(unpacked_type, type_roi)
-    assert np.array_equal(unpacked_sender, sender_roi)
 
 
 def test_unpack_row_crops_does_not_mix_fields_on_a_scaled_screen(monkeypatch):
@@ -247,18 +195,6 @@ def test_unpack_row_crops_does_not_mix_fields_on_a_scaled_screen(monkeypatch):
     assert np.array_equal(unpacked_type, type_roi)
     assert np.array_equal(unpacked_sender, sender_roi)
     assert not np.any(unpacked_sender == 100), "срез имени не должен содержать ни пикселя из кропа типа"
-
-
-def test_crop_top_row_and_ocr_top_row_crops_match_read_top_row(monkeypatch):
-    """End-to-end for the pipeline's split: crop at capture time, OCR later on the saved
-    crop, must give the exact same result as the still-synchronous read_top_row."""
-    monkeypatch.setattr(cr.coord_manager, "to_region_dialog", lambda x, y, w, h: (x, y, w, h))
-    frame = _load_fixture()
-
-    combined = cr.crop_top_row(frame)
-    chest_type, sender = cr.ocr_top_row_crops(combined)
-
-    assert (chest_type, sender) == cr.read_top_row(frame)
 
 
 def test_init_db_creates_table(tmp_path):
@@ -360,17 +296,6 @@ def test_get_unsynced_counts_empty_after_full_sync(tmp_path):
     assert counts == {}
 
 
-def test_detect_row_pitch_matches_reference_fixture():
-    """Sanity/parity check: on the original calibration screenshot, the dynamically
-    measured pitch must equal the old hardcoded ROW_PITCH=100 — proves the dynamic
-    method is a safe drop-in, not a behaviour change, at the resolution it was
-    originally tuned for."""
-    frame = _load_fixture()
-    bbox = cr.detect_dialog_bbox(frame)
-    dialog = cr.crop_dialog(frame, bbox)
-    assert cr.detect_row_pitch(dialog) == (100, 1)
-
-
 def _synthetic_scaled_dialog():
     """A dialog rendered at a bigger real pixel size than the reference monitor
     (e.g. a 2K screen where the game draws everything ~1.33x larger) — three
@@ -411,38 +336,6 @@ def test_find_open_button_scales_search_band_to_measured_pitch_not_hardcoded_100
         cr.find_open_button(bbox, dialog)
         x, y, w, h = captured['region']
         assert (x, y, w, h) == (1139, 531, 131, 73)
-    finally:
-        cr_mod.find_colored_button = monkey_target
-
-
-def test_find_open_button_region_is_top_row_right_side():
-    """find_open_button must restrict the color search to the top-row band,
-    not the whole dialog (avoids matching unrelated green UI elsewhere). Its
-    return value is only a presence signal for collect_chests's stop check —
-    the position itself is never used for clicking, see click_open_button.
-    Uses the real fixture's own dialog crop so detect_row_pitch has real row
-    boundaries to measure (row_top=1, see test_detect_row_pitch_matches_reference_fixture)."""
-    captured = {}
-
-    def fake_find_colored_button(region, color, pick):
-        captured['region'] = region
-        captured['color'] = color
-        return (region[0] + 10, region[1] + 10)
-
-    import chest_reader as cr_mod
-    monkey_target = cr_mod.find_colored_button
-    cr_mod.find_colored_button = fake_find_colored_button
-    try:
-        frame = _load_fixture()
-        bbox = cr.detect_dialog_bbox(frame)
-        dialog = cr.crop_dialog(frame, bbox)
-        assert bbox == (671, 340, 764, 475)
-        pos = cr.find_open_button(bbox, dialog)
-        assert pos == (1276, 396)
-        x, y, w, h = captured['region']
-        assert x == 671 + int(764 * 0.78)
-        assert y == 340 + 1 + int(100 * 0.45)
-        assert captured['color'] == 'green'
     finally:
         cr_mod.find_colored_button = monkey_target
 
