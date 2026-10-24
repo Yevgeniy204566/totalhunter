@@ -468,7 +468,9 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
   // нормой по Герою; иначе — прежние очки клана и общая цель сезона.
   const pointsPersonal = (personalCrypts || personalEmc) && !!typeMeta
   const players = useMemo(() => {
-    if (!pointsPersonal) return rawPlayers
+    // без личных норм порядок и место «#» — тоже строго по очкам (сервер так и отдаёт, но старые архивы сезонов могли храниться иначе):
+    // лидер всегда с самым высоким оформлением имени (владелец 2026-10-24)
+    if (!pointsPersonal) return [...rawPlayers].sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
     return rawPlayers.map(p => ({
       ...p, clanPoints: p.points,
       points: scoreOf(p.counts, typeMeta, p.hero_level, scale).score,
