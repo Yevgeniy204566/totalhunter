@@ -1023,3 +1023,10 @@ a:hover { color: var(--on-surface); }
 .mixer-col--master .mixer-name { height: auto; min-height: 26px; font-size: 19px; font-weight: 800; color: var(--mc, #fff); }
 .mixer-col--master .mixer-k { width: 92px; font-size: 18px; font-weight: 700; }
 @media (max-width: 640px) { .mixer-masters-row { gap: 14px; } .mixer-col--master { width: 100px; flex-basis: 100px; } }
+.mixer-fine { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; margin-top: 4px; }
+.mixer-fine-btn { padding: 5px 0; font-size: 14px; font-weight: 700; font-family: inherit; color: var(--on-surface); cursor: pointer;
+  background: var(--elevated); border: 1px solid var(--mc, var(--outline)); border-radius: 8px; user-select: none; touch-action: manipulation; }
+.mixer-fine-btn:hover:not(:disabled) { color: #fff; background: color-mix(in srgb, var(--mc, #3D7FFF) 25%, var(--elevated)); }
+.mixer-fine-btn:active:not(:disabled) { transform: translateY(1px); }
+.mixer-live { margin-top: 14px; padding: 10px 12px; border-top: 1px dashed var(--outline); font-size: 16px; line-height: 1.5; color: #fff; }
+.mixer-live b { color: var(--accent); }

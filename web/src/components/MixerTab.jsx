@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
 } from '../lib/emcQuota.js'
@@ -23,6 +23,8 @@ const TXT = {
     mastersTitle: 'Главные фейдеры',
     mastersHint: 'Три главные цели клана — те же три столбца на публичной странице. Двигают всё сразу; ниже — детальные настройки по типам сундуков и уровням Героя.',
     mastersAt: 'Значения для Героя {h}',
+    fineTip: 'Точная подстройка: −/+ 1% и 0,1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
+    liveTitle: 'Итог сейчас',
     mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): множитель и число штук на игрока',
     mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): множитель и число штук на игрока',
     mPoints: 'Очки', mPointsTip: 'Итоговая норма очков за сезон: множитель и число очков на игрока',
@@ -67,6 +69,8 @@ const TXT = {
     mastersTitle: 'Master faders',
     mastersHint: 'The three main clan goals — the same three columns as on the public page. They move everything at once; below are the detailed settings by chest type and Hero level.',
     mastersAt: 'Values for Hero {h}',
+    fineTip: 'Fine tuning: −/+ 1% and 0.1% of the current multiplier; hold a button to keep going',
+    liveTitle: 'Result now',
     mCrypts: 'Crypts', mCryptsTip: 'Epic crypts norm (all crypt types together): multiplier and pieces per player',
     mEmc: 'EMC', mEmcTip: 'EMC norm (all epic monsters together, including Chimera): multiplier and pieces per player',
     mPoints: 'Points', mPointsTip: 'Total season points norm: multiplier and points per player',
@@ -134,6 +138,36 @@ function sortTypes(list, tab) {
   })
 }
 
+// Ручки точной подстройки главного фейдера (владелец 2026-10-24): шаг в процентах от текущего множителя,
+// при удержании кнопки — повтор. Актуальные k/onK берём из ref: за время удержания фейдер перерисовывается.
+function FineKnobs({ k, onK, disabled, tt }) {
+  const ref = useRef({ k, onK })
+  ref.current = { k, onK }
+  const timers = useRef({ start: null, tick: null })
+  const stop = () => { clearTimeout(timers.current.start); clearInterval(timers.current.tick) }
+  useEffect(() => stop, [])
+  const nudge = d => {
+    const next = ref.current.k * (1 + d)
+    ref.current.onK(Math.round(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, next)) * 10000) / 10000)
+  }
+  const hold = d => e => {
+    e.preventDefault()
+    stop()
+    nudge(d)
+    timers.current.start = setTimeout(() => { timers.current.tick = setInterval(() => nudge(d), 70) }, 380)
+  }
+  const knobs = [['−1%', -0.01], ['+1%', 0.01], ['−0,1%', -0.001], ['+0,1%', 0.001]]
+  return (
+    <div className="mixer-fine" title={tt.fineTip}>
+      {knobs.map(([label, d]) => (
+        <button key={label} type="button" className="mixer-fine-btn" disabled={disabled}
+          onPointerDown={hold(d)} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nudge(d) } }}>{label}</button>
+      ))}
+    </div>
+  )
+}
+
 function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
@@ -161,6 +195,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
       <input className="input-dark mixer-k" type="text" inputMode="decimal" value={draft ?? abs} disabled={disabled}
         title={manual ? tt.manual : `${tt.abs} · ${tt.calc}: ${calc}`} onChange={type} onFocus={e => e.target.select()}
         onBlur={() => setDraft(null)} />
+      {master && <FineKnobs k={k} onK={onK} disabled={disabled} tt={tt} />}
     </div>
   )
 }
@@ -413,6 +448,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
               abs={a.abs} onAbs={a.onAbs} calc={a.calcText} disabled={m.disabled} />
           })}
         </div>
+        <div className="mixer-live" role="status" aria-live="polite"><b>{t.liveTitle}:</b> {summaryNode}</div>
       </section>
 
       <div className="chest-tabs chest-tabs--pill">
