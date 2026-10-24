@@ -10,7 +10,7 @@
 // Очки за сундук округляются до кратных 5, общая норма — до сотен.
 
 import { clampMultiplier, computeRow, bandKey, emcChimeraAt } from './emcQuota.js'
-import { NORM_LOW, normBase, lnNormSlope } from './normCurve.js'
+import { NORM_LOW, normBase } from './normCurve.js'
 
 const P = 298
 const E = 387.5
@@ -38,9 +38,12 @@ const W = {
   'Epic Hellforge': [[B, 20]],
 }
 
-// Ориентир по эпик-склепам — стены: Старт 50, ЭДО 200, Берсерки 300 (на Герое 450). Между стенами — гладкая кубическая
-// кривая (монотонная, с общими касательными в стыках); ниже Старта и выше Берсерков цель идёт вместе с нормой в очках.
-const EPIC_WALLS = [[NORM_LOW, 50], [E, 200], [B, 300]]
+// Ориентир по эпик-склепам. Опорные стены — Старт 50 (Герой 279) и Берсерки 300 (Герой 450). Стена ЭДО (200 на 387.5)
+// выбивалась из общей кривой: у неё эпики×средние очки = 102% нормы, у Старта 81%, у Берсерков 86%, а на 1000 очков
+// нормы 14.3 склепа против 10.0 и 12.0 (владелец 2026-10-24: общей кривой доверяем больше, чем частному случаю,
+// который скорее всего ошибка или нехватка данных). Поэтому считаем долю нормы, которую закрывают эпики, S(h):
+// плавно (smoothstep, без изломов) от доли Старта к доле Берсерков, вне стен — константа; ЭДО на 387.5 выходит ≈165.
+const EPIC_WALLS = [[NORM_LOW, 50], [B, 300]]
 
 export const HERO_LEVELS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 export const DEFAULT_SETTINGS = { norm: 1, weights: 1, ranges: [] }
@@ -144,30 +147,15 @@ function avgEpicWeight(hero) {
     .reduce((sum, id) => sum + baseWeight(id, hero), 0) / 4
 }
 
-// Кубический Эрмит между двумя точками с заданными касательными
-function hermite(x0, y0, m0, x1, y1, m1, x) {
-  const d = x1 - x0
-  const t = (x - x0) / d
-  const t2 = t * t
-  const t3 = t2 * t
-  return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * d * m0 + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * d * m1
-}
+const smoothstep = t => t * t * (3 - 2 * t)
 
 function epicBase(hero) {
-  const [[xa, ya], [xb, yb], [xc, yc]] = EPIC_WALLS
-  // касательные на краях согласованы с хвостами за пределами стен (там цель пропорциональна норме)
-  const mLeft = ya * lnNormSlope(xa)
-  const mRight = yc * lnNormSlope(xc)
-  // средняя касательная — гармоническое среднее наклонов отрезков (стандартный монотонный PCHIP)
-  const d0 = (yb - ya) / (xb - xa)
-  const d1 = (yc - yb) / (xc - xb)
-  const w1 = 2 * (xc - xb) + (xb - xa)
-  const w2 = (xc - xb) + 2 * (xb - xa)
-  const mMid = (w1 + w2) / (w1 / d0 + w2 / d1)
-  if (hero < xa) return (ya * normBase(hero) * avgEpicWeight(xa)) / (normBase(xa) * avgEpicWeight(hero))
-  if (hero <= xb) return hermite(xa, ya, mLeft, xb, yb, mMid, hero)
-  if (hero <= xc) return hermite(xb, yb, mMid, xc, yc, mRight, hero)
-  return (yc * normBase(hero) * avgEpicWeight(xc)) / (normBase(xc) * avgEpicWeight(hero))
+  const [[xa, ya], [xc, yc]] = EPIC_WALLS
+  const shareA = ya * avgEpicWeight(xa) / normBase(xa) // доля нормы, закрываемая эпиками, у Старта
+  const shareC = yc * avgEpicWeight(xc) / normBase(xc) // и у Берсерков
+  const t = Math.min(1, Math.max(0, (hero - xa) / (xc - xa)))
+  const share = shareA + (shareC - shareA) * smoothstep(t)
+  return share * normBase(hero) / avgEpicWeight(hero)
 }
 
 export function epicRefAt(hero, settings = DEFAULT_SETTINGS) {
@@ -230,7 +218,7 @@ export const CRYPT_TYPES = ['Common Crypt 20', 'Common Crypt 25', 'Rare Crypt 20
 export const EMC_TYPES = [...EMC_IDS, 'Dark Omens Chest', 'Epic Briareus', 'Yogwai', 'Epic Basilisk', 'Epic Chimera', 'Epic Hellforge']
 
 // Количество склепов по типам (режим «Количество» пульта) — по данным кланов (владелец 2026-10-21):
-// клан требует N эпик-склепов любого уровня 20–35 (Старт 50, ЭДО 200 — факт; 40 и 250 — расчёт) — это
+// клан требует N эпик-склепов любого уровня 20–35 (Старт 50, Берсерки 300 — стены; ЕДО ≈166 по общей кривой) — это
 // epicRefAt(Герой). Делим поровну между включёнными эпик-типами (клан уровни не различает). Для Rare/Common/
 // Citadel клан штук не называет — база 0 (они считаются только в очках); число можно задать вручную (set).
 // Проверка по данным: эпики × средние очки эпика = 102% нормы ЭДО, 81% Старта.
@@ -282,8 +270,8 @@ export function emcOthersTotal(typeMeta, hero, settings = DEFAULT_SETTINGS, emcM
     .reduce((sum, m) => sum + emcCountAt(m.id, hero, settings, emcModel), 0)
 }
 
-// Обязательная норма клана — эпик-склепы суммой (любой уровень 20–35): Старт 50, ЭДО 200 — факт, выше/ниже —
-// интерполяция (Герой 456 → 334). Сумма долей типов, поэтому фейдеры и mute пульта её меняют.
+// Обязательная норма клана — эпик-склепы суммой (любой уровень 20–35): Старт 50, Берсерки 300 — стены, между ними и
+// выше/ниже — общая кривая (Герой 456 → 317). Сумма долей типов, поэтому фейдеры и mute пульта её меняют.
 export function epicCountTotal(hero, settings = DEFAULT_SETTINGS) {
   // сумма до округления: четыре доли по 83.5 дают 334, а не 336
   return Math.round(EPIC_CRYPTS.reduce((sum, id) => sum + countRaw(id, hero, settings), 0))

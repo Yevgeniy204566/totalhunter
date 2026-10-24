@@ -989,3 +989,107 @@ async def test_delete_collector_rejects_other_users_collector(db_session):
         resp = await client.delete("/web/dashboard/chests/not-yours-slug",
                                    headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 403
+
+
+# ---- «Скрыть игрока из учёта» (владелец 2026-10-24) ----
+
+async def _add_chest(db, collector_id, sender, ctype="Epic Arachne"):
+    db.add(Chest(collector_id=collector_id, sender_raw=sender, sender_canonical=sender,
+                 chest_type_raw=ctype, chest_type_canonical=ctype,
+                 collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+
+
+@pytest.mark.asyncio
+async def test_player_hide_removes_player_from_list_and_summary_but_keeps_chests(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="hide-slug", language="ru")
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Arachne",
+                                      points=40, is_in_pattern=True))
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="Araiina", canonical_name="Arahna"))
+    await _add_chest(db_session, collector.id, "Araiina")   # игрок под псевдонимом
+    await _add_chest(db_session, collector.id, "Stayer")    # игрок без псевдонима
+    await db_session.commit()
+    auth = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/web/dashboard/chests/player-hide", headers=auth,
+                                 json={"collector_slug": "hide-slug", "canonical_name": "Arahna"})
+        assert resp.status_code == 200
+        assert resp.json()["hidden_players"] == ["Arahna"]
+
+        data = (await client.get("/web/dashboard/chests", headers=auth)).json()["collectors"][0]
+        assert data["hidden_players"] == ["Arahna"]
+        assert [r["canonical_name"] for r in data["player_alias_rows"]] == ["Stayer"]
+
+        summary = (await client.get("/api/v1/chests/summary/hide-slug")).json()
+        assert [p["name"] for p in summary["players"]] == ["Stayer"]
+
+    # сундуки остались в базе — ничего не удалено
+    n = (await db_session.execute(select(Chest).where(Chest.collector_id == collector.id))).scalars().all()
+    assert len(n) == 2
+
+
+@pytest.mark.asyncio
+async def test_player_hide_restore_brings_player_back(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="unhide-slug", language="ru")
+    db_session.add(ChestConfiguration(collector_id=collector.id, catalog_id="Epic Arachne",
+                                      points=40, is_in_pattern=True))
+    await _add_chest(db_session, collector.id, "Stayer")
+    await db_session.commit()
+    auth = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/web/dashboard/chests/player-hide", headers=auth,
+                          json={"collector_slug": "unhide-slug", "canonical_name": "Stayer"})
+        assert (await client.get("/api/v1/chests/summary/unhide-slug")).json()["players"] == []
+        resp = await client.post("/web/dashboard/chests/player-hide", headers=auth,
+                                 json={"collector_slug": "unhide-slug", "canonical_name": "Stayer", "hidden": False})
+        assert resp.json()["hidden_players"] == []
+        summary = (await client.get("/api/v1/chests/summary/unhide-slug")).json()
+    assert [p["name"] for p in summary["players"]] == ["Stayer"]
+
+
+@pytest.mark.asyncio
+async def test_saving_players_tab_keeps_alias_and_profile_of_hidden_player(db_session):
+    user, token = await _create_user_with_token(db_session)
+    collector = await _create_collector(db_session, user.id, slug="hide-save-slug")
+    collector.hidden_players = ["Arahna"]
+    db_session.add(PlayerAlias(collector_id=collector.id, raw_name="Araiina", canonical_name="Arahna"))
+    db_session.add(PlayerProfile(collector_id=collector.id, canonical_name="Arahna", rank="Офицер", hero_level=350))
+    await db_session.commit()
+    auth = {"Authorization": f"Bearer {token}"}
+
+    # вкладка «Игроки» скрытого игрока не показывает, поэтому при сохранении его в строках нет
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r1 = await client.post("/web/dashboard/chests/player-aliases", headers=auth,
+                               json={"collector_slug": "hide-save-slug",
+                                     "rows": [{"raw_name": "Other", "canonical_name": "Other"}]})
+        r2 = await client.post("/web/dashboard/chests/player-profiles", headers=auth,
+                               json={"collector_slug": "hide-save-slug", "rows": [{"canonical_name": "Other"}]})
+    assert r1.status_code == 200 and r2.status_code == 200
+
+    aliases = {(a.raw_name, a.canonical_name) for a in (await db_session.execute(
+        select(PlayerAlias).where(PlayerAlias.collector_id == collector.id))).scalars().all()}
+    assert aliases == {("Araiina", "Arahna"), ("Other", "Other")}
+    profiles = {p.canonical_name: p for p in (await db_session.execute(
+        select(PlayerProfile).where(PlayerProfile.collector_id == collector.id))).scalars().all()}
+    assert profiles["Arahna"].rank == "Офицер" and profiles["Arahna"].hero_level == 350
+
+
+@pytest.mark.asyncio
+async def test_player_hide_rejects_other_users_collector_and_empty_name(db_session):
+    user, token = await _create_user_with_token(db_session)
+    other, _ = await _create_user_with_token(db_session, email="other-hide@example.com")
+    await _create_collector(db_session, other.id, slug="not-mine-hide-slug")
+    await _create_collector(db_session, user.id, slug="mine-hide-slug")
+    await db_session.commit()
+    auth = {"Authorization": f"Bearer {token}"}
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r_other = await client.post("/web/dashboard/chests/player-hide", headers=auth,
+                                    json={"collector_slug": "not-mine-hide-slug", "canonical_name": "X"})
+        r_empty = await client.post("/web/dashboard/chests/player-hide", headers=auth,
+                                    json={"collector_slug": "mine-hide-slug", "canonical_name": "  "})
+    assert r_other.status_code == 403
+    assert r_empty.status_code == 422

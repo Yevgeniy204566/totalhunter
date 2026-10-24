@@ -110,9 +110,9 @@ test('множители зажимаются в 0.01…1000', () => {
   assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99999 }), 14000000)
 })
 
-test('ориентир по эпикам: проходит через стены 50 / 200 / 300, монотонно растёт на всём диапазоне', () => {
+test('ориентир по эпикам: проходит через стены Старта 50 и Берсерков 300, ЕДО по общей кривой ≈166 (стена 200 была выбросом), монотонно растёт', () => {
   assert.equal(epicRefAt(279), 50)
-  assert.equal(epicRefAt(387.5), 200)
+  assert.equal(epicRefAt(387.5), 166)
   assert.equal(epicRefAt(450), 300) // Берсерки: 300 эпик-склепов на Герое 450
   let prev = -1
   for (let h = 100; h <= 600; h += 10) {
@@ -222,7 +222,7 @@ test('цитадели Cursed/Elven делят один фейдер', () => {
 })
 
 test('ориентир по эпикам: фейдер и mute', () => {
-  assert.equal(epicRefAt(387.5, { ...DEFAULT_SETTINGS, mix: { epic: { all: 1.5 } } }), 300)
+  assert.equal(epicRefAt(387.5, { ...DEFAULT_SETTINGS, mix: { epic: { all: 1.5 } } }), 249)
   assert.equal(epicRefAt(387.5, { ...DEFAULT_SETTINGS, mix: { epic: { on: false } } }), 0)
 })
 
@@ -237,17 +237,17 @@ test('EMC: множитель монстра на ступень (cells) и вы
   assert.equal(off.emc, base.emc - base.finalU)
 })
 
-test('количество эпик-склепов: ориентир клана ÷ 4 типа (200 у ЭДО → по 50)', () => {
+test('количество эпик-склепов: ориентир клана ÷ 4 типа (166 на Герое 387.5 → по 42)', () => {
   for (const id of ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']) {
-    assert.equal(countAt(id, 387.5), 50, id)
+    assert.equal(countAt(id, 387.5), 42, id)
   }
   assert.equal(countAt('Epic Crypt 35', 279), 13) // Старт: 50 ÷ 4 = 12.5 → 13
 })
 
-test('проверка по данным клана: эпики × средние очки эпика ≈ норма (ЭДО в пределах 3%)', () => {
+test('эпики × средние очки эпика на Герое 387.5 ≈ 85% нормы (между Стартом 81% и Берсерками 86%), без горба 102%', () => {
   const ids = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
   const pts = ids.reduce((sum, id) => sum + countAt(id, 387.5) * weightAt(id, 387.5), 0)
-  assert.ok(Math.abs(pts / normAt(387.5) - 1) < 0.03, String(pts))
+  assert.ok(Math.abs(pts / normAt(387.5) - 0.85) < 0.03, String(pts))
 })
 
 test('Rare/Common/Citadel: штук в данных клана нет — база 0, число задаётся вручную (set)', () => {
@@ -259,21 +259,21 @@ test('Rare/Common/Citadel: штук в данных клана нет — баз
 
 test('количество эпиков: фейдер, mute (доля остальных растёт)', () => {
   const up = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 30': { all: 2 } } } }
-  assert.equal(countAt('Epic Crypt 30', 387.5, up), 100)
+  assert.equal(countAt('Epic Crypt 30', 387.5, up), 83)
   const muted = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 35': { on: false } } } }
   assert.equal(countAt('Epic Crypt 35', 387.5, muted), 0)
-  assert.equal(countAt('Epic Crypt 30', 387.5, muted), 67) // 200 ÷ 3
+  assert.equal(countAt('Epic Crypt 30', 387.5, muted), 55) // 166 ÷ 3
 })
 
 test('EMC: четыре известных монстра — по истории, прочие — среднее четырёх', () => {
-  assert.equal(emcCountAt('Epic Fire Hydra', 400), 19)
-  assert.equal(emcCountAt('Epic Shadow City', 400), 4)
-  // среднее по 19/7/3/4 = 8.25 -> 8
-  assert.equal(emcCountAt('Epic Briareus', 400), 8)
-  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 17) // 8.25 × 2 = 16.5 -> 17
+  assert.equal(emcCountAt('Epic Fire Hydra', 400), 15)
+  assert.equal(emcCountAt('Epic Shadow City', 400), 3)
+  // среднее по 15/5/2/3 = 6.25 -> 6
+  assert.equal(emcCountAt('Epic Briareus', 400), 6)
+  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 13) // 6.25 × 2 = 12.5 -> 13
   // Chimera — пятый эпик-монстр ELDORADO со своей базой (52% всего EMC), а не «прочий»
-  assert.equal(emcCountAt('Epic Chimera', 400), 35)
-  assert.equal(emcCountAt('Epic Chimera', 450), 112)
+  assert.equal(emcCountAt('Epic Chimera', 400), 28)
+  assert.equal(emcCountAt('Epic Chimera', 450), 44)
   assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { on: false } } } }), 0)
 })
 
@@ -282,7 +282,7 @@ test('EMC: цель «прочих» монстров слота 2 суммир�
     A: { id: 'Epic Briareus', points: 45, slot: 2 }, B: { id: 'Epic Fire Hydra', points: 30, slot: 2 },
     C: { id: 'Yogwai', points: 40, slot: 1 },
   }
-  assert.equal(emcOthersTotal(meta, 400), 8) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
+  assert.equal(emcOthersTotal(meta, 400), 6) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
 })
 
 test('тип вне шкалы: очки клана × фейдер, mute обнуляет', () => {
@@ -294,19 +294,19 @@ test('тип вне шкалы: очки клана × фейдер, mute обн
   assert.equal(scoreOf({ 'Тыква': 3 }, meta, 300, off).score, 0)
 })
 
-test('итоговая норма эпик-склепов: ЭДО ≥ 200, Берсерки 450 → 300, Герой 456 → 317, а не доля типа', () => {
-  assert.equal(epicCountTotal(387.5), 200)
+test('итоговая норма эпик-склепов: ЕДО ≈166, Берсерки 450 → 300, Герой 456 → 317, а не доля типа', () => {
+  assert.equal(epicCountTotal(387.5), 166)
   assert.equal(epicCountTotal(450), 300)
   assert.equal(epicCountTotal(456), 317)
-  assert.ok(epicCountTotal(400) >= 200)
+  assert.ok(epicCountTotal(400) >= 166)
   assert.equal(epicCountTotal(279), 50)
 })
 
 test('норма эпиков следует за фейдерами пульта: mute типа и множитель', () => {
   const muted = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 20': { on: false } } } }
-  assert.equal(epicCountTotal(387.5, muted), 200) // 200 ÷ 3 на каждый из трёх оставшихся типов
+  assert.equal(epicCountTotal(387.5, muted), 166) // 166 ÷ 3 на каждый из трёх оставшихся типов
   const up = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 35': { all: 2 } } } }
-  assert.equal(epicCountTotal(387.5, up), 250)
+  assert.equal(epicCountTotal(387.5, up), 208)
 })
 
 test('эпик-склепы игрока: суммируются по id типов 20–35, прочие не входят', () => {
@@ -317,12 +317,22 @@ test('эпик-склепы игрока: суммируются по id тип�
   assert.equal(epicCryptsOf({ 'Эпик 35': 10, 'Эпик 25': 5, 'Редкий 30': 40, Hydra: 7 }, meta), 15)
 })
 
-test('согласованность по всей шкале: очки эпиков держатся около нормы (75–110%: у Старта 81%, у ЭДО 102%, у Берсерков 86%) на уровнях 100–600', () => {
+test('согласованность по всей шкале: очки эпиков держатся около нормы (75–110%: у Старта 81%, у Берсерков 86%, между ними плавно) на уровнях 100–600', () => {
   const ids = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
   for (let h = 150; h <= 600; h += 10) { // ниже 150 штуки эпиков в единицах — округление по типам дробит процент
     const pts = ids.reduce((sum, id) => sum + countAt(id, h) * weightAt(id, h), 0)
     const ratio = pts / normAt(h)
     assert.ok(ratio > 0.75 && ratio < 1.1, `@${h}: ${(ratio * 100).toFixed(0)}%`)
+  }
+})
+
+test('без горба: эпик-склепов на 1000 очков нормы не выше уровня Берсерков (12) на всём 280–600 и растёт плавно между стенами', () => {
+  let prev = 0
+  for (let h = 280; h <= 600; h += 10) {
+    const rate = 1000 * epicRefAt(h) / normAt(h)
+    assert.ok(rate <= 12.3, `@${h}: ${rate.toFixed(1)}`)
+    assert.ok(rate >= prev - 0.3, `@${h}: провал ${rate.toFixed(1)} < ${prev.toFixed(1)}`)
+    prev = rate
   }
 })
 
@@ -376,6 +386,6 @@ test('синхронизация пульта и публичной страни
   assert.equal(typeTab('Yogwai', null), 'crypts')            // без «Квоты 2» — не EMC, как бы ни назывался
   assert.equal(typeTab('Epic Fire Hydra', 1), 'crypts')
   const meta = { 'Тыква': { id: 'Pumpkin Chest', points: 1, slot: 2 }, Hydra: { id: 'Epic Fire Hydra', points: 1, slot: 2 } }
-  assert.equal(emcOthersTotal(meta, 400), 8)         // «Тыква» = среднее четырёх, как в пульте
-  assert.equal(emcCountAt('Pumpkin Chest', 400), 8)
+  assert.equal(emcOthersTotal(meta, 400), 6)         // «Тыква» = среднее четырёх, как в пульте
+  assert.equal(emcCountAt('Pumpkin Chest', 400), 6)
 })

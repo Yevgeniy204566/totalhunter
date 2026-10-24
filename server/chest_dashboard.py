@@ -244,8 +244,11 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
     )).scalars().all()
     profile_map = {p.canonical_name: p for p in profiles}
 
+    hidden = set(collector.hidden_players or [])
     rows = []
     for a in aliases:
+        if a.canonical_name in hidden:
+            continue
         profile = profile_map.get(a.canonical_name)
         rows.append({
             "raw_name": a.raw_name,
@@ -264,6 +267,8 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
         if raw_name in mapped_raw_names:
             continue
         canonical = (global_alias_map or {}).get(raw_name)
+        if (canonical or raw_name) in hidden:
+            continue
         profile = profile_map.get(canonical or raw_name)
         rows.append({
             "raw_name": raw_name,
@@ -356,6 +361,7 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
             "personal_scale": collector.personal_scale,
             "leader_canonical_name": collector.leader_canonical_name,
             "leader_excluded_catalog_ids": collector.leader_excluded_catalog_ids or [],
+            "hidden_players": sorted(collector.hidden_players or []),
             # Руководители (2026-09-27): кабинет прячет у руководителя настройки хозяина
             "role": "owner" if collector.id in own_ids else "manager",
             "owner_label": None if collector.id in own_ids else owner_label_by_id.get(collector.id),
@@ -481,11 +487,13 @@ async def post_player_aliases(payload: PlayerAliasesPayload, user: User = Depend
                               db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
-    await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector.id))
+    hidden = list(collector.hidden_players or [])
+    await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector.id,
+                                               PlayerAlias.canonical_name.notin_(hidden)))
 
     for row in payload.rows:
         canonical = (row.canonical_name or "").strip()
-        if not canonical:
+        if not canonical or canonical in hidden:
             continue
         db.add(PlayerAlias(collector_id=collector.id, raw_name=row.raw_name,
                            canonical_name=canonical))
@@ -513,9 +521,11 @@ async def post_player_profiles(payload: PlayerProfilesPayload,
                                db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
-    await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id))
+    hidden = list(collector.hidden_players or [])
+    await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id,
+                                                 PlayerProfile.canonical_name.notin_(hidden)))
 
-    seen: set[str] = set()
+    seen: set[str] = set(hidden)
     for row in payload.rows:
         canonical = (row.canonical_name or "").strip()
         if not canonical or canonical in seen:
@@ -531,6 +541,32 @@ async def post_player_profiles(payload: PlayerProfilesPayload,
 
     await db.commit()
     return {"ok": True}
+
+
+class PlayerHidePayload(BaseModel):
+    collector_slug: str
+    canonical_name: str
+    hidden: bool = True
+
+
+@router.post("/player-hide")
+async def post_player_hide(payload: PlayerHidePayload, user: User = Depends(get_web_user),
+                           db: AsyncSession = Depends(get_db)):
+    """Скрыть игрока из учёта (hidden=true) или вернуть (hidden=false). Сундуки не удаляются:
+    скрытый игрок не попадает в сводку, историю и список «Игроки»; новые сундуки под этим именем
+    продолжают приходить, но тоже скрыты. Доступно хозяину и руководителю, как правка участников."""
+    collector, _ = await _get_collector_access(db, payload.collector_slug, user)
+    name = (payload.canonical_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="canonical_name is empty")
+    current = list(collector.hidden_players or [])
+    if payload.hidden and name not in current:
+        current.append(name)
+    elif not payload.hidden:
+        current = [n for n in current if n != name]
+    collector.hidden_players = current   # новый список: JSON-колонка не видит правку «на месте»
+    await db.commit()
+    return {"ok": True, "hidden_players": sorted(current)}
 
 
 class CollectorSlugPayload(BaseModel):

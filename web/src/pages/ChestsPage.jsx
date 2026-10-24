@@ -349,6 +349,28 @@ export default function ChestsPage() {
     }))
   }
 
+  // «Скрыть из учёта»: сервер хранит список скрытых канонических имён, сундуки не удаляются.
+  // Строки убираем локально, не перечитывая данные, — чтобы не потерять несохранённые правки в таблице.
+  async function hidePlayer(slug, name) {
+    if (!name || !window.confirm(cx.hideConfirm.replace('{name}', name))) return
+    try {
+      const res = await api.dashboardChestsPlayerHide(slug, name, true)
+      setPlayerRowsByCollector(prev => ({
+        ...prev, [slug]: (prev[slug] || []).filter(r => (r.canonical_name || r.raw_name) !== name),
+      }))
+      setCollectors(prev => prev.map(c => (c.slug === slug ? { ...c, hidden_players: res.hidden_players } : c)))
+      setMsg(cx.playerHidden)
+    } catch (e) { setMsg(e.message) }
+  }
+
+  async function restorePlayer(slug, name) {
+    try {
+      await api.dashboardChestsPlayerHide(slug, name, false)
+      setMsg(cx.playerRestored)
+      await refresh()
+    } catch (e) { setMsg(e.message) }
+  }
+
   async function savePlayerAliases(slug) {
     try {
       await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
@@ -899,6 +921,7 @@ export default function ChestsPage() {
                       Состав{sortArrow('troop')}
                     </th>
                     <th>{cx.heroPlaceholder}</th>
+                    <th aria-label={cx.hidePlayer}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -956,10 +979,15 @@ export default function ChestsPage() {
                           onChange={e => updatePlayerRow(collector.slug, origIdx, 'hero_level',
                             e.target.value.replace(/\D/g, '').slice(0, 3))} />
                       </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button type="button" className="pult-step pult-step--del" title={cx.hidePlayer}
+                          aria-label={`${cx.hidePlayer}: ${row.canonical_name || row.raw_name}`}
+                          onClick={() => hidePlayer(collector.slug, row.canonical_name || row.raw_name)}>×</button>
+                      </td>
                     </tr>
                     {leaderByCollector[collector.slug] === (row.canonical_name || row.raw_name) && (
                       <tr key={`leader-excl-${origIdx}`}>
-                        <td colSpan={6} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
+                        <td colSpan={7} style={{ paddingLeft: 24, paddingBottom: 10, background: '#1e1e2e' }}>
                           <div style={{ fontSize: 13, color: '#a6adc8', marginBottom: 6 }}>
                             Не считать в статистику:
                           </div>
@@ -999,6 +1027,21 @@ export default function ChestsPage() {
                   ))}
                 </tbody>
               </table>
+
+              {(collector.hidden_players || []).length > 0 && (
+                <div style={{ marginTop: 16, padding: '10px 12px', border: '1px dashed #45475a', borderRadius: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#a6adc8', marginBottom: 8 }}>{cx.hiddenPlayersTitle}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {collector.hidden_players.map(name => (
+                      <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 15, color: '#cdd6f4',
+                                                background: '#1e1e2e', border: '1px solid #45475a', borderRadius: 8, padding: '4px 10px' }}>
+                        {name}
+                        <button type="button" className="pult-link-btn" onClick={() => restorePlayer(collector.slug, name)}>{cx.restorePlayer}</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <button className="chest-pill-btn" onClick={() => addPlayerRow(collector.slug)} style={{ marginTop: 12 }}>
                 {cx.addPlayerRow}

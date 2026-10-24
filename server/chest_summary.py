@@ -157,7 +157,10 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
         rows_query = rows_query.where(Chest.collected_at <= period_end)
 
     rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr)
-    return (await db.execute(rows_query)).all()
+    rows = (await db.execute(rows_query)).all()
+    hidden = set(collector.hidden_players or [])
+    # строка = (игрок по каноническому имени, тип, ...): скрытые игроки убираются целиком
+    return [r for r in rows if r[0] not in hidden] if hidden else rows
 
 
 

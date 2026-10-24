@@ -52,6 +52,7 @@ export const api = {
   dashboardChests:      ()              => request('GET',   '/web/dashboard/chests'),
   dashboardChestsSave:  (slug, rows)    => request('POST',  '/web/dashboard/chests/rows', { collector_slug: slug, rows }),
   dashboardChestsPlayerAliases: (slug, rows) => request('POST', '/web/dashboard/chests/player-aliases', { collector_slug: slug, rows }),
+  dashboardChestsPlayerHide: (slug, name, hidden = true) => request('POST', '/web/dashboard/chests/player-hide', { collector_slug: slug, canonical_name: name, hidden }),
   dashboardChestsPlayerProfiles: (slug, rows) =>
     request('POST', '/web/dashboard/chests/player-profiles', { collector_slug: slug, rows }),
   // Руководители ростера (2026-09-27): хозяин приглашает кодом, хозяин не меняется

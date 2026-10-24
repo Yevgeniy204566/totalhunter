@@ -475,6 +475,9 @@ class ChestCollector(Base):
     last_import_at          = Column(TIMESTAMP(timezone=True), nullable=True)
     leader_canonical_name   = Column(String(200), nullable=True)
     leader_excluded_catalog_ids = Column(JSON, nullable=False, server_default=text("'[]'"))
+    # Скрытые из учёта игроки (канонические имена): их сундуки остаются в базе, но не попадают
+    # в сводку, историю и список «Игроки» кабинета (владелец 2026-10-24). Вернуть можно из кабинета.
+    hidden_players          = Column(JSON, nullable=False, server_default=text("'[]'"))
     ancient_hidden          = Column(Boolean, nullable=False, server_default=text("false"))
     ancient_hidden_at       = Column(TIMESTAMP(timezone=True), nullable=True)
     ancient_shortfall_light_pct    = Column(Float, nullable=True)
