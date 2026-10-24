@@ -247,6 +247,15 @@ def cal_visual_dispatch_for_kind(kind):
     }[kind]
 
 
+def chest_low_credits_text(L, result):
+    """Ответ 402 на отправку сундуков: сколько нужно и сколько есть (цифры присылает сервер);
+    без цифр — короткий текст. Не «0 алмазов / привяжите устройство»: алмазы могут быть, просто не хватает на батч."""
+    need, have = result.get("required"), result.get("credits")
+    if isinstance(need, int) and isinstance(have, int):
+        return L["chest_not_enough"].format(need=need, have=have)
+    return L["chest_not_enough_plain"]
+
+
 def cal_resolve_point_position(target_id):
     """PC-05: base_pos_fn вызывается заново при КАЖДОМ вызове (не кэшируется как число) —
     координата зависит от текущей калибровки ref_a/ref_b. Возвращает экранные координаты
@@ -432,6 +441,10 @@ LANGS = {
         "chest_auto_send_lb": "Авто-отправка на сервер",
         "chest_queue_title": "Очередь сундуков",
         "chest_batch_title": "Батч сундуков",
+        "server_offline_retry": "Нет связи с сервером, повторяем…",
+        "server_error_retry": "Ошибка сервера, повторяем…",
+        "chest_not_enough_plain": "Не хватает алмазов для отправки",
+        "chest_not_enough": "Не хватает алмазов для отправки: нужно {need}, у вас {have}",
         "chest_delete_batch_btn": "🗑 Удалить батч",
         "tab_ancient": "ДРЕВНИЙ", "ancient_status_running": "Сбор турнирной таблицы...", "ancient_status_sent": "Отправлено на сервер", "ancient_status_failed": "Сервер недоступен. Данные сохранены локально.",
         "ancient_desc": "Откройте диалог «Статистика» в игре перед запуском.",
@@ -510,6 +523,10 @@ LANGS = {
         "chest_auto_send_lb": "Auto-send to server",
         "chest_queue_title": "Chest queue",
         "chest_batch_title": "Chest batch",
+        "server_offline_retry": "No connection to the server, retrying…",
+        "server_error_retry": "Server error, retrying…",
+        "chest_not_enough_plain": "Not enough diamonds to send",
+        "chest_not_enough": "Not enough diamonds to send: {need} needed, you have {have}",
         "chest_delete_batch_btn": "🗑 Delete batch",
         "tab_ancient": "ANCIENT", "ancient_status_running": "Collecting tournament data...", "ancient_status_sent": "Sent to server", "ancient_status_failed": "Server unavailable. Data saved locally.",
         "ancient_desc": "Open the in-game «Statistics» dialog before starting.",
@@ -586,6 +603,10 @@ LANGS = {
         "chest_auto_send_lb": "Automatisch an Server senden",
         "chest_queue_title": "Truhen-Warteschlange",
         "chest_batch_title": "Truhen-Batch",
+        "server_offline_retry": "Keine Verbindung zum Server, neuer Versuch…",
+        "server_error_retry": "Serverfehler, neuer Versuch…",
+        "chest_not_enough_plain": "Nicht genug Diamanten zum Senden",
+        "chest_not_enough": "Nicht genug Diamanten zum Senden: {need} nötig, Sie haben {have}",
         "chest_delete_batch_btn": "🗑 Batch löschen",
         "tab_ancient": "URALTER", "ancient_status_running": "Turnierdaten werden gesammelt...", "ancient_status_sent": "An Server gesendet", "ancient_status_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "ancient_desc": "Öffne den Dialog «Statistik» im Spiel, bevor du startest.",
@@ -651,6 +672,10 @@ LANGS = {
         "chest_auto_send_lb": "Envío automático al servidor",
         "chest_queue_title": "Cola de cofres",
         "chest_batch_title": "Lote de cofres",
+        "server_offline_retry": "Sin conexión con el servidor, reintentando…",
+        "server_error_retry": "Error del servidor, reintentando…",
+        "chest_not_enough_plain": "No hay suficientes diamantes para enviar",
+        "chest_not_enough": "No hay suficientes diamantes para enviar: se necesitan {need}, tiene {have}",
         "chest_delete_batch_btn": "🗑 Eliminar lote",
         "tab_ancient": "ANTIGUO", "ancient_status_running": "Recolectando datos del torneo...", "ancient_status_sent": "Enviado al servidor", "ancient_status_failed": "Servidor no disponible. Datos guardados localmente.",
         "ancient_desc": "Abre el diálogo «Estadísticas» en el juego antes de empezar.",
@@ -716,6 +741,10 @@ LANGS = {
         "chest_auto_send_lb": "Envoi automatique au serveur",
         "chest_queue_title": "File des coffres",
         "chest_batch_title": "Lot de coffres",
+        "server_offline_retry": "Pas de connexion au serveur, nouvelle tentative…",
+        "server_error_retry": "Erreur du serveur, nouvelle tentative…",
+        "chest_not_enough_plain": "Pas assez de diamants pour envoyer",
+        "chest_not_enough": "Pas assez de diamants pour envoyer : {need} requis, vous en avez {have}",
         "chest_delete_batch_btn": "🗑 Supprimer le lot",
         "tab_ancient": "ANCIEN", "ancient_status_running": "Collecte des données du tournoi...", "ancient_status_sent": "Envoyé au serveur", "ancient_status_failed": "Serveur indisponible. Données enregistrées localement.",
         "ancient_desc": "Ouvrez la boîte de dialogue «Statistiques» dans le jeu avant de démarrer.",
@@ -781,6 +810,10 @@ LANGS = {
         "chest_auto_send_lb": "Invio automatico al server",
         "chest_queue_title": "Coda degli scrigni",
         "chest_batch_title": "Batch di scrigni",
+        "server_offline_retry": "Nessuna connessione al server, riprovo…",
+        "server_error_retry": "Errore del server, riprovo…",
+        "chest_not_enough_plain": "Diamanti insufficienti per l'invio",
+        "chest_not_enough": "Diamanti insufficienti per l'invio: ne servono {need}, ne hai {have}",
         "chest_delete_batch_btn": "🗑 Elimina il batch",
         "tab_ancient": "ANTICO", "ancient_status_running": "Raccolta dati del torneo...", "ancient_status_sent": "Inviato al server", "ancient_status_failed": "Server non disponibile. Dati salvati localmente.",
         "ancient_desc": "Apri la finestra «Statistiche» nel gioco prima di avviare.",
@@ -846,6 +879,10 @@ LANGS = {
         "chest_auto_send_lb": "Automatisch verzenden naar server",
         "chest_queue_title": "Kistenwachtrij",
         "chest_batch_title": "Kistenbatch",
+        "server_offline_retry": "Geen verbinding met de server, opnieuw proberen…",
+        "server_error_retry": "Serverfout, opnieuw proberen…",
+        "chest_not_enough_plain": "Niet genoeg diamanten om te verzenden",
+        "chest_not_enough": "Niet genoeg diamanten om te verzenden: {need} nodig, u heeft er {have}",
         "chest_delete_batch_btn": "🗑 Batch verwijderen",
         "tab_ancient": "ALOUDE", "ancient_status_running": "Toernooigegevens verzamelen...", "ancient_status_sent": "Verzonden naar server", "ancient_status_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "ancient_desc": "Open het «Statistieken»-dialoogvenster in de game voordat je start.",
@@ -911,6 +948,10 @@ LANGS = {
         "chest_auto_send_lb": "Automatisk sending til server",
         "chest_queue_title": "Kistekø",
         "chest_batch_title": "Kistebatch",
+        "server_offline_retry": "Ingen forbindelse til serveren, prøver igjen…",
+        "server_error_retry": "Serverfeil, prøver igjen…",
+        "chest_not_enough_plain": "Ikke nok diamanter til å sende",
+        "chest_not_enough": "Ikke nok diamanter til å sende: {need} trengs, du har {have}",
         "chest_delete_batch_btn": "🗑 Slett batch",
         "tab_ancient": "URGAMMEL", "ancient_status_running": "Samler turneringsdata...", "ancient_status_sent": "Sendt til server", "ancient_status_failed": "Server utilgjengelig. Data lagret lokalt.",
         "ancient_desc": "Åpne «Statistikk»-dialogen i spillet før du starter.",
@@ -976,6 +1017,10 @@ LANGS = {
         "chest_auto_send_lb": "Automatyczne wysyłanie na serwer",
         "chest_queue_title": "Kolejka skrzyń",
         "chest_batch_title": "Partia skrzyń",
+        "server_offline_retry": "Brak połączenia z serwerem, ponawiam…",
+        "server_error_retry": "Błąd serwera, ponawiam…",
+        "chest_not_enough_plain": "Za mało diamentów do wysłania",
+        "chest_not_enough": "Za mało diamentów do wysłania: potrzeba {need}, masz {have}",
         "chest_delete_batch_btn": "🗑 Usuń partię",
         "tab_ancient": "STARODAWNY", "ancient_status_running": "Zbieranie danych turniejowych...", "ancient_status_sent": "Wysłano na serwer", "ancient_status_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "ancient_desc": "Otwórz okno «Statystyki» w grze przed uruchomieniem.",
@@ -1041,6 +1086,10 @@ LANGS = {
         "chest_auto_send_lb": "Envio automático para o servidor",
         "chest_queue_title": "Fila de baús",
         "chest_batch_title": "Lote de baús",
+        "server_offline_retry": "Sem conexão com o servidor, tentando novamente…",
+        "server_error_retry": "Erro do servidor, tentando novamente…",
+        "chest_not_enough_plain": "Diamantes insuficientes para enviar",
+        "chest_not_enough": "Diamantes insuficientes para enviar: são necessários {need}, você tem {have}",
         "chest_delete_batch_btn": "🗑 Excluir lote",
         "tab_ancient": "ANCIÃO", "ancient_status_running": "Coletando dados do torneio...", "ancient_status_sent": "Enviado ao servidor", "ancient_status_failed": "Servidor indisponível. Dados salvos localmente.",
         "ancient_desc": "Abra a caixa de diálogo «Estatísticas» no jogo antes de iniciar.",
@@ -1106,6 +1155,10 @@ LANGS = {
         "chest_auto_send_lb": "Automatisk sändning till server",
         "chest_queue_title": "Kistkö",
         "chest_batch_title": "Kistbatch",
+        "server_offline_retry": "Ingen anslutning till servern, försöker igen…",
+        "server_error_retry": "Serverfel, försöker igen…",
+        "chest_not_enough_plain": "Inte tillräckligt med diamanter för att skicka",
+        "chest_not_enough": "Inte tillräckligt med diamanter för att skicka: {need} behövs, du har {have}",
         "chest_delete_batch_btn": "🗑 Ta bort batch",
         "tab_ancient": "FORNTIDA", "ancient_status_running": "Samlar turneringsdata...", "ancient_status_sent": "Skickat till server", "ancient_status_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "ancient_desc": "Öppna dialogrutan «Statistik» i spelet innan du startar.",
@@ -1171,6 +1224,10 @@ LANGS = {
         "chest_auto_send_lb": "Sunucuya otomatik gönderim",
         "chest_queue_title": "Sandık kuyruğu",
         "chest_batch_title": "Sandık toplu işi",
+        "server_offline_retry": "Sunucuyla bağlantı yok, yeniden deneniyor…",
+        "server_error_retry": "Sunucu hatası, yeniden deneniyor…",
+        "chest_not_enough_plain": "Göndermek için yeterli elmas yok",
+        "chest_not_enough": "Göndermek için yeterli elmas yok: {need} gerekli, sizde {have} var",
         "chest_delete_batch_btn": "🗑 Toplu işi sil",
         "tab_ancient": "KADİM", "ancient_status_running": "Turnuva verileri toplanıyor...", "ancient_status_sent": "Sunucuya gönderildi", "ancient_status_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "ancient_desc": "Başlamadan önce oyundaki «İstatistik» penceresini açın.",
@@ -1236,6 +1293,10 @@ LANGS = {
         "chest_auto_send_lb": "إرسال تلقائي إلى الخادم",
         "chest_queue_title": "طابور الصناديق",
         "chest_batch_title": "دفعة الصناديق",
+        "server_offline_retry": "لا يوجد اتصال بالخادم، جارٍ إعادة المحاولة…",
+        "server_error_retry": "خطأ في الخادم، جارٍ إعادة المحاولة…",
+        "chest_not_enough_plain": "لا توجد ألماسات كافية للإرسال",
+        "chest_not_enough": "لا توجد ألماسات كافية للإرسال، المطلوب {need}، لديك {have}",
         "chest_delete_batch_btn": "🗑 حذف الدفعة",
         "tab_ancient": "القديم", "ancient_status_running": "جمع بيانات البطولة...", "ancient_status_sent": "تم الإرسال إلى الخادم", "ancient_status_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "ancient_desc": "افتح نافذة «الإحصائيات» في اللعبة قبل البدء.",
@@ -1301,6 +1362,10 @@ LANGS = {
         "chest_auto_send_lb": "サーバーへ自動送信",
         "chest_queue_title": "宝箱キュー",
         "chest_batch_title": "宝箱バッチ",
+        "server_offline_retry": "サーバーに接続できません。再試行しています…",
+        "server_error_retry": "サーバーエラー。再試行しています…",
+        "chest_not_enough_plain": "送信に必要なダイヤが足りません",
+        "chest_not_enough": "送信に必要なダイヤが足りません：必要 {need}、所持 {have}",
         "chest_delete_batch_btn": "🗑 バッチを削除",
         "tab_ancient": "古代の者", "ancient_status_running": "トーナメントデータを収集中...", "ancient_status_sent": "サーバーに送信しました", "ancient_status_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "ancient_desc": "開始する前にゲーム内の「統計」ダイアログを開いてください。",
@@ -1366,6 +1431,10 @@ LANGS = {
         "chest_auto_send_lb": "自动发送到服务器",
         "chest_queue_title": "宝箱队列",
         "chest_batch_title": "宝箱批次",
+        "server_offline_retry": "无法连接服务器，正在重试…",
+        "server_error_retry": "服务器错误，正在重试…",
+        "chest_not_enough_plain": "钻石不足，无法发送",
+        "chest_not_enough": "钻石不足，无法发送：需要 {need}，当前有 {have}",
         "chest_delete_batch_btn": "🗑 删除批次",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集锦标赛数据...", "ancient_status_sent": "已发送到服务器", "ancient_status_failed": "服务器不可用，数据已保存到本地。",
         "ancient_desc": "开始前请打开游戏内的「统计」对话框。",
@@ -1431,6 +1500,10 @@ LANGS = {
         "chest_auto_send_lb": "自動發送到伺服器",
         "chest_queue_title": "寶箱隊列",
         "chest_batch_title": "寶箱批次",
+        "server_offline_retry": "無法連線至伺服器，正在重試…",
+        "server_error_retry": "伺服器錯誤，正在重試…",
+        "chest_not_enough_plain": "鑽石不足，無法傳送",
+        "chest_not_enough": "鑽石不足，無法傳送：需要 {need}，目前有 {have}",
         "chest_delete_batch_btn": "🗑 刪除批次",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集錦標賽資料...", "ancient_status_sent": "已發送到伺服器", "ancient_status_failed": "伺服器無法連線，資料已儲存在本機。",
         "ancient_desc": "開始前請打開遊戲內的「統計」對話框。",
@@ -1496,6 +1569,10 @@ LANGS = {
         "chest_auto_send_lb": "서버로 자동 전송",
         "chest_queue_title": "보물상자 대기열",
         "chest_batch_title": "보물상자 배치",
+        "server_offline_retry": "서버에 연결할 수 없습니다. 다시 시도하는 중…",
+        "server_error_retry": "서버 오류입니다. 다시 시도하는 중…",
+        "chest_not_enough_plain": "전송에 필요한 다이아몬드가 부족합니다",
+        "chest_not_enough": "전송에 필요한 다이아몬드가 부족합니다: 필요 {need}, 보유 {have}",
         "chest_delete_batch_btn": "🗑 배치 삭제",
         "tab_ancient": "고대의 존재", "ancient_status_running": "토너먼트 데이터 수집 중...", "ancient_status_sent": "서버로 전송됨", "ancient_status_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "ancient_desc": "시작하기 전에 게임 내 「통계」 대화상자를 여세요.",
@@ -1561,6 +1638,10 @@ LANGS = {
         "chest_auto_send_lb": "Авто-відправка на сервер",
         "chest_queue_title": "Черга скринь",
         "chest_batch_title": "Батч скринь",
+        "server_offline_retry": "Немає зв'язку із сервером, повторюємо…",
+        "server_error_retry": "Помилка сервера, повторюємо…",
+        "chest_not_enough_plain": "Не вистачає алмазів для відправки",
+        "chest_not_enough": "Не вистачає алмазів для відправки: потрібно {need}, у вас {have}",
         "chest_delete_batch_btn": "🗑 Видалити батч",
         "tab_ancient": "ДАВНІЙ", "ancient_status_running": "Збір турнірної таблиці...", "ancient_status_sent": "Відправлено на сервер", "ancient_status_failed": "Сервер недоступний. Дані збережено локально.",
         "ancient_desc": "Відкрийте діалог «Статистика» в грі перед запуском.",
@@ -1626,6 +1707,10 @@ LANGS = {
         "chest_auto_send_lb": "Kirim otomatis ke server",
         "chest_queue_title": "Antrean peti",
         "chest_batch_title": "Batch peti",
+        "server_offline_retry": "Tidak ada koneksi ke server, mencoba lagi…",
+        "server_error_retry": "Kesalahan server, mencoba lagi…",
+        "chest_not_enough_plain": "Berlian tidak cukup untuk mengirim",
+        "chest_not_enough": "Berlian tidak cukup untuk mengirim, butuh {need}, Anda punya {have}",
         "chest_delete_batch_btn": "🗑 Hapus batch",
         "tab_ancient": "KUNO", "ancient_status_running": "Mengumpulkan data turnamen...", "ancient_status_sent": "Terkirim ke server", "ancient_status_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "ancient_desc": "Buka dialog «Statistik» dalam game sebelum memulai.",
@@ -2126,6 +2211,8 @@ class TotalHunterApp(ctk.CTk):
         self.current_lang = saved_lang.get("lang", "EN")
         self.user_email = None
         self.current_credits = 0
+        self._balance_known = False     # True — баланс хоть раз получен от сервера (иначе 0 означает «не знаем»)
+        self._server_offline = None     # None | "offline" | "server_error" — последний check_license не дошёл до ответа
         self.my_ref_id = "---"
         self.is_running = False # ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННОЙ СОСТОЯНИЯ
         self._esc_stopped = False      # True после ESC — блокирует авто-перезапуск
@@ -3306,7 +3393,7 @@ class TotalHunterApp(ctk.CTk):
                     text_color=MD3["error_text"])
                 return
             if self.current_credits <= 0:
-                messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
+                self._warn_no_credits(); return
             selected = [k for k, v in self._crypt_vars.items() if v.get()]
             if not selected:
                 self.crypt_status_label.configure(
@@ -3433,7 +3520,7 @@ class TotalHunterApp(ctk.CTk):
                 elif send_result.get("missing_fields"):
                     text, color = L["chest_missing_fields"], MD3["error_text"]
                 elif send_result.get("low_credits"):
-                    messagebox.showwarning("Hunter", L["no_credits"])
+                    messagebox.showwarning("Hunter", chest_low_credits_text(L, send_result))
                     text, color = L["chest_status_stopped"], MD3["on_surface2"]
                 else:
                     text, color = L["chest_send_failed"], MD3["error_text"]
@@ -3570,7 +3657,7 @@ class TotalHunterApp(ctk.CTk):
                     self.chest_status_label.configure(text=L["chest_missing_fields"],
                                                        text_color=MD3["error_text"])
                 elif result.get("low_credits"):
-                    messagebox.showwarning("Hunter", L["no_credits"])
+                    messagebox.showwarning("Hunter", chest_low_credits_text(L, result))
                     self.chest_status_label.configure(text=L["chest_status_stopped"],
                                                        text_color=MD3["on_surface2"])
                 else:
@@ -3926,9 +4013,43 @@ class TotalHunterApp(ctk.CTk):
     def _update_credits_display(self, n: int):
         """Обновляет счётчик кредитов на всех вкладках сразу."""
         self.current_credits = n
+        self._balance_known = True
         self.credits_label.configure(text=str(n))
         self.crypt_credits_label.configure(text=str(n))
         self._set_start_buttons_state(n > 0)
+
+    def _on_server_balance(self, n: int):
+        """Баланс пришёл из long-poll — значит связь с сервером есть. Если до этого check_license не
+        дошёл до ответа, баннер «нет связи» заменяем актуальным состоянием (повторный check_license)."""
+        was_offline = self._server_offline
+        self._server_offline = None
+        self._update_credits_display(n)
+        if was_offline:
+            self.after(200, self.update_license_info)
+
+    def _show_server_offline(self, server_error: bool):
+        """Сервер не дал баланс (нет сети / тайм-аут / 5xx): честно пишем это, а не «0 алмазов».
+        Последний известный баланс не затираем; пока он ни разу не получен — показываем «—»."""
+        L = LANGS[self.current_lang]
+        self._server_offline = "server_error" if server_error else "offline"
+        if not self._balance_known:
+            self.credits_label.configure(text="—")
+            self.crypt_credits_label.configure(text="—")
+        text = L["server_error_retry" if server_error else "server_offline_retry"]
+        self.broadcast_frame.pack(fill="x", padx=0, pady=0)
+        self.broadcast_label.pack(padx=10, pady=5)
+        self.broadcast_label.configure(text=f"⚠ {text}")
+        self.info_banner.pack(fill="x", padx=20, pady=(4, 0))
+
+    def _warn_no_credits(self):
+        """Старт без алмазов. Если баланс просто не получен из-за связи — говорим про связь, а не
+        «0 алмазов / привяжите устройство» (настоящий нулевой баланс из ответа сервера — как раньше)."""
+        L = LANGS[self.current_lang]
+        if self._server_offline:
+            key = "server_error_retry" if self._server_offline == "server_error" else "server_offline_retry"
+            messagebox.showwarning("Hunter", L[key])
+        else:
+            messagebox.showwarning("Hunter", L["no_credits"])
 
     def _set_start_buttons_state(self, enabled: bool):
         """Блокирует/разблокирует кнопки старта при нулевом балансе.
@@ -3956,7 +4077,7 @@ class TotalHunterApp(ctk.CTk):
             while True:
                 try:
                     balance_sync_step(
-                        lambda c: self.after(0, lambda: self._update_credits_display(c)),
+                        lambda c: self.after(0, lambda: self._on_server_balance(c)),
                         on_linked=lambda: self._awaiting_link and self.after(0, self._on_account_linked))
                 except Exception:
                     time.sleep(2)
@@ -3966,7 +4087,12 @@ class TotalHunterApp(ctk.CTk):
         try:
             data = check_license()
             if not data: return
-           
+
+            if data.get("offline"):
+                self._show_server_offline(bool(data.get("server_error")))
+                return
+            self._server_offline = None
+
             if data.get("banned"):
                 messagebox.showerror("System", LANGS[self.current_lang]["banned"])
                 self.destroy(); sys.exit()
@@ -4600,7 +4726,7 @@ class TotalHunterApp(ctk.CTk):
                 self.always_on_top_var.set(False)
                 self._on_always_on_top()
             if self.current_credits <= 0:
-                messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
+                self._warn_no_credits(); return
             try:
                 # Центр джойстика — из калибровки (единственный источник правды)
                 cx, cy = int(coord_manager.anchor_x), int(coord_manager.anchor_y)
@@ -4671,7 +4797,7 @@ class TotalHunterApp(ctk.CTk):
                                             text_color=MD3["error_text"])
                 return
             if self.current_credits <= 0:
-                messagebox.showwarning("Hunter", LANGS[self.current_lang]["no_credits"]); return
+                self._warn_no_credits(); return
             try:
                 cx, cy = int(coord_manager.anchor_x), int(coord_manager.anchor_y)
                 step = int(self.nav_step_slider.get())

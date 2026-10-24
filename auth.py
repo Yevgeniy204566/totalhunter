@@ -51,10 +51,12 @@ def check_license():
         _mark_contact_success()
         if response.status_code == 200:
             return response.json()
-        return {"authorized": False, "credits": 0, "message": "Ошибка сервера"}
+        # offline=True: баланс НЕ получен — вызывающий код не должен показывать это как «0 алмазов»
+        return {"authorized": False, "credits": 0, "offline": True, "server_error": True,
+                "message": "Ошибка сервера"}
     except Exception as e:
         log_error_to_server(f"Check License Error: {str(e)}")
-        return {"authorized": False, "credits": 0, "message": "Нет связи с сервером"}
+        return {"authorized": False, "credits": 0, "offline": True, "message": "Нет связи с сервером"}
 
 def generate_link_code():
     """Генерирует 6-значный код для привязки бота к аккаунту на сайте.

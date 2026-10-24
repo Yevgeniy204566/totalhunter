@@ -776,7 +776,16 @@ def export_to_api(kingdom, clan, items):
             reason = f"{type(exc).__name__}: {exc}"
             continue
         if response.status_code == 402:
-            return {"success": False, "low_credits": True}
+            low = {"success": False, "low_credits": True}
+            try:
+                detail = response.json().get("detail")
+            except ValueError:
+                detail = None
+            if isinstance(detail, dict):   # сервер присылает, сколько нужно и сколько есть
+                for key in ("required", "credits"):
+                    if isinstance(detail.get(key), int):
+                        low[key] = detail[key]
+            return low
         if 200 <= response.status_code < 300:
             try:
                 count = response.json().get("count", len(items))
