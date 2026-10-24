@@ -288,7 +288,7 @@
   .public-table thead th.public-name-cell { z-index: 5 !important; }
   .hero-shield { width: 28px; height: 32px; }
   /* Заголовок «Герой» в узком столбце: мельче, без значка сортировки, чтобы не обрезался */
-  .public-table th.public-hero-cell { font-size: 8px !important; padding-left: 0 !important; padding-right: 0 !important; overflow: hidden !important; }
+  .public-table th.public-hero-cell { font-size: 7px !important; padding-left: 0 !important; padding-right: 0 !important; overflow: hidden !important; }
   .public-table th.public-hero-cell .public-sort-mark { display: none; }
 
   /* Три главные ячейки (ранее 320px — почти весь экран) */
@@ -297,8 +297,12 @@
 
   /* Меньший шрифт ячеек — больше колонок видно без скролла */
   .public-table th,
-  .public-table td { font-size: 10px !important; padding: 5px 6px !important; }
-  .public-table { --public-name-base: 12px; }
+  .public-table td { font-size: 8px !important; padding: 5px 6px !important; }
+  /* Имена игроков крупнее чисел (владелец 2026-10-24): база имени 11px при числах 8px. Размеры в ячейках
+     «Очки/Склепы/EM» заданы прямо в разметке (14/12/16px) — перебиваем, иначе числа выходили крупнее имён. */
+  .public-table { --public-name-base: 11px; }
+  .public-table .public-bar-top, .public-table .public-bar-pct,
+  .public-table .public-epic-cell div, .public-table .public-points-cell div { font-size: 8px !important; }
   /* Зум пальцами не блокируем (владелец 2026-10-24) */
   .public-table-wrap { touch-action: pan-x pan-y pinch-zoom; }
 
