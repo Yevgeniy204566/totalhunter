@@ -934,7 +934,7 @@
                   <tr>
                     <td style="white-space:nowrap;color:var(--text-dim)" x-text="formatDate(f.created_at)"></td>
                     <td style="font-family:monospace;font-size:11px" x-text="f.user_id"></td>
-                    <td x-text="f.text"></td>
+                    <td style="white-space:pre-wrap;word-break:break-word" x-text="f.text"></td>
                   </tr>
                 </template>
                 <tr x-show="feedbackItems.length===0">

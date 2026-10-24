@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { wheelKeyShouldSpin } from '../lib/wheelKey.js'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
@@ -637,7 +638,10 @@ function mountWheel() {
   const diskEl=document.getElementById('disk')
   if(diskEl) diskEl.style.transform=`rotate(${angle}rad)`
 
-  window.addEventListener('keydown',e=>{if((e.code==='Space'||e.code==='Enter')&&!document.getElementById('spin')?.disabled){e.preventDefault();startSpin()}})
+  // Обработчик снимается при уходе со страницы (cleanup в EarnPage) и не перехватывает поля ввода.
+  const onWheelKey=e=>{ if(wheelKeyShouldSpin(e,document.getElementById('spin'))){e.preventDefault();startSpin()} }
+  window.addEventListener('keydown',onWheelKey)
+  window.__wheelKeyHandler=onWheelKey
   requestAnimationFrame(tick)
 
   window.__wheel={ startSpin, currentSectorIndex, VALUES, burstButtonSparks, ensureAudio, getAngle:()=>angle }
@@ -705,6 +709,8 @@ export default function EarnPage() {
 
     return () => {
       link.remove()
+      if (window.__wheelKeyHandler) window.removeEventListener('keydown', window.__wheelKeyHandler)
+      window.__wheelKeyHandler = undefined
       window.TEXTURES      = undefined
       window.__wheel       = undefined
       window.__wheelOnLanded = undefined

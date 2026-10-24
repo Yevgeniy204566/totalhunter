@@ -293,9 +293,13 @@ If you are the owner of your own roster, you do not need this block.`,
   feedback: {
     title:       'Feedback',
     sub:         'Got an idea or suggestion? We read every message.',
-    placeholder: 'Your idea or suggestion...',
+    label:       'Your message',
+    placeholder: 'Describe your idea, suggestion or problem — multiple lines are fine...',
     sending:     'Sending...',
     send:        'Send Idea',
+    thanks:      'Thank you! Your message has been sent.',
+    error:       'Could not send. Your text is still in the box — please try again.',
+    limitHint:   'limit reached, send a longer text as two messages',
   },
 
   login: {
