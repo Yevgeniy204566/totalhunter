@@ -7,7 +7,7 @@ notify_balance_changed(hwid) вызывается после начислени�
 
 import asyncio
 from datetime import datetime, timedelta, timezone
-from typing import Dict
+from typing import Dict, Set
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import case, select, update
@@ -18,13 +18,16 @@ from models import User
 
 router = APIRouter(prefix="/vault", tags=["vault"])
 
-_notifiers: Dict[str, asyncio.Event] = {}
+# Событие на каждое подключение, а не на HWID: второе подключение того же HWID не должно подменять
+# событие первого, а завершение одного — удалять событие другого (иначе платёж не будит бота сразу).
+_notifiers: Dict[str, Set[asyncio.Event]] = {}
 
 
 def notify_balance_changed(hwid: str | None) -> None:
-    """Вызывать после любого изменения кредитов. Будит ожидающий long-poll бота."""
-    if hwid and hwid in _notifiers:
-        _notifiers[hwid].set()
+    """Вызывать после любого изменения кредитов. Будит все ожидающие long-poll этого HWID."""
+    if hwid:
+        for event in list(_notifiers.get(hwid, ())):
+            event.set()
 
 
 @router.get("/sync/{hwid}")
@@ -41,14 +44,18 @@ async def balance_sync(hwid: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="unknown_hwid")
 
     event = asyncio.Event()
-    _notifiers[hwid] = event
+    _notifiers.setdefault(hwid, set()).add(event)
 
     try:
         await asyncio.wait_for(event.wait(), timeout=50.0)
     except asyncio.TimeoutError:
         pass  # Нормальный heartbeat — всё равно вернуть баланс
     finally:
-        _notifiers.pop(hwid, None)
+        waiters = _notifiers.get(hwid)
+        if waiters is not None:
+            waiters.discard(event)
+            if not waiters:
+                del _notifiers[hwid]
 
     # UPDATE вместо SELECT — этот long-poll работает непрерывно, пока бот
     # открыт (даже без охоты), поэтому заодно служит heartbeat'ом для

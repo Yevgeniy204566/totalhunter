@@ -173,6 +173,64 @@ async def test_balance_sync_releases_connection_before_long_wait(db_session, mon
 
 
 @pytest.mark.asyncio
+async def test_notify_wakes_every_connection_of_same_hwid(db_session):
+    """Два подключения одного HWID: второе не подменяет событие первого — уведомление будит оба."""
+    u = User(hwid="AAAA000011112222", credits=1, ref_code="vault10")
+    db_session.add(u)
+    await db_session.commit()
+
+    async def _call():
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            return await client.get(f"/vault/sync/{u.hwid}")
+
+    first = asyncio.create_task(_call())
+    await asyncio.sleep(0.1)
+    second = asyncio.create_task(_call())
+    await asyncio.sleep(0.1)
+
+    notify_balance_changed(u.hwid)
+    resp_first, resp_second = await asyncio.wait_for(asyncio.gather(first, second), timeout=2.0)
+
+    assert resp_first.status_code == resp_second.status_code == 200
+    assert u.hwid not in vault._notifiers       # оба ушли — запись убрана
+
+
+@pytest.mark.asyncio
+async def test_finishing_one_connection_does_not_drop_notifier_of_other(db_session, monkeypatch):
+    """Старое подключение закончилось по таймауту, новое ещё ждёт: его событие остаётся,
+    платёж будит его сразу, а не по собственному таймауту."""
+    u = User(hwid="BBBB000011112222", credits=1, ref_code="vault11")
+    db_session.add(u)
+    await db_session.commit()
+
+    orig_wait_for = vault.asyncio.wait_for
+    calls = []
+
+    async def _wait_for(aw, timeout):
+        calls.append(1)
+        return await orig_wait_for(aw, timeout=0.4 if len(calls) == 1 else 5.0)
+
+    monkeypatch.setattr(vault.asyncio, "wait_for", _wait_for)
+
+    async def _call():
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            return await client.get(f"/vault/sync/{u.hwid}")
+
+    old = asyncio.create_task(_call())          # ждёт 0.4 с
+    await asyncio.sleep(0.1)
+    new = asyncio.create_task(_call())          # ждёт 5 с
+    await asyncio.wait_for(old, timeout=2.0)    # старое завершилось по таймауту
+    assert not new.done()
+    assert u.hwid in vault._notifiers           # событие нового не удалено
+
+    notify_balance_changed(u.hwid)
+    resp = await asyncio.wait_for(new, timeout=1.0)   # проснулось сразу, а не через 5 с
+
+    assert resp.status_code == 200
+    assert u.hwid not in vault._notifiers
+
+
+@pytest.mark.asyncio
 async def test_balance_sync_reports_linked_when_account_has_email(db_session):
     """Бот ждёт привязку не опросом раз в 5 с, а через этот long-poll: linked — состояние из БД
     в КАЖДОМ ответе, поэтому потерянное пробуждение догоняется следующим циклом (≤50 с)."""
