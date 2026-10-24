@@ -296,10 +296,10 @@ function barBackground(pct) {
 }
 // Уровень Героя на щите: заливка слева направо, свой градиент на каждую сотню (владелец 2026-10-24).
 const HERO_BANDS = [
-  { max: 300, from: '#F2C94C', to: '#8B5A2B', dark: '#4A2D10' },
-  { max: 400, from: '#B8E04A', to: '#1F6B3A', dark: '#0E3A1D' },
-  { max: 500, from: '#7DD3FC', to: '#1E3A8A', dark: '#0E1F52' },
-  { max: 600, from: '#E91E8C', to: '#3B0F6B', dark: '#200640' },
+  { max: 300, from: '#F2C94C', to: '#8B5A2B', dark: '#4A2D10', light: '#FFF0B3' },
+  { max: 400, from: '#B8E04A', to: '#1F6B3A', dark: '#0E3A1D', light: '#E3F7A6' },
+  { max: 500, from: '#7DD3FC', to: '#1E3A8A', dark: '#0E1F52', light: '#B9E6FD' },
+  { max: 600, from: '#E91E8C', to: '#3B0F6B', dark: '#200640', light: '#F7A3D4' },
 ]
 function heroBand(level) {
   if (!level || level < 100) return -1
@@ -325,12 +325,14 @@ function HeroShieldDefs() {
 }
 function HeroShield({ level }) {
   const band = heroBand(level)
-  const dark = band === -1 ? '#1F2937' : HERO_BANDS[band].dark   // обводка и контур цифр — тёмный тон своего цвета
+  // рамка щита — светлее заливки в её тоне; контур цифр — тёмный тон того же цвета (владелец 2026-10-24)
+  const dark = band === -1 ? '#1F2937' : HERO_BANDS[band].dark
+  const light = band === -1 ? '#9CA3AF' : HERO_BANDS[band].light
   const fill = band === -1 ? 'url(#hero-shield-none)' : `url(#hero-shield-${band})`
   return (
     <svg className="hero-shield" viewBox="0 0 40 46" role="img" aria-label={level ? String(level) : '—'}>
       <path d="M20 1.5 L37.5 7.5 V23 C37.5 33 29.5 40 20 44.5 C10.5 40 2.5 33 2.5 23 V7.5 Z"
-            fill={fill} stroke={dark} strokeWidth="2" strokeLinejoin="round" />
+            fill={fill} stroke={light} strokeWidth="2" strokeLinejoin="round" />
       <path d="M20 6 L33.5 10.5 V23 C33.5 31 27 36.8 20 40.4 C13 36.8 6.5 31 6.5 23 V10.5 Z"
             fill="none" stroke={dark} strokeOpacity="0.45" strokeWidth="1" />
       <text x="20" y="27" textAnchor="middle" fontSize={level >= 100 ? 14 : 16} fontWeight="800"
@@ -371,6 +373,7 @@ function MainIcon({ kind }) {
     strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: 'public-main-icon' }
   if (kind === 'star') return <svg {...common} fill="currentColor"><path d="M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18l-6.5 4 1.7-7.4-5.7-5 7.5-.7z" /></svg>
   if (kind === 'chest') return <svg {...common}><path d="M4 11V8a8 8 0 0 1 16 0v3" /><rect x="3" y="11" width="18" height="9.5" rx="1.5" /><path d="M3 14.5h18" /><rect x="10.2" y="12.8" width="3.6" height="4.4" rx="0.8" fill="currentColor" /></svg>
+  if (kind === 'dragon') return <svg {...common}><path d="M2 17 L6 13 L10 9 L13 5.5 H20 L22 9 L18.5 10 L15 12.5 L14.5 16.5 L15.5 21 H11 L10.5 17.5 H8 Z" /><circle cx="17.5" cy="8" r="0.9" fill="currentColor" stroke="none" /></svg>
   return <svg {...common}><path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z" /></svg>
 }
 function BarCell({ value, target, partial, hint = '' }) {
@@ -459,7 +462,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     if (!pointsPersonal) return null
     return [
       { key: 'points', name: tt.points, icon: 'star', get: p => p.points, targetOf: p => p.pointsTarget, partialOf: p => !p.hero_level },
-      ...quotaCols.map(c => ({ ...c, icon: c.key === 'quota:2' ? 'chest' : 'crypt' })),
+      ...quotaCols.map(c => ({ ...c, icon: c.key === 'quota:2' ? 'dragon' : 'chest' })),
     ]
   }, [pointsPersonal, quotaCols, tt])
   // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
