@@ -704,6 +704,79 @@ def test_collect_chests_stops_at_batch_limit_even_with_more_available(tmp_path, 
     assert sum(result["counts"].values()) == 3
 
 
+def test_queue_limit_is_2000_and_batch_limit_stays_5000():
+    """Владелец 2026-10-24: очередь обработки (кропы, ждущие OCR) — не больше 2000, а лимит батча
+    (сундуки, которые платно уходят на сервер разом) остаётся 5000. Это два разных предела."""
+    assert cr.QUEUE_LIMIT == 2000
+    assert cr.BATCH_LIMIT == 5000
+
+
+def test_collect_chests_pauses_clicking_while_queue_is_full(tmp_path, monkeypatch):
+    """Очередь на диске не растёт выше queue_limit: пока OCR не разгребёт хвост, producer не кликает
+    «Открыть» и не режет новые кропы (иначе очередь растёт до лимита батча). После освобождения очереди
+    сбор продолжается и доходит до лимита батча."""
+    import threading
+
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    gate = threading.Event()
+    clicks = []
+    max_pending = [0]
+
+    def blocked_ocr(combined, full_lang=False):
+        gate.wait(timeout=10)
+        return ("Тип", "Игрок")
+
+    def counting_click(pause_range=cr.ANTI_DETECT_PAUSE_RANGE):
+        clicks.append(1)
+        max_pending[0] = max(max_pending[0], cr.count_pending(pending_dir))
+
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: (10, 10))
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "ocr_top_row_crops", blocked_ocr)
+    monkeypatch.setattr(cr, "click_open_button", counting_click)
+
+    box = {}
+    worker = threading.Thread(target=lambda: box.update(result=cr.collect_chests(
+        lambda: False, db_path=db_path, pending_dir=pending_dir, batch_limit=6, queue_limit=3)))
+    worker.start()
+
+    time.sleep(0.8)                      # OCR заблокирован — очередь забита до лимита
+    assert len(clicks) == 3              # producer остановился ровно на лимите очереди
+    assert cr.count_pending(pending_dir) == 3
+
+    gate.set()                           # OCR заработал — очередь освобождается, сбор идёт дальше
+    worker.join(timeout=20)
+    assert not worker.is_alive()
+
+    result = box["result"]
+    assert result["batch_full"] is True
+    assert sum(result["counts"].values()) == 6
+    assert max_pending[0] <= 3           # за весь прогон очередь не превысила лимит
+
+
+def test_count_batch_is_recognized_plus_waiting_crops(tmp_path):
+    """Полоса «Батч сундуков»: распознанные неотправленные + кропы в очереди — то же число, по которому
+    сбор останавливается на BATCH_LIMIT."""
+    db_path = str(tmp_path / "chest_buffer.db")
+    pending_dir = str(tmp_path / "chest_pending")
+    os.makedirs(pending_dir)
+    for n in (1, 2):
+        cv2.imwrite(os.path.join(pending_dir, f"00000{n}.png"), np.zeros((48, 400, 3), dtype=np.uint8))
+    conn = cr.init_db(db_path)
+    try:
+        cr.insert_chest(conn, "Тип", "Игрок", "2026-10-24T10:00:00.000001")
+        cr.insert_chest(conn, "Тип", "Игрок", "2026-10-24T10:00:00.000002")
+        cr.insert_chest(conn, "Тип", "Игрок", "2026-10-24T10:00:00.000003")
+    finally:
+        conn.close()
+
+    assert cr.count_batch(pending_dir, db_path) == 5
+
+
 def test_collect_chests_processes_leftover_crops_from_previous_run(tmp_path, monkeypatch):
     """Не допускать потери сундуков при перезапуске (входящие заметки, п.D): кроп,
     оставшийся на диске от прерванного запуска (краш/закрытие бота до того, как consumer

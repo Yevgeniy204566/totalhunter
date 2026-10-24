@@ -115,6 +115,12 @@ PENDING_DIR = os.path.join(STORAGE_DIR, 'chest_pending')
 # сработать отправка батча (on_batch_ready, реализуется вызывающим кодом в main.py).
 BATCH_LIMIT = 5000
 
+# Лимит очереди обработки (владелец 2026-10-24) — другой предел, чем батч: батч — сколько сундуков
+# уйдёт на сервер разом (деньги), очередь — сколько кропов одновременно лежит на диске в ожидании OCR.
+# При достижении producer не кликает «Открыть» и не режет новые кропы, пока OCR не разгребёт хвост;
+# сбор при этом не завершается (в отличие от BATCH_LIMIT).
+QUEUE_LIMIT = 2000
+
 
 def detect_dialog_bbox(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -566,6 +572,12 @@ def _batch_size(pending_dir: str, db_path: str) -> int:
     return unsynced + len(_pending_queue(pending_dir))
 
 
+def count_batch(pending_dir: str = PENDING_DIR, db_path: str = DB_PATH) -> int:
+    """Заполнение батча для полосы «Батч сундуков» в GUI — то же число, по которому сбор
+    останавливается на BATCH_LIMIT."""
+    return _batch_size(pending_dir, db_path)
+
+
 _now = datetime.datetime.now
 _last_chest_ts = None
 _chest_ts_lock = threading.Lock()
@@ -638,7 +650,7 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                    pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False,
                    pending_dir=PENDING_DIR, batch_limit=BATCH_LIMIT, on_batch_ready=None,
-                   kingdom=None, clan=None):
+                   kingdom=None, clan=None, queue_limit=QUEUE_LIMIT):
     """Конвейер (сессия #149, входящие заметки п.D): клики по «Собрать» НЕ ждут OCR.
     Этот (producer) поток захватывает кадр, проверяет кнопку «Открыть» (find_open_button,
     как раньше), вырезает оба ROI (crop_top_row) и атомарно сохраняет кроп в pending_dir —
@@ -682,6 +694,10 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
             if _batch_size(pending_dir, db_path) >= batch_limit:
                 batch_full = True
                 break
+
+            if count_pending(pending_dir) >= queue_limit:
+                time.sleep(0.2)   # очередь забита — ждём OCR; ESC/стоп всё равно проверяется в while
+                continue
 
             frame = grab_fullscreen()
             bbox = detect_dialog_bbox(frame)

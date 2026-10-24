@@ -430,7 +430,8 @@ LANGS = {
         "chest_send_btn": "ОТПРАВИТЬ НА СЕРВЕР", "chest_send_success": "Отправлено на сервер",
         "chest_send_failed": "Сервер недоступен. Данные сохранены локально.",
         "chest_auto_send_lb": "Авто-отправка на сервер",
-        "chest_queue_title": "Очередь OCR",
+        "chest_queue_title": "Очередь сундуков",
+        "chest_batch_title": "Батч сундуков",
         "chest_delete_batch_btn": "🗑 Удалить батч",
         "tab_ancient": "ДРЕВНИЙ", "ancient_status_running": "Сбор турнирной таблицы...", "ancient_status_sent": "Отправлено на сервер", "ancient_status_failed": "Сервер недоступен. Данные сохранены локально.",
         "ancient_desc": "Откройте диалог «Статистика» в игре перед запуском.",
@@ -507,7 +508,8 @@ LANGS = {
         "chest_send_btn": "SEND TO SERVER", "chest_send_success": "Sent to server",
         "chest_send_failed": "Server unavailable. Data saved locally.",
         "chest_auto_send_lb": "Auto-send to server",
-        "chest_queue_title": "OCR queue",
+        "chest_queue_title": "Chest queue",
+        "chest_batch_title": "Chest batch",
         "chest_delete_batch_btn": "🗑 Delete batch",
         "tab_ancient": "ANCIENT", "ancient_status_running": "Collecting tournament data...", "ancient_status_sent": "Sent to server", "ancient_status_failed": "Server unavailable. Data saved locally.",
         "ancient_desc": "Open the in-game «Statistics» dialog before starting.",
@@ -582,7 +584,8 @@ LANGS = {
         "chest_send_btn": "AN SERVER SENDEN", "chest_send_success": "An Server gesendet",
         "chest_send_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "chest_auto_send_lb": "Automatisch an Server senden",
-        "chest_queue_title": "OCR-Warteschlange",
+        "chest_queue_title": "Truhen-Warteschlange",
+        "chest_batch_title": "Truhen-Batch",
         "chest_delete_batch_btn": "🗑 Batch löschen",
         "tab_ancient": "URALTER", "ancient_status_running": "Turnierdaten werden gesammelt...", "ancient_status_sent": "An Server gesendet", "ancient_status_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "ancient_desc": "Öffne den Dialog «Statistik» im Spiel, bevor du startest.",
@@ -646,7 +649,8 @@ LANGS = {
         "chest_send_btn": "ENVIAR AL SERVIDOR", "chest_send_success": "Enviado al servidor",
         "chest_send_failed": "Servidor no disponible. Datos guardados localmente.",
         "chest_auto_send_lb": "Envío automático al servidor",
-        "chest_queue_title": "Cola de OCR",
+        "chest_queue_title": "Cola de cofres",
+        "chest_batch_title": "Lote de cofres",
         "chest_delete_batch_btn": "🗑 Eliminar lote",
         "tab_ancient": "ANTIGUO", "ancient_status_running": "Recolectando datos del torneo...", "ancient_status_sent": "Enviado al servidor", "ancient_status_failed": "Servidor no disponible. Datos guardados localmente.",
         "ancient_desc": "Abre el diálogo «Estadísticas» en el juego antes de empezar.",
@@ -710,7 +714,8 @@ LANGS = {
         "chest_send_btn": "ENVOYER AU SERVEUR", "chest_send_success": "Envoyé au serveur",
         "chest_send_failed": "Serveur indisponible. Données enregistrées localement.",
         "chest_auto_send_lb": "Envoi automatique au serveur",
-        "chest_queue_title": "File OCR",
+        "chest_queue_title": "File des coffres",
+        "chest_batch_title": "Lot de coffres",
         "chest_delete_batch_btn": "🗑 Supprimer le lot",
         "tab_ancient": "ANCIEN", "ancient_status_running": "Collecte des données du tournoi...", "ancient_status_sent": "Envoyé au serveur", "ancient_status_failed": "Serveur indisponible. Données enregistrées localement.",
         "ancient_desc": "Ouvrez la boîte de dialogue «Statistiques» dans le jeu avant de démarrer.",
@@ -774,7 +779,8 @@ LANGS = {
         "chest_send_btn": "INVIA AL SERVER", "chest_send_success": "Inviato al server",
         "chest_send_failed": "Server non disponibile. Dati salvati localmente.",
         "chest_auto_send_lb": "Invio automatico al server",
-        "chest_queue_title": "Coda OCR",
+        "chest_queue_title": "Coda degli scrigni",
+        "chest_batch_title": "Batch di scrigni",
         "chest_delete_batch_btn": "🗑 Elimina il batch",
         "tab_ancient": "ANTICO", "ancient_status_running": "Raccolta dati del torneo...", "ancient_status_sent": "Inviato al server", "ancient_status_failed": "Server non disponibile. Dati salvati localmente.",
         "ancient_desc": "Apri la finestra «Statistiche» nel gioco prima di avviare.",
@@ -838,7 +844,8 @@ LANGS = {
         "chest_send_btn": "VERZENDEN NAAR SERVER", "chest_send_success": "Verzonden naar server",
         "chest_send_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "chest_auto_send_lb": "Automatisch verzenden naar server",
-        "chest_queue_title": "OCR-wachtrij",
+        "chest_queue_title": "Kistenwachtrij",
+        "chest_batch_title": "Kistenbatch",
         "chest_delete_batch_btn": "🗑 Batch verwijderen",
         "tab_ancient": "ALOUDE", "ancient_status_running": "Toernooigegevens verzamelen...", "ancient_status_sent": "Verzonden naar server", "ancient_status_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "ancient_desc": "Open het «Statistieken»-dialoogvenster in de game voordat je start.",
@@ -902,7 +909,8 @@ LANGS = {
         "chest_send_btn": "SEND TIL SERVER", "chest_send_success": "Sendt til server",
         "chest_send_failed": "Server utilgjengelig. Data lagret lokalt.",
         "chest_auto_send_lb": "Automatisk sending til server",
-        "chest_queue_title": "OCR-kø",
+        "chest_queue_title": "Kistekø",
+        "chest_batch_title": "Kistebatch",
         "chest_delete_batch_btn": "🗑 Slett batch",
         "tab_ancient": "URGAMMEL", "ancient_status_running": "Samler turneringsdata...", "ancient_status_sent": "Sendt til server", "ancient_status_failed": "Server utilgjengelig. Data lagret lokalt.",
         "ancient_desc": "Åpne «Statistikk»-dialogen i spillet før du starter.",
@@ -966,7 +974,8 @@ LANGS = {
         "chest_send_btn": "WYŚLIJ NA SERWER", "chest_send_success": "Wysłano na serwer",
         "chest_send_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "chest_auto_send_lb": "Automatyczne wysyłanie na serwer",
-        "chest_queue_title": "Kolejka OCR",
+        "chest_queue_title": "Kolejka skrzyń",
+        "chest_batch_title": "Partia skrzyń",
         "chest_delete_batch_btn": "🗑 Usuń partię",
         "tab_ancient": "STARODAWNY", "ancient_status_running": "Zbieranie danych turniejowych...", "ancient_status_sent": "Wysłano na serwer", "ancient_status_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "ancient_desc": "Otwórz okno «Statystyki» w grze przed uruchomieniem.",
@@ -1030,7 +1039,8 @@ LANGS = {
         "chest_send_btn": "ENVIAR AO SERVIDOR", "chest_send_success": "Enviado ao servidor",
         "chest_send_failed": "Servidor indisponível. Dados salvos localmente.",
         "chest_auto_send_lb": "Envio automático para o servidor",
-        "chest_queue_title": "Fila OCR",
+        "chest_queue_title": "Fila de baús",
+        "chest_batch_title": "Lote de baús",
         "chest_delete_batch_btn": "🗑 Excluir lote",
         "tab_ancient": "ANCIÃO", "ancient_status_running": "Coletando dados do torneio...", "ancient_status_sent": "Enviado ao servidor", "ancient_status_failed": "Servidor indisponível. Dados salvos localmente.",
         "ancient_desc": "Abra a caixa de diálogo «Estatísticas» no jogo antes de iniciar.",
@@ -1094,7 +1104,8 @@ LANGS = {
         "chest_send_btn": "SKICKA TILL SERVER", "chest_send_success": "Skickat till server",
         "chest_send_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "chest_auto_send_lb": "Automatisk sändning till server",
-        "chest_queue_title": "OCR-kö",
+        "chest_queue_title": "Kistkö",
+        "chest_batch_title": "Kistbatch",
         "chest_delete_batch_btn": "🗑 Ta bort batch",
         "tab_ancient": "FORNTIDA", "ancient_status_running": "Samlar turneringsdata...", "ancient_status_sent": "Skickat till server", "ancient_status_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "ancient_desc": "Öppna dialogrutan «Statistik» i spelet innan du startar.",
@@ -1158,7 +1169,8 @@ LANGS = {
         "chest_send_btn": "SUNUCUYA GÖNDER", "chest_send_success": "Sunucuya gönderildi",
         "chest_send_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "chest_auto_send_lb": "Sunucuya otomatik gönderim",
-        "chest_queue_title": "OCR kuyruğu",
+        "chest_queue_title": "Sandık kuyruğu",
+        "chest_batch_title": "Sandık toplu işi",
         "chest_delete_batch_btn": "🗑 Toplu işi sil",
         "tab_ancient": "KADİM", "ancient_status_running": "Turnuva verileri toplanıyor...", "ancient_status_sent": "Sunucuya gönderildi", "ancient_status_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "ancient_desc": "Başlamadan önce oyundaki «İstatistik» penceresini açın.",
@@ -1222,7 +1234,8 @@ LANGS = {
         "chest_send_btn": "إرسال إلى الخادم", "chest_send_success": "تم الإرسال إلى الخادم",
         "chest_send_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "chest_auto_send_lb": "إرسال تلقائي إلى الخادم",
-        "chest_queue_title": "طابور التعرف الضوئي",
+        "chest_queue_title": "طابور الصناديق",
+        "chest_batch_title": "دفعة الصناديق",
         "chest_delete_batch_btn": "🗑 حذف الدفعة",
         "tab_ancient": "القديم", "ancient_status_running": "جمع بيانات البطولة...", "ancient_status_sent": "تم الإرسال إلى الخادم", "ancient_status_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "ancient_desc": "افتح نافذة «الإحصائيات» في اللعبة قبل البدء.",
@@ -1286,7 +1299,8 @@ LANGS = {
         "chest_send_btn": "サーバーに送信", "chest_send_success": "サーバーに送信しました",
         "chest_send_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "chest_auto_send_lb": "サーバーへ自動送信",
-        "chest_queue_title": "OCRキュー",
+        "chest_queue_title": "宝箱キュー",
+        "chest_batch_title": "宝箱バッチ",
         "chest_delete_batch_btn": "🗑 バッチを削除",
         "tab_ancient": "古代の者", "ancient_status_running": "トーナメントデータを収集中...", "ancient_status_sent": "サーバーに送信しました", "ancient_status_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "ancient_desc": "開始する前にゲーム内の「統計」ダイアログを開いてください。",
@@ -1350,7 +1364,8 @@ LANGS = {
         "chest_send_btn": "发送到服务器", "chest_send_success": "已发送到服务器",
         "chest_send_failed": "服务器不可用，数据已保存到本地。",
         "chest_auto_send_lb": "自动发送到服务器",
-        "chest_queue_title": "OCR队列",
+        "chest_queue_title": "宝箱队列",
+        "chest_batch_title": "宝箱批次",
         "chest_delete_batch_btn": "🗑 删除批次",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集锦标赛数据...", "ancient_status_sent": "已发送到服务器", "ancient_status_failed": "服务器不可用，数据已保存到本地。",
         "ancient_desc": "开始前请打开游戏内的「统计」对话框。",
@@ -1414,7 +1429,8 @@ LANGS = {
         "chest_send_btn": "發送到伺服器", "chest_send_success": "已發送到伺服器",
         "chest_send_failed": "伺服器無法連線，資料已儲存在本機。",
         "chest_auto_send_lb": "自動發送到伺服器",
-        "chest_queue_title": "OCR隊列",
+        "chest_queue_title": "寶箱隊列",
+        "chest_batch_title": "寶箱批次",
         "chest_delete_batch_btn": "🗑 刪除批次",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集錦標賽資料...", "ancient_status_sent": "已發送到伺服器", "ancient_status_failed": "伺服器無法連線，資料已儲存在本機。",
         "ancient_desc": "開始前請打開遊戲內的「統計」對話框。",
@@ -1478,7 +1494,8 @@ LANGS = {
         "chest_send_btn": "서버로 전송", "chest_send_success": "서버로 전송됨",
         "chest_send_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "chest_auto_send_lb": "서버로 자동 전송",
-        "chest_queue_title": "OCR 대기열",
+        "chest_queue_title": "보물상자 대기열",
+        "chest_batch_title": "보물상자 배치",
         "chest_delete_batch_btn": "🗑 배치 삭제",
         "tab_ancient": "고대의 존재", "ancient_status_running": "토너먼트 데이터 수집 중...", "ancient_status_sent": "서버로 전송됨", "ancient_status_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "ancient_desc": "시작하기 전에 게임 내 「통계」 대화상자를 여세요.",
@@ -1542,7 +1559,8 @@ LANGS = {
         "chest_send_btn": "ВІДПРАВИТИ НА СЕРВЕР", "chest_send_success": "Відправлено на сервер",
         "chest_send_failed": "Сервер недоступний. Дані збережено локально.",
         "chest_auto_send_lb": "Авто-відправка на сервер",
-        "chest_queue_title": "Черга OCR",
+        "chest_queue_title": "Черга скринь",
+        "chest_batch_title": "Батч скринь",
         "chest_delete_batch_btn": "🗑 Видалити батч",
         "tab_ancient": "ДАВНІЙ", "ancient_status_running": "Збір турнірної таблиці...", "ancient_status_sent": "Відправлено на сервер", "ancient_status_failed": "Сервер недоступний. Дані збережено локально.",
         "ancient_desc": "Відкрийте діалог «Статистика» в грі перед запуском.",
@@ -1606,7 +1624,8 @@ LANGS = {
         "chest_send_btn": "KIRIM KE SERVER", "chest_send_success": "Terkirim ke server",
         "chest_send_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "chest_auto_send_lb": "Kirim otomatis ke server",
-        "chest_queue_title": "Antrean OCR",
+        "chest_queue_title": "Antrean peti",
+        "chest_batch_title": "Batch peti",
         "chest_delete_batch_btn": "🗑 Hapus batch",
         "tab_ancient": "KUNO", "ancient_status_running": "Mengumpulkan data turnamen...", "ancient_status_sent": "Terkirim ke server", "ancient_status_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "ancient_desc": "Buka dialog «Statistik» dalam game sebelum memulai.",
@@ -5695,8 +5714,8 @@ class TotalHunterApp(ctk.CTk):
         self.chest_status_label.pack(pady=(0, 8))
         self._i18n_labels.append((self.chest_status_label, "chest_status_ready"))
 
-        # ── Очередь OCR — прогресс-бар кропов, ждущих распознавания, по образцу Биржи 2.0
-        # (100% = BATCH_LIMIT). Обновляется из _on_update (чест-конвейер) и по завершении сбора.
+        # ── Очередь сундуков (100% = QUEUE_LIMIT) и Батч сундуков (100% = BATCH_LIMIT) — две полосы
+        # в одной карточке. Обновляются из _on_update (чест-конвейер) и по завершении сбора.
         queue_card = ctk.CTkFrame(self.tab_chest, fg_color=MD3["elevated"],
                                   corner_radius=12, border_width=1,
                                   border_color=MD3["outline"])
@@ -5716,7 +5735,23 @@ class TotalHunterApp(ctk.CTk):
                                                   fg_color=MD3["card"],
                                                   progress_color=MD3["primary"])
         self.chest_queue_bar.set(0)
-        self.chest_queue_bar.pack(fill="x", padx=12, pady=(2, 8))
+        self.chest_queue_bar.pack(fill="x", padx=12, pady=(2, 6))
+        batch_head = ctk.CTkFrame(queue_card, fg_color="transparent")
+        batch_head.pack(fill="x", padx=12, pady=(2, 2))
+        self.chest_batch_title_lb = ctk.CTkLabel(batch_head, text=L["chest_batch_title"],
+                                                 font=ctk.CTkFont(size=13, weight="bold"),
+                                                 text_color=MD3["on_surface"])
+        self.chest_batch_title_lb.pack(side="left")
+        self._i18n_labels.append((self.chest_batch_title_lb, "chest_batch_title"))
+        self.chest_batch_count_lb = ctk.CTkLabel(batch_head, text="0 / 0",
+                                                 font=ctk.CTkFont(size=13, weight="bold"),
+                                                 text_color=MD3["value_text"])
+        self.chest_batch_count_lb.pack(side="right")
+        self.chest_batch_bar = ctk.CTkProgressBar(queue_card, height=12, corner_radius=6,
+                                                  fg_color=MD3["card"],
+                                                  progress_color=MD3["primary"])
+        self.chest_batch_bar.set(0)
+        self.chest_batch_bar.pack(fill="x", padx=12, pady=(2, 8))
 
         # ── Live-счётчик по типам — фиксированная высота, список скроллится
         # внутри своих границ и не выталкивает СТАРТ ниже ──────────────────
@@ -5863,14 +5898,18 @@ class TotalHunterApp(ctk.CTk):
         self._save_gui_config_key("chest_auto_send", bool(self.chest_auto_send_var.get()))
 
     def _refresh_chest_queue(self) -> None:
-        """Прогресс-бар очереди OCR (кропы, ждущие распознавания) — по образцу Биржи 2.0.
-        100% = BATCH_LIMIT (тот же лимит, что останавливает сбор при достижении батча)."""
+        """Полосы «Очередь сундуков» (кропы, ждущие OCR; 100% = QUEUE_LIMIT, при нём сбор ждёт)
+        и «Батч сундуков» (распознанные неотправленные + очередь; 100% = BATCH_LIMIT, при нём сбор
+        останавливается)"""
         import chest_reader
         pending = chest_reader.count_pending(chest_reader.PENDING_DIR)
-        limit = chest_reader.BATCH_LIMIT
-        frac = min(1.0, pending / limit) if limit else 0.0
-        self.chest_queue_bar.set(frac)
-        self.chest_queue_count_lb.configure(text=f"{pending} / {limit}")
+        queue_limit = chest_reader.QUEUE_LIMIT
+        self.chest_queue_bar.set(min(1.0, pending / queue_limit) if queue_limit else 0.0)
+        self.chest_queue_count_lb.configure(text=f"{pending} / {queue_limit}")
+        batch = chest_reader.count_batch()
+        batch_limit = chest_reader.BATCH_LIMIT
+        self.chest_batch_bar.set(min(1.0, batch / batch_limit) if batch_limit else 0.0)
+        self.chest_batch_count_lb.configure(text=f"{batch} / {batch_limit}")
 
     # ── ancient tab (tournament roster import) ──────────────────────────────
 
