@@ -294,6 +294,51 @@ function barBackground(pct) {
   const w = Math.min(Math.max(pct, 0), 100)
   return `linear-gradient(to right, ${barColor(pct)} ${w}%, rgba(255,255,255,0.025) ${w}%)`
 }
+// Уровень Героя на щите: заливка слева направо, свой градиент на каждую сотню (владелец 2026-10-24).
+const HERO_BANDS = [
+  { max: 300, from: '#F2C94C', to: '#8B5A2B' },
+  { max: 400, from: '#B8E04A', to: '#1F6B3A' },
+  { max: 500, from: '#7DD3FC', to: '#1E3A8A' },
+  { max: 600, from: '#E91E8C', to: '#3B0F6B' },
+]
+function heroBand(level) {
+  if (!level || level < 100) return -1
+  const i = HERO_BANDS.findIndex(b => level <= b.max)
+  return i === -1 ? HERO_BANDS.length - 1 : i
+}
+// Градиенты объявлены один раз на таблицу; щиты ссылаются на них по id.
+function HeroShieldDefs() {
+  return (
+    <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" focusable="false">
+      <defs>
+        {HERO_BANDS.map((b, i) => (
+          <linearGradient key={i} id={`hero-shield-${i}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor={b.from} /><stop offset="1" stopColor={b.to} />
+          </linearGradient>
+        ))}
+        <linearGradient id="hero-shield-none" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#6B7280" /><stop offset="1" stopColor="#374151" />
+        </linearGradient>
+      </defs>
+    </svg>
+  )
+}
+function HeroShield({ level }) {
+  const band = heroBand(level)
+  const fill = band === -1 ? 'url(#hero-shield-none)' : `url(#hero-shield-${band})`
+  return (
+    <svg className="hero-shield" viewBox="0 0 40 46" role="img" aria-label={level ? String(level) : '—'}>
+      <path d="M20 1.5 L37.5 7.5 V23 C37.5 33 29.5 40 20 44.5 C10.5 40 2.5 33 2.5 23 V7.5 Z"
+            fill={fill} stroke="rgba(255,255,255,0.75)" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M20 6 L33.5 10.5 V23 C33.5 31 27 36.8 20 40.4 C13 36.8 6.5 31 6.5 23 V10.5 Z"
+            fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1" />
+      <text x="20" y="27" textAnchor="middle" fontSize={level >= 100 ? 14 : 16} fontWeight="800"
+            fill="#fff" stroke="rgba(0,0,0,0.75)" strokeWidth="2.4" paintOrder="stroke"
+            style={{ fontFamily: 'inherit' }}>{level || '—'}</text>
+    </svg>
+  )
+}
+
 function ProgressCell({ value, target, partial, hint = '', showPct = false, className = 'public-epic-cell', minWidth = 96 }) {
   const pct = target ? Math.round((value / target) * 100) : 100
   return (
@@ -450,17 +495,6 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     })
   }
 
-  // Колонка «Ур. Героя» первой слева, скрываемая (владелец 2026-09-26); выбор помнится в браузере.
-  const [showHero, setShowHero] = useState(() => {
-    try { return localStorage.getItem('chestShowHero') !== '0' } catch { return true }
-  })
-  function toggleHero() {
-    setShowHero(v => {
-      try { localStorage.setItem('chestShowHero', v ? '0' : '1') } catch { /* приватный режим */ }
-      return !v
-    })
-  }
-
   const tableWrapRef = useRef(null)
   const topScrollRef = useRef(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
@@ -530,16 +564,11 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '0 0 6px' }}>
         {editButton}
-        {/* Просто «Герой»: клик прячет/показывает колонку, подсветка = колонка видна (владелец 2026-09-26) */}
-        <button type="button" className="public-avg-toggle public-hero-toggle" onClick={toggleHero}
-          aria-pressed={showHero}
-          style={{ marginRight: 8, ...(showHero ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}) }}>
-          {tt.heroCol}
-        </button>
         <button type="button" className="public-avg-toggle" onClick={toggleAvg}>
           {showAvg ? tt.hideAvg : tt.showAvg}
         </button>
       </div>
+      <HeroShieldDefs />
       <div
         className="public-table-top-scroll"
         ref={topScrollRef}
@@ -549,10 +578,10 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
       </div>
 
       <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncTopScrollFromTable}>
-        <table className={`public-table${showHero ? ' with-hero' : ''}`}>
+        <table className="public-table">
           <thead>
             {showAvg && <tr className="public-avg-row">
-              {showHero && <th></th>}
+              <th></th>
               <th></th>
               <th>{tt.avg}</th>
               {editMode && <th></th>}
@@ -573,10 +602,8 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               ))}
             </tr>}
             <tr className={showAvg ? 'public-head-row' : ''}>
-              {showHero && (
-                <th className="public-sortable" onClick={() => toggleSort('hero')}>{tt.heroCol}{sortMark('hero')}</th>
-              )}
               <th className="public-num-cell">#</th>
+              <th className="public-sortable public-hero-cell" onClick={() => toggleSort('hero')}>{tt.heroCol}{sortMark('hero')}</th>
               <th className="public-sortable public-name-cell" onClick={() => toggleSort('name')}>{tt.player}{sortMark('name')}</th>
               {editMode && <th>{tt.rank}</th>}
               {editMode && <th>{tt.troops}</th>}
@@ -617,8 +644,8 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
             {shownPlayers.map(p => {
               return (
                 <tr key={p.name}>
-                  {showHero && <td style={{ textAlign: 'center' }}>{p.hero_level ?? '—'}</td>}
                   <td className="public-num-cell">{pointsRank[p.name]}</td>
+                  <td className="public-hero-cell"><HeroShield level={p.hero_level} /></td>
                   <td title={p.name} translate="no" className="notranslate public-name-cell">
                     {renderPlayerName(p, pointsPersonal ? { ...targets, points: p.pointsTarget } : targets)}
                   </td>

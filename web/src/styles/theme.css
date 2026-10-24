@@ -574,16 +574,21 @@ a:hover { color: var(--on-surface); }
 .row-danger td { color: #FF6961; }
 .row-quota-light td { color: #F5D76E; }
 
-.public-table th:nth-child(1), .public-table td:nth-child(1) {
-  position: sticky; left: 0; z-index: 2; width: 40px; background: var(--card);
+/* Три закреплённых слева столбца: «#», щит с уровнем Героя, имя. Фон непрозрачный (подсветка наводки —
+   поверх сплошного цвета), иначе данные просвечивают под закрепом (владелец 2026-10-24). */
+.public-table .public-num-cell, .public-table .public-hero-cell, .public-table .public-name-cell {
+  position: sticky; z-index: 2; background-color: var(--card);
 }
-.public-table th:nth-child(2), .public-table td:nth-child(2) {
-  position: sticky; left: 40px; z-index: 2; background: var(--card);
-}
-.public-table tbody tr:nth-child(even) td:nth-child(1),
-.public-table tbody tr:nth-child(even) td:nth-child(2) { background: #0D1326; }
-.public-table tbody tr:hover td:nth-child(1),
-.public-table tbody tr:hover td:nth-child(2) { background: var(--accent-glow); }
+.public-table .public-num-cell  { left: 0;    width: 40px;  min-width: 40px;  text-align: center; }
+.public-table .public-hero-cell { left: 40px; width: 62px;  min-width: 62px;  text-align: center; padding-top: 2px; padding-bottom: 2px; }
+.public-table .public-name-cell { left: 102px; text-align: left; box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.7); }
+.public-table tbody tr:nth-child(even) td.public-num-cell,
+.public-table tbody tr:nth-child(even) td.public-hero-cell,
+.public-table tbody tr:nth-child(even) td.public-name-cell { background-color: #0D1326; }
+.public-table tbody tr:hover td.public-num-cell,
+.public-table tbody tr:hover td.public-hero-cell,
+.public-table tbody tr:hover td.public-name-cell { background-image: linear-gradient(var(--accent-glow), var(--accent-glow)); }
+.hero-shield { width: 38px; height: 44px; display: block; margin: 0 auto; }
 
 /* ── Имя игрока по очкам (редизайн 2026-09-28): ярко, без размытого свечения, плавный блик ── */
 @keyframes public-name-flow { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
@@ -661,8 +666,8 @@ a:hover { color: var(--on-surface); }
 .public-sortable:hover { color: var(--accent); }
 .public-sort-mark { opacity: 0.45; font-size: 0.85em; }
 .public-sort-mark--on { opacity: 1; color: var(--accent); }
-/* Overrides z-index & background for sticky corner cells; left-position comes from earlier .public-table th:nth-child(1/2) rules */
-.public-table thead th:nth-child(1), .public-table thead th:nth-child(2) {
+/* Угловые ячейки шапки выше остальных и тоже непрозрачные */
+.public-table thead th.public-num-cell, .public-table thead th.public-hero-cell, .public-table thead th.public-name-cell {
   z-index: 4; background: var(--card);
 }
 
@@ -721,15 +726,6 @@ a:hover { color: var(--on-surface); }
   .season-fields { grid-template-columns: 1fr; }
   .chest-tab--pill { padding: 9px 16px; font-size: 16px; }
 }
-
-/* Колонка «Ур. Героя» первой: сдвигаем закреплённые «#» и имя вправо (владелец 2026-09-26) */
-.public-table.with-hero th:nth-child(1), .public-table.with-hero td:nth-child(1) { width: 92px; min-width: 92px; white-space: nowrap; }
-.public-table.with-hero th:nth-child(2), .public-table.with-hero td:nth-child(2) { left: 92px; width: 40px; }
-.public-table.with-hero th:nth-child(3), .public-table.with-hero td:nth-child(3) {
-  position: sticky; left: 132px; z-index: 2; background: var(--card);
-}
-.public-table.with-hero tbody tr:nth-child(even) td:nth-child(3) { background: #0D1326; }
-.public-table.with-hero tbody tr:hover td:nth-child(3) { background: var(--accent-glow); }
 
 /* Публичная таблица сундуков — вдвое шире общего контейнера 900px: у таблицы десятки столбцов
    (владелец 2026-09-26). Общий .page-content не трогаем — он для текстовых страниц. */

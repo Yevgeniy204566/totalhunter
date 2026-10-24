@@ -252,68 +252,52 @@
 
   /* ── Публичная таблица клана ────────────────────────────── */
 
-  /* На мобиле колонки # и Имя НЕ прилипают — уходят влево при скролле вправо */
-  .public-table th:nth-child(1),
-  .public-table td:nth-child(1),
-  .public-table th:nth-child(2),
-  .public-table td:nth-child(2) {
-    position: static !important;
-  }
-  /* …но в шапке они держатся сверху, как остальные заголовки (владелец 2026-09-26) */
-  .public-table thead th:nth-child(1),
-  .public-table thead th:nth-child(2) {
-    position: sticky !important; left: auto !important;
-  }
-  /* С колонкой Героя имя третье — на телефоне тоже не прилипает слева, но шапка держится сверху */
-  .public-table.with-hero td:nth-child(3) { position: static !important; }
-  .public-table.with-hero thead th:nth-child(3) { position: sticky !important; left: auto !important; }
   /* Средние на телефоне не показываем совсем — мешают (владелец 2026-09-26) */
   .public-avg-toggle,
   .public-table thead tr.public-avg-row { display: none !important; }
   .public-table thead tr.public-head-row th { top: 0 !important; }
-  .public-avg-toggle.public-hero-toggle { display: inline-block !important; margin-right: 0 !important; }
 
   /* Тень-«намёк о скролле» (::after) убрана (владелец 2026-09-28): внутри прокручиваемой
      обёртки она уезжала вместе с таблицей и тёмной полосой резала столбец посередине.
      Верхняя дублирующая полоса прокрутки на телефоне не нужна — таблицу двигают пальцем. */
   .public-table-top-scroll { display: none !important; }
 
-  /* Колонка имени — ровно 1/3 ширины экрана, длинное имя обрезается «…» (владелец 2026-09-30) */
-  .public-table th.public-name-cell,
-  .public-table td.public-name-cell {
-    box-sizing: border-box !important;
-    width: 33.333vw !important; min-width: 33.333vw !important; max-width: 33.333vw !important;
-    overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
-  }
-  /* …и закреплена слева при прокрутке вправо (владелец 2026-09-30; отменяет прежнее
-     «не прилипает» выше — двойной класс нужен, чтобы перебить nth-child-правила) */
-  .public-table.public-table td.public-name-cell {
-    position: sticky !important; left: 44px !important; z-index: 3 !important;
-    background: var(--card);
-  }
-  .public-table.public-table thead th.public-name-cell {
-    position: sticky !important; left: 44px !important; z-index: 5 !important;
-  }
-  /* Нумерация «#» тоже закреплена (левее имени, фикс. 44px), чтобы при прокрутке вправо
-     номера не пропадали (владелец 2026-09-30) */
+  /* Три закреплённых слева столбца (владелец 2026-10-24): «#» 32px, щит 46px, имя 30% экрана,
+     длинное имя обрезается «…». Непрозрачный фон и тень справа — данные не просвечивают под закрепом. */
   .public-table th.public-num-cell,
   .public-table td.public-num-cell {
     box-sizing: border-box !important;
-    width: 44px !important; min-width: 44px !important; max-width: 44px !important;
-    text-align: center !important;
+    width: 32px !important; min-width: 32px !important; max-width: 32px !important;
+    left: 0 !important; padding-left: 2px !important; padding-right: 2px !important;
   }
-  .public-table.public-table td.public-num-cell {
-    position: sticky !important; left: 0 !important; z-index: 3 !important;
-    background: var(--card);
+  .public-table th.public-hero-cell,
+  .public-table td.public-hero-cell {
+    box-sizing: border-box !important;
+    width: 46px !important; min-width: 46px !important; max-width: 46px !important;
+    left: 32px !important; padding-left: 2px !important; padding-right: 2px !important;
   }
-  .public-table.public-table thead th.public-num-cell {
-    position: sticky !important; left: 0 !important; z-index: 5 !important;
+  .public-table th.public-name-cell,
+  .public-table td.public-name-cell {
+    box-sizing: border-box !important;
+    width: 30vw !important; min-width: 30vw !important; max-width: 30vw !important;
+    left: 78px !important;
+    overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
   }
+  .public-table thead th.public-num-cell,
+  .public-table thead th.public-hero-cell,
+  .public-table thead th.public-name-cell { z-index: 5 !important; }
+  .hero-shield { width: 34px; height: 39px; }
+
+  /* Три главные ячейки (ранее 320px — почти весь экран) */
+  .public-table th.public-main-th,
+  .public-table td.public-bar-cell { min-width: 220px !important; }
 
   /* Меньший шрифт ячеек — больше колонок видно без скролла */
   .public-table th,
-  .public-table td { font-size: 12px !important; padding: 6px 8px !important; }
-  .public-table { --public-name-base: 14.5px; }
+  .public-table td { font-size: 14px !important; padding: 6px 8px !important; }
+  .public-table { --public-name-base: 16px; }
+  /* Зум пальцами не блокируем (владелец 2026-10-24) */
+  .public-table-wrap { touch-action: pan-x pan-y pinch-zoom; }
 
   /* Цели сезона на телефоне: каждая цель — своя плашка на всю ширину, одной строкой
      (владелец 2026-09-28); общая плашка ПК скрыта */
