@@ -478,6 +478,12 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
       // обгонять сильного — клану нужны богатые сундуки. «Успеваемость» (очки / норма) — отдельная сортировка по клику на заголовок.
       .sort((a, b) => b.points - a.points || b.pointsPct - a.pointsPct || a.name.localeCompare(b.name))
   }, [rawPlayers, pointsPersonal, typeMeta, scale])
+  // Цвет, размер и знамя имени идут от АБСОЛЮТНЫХ очков игрока (владелец 2026-10-24): очки ÷ одна общая цель сезона клана.
+  // Раньше при личных нормах делили на норму Героя игрока, и слабый Герой, перекрывший малую норму, выглядел круче сильного
+  // с большим числом очков. Нет общей цели сезона — берём норму стандартного Героя 400 (одна на всех).
+  const nameTargets = useMemo(() => (pointsPersonal
+    ? { ...targets, points: targets?.points || normAt(DEFAULT_HERO, scale) }
+    : targets), [pointsPersonal, targets, scale])
   // Три главных столбца = прежние «Очки», Crypts-квота и EMC в прежнем порядке (владелец 2026-10-21);
   // меняется только вид ячейки. Столбцы типов сундуков идут после них.
   const mainCols = useMemo(() => {
@@ -673,7 +679,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   <td className="public-num-cell">{pointsRank[p.name]}</td>
                   <td className="public-hero-cell"><HeroShield level={p.hero_level} /></td>
                   <td title={p.name} translate="no" className="notranslate public-name-cell">
-                    {renderPlayerName(p, pointsPersonal ? { ...targets, points: p.pointsTarget } : targets)}
+                    {renderPlayerName(p, nameTargets)}
                   </td>
                   {editMode && (
                     <td>
