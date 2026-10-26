@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
 import { BANDS, HANDLE_BANDS, centerOf, applyDrag, seriesOf, bandsFromTargets } from '../lib/curveEdit.js'
-import { weightAt, DEFAULT_SETTINGS } from '../lib/heroQuota.js'
 
 // Кривая очков за сундук по уровням Героя (владелец 2026-10-26): как EQ в цифровом пульте — тянешь ручку, соседние точки
 // плавно идут следом. Правит одну линию за раз; хранение прежнее (поправки ступеней mix.w[тип].bands), график показывает очки.
@@ -8,33 +7,31 @@ import { weightAt, DEFAULT_SETTINGS } from '../lib/heroQuota.js'
 const TXT = {
   ru: {
     title: 'Очки за сундук по уровням Героя',
-    hint: 'Выберите сундук внизу и тяните квадратные ручки вверх и вниз: соседние уровни следуют плавно. «Мягкость» — как далеко достаёт влияние ручки. Пунктир — очки по шкале, закрашено — ваше отличие от неё. Клавиши ↑ ↓ на выбранной ручке — шаг 5 очков.',
+    hint: 'Выберите сундук внизу и тяните квадратные ручки вверх и вниз: соседние уровни следуют плавно. «Мягкость» — как далеко достаёт влияние ручки. Пунктир — очки по шкале (ручка рядом с ним «прилипает» к нему — так линию можно вернуть в исходное), закрашено — ваше отличие от неё. Клавиши ↑ ↓ на выбранной ручке — шаг 5 очков.',
     soft: 'Мягкость', softOnly: 'одна точка', softWide: 'широкая волна',
     reset: 'Сбросить линию к шкале', resetTip: 'Вернуть очки выбранного сундука на всех уровнях к шкале',
     hero: 'Герой', points: 'очков', scale: 'по шкале', muted: 'Тип выключен кнопкой — включите его, чтобы править линию.',
     locked: 'В шкале на этом уровне 0 очков — поднять нельзя.', off: 'Включите «Персонализированный учёт», чтобы править линии.',
-    anchor: 'опора', none: 'В шкале нет типов этого пульта.', pick: 'Выбранный сундук',
+    axisX: 'Уровень Героя', axisY: 'Очки за сундук', resetAll: 'Сбросить все линии', none: 'В шкале нет типов этого пульта.', pick: 'Выбранный сундук',
   },
   en: {
     title: 'Chest points by Hero level',
-    hint: 'Pick a chest below and drag the square handles up and down: neighbouring levels follow smoothly. "Softness" is how far a handle reaches. Dashed — points by the scale, filled — your difference from it. Arrow keys ↑ ↓ on a focused handle step 5 points.',
+    hint: 'Pick a chest below and drag the square handles up and down: neighbouring levels follow smoothly. "Softness" is how far a handle reaches. Dashed — points by the scale (a handle near it snaps onto it, so the line can be returned to the original), filled — your difference from it. Arrow keys ↑ ↓ on a focused handle step 5 points.',
     soft: 'Softness', softOnly: 'single point', softWide: 'wide wave',
     reset: 'Reset line to scale', resetTip: 'Return the selected chest to the scale on all levels',
     hero: 'Hero', points: 'points', scale: 'by scale', muted: 'This type is switched off — turn it on to edit the line.',
     locked: 'The scale gives 0 points at this level — it cannot be raised.', off: 'Turn on "Personalized accounting" to edit the lines.',
-    anchor: 'anchor', none: 'No types of this console are in the scale.', pick: 'Selected chest',
+    axisX: 'Hero level', axisY: 'Points per chest', resetAll: 'Reset all lines', none: 'No types of this console are in the scale.', pick: 'Selected chest',
   },
 }
 
 const COLORS = ['#a78bfa', '#f59e0b', '#38bdf8', '#4ade80', '#f472b6', '#fb923c', '#22d3ee', '#facc15', '#c084fc', '#34d399', '#f87171', '#94a3b8']
-// опорные Герои шкалы: на них стоят реальные данные кланов, между ними кривая интерполирована
-const ANCHORS = [298, 387.5, 450]
 
-const W = 1000, H = 380, ML = 54, MR = 16, MT = 16, MB = 36
+const W = 1000, H = 400, ML = 58, MR = 16, MT = 16, MB = 62
 const xOf = h => ML + (h - 100) / 500 * (W - ML - MR)
 const niceMax = v => Math.max(50, Math.ceil(v * 1.3 / 50) * 50)
 
-export default function CurveEditor({ lang = 'ru', items = [], scale, disabled = false, onBands }) {
+export default function CurveEditor({ lang = 'ru', items = [], scale, disabled = false, onBands, onResetAll, hasLines = false, footer = null, note = '' }) {
   const t = TXT[lang] || TXT.ru
   const [selKey, setSelKey] = useState(null)
   const [softness, setSoftness] = useState(40)
@@ -74,7 +71,7 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
     if (!canEdit || sel.locked.has(band)) return
     e.preventDefault()
     svgRef.current.setPointerCapture(e.pointerId)
-    drag.current = { band, start: [...sel.cur], existing: { ...selBands }, ymax, v0: sel.cur[i] }
+    drag.current = { band, start: [...sel.cont], existing: { ...selBands }, ymax, v0: sel.cont[i], scaleV: sel.ref[i] }
   }
   const onMove = e => {
     const d = drag.current
@@ -82,7 +79,10 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
     const hero = 100 + ((e.clientX - r.left) / r.width * W - ML) / (W - ML - MR) * 500
     setHover(Math.min(BANDS.length - 1, Math.max(0, Math.floor((hero - 100) / 10))))
     if (!d) return
-    commit(d.band, d.start, pointerValue(e) - d.v0, d.existing)
+    // магнит к шкале: когда ручка показывает то же число, что и шкала (очки кратны 5), она встаёт ровно на значение шкалы — так линию можно вернуть в исходное без следа
+    let v = pointerValue(e)
+    if (Math.round(v / 5) === Math.round(d.scaleV / 5) || Math.abs(v - d.scaleV) < 3) v = d.scaleV
+    commit(d.band, d.start, v - d.v0, d.existing)
   }
   const onUp = () => { drag.current = null }
   const onKey = (band, i) => e => {
@@ -91,7 +91,7 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
     const delta = e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0
     if (!delta) return
     e.preventDefault()
-    commit(band, [...sel.cur], delta, { ...selBands })
+    commit(band, [...sel.cont], delta, { ...selBands })
   }
 
   const hi = hover ?? BANDS.indexOf(400)
@@ -115,20 +115,13 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
           </g>
         ))}
         {[100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600].map(h => (
-          <text key={h} x={xOf(h)} y={H - 10} textAnchor="middle" className="curve-axis">{h}</text>
+          <g key={h}>
+            <line x1={xOf(h)} x2={xOf(h)} y1={H - MB} y2={H - MB + 7} className="curve-tick" />
+            <text x={xOf(h)} y={H - MB + 25} textAnchor="middle" className="curve-axis">{h}</text>
+          </g>
         ))}
-        {ANCHORS.map((h, n) => {
-          const v = weightAt(sel.key, h, scale) ?? 0
-          const b0 = weightAt(sel.key, h, DEFAULT_SETTINGS) ?? 0
-          return (
-            <g key={h}>
-              <line x1={xOf(h)} x2={xOf(h)} y1={MT} y2={H - MB} className="curve-anchor" />
-              <text x={xOf(h) + 6} y={MT + 15 + n * 19} className="curve-anchor-text">{t.anchor} {h}: <tspan className="curve-anchor-val">{v}</tspan>{v !== b0 ? ` (${t.scale} ${b0})` : ''}</text>
-              <circle cx={xOf(h)} cy={yOf(v)} r="5.5" className="curve-anchor-dot" />
-            </g>
-          )
-        })}
-
+        <text x={(ML + W - MR) / 2} y={H - 8} textAnchor="middle" className="curve-axis-title">{t.axisX}</text>
+        <text x={ML} y={MT - 3} className="curve-axis-title">{t.axisY}</text>
         <path d={areaOf(sel.cur, sel.base)} fill={sel.color} opacity="0.2" />
         <path d={pathOf(sel.base)} fill="none" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="7 6" opacity="0.7" />
         <path d={pathOf(sel.cur)} fill="none" stroke={sel.color} strokeWidth="4.5" strokeLinejoin="round" opacity={sel.muted ? 0.35 : 1} />
@@ -175,6 +168,13 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
         </label>
         <button type="button" className="chest-pill-btn" title={t.resetTip} disabled={!canEdit || !dirty} onClick={() => onBands(sel.key, {})}>{t.reset}</button>
       </div>
+      {footer && (
+        <div className="curve-footer">
+          {footer}
+          <button type="button" className="chest-pill-btn" disabled={disabled || !hasLines} onClick={onResetAll}>{t.resetAll}</button>
+        </div>
+      )}
+      {note && <p className="pult-flash">{note}</p>}
     </div>
   )
 }

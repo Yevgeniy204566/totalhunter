@@ -53,7 +53,7 @@ test('круг: график → поправки ступеней → очки 
 
 test('поправка около шкалы стирается, чтобы не копить шум', () => {
   const s = seriesOf('Epic Crypt 30', { ...DEFAULT_SETTINGS, mix: {} })
-  const bands = bandsFromTargets(s.cur, s.ref, { 300: 1.5 }, s.cur.map((_, j) => BANDS[j] === 300))
+  const bands = bandsFromTargets(s.cont, s.ref, { 300: 1.5 }, s.cont.map((_, j) => BANDS[j] === 300))
   assert.equal('300' in bands, false)
 })
 
@@ -61,4 +61,40 @@ test('тип без очков в шкале на этих уровнях зак
   const s = seriesOf('Common Crypt 25', { ...DEFAULT_SETTINGS, mix: {} })
   assert.ok(s.locked.has(500))
   assert.ok(!s.locked.has(200))
+})
+
+test('правка в обе стороны: вверх и обратно возвращает шкалу без следа в данных', () => {
+  for (const key of ['Epic Crypt 30', 'Rare Crypt 25', 'Epic Fire Hydra', 'Citadel 30']) {
+    for (const soft of [0, 30, 80]) {
+      for (const [band, delta] of [[300, 40], [450, -15], [100, 60], [600, 25]]) {
+        let mix = { w: { [key]: { on: true, all: 1, bands: {} } } }
+        const step = d => {
+          const sc = { ...DEFAULT_SETTINGS, mix }
+          const s = seriesOf(key, sc)
+          const t = applyDrag(s.cont, band, d, soft, s.locked)
+          const changed = t.map((v, i) => Math.abs(v - s.cont[i]) > 1e-9)
+          mix = { w: { [key]: { on: true, all: 1, bands: bandsFromTargets(t, s.ref, mix.w[key].bands, changed) } } }
+        }
+        step(delta)
+        assert.ok(Object.keys(mix.w[key].bands).length > 0, `${key}/${soft}/${band}: после правки поправок нет`)
+        step(-delta)
+        assert.deepEqual(mix.w[key].bands, {}, `${key}/${soft}/${band}: после возврата остались поправки`)
+        assert.equal(weightAt(key, centerOf(band), { ...DEFAULT_SETTINGS, mix }), weightAt(key, centerOf(band), DEFAULT_SETTINGS))
+      }
+    }
+  }
+})
+
+test('несколько правок подряд и возврат по одной в обратном порядке дают исходное', () => {
+  const key = 'Epic Crypt 35'
+  let mix = { w: { [key]: { on: true, all: 1, bands: {} } } }
+  const step = (band, d, soft) => {
+    const s = seriesOf(key, { ...DEFAULT_SETTINGS, mix })
+    const t = applyDrag(s.cont, band, d, soft, s.locked)
+    mix = { w: { [key]: { on: true, all: 1, bands: bandsFromTargets(t, s.ref, mix.w[key].bands, t.map((v, i) => Math.abs(v - s.cont[i]) > 1e-9)) } } }
+  }
+  const ops = [[200, 30, 40], [350, -20, 40], [500, 25, 60]]
+  ops.forEach(o => step(...o))
+  ;[...ops].reverse().forEach(([b, d, soft]) => step(b, -d, soft))
+  assert.deepEqual(mix.w[key].bands, {})
 })

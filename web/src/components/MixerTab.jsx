@@ -7,7 +7,7 @@ import CurveEditor from './CurveEditor.jsx'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
-  weightKey, weightAt, normAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
+  weightKey, weightAt, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
 } from '../lib/heroQuota.js'
 
 // «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
@@ -27,7 +27,7 @@ const TXT = {
     mastersAt: 'Значения для Героя {h}',
     fineTip: 'Точная подстройка: −/+ 1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
     liveTitle: 'Итог сейчас',
-    resetMaster: 'Сброс', resetMasterTip: 'Вернуть все фейдеры этого пульта в исходное положение (по центру) в выбранном режиме. Вписанные вручную числа и выключенные типы остаются',
+    resetMaster: 'Сброс', resetMasterTip: 'Вернуть все фейдеры этого пульта в исходное положение (по центру) в выбранном режиме. Выключенные типы остаются',
     resetAll: 'Сбросить главные к расчёту', resetAllTip: 'Все три главных фейдера — к расчётному значению. Детальные настройки ниже не трогает',
     mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): множитель и число штук на игрока',
     mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): множитель и число штук на игрока',
@@ -43,7 +43,6 @@ const TXT = {
     countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. Для Rare, Common и Citadel штук в норме нет — впишите число сами, если нужно.',
     save: '💾 Сохранить настройки', saved: 'Применяет настройки этой вкладки к сезону. Игроки видят результат на публичной странице.',
     dirtyOn: '● Есть несохранённые изменения', dirtyOff: '✓ Всё сохранено',
-    summary: 'Герой {h}: норма «Всего» {total} очков = склепы и цитадели {crypts} очков + эпические монстры (EMC) {emcpts} очков ({emc} шт.)',
     editing: 'Правим: {what}',
     scopeAllTitle: 'Вы правите: «Все уровни»',
     scopeAllText: 'Число (очки или количество) вы задаёте для уровня Героя из поля «Пример для Героя» ({h}). Остальные уровни меняются в той же пропорции. Пример: на Герое 400 сундук даёт 135 очков, на Герое 300 — 150. Вы поставили 160 на Герое 400 — на Герое 300 станет 180.',
@@ -76,7 +75,7 @@ const TXT = {
     mastersAt: 'Values for Hero {h}',
     fineTip: 'Fine tuning: −/+ 1% of the current multiplier; hold a button to keep going',
     liveTitle: 'Result now',
-    resetMaster: 'Reset', resetMasterTip: 'Return every fader of this console to the start position (centre) in the chosen mode. Hand-typed numbers and muted types stay',
+    resetMaster: 'Reset', resetMasterTip: 'Return every fader of this console to the start position (centre) in the chosen mode. Muted types stay',
     resetAll: 'Reset masters to calculated', resetAllTip: 'All three master faders back to the calculated value. The detailed settings below are not touched',
     mCrypts: 'Crypts', mCryptsTip: 'Epic crypts norm (all crypt types together): multiplier and pieces per player',
     mEmc: 'EMC', mEmcTip: 'EMC norm (all epic monsters together, including Chimera): multiplier and pieces per player',
@@ -92,7 +91,6 @@ const TXT = {
     countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel have no counts in the norm — type a number yourself if needed.',
     save: '💾 Save settings', saved: 'Applies this tab\'s settings to the season. Players see the result on the public page.',
     dirtyOn: '● Unsaved changes', dirtyOff: '✓ All saved',
-    summary: 'Hero {h}: total norm {total} points = crypts and citadels {crypts} points + epic monsters (EMC) {emcpts} points ({emc} pcs)',
     editing: 'Editing: {what}',
     scopeAllTitle: 'You are editing: All levels',
     scopeAllText: 'You set the number (points or count) for the Hero level from the "Example for Hero" field ({h}). Other levels change in the same proportion. Example: a chest gives 135 points at Hero 400 and 150 at Hero 300. You set 160 at Hero 400 — at Hero 300 it becomes 180.',
@@ -425,11 +423,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   )
 
   const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
-  const emcTotal = computeRow(exHero, emc).emc + emcOthersTotal(emcMeta, exHero, scale, emc)
-  const totalNorm = normAt(exHero, scale)
-  const cryptsNorm = cryptsNormAt(exHero, emc, scale)
-  const summary = t.summary.replace('{h}', exHero).replace('{total}', fmt(totalNorm))
-    .replace('{crypts}', fmt(cryptsNorm)).replace('{emcpts}', fmt(Math.max(0, totalNorm - cryptsNorm))).replace('{emc}', emcTotal)
   // Три главных фейдера (владелец 2026-10-24) — те же три столбца публичной страницы: Склепы, EMC, Очки.
   // Это вид сверху над уже существующими множителями: mix.epic.all (норма эпик-склепов, все типы склепов),
   // emc.global (все эпические монстры, включая Chimera) и personal.norm (итоговая норма очков).
@@ -449,7 +442,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     const keys = list.map(x => x.key)
     const dev = e => !!e && (Math.abs((e.all ?? 1) - 1) > 1e-9 || Object.keys(e.bands || {}).length > 0)
     // фейдеры типов этого пульта — в центр (поправки «все уровни» и ступеней убираются); mute и вписанные числа остаются
-    const cleanKeys = obj => ({ ...(obj || {}), ...Object.fromEntries(keys.filter(k => obj?.[k]).map(k => [k, { ...obj[k], all: 1, bands: {} }])) })
+    const cleanKeys = (obj, clearSet = false) => ({ ...(obj || {}), ...Object.fromEntries(keys.filter(k => obj?.[k]).map(k => [k, { ...obj[k], all: 1, bands: {}, ...(clearSet ? { set: null } : {}) }])) })
     if (mode === 'points') {
       const sumAt = k => {
         const m = { ...mix, g: { ...mixG, [tab]: { ...(mixG[tab] || {}), all: k } } }
@@ -467,25 +460,24 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     if (isC) {
       return { id: tab, title, tip: t.mCryptsTip, accent, disabled,
         k: mixEpic.all ?? 1, onK: k => setPersonal({ mix: { ...mix, epic: { ...mixEpic, all: k } } }),
-        resetOff: !(keys.some(k => dev(mix.c?.[k])) || mix.epic),
-        onReset: () => { const { epic, ...rest } = mix; setPersonal({ mix: { ...rest, c: cleanKeys(mix.c) } }) },
+        resetOff: !(keys.some(k => dev(mix.c?.[k]) || mix.c?.[k]?.set != null) || mix.epic),
+        onReset: () => { const { epic, ...rest } = mix; setPersonal({ mix: { ...rest, c: cleanKeys(mix.c, true) } }) },
         calc: k => epicCountTotal(exHero, { ...scale, mix: { ...mix, epic: { ...mixEpic, all: k } } }),
         base: epicCountTotal(exHero, SCALE_DEFAULTS) }
     }
     return { id: tab, title, tip: t.mEmcTip, accent, disabled,
       k: emc.global ?? 1, onK: k => setEmc({ ...emc, global: k }),
-      resetOff: !(keys.some(k => dev(mix.c?.[k])) || (emc.global ?? 1) !== 1
+      resetOff: !(keys.some(k => dev(mix.c?.[k]) || mix.c?.[k]?.set != null) || (emc.global ?? 1) !== 1
         || MONSTERS.some(([m]) => Math.abs((emc.monsters?.[m] ?? 1) - 1) > 1e-9)
         || Object.values(emc.cells || {}).some(c => Object.keys(c || {}).length > 0)),
       onReset: () => {
-        setPersonal({ mix: { ...mix, c: cleanKeys(mix.c) } })
+        setPersonal({ mix: { ...mix, c: cleanKeys(mix.c, true) } })
         setEmc({ ...emc, global: 1, monsters: { hydra: 1, undead: 1, arachna: 1, shadow: 1 }, cells: {} })
       },
       calc: k => emcAll({ ...emc, global: k }, scale), base: emcAll(EMC_DEFAULTS, SCALE_DEFAULTS) }
   }
   const boards = ['crypts', 'emc'].map(buildBoard)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
-  const summaryNode = summary
 
   return (
     <div className="mixer">
@@ -540,17 +532,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       </div>
       </section>
 
-      <section className="mixer-masters" aria-label={t.presets}>
-        <div className="mixer-masters-tools mixer-masters-tools--plain">
-          <div className="mixer-sets" role="group" aria-label={t.presets}>
-            <b>{t.presets}:</b>
-            {setsControls}
-          </div>
-        </div>
-        {note && <p className="pult-flash">{note}</p>}
-        <div className="mixer-live" role="status" aria-live="polite"><b>{t.liveTitle}:</b> {summaryNode}</div>
-      </section>
-
       <div className="pult-scope" role="note">
         <b>{isAll ? t.scopeAllTitle : t.scopeDivTitle.replace('{what}', `${t.hero} ${editing}`)}</b>
         <p>{isAll ? t.scopeAllText.replace('{h}', exHero) : t.scopeDivText}</p>
@@ -594,7 +575,10 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
               </div>
             </div>
             <CurveEditor lang={lang} items={b.curveItems} scale={scale} disabled={!b.enabled}
-              onBands={(key, bands) => setMixEntry('w', key, { bands })} />
+              onBands={(key, bands) => setMixEntry('w', key, { bands })}
+              onResetAll={() => setPersonal({ mix: { ...mix, w: Object.fromEntries(Object.entries(mix.w || {}).map(([k, e]) => [k, b.curveItems.some(x => x.key === k) ? { ...e, bands: {} } : e])) } })}
+              hasLines={b.curveItems.some(x => Object.keys(mix.w?.[x.key]?.bands || {}).length > 0)}
+              footer={<>{setsControls}</>} note={note} />
           </section>
         )
       })}
@@ -607,7 +591,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <p className="pult-hint">{t.saved}</p>
       </section>
 
-      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal}
+      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal} sets={setsControls} setsNote={note}
         onLoad={loadClanPreset}
         setsTitle={t.presets} setsHint={t.presetHint}
         catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />

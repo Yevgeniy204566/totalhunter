@@ -1,7 +1,7 @@
 // Правка очков за сундук по уровням Героя «кривой» (владелец 2026-10-26): тянешь точку, соседние идут плавно.
 // Хранение прежнее — поправки ступеней Героя mix.w[тип].bands; график показывает и пишет только очки.
 import { weightAt, weightBase, DEFAULT_SETTINGS } from './heroQuota.js'
-import { MULTIPLIER_MIN, MULTIPLIER_MAX } from './emcQuota.js'
+import { MULTIPLIER_MIN, MULTIPLIER_MAX, clampMultiplier } from './emcQuota.js'
 
 export const BANDS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 // ручки — через каждые 50 уровней: 100, 150 … 600
@@ -28,17 +28,20 @@ export function applyDrag(start, handleBand, delta, softness, locked = new Set()
 
 // Ряды для графика: текущие очки, очки по шкале (пунктир), опора для пересчёта и «закрытые» ступени.
 export function seriesOf(key, scale) {
-  const cur = [], base = [], ref = []
+  const cur = [], base = [], ref = [], cont = []
   const locked = new Set()
+  const bands = scale.mix?.w?.[key]?.bands || {}
   BANDS.forEach(band => {
     const h = centerOf(band)
     cur.push(weightAt(key, h, scale) ?? 0)
     base.push(weightAt(key, h, DEFAULT_SETTINGS) ?? 0)
     const r = weightBase(key, h, scale) ?? 0
     ref.push(r)
+    // точные очки без округления до 5: правка стартует от них, поэтому «вверх и обратно» возвращает исходное без следа
+    cont.push(r * clampMultiplier(bands[String(band)]))
     if (!(r > 0)) locked.add(band)
   })
-  return { cur, base, ref, locked }
+  return { cur, base, ref, cont, locked }
 }
 
 // Ступени Героя из желаемых очков: поправка = желаемое / расчётное. Трогаем только ступени, где очки изменились
@@ -48,10 +51,11 @@ export function bandsFromTargets(target, ref, existing = {}, changed = null) {
   BANDS.forEach((band, i) => {
     if (changed && !changed[i]) return
     if (!(ref[i] > 0)) return
-    const k = Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, target[i] / ref[i]))
-    // очки кратны 5: если на странице получится то же, что и по шкале, поправка не нужна
-    if (Math.round(target[i] / 5) === Math.round(ref[i] / 5)) delete out[String(band)]
-    else out[String(band)] = Math.round(k * 10000) / 10000
+    const ratio = target[i] / ref[i]
+    // поправка меньше 0,4% от шкалы неотличима глазом и не нужна; правило симметрично, поэтому «вверх и обратно»
+    // возвращает шкалу без следа (стирание по корзине округления до 5 на границе корзин давало остатки)
+    if (Math.abs(ratio - 1) < 0.004) delete out[String(band)]
+    else out[String(band)] = Math.round(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, ratio)) * 10000) / 10000
   })
   return out
 }
