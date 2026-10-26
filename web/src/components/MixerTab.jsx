@@ -21,7 +21,8 @@ const TXT = {
   ru: {
     points: 'Очки', count: 'Количество',
     allLevels: 'Все уровни', hero: 'Герой',
-    consoleCrypts: 'Склепы и цитадели', consoleEmc: 'Epic Monster Chests',
+    consoleCrypts: 'Склепы и цитадели', consoleEmc: 'EMC — Epic Monster Chests',
+    pickLevels: 'Править уровни Героя',
     normsFor: 'Нормы игрока с Героем {h}:', normCrypts: 'эпик-склепов', normEmc: 'EMC (монстры)', normPoints: 'очков за 2 недели',
     addChest: '+ Добавить сундук', addPick: 'Выберите сундук', addOk: 'Добавить', addCancel: 'Отмена',
     chestAdded: 'Сундук добавлен в учёт. Чтобы сохранить, нажмите «Сохранить настройки».',
@@ -37,9 +38,10 @@ const TXT = {
     reset: 'Двойной щелчок по ползунку — вернуть расчётное значение',
     mute: 'Зелёный — участвует в подсчёте, красный — не участвует (выключен или значение 0). Нажмите, чтобы включить или выключить',
     abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
-    manual: 'В нормах клана штук для этого типа нет. По умолчанию 0 — ручка по центру; двигайте её вверх (до 200) или впишите число вручную; двойной щелчок — сбросить в 0',
+    manual: 'Этого типа нет в шкале, штук по норме нет. По умолчанию 0 — ручка по центру; двигайте её вверх (до 200) или впишите число вручную; двойной щелчок — сбросить в 0',
     calc: 'расчёт',
-    countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. Для Rare, Common и Citadel штук в норме нет — впишите число сами, если нужно.',
+    countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. У Rare, Common и Citadel штук столько же, сколько у эпик-типа, пока у типа на этом уровне Героя есть очки (нет очков — нет и штук); на цель «Epic Crypts» они не влияют.',
+    deadAt: 'нет на Герое {h}', deadTip: 'На выбранном уровне Героя у этого типа 0 в шкале — он не учитывается, поэтому ручка не работает. Выберите другой уровень Героя вверху.', undoTip: 'Вернуть эту колонку к расчёту',
     save: '💾 Сохранить настройки', saved: 'Применяет настройки пультов к сезону. Игроки видят результат на публичной странице.',
     dirtyOn: '● Есть несохранённые изменения', dirtyOff: '✓ Всё сохранено',
     editing: 'Правим: {what}',
@@ -67,7 +69,8 @@ const TXT = {
   en: {
     points: 'Points', count: 'Count',
     allLevels: 'All levels', hero: 'Hero',
-    consoleCrypts: 'Crypts and citadels', consoleEmc: 'Epic Monster Chests',
+    consoleCrypts: 'Crypts and citadels', consoleEmc: 'EMC — Epic Monster Chests',
+    pickLevels: 'Hero levels to edit',
     normsFor: 'Norms of a player with Hero {h}:', normCrypts: 'epic crypts', normEmc: 'EMC (monsters)', normPoints: 'points per 2 weeks',
     addChest: '+ Add chest', addPick: 'Pick a chest', addOk: 'Add', addCancel: 'Cancel',
     chestAdded: "Chest added to the accounting. Press 'Save settings' to keep it.",
@@ -83,9 +86,10 @@ const TXT = {
     reset: 'Double-click a slider to return the calculated value',
     mute: 'Green — counted, red — not counted (off or value 0). Click to turn on or off',
     abs: 'Value: erase and type your own number (0 turns the type off)',
-    manual: 'The clan norms give no count for this type. The default is 0 — the handle sits in the centre; move it up (to 200) or type a number; double-click resets to 0',
+    manual: 'This type is not in the scale, so there is no norm count. The default is 0 — the handle sits in the centre; move it up (to 200) or type a number; double-click resets to 0',
     calc: 'calc.',
-    countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel have no counts in the norm — type a number yourself if needed.',
+    countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel get the same count as an epic type while the type has points at this Hero level (no points — no pieces); they do not affect the "Epic Crypts" target.',
+    deadAt: 'none at Hero {h}', deadTip: 'At the chosen Hero level this type is 0 in the scale — it is not counted, so the handle does nothing. Pick another Hero level above.', undoTip: 'Return this column to the calculated value',
     save: '💾 Save settings', saved: 'Applies the consoles\' settings to the season. Players see the result on the public page.',
     dirtyOn: '● Unsaved changes', dirtyOff: '✓ All saved',
     editing: 'Editing: {what}',
@@ -171,7 +175,7 @@ function FineKnobs({ k, onK, disabled, tt }) {
   )
 }
 
-function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset, resetOff, mk = 1 }) {
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset, resetOff, mk = 1, dead = false, deadText = '' }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
   const [draft, setDraft] = useState(null)
@@ -187,7 +191,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
     if (v !== '.') onAbs(Number(v))
   }
   return (
-    <div className={`mixer-col${master ? ' mixer-col--master' : ''}${lifted ? ' mixer-col--lift' : ''}${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}
+    <div className={`mixer-col${master ? ' mixer-col--master' : ''}${lifted ? ' mixer-col--lift' : ''}${dead ? ' mixer-col--dead' : ''}${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}
          style={accent ? { '--mc': accent } : undefined}>
       <div className="mixer-name" title={tip || title}>{title}</div>
       {onToggle
@@ -202,13 +206,18 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
             onDoubleClick={() => onAbs('')} />
         ) : (
           <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k * mk)}
-            disabled={disabled} onChange={e => onK(posToK(Number(e.target.value)) / mk)}
+            disabled={disabled || dead} onChange={e => onK(posToK(Number(e.target.value)) / mk)}
             onDoubleClick={() => onK(1)} />
         )}
       </div>
       <input className="input-dark mixer-k" type="text" inputMode="decimal" value={draft ?? abs} disabled={disabled}
         title={manual ? tt.manual : `${tt.abs} · ${tt.calc}: ${calc}`} onChange={type} onFocus={e => e.target.select()}
         onBlur={() => setDraft(null)} />
+      {dead && <small className="mixer-dead" title={tt.deadTip}>{deadText}</small>}
+      {/* видимый возврат одной колонки к расчёту (двойной щелчок по ручке — то же, но скрыто) */}
+      {!master && !manual && !dead && Math.abs(k - 1) > 1e-9 && (
+        <button type="button" className="mixer-undo" title={tt.undoTip} aria-label={tt.undoTip} disabled={disabled} onClick={() => onK(1)}>↺</button>
+      )}
       {master && <FineKnobs k={k} onK={onK} disabled={disabled} tt={tt} />}
       {master && onReset && (
         <button type="button" className="mixer-fine-btn mixer-reset-btn" title={tt.resetMasterTip}
@@ -525,7 +534,9 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
             <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
           </div>
         </div>
-        <div className="mixer-levels">
+        <details className="mixer-levels-fold">
+          <summary>{t.pickLevels}: <b>{isAll ? t.allLevels : editing}</b></summary>
+          <div className="mixer-levels">
         <label className="mixer-all">
           <input type="checkbox" checked={isAll} onChange={() => setSel(new Set(['all']))} />
           <b>{t.allLevels}</b>
@@ -551,6 +562,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           })}
         </div>
       </div>
+        </details>
       </section>
         {quotaEditor}
         <div className="mixer-norms" role="status" aria-live="polite">
@@ -615,6 +627,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   const a = absProps(c)
                   return (
                     <Fader key={c.key} tt={t} title={c.title} k={c.k} onK={c.onK} on={c.on} onToggle={c.onToggle}
+                      dead={!c.manual && !(c.calc(MULTIPLIER_MAX) > 0)} deadText={t.deadAt.replace('{h}', exHero)}
                       mk={c.manual ? 1 : b.master.k} accent={!c.manual && Math.abs(b.master.k - 1) > 1e-9 ? b.master.accent : undefined}
                       abs={a.abs} onAbs={a.onAbs} calc={a.calcText} manual={c.manual} disabled={!b.enabled} />
                   )

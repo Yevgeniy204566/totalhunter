@@ -1155,3 +1155,32 @@ a:hover { color: var(--on-surface); }
 @media (max-width: 640px) {
   .public-table .public-name-cell { box-sizing: border-box; max-width: 128px; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; padding-right: 8px; }
 }
+
+/* Проверка пульта 2026-10-26: кнопки не ниже 40px, текст не мельче 15px, неактивное видно, колонка «нет на Герое» серая */
+.norm-panel .chest-pill-btn, .norm-panel .pult-link-btn { font-size: 15px; min-height: 40px; }
+.mixer-fine-btn { min-height: 40px; min-width: 44px; font-size: 15px; }
+.mixer-fine-btn:disabled, .mixer-undo:disabled { opacity: 0.4; cursor: default; }
+.curve-zoom button { width: 40px; height: 40px; }
+.mixer small, .norm-panel small, .quota-hero small { font-size: 15px; }
+.mixer-undo { min-height: 36px; padding: 0 12px; font-size: 20px; line-height: 1; font-family: inherit; color: var(--on-surface); background: var(--elevated); border: 1px solid var(--outline); border-radius: 8px; cursor: pointer; }
+.mixer-undo:hover:not(:disabled) { color: #fff; border-color: #38bdf8; }
+.mixer-col--dead .mixer-rail { opacity: 0.3; }
+.mixer-col--dead .mixer-name { opacity: 0.6; }
+.mixer-dead { font-size: 14px; line-height: 1.2; text-align: center; color: var(--on-surface2); }
+@media (max-width: 640px) { .public-table .public-name-cell { max-width: 112px; } }
+
+/* Телефон: наезд строк при прокрутке вбок (владелец 2026-10-26). Причины: анимированные слои имён (бегущий блик, тень-фильтр)
+   на мобильных браузерах живут отдельно от закреплённой колонки и накладываются на соседние строки — анимированы только имена
+   выше нормы, поэтому «через строку»; и раздельная модель границ у закрепов. Цвета и ленты остаются, движение и фильтры — нет. */
+.public-table { border-collapse: separate; border-spacing: 0; }
+.public-table .public-num-cell, .public-table .public-hero-cell, .public-table .public-name-cell { isolation: isolate; contain: paint; }
+@media (max-width: 900px), (pointer: coarse) {
+  .public-name-shimmer, .public-name-legendary, .public-name-banner, .public-imp-field, .public-imp-field::before { animation: none !important; }
+  .public-name-plain, .public-name-shimmer, .public-name-legendary { filter: none; }
+}
+
+/* Таблица ступеней Героя свёрнута: по умолчанию «Все уровни», раскрывается по нажатию */
+.mixer-levels-fold { margin-top: 6px; }
+.mixer-levels-fold > summary { cursor: pointer; font-size: 17px; color: var(--accent); padding: 8px 0; list-style-position: inside; }
+.mixer-levels-fold > summary b { color: #fff; }
+.mixer-levels-fold[open] > summary { margin-bottom: 4px; }

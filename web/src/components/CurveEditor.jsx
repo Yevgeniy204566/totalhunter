@@ -8,7 +8,7 @@ import { BANDS, HANDLE_BANDS, centerOf, applyDrag, bandsFromTargets } from '../l
 const TXT = {
   ru: {
     titlePoints: 'Очки за сундук по уровням Героя', titleCount: 'Количество сундуков по уровням Героя',
-    hintPoints: 'Выберите сундук внизу и тяните квадратные ручки вверх и вниз: соседние уровни следуют плавно. Полоска Zoom на графике (её можно прокрутить влево и вправо или нажать «−» и «+») — как далеко достаёт влияние ручки: правее — ручка тянет за собой больше соседних уровней, левее — меньше (в самом левом положении двигается только одна ступень). Пунктир — значения по шкале (ручка рядом с ним «прилипает» к нему — так линию можно вернуть в исходное), закрашено — ваше отличие от неё. Клавиши ↑ ↓ на выбранной ручке — шаг 1, с Shift — шаг 5.',
+    hintPoints: 'Выберите сундук внизу и тяните квадратные ручки вверх-вниз — соседние уровни идут следом. Полоска Zoom задаёт, сколько уровней ручка тянет за собой. Пунктир — шкала по умолчанию (рядом с ним ручка «прилипает»), закрашено — ваше отличие.',
     zoom: 'Zoom', zoomIn: 'Ручка тянет за собой больше соседних уровней', zoomOut: 'Ручка тянет за собой меньше соседних уровней (в минимуме — одна ступень)',
     reset: 'Сбросить линию к шкале', resetTip: 'Вернуть выбранную линию на всех уровнях к шкале',
     resetAll: 'Сбросить все линии',
@@ -19,7 +19,7 @@ const TXT = {
   },
   en: {
     titlePoints: 'Chest points by Hero level', titleCount: 'Chest count by Hero level',
-    hintPoints: 'Pick a chest below and drag the square handles up and down: neighbouring levels follow smoothly. The Zoom strip on the chart (slide it left and right or press "−" and "+") sets how far a handle reaches: further right — a handle pulls more neighbouring levels along, further left — fewer (at the far left only one step moves). Dashed — values by the scale (a handle near it snaps onto it, so the line can be returned to the original), filled — your difference from it. Arrow keys ↑ ↓ on a focused handle step 1, with Shift 5.',
+    hintPoints: 'Pick a chest below and drag the square handles up and down — neighbouring levels follow. The Zoom strip sets how many levels a handle pulls along. Dashed — the default scale (a handle snaps onto it), filled — your difference.',
     zoom: 'Zoom', zoomIn: 'A handle pulls more neighbouring levels along', zoomOut: 'A handle pulls fewer neighbouring levels along (at the minimum — one step)',
     reset: 'Reset line to scale', resetTip: 'Return the selected line to the scale on all levels',
     resetAll: 'Reset all lines',
