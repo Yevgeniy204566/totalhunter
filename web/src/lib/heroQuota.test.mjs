@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {
+import { fallbackWeight,
   DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf, typeTab,
 } from './heroQuota.js'
 
@@ -415,4 +415,12 @@ test('главный фейдер группы множит очки всех т
   const e = { mix: { g: { emc: { all: 2 } } } }
   assert.ok(Math.abs(weightAt('Epic Fire Hydra', 300, e) - weightAt('Epic Fire Hydra', 300) * 2) <= 1)
   assert.equal(weightAt('Epic Crypt 35', 300, e), weightAt('Epic Crypt 35', 300))
+})
+
+test('тип вне шкалы: очки клана с главным фейдером группы и mute — одна функция для пульта и счёта', () => {
+  const m = { id: 'Pumpkin', points: 5, slot: 2 }
+  assert.equal(fallbackWeight(m, 400, DEFAULT_SETTINGS), 5)
+  assert.equal(fallbackWeight(m, 400, { mix: { g: { emc: { all: 2 } } } }), 10)
+  assert.equal(fallbackWeight(m, 400, { mix: { w: { Pumpkin: { on: false } } } }), 0)
+  assert.equal(scoreOf({ Pumpkin: 3 }, { Pumpkin: m }, 400, { mix: { g: { emc: { all: 2 } } } }).score, 30)
 })

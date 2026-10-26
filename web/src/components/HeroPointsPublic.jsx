@@ -91,7 +91,7 @@ export default function HeroPointsPublic({ model = {}, emcModel, players = [], m
       </div>
 
       <p className="emc-text">
-        {t.hero} <b>{level}</b>{hero ? '' : ' *'} · {t.norm}: <b>{norm.toLocaleString('ru-RU')}</b> ({t.cryptsPart}: <b>{cryptsNorm.toLocaleString('ru-RU')}</b>) · {t.epicRef}: <b>{epicRefAt(level)}</b>
+        {t.hero} <b>{level}</b>{hero ? '' : ' *'} · {t.norm}: <b>{norm.toLocaleString('ru-RU')}</b> ({t.cryptsPart}: <b>{cryptsNorm.toLocaleString('ru-RU')}</b>) · {t.epicRef}: <b>{epicRefAt(level, model)}</b>
         {mine && <> · {t.yours}: <b>{mine.score.toLocaleString('ru-RU')}</b> ({norm ? Math.round(mine.score / norm * 100) : 0}%)</>}
       </p>
       {mine?.fallback.length > 0 && (

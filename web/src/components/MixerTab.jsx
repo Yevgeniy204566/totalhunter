@@ -8,7 +8,7 @@ import { pointsLines, countLines, writeBands } from '../lib/curveLines.js'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
-  weightKey, weightAt, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
+  weightKey, weightAt, fallbackWeight, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
 } from '../lib/heroQuota.js'
 
 // «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
@@ -19,20 +19,15 @@ import {
 
 const TXT = {
   ru: {
-    tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Очки', count: 'Количество',
     allLevels: 'Все уровни', hero: 'Герой',
     consoleCrypts: 'Склепы и цитадели', consoleEmc: 'Epic Monster Chests',
     gCryptsTip: 'Главный фейдер склепов и цитаделей: двигает очки всех сундуков этого пульта сразу. Число — сумма очков за по одному сундуку каждого типа',
     gEmcTip: 'Главный фейдер EMC: двигает очки всех эпических монстров сразу. Число — сумма очков за по одному монстру каждого типа',
-    mastersAt: 'Значения для Героя {h}',
-    fineTip: 'Точная подстройка: −/+ 1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
-    liveTitle: 'Итог сейчас',
+    fineTip: 'Точная подстройка: −/+ 1% от текущего значения; удерживайте кнопку — значение идёт непрерывно',
     resetMaster: 'Сброс', resetMasterTip: 'Вернуть все фейдеры этого пульта в исходное положение (по центру) в выбранном режиме. Выключенные типы остаются',
-    resetAll: 'Сбросить главные к расчёту', resetAllTip: 'Все три главных фейдера — к расчётному значению. Детальные настройки ниже не трогает',
-    mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): множитель и число штук на игрока',
-    mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): множитель и число штук на игрока',
-    mPoints: 'Очки', mPointsTip: 'Итоговая норма очков за сезон: множитель и число очков на игрока',
+    mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): число штук на игрока',
+    mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): число штук на игрока',
     enable: 'Персонализированный учёт по уровню Героя',
     off: 'Выключено: нормы игроков фиксированные, из настроек сезона. Включите переключатель выше, чтобы настраивать нормы по уровням Героя.',
     sample: 'Пример для Героя',
@@ -42,7 +37,7 @@ const TXT = {
     manual: 'В нормах клана штук для этого типа нет. По умолчанию 0 — ручка по центру; двигайте её вверх (до 200) или впишите число вручную; двойной щелчок — сбросить в 0',
     calc: 'расчёт',
     countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. Для Rare, Common и Citadel штук в норме нет — впишите число сами, если нужно.',
-    save: '💾 Сохранить настройки', saved: 'Применяет настройки этой вкладки к сезону. Игроки видят результат на публичной странице.',
+    save: '💾 Сохранить настройки', saved: 'Применяет настройки пультов к сезону. Игроки видят результат на публичной странице.',
     dirtyOn: '● Есть несохранённые изменения', dirtyOff: '✓ Всё сохранено',
     editing: 'Правим: {what}',
     scopeAllTitle: 'Вы правите: «Все уровни»',
@@ -52,14 +47,14 @@ const TXT = {
     mixed: 'у выбранных уровней значения разные — ползунок задаст одинаковое',
     noTypes: 'В «Учёте» клана пока нет сундуков этой группы — показаны типы шкалы по умолчанию.',
     presets: 'Наборы настроек очков', presetName: 'Название', slot: 'Слот', empty: 'пусто', saveSlot: 'Сохранить набор', load: 'Загрузить набор',
-    presetHint: 'Набор — запись всех настроек этой вкладки: ползунки, числа и ваши правки пресетов T5–T9. Три слота — три ваших варианта. «Сохранить набор» записывает настройки в слот и сразу применяет их к сезону. «Загрузить набор» возвращает записанные настройки на страницу — затем нажмите «Сохранить настройки». Общие пресеты T5–T9 не меняются.',
+    presetHint: 'Набор — запись всех настроек пультов: ползунки, числа и ваши правки пресетов T5–T9. Три слота — три ваших варианта. «Сохранить набор» записывает настройки в слот и сразу применяет их к сезону. «Загрузить набор» возвращает записанные настройки на страницу — затем нажмите «Сохранить настройки». Общие пресеты T5–T9 не меняются.',
     loaded: 'Набор загружен. Чтобы применить его к сезону, нажмите «Сохранить настройки».',
     savedPreset: 'Набор сохранён.',
     help: 'Как работают личные нормы игроков',
     helpText: [
       'Вкладка «Общие нормы клана» — одни нормы на весь клан: названия, очки за сундук, «Учёт». Она питает колонку «Очки» в таблице игроков.',
       'Эта вкладка включается переключателем «Персонализированный учёт по уровню Героя» на квоте Crypts и/или EMC. Тогда нормы игрока зависят от его Героя: чем ниже Герой, тем больше очков за сундук и меньше норма. Шкала построена по данным реальных кланов, уровни Героя 100–600, сезон 14 дней.',
-      'Здесь — сундуки из «Учёта» клана. Вкладка EMC — со статусом «Квота 2», вкладка Crypts — «Квота 1» и «В учёте». Для сундуков вне шкалы за основу берутся очки из «Общих норм клана».',
+      'Здесь — сундуки из «Учёта» клана. Пульт EMC — со статусом «Квота 2», пульт Crypts — «Квота 1» и «В учёте». Для сундуков вне шкалы за основу берутся очки из «Общих норм клана».',
       'У каждого сундука — ползунок и число под ним, это одно и то же. Двигаете ползунок — число меняется; вписываете число — ползунок встаёт сам. Середина — расчётное значение. 0 или зелёная точка выключают сундук.',
       '«Очки» — сколько очков даёт сундук. «Количество» — сколько штук ждут от игрока.',
       'Править можно двумя способами. «Все уровни»: число для «Примера для Героя», остальные уровни меняются пропорционально. Выбранные уровни Героя: число действует только для них.',
@@ -67,20 +62,15 @@ const TXT = {
     ],
   },
   en: {
-    tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Points', count: 'Count',
     allLevels: 'All levels', hero: 'Hero',
     consoleCrypts: 'Crypts and citadels', consoleEmc: 'Epic Monster Chests',
     gCryptsTip: 'Crypts and citadels master fader: moves the points of every chest of this console at once. The number is the sum of points for one chest of each type',
     gEmcTip: 'EMC master fader: moves the points of every epic monster at once. The number is the sum of points for one monster of each type',
-    mastersAt: 'Values for Hero {h}',
     fineTip: 'Fine tuning: −/+ 1% of the current multiplier; hold a button to keep going',
-    liveTitle: 'Result now',
     resetMaster: 'Reset', resetMasterTip: 'Return every fader of this console to the start position (centre) in the chosen mode. Muted types stay',
-    resetAll: 'Reset masters to calculated', resetAllTip: 'All three master faders back to the calculated value. The detailed settings below are not touched',
     mCrypts: 'Crypts', mCryptsTip: 'Epic crypts norm (all crypt types together): multiplier and pieces per player',
     mEmc: 'EMC', mEmcTip: 'EMC norm (all epic monsters together, including Chimera): multiplier and pieces per player',
-    mPoints: 'Points', mPointsTip: 'Total season points norm: multiplier and points per player',
     enable: 'Personalized accounting by Hero level',
     off: 'Off: player norms are fixed from the season settings. Turn the switch above on to set norms by Hero level.',
     sample: 'Example for Hero',
@@ -90,7 +80,7 @@ const TXT = {
     manual: 'The clan norms give no count for this type. The default is 0 — the handle sits in the centre; move it up (to 200) or type a number; double-click resets to 0',
     calc: 'calc.',
     countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel have no counts in the norm — type a number yourself if needed.',
-    save: '💾 Save settings', saved: 'Applies this tab\'s settings to the season. Players see the result on the public page.',
+    save: '💾 Save settings', saved: 'Applies the consoles\' settings to the season. Players see the result on the public page.',
     dirtyOn: '● Unsaved changes', dirtyOff: '✓ All saved',
     editing: 'Editing: {what}',
     scopeAllTitle: 'You are editing: All levels',
@@ -100,14 +90,14 @@ const TXT = {
     mixed: 'selected levels have different values — the slider will set them equal',
     noTypes: "The clan's accounting has no chests of this group yet — showing the default scale types.",
     presets: 'Point settings sets', presetName: 'Name', slot: 'Slot', empty: 'empty', saveSlot: 'Save set', load: 'Load set',
-    presetHint: "A set is a record of all settings on this tab: sliders, numbers and your edits of the T5–T9 presets. Three slots hold three variants of yours. 'Save set' writes the settings to the slot and applies them to the season right away. 'Load set' brings the recorded settings back to the page — then press 'Save settings'. The shared T5–T9 presets never change.",
+    presetHint: "A set is a record of all settings of the consoles: sliders, numbers and your edits of the T5–T9 presets. Three slots hold three variants of yours. 'Save set' writes the settings to the slot and applies them to the season right away. 'Load set' brings the recorded settings back to the page — then press 'Save settings'. The shared T5–T9 presets never change.",
     loaded: "Set loaded. To apply it to the season, press 'Save settings'.",
     savedPreset: 'Preset saved.',
     help: 'How personal player norms work',
     helpText: [
       "The 'Clan-wide norms' tab holds one set of norms for the whole clan: names, points per chest, accounting. It feeds the 'Points' column of the player table.",
       "This tab is turned on by the 'Personalized accounting by Hero level' switch on the Crypts and/or EMC quota. A player's norms then depend on their Hero: the lower the Hero, the more points per chest and the smaller the norm. The scale is built from real clan data, Hero levels 100–600, a season is 14 days.",
-      "This tab shows the chests from the clan's accounting. The EMC tab holds 'Quota 2' chests, the Crypts tab holds 'Quota 1' and 'Counted'. For chests outside the scale the base is the points from 'Clan-wide norms'.",
+      "This tab shows the chests from the clan's accounting. The EMC console holds 'Quota 2' chests, the Crypts console holds 'Quota 1' and 'Counted'. For chests outside the scale the base is the points from 'Clan-wide norms'.",
       "Every chest has a slider and a number below it — they are the same thing. Move the slider and the number changes; type a number and the slider follows. The middle is the calculated value. 0 or the green dot turns the chest off.",
       "'Points' is how many points a chest gives. 'Count' is how many pieces are expected from a player.",
       "There are two ways to edit. 'All levels': a number for the chosen 'Example for Hero', other levels change proportionally. Chosen Hero levels: the number applies only to them.",
@@ -289,8 +279,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       const m = { ...mix, w: { ...(mix.w || {}), [x.key]: entry } }
       const scaled = weightAt(x.key, exHero, { ...scale, mix: m })
       if (scaled != null) return scaled
-      // тип вне шкалы: базой служат очки клана из «Сундуков»
-      return Math.round(clan * clampMultiplier(entry.all) * clampMultiplier(entry.bands?.[bands[0]]))
+      // тип вне шкалы: базой служат очки клана из «Сундуков» — считает та же функция, что и публичный счёт
+      return fallbackWeight({ id: x.key, slot: x.slot, points: clan }, exHero, { ...scale, mix: m })
     }
     return { key: x.key, title: titleOf(x), e, path: 'w', calc,
       base: weightAt(x.key, exHero, SCALE_DEFAULTS) ?? clan }
@@ -360,7 +350,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
   const absProps = c => {
     if (c.manual) {
-      return { abs: c.manualValue ?? '', calcText: c.base, onAbs: v => c.onSet(v === '' ? null : Math.max(0, Number(v) || 0)) }
+      return { abs: c.manualValue ?? '', calcText: c.base, onAbs: v => c.onSet(v === '' ? null : Math.min(9999, Math.round(Math.max(0, Number(v) || 0)))) }
     }
     return {
       abs: c.calc(c.k),
@@ -454,7 +444,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       const setG = patch => setPersonal({ mix: { ...mix, g: { ...mixG, [tab]: { ...(mixG[tab] || {}), ...patch } } } })
       return { id: tab, title, tip: isC ? t.gCryptsTip : t.gEmcTip, accent, disabled,
         k: mixG[tab]?.all ?? 1, onK: k => setG({ all: k }),
-        resetOff: !(keys.some(k => dev(mix.w?.[k])) || mixG[tab]),
+        resetOff: !(keys.some(k => dev(mix.w?.[k])) || Math.abs((mixG[tab]?.all ?? 1) - 1) > 1e-9),
         onReset: () => { const { [tab]: _drop, ...rest } = mixG; setPersonal({ mix: { ...mix, w: cleanKeys(mix.w), g: rest } }) },
         // число под фейдером — сумма очков за по одному сундуку каждого включённого типа пульта для Героя «Примера»
         calc: sumAt, base: sumAt(1) }
@@ -462,7 +452,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     if (isC) {
       return { id: tab, title, tip: t.mCryptsTip, accent, disabled,
         k: mixEpic.all ?? 1, onK: k => setPersonal({ mix: { ...mix, epic: { ...mixEpic, all: k } } }),
-        resetOff: !(keys.some(k => dev(mix.c?.[k]) || mix.c?.[k]?.set != null) || mix.epic),
+        resetOff: !(keys.some(k => dev(mix.c?.[k]) || mix.c?.[k]?.set != null) || dev(mix.epic)),
         onReset: () => { const { epic, ...rest } = mix; setPersonal({ mix: { ...rest, c: cleanKeys(mix.c, true) } }) },
         calc: k => epicCountTotal(exHero, { ...scale, mix: { ...mix, epic: { ...mixEpic, all: k } } }),
         base: epicCountTotal(exHero, SCALE_DEFAULTS) }

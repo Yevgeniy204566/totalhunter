@@ -54,3 +54,11 @@ test('очки: линия на каждый тип шкалы, значения
   assert.ok(lines.length >= 5)
   assert.ok(lines.every(l => l.cur.every(Number.isInteger)))
 })
+
+test('writeBands: пустые поправки не создают записей и не оставляют пустых', () => {
+  const st = { mix: {}, emc: { cells: {} } }
+  assert.equal(writeBands(st, { path: 'c', key: 'Epic Crypt 30' }, {}).mix, st.mix)
+  assert.equal(writeBands(st, { path: 'cell', key: 'hydra' }, {}).emc, st.emc)
+  const withCell = writeBands(st, { path: 'cell', key: 'hydra' }, { 400: 2 })
+  assert.deepEqual(writeBands(withCell, { path: 'cell', key: 'hydra' }, {}).emc.cells, {})
+})

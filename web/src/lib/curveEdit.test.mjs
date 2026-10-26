@@ -98,3 +98,36 @@ test('несколько правок подряд и возврат по одн
   ;[...ops].reverse().forEach(([b, d, soft]) => step(b, -d, soft))
   assert.deepEqual(mix.w[key].bands, {})
 })
+
+// Мелкие жесты: следы после возврата и шаг при больших значениях (отчёт проверки пульта 2026-10-26)
+function gesture(key, all, ops) {
+  let mix = { w: { [key]: { on: true, all, bands: {} } } }
+  const scale = () => ({ ...DEFAULT_SETTINGS, mix })
+  for (const [band, d, soft, snap] of ops) {
+    const s = seriesOf(key, scale())
+    const i = BANDS.indexOf(band)
+    const delta = snap ? s.ref[i] - s.cont[i] : d
+    const t = applyDrag(s.cont, band, delta, soft, s.locked)
+    mix = { w: { [key]: { on: true, all, bands: bandsFromTargets(t, s.ref, mix.w[key].bands, t.map((v, j) => Math.abs(v - s.cont[j]) > 1e-9)) } } }
+  }
+  return { bands: mix.w[key].bands, at: h => weightAt(key, h, scale()) }
+}
+
+test('+1 и возврат магнитом, стрелки ↑×3 и ↓×3 не оставляют следов', () => {
+  for (const key of ['Epic Crypt 30', 'Epic Crypt 35', 'Rare Crypt 25']) for (const soft of [0, 40, 100]) {
+    assert.deepEqual(gesture(key, 1, [[250, 1, soft], [250, 0, soft, true]]).bands, {}, `${key}/${soft} магнит`)
+    assert.deepEqual(gesture(key, 1, [[250, 1, soft], [250, 1, soft], [250, 1, soft], [250, -1, soft], [250, -1, soft], [250, -1, soft]]).bands, {}, `${key}/${soft} стрелки`)
+  }
+})
+
+test('шаг 1 двигает ступень и при больших значениях', () => {
+  const g = gesture('Epic Crypt 35', 3, [[300, 1, 40]])
+  const base = gesture('Epic Crypt 35', 3, [])
+  assert.equal(g.at(305), base.at(305) + 1)
+})
+
+test('если на странице ничего не отличается от шкалы, в данных пусто', () => {
+  const s = seriesOf('Epic Crypt 30', { ...DEFAULT_SETTINGS, mix: {} })
+  const tiny = s.cont.map(v => v + 0.3)
+  assert.deepEqual(bandsFromTargets(tiny, s.ref, { 200: 1.001, 300: 0.999 }), {})
+})

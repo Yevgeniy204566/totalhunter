@@ -60,10 +60,14 @@ export function bandsFromTargets(target, ref, existing = {}, changed = null) {
     if (changed && !changed[i]) return
     if (!(ref[i] > 0)) return
     const ratio = target[i] / ref[i]
-    // поправка меньше 0,4% от шкалы неотличима глазом и не нужна; правило симметрично, поэтому «вверх и обратно»
-    // возвращает шкалу без следа (стирание по корзине округления на границе корзин давало остатки)
-    if (Math.abs(ratio - 1) < 0.004) delete out[String(band)]
-    else out[String(band)] = Math.round(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, ratio)) * 10000) / 10000
+    // отличие меньше полуочка (штуки) на странице не видно и не нужно; порог абсолютный и симметричный, поэтому «вверх и обратно»
+    // возвращает шкалу без следа и при больших значениях шаг 1 всё равно двигает ступень. Шесть знаков — чтобы округление
+    // хранимой поправки не сдвигало порог при возврате
+    if (Math.abs(target[i] - ref[i]) < 0.5) delete out[String(band)]
+    else out[String(band)] = Math.round(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, ratio)) * 1e6) / 1e6
   })
-  return out
+  // если ни на одной ступени значение на странице не отличается от шкалы — в данных не должно оставаться ничего
+  const visible = BANDS.some((band, i) => ref[i] > 0 && out[String(band)] != null
+    && Math.round(ref[i] * clampMultiplier(out[String(band)])) !== Math.round(ref[i]))
+  return visible ? out : {}
 }

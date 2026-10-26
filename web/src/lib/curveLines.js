@@ -53,7 +53,17 @@ export function countLines(tab, list, scale, emc) {
 
 // Записывает поправки ступеней линии в данные пульта (mix / emc) и возвращает новые копии.
 export function writeBands({ mix, emc }, target, bands) {
-  if (target.path === 'cell') return { mix, emc: { ...emc, cells: { ...(emc.cells || {}), [target.key]: bands } } }
+  const empty = Object.keys(bands || {}).length === 0
+  if (target.path === 'cell') {
+    const cells = { ...(emc.cells || {}) }
+    if (empty) {
+      if (!(target.key in cells)) return { mix, emc }
+      delete cells[target.key]
+    } else cells[target.key] = bands
+    return { mix, emc: { ...emc, cells } }
+  }
   const grp = target.path
-  return { mix: { ...mix, [grp]: { ...(mix[grp] || {}), [target.key]: { ...(mix[grp]?.[target.key] || {}), bands } } }, emc }
+  const entry = mix[grp]?.[target.key]
+  if (empty && !entry) return { mix, emc }
+  return { mix: { ...mix, [grp]: { ...(mix[grp] || {}), [target.key]: { ...(entry || {}), bands } } }, emc }
 }

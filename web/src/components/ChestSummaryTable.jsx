@@ -242,7 +242,7 @@ export function quotaColumns(targets, epicLabel, typeMeta = null) {
     // шкала очков — lib/heroQuota.js. У архива без chest_type_meta веса неизвестны: Crypts — как
     // обычная квота (по штукам), «Всего» не показываем.
     const pers = targets.personal || {}
-    const scale = { norm: pers.norm, weights: pers.weights, ranges: pers.ranges }
+    const scale = { norm: pers.norm, weights: pers.weights, ranges: pers.ranges, mix: pers.mix }
     const cols = targets.quotas.map(q => {
       // Crypts при персонализации — эпик-склепы суммой (обязательная норма клана): цель по Герою из шкалы,
       // фейдеры пульта её меняют (владелец 2026-10-21). Очки сезона остаются отдельным столбцом «Очки».

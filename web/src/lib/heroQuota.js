@@ -189,6 +189,12 @@ export function weightTable(hero, settings = DEFAULT_SETTINGS) {
 
 export const DEFAULT_HERO = 400
 
+// Очки типа вне шкалы: очки клана из «Учёта» с фейдером пульта, главным фейдером группы и mute — одна функция для пульта и счёта.
+export function fallbackWeight(m, hero, settings = DEFAULT_SETTINGS) {
+  const f = mixFactor(settings.mix?.w?.[m.id], hero) * groupK(typeTab(m.id, m.slot), settings)
+  return Math.round((m?.points || 0) * f)
+}
+
 // Счёт игрока: Σ штук × вес типа при его Герое. Тип вне шкалы — очки клана из «Учёта»
 // (запасной вариант, перечислен в fallback). Нет Героя — считаем по 400 и ставим partial.
 export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS, slot = null) {
@@ -202,9 +208,8 @@ export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS, slot = 
     if (slot != null && m?.slot !== slot) continue
     const scaled = m ? weightAt(m.id, h, settings) : null
     if (scaled == null) {
-      // тип вне шкалы: очки клана из «Учёта»; фейдер пульта (mix.w) множит их, mute обнуляет
-      const f = m ? mixFactor(settings.mix?.w?.[m.id], h) * groupK(typeTab(m.id, m.slot), settings) : 1
-      score += n * Math.round((m?.points || 0) * f)
+      // тип вне шкалы: очки клана из «Учёта»; фейдер пульта (mix.w) и главный фейдер группы двигают их, mute обнуляет
+      score += n * (m ? fallbackWeight(m, h, settings) : 0)
       fallback.push(name)
     } else {
       score += n * scaled
