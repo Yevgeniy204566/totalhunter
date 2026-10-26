@@ -108,7 +108,7 @@ function allChestTypes(rows, catalogOptions) {
 // Подпись настроек пульта (персонализация + рычаги EMC + названия/цели квот) для индикатора «не сохранено»
 const mixerSig = s => JSON.stringify([s?.personal, (s?.quotas || []).map(q => [q.slot, q.name, String(q.target ?? ''), q.emc])])
 
-function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) {
+export function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) {
   const set = (slot, field, value) => onChange(quotas.map(q => (q.slot === slot ? { ...q, [field]: value } : q)))
   const flag = { 1: 'crypts', 2: 'emc' }
   return (
@@ -752,7 +752,7 @@ export default function ChestsPage() {
           <div className="mode-switch" role="tablist">
             {[['chests', cx.modeClanTitle, cx.modeClanSub], ['mixer', cx.modePersonalTitle, cx.modePersonalSub]].map(([id, title, sub]) => (
               <button key={id} type="button" role="tab" aria-selected={activeTab(collector.slug) === id}
-                className={`mode-btn ${activeTab(collector.slug) === id ? 'mode-btn--active' : ''}`}
+                className={`mode-btn mode-btn--${id === 'chests' ? 'general' : 'personal'} ${activeTab(collector.slug) === id ? 'mode-btn--active' : ''}`}
                 onClick={() => setTab(collector.slug, id)}>
                 <span className="mode-btn-title">{title}</span>
                 <span className="mode-btn-sub">{sub}</span>
@@ -767,7 +767,8 @@ export default function ChestsPage() {
           </div>
 
           {activeTab(collector.slug) === 'chests' && (
-            <>
+            <div className="norm-panel norm-panel--general">
+              <div className="norm-panel-head"><b>{cx.modeClanTitle}</b><span>{cx.modeClanInfo}</span></div>
               {/* Presets + Save + Итого in one row */}
               <div style={{ marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 {presets && Object.keys(presets).length > 0 && (
@@ -901,7 +902,7 @@ export default function ChestsPage() {
               <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => save(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
                 {cx.save}
               </button>
-            </>
+            </div>
           )}
 
           {activeTab(collector.slug) === 'players' && (() => {
@@ -1078,6 +1079,8 @@ export default function ChestsPage() {
           })()}
 
           {activeTab(collector.slug) === 'mixer' && (
+            <div className="norm-panel norm-panel--personal">
+            <div className="norm-panel-head"><b>{cx.modePersonalTitle}</b><span>{cx.modePersonalInfo}</span></div>
             <MixerTab lang={lang}
               personal={seasonByCollector[collector.slug]?.personal || DEFAULT_PERSONAL}
               onPersonal={p => updateSeasonField(collector.slug, 'personal', p)}
@@ -1098,6 +1101,7 @@ export default function ChestsPage() {
                 />
               )}
               onSave={p => savePult(collector.slug, p)} />
+            </div>
           )}
 
           {activeTab(collector.slug) === 'history' && (

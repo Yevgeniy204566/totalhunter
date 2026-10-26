@@ -8,7 +8,7 @@ import { pointsLines, countLines, writeBands } from '../lib/curveLines.js'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
-  weightKey, weightAt, fallbackWeight, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
+  weightKey, weightAt, fallbackWeight, normAt, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
 } from '../lib/heroQuota.js'
 
 // «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
@@ -22,6 +22,7 @@ const TXT = {
     points: 'Очки', count: 'Количество',
     allLevels: 'Все уровни', hero: 'Герой',
     consoleCrypts: 'Склепы и цитадели', consoleEmc: 'Epic Monster Chests',
+    normsFor: 'Нормы игрока с Героем {h}:', normCrypts: 'эпик-склепов', normEmc: 'EMC (монстры)', normPoints: 'очков за 2 недели',
     addChest: '+ Добавить сундук', addPick: 'Выберите сундук', addOk: 'Добавить', addCancel: 'Отмена',
     chestAdded: 'Сундук добавлен в учёт. Чтобы сохранить, нажмите «Сохранить настройки».',
     gCryptsTip: 'Главный фейдер склепов и цитаделей: двигает очки всех сундуков этого пульта сразу. Число — сумма очков за по одному сундуку каждого типа',
@@ -67,6 +68,7 @@ const TXT = {
     points: 'Points', count: 'Count',
     allLevels: 'All levels', hero: 'Hero',
     consoleCrypts: 'Crypts and citadels', consoleEmc: 'Epic Monster Chests',
+    normsFor: 'Norms of a player with Hero {h}:', normCrypts: 'epic crypts', normEmc: 'EMC (monsters)', normPoints: 'points per 2 weeks',
     addChest: '+ Add chest', addPick: 'Pick a chest', addOk: 'Add', addCancel: 'Cancel',
     chestAdded: "Chest added to the accounting. Press 'Save settings' to keep it.",
     gCryptsTip: 'Crypts and citadels master fader: moves the points of every chest of this console at once. The number is the sum of points for one chest of each type',
@@ -505,15 +507,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         {t.helpText.map((line, i) => <p key={i} className="emc-text mixer-help-text">{line}</p>)}
       </details>
 
-      {quotaEditor && <section className="mixer-quotas">{quotaEditor}</section>}
-
-      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal} sets={setsControls} setsNote={note}
-        onLoad={loadClanPreset}
-        setsTitle={t.presets} setsHint={t.presetHint}
-        catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
-
-
-      {/* Герой — первым делом: выбрали Героя/ступени и сразу двигаем главные фейдеры ниже (владелец 2026-10-24) */}
+      <section className="mixer-quotas">
       <section className="mixer-hero-card">
         <div className="mixer-hero-row">
           <span className="pult-hero-label">{t.hero}</span>
@@ -558,6 +552,22 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         </div>
       </div>
       </section>
+        {quotaEditor}
+        <div className="mixer-norms" role="status" aria-live="polite">
+          <span className="mixer-norms-cap">{t.normsFor.replace('{h}', exHero)}</span>
+          <span className="mixer-norm mixer-norm--crypts"><b>{epicCountTotal(exHero, scale)}</b> {t.normCrypts}</span>
+          <span className="mixer-norm mixer-norm--emc"><b>{emcAll(emc, scale)}</b> {t.normEmc}</span>
+          <span className="mixer-norm mixer-norm--points"><b>{fmt(normAt(exHero, scale))}</b> {t.normPoints}</span>
+        </div>
+      </section>
+
+      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal} sets={setsControls} setsNote={note}
+        onLoad={loadClanPreset}
+        setsTitle={t.presets} setsHint={t.presetHint}
+        catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
+
+
+      {/* Герой — первым делом: выбрали Героя/ступени и сразу двигаем главные фейдеры ниже (владелец 2026-10-24) */}
 
       <div className="pult-scope" role="note">
         <b>{isAll ? t.scopeAllTitle : t.scopeDivTitle.replace('{what}', `${t.hero} ${editing}`)}</b>
