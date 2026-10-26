@@ -47,13 +47,29 @@ function initialLang() {
   return (navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en'
 }
 
-function formatRemaining(periodEndIso, offsetMinutes, t) {
+function remainingMillis(periodEndIso, offsetMinutes) {
   const [datePart, timePart] = periodEndIso.split('T')
   const [y, mo, d] = datePart.split('-').map(Number)
   const [h, mi, s] = (timePart || '00:00:00').split(':').map(Number)
   const periodEndMillis = Date.UTC(y, mo - 1, d, h, mi, s || 0)
   const clanNowMillis = Date.now() + offsetMinutes * 60000
-  const remaining = periodEndMillis - clanNowMillis
+  return periodEndMillis - clanNowMillis
+}
+
+// Цвет таймера (владелец 2026-10-26): пока до конца сезона больше 3 дней — обычный синий; за 3 дня плавно (в RGB, через
+// фиолетовый) переходит к красному, к концу сезона становится красным
+const WARN_MS = 3 * 24 * 3600 * 1000
+const TIMER_BLUE = [61, 127, 255]
+const TIMER_RED = [239, 68, 68]
+function timerColor(remaining) {
+  if (remaining >= WARN_MS) return null
+  const k = Math.min(1, Math.max(0, 1 - remaining / WARN_MS)) // 0 — осталось 3 дня, 1 — время вышло
+  const c = TIMER_BLUE.map((v, i) => Math.round(v + (TIMER_RED[i] - v) * k))
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`
+}
+
+function formatRemaining(periodEndIso, offsetMinutes, t) {
+  const remaining = remainingMillis(periodEndIso, offsetMinutes)
   if (remaining <= 0) return t.ended
   const totalMinutes = Math.floor(remaining / 60000)
   const days = Math.floor(totalMinutes / (24 * 60))
@@ -64,16 +80,19 @@ function formatRemaining(periodEndIso, offsetMinutes, t) {
 
 function CountdownTimer({ periodEnd, offsetMinutes, t }) {
   const [label, setLabel] = useState(() => formatRemaining(periodEnd, offsetMinutes, t))
+  const [color, setColor] = useState(() => timerColor(remainingMillis(periodEnd, offsetMinutes)))
 
   useEffect(() => {
-    setLabel(formatRemaining(periodEnd, offsetMinutes, t))
-    const id = setInterval(() => {
+    const tick = () => {
       setLabel(formatRemaining(periodEnd, offsetMinutes, t))
-    }, 60000)
+      setColor(timerColor(remainingMillis(periodEnd, offsetMinutes)))
+    }
+    tick()
+    const id = setInterval(tick, 60000)
     return () => clearInterval(id)
   }, [periodEnd, offsetMinutes, t])
 
-  return <span className="public-season-badge public-season-timer">{label}</span>
+  return <span className="public-season-badge public-season-timer" style={color ? { color, borderColor: color } : undefined}>{label}</span>
 }
 
 function formatOffsetLabel(offsetMinutes) {
