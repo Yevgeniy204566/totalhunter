@@ -806,14 +806,24 @@ a:hover { color: var(--on-surface); }
 .mixer-console-title { margin: 0; font-size: 20px; color: #fff; }
 .mixer-col { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 84px; flex: 0 0 84px; }
 .mixer-name { font-size: 14px; line-height: 1.2; height: 70px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; align-items: flex-end; text-align: center; color: var(--on-surface); word-break: break-word; }
-.mixer-dot, .mixer-dot-gap { width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto; }
-.mixer-dot { border: 2px solid #2f8f4f; background: #3fbf6a; cursor: pointer; padding: 0; }
-.mixer-dot--off { background: transparent; border-color: var(--outline); }
+.mixer-dot, .mixer-dot-gap { width: 30px; height: 16px; border-radius: 3px; flex: 0 0 auto; }
+/* кнопка включения как на аналоговом пульте: прямоугольная клавиша со светодиодом */
+.mixer-dot { border: 1px solid #1f6b3a; background: linear-gradient(#58d98a, #2f9f5a); box-shadow: 0 0 8px rgba(63,191,106,0.55), inset 0 1px 0 rgba(255,255,255,0.35); cursor: pointer; padding: 0; }
+.mixer-dot--off { background: linear-gradient(#2a303b, #1a1f28); border-color: var(--outline); box-shadow: inset 0 1px 3px rgba(0,0,0,0.7); }
 .mixer-col--muted .mixer-rail, .mixer-col--muted .mixer-k, .mixer-col--muted .mixer-sub { opacity: 0.4; }
 .mixer-rail { position: relative; width: 44px; height: 220px; flex: 0 0 auto;
   background: linear-gradient(to bottom, transparent calc(50% - 1px), var(--outline) calc(50% - 1px), var(--outline) calc(50% + 1px), transparent calc(50% + 1px)); }
 .mixer-range { position: absolute; left: 50%; top: 50%; width: 220px; height: 30px; margin: 0;
-  transform: translate(-50%, -50%) rotate(-90deg); cursor: pointer; accent-color: #38bdf8; }
+  transform: translate(-50%, -50%) rotate(-90deg); cursor: pointer; accent-color: #38bdf8; -webkit-appearance: none; appearance: none; background: transparent; }
+/* ручка фейдера: металлическая крышка с риской поперёк хода (ползунок повёрнут на -90°, риска получается горизонтальной) */
+.mixer-range::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: linear-gradient(#05070b, #1a212c); box-shadow: inset 0 1px 3px #000, 0 0 0 1px var(--outline); }
+.mixer-range::-moz-range-track { height: 8px; border-radius: 4px; background: linear-gradient(#05070b, #1a212c); box-shadow: inset 0 1px 3px #000, 0 0 0 1px var(--outline); }
+.mixer-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 38px; margin-top: -15px; border: 1px solid #0b0f17; border-radius: 4px;
+  background: linear-gradient(90deg, #e3e8ee 0, #98a3b2 44%, var(--mc, #0b0f17) 44%, var(--mc, #0b0f17) 56%, #98a3b2 56%, #e3e8ee 100%); box-shadow: 0 3px 6px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.35); }
+.mixer-range::-moz-range-thumb { width: 18px; height: 36px; border: 1px solid #0b0f17; border-radius: 4px;
+  background: linear-gradient(90deg, #e3e8ee 0, #98a3b2 44%, var(--mc, #0b0f17) 44%, var(--mc, #0b0f17) 56%, #98a3b2 56%, #e3e8ee 100%); box-shadow: 0 3px 6px rgba(0,0,0,0.7); }
+.mixer-range:focus-visible::-webkit-slider-thumb { outline: 2px solid #38bdf8; outline-offset: 2px; }
+.mixer-masters-tools--plain { margin-top: 0; padding-top: 0; border-top: 0; }
 .mixer-k { width: 72px; font-size: 15px; text-align: center; padding: 4px 2px; }
 .mixer-sub { font-size: 13px; color: var(--on-surface2); text-align: center; line-height: 1.25; }
 .mixer-col--disabled { pointer-events: none; }

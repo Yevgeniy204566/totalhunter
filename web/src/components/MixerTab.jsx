@@ -20,12 +20,9 @@ const TXT = {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Очки', count: 'Количество',
     allLevels: 'Все уровни', hero: 'Герой',
-    mastersTitle: 'Общая норма очков',
-    mastersHint: 'Итоговая норма очков за сезон — один из трёх столбцов публичной страницы. Склепы и EMC управляются главными фейдерами справа от своих пультов ниже.',
     consoleCrypts: 'Склепы и цитадели', consoleEmc: 'EMC — эпические монстры',
-    gCryptsTip: 'Главный фейдер склепов и цитаделей: множитель очков сразу всех сундуков этого пульта',
-    gEmcTip: 'Главный фейдер EMC: множитель очков сразу всех эпических монстров этого пульта',
-    resetTypes: 'Сбросить все типы к шкале', resetTypesTip: 'Убирает множители у всех сундуков и ступеней Героя (в ×1). Вписанные вручную числа и выключенные типы остаются',
+    gCryptsTip: 'Главный фейдер склепов и цитаделей: двигает очки всех сундуков этого пульта сразу. Число — сумма очков за по одному сундуку каждого типа',
+    gEmcTip: 'Главный фейдер EMC: двигает очки всех эпических монстров сразу. Число — сумма очков за по одному монстру каждого типа',
     mastersAt: 'Значения для Героя {h}',
     fineTip: 'Точная подстройка: −/+ 1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
     liveTitle: 'Итог сейчас',
@@ -72,12 +69,9 @@ const TXT = {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Points', count: 'Count',
     allLevels: 'All levels', hero: 'Hero',
-    mastersTitle: 'Total points norm',
-    mastersHint: 'The total season points norm — one of the three columns of the public page. Crypts and EMC are driven by the master faders on the right of their consoles below.',
     consoleCrypts: 'Crypts and citadels', consoleEmc: 'EMC — epic monsters',
-    gCryptsTip: 'Crypts and citadels master fader: a points multiplier for every chest of this console at once',
-    gEmcTip: 'EMC master fader: a points multiplier for every epic monster of this console at once',
-    resetTypes: 'Reset all types to scale', resetTypesTip: 'Removes the multipliers from every chest and Hero band (to ×1). Hand-typed numbers and muted types stay',
+    gCryptsTip: 'Crypts and citadels master fader: moves the points of every chest of this console at once. The number is the sum of points for one chest of each type',
+    gEmcTip: 'EMC master fader: moves the points of every epic monster at once. The number is the sum of points for one monster of each type',
     mastersAt: 'Values for Hero {h}',
     fineTip: 'Fine tuning: −/+ 1% of the current multiplier; hold a button to keep going',
     liveTitle: 'Result now',
@@ -218,7 +212,8 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
 
 export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], allChestTypes = null, dirty = false, clanPresets = null }) {
   const t = TXT[lang] || TXT.ru
-  const [mode, setMode] = useState('points')
+  // режим «Очки/Количество» — свой у каждого пульта (владелец 2026-10-26)
+  const [modes, setModes] = useState({ crypts: 'points', emc: 'points' })
   const [sel, setSel] = useState(() => new Set(['all']))
   const [sample, setSample] = useState(400)
   const [presetName, setPresetName] = useState('')
@@ -292,6 +287,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   }
 
   function buildBoard(tab) {
+    const mode = modes[tab]
     const seen = new Set()
     const own = types.filter(x => typeTab(x.id, x.slot) === tab).map(x => ({ ...x, key: weightKey(x.id) }))
       .filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
@@ -347,7 +343,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       })
       cols.unshift(...four)
     }
-    return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab) }
+    return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab, list) }
   }
 
   const absProps = c => {
@@ -432,17 +428,24 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   // «Очки»: множитель очков типов группы (mix.g); «Количество»: склепы — норма эпик-склепов (mix.epic),
   // EMC — все эпические монстры вместе, включая Chimera (emc.global). Число под ползунком — что получается для Героя «Примера».
   const mixG = mix.g || {}
-  const groupMaster = tab => {
+  const groupMaster = (tab, list) => {
+    const mode = modes[tab]
     const isC = tab === 'crypts'
     const accent = isC ? 'var(--epic-purple)' : '#4ADE80'
     const title = isC ? t.mCrypts : t.mEmc
     const disabled = !personal[tab]
     if (mode === 'points') {
+      const sumAt = k => {
+        const m = { ...mix, g: { ...mixG, [tab]: { ...(mixG[tab] || {}), all: k } } }
+        return list.reduce((sum, x) => (mix.w?.[x.key]?.on === false ? sum
+          : sum + (weightAt(x.key, exHero, { ...scale, mix: m }) ?? Math.round((x.points || 0) * k))), 0)
+      }
       const setG = patch => setPersonal({ mix: { ...mix, g: { ...mixG, [tab]: { ...(mixG[tab] || {}), ...patch } } } })
       return { id: tab, title, tip: isC ? t.gCryptsTip : t.gEmcTip, accent, disabled,
         k: mixG[tab]?.all ?? 1, onK: k => setG({ all: k }),
         onReset: () => { const { [tab]: _drop, ...rest } = mixG; setPersonal({ mix: { ...mix, g: rest } }) },
-        calc: k => Math.round(k * 100) / 100, base: 1 }
+        // число под фейдером — сумма очков за по одному сундуку каждого включённого типа пульта для Героя «Примера»
+        calc: sumAt, base: sumAt(1) }
     }
     if (isC) {
       return { id: tab, title, tip: t.mCryptsTip, accent, disabled,
@@ -456,27 +459,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       onReset: () => setEmc({ ...emc, global: 1 }),
       calc: k => emcAll({ ...emc, global: k }, scale), base: emcAll(EMC_DEFAULTS, SCALE_DEFAULTS) }
   }
-  const masters = [
-    { id: 'points', title: t.mPoints, tip: t.mPointsTip, accent: 'var(--credits-gold)', disabled: !(personal.crypts || personal.emc),
-      k: personal.norm ?? 1, onK: k => setPersonal({ norm: k }),
-      onReset: () => setPersonal({ norm: 1 }),
-      calc: k => normAt(exHero, { ...scale, norm: k }), base: normAt(exHero, SCALE_DEFAULTS), fmt: true },
-  ]
   const boards = ['crypts', 'emc'].map(buildBoard)
-  // «Сбросить главные»: все главные фейдеры — в ×1 (mix.epic и mix.g убираются целиком, emc.global и norm = 1); фейдеры типов не трогаем
-  const resetMasters = () => {
-    const { epic, g: _g, ...rest } = mix
-    onPersonal({ ...personal, norm: 1, mix: rest })
-    setEmc({ ...emc, global: 1 })
-  }
-  // «Сбросить все типы»: множители типов и ступеней — в ×1; mute и числа, вписанные вручную (set), остаются
-  const hasK = e => !!e && (Math.abs((e.all ?? 1) - 1) > 1e-9 || Object.keys(e.bands || {}).length > 0)
-  const typesHaveK = [...Object.values(mix.w || {}), ...Object.values(mix.c || {})].some(hasK)
-  const resetTypes = () => {
-    const clean = obj => Object.fromEntries(Object.entries(obj || {}).map(([k, e]) => [k, { ...e, all: 1, bands: {} }]))
-    setPersonal({ mix: { ...mix, w: clean(mix.w), c: clean(mix.c) } })
-  }
-  const mastersAtDefault = [personal.norm, mixEpic.all, emc.global, mixG.crypts?.all, mixG.emc?.all].every(v => Math.abs((v ?? 1) - 1) < 1e-9)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
   const summaryNode = summary
 
@@ -533,21 +516,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       </div>
       </section>
 
-      <section className="mixer-masters" aria-label={t.mastersTitle}>
-        <div className="mixer-masters-head">
-          <b>{t.mastersTitle}</b>
-          <span>{t.mastersAt.replace('{h}', exHero)}</span>
-        </div>
-        <p className="mixer-masters-hint">{t.mastersHint}</p>
-        <div className="mixer-masters-row">
-          {masters.map(m => {
-            const a = absProps(m)
-            return <Fader key={m.id} tt={t} master accent={m.accent} tip={m.tip} title={m.title} k={m.k} onK={m.onK}
-              abs={a.abs} onAbs={a.onAbs} calc={a.calcText} disabled={m.disabled} onReset={m.onReset} />
-          })}
-        </div>
-        <div className="mixer-masters-tools">
-          <button type="button" className="chest-pill-btn" title={t.resetAllTip} disabled={mastersAtDefault} onClick={resetMasters}>{t.resetAll}</button>
+      <section className="mixer-masters" aria-label={t.presets}>
+        <div className="mixer-masters-tools mixer-masters-tools--plain">
           <div className="mixer-sets" role="group" aria-label={t.presets}>
             <b>{t.presets}:</b>
             {setsControls}
@@ -556,17 +526,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         {note && <p className="pult-flash">{note}</p>}
         <div className="mixer-live" role="status" aria-live="polite"><b>{t.liveTitle}:</b> {summaryNode}</div>
       </section>
-
-      <div className="mixer-bar">
-        <div className="mixer-switch">
-          {[['points', t.points], ['count', t.count]].map(([id, label]) => (
-            <button key={id} type="button" className={`chest-pill-btn chest-pill-btn--sm${mode === id ? ' chest-pill-btn--green' : ''}`}
-              onClick={() => setMode(id)}>{label}</button>
-          ))}
-          <button type="button" className="chest-pill-btn chest-pill-btn--sm" title={t.resetTypesTip}
-            disabled={!typesHaveK} onClick={resetTypes}>{t.resetTypes}</button>
-        </div>
-      </div>
 
       <div className="pult-scope" role="note">
         <b>{isAll ? t.scopeAllTitle : t.scopeDivTitle.replace('{what}', `${t.hero} ${editing}`)}</b>
@@ -580,6 +539,12 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           <section key={b.tab} className="mixer-console" aria-label={b.title}>
             <div className="mixer-console-head">
               <h3 className="mixer-console-title">{b.title}</h3>
+              <div className="mixer-switch">
+                {[['points', t.points], ['count', t.count]].map(([id, label]) => (
+                  <button key={id} type="button" className={`chest-pill-btn chest-pill-btn--sm${modes[b.tab] === id ? ' chest-pill-btn--green' : ''}`}
+                    onClick={() => setModes({ ...modes, [b.tab]: id })}>{label}</button>
+                ))}
+              </div>
               <label className="quota-check">
                 <input type="checkbox" checked={b.enabled} onChange={e => setPersonal({ [b.tab]: e.target.checked })} />
                 {t.enable}
@@ -588,7 +553,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
             {!b.enabled && <p className="emc-text"><small>{t.off}</small></p>}
             {b.fallback && <p className="emc-text"><small>{t.noTypes}</small></p>}
             {b.cols.some(c => c.mixed) && <p className="emc-text"><small>⚠ {t.mixed}</small></p>}
-            {b.tab === 'crypts' && mode === 'count' && <p className="emc-text"><small>{t.countNote}</small></p>}
+            {b.tab === 'crypts' && modes.crypts === 'count' && <p className="emc-text"><small>{t.countNote}</small></p>}
             <div className={`mixer-board${b.enabled ? '' : ' mixer-board--off'}`}>
               <div className="mixer-cols">
                 {b.cols.map(c => {
