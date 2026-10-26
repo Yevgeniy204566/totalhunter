@@ -1231,3 +1231,23 @@ a:hover { color: var(--on-surface); }
 
 /* клавиша включения типа — удобная цель для пальца (раньше 30×16) */
 .mixer-dot, .mixer-dot-gap { width: 40px; height: 26px; }
+
+/* Телефон и планшет: «#», герой и имя — отдельный блок слева, один на всю таблицу (position: sticky у блока, а не у сотен ячеек);
+   данные листаются рядом и обрезаются границей контейнера, поэтому наложиться на имя не могут (владелец 2026-10-26, 4-я жалоба) */
+.public-split { display: flex; align-items: flex-start; width: max-content; min-width: 100%; }
+.public-split-left { position: sticky; left: 0; z-index: 6; flex: 0 0 auto; background: var(--card); box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.7); }
+.public-table--fixed { width: auto; }
+.public-table--data { width: auto; flex: 1 0 auto; }
+.public-table--fixed .public-num-cell, .public-table--fixed .public-hero-cell, .public-table--fixed .public-name-cell {
+  position: static; contain: none; isolation: auto; }
+.public-table--fixed .public-name-cell { box-shadow: none; }
+/* одинаковая высота строк в обеих таблицах — строки слева и справа не расходятся */
+.public-table--fixed tbody td, .public-table--data tbody td { height: 64px; box-sizing: border-box; }
+.public-table--fixed thead tr.public-avg-row th, .public-table--data thead tr.public-avg-row th { height: 30px; }
+.public-table--fixed thead tr:last-child th, .public-table--data thead tr:last-child th { height: 58px; box-sizing: border-box; }
+
+/* «#» (порядковый номер): по центру колонки и крупнее; общее правило «первая колонка слева» его сдвигало */
+.public-table td.public-num-cell, .public-table th.public-num-cell { text-align: center; font-size: 19px; font-weight: 700; padding-left: 2px; padding-right: 2px; }
+.public-table th.public-num-cell { font-size: 15px; }
+.public-table--fixed thead tr.public-avg-row th, .public-table--data thead tr.public-avg-row th { height: 38px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; line-height: 38px; }
+.public-table--fixed thead tr.public-head-row th, .public-table--data thead tr.public-head-row th { top: 38px; }
