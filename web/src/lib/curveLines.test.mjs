@@ -28,13 +28,14 @@ function roundTrip(tab, list, key, band, delta, soft) {
   assert.deepEqual(back.cur, base.cur, `${key}: значения не вернулись`)
 }
 
-test('количество склепов: график даёт линии только эпик-склепам, ручные типы не показываются', () => {
-  const lines = countLines('crypts', CRYPTS, { ...DEFAULT_SETTINGS, mix: {} }, structuredClone(EMC_DEFAULTS))
-  assert.deepEqual(lines.map(l => l.key), ['Epic Crypt 35', 'Epic Crypt 30', 'Epic Crypt 25', 'Epic Crypt 20'])
+test('количество склепов: линия есть у каждого типа шкалы (и Rare, и Citadel), у типа вне шкалы и со вписанным числом линии нет', () => {
+  const list = [...CRYPTS, { key: 'Citadel 30', title: 'C30' }, { key: 'My Crypt', title: 'My' }]
+  const lines = countLines('crypts', list, { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Crypt 25': { set: 9 } } } }, structuredClone(EMC_DEFAULTS))
+  assert.deepEqual(lines.map(l => l.key), ['Epic Crypt 35', 'Epic Crypt 30', 'Epic Crypt 20', 'Rare Crypt 30', 'Citadel 30'])
 })
 
-test('количество склепов: вверх и обратно возвращает исходное без следа', () => {
-  for (const soft of [0, 30, 80]) for (const [band, d] of [[300, 6], [450, -4], [200, 3]]) roundTrip('crypts', CRYPTS, 'Epic Crypt 30', band, d, soft)
+test('количество склепов: вверх и обратно возвращает исходное без следа (в том числе у Rare)', () => {
+  for (const key of ['Epic Crypt 30', 'Rare Crypt 30']) for (const soft of [0, 30, 80]) for (const [band, d] of [[300, 6], [450, -4], [200, 3]]) roundTrip('crypts', CRYPTS, key, band, d, soft)
 })
 
 test('количество EMC: четыре монстра (emc.cells), Chimera и прочие (mix.c) — вверх и обратно без следа', () => {

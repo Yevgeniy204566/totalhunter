@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { fallbackWeight,
+import { fallbackWeight, CRYPT_TYPES,
   DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf, typeTab,
 } from './heroQuota.js'
 
@@ -250,11 +250,26 @@ test('эпики × средние очки эпика на Герое 387.5 ≈
   assert.ok(Math.abs(pts / normAt(387.5) - 0.85) < 0.03, String(pts))
 })
 
-test('Rare/Common/Citadel: штук в данных клана нет — база 0, число задаётся вручную (set)', () => {
-  assert.equal(countAt('Rare Crypt 30', 300), 0)
-  assert.equal(countAt('Citadel 25', 300), 0)
+test('Rare/Common/Citadel: штук столько же, сколько у эпик-типа, пока у типа есть очки; вписанное число (set) перекрывает', () => {
+  const epic = countAt('Epic Crypt 30', 300)
+  assert.ok(epic > 0)
+  assert.equal(countAt('Rare Crypt 30', 300), epic)
+  assert.equal(countAt('Citadel 25', 300), epic)
   const s = { ...DEFAULT_SETTINGS, mix: { c: { 'Rare Crypt 30': { set: 25 } } } }
   assert.equal(countAt('Rare Crypt 30', 300, s), 25)
+  assert.equal(countAt('Not In Scale Crypt', 300), 0)
+})
+
+test('очки и штуки согласованы: у склепа и цитадели шкалы на любом уровне Героя очки > 0 ⇔ штук > 0', () => {
+  const levels = [...HERO_LEVELS, 298, 387.5, 405, 599]
+  for (const id of CRYPT_TYPES) for (const h of levels) {
+    assert.equal(weightAt(id, h) > 0, countAt(id, h) > 0, `${id} @${h}: очки ${weightAt(id, h)}, штук ${countAt(id, h)}`)
+  }
+})
+
+test('штуки Rare/Citadel не входят в публичную цель эпик-склепов', () => {
+  const withRare = { ...DEFAULT_SETTINGS, mix: { c: { 'Rare Crypt 30': { all: 3 } } } }
+  assert.equal(epicCountTotal(400, withRare), epicCountTotal(400))
 })
 
 test('количество эпиков: фейдер, mute (доля остальных растёт)', () => {

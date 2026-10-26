@@ -1,9 +1,9 @@
 // Линии графика пульта по режимам (владелец 2026-10-26): «Очки» — очки за сундук по уровням Героя; «Количество» —
 // штуки на игрока по уровням Героя (эпик-склепы, монстры EMC). Хранение прежнее:
 //   очки — mix.w[тип].bands; штуки склепов и прочих монстров — mix.c[тип].bands; четыре монстра с историей — emc.cells[монстр].
-// Типы, у которых нет базового числа по уровням (Rare/Citadel/Common со вписанным числом), на графике количества не показываются.
+// Типы без базового числа (свой склеп вне шкалы) и со старым вписанным числом (set), которое одно на все уровни, на графике количества не показываются.
 import { makeSeries, seriesOf } from './curveEdit.js'
-import { DEFAULT_SETTINGS, countRaw, countAt, emcCountAt, emcOtherRaw, EPIC_CRYPTS, EMC_FOUR } from './heroQuota.js'
+import { DEFAULT_SETTINGS, countRaw, countAt, emcCountAt, emcOtherRaw, CRYPT_TYPES, EMC_FOUR } from './heroQuota.js'
 import { computeRow, DEFAULT_SETTINGS as EMC_DEFAULTS } from './emcQuota.js'
 
 const MONSTER_BY_ID = { 'Epic Fire Hydra': 'hydra', 'Epic Undead': 'undead', 'Epic Arachne': 'arachna', 'Epic Shadow City': 'shadow' }
@@ -28,7 +28,7 @@ export function countLines(tab, list, scale, emc) {
     if (entry?.set != null) return // число вписано вручную — по уровням Героя не меняется
     const muted = entry?.on === false
     if (tab === 'crypts') {
-      if (!EPIC_CRYPTS.includes(key)) return
+      if (!CRYPT_TYPES.includes(key)) return
       const s2 = withoutBands(scale, key)
       out.push({ key, title: x.title, unit: 'count', target: { path: 'c', key }, muted,
         ...makeSeries({ cur: h => countAt(key, h, scale), base: h => countAt(key, h, DEFAULT_SETTINGS),

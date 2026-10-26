@@ -824,7 +824,9 @@ a:hover { color: var(--on-surface); }
   background: linear-gradient(90deg, #e3e8ee 0, #98a3b2 44%, var(--mc, #0b0f17) 44%, var(--mc, #0b0f17) 56%, #98a3b2 56%, #e3e8ee 100%); box-shadow: 0 3px 6px rgba(0,0,0,0.7); }
 .mixer-range:focus-visible::-webkit-slider-thumb { outline: 2px solid #38bdf8; outline-offset: 2px; }
 .mixer-masters-tools--plain { margin-top: 0; padding-top: 0; border-top: 0; }
-.mixer-k { width: 72px; font-size: 15px; text-align: center; padding: 4px 2px; }
+.mixer-k { width: 72px; font-size: 15px; text-align: center; padding: 4px 2px; transition: font-size .15s, box-shadow .15s; }
+/* главный фейдер группы сдвинут: числа под ручками крупнее и подсвечены цветом группы */
+.mixer-col--lift .mixer-k { font-size: 21px; font-weight: 800; color: #fff; border-color: var(--mc); box-shadow: 0 0 12px color-mix(in srgb, var(--mc) 60%, transparent); }
 .mixer-sub { font-size: 13px; color: var(--on-surface2); text-align: center; line-height: 1.25; }
 .mixer-col--disabled { pointer-events: none; }
 @media (max-width: 640px) { .mixer-col { width: 72px; flex-basis: 72px; } }
@@ -1081,6 +1083,9 @@ a:hover { color: var(--on-surface); }
 .curve-anchor-val { fill: #fff; font-weight: 700; }
 .curve-anchor-dot { fill: #0a0e15; stroke: #7dd3fc; stroke-width: 2; }
 .curve-val { fill: #fff; font-size: 16px; font-weight: 700; paint-order: stroke; stroke: #0a0e15; stroke-width: 4px; }
+.mixer-quotas { margin: 14px 0; }
+.mixer-add { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mixer-add select { min-width: 220px; }
 .curve-tick { stroke: rgba(255,255,255,0.35); stroke-width: 1.5; }
 .curve-axis-title { fill: #cbd5e1; font-size: 16px; font-weight: 600; }
 .curve-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--outline); }

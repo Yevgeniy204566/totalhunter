@@ -237,7 +237,7 @@ export const CRYPT_TYPES = ['Common Crypt 20', 'Common Crypt 25', 'Rare Crypt 20
   'Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35', 'Citadel 20', 'Citadel 25', 'Citadel 30']
 export const EMC_TYPES = [...EMC_IDS, 'Dark Omens Chest', 'Epic Briareus', 'Yogwai', 'Epic Basilisk', 'Epic Chimera', 'Epic Hellforge']
 
-// Количество склепов по типам (режим «Количество» пульта) — по данным кланов (владелец 2026-10-21):
+// Количество склепов по типам (режим «Количество» пульта) — по данным кланов (владелец 2026-10-21; Rare/Common/Citadel — 2026-10-26):
 // клан требует N эпик-склепов любого уровня 20–35 (Старт 50, Берсерки 300 — стены; ЕДО ≈166 по общей кривой) — это
 // epicRefAt(Герой). Делим поровну между включёнными эпик-типами (клан уровни не различает). Для Rare/Common/
 // Citadel клан штук не называет — база 0 (они считаются только в очках); число можно задать вручную (set).
@@ -250,8 +250,14 @@ export function countRaw(id, hero, settings) {
   const entry = mixC[key]
   if (entry?.on === false) return 0
   if (entry?.set != null) return Math.max(0, entry.set)
-  if (!EPIC_CRYPTS.includes(key)) return 0
+  // тип вне шкалы (свой склеп) — штук нет, число вписывается вручную
+  if (!CRYPT_TYPES.includes(key)) return 0
+  // очки у типа на этом уровне Героя нулевые — значит, он не учитывается и штук тоже нет (владелец 2026-10-26: очки есть,
+  // а штук 0 быть не может, и наоборот)
+  if (!EPIC_CRYPTS.includes(key) && !(baseWeight(key, hero) >= 0.5)) return 0
   const active = EPIC_CRYPTS.filter(t => mixC[t]?.on !== false)
+  // Rare, Common и Citadel — столько же штук, сколько у типа эпик-склепа: клан называет норму только по эпикам, у остальных
+  // типов это ориентир, на публичные цели (сумма эпик-склепов) он не влияет
   return epicRefAt(hero, settings) / active.length * mixFactor({ ...entry, on: true }, hero)
 }
 

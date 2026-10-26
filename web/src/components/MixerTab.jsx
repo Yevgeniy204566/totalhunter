@@ -22,6 +22,8 @@ const TXT = {
     points: 'Очки', count: 'Количество',
     allLevels: 'Все уровни', hero: 'Герой',
     consoleCrypts: 'Склепы и цитадели', consoleEmc: 'Epic Monster Chests',
+    addChest: '+ Добавить сундук', addPick: 'Выберите сундук', addOk: 'Добавить', addCancel: 'Отмена',
+    chestAdded: 'Сундук добавлен в учёт. Чтобы сохранить, нажмите «Сохранить настройки».',
     gCryptsTip: 'Главный фейдер склепов и цитаделей: двигает очки всех сундуков этого пульта сразу. Число — сумма очков за по одному сундуку каждого типа',
     gEmcTip: 'Главный фейдер EMC: двигает очки всех эпических монстров сразу. Число — сумма очков за по одному монстру каждого типа',
     fineTip: 'Точная подстройка: −/+ 1% от текущего значения; удерживайте кнопку — значение идёт непрерывно',
@@ -65,6 +67,8 @@ const TXT = {
     points: 'Points', count: 'Count',
     allLevels: 'All levels', hero: 'Hero',
     consoleCrypts: 'Crypts and citadels', consoleEmc: 'Epic Monster Chests',
+    addChest: '+ Add chest', addPick: 'Pick a chest', addOk: 'Add', addCancel: 'Cancel',
+    chestAdded: "Chest added to the accounting. Press 'Save settings' to keep it.",
     gCryptsTip: 'Crypts and citadels master fader: moves the points of every chest of this console at once. The number is the sum of points for one chest of each type',
     gEmcTip: 'EMC master fader: moves the points of every epic monster at once. The number is the sum of points for one monster of each type',
     fineTip: 'Fine tuning: −/+ 1% of the current multiplier; hold a button to keep going',
@@ -165,12 +169,14 @@ function FineKnobs({ k, onK, disabled, tt }) {
   )
 }
 
-function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset, resetOff }) {
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset, resetOff, mk = 1 }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
   const [draft, setDraft] = useState(null)
   // светодиод: зелёный — тип участвует в подсчёте, красный — выключен кнопкой или значение 0
   const counted = on !== false && Number(abs) > 0
+  // главный фейдер группы сдвинут — ручки группы идут за ним, а числа под ними крупнее и подсвечены (владелец 2026-10-26)
+  const lifted = !master && Math.abs(mk - 1) > 1e-9
   const type = e => {
     const v = e.target.value.replace(',', '.')
     if (!/^\d*\.?\d*$/.test(v)) return
@@ -179,7 +185,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
     if (v !== '.') onAbs(Number(v))
   }
   return (
-    <div className={`mixer-col${master ? ' mixer-col--master' : ''}${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}
+    <div className={`mixer-col${master ? ' mixer-col--master' : ''}${lifted ? ' mixer-col--lift' : ''}${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}
          style={accent ? { '--mc': accent } : undefined}>
       <div className="mixer-name" title={tip || title}>{title}</div>
       {onToggle
@@ -193,8 +199,8 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
             disabled={disabled} onChange={e => onAbs(Math.max(0, Math.round((Number(e.target.value) - 500) / 500 * MANUAL_MAX)))}
             onDoubleClick={() => onAbs('')} />
         ) : (
-          <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k)}
-            disabled={disabled} onChange={e => onK(posToK(Number(e.target.value)))}
+          <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k * mk)}
+            disabled={disabled} onChange={e => onK(posToK(Number(e.target.value)) / mk)}
             onDoubleClick={() => onK(1)} />
         )}
       </div>
@@ -210,7 +216,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
   )
 }
 
-export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], allChestTypes = null, dirty = false, clanPresets = null }) {
+export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], allChestTypes = null, dirty = false, clanPresets = null, quotaEditor = null, onAddChest = null }) {
   const t = TXT[lang] || TXT.ru
   // режим «Очки/Количество» — свой у каждого пульта (владелец 2026-10-26)
   const [modes, setModes] = useState({ crypts: 'points', emc: 'points' })
@@ -219,6 +225,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const [presetName, setPresetName] = useState('')
   const [presetSlot, setPresetSlot] = useState('1')
   const [note, setNote] = useState('')
+  const [adding, setAdding] = useState(null) // { tab, id } — выбор сундука для добавления в пульт
 
   const emcQ = quotas.find(q => q.slot === 2)
   const emc = useMemo(() => ({ ...structuredClone(EMC_DEFAULTS), ...(emcQ?.emc || {}) }), [emcQ])
@@ -300,7 +307,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       const e = mix.c?.[x.key]
       const isEmc = tab === 'emc'
       const fn = isEmc ? emcCountAt : countAt
-      const zeroBase = !isEmc && !EPIC_CRYPTS.includes(x.key)
+      const zeroBase = !isEmc && !CRYPT_TYPES.includes(x.key)
       return {
         key: x.key, title: titleOf(x), e, path: 'c', manual: zeroBase,
         calc: k => fn(x.key, exHero, { ...scale, mix: { ...mix, c: { ...(mix.c || {}), [x.key]: withK(e, k) } } }, emc),
@@ -343,7 +350,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       })
       cols.unshift(...four)
     }
-    return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab, list),
+    return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab, list), ownIds: new Set(types.map(x => x.id)),
       lines: mode === 'points' ? pointsLines(list.map(x => ({ key: x.key, title: titleOf(x) })), scale)
         : countLines(tab, list.map(x => ({ key: x.key, title: titleOf(x) })), scale, emc) }
   }
@@ -480,6 +487,14 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     if (st.mix !== mix) setPersonal({ mix: st.mix })
     if (st.emc !== emc) setEmc(st.emc)
   }
+  // Какие сундуки можно добавить в пульт: весь каталог клана, кроме уже стоящих в учёте; сначала подходящие по названию
+  const addCandidates = b => {
+    const mine = /Crypt|Citadel/i
+    const have = new Set([...b.ownIds].map(weightKey))
+    return (allChestTypes || [...CRYPT_TYPES, ...EMC_TYPES].map(id => ({ id, label: id })))
+      .filter(o => !have.has(weightKey(o.id)))
+      .sort((x, y) => ((mine.test(y.id) ? 1 : 0) - (mine.test(x.id) ? 1 : 0)) * (b.tab === 'crypts' ? 1 : -1) || x.label.localeCompare(y.label))
+  }
   const boards = ['crypts', 'emc'].map(buildBoard)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
 
@@ -489,6 +504,14 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <summary>{t.help}</summary>
         {t.helpText.map((line, i) => <p key={i} className="emc-text mixer-help-text">{line}</p>)}
       </details>
+
+      {quotaEditor && <section className="mixer-quotas">{quotaEditor}</section>}
+
+      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal} sets={setsControls} setsNote={note}
+        onLoad={loadClanPreset}
+        setsTitle={t.presets} setsHint={t.presetHint}
+        catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
+
 
       {/* Герой — первым делом: выбрали Героя/ступени и сразу двигаем главные фейдеры ниже (владелец 2026-10-24) */}
       <section className="mixer-hero-card">
@@ -554,6 +577,19 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                     onClick={() => setModes({ ...modes, [b.tab]: id })}>{label}</button>
                 ))}
               </div>
+              {onAddChest && (adding?.tab === b.tab ? (
+                <span className="mixer-add">
+                  <select className="input-dark" value={adding.id} onChange={e => setAdding({ tab: b.tab, id: e.target.value })} aria-label={t.addChest}>
+                    <option value="">{t.addPick}</option>
+                    {addCandidates(b).map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  </select>
+                  <button type="button" className="chest-pill-btn chest-pill-btn--primary" disabled={!adding.id}
+                    onClick={() => { onAddChest(b.tab, adding.id, weightAt(adding.id, exHero, SCALE_DEFAULTS) ?? 0); setAdding(null); setNote(t.chestAdded) }}>{t.addOk}</button>
+                  <button type="button" className="pult-link-btn" onClick={() => setAdding(null)}>{t.addCancel}</button>
+                </span>
+              ) : (
+                <button type="button" className="chest-pill-btn" onClick={() => setAdding({ tab: b.tab, id: '' })}>{t.addChest}</button>
+              ))}
               <label className="quota-check">
                 <input type="checkbox" checked={b.enabled} onChange={e => setPersonal({ [b.tab]: e.target.checked })} />
                 {t.enable}
@@ -569,6 +605,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   const a = absProps(c)
                   return (
                     <Fader key={c.key} tt={t} title={c.title} k={c.k} onK={c.onK} on={c.on} onToggle={c.onToggle}
+                      mk={c.manual ? 1 : b.master.k} accent={!c.manual && Math.abs(b.master.k - 1) > 1e-9 ? b.master.accent : undefined}
                       abs={a.abs} onAbs={a.onAbs} calc={a.calcText} manual={c.manual} disabled={!b.enabled} />
                   )
                 })}
@@ -594,10 +631,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <p className="pult-hint">{t.saved}</p>
       </section>
 
-      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal} sets={setsControls} setsNote={note}
-        onLoad={loadClanPreset}
-        setsTitle={t.presets} setsHint={t.presetHint}
-        catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
     </div>
   )
 }

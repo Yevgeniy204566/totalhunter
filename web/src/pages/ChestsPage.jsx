@@ -140,7 +140,7 @@ function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) 
               {on && (
                 <div className="quota-hero">
                   <small>{q.slot === 1 ? cx.personalCryptsHint : cx.quotaPersonalHint}</small>
-                  {q.slot === 2 && (
+                  {q.slot === 2 && onOpenEmc && (
                     <button type="button" className="chest-pill-btn chest-pill-btn--sm" onClick={onOpenEmc}>
                       {cx.openEmcTab}
                     </button>
@@ -172,6 +172,7 @@ export default function ChestsPage() {
   const [seasonByCollector, setSeasonByCollector] = useState({})
   // подпись сохранённых настроек пульта — по ней видно, есть ли несохранённые изменения
   const [savedSigByCollector, setSavedSigByCollector] = useState({})
+  const [pultRowsDirty, setPultRowsDirty] = useState({}) // сундуки, добавленные из пульта и ещё не отправленные на сервер
   const [msg, setMsg] = useState('')
   const [loadError, setLoadError] = useState('')
   const [claimCode, setClaimCode] = useState('')
@@ -293,6 +294,29 @@ export default function ChestsPage() {
       return { ...prev, [slug]: rows }
     })
     setMsg(cx.presetLoaded)
+  }
+
+  // Добавление сундука из пульта (владелец 2026-10-26): строка учёта появляется сразу, на сервер уходит вместе с «Сохранить настройки»
+  function addChestFromPult(slug, tab, catalogId, points) {
+    setRowsByCollector(prev => {
+      const rows = [...(prev[slug] || [])]
+      const idx = rows.findIndex(r => r.catalog_id === catalogId)
+      const slot = tab === 'emc' ? 2 : null
+      if (idx >= 0) rows[idx] = { ...rows[idx], is_in_pattern: true, quota_slot: slot }
+      else rows.push({ raw_type: null, catalog_id: catalogId, custom_name: null, points, is_in_pattern: true, quota_slot: slot })
+      return { ...prev, [slug]: rows }
+    })
+    setPultRowsDirty(prev => ({ ...prev, [slug]: true }))
+  }
+
+  async function savePult(slug, personalOverride) {
+    if (pultRowsDirty[slug]) {
+      try {
+        await api.dashboardChestsSave(slug, rowsByCollector[slug])
+        setPultRowsDirty(prev => ({ ...prev, [slug]: false }))
+      } catch (e) { setMsg(e.message); return }
+    }
+    await saveSeason(slug, undefined, personalOverride)
   }
 
   async function save(slug) {
@@ -1062,8 +1086,18 @@ export default function ChestsPage() {
               types={mixerTypes(rowsByCollector[collector.slug] || [], collector.catalog_options)}
               allChestTypes={allChestTypes(rowsByCollector[collector.slug] || [], collector.catalog_options)}
               clanPresets={presets}
-              dirty={mixerSig(seasonByCollector[collector.slug]) !== savedSigByCollector[collector.slug]}
-              onSave={p => saveSeason(collector.slug, undefined, p)} />
+              dirty={mixerSig(seasonByCollector[collector.slug]) !== savedSigByCollector[collector.slug] || !!pultRowsDirty[collector.slug]}
+              onAddChest={(tab, id, points) => addChestFromPult(collector.slug, tab, id, points)}
+              quotaEditor={(
+                <QuotaEditor
+                  quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
+                  personal={seasonByCollector[collector.slug]?.personal || DEFAULT_PERSONAL}
+                  cx={cx}
+                  onChange={q => updateSeasonField(collector.slug, 'quotas', q)}
+                  onPersonal={p => updateSeasonField(collector.slug, 'personal', p)}
+                />
+              )}
+              onSave={p => savePult(collector.slug, p)} />
           )}
 
           {activeTab(collector.slug) === 'history' && (
