@@ -8,8 +8,8 @@ import { BANDS, HANDLE_BANDS, centerOf, applyDrag, bandsFromTargets } from '../l
 const TXT = {
   ru: {
     titlePoints: 'Очки за сундук по уровням Героя', titleCount: 'Количество сундуков по уровням Героя',
-    hintPoints: 'Выберите сундук внизу и тяните квадратные ручки вверх и вниз: соседние уровни следуют плавно. «Мягкость» — как далеко достаёт влияние ручки. Пунктир — значения по шкале (ручка рядом с ним «прилипает» к нему — так линию можно вернуть в исходное), закрашено — ваше отличие от неё. Клавиши ↑ ↓ на выбранной ручке — шаг 1, с Shift — шаг 5.',
-    soft: 'Мягкость', softOnly: 'одна точка', softWide: 'широкая волна',
+    hintPoints: 'Выберите сундук внизу и тяните квадратные ручки вверх и вниз: соседние уровни следуют плавно. Кнопки Zoom «+» и «−» на графике — как далеко достаёт влияние ручки: «+» тянет за собой больше соседних уровней, «−» меньше (в самом минимуме двигается только одна ступень). Пунктир — значения по шкале (ручка рядом с ним «прилипает» к нему — так линию можно вернуть в исходное), закрашено — ваше отличие от неё. Клавиши ↑ ↓ на выбранной ручке — шаг 1, с Shift — шаг 5.',
+    zoom: 'Zoom', zoomIn: 'Ручка тянет за собой больше соседних уровней', zoomOut: 'Ручка тянет за собой меньше соседних уровней (в минимуме — одна ступень)',
     reset: 'Сбросить линию к шкале', resetTip: 'Вернуть выбранную линию на всех уровнях к шкале',
     resetAll: 'Сбросить все линии',
     hero: 'Герой', points: 'очков', count: 'шт.', scale: 'по шкале', muted: 'Тип выключен кнопкой — включите его, чтобы править линию.',
@@ -19,8 +19,8 @@ const TXT = {
   },
   en: {
     titlePoints: 'Chest points by Hero level', titleCount: 'Chest count by Hero level',
-    hintPoints: 'Pick a chest below and drag the square handles up and down: neighbouring levels follow smoothly. "Softness" is how far a handle reaches. Dashed — values by the scale (a handle near it snaps onto it, so the line can be returned to the original), filled — your difference from it. Arrow keys ↑ ↓ on a focused handle step 1, with Shift 5.',
-    soft: 'Softness', softOnly: 'single point', softWide: 'wide wave',
+    hintPoints: 'Pick a chest below and drag the square handles up and down: neighbouring levels follow smoothly. The Zoom "+" and "−" buttons on the chart set how far a handle reaches: "+" pulls more neighbouring levels along, "−" fewer (at the minimum only one step moves). Dashed — values by the scale (a handle near it snaps onto it, so the line can be returned to the original), filled — your difference from it. Arrow keys ↑ ↓ on a focused handle step 1, with Shift 5.',
+    zoom: 'Zoom', zoomIn: 'A handle pulls more neighbouring levels along', zoomOut: 'A handle pulls fewer neighbouring levels along (at the minimum — one step)',
     reset: 'Reset line to scale', resetTip: 'Return the selected line to the scale on all levels',
     resetAll: 'Reset all lines',
     hero: 'Hero', points: 'points', count: 'pcs', scale: 'by scale', muted: 'This type is switched off — turn it on to edit the line.',
@@ -111,6 +111,12 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
       <p className="curve-hint">{t.hintPoints}</p>
       {disabled && <p className="emc-text"><small>{t.off}</small></p>}
 
+      <div className="curve-wrap">
+      <div className="curve-zoom" role="group" aria-label={t.zoom}>
+        <span>{t.zoom}</span>
+        <button type="button" title={t.zoomOut} aria-label={`${t.zoom} −`} disabled={softness <= 0} onClick={() => setSoftness(v => Math.max(0, v - 10))}>−</button>
+        <button type="button" title={t.zoomIn} aria-label={`${t.zoom} +`} disabled={softness >= 100} onClick={() => setSoftness(v => Math.min(100, v + 10))}>+</button>
+      </div>
       <svg ref={svgRef} className="curve-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={mode === 'count' ? t.titleCount : t.titlePoints}
         onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={() => { if (!drag.current) setHover(null) }}>
         {grid.map(v => (
@@ -152,6 +158,7 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
           )
         })}
       </svg>
+      </div>
 
       <p className="curve-readout" role="status" aria-live="polite">{readout}</p>
       {sel.muted && <p className="emc-text"><small>{t.muted}</small></p>}
@@ -166,12 +173,6 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
       </div>
 
       <div className="curve-tools">
-        <label className="curve-soft">
-          <span>{t.soft}</span>
-          <small>{t.softOnly}</small>
-          <input type="range" min={0} max={100} value={softness} onChange={e => setSoftness(Number(e.target.value))} aria-label={t.soft} />
-          <small>{t.softWide}</small>
-        </label>
         <button type="button" className="chest-pill-btn" title={t.resetTip} disabled={!canEdit || !dirty} onClick={() => onBands(sel, {})}>{t.reset}</button>
       </div>
       {footer && (
