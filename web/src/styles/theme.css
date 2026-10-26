@@ -529,6 +529,7 @@ a:hover { color: var(--on-surface); }
 .public-table th, .public-table td { border-right: 1px solid rgba(255, 255, 255, 0.07); }
 .public-table th:last-child, .public-table td:last-child { border-right: none; }
 .public-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
+.public-table tbody tr:hover td:not(.public-num-cell):not(.public-hero-cell):not(.public-name-cell) { background: var(--accent-glow); }
 .public-cell-zero { color: var(--on-surface2); }
 /* Три главных столбца (макет «Лидерборд», 2026-10-21): ширина ≈ трём обычным столбцам */
 .public-table th.public-main-th { text-align: left; min-width: 320px; font-size: 13px; color: var(--accent); }
@@ -587,6 +588,10 @@ a:hover { color: var(--on-surface); }
 .public-table tbody tr:nth-child(even) td.public-num-cell,
 .public-table tbody tr:nth-child(even) td.public-hero-cell,
 .public-table tbody tr:nth-child(even) td.public-name-cell { background-color: #0D1326; }
+/* выделение строки: у закреплённых ячеек — градиентом поверх сплошного фона (фон остаётся непрозрачным, под именем ничего не просвечивает) */
+.public-table tbody tr:hover td.public-num-cell,
+.public-table tbody tr:hover td.public-hero-cell,
+.public-table tbody tr:hover td.public-name-cell { background-image: linear-gradient(var(--accent-glow), var(--accent-glow)); }
 .hero-shield { width: 38px; height: 44px; display: block; margin: 0 auto; }
 
 /* ── Имя игрока по очкам (редизайн 2026-09-28): ярко, без размытого свечения, плавный блик ── */
