@@ -529,7 +529,6 @@ a:hover { color: var(--on-surface); }
 .public-table th, .public-table td { border-right: 1px solid rgba(255, 255, 255, 0.07); }
 .public-table th:last-child, .public-table td:last-child { border-right: none; }
 .public-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
-.public-table tbody tr:hover td { background: var(--accent-glow); }
 .public-cell-zero { color: var(--on-surface2); }
 /* Три главных столбца (макет «Лидерборд», 2026-10-21): ширина ≈ трём обычным столбцам */
 .public-table th.public-main-th { text-align: left; min-width: 320px; font-size: 13px; color: var(--accent); }
@@ -575,20 +574,19 @@ a:hover { color: var(--on-surface); }
 .row-danger td { color: #FF6961; }
 .row-quota-light td { color: #F5D76E; }
 
-/* Три закреплённых слева столбца: «#», щит с уровнем Героя, имя. Фон непрозрачный (подсветка наводки —
-   поверх сплошного цвета), иначе данные просвечивают под закрепом (владелец 2026-10-24). */
+/* Три закреплённых слева столбца: «#», щит с уровнем Героя, имя. Фон ОБЯЗАН быть непрозрачным в любом состоянии
+   (никаких :hover/выделения строки с полупрозрачным фоном — через них данные просвечивали под именем, владелец 2026-10-26).
+   🔒 ШИРИНУ И ВЫСОТУ ЯЧЕЕК НА ТЕЛЕФОНЕ НЕ МЕНЯТЬ без отдельного разрешения владельца (запрет 2026-10-26). */
 .public-table .public-num-cell, .public-table .public-hero-cell, .public-table .public-name-cell {
   position: sticky; z-index: 2; background-color: var(--card);
 }
 .public-table .public-num-cell  { left: 0;    width: 40px;  min-width: 40px;  text-align: center; }
 .public-table .public-hero-cell { left: 40px; width: 62px;  min-width: 62px;  text-align: center; padding-top: 2px; padding-bottom: 2px; }
 .public-table .public-name-cell { left: 102px; text-align: left; box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.7); }
+.public-table td.public-num-cell, .public-table th.public-num-cell { text-align: center; }
 .public-table tbody tr:nth-child(even) td.public-num-cell,
 .public-table tbody tr:nth-child(even) td.public-hero-cell,
 .public-table tbody tr:nth-child(even) td.public-name-cell { background-color: #0D1326; }
-.public-table tbody tr:hover td.public-num-cell,
-.public-table tbody tr:hover td.public-hero-cell,
-.public-table tbody tr:hover td.public-name-cell { background-image: linear-gradient(var(--accent-glow), var(--accent-glow)); }
 .hero-shield { width: 38px; height: 44px; display: block; margin: 0 auto; }
 
 /* ── Имя игрока по очкам (редизайн 2026-09-28): ярко, без размытого свечения, плавный блик ── */
