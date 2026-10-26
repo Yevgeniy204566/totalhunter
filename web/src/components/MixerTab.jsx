@@ -4,6 +4,7 @@ import {
 } from '../lib/emcQuota.js'
 import TierPresetEditor from './TierPresetEditor.jsx'
 import CurveEditor from './CurveEditor.jsx'
+import { pointsLines, countLines, writeBands } from '../lib/curveLines.js'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
@@ -38,7 +39,7 @@ const TXT = {
     reset: 'Двойной щелчок по ползунку — вернуть расчётное значение',
     mute: 'Зелёный — участвует в подсчёте, красный — не участвует (выключен или значение 0). Нажмите, чтобы включить или выключить',
     abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
-    manual: 'В нормах клана штук для этого типа нет — двигайте ползунок (0–200) или впишите число вручную; двойной щелчок — сбросить в 0',
+    manual: 'В нормах клана штук для этого типа нет. По умолчанию 0 — ручка по центру; двигайте её вверх (до 200) или впишите число вручную; двойной щелчок — сбросить в 0',
     calc: 'расчёт',
     countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. Для Rare, Common и Citadel штук в норме нет — впишите число сами, если нужно.',
     save: '💾 Сохранить настройки', saved: 'Применяет настройки этой вкладки к сезону. Игроки видят результат на публичной странице.',
@@ -86,7 +87,7 @@ const TXT = {
     reset: 'Double-click a slider to return the calculated value',
     mute: 'Green — counted, red — not counted (off or value 0). Click to turn on or off',
     abs: 'Value: erase and type your own number (0 turns the type off)',
-    manual: 'The clan norms give no count for this type — move the slider (0–200) or type a number; double-click resets to 0',
+    manual: 'The clan norms give no count for this type. The default is 0 — the handle sits in the centre; move it up (to 200) or type a number; double-click resets to 0',
     calc: 'calc.',
     countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel have no counts in the norm — type a number yourself if needed.',
     save: '💾 Save settings', saved: 'Applies this tab\'s settings to the season. Players see the result on the public page.',
@@ -198,8 +199,8 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
       <div className="mixer-rail" title={manual ? tt.manual : tt.reset}>
         {manual ? (
           // у типа нет базы в нормах клана — ползунок двигает число штук напрямую (0…MANUAL_MAX), больше можно вписать
-          <input type="range" className="mixer-range" min={0} max={1000} value={Math.min(1000, Math.round((Number(abs) || 0) / MANUAL_MAX * 1000))}
-            disabled={disabled} onChange={e => onAbs(Math.round(Number(e.target.value) / 1000 * MANUAL_MAX))}
+          <input type="range" className="mixer-range" min={0} max={1000} value={500 + Math.min(500, Math.round((Number(abs) || 0) / MANUAL_MAX * 500))}
+            disabled={disabled} onChange={e => onAbs(Math.max(0, Math.round((Number(e.target.value) - 500) / 500 * MANUAL_MAX)))}
             onDoubleClick={() => onAbs('')} />
         ) : (
           <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k)}
@@ -353,7 +354,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       cols.unshift(...four)
     }
     return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab, list),
-      curveItems: list.map(x => ({ key: x.key, title: titleOf(x) })) }
+      lines: mode === 'points' ? pointsLines(list.map(x => ({ key: x.key, title: titleOf(x) })), scale)
+        : countLines(tab, list.map(x => ({ key: x.key, title: titleOf(x) })), scale, emc) }
   }
 
   const absProps = c => {
@@ -476,6 +478,18 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       },
       calc: k => emcAll({ ...emc, global: k }, scale), base: emcAll(EMC_DEFAULTS, SCALE_DEFAULTS) }
   }
+  // Поправки ступеней с графика: очки — mix.w, штуки — mix.c, четыре монстра EMC — emc.cells
+  const applyBands = (line, bands) => {
+    const next = writeBands({ mix, emc }, line.target, bands)
+    if (line.target.path === 'cell') setEmc(next.emc)
+    else setPersonal({ mix: next.mix })
+  }
+  const resetLines = lines => {
+    let st = { mix, emc }
+    lines.filter(l => Object.keys(l.bands || {}).length > 0).forEach(l => { st = writeBands(st, l.target, {}) })
+    if (st.mix !== mix) setPersonal({ mix: st.mix })
+    if (st.emc !== emc) setEmc(st.emc)
+  }
   const boards = ['crypts', 'emc'].map(buildBoard)
   const editing = isAll ? t.allLevels : bands.map(bandLabel).join(', ')
 
@@ -574,10 +588,9 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReset={b.master.onReset} resetOff={b.master.resetOff} />
               </div>
             </div>
-            <CurveEditor lang={lang} items={b.curveItems} scale={scale} disabled={!b.enabled}
-              onBands={(key, bands) => setMixEntry('w', key, { bands })}
-              onResetAll={() => setPersonal({ mix: { ...mix, w: Object.fromEntries(Object.entries(mix.w || {}).map(([k, e]) => [k, b.curveItems.some(x => x.key === k) ? { ...e, bands: {} } : e])) } })}
-              hasLines={b.curveItems.some(x => Object.keys(mix.w?.[x.key]?.bands || {}).length > 0)}
+            <CurveEditor lang={lang} mode={modes[b.tab]} lines={b.lines} disabled={!b.enabled}
+              onBands={applyBands} onResetAll={() => resetLines(b.lines)}
+              hasLines={b.lines.some(l => Object.keys(l.bands || {}).length > 0)}
               footer={<>{setsControls}</>} note={note} />
           </section>
         )

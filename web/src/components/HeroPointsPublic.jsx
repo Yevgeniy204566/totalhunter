@@ -7,7 +7,7 @@ import { HERO_LEVELS, DEFAULT_HERO, weightTable, weightAt, normAt, cryptsNormAt,
 const TXT = {
   ru: {
     title: 'Нормы по уровню Героя',
-    intro: 'Чем ниже уровень Героя, тем меньше очков нужно набрать, но каждый сундук даёт больше очков. Чем выше уровень, тем норма больше, а сундук весит меньше. Очки за сундук округлены до 5.',
+    intro: 'Чем ниже уровень Героя, тем меньше очков нужно набрать, но каждый сундук даёт больше очков. Чем выше уровень, тем норма больше, а сундук весит меньше.',
     find: 'Ваш уровень Героя',
     player: 'или выберите игрока',
     none: '— не выбран —',
@@ -28,7 +28,7 @@ const TXT = {
   },
   en: {
     title: 'Hero level norms',
-    intro: 'The lower the Hero level, the fewer points are needed, but each chest gives more. The higher the level, the bigger the norm and the less each chest is worth. Chest points are rounded to 5.',
+    intro: 'The lower the Hero level, the fewer points are needed, but each chest gives more. The higher the level, the bigger the norm and the less each chest is worth.',
     find: 'Your Hero level',
     player: 'or pick a player',
     none: '— none —',

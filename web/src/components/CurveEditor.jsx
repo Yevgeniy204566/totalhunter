@@ -1,27 +1,32 @@
 import { useMemo, useRef, useState } from 'react'
-import { BANDS, HANDLE_BANDS, centerOf, applyDrag, seriesOf, bandsFromTargets } from '../lib/curveEdit.js'
+import { BANDS, HANDLE_BANDS, centerOf, applyDrag, bandsFromTargets } from '../lib/curveEdit.js'
 
-// Кривая очков за сундук по уровням Героя (владелец 2026-10-26): как EQ в цифровом пульте — тянешь ручку, соседние точки
-// плавно идут следом. Правит одну линию за раз; хранение прежнее (поправки ступеней mix.w[тип].bands), график показывает очки.
+// Кривая по уровням Героя (владелец 2026-10-26): как EQ в цифровом пульте — тянешь ручку, соседние точки плавно идут
+// следом. Режим «Очки» — очки за сундук, «Количество» — штуки на игрока. Правит одну линию за раз; линии готовит
+// lib/curveLines.js, хранение прежнее (поправки ступеней), график показывает числа.
 
 const TXT = {
   ru: {
-    title: 'Очки за сундук по уровням Героя',
-    hint: 'Выберите сундук внизу и тяните квадратные ручки вверх и вниз: соседние уровни следуют плавно. «Мягкость» — как далеко достаёт влияние ручки. Пунктир — очки по шкале (ручка рядом с ним «прилипает» к нему — так линию можно вернуть в исходное), закрашено — ваше отличие от неё. Клавиши ↑ ↓ на выбранной ручке — шаг 5 очков.',
+    titlePoints: 'Очки за сундук по уровням Героя', titleCount: 'Количество сундуков по уровням Героя',
+    hintPoints: 'Выберите сундук внизу и тяните квадратные ручки вверх и вниз: соседние уровни следуют плавно. «Мягкость» — как далеко достаёт влияние ручки. Пунктир — значения по шкале (ручка рядом с ним «прилипает» к нему — так линию можно вернуть в исходное), закрашено — ваше отличие от неё. Клавиши ↑ ↓ на выбранной ручке — шаг 1, с Shift — шаг 5.',
     soft: 'Мягкость', softOnly: 'одна точка', softWide: 'широкая волна',
-    reset: 'Сбросить линию к шкале', resetTip: 'Вернуть очки выбранного сундука на всех уровнях к шкале',
-    hero: 'Герой', points: 'очков', scale: 'по шкале', muted: 'Тип выключен кнопкой — включите его, чтобы править линию.',
-    locked: 'В шкале на этом уровне 0 очков — поднять нельзя.', off: 'Включите «Персонализированный учёт», чтобы править линии.',
-    axisX: 'Уровень Героя', axisY: 'Очки за сундук', resetAll: 'Сбросить все линии', none: 'В шкале нет типов этого пульта.', pick: 'Выбранный сундук',
+    reset: 'Сбросить линию к шкале', resetTip: 'Вернуть выбранную линию на всех уровнях к шкале',
+    resetAll: 'Сбросить все линии',
+    hero: 'Герой', points: 'очков', count: 'шт.', scale: 'по шкале', muted: 'Тип выключен кнопкой — включите его, чтобы править линию.',
+    locked: 'В шкале на этом уровне 0 — поднять нельзя.', off: 'Включите «Персонализированный учёт», чтобы править линии.',
+    axisX: 'Уровень Героя', axisYPoints: 'Очки за сундук', axisYCount: 'Штук на игрока',
+    none: 'Для этого пульта на графике нечего показывать: у типов нет значений по уровням Героя.', pick: 'Выбранный сундук',
   },
   en: {
-    title: 'Chest points by Hero level',
-    hint: 'Pick a chest below and drag the square handles up and down: neighbouring levels follow smoothly. "Softness" is how far a handle reaches. Dashed — points by the scale (a handle near it snaps onto it, so the line can be returned to the original), filled — your difference from it. Arrow keys ↑ ↓ on a focused handle step 5 points.',
+    titlePoints: 'Chest points by Hero level', titleCount: 'Chest count by Hero level',
+    hintPoints: 'Pick a chest below and drag the square handles up and down: neighbouring levels follow smoothly. "Softness" is how far a handle reaches. Dashed — values by the scale (a handle near it snaps onto it, so the line can be returned to the original), filled — your difference from it. Arrow keys ↑ ↓ on a focused handle step 1, with Shift 5.',
     soft: 'Softness', softOnly: 'single point', softWide: 'wide wave',
-    reset: 'Reset line to scale', resetTip: 'Return the selected chest to the scale on all levels',
-    hero: 'Hero', points: 'points', scale: 'by scale', muted: 'This type is switched off — turn it on to edit the line.',
-    locked: 'The scale gives 0 points at this level — it cannot be raised.', off: 'Turn on "Personalized accounting" to edit the lines.',
-    axisX: 'Hero level', axisY: 'Points per chest', resetAll: 'Reset all lines', none: 'No types of this console are in the scale.', pick: 'Selected chest',
+    reset: 'Reset line to scale', resetTip: 'Return the selected line to the scale on all levels',
+    resetAll: 'Reset all lines',
+    hero: 'Hero', points: 'points', count: 'pcs', scale: 'by scale', muted: 'This type is switched off — turn it on to edit the line.',
+    locked: 'The scale gives 0 at this level — it cannot be raised.', off: 'Turn on "Personalized accounting" to edit the lines.',
+    axisX: 'Hero level', axisYPoints: 'Points per chest', axisYCount: 'Pieces per player',
+    none: 'Nothing to draw for this console: the types have no values by Hero level.', pick: 'Selected chest',
   },
 }
 
@@ -29,26 +34,25 @@ const COLORS = ['#a78bfa', '#f59e0b', '#38bdf8', '#4ade80', '#f472b6', '#fb923c'
 
 const W = 1000, H = 400, ML = 58, MR = 16, MT = 16, MB = 62
 const xOf = h => ML + (h - 100) / 500 * (W - ML - MR)
-const niceMax = v => Math.max(50, Math.ceil(v * 1.3 / 50) * 50)
+// верх оси — ближайшее «круглое» число с запасом 30%; линий сетки всегда пять
+const NICE = [5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 125, 150, 200, 250, 300, 400, 500, 600, 800, 1000, 1500, 2000, 3000, 5000, 10000]
+const niceMax = v => NICE.find(n => n >= v * 1.3) ?? Math.ceil(v * 1.3 / 1000) * 1000
 
-export default function CurveEditor({ lang = 'ru', items = [], scale, disabled = false, onBands, onResetAll, hasLines = false, footer = null, note = '' }) {
+export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], disabled = false, onBands, onResetAll, hasLines = false, footer = null, note = '' }) {
   const t = TXT[lang] || TXT.ru
   const [selKey, setSelKey] = useState(null)
   const [softness, setSoftness] = useState(40)
   const [hover, setHover] = useState(null)
   const drag = useRef(null)
   const svgRef = useRef(null)
+  const unitWord = mode === 'count' ? t.count : t.points
 
-  const series = useMemo(() => {
-    const out = items.map(x => ({ ...x, ...seriesOf(x.key, scale) })).filter(x => x.ref.some(r => r > 0) || x.base.some(b => b > 0))
-    return out.map((x, i) => ({ ...x, color: COLORS[i % COLORS.length], muted: scale.mix?.w?.[x.key]?.on === false }))
-  }, [items, scale])
+  const series = useMemo(() => lines.map((x, i) => ({ ...x, color: COLORS[i % COLORS.length] })), [lines])
   if (!series.length) return <p className="emc-text"><small>{t.none}</small></p>
 
   const sel = series.find(x => x.key === selKey) || series[0]
-  const selBands = scale.mix?.w?.[sel.key]?.bands || {}
   // ось Y не прыгает во время перетаскивания
-  const ymax = drag.current?.ymax ?? niceMax(Math.max(...sel.cur, ...sel.base))
+  const ymax = drag.current?.ymax ?? niceMax(Math.max(...sel.cur, ...sel.base, 1))
   const yOf = v => MT + (1 - Math.min(v, ymax) / ymax) * (H - MT - MB)
   const canEdit = !disabled && !sel.muted
 
@@ -58,7 +62,7 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
   const commit = (handleBand, start, delta, existing) => {
     const target = applyDrag(start, handleBand, delta, softness, sel.locked)
     const changed = target.map((v, i) => Math.abs(v - start[i]) > 1e-9)
-    onBands(sel.key, bandsFromTargets(target, sel.ref, existing, changed))
+    onBands(sel, bandsFromTargets(target, sel.ref, existing, changed))
   }
 
   const pointerValue = e => {
@@ -71,7 +75,7 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
     if (!canEdit || sel.locked.has(band)) return
     e.preventDefault()
     svgRef.current.setPointerCapture(e.pointerId)
-    drag.current = { band, start: [...sel.cont], existing: { ...selBands }, ymax, v0: sel.cont[i], scaleV: sel.ref[i] }
+    drag.current = { band, start: [...sel.cont], existing: { ...sel.bands }, ymax, v0: sel.cont[i], scaleV: sel.ref[i] }
   }
   const onMove = e => {
     const d = drag.current
@@ -79,39 +83,40 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
     const hero = 100 + ((e.clientX - r.left) / r.width * W - ML) / (W - ML - MR) * 500
     setHover(Math.min(BANDS.length - 1, Math.max(0, Math.floor((hero - 100) / 10))))
     if (!d) return
-    // магнит к шкале: когда ручка показывает то же число, что и шкала (очки кратны 5), она встаёт ровно на значение шкалы — так линию можно вернуть в исходное без следа
+    // магнит к шкале: когда ручка показывает то же число, что и шкала (значения целые), она встаёт ровно на значение шкалы —
+    // так линию можно вернуть в исходное без следа в данных
     let v = pointerValue(e)
-    if (Math.round(v / 5) === Math.round(d.scaleV / 5) || Math.abs(v - d.scaleV) < 3) v = d.scaleV
+    if (Math.round(v) === Math.round(d.scaleV) || Math.abs(v - d.scaleV) < Math.max(0.5, d.ymax * 0.02)) v = d.scaleV
     commit(d.band, d.start, v - d.v0, d.existing)
   }
   const onUp = () => { drag.current = null }
   const onKey = (band, i) => e => {
     if (!canEdit || sel.locked.has(band)) return
-    const step = e.shiftKey ? 25 : 5
+    const step = e.shiftKey ? 5 : 1
     const delta = e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0
     if (!delta) return
     e.preventDefault()
-    commit(band, [...sel.cont], delta, { ...selBands })
+    commit(band, [...sel.cont], delta, { ...sel.bands })
   }
 
   const hi = hover ?? BANDS.indexOf(400)
-  const readout = `${t.hero} ${BANDS[hi]}${BANDS[hi] >= 600 ? '' : '–' + (BANDS[hi] + 9)}: ${sel.title} — ${sel.cur[hi]} ${t.points} (${t.scale} ${sel.base[hi]})`
-  const gridStep = ymax <= 250 ? 50 : 100
-  const grid = Array.from({ length: Math.floor(ymax / gridStep) + 1 }, (_, k) => k * gridStep)
-  const dirty = Object.keys(selBands).length > 0
+  const readout = `${t.hero} ${BANDS[hi]}${BANDS[hi] >= 600 ? '' : '–' + (BANDS[hi] + 9)}: ${sel.title} — ${sel.cur[hi]} ${unitWord} (${t.scale} ${sel.base[hi]})`
+  const gridStep = ymax / 5
+  const grid = [0, 1, 2, 3, 4, 5].map(k => k * gridStep)
+  const dirty = Object.keys(sel.bands || {}).length > 0
 
   return (
     <div className={`curve${disabled ? ' curve--off' : ''}`}>
-      <h4 className="curve-title">{t.title}</h4>
-      <p className="curve-hint">{t.hint}</p>
+      <h4 className="curve-title">{mode === 'count' ? t.titleCount : t.titlePoints}</h4>
+      <p className="curve-hint">{t.hintPoints}</p>
       {disabled && <p className="emc-text"><small>{t.off}</small></p>}
 
-      <svg ref={svgRef} className="curve-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t.title}
+      <svg ref={svgRef} className="curve-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={mode === 'count' ? t.titleCount : t.titlePoints}
         onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={() => { if (!drag.current) setHover(null) }}>
         {grid.map(v => (
           <g key={v}>
             <line x1={ML} x2={W - MR} y1={yOf(v)} y2={yOf(v)} className="curve-grid" />
-            <text x={ML - 8} y={yOf(v) + 5} textAnchor="end" className="curve-axis">{Math.round(v)}</text>
+            <text x={ML - 8} y={yOf(v) + 5} textAnchor="end" className="curve-axis">{Math.round(v * 100) / 100}</text>
           </g>
         ))}
         {[100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600].map(h => (
@@ -121,7 +126,8 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
           </g>
         ))}
         <text x={(ML + W - MR) / 2} y={H - 8} textAnchor="middle" className="curve-axis-title">{t.axisX}</text>
-        <text x={ML} y={MT - 3} className="curve-axis-title">{t.axisY}</text>
+        <text x={ML} y={MT - 3} className="curve-axis-title">{mode === 'count' ? t.axisYCount : t.axisYPoints}</text>
+
         <path d={areaOf(sel.cur, sel.base)} fill={sel.color} opacity="0.2" />
         <path d={pathOf(sel.base)} fill="none" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="7 6" opacity="0.7" />
         <path d={pathOf(sel.cur)} fill="none" stroke={sel.color} strokeWidth="4.5" strokeLinejoin="round" opacity={sel.muted ? 0.35 : 1} />
@@ -166,7 +172,7 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
           <input type="range" min={0} max={100} value={softness} onChange={e => setSoftness(Number(e.target.value))} aria-label={t.soft} />
           <small>{t.softWide}</small>
         </label>
-        <button type="button" className="chest-pill-btn" title={t.resetTip} disabled={!canEdit || !dirty} onClick={() => onBands(sel.key, {})}>{t.reset}</button>
+        <button type="button" className="chest-pill-btn" title={t.resetTip} disabled={!canEdit || !dirty} onClick={() => onBands(sel, {})}>{t.reset}</button>
       </div>
       {footer && (
         <div className="curve-footer">

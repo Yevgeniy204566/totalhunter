@@ -7,9 +7,9 @@
 // владельца 2026-10-23). Между опорами — линейно; ниже первой опоры вес растёт
 // по общему коэффициенту (у эпиков Феникса очки на 11.6% выше, чем у ЭДО, и тренд продолжается);
 // выше последней — постоянный. Всё, что не стена клана, — РАСЧЁТ, не требование клана.
-// Очки за сундук округляются до кратных 5, общая норма — до сотен.
+// Очки за сундук округляются до целых (владелец 2026-10-26: шаг 1, не 5), общая норма — до сотен.
 
-import { clampMultiplier, computeRow, bandKey, emcChimeraAt } from './emcQuota.js'
+import { clampMultiplier, computeRow, bandKey, emcChimeraAt, emcChimeraBaseAt } from './emcQuota.js'
 import { NORM_LOW, normBase } from './normCurve.js'
 
 const P = 298
@@ -68,7 +68,7 @@ function lerp(points, h) {
   return null
 }
 
-const round5 = x => Math.round(x / 5) * 5
+const round1 = x => Math.round(x)
 const round100 = x => Math.round(x / 100) * 100
 
 // Cursed/Elven-цитадели одного уровня — одна строка шкалы (в стенах просто «цитадель»).
@@ -134,7 +134,7 @@ export function weightAt(id, hero, settings = DEFAULT_SETTINGS) {
   const base = baseWeight(key, hero)
   if (base == null) return null
   const group = CRYPT_TYPES.includes(key) ? 'crypts' : 'emc'
-  return round5(base * clampMultiplier(settings.weights) * mixFactor(settings.mix?.w?.[key], hero) * groupK(group, settings))
+  return round1(base * clampMultiplier(settings.weights) * mixFactor(settings.mix?.w?.[key], hero) * groupK(group, settings))
 }
 
 // Очки типа на уровне Героя без округления и без поправки ступеней: опора, от которой график пересчитывает «желаемые очки»
@@ -239,7 +239,7 @@ export const EMC_TYPES = [...EMC_IDS, 'Dark Omens Chest', 'Epic Briareus', 'Yogw
 // Проверка по данным: эпики × средние очки эпика = 102% нормы ЭДО, 81% Старта.
 export const EPIC_CRYPTS = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
 
-function countRaw(id, hero, settings) {
+export function countRaw(id, hero, settings) {
   const key = weightKey(id)
   const mixC = settings.mix?.c || {}
   const entry = mixC[key]
@@ -302,4 +302,15 @@ export function epicCryptsOf(counts, meta) {
     if (m && EPIC_CRYPTS.includes(weightKey(m.id))) n += c || 0
   }
   return n
+}
+
+// Количество прочих эпических монстров (всё, кроме четырёх с историей) без округления — опора для графика количества.
+export function emcOtherRaw(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
+  const entry = settings.mix?.c?.[id]
+  const globalK = clampMultiplier(emcModel?.global)
+  const f = mixFactor({ ...entry, on: true }, hero)
+  if (id === 'Epic Chimera') return emcChimeraBaseAt(hero) * f * globalK
+  const row = computeRow(hero)
+  const mean = EMC_FINALS.reduce((sum, k) => sum + row[k], 0) / 4
+  return mean * f * globalK
 }

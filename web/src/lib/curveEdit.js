@@ -26,22 +26,30 @@ export function applyDrag(start, handleBand, delta, softness, locked = new Set()
   })
 }
 
-// Ряды для графика: текущие очки, очки по шкале (пунктир), опора для пересчёта и «закрытые» ступени.
-export function seriesOf(key, scale) {
-  const cur = [], base = [], ref = [], cont = []
-  const locked = new Set()
-  const bands = scale.mix?.w?.[key]?.bands || {}
+// Ряды для графика по трём функциям уровня Героя: cur — что показывается сейчас (округлено), base — по умолчанию,
+// ref — точное значение без поправки ступени этой линии (опора для пересчёта). bands — её поправки ступеней сейчас.
+export function makeSeries({ cur, base, ref }, bands = {}) {
+  const out = { cur: [], base: [], ref: [], cont: [], locked: new Set(), bands }
   BANDS.forEach(band => {
     const h = centerOf(band)
-    cur.push(weightAt(key, h, scale) ?? 0)
-    base.push(weightAt(key, h, DEFAULT_SETTINGS) ?? 0)
-    const r = weightBase(key, h, scale) ?? 0
-    ref.push(r)
-    // точные очки без округления до 5: правка стартует от них, поэтому «вверх и обратно» возвращает исходное без следа
-    cont.push(r * clampMultiplier(bands[String(band)]))
-    if (!(r > 0)) locked.add(band)
+    out.cur.push(cur(h))
+    out.base.push(base(h))
+    const r = ref(h) || 0
+    out.ref.push(r)
+    // точные значения без округления: правка стартует от них, поэтому «вверх и обратно» возвращает исходное без следа
+    out.cont.push(r * clampMultiplier(bands[String(band)]))
+    if (!(r > 0)) out.locked.add(band)
   })
-  return { cur, base, ref, cont, locked }
+  return out
+}
+
+// Очки за сундук (режим «Очки»)
+export function seriesOf(key, scale) {
+  return makeSeries({
+    cur: h => weightAt(key, h, scale) ?? 0,
+    base: h => weightAt(key, h, DEFAULT_SETTINGS) ?? 0,
+    ref: h => weightBase(key, h, scale) ?? 0,
+  }, scale.mix?.w?.[key]?.bands || {})
 }
 
 // Ступени Героя из желаемых очков: поправка = желаемое / расчётное. Трогаем только ступени, где очки изменились
@@ -53,7 +61,7 @@ export function bandsFromTargets(target, ref, existing = {}, changed = null) {
     if (!(ref[i] > 0)) return
     const ratio = target[i] / ref[i]
     // поправка меньше 0,4% от шкалы неотличима глазом и не нужна; правило симметрично, поэтому «вверх и обратно»
-    // возвращает шкалу без следа (стирание по корзине округления до 5 на границе корзин давало остатки)
+    // возвращает шкалу без следа (стирание по корзине округления на границе корзин давало остатки)
     if (Math.abs(ratio - 1) < 0.004) delete out[String(band)]
     else out[String(band)] = Math.round(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, ratio)) * 10000) / 10000
   })

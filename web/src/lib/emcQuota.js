@@ -98,9 +98,10 @@ export function computeRow(hero, settings = DEFAULT_SETTINGS) {
   const band = bandKey(hero)
   const cellK = MONSTER_KEYS.map(key => clampMultiplier(settings.cells?.[key]?.[band]))
   const off = settings.off || []
-  const fin = base.map((b, k) => (off.includes(MONSTER_KEYS[k]) ? 0
-    : round(b * levelK * monsterK[k] * cellK[k] * globalK)))
+  const raw = base.map((b, k) => (off.includes(MONSTER_KEYS[k]) ? 0 : b * levelK * monsterK[k] * cellK[k] * globalK))
+  const fin = raw.map(round)
   return {
+    raw,
     hero,
     base,
     levelK,

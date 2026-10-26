@@ -25,9 +25,9 @@ test('опора ЭДО (387.5): стена клана воспроизводи�
   for (const [id, pts] of Object.entries(wall)) assert.equal(w(id, 387.5), pts, id)
 })
 
-test('очки за сундук всегда кратны 5', () => {
+test('очки за сундук — целые числа (шаг 1)', () => {
   for (const h of HERO_LEVELS) for (const id of ['Epic Crypt 35', 'Rare Crypt 25', 'Common Crypt 25', 'Epic Fire Hydra']) {
-    assert.equal(w(id, h) % 5, 0, `${id} @${h}`)
+    assert.ok(Number.isInteger(w(id, h)), `${id} @${h}`)
   }
 })
 
@@ -96,7 +96,7 @@ test('общая норма на всём диапазоне 100–600: раст
 test('рычаги: множитель нормы и множитель весов', () => {
   const s = { ...DEFAULT_SETTINGS, norm: 1.2, weights: 0.5 }
   assert.equal(normAt(387.5, s), 16800)
-  assert.equal(w('Epic Crypt 35', 387.5, s), 70) // 135×0.5=67.5 → ближайшее кратное 5
+  assert.equal(w('Epic Crypt 35', 387.5, s), 68) // 135×0.5=67.5 → ближайшее целое
 })
 
 test('рычаг по диапазону Героев меняет только норму этого диапазона', () => {
@@ -146,7 +146,7 @@ test('счёт без уровня Героя — по Герою 400 и partial
 
 test('таблица весов по уровню: строки для всех типов шкалы', () => {
   const t = weightTable(300)
-  assert.equal(t.find(r => r.id === 'Epic Crypt 35').points, 150)
+  assert.equal(t.find(r => r.id === 'Epic Crypt 35').points, 149)
   assert.ok(t.length >= 20)
   assert.ok(t.every(r => ['FACT', 'CALC'].includes(r.origin)))
 })
@@ -198,15 +198,15 @@ test('ступень Героя: 310–319 → "310", края 100…600', () =>
 
 test('фейдер «все уровни» умножает очки типа на каждой ступени пропорционально', () => {
   const s = { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Crypt 35': { all: 1.2 } } } }
-  assert.equal(w('Epic Crypt 35', 387.5, s), 160) // 135×1.2=162 → 160
+  assert.equal(w('Epic Crypt 35', 387.5, s), 162) // 135×1.2
   assert.equal(w('Epic Crypt 35', 298, s), 180)   // 150×1.2
   assert.equal(w('Epic Crypt 30', 298, s), 90)    // другие типы не затронуты
 })
 
 test('фейдер ступени правит только свою ступень, поверх «всех уровней»', () => {
   const s = { ...DEFAULT_SETTINGS, mix: { w: { 'Epic Crypt 35': { all: 1.2, bands: { 380: 0.5 } } } } }
-  assert.equal(w('Epic Crypt 35', 385, s), 80)    // 135×1.2×0.5=81 → 80
-  assert.equal(w('Epic Crypt 35', 395, s), 160)   // соседняя ступень — только «все уровни»
+  assert.equal(w('Epic Crypt 35', 385, s), 81)    // 135×1.2×0.5
+  assert.equal(w('Epic Crypt 35', 395, s), 162)   // соседняя ступень — только «все уровни»
 })
 
 test('mute (on:false) обнуляет тип', () => {
@@ -410,10 +410,9 @@ test('синхронизация пульта и публичной страни
 
 test('главный фейдер группы множит очки всех типов своей группы и только её', () => {
   const s = { mix: { g: { crypts: { all: 0.5 } } } }
-  // очки кратны 5: ждём половину с допуском округления
-  for (const id of ['Epic Crypt 35', 'Citadel 30']) assert.ok(Math.abs(weightAt(id, 300, s) - weightAt(id, 300) * 0.5) <= 5, id)
+  for (const id of ['Epic Crypt 35', 'Citadel 30']) assert.ok(Math.abs(weightAt(id, 300, s) - weightAt(id, 300) * 0.5) <= 1, id)
   assert.equal(weightAt('Epic Fire Hydra', 300, s), weightAt('Epic Fire Hydra', 300))
   const e = { mix: { g: { emc: { all: 2 } } } }
-  assert.ok(Math.abs(weightAt('Epic Fire Hydra', 300, e) - weightAt('Epic Fire Hydra', 300) * 2) <= 5)
+  assert.ok(Math.abs(weightAt('Epic Fire Hydra', 300, e) - weightAt('Epic Fire Hydra', 300) * 2) <= 1)
   assert.equal(weightAt('Epic Crypt 35', 300, e), weightAt('Epic Crypt 35', 300))
 })
