@@ -580,8 +580,9 @@ a:hover { color: var(--on-surface); }
 .public-table .public-num-cell, .public-table .public-hero-cell, .public-table .public-name-cell {
   position: sticky; z-index: 2; background-color: var(--card);
 }
-.public-table .public-num-cell  { left: 0;    width: 40px;  min-width: 40px;  text-align: center; }
-.public-table .public-hero-cell { left: 40px; width: 62px;  min-width: 62px;  text-align: center; padding-top: 2px; padding-bottom: 2px; }
+.public-table .public-num-cell, .public-table .public-hero-cell { box-sizing: border-box; padding-left: 2px; padding-right: 2px; overflow: hidden; }
+.public-table .public-num-cell  { left: 0;    width: 40px;  min-width: 40px;  max-width: 40px;  text-align: center; }
+.public-table .public-hero-cell { left: 40px; width: 62px;  min-width: 62px;  max-width: 62px;  text-align: center; padding-top: 2px; padding-bottom: 2px; }
 .public-table .public-name-cell { left: 102px; text-align: left; box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.7); }
 .public-table tbody tr:nth-child(even) td.public-num-cell,
 .public-table tbody tr:nth-child(even) td.public-hero-cell,
@@ -1147,4 +1148,10 @@ a:hover { color: var(--on-surface); }
 @media (max-width: 640px) {
   .mixer-name { font-size: 14px; }
   .mixer-col { width: 80px; flex-basis: 80px; }
+}
+
+/* Телефон: имя игрока в закрепе не шире ~128px (длинное — с многоточием), иначе на прокручиваемые данные не остаётся места;
+   отступы закреплённых ячеек учтены в ширине, чтобы они не наезжали друг на друга при прокрутке */
+@media (max-width: 640px) {
+  .public-table .public-name-cell { box-sizing: border-box; max-width: 128px; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; padding-right: 8px; }
 }
