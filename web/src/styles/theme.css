@@ -1123,20 +1123,20 @@ a:hover { color: var(--on-surface); }
 
 /* Два главных раздела кабинета — каждый в своей цветной рамке */
 .mode-btn--general { border: 2px solid #38bdf8; }
-.mode-btn--personal { border: 2px solid #fb923c; }
+.mode-btn--personal { border: 2px solid #22c55e; }
 .mode-switch { gap: 10px; border: none; background: transparent; overflow: visible; }
 .mode-btn { border-radius: 14px; }
 .mode-btn + .mode-btn { border-left-width: 2px; border-top-width: 2px; }
 .mode-btn--general.mode-btn--active, .mode-btn--general.mode-btn--active:hover { background: #0e7490; border-color: #38bdf8; }
-.mode-btn--personal.mode-btn--active, .mode-btn--personal.mode-btn--active:hover { background: #9a3412; border-color: #fb923c; }
+.mode-btn--personal.mode-btn--active, .mode-btn--personal.mode-btn--active:hover { background: #15803d; border-color: #4ade80; }
 .norm-panel { margin: 4px 0 16px; padding: 16px 16px 18px; border-radius: 16px; border: 2px solid var(--outline); }
 .norm-panel--general { border-color: #38bdf8; box-shadow: 0 0 0 1px rgba(56,189,248,0.25), 0 0 22px rgba(56,189,248,0.12); }
-.norm-panel--personal { border-color: #fb923c; box-shadow: 0 0 0 1px rgba(251,146,60,0.25), 0 0 22px rgba(251,146,60,0.12); }
+.norm-panel--personal { border-color: #22c55e; box-shadow: 0 0 0 1px rgba(34,197,94,0.25), 0 0 22px rgba(34,197,94,0.12); }
 .norm-panel-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--outline); }
 .norm-panel-head b { font-size: 21px; color: #fff; }
 .norm-panel-head span { font-size: 16px; line-height: 1.5; color: var(--on-surface2); }
 .norm-panel--general .norm-panel-head b { color: #7dd3fc; }
-.norm-panel--personal .norm-panel-head b { color: #fdba74; }
+.norm-panel--personal .norm-panel-head b { color: #86efac; }
 
 /* Публичная таблица: имя игрока и очки одним базовым размером; дальше имя растёт с успехом (nameSize) */
 .public-table { --public-name-base: 17px; }
@@ -1184,3 +1184,50 @@ a:hover { color: var(--on-surface); }
 .mixer-levels-fold > summary { cursor: pointer; font-size: 17px; color: var(--accent); padding: 8px 0; list-style-position: inside; }
 .mixer-levels-fold > summary b { color: #fff; }
 .mixer-levels-fold[open] > summary { margin-bottom: 4px; }
+
+/* ===== Телефон: аудит юзабилити 2026-10-26 ===== */
+/* карточки квот не выезжают за рамку: колонка сетки может сжиматься, длинная кнопка переносится */
+.quota-card { min-width: 0; }
+.quota-hero .chest-pill-btn { white-space: normal; text-align: left; height: auto; line-height: 1.3; padding: 10px 14px; }
+@media (max-width: 900px) { .quota-grid { grid-template-columns: minmax(0, 1fr); } }
+.norm-panel input[type=checkbox] { width: 22px; height: 22px; flex: 0 0 auto; }
+.curve-hit { fill: transparent; }
+@media (max-width: 640px) {
+  .norm-panel { padding: 12px 10px 14px; }
+  .mixer-quotas { padding: 10px 8px; }
+  .mixer-console { padding: 10px 8px 6px; }
+  .mixer-hero-card { padding: 10px 10px 8px; }
+  .mixer-hero-row { gap: 10px; }
+  .mixer-hero-actions { margin-left: 0; width: 100%; justify-content: space-between; }
+  .mixer-console-head { flex-direction: column; align-items: stretch; gap: 10px; }
+  .mixer-console-head .mixer-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mixer-console-head .mixer-switch .chest-pill-btn { min-height: 44px; justify-content: center; }
+  .mixer-add { width: 100%; }
+  .mixer-add select { flex: 1 1 100%; min-width: 0; }
+  /* мастер-фейдер — карточкой над колонками (иначе рядом остаётся окошко в полторы колонки), колонки на всю ширину */
+  .mixer-board { flex-direction: column; padding: 8px 4px 10px; gap: 0; }
+  .mixer-master { order: -1; flex: 0 0 auto; border-left: none; border-bottom: 1px solid var(--outline); padding: 0 0 12px; margin-bottom: 12px; display: block; }
+  .mixer-master .mixer-col--master { width: 100%; flex: 1 1 auto; display: grid; grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: "rail name" "rail num" "rail fine" "rail reset"; column-gap: 16px; row-gap: 8px; align-items: center; justify-items: stretch; }
+  .mixer-master .mixer-name { grid-area: name; height: auto; text-align: left; font-size: 20px; }
+  .mixer-master .mixer-dot-gap { display: none; }
+  .mixer-master .mixer-rail { grid-area: rail; justify-self: center; }
+  .mixer-master .mixer-k { grid-area: num; width: 100%; }
+  .mixer-master .mixer-fine { grid-area: fine; }
+  .mixer-master .mixer-reset-btn { grid-area: reset; margin-top: 0; }
+  /* график: Zoom над графиком на всю ширину; сам график шире экрана и прокручивается, подписи крупнее */
+  .curve-zoom { position: static; margin: 0 0 8px; width: 100%; box-sizing: border-box; justify-content: space-between; }
+  .curve-zoom-strip { flex: 1 1 auto; width: auto; min-width: 0; }
+  .curve-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .curve-svg { min-width: 720px; }
+  .curve-axis, .curve-val { font-size: 21px; }
+  .curve-axis-title { font-size: 22px; }
+  .curve-chip { padding: 10px 14px; }
+  .curve-footer { flex-direction: column; align-items: stretch; }
+  .curve-footer select, .curve-footer input { width: 100%; box-sizing: border-box; min-height: 44px; }
+  .curve-tools { flex-direction: column; align-items: stretch; }
+  .mixer-norms { gap: 8px; }
+  .mixer-norm { flex: 1 1 100%; }
+}
+
+/* клавиша включения типа — удобная цель для пальца (раньше 30×16) */
+.mixer-dot, .mixer-dot-gap { width: 40px; height: 26px; }

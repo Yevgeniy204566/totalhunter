@@ -119,6 +119,7 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
           style={{ '--p': `${softness}%` }} onChange={e => setSoftness(Number(e.target.value))} />
         <button type="button" title={t.zoomIn} aria-label={`${t.zoom} +`} disabled={softness >= 100} onClick={() => setSoftness(v => Math.min(100, v + 10))}>+</button>
       </div>
+      <div className="curve-scroll">
       <svg ref={svgRef} className="curve-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={mode === 'count' ? t.titleCount : t.titlePoints}
         onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={() => { if (!drag.current) setHover(null) }}>
         {grid.map(v => (
@@ -153,6 +154,7 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
               tabIndex={canEdit && !locked ? 0 : -1} role="slider" aria-label={`${t.hero} ${b}`} aria-valuemin={0} aria-valuemax={Math.round(ymax)}
               aria-valuenow={sel.cur[i]} onPointerDown={onDown(b, i)} onKeyDown={onKey(b, i)}>
               <title>{locked ? t.locked : `${t.hero} ${b}: ${sel.cur[i]}`}</title>
+              <rect x={x - 24} y={y - 30} width="48" height="60" className="curve-hit" />
               <rect x={x - 11} y={y - 15} width="22" height="30" rx="4" className="curve-cap" />
               <line x1={x - 11} x2={x + 11} y1={y} y2={y} stroke={sel.color} strokeWidth="3" />
               <text x={x} y={y > MT + 46 ? y - 21 : y + 36} textAnchor="middle" className="curve-val">{sel.cur[i]}</text>
@@ -160,6 +162,7 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
           )
         })}
       </svg>
+      </div>
       </div>
 
       <p className="curve-readout" role="status" aria-live="polite">{readout}</p>
