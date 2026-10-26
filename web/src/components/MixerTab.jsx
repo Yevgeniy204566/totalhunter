@@ -638,6 +638,12 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReset={b.master.onReset} resetOff={b.master.resetOff} />
               </div>
             </div>
+            {/* Сохранить / загрузить — в каждом модуле сразу под ручками (владелец 2026-10-26): настроил — и тут же сохранил */}
+            <div className="mixer-console-actions">
+              <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
+              <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
+              {setsControls}
+            </div>
             <CurveEditor lang={lang} mode={modes[b.tab]} lines={b.lines} disabled={!b.enabled}
               onBands={applyBands} onResetAll={() => resetLines(b.lines)}
               hasLines={b.lines.some(l => Object.keys(l.bands || {}).length > 0)}
