@@ -35,7 +35,7 @@ const TXT = {
     off: 'Выключено: нормы игроков фиксированные, из настроек сезона. Включите переключатель выше, чтобы настраивать нормы по уровням Героя.',
     sample: 'Пример для Героя',
     reset: 'Двойной щелчок по ползунку — вернуть расчётное значение',
-    mute: 'Вкл/выкл: выключенный тип не считается',
+    mute: 'Зелёный — участвует в подсчёте, красный — не участвует (выключен или значение 0). Нажмите, чтобы включить или выключить',
     abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
     manual: 'В нормах клана штук для этого типа нет — двигайте ползунок (0–200) или впишите число вручную; двойной щелчок — сбросить в 0',
     calc: 'расчёт',
@@ -84,7 +84,7 @@ const TXT = {
     off: 'Off: player norms are fixed from the season settings. Turn the switch above on to set norms by Hero level.',
     sample: 'Example for Hero',
     reset: 'Double-click a slider to return the calculated value',
-    mute: 'On/off: a muted type is not counted',
+    mute: 'Green — counted, red — not counted (off or value 0). Click to turn on or off',
     abs: 'Value: erase and type your own number (0 turns the type off)',
     manual: 'The clan norms give no count for this type — move the slider (0–200) or type a number; double-click resets to 0',
     calc: 'calc.',
@@ -179,6 +179,8 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
   const [draft, setDraft] = useState(null)
+  // светодиод: зелёный — тип участвует в подсчёте, красный — выключен кнопкой или значение 0
+  const counted = on !== false && Number(abs) > 0
   const type = e => {
     const v = e.target.value.replace(',', '.')
     if (!/^\d*\.?\d*$/.test(v)) return
@@ -191,7 +193,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
          style={accent ? { '--mc': accent } : undefined}>
       <div className="mixer-name" title={tip || title}>{title}</div>
       {onToggle
-        ? <button type="button" className={`mixer-dot${on === false ? ' mixer-dot--off' : ''}`} title={tt.mute}
+        ? <button type="button" className={`mixer-dot${counted ? '' : ' mixer-dot--off'}`} title={tt.mute}
             onClick={onToggle} disabled={disabled} />
         : <span className="mixer-dot-gap" />}
       <div className="mixer-rail" title={manual ? tt.manual : tt.reset}>
