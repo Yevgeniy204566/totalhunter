@@ -580,9 +580,8 @@ a:hover { color: var(--on-surface); }
 .public-table .public-num-cell, .public-table .public-hero-cell, .public-table .public-name-cell {
   position: sticky; z-index: 2; background-color: var(--card);
 }
-.public-table .public-num-cell, .public-table .public-hero-cell { box-sizing: border-box; padding-left: 2px; padding-right: 2px; overflow: hidden; }
-.public-table .public-num-cell  { left: 0;    width: 40px;  min-width: 40px;  max-width: 40px;  text-align: center; }
-.public-table .public-hero-cell { left: 40px; width: 62px;  min-width: 62px;  max-width: 62px;  text-align: center; padding-top: 2px; padding-bottom: 2px; }
+.public-table .public-num-cell  { left: 0;    width: 40px;  min-width: 40px;  text-align: center; }
+.public-table .public-hero-cell { left: 40px; width: 62px;  min-width: 62px;  text-align: center; padding-top: 2px; padding-bottom: 2px; }
 .public-table .public-name-cell { left: 102px; text-align: left; box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.7); }
 .public-table tbody tr:nth-child(even) td.public-num-cell,
 .public-table tbody tr:nth-child(even) td.public-hero-cell,
@@ -1138,22 +1137,12 @@ a:hover { color: var(--on-surface); }
 .norm-panel--general .norm-panel-head b { color: #7dd3fc; }
 .norm-panel--personal .norm-panel-head b { color: #86efac; }
 
-/* Публичная таблица: имя игрока и очки одним базовым размером; дальше имя растёт с успехом (nameSize) */
-.public-table { --public-name-base: 17px; }
-.public-table td.public-points-cell, .public-table .public-points-cell .public-bar-val, .public-table td.public-points-cell .public-bar-top { font-size: var(--public-name-base); }
-.public-table .public-bar-top { font-size: var(--public-name-base); }
 
 /* Телефон: текст в пульте не мельче 14px (аудитория 40–60+) */
 .chest-pill-btn--sm { font-size: 15px; }
 @media (max-width: 640px) {
   .mixer-name { font-size: 14px; }
   .mixer-col { width: 80px; flex-basis: 80px; }
-}
-
-/* Телефон: имя игрока в закрепе не шире ~128px (длинное — с многоточием), иначе на прокручиваемые данные не остаётся места;
-   отступы закреплённых ячеек учтены в ширине, чтобы они не наезжали друг на друга при прокрутке */
-@media (max-width: 640px) {
-  .public-table .public-name-cell { box-sizing: border-box; max-width: 128px; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; padding-right: 8px; }
 }
 
 /* Проверка пульта 2026-10-26: кнопки не ниже 40px, текст не мельче 15px, неактивное видно, колонка «нет на Герое» серая */
@@ -1167,17 +1156,7 @@ a:hover { color: var(--on-surface); }
 .mixer-col--dead .mixer-rail { opacity: 0.3; }
 .mixer-col--dead .mixer-name { opacity: 0.6; }
 .mixer-dead { font-size: 14px; line-height: 1.2; text-align: center; color: var(--on-surface2); }
-@media (max-width: 640px) { .public-table .public-name-cell { max-width: 112px; } }
 
-/* Телефон: наезд строк при прокрутке вбок (владелец 2026-10-26). Причины: анимированные слои имён (бегущий блик, тень-фильтр)
-   на мобильных браузерах живут отдельно от закреплённой колонки и накладываются на соседние строки — анимированы только имена
-   выше нормы, поэтому «через строку»; и раздельная модель границ у закрепов. Цвета и ленты остаются, движение и фильтры — нет. */
-.public-table { border-collapse: separate; border-spacing: 0; }
-.public-table .public-num-cell, .public-table .public-hero-cell, .public-table .public-name-cell { isolation: isolate; contain: paint; }
-@media (max-width: 900px), (pointer: coarse) {
-  .public-name-shimmer, .public-name-legendary, .public-name-banner, .public-imp-field, .public-imp-field::before { animation: none !important; }
-  .public-name-plain, .public-name-shimmer, .public-name-legendary { filter: none; }
-}
 
 /* Таблица ступеней Героя свёрнута: по умолчанию «Все уровни», раскрывается по нажатию */
 .mixer-levels-fold { margin-top: 6px; }
@@ -1231,26 +1210,3 @@ a:hover { color: var(--on-surface); }
 
 /* клавиша включения типа — удобная цель для пальца (раньше 30×16) */
 .mixer-dot, .mixer-dot-gap { width: 40px; height: 26px; }
-
-/* Телефон и планшет: «#», герой и имя — отдельный блок слева, один на всю таблицу (position: sticky у блока, а не у сотен ячеек);
-   данные листаются рядом и обрезаются границей контейнера, поэтому наложиться на имя не могут (владелец 2026-10-26, 4-я жалоба) */
-.public-split { display: flex; align-items: flex-start; width: max-content; min-width: 100%; }
-.public-split-left { position: sticky; left: 0; z-index: 6; flex: 0 0 auto; background: var(--card); box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.7); }
-.public-table--fixed { width: auto; }
-.public-table--data { width: auto; flex: 1 0 auto; }
-.public-table--fixed .public-num-cell, .public-table--fixed .public-hero-cell, .public-table--fixed .public-name-cell {
-  position: static; contain: none; isolation: auto; }
-.public-table--fixed .public-name-cell { box-shadow: none; }
-/* одинаковая высота строк в обеих таблицах — строки слева и справа не расходятся */
-.public-table--fixed tbody td, .public-table--data tbody td { height: 58px; box-sizing: border-box; }
-.public-table--fixed thead tr.public-avg-row th, .public-table--data thead tr.public-avg-row th { height: 30px; }
-.public-table--fixed thead tr:last-child th, .public-table--data thead tr:last-child th { height: 47px; box-sizing: border-box; }
-
-/* «#» (порядковый номер): по центру колонки и крупнее; общее правило «первая колонка слева» его сдвигало */
-.public-table td.public-num-cell, .public-table th.public-num-cell { text-align: center; font-size: 19px; font-weight: 700; padding-left: 2px; padding-right: 2px; }
-.public-table th.public-num-cell { font-size: 15px; }
-.public-table--fixed thead tr.public-avg-row th, .public-table--data thead tr.public-avg-row th { height: 37px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; line-height: 37px; }
-.public-table--fixed thead tr.public-head-row th, .public-table--data thead tr.public-head-row th { top: 37px; }
-/* содержимое не должно растягивать строку выше 58px — иначе левая и правая части расходятся (по 0,1px на строку) */
-.public-table--fixed tbody td, .public-table--data tbody td { padding-top: 4px; padding-bottom: 4px; vertical-align: middle; }
-.public-table--data tbody td.public-bar-cell, .public-table--data tbody td.public-epic-cell { padding-top: 4px; padding-bottom: 4px; }

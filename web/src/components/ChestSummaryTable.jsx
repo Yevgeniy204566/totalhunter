@@ -453,20 +453,6 @@ const TABLE_TXT = {
         sortPct: 'Sort by performance: % of the own Hero norm', sortAbs: 'Sort by absolute value: highest numbers', abs: 'abs.', pctShort: '% of norm', heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
 }
 
-// Узкий экран (телефон/планшет): закреплённые колонки выносятся из прокручиваемой области в свой блок слева.
-function useNarrow(query = '(max-width: 900px)') {
-  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(query).matches)
-  useEffect(() => {
-    if (!window.matchMedia) return undefined
-    const mq = window.matchMedia(query)
-    const on = () => setNarrow(mq.matches)
-    on()
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [query])
-  return narrow
-}
-
 export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta), [targets, tt.epic, chestTypeMeta])
@@ -543,8 +529,6 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     })
   }
 
-  const narrow = useNarrow()
-  const split = narrow && !editMode
   const tableWrapRef = useRef(null)
   const topScrollRef = useRef(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
@@ -610,14 +594,33 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     }
   }
 
-  const renderHead = part => (
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '0 0 6px' }}>
+        {editButton}
+        <button type="button" className="public-avg-toggle" onClick={toggleAvg}>
+          {showAvg ? tt.hideAvg : tt.showAvg}
+        </button>
+      </div>
+      <HeroShieldDefs />
+      <div
+        className="public-table-top-scroll"
+        ref={topScrollRef}
+        onScroll={syncTableFromTopScroll}
+      >
+        <div style={{ width: tableScrollWidth, height: 1 }} />
+      </div>
+
+      <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncTopScrollFromTable}>
+        <table className="public-table">
           <thead>
             {showAvg && <tr className="public-avg-row">
-              {part !== 'data' && <><th></th><th></th><th>{tt.avg}</th></>}
+              <th></th>
+              <th></th>
+              <th>{tt.avg}</th>
               {editMode && <th></th>}
               {editMode && <th></th>}
               {editMode && <th></th>}
-              {part !== 'fixed' && (<>
               {mainCols
                 ? mainCols.map(c => <th key={c.key} className="public-main-th">{fmtAvg(columnAverage(players, c.get))}</th>)
                 : <>
@@ -631,18 +634,14 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   {fmtAvg(columnAverage(players, p => p.counts[t]))}
                 </th>
               ))}
-              </>)}
             </tr>}
             <tr className={showAvg ? 'public-head-row' : ''}>
-              {part !== 'data' && (<>
               <th className="public-num-cell">#</th>
               <th className="public-sortable public-hero-cell" onClick={() => toggleSort('hero')}>{tt.heroCol}{sortMark('hero')}</th>
               <th className="public-sortable public-name-cell" onClick={() => toggleSort('name')}>{tt.player}{sortMark('name')}</th>
-              </>)}
               {editMode && <th>{tt.rank}</th>}
               {editMode && <th>{tt.troops}</th>}
               {editMode && <th></th>}
-              {part !== 'fixed' && (<>
               {mainCols
                 ? mainCols.map(c => (
                   <th key={c.key} className="public-main-th">
@@ -673,19 +672,17 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   <span translate="no" className="notranslate">{t}</span>{sortMark(t)}
                 </th>
               ))}
-              </>)}
             </tr>
           </thead>
-  )
-  const renderRow = (p, part) => (
+          <tbody>
+            {shownPlayers.map(p => {
+              return (
                 <tr key={p.name}>
-                  {part !== 'data' && (<>
                   <td className="public-num-cell">{pointsRank[p.name]}</td>
                   <td className="public-hero-cell"><HeroShield level={p.hero_level} /></td>
                   <td title={p.name} translate="no" className="notranslate public-name-cell">
                     {renderPlayerName(p, nameTargets)}
                   </td>
-                  </>)}
                   {editMode && (
                     <td>
                       <select
@@ -754,7 +751,6 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                       </button>
                     </td>
                   )}
-                  {part !== 'fixed' && (<>
                   {mainCols
                     ? mainCols.map(c => (
                       <BarCell key={c.key} value={c.get(p)} target={c.targetOf(p)} partial={c.partialOf(p)} hint={tt.partialHint} />
@@ -819,47 +815,11 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                       </td>
                     )
                   })}
-                  </>)}
                 </tr>
-  )
-
-  return (
-    <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', margin: '0 0 6px' }}>
-        {editButton}
-        <button type="button" className="public-avg-toggle" onClick={toggleAvg}>
-          {showAvg ? tt.hideAvg : tt.showAvg}
-        </button>
-      </div>
-      <HeroShieldDefs />
-      <div
-        className="public-table-top-scroll"
-        ref={topScrollRef}
-        onScroll={syncTableFromTopScroll}
-      >
-        <div style={{ width: tableScrollWidth, height: 1 }} />
-      </div>
-
-      <div className="public-table-wrap" ref={tableWrapRef} onScroll={syncTopScrollFromTable}>
-        {split ? (
-          <div className="public-split">
-            <div className="public-split-left">
-              <table className="public-table public-table--fixed">
-                {renderHead('fixed')}
-                <tbody>{shownPlayers.map(p => renderRow(p, 'fixed'))}</tbody>
-              </table>
-            </div>
-            <table className="public-table public-table--data">
-              {renderHead('data')}
-              <tbody>{shownPlayers.map(p => renderRow(p, 'data'))}</tbody>
-            </table>
-          </div>
-        ) : (
-          <table className="public-table">
-            {renderHead('all')}
-            <tbody>{shownPlayers.map(p => renderRow(p, 'all'))}</tbody>
-          </table>
-        )}
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </>
   )
