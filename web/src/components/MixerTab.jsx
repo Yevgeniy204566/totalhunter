@@ -27,7 +27,7 @@ const TXT = {
     mastersAt: 'Значения для Героя {h}',
     fineTip: 'Точная подстройка: −/+ 1% от текущего множителя; удерживайте кнопку — значение идёт непрерывно',
     liveTitle: 'Итог сейчас',
-    resetMaster: 'Сброс', resetMasterTip: 'Вернуть этот фейдер к расчётному значению',
+    resetMaster: 'Сброс', resetMasterTip: 'Вернуть все фейдеры этого пульта в исходное положение (по центру) в выбранном режиме. Вписанные вручную числа и выключенные типы остаются',
     resetAll: 'Сбросить главные к расчёту', resetAllTip: 'Все три главных фейдера — к расчётному значению. Детальные настройки ниже не трогает',
     mCrypts: 'Склепы', mCryptsTip: 'Норма эпик-склепов (все типы склепов вместе): множитель и число штук на игрока',
     mEmc: 'EMC', mEmcTip: 'Норма EMC (все эпические монстры вместе, включая Chimera): множитель и число штук на игрока',
@@ -76,7 +76,7 @@ const TXT = {
     mastersAt: 'Values for Hero {h}',
     fineTip: 'Fine tuning: −/+ 1% of the current multiplier; hold a button to keep going',
     liveTitle: 'Result now',
-    resetMaster: 'Reset', resetMasterTip: 'Return this fader to the calculated value',
+    resetMaster: 'Reset', resetMasterTip: 'Return every fader of this console to the start position (centre) in the chosen mode. Hand-typed numbers and muted types stay',
     resetAll: 'Reset masters to calculated', resetAllTip: 'All three master faders back to the calculated value. The detailed settings below are not touched',
     mCrypts: 'Crypts', mCryptsTip: 'Epic crypts norm (all crypt types together): multiplier and pieces per player',
     mEmc: 'EMC', mEmcTip: 'EMC norm (all epic monsters together, including Chimera): multiplier and pieces per player',
@@ -176,7 +176,7 @@ function FineKnobs({ k, onK, disabled, tt }) {
   )
 }
 
-function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset }) {
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset, resetOff }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
   const [draft, setDraft] = useState(null)
@@ -215,7 +215,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
       {master && <FineKnobs k={k} onK={onK} disabled={disabled} tt={tt} />}
       {master && onReset && (
         <button type="button" className="mixer-fine-btn mixer-reset-btn" title={tt.resetMasterTip}
-          disabled={disabled || Math.abs(k - 1) < 1e-9} onClick={onReset}>{tt.resetMaster}</button>
+          disabled={disabled || (resetOff ?? Math.abs(k - 1) < 1e-9)} onClick={onReset}>{tt.resetMaster}</button>
       )}
     </div>
   )
@@ -446,6 +446,10 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     const accent = isC ? 'var(--epic-purple)' : '#4ADE80'
     const title = isC ? t.mCrypts : t.mEmc
     const disabled = !personal[tab]
+    const keys = list.map(x => x.key)
+    const dev = e => !!e && (Math.abs((e.all ?? 1) - 1) > 1e-9 || Object.keys(e.bands || {}).length > 0)
+    // фейдеры типов этого пульта — в центр (поправки «все уровни» и ступеней убираются); mute и вписанные числа остаются
+    const cleanKeys = obj => ({ ...(obj || {}), ...Object.fromEntries(keys.filter(k => obj?.[k]).map(k => [k, { ...obj[k], all: 1, bands: {} }])) })
     if (mode === 'points') {
       const sumAt = k => {
         const m = { ...mix, g: { ...mixG, [tab]: { ...(mixG[tab] || {}), all: k } } }
@@ -455,20 +459,28 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       const setG = patch => setPersonal({ mix: { ...mix, g: { ...mixG, [tab]: { ...(mixG[tab] || {}), ...patch } } } })
       return { id: tab, title, tip: isC ? t.gCryptsTip : t.gEmcTip, accent, disabled,
         k: mixG[tab]?.all ?? 1, onK: k => setG({ all: k }),
-        onReset: () => { const { [tab]: _drop, ...rest } = mixG; setPersonal({ mix: { ...mix, g: rest } }) },
+        resetOff: !(keys.some(k => dev(mix.w?.[k])) || mixG[tab]),
+        onReset: () => { const { [tab]: _drop, ...rest } = mixG; setPersonal({ mix: { ...mix, w: cleanKeys(mix.w), g: rest } }) },
         // число под фейдером — сумма очков за по одному сундуку каждого включённого типа пульта для Героя «Примера»
         calc: sumAt, base: sumAt(1) }
     }
     if (isC) {
       return { id: tab, title, tip: t.mCryptsTip, accent, disabled,
         k: mixEpic.all ?? 1, onK: k => setPersonal({ mix: { ...mix, epic: { ...mixEpic, all: k } } }),
-        onReset: () => { const { epic, ...rest } = mix; setPersonal({ mix: rest }) },
+        resetOff: !(keys.some(k => dev(mix.c?.[k])) || mix.epic),
+        onReset: () => { const { epic, ...rest } = mix; setPersonal({ mix: { ...rest, c: cleanKeys(mix.c) } }) },
         calc: k => epicCountTotal(exHero, { ...scale, mix: { ...mix, epic: { ...mixEpic, all: k } } }),
         base: epicCountTotal(exHero, SCALE_DEFAULTS) }
     }
     return { id: tab, title, tip: t.mEmcTip, accent, disabled,
       k: emc.global ?? 1, onK: k => setEmc({ ...emc, global: k }),
-      onReset: () => setEmc({ ...emc, global: 1 }),
+      resetOff: !(keys.some(k => dev(mix.c?.[k])) || (emc.global ?? 1) !== 1
+        || MONSTERS.some(([m]) => Math.abs((emc.monsters?.[m] ?? 1) - 1) > 1e-9)
+        || Object.values(emc.cells || {}).some(c => Object.keys(c || {}).length > 0)),
+      onReset: () => {
+        setPersonal({ mix: { ...mix, c: cleanKeys(mix.c) } })
+        setEmc({ ...emc, global: 1, monsters: { hydra: 1, undead: 1, arachna: 1, shadow: 1 }, cells: {} })
+      },
       calc: k => emcAll({ ...emc, global: k }, scale), base: emcAll(EMC_DEFAULTS, SCALE_DEFAULTS) }
   }
   const boards = ['crypts', 'emc'].map(buildBoard)
@@ -578,7 +590,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
               </div>
               <div className="mixer-master">
                 <Fader tt={t} master accent={b.master.accent} tip={b.master.tip} title={b.master.title} k={b.master.k} onK={b.master.onK}
-                  abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReset={b.master.onReset} />
+                  abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReset={b.master.onReset} resetOff={b.master.resetOff} />
               </div>
             </div>
             <CurveEditor lang={lang} items={b.curveItems} scale={scale} disabled={!b.enabled}

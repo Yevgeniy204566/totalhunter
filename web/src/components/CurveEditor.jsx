@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { BANDS, HANDLE_BANDS, centerOf, applyDrag, seriesOf, bandsFromTargets } from '../lib/curveEdit.js'
+import { weightAt, DEFAULT_SETTINGS } from '../lib/heroQuota.js'
 
 // Кривая очков за сундук по уровням Героя (владелец 2026-10-26): как EQ в цифровом пульте — тянешь ручку, соседние точки
 // плавно идут следом. Правит одну линию за раз; хранение прежнее (поправки ступеней mix.w[тип].bands), график показывает очки.
@@ -31,7 +32,7 @@ const ANCHORS = [298, 387.5, 450]
 
 const W = 1000, H = 380, ML = 54, MR = 16, MT = 16, MB = 36
 const xOf = h => ML + (h - 100) / 500 * (W - ML - MR)
-const niceMax = v => Math.max(50, Math.ceil(v * 1.15 / 50) * 50)
+const niceMax = v => Math.max(50, Math.ceil(v * 1.3 / 50) * 50)
 
 export default function CurveEditor({ lang = 'ru', items = [], scale, disabled = false, onBands }) {
   const t = TXT[lang] || TXT.ru
@@ -50,7 +51,7 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
   const sel = series.find(x => x.key === selKey) || series[0]
   const selBands = scale.mix?.w?.[sel.key]?.bands || {}
   // ось Y не прыгает во время перетаскивания
-  const ymax = drag.current?.ymax ?? niceMax(Math.max(...series.flatMap(x => [...x.cur, ...x.base])))
+  const ymax = drag.current?.ymax ?? niceMax(Math.max(...sel.cur, ...sel.base))
   const yOf = v => MT + (1 - Math.min(v, ymax) / ymax) * (H - MT - MB)
   const canEdit = !disabled && !sel.muted
 
@@ -116,17 +117,17 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
         {[100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600].map(h => (
           <text key={h} x={xOf(h)} y={H - 10} textAnchor="middle" className="curve-axis">{h}</text>
         ))}
-        {ANCHORS.map(h => (
-          <g key={h}>
-            <line x1={xOf(h)} x2={xOf(h)} y1={MT} y2={H - MB} className="curve-anchor" />
-            <text x={xOf(h) + 5} y={MT + 14} className="curve-anchor-text">{t.anchor} {h}</text>
-          </g>
-        ))}
-
-        {series.filter(x => x.key !== sel.key).map(x => (
-          <path key={x.key} d={pathOf(x.cur)} fill="none" stroke={x.color} strokeWidth="2" opacity="0.4" className="curve-line"
-            onClick={() => setSelKey(x.key)} />
-        ))}
+        {ANCHORS.map((h, n) => {
+          const v = weightAt(sel.key, h, scale) ?? 0
+          const b0 = weightAt(sel.key, h, DEFAULT_SETTINGS) ?? 0
+          return (
+            <g key={h}>
+              <line x1={xOf(h)} x2={xOf(h)} y1={MT} y2={H - MB} className="curve-anchor" />
+              <text x={xOf(h) + 6} y={MT + 15 + n * 19} className="curve-anchor-text">{t.anchor} {h}: <tspan className="curve-anchor-val">{v}</tspan>{v !== b0 ? ` (${t.scale} ${b0})` : ''}</text>
+              <circle cx={xOf(h)} cy={yOf(v)} r="5.5" className="curve-anchor-dot" />
+            </g>
+          )
+        })}
 
         <path d={areaOf(sel.cur, sel.base)} fill={sel.color} opacity="0.2" />
         <path d={pathOf(sel.base)} fill="none" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="7 6" opacity="0.7" />
@@ -147,6 +148,7 @@ export default function CurveEditor({ lang = 'ru', items = [], scale, disabled =
               <title>{locked ? t.locked : `${t.hero} ${b}: ${sel.cur[i]}`}</title>
               <rect x={x - 11} y={y - 15} width="22" height="30" rx="4" className="curve-cap" />
               <line x1={x - 11} x2={x + 11} y1={y} y2={y} stroke={sel.color} strokeWidth="3" />
+              <text x={x} y={y > MT + 46 ? y - 21 : y + 36} textAnchor="middle" className="curve-val">{sel.cur[i]}</text>
             </g>
           )
         })}

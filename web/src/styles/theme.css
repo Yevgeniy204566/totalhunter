@@ -1078,3 +1078,6 @@ a:hover { color: var(--on-surface); }
 .curve-soft > span { font-weight: 700; color: #fff; }
 .curve-soft small { font-size: 13px; color: var(--on-surface2); }
 .curve-soft input[type=range] { width: 200px; accent-color: #38bdf8; }
+.curve-anchor-val { fill: #fff; font-weight: 700; }
+.curve-anchor-dot { fill: #0a0e15; stroke: #7dd3fc; stroke-width: 2; }
+.curve-val { fill: #fff; font-size: 16px; font-weight: 700; paint-order: stroke; stroke: #0a0e15; stroke-width: 4px; }
