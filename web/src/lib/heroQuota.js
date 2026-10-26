@@ -137,6 +137,16 @@ export function weightAt(id, hero, settings = DEFAULT_SETTINGS) {
   return round5(base * clampMultiplier(settings.weights) * mixFactor(settings.mix?.w?.[key], hero) * groupK(group, settings))
 }
 
+// Очки типа на уровне Героя без округления и без поправки ступеней: опора, от которой график пересчитывает «желаемые очки»
+// в поправку ступени. null — типа нет в шкале.
+export function weightBase(id, hero, settings = DEFAULT_SETTINGS) {
+  const key = weightKey(id)
+  const base = baseWeight(key, hero)
+  if (base == null) return null
+  const group = CRYPT_TYPES.includes(key) ? 'crypts' : 'emc'
+  return base * clampMultiplier(settings.weights) * clampMultiplier(settings.mix?.w?.[key]?.all) * groupK(group, settings)
+}
+
 function rangeK(hero, ranges) {
   const r = (ranges || []).find(x => hero >= Number(x.from) && hero <= Number(x.to))
   return r ? clampMultiplier(r.k) : 1

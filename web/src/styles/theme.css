@@ -1051,3 +1051,30 @@ a:hover { color: var(--on-surface); }
 .mixer-masters-tools { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--outline); }
 .mixer-sets { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 .mixer-sets > b { font-size: 15px; color: var(--on-surface2); }
+
+/* Кривая очков по уровням Героя (под каждым пультом) */
+.curve { margin: 16px 0 6px; padding: 12px 12px 10px; border-top: 1px dashed var(--outline); }
+.curve--off { opacity: 0.55; pointer-events: none; }
+.curve-title { margin: 0 0 4px; font-size: 18px; color: #fff; }
+.curve-hint { margin: 0 0 8px; font-size: 15px; line-height: 1.5; color: var(--on-surface2); }
+.curve-svg { width: 100%; height: auto; display: block; border-radius: 10px; background: linear-gradient(#0a0e15, #0e131c); border: 1px solid var(--outline); user-select: none; }
+.curve-grid { stroke: rgba(255,255,255,0.08); stroke-width: 1; }
+.curve-axis { fill: #9aa4b2; font-size: 15px; }
+.curve-anchor { stroke: rgba(56,189,248,0.4); stroke-width: 1.5; stroke-dasharray: 3 5; }
+.curve-anchor-text { fill: #7dd3fc; font-size: 14px; }
+.curve-cross { stroke: rgba(255,255,255,0.3); stroke-width: 1; }
+.curve-line { cursor: pointer; }
+.curve-handle { cursor: ns-resize; outline: none; }
+.curve-cap { fill: #cfd6df; stroke: #0b0f17; stroke-width: 1.5; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.7)); }
+.curve-handle:hover .curve-cap, .curve-handle:focus-visible .curve-cap { fill: #fff; stroke: #38bdf8; stroke-width: 2.5; }
+.curve-handle--locked { cursor: not-allowed; opacity: 0.35; }
+.curve-readout { margin: 8px 0; font-size: 16px; color: #fff; min-height: 24px; }
+.curve-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+.curve-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 15px; font-family: inherit; color: var(--on-surface); background: var(--elevated); border: 1px solid var(--outline); border-radius: 10px; cursor: pointer; }
+.curve-chip i { width: 14px; height: 14px; border-radius: 3px; background: var(--cc); }
+.curve-chip--on { color: #fff; border-color: var(--cc); box-shadow: 0 0 0 1px var(--cc); }
+.curve-tools { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.curve-soft { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--on-surface); }
+.curve-soft > span { font-weight: 700; color: #fff; }
+.curve-soft small { font-size: 13px; color: var(--on-surface2); }
+.curve-soft input[type=range] { width: 200px; accent-color: #38bdf8; }

@@ -3,6 +3,7 @@ import {
   DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
 } from '../lib/emcQuota.js'
 import TierPresetEditor from './TierPresetEditor.jsx'
+import CurveEditor from './CurveEditor.jsx'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
@@ -20,7 +21,7 @@ const TXT = {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Очки', count: 'Количество',
     allLevels: 'Все уровни', hero: 'Герой',
-    consoleCrypts: 'Склепы и цитадели', consoleEmc: 'EMC — эпические монстры',
+    consoleCrypts: 'Склепы и цитадели', consoleEmc: 'Epic Monster Chests',
     gCryptsTip: 'Главный фейдер склепов и цитаделей: двигает очки всех сундуков этого пульта сразу. Число — сумма очков за по одному сундуку каждого типа',
     gEmcTip: 'Главный фейдер EMC: двигает очки всех эпических монстров сразу. Число — сумма очков за по одному монстру каждого типа',
     mastersAt: 'Значения для Героя {h}',
@@ -69,7 +70,7 @@ const TXT = {
     tabCrypts: 'Crypts', tabEmc: 'EMC',
     points: 'Points', count: 'Count',
     allLevels: 'All levels', hero: 'Hero',
-    consoleCrypts: 'Crypts and citadels', consoleEmc: 'EMC — epic monsters',
+    consoleCrypts: 'Crypts and citadels', consoleEmc: 'Epic Monster Chests',
     gCryptsTip: 'Crypts and citadels master fader: moves the points of every chest of this console at once. The number is the sum of points for one chest of each type',
     gEmcTip: 'EMC master fader: moves the points of every epic monster at once. The number is the sum of points for one monster of each type',
     mastersAt: 'Values for Hero {h}',
@@ -353,7 +354,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       })
       cols.unshift(...four)
     }
-    return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab, list) }
+    return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab, list),
+      curveItems: list.map(x => ({ key: x.key, title: titleOf(x) })) }
   }
 
   const absProps = c => {
@@ -579,6 +581,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReset={b.master.onReset} />
               </div>
             </div>
+            <CurveEditor lang={lang} items={b.curveItems} scale={scale} disabled={!b.enabled}
+              onBands={(key, bands) => setMixEntry('w', key, { bands })} />
           </section>
         )
       })}
