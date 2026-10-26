@@ -37,7 +37,7 @@ const TXT = {
     reset: 'Двойной щелчок по ползунку — вернуть расчётное значение',
     mute: 'Вкл/выкл: выключенный тип не считается',
     abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
-    manual: 'В нормах клана штук для этого типа нет — впишите число вручную (пусто = 0)',
+    manual: 'В нормах клана штук для этого типа нет — двигайте ползунок (0–200) или впишите число вручную; двойной щелчок — сбросить в 0',
     calc: 'расчёт',
     countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. Для Rare, Common и Citadel штук в норме нет — впишите число сами, если нужно.',
     save: '💾 Сохранить настройки', saved: 'Применяет настройки этой вкладки к сезону. Игроки видят результат на публичной странице.',
@@ -86,7 +86,7 @@ const TXT = {
     reset: 'Double-click a slider to return the calculated value',
     mute: 'On/off: a muted type is not counted',
     abs: 'Value: erase and type your own number (0 turns the type off)',
-    manual: 'The clan norms give no count for this type — type a number (empty = 0)',
+    manual: 'The clan norms give no count for this type — move the slider (0–200) or type a number; double-click resets to 0',
     calc: 'calc.',
     countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel have no counts in the norm — type a number yourself if needed.',
     save: '💾 Save settings', saved: 'Applies this tab\'s settings to the season. Players see the result on the public page.',
@@ -121,6 +121,7 @@ const MONSTERS = [['hydra', 'Hydra', 'Epic Fire Hydra'], ['undead', 'Undead', 'E
 const GROUPS = [100, 200, 300, 400, 500].map(g => ({
   g, bands: Array.from({ length: g === 500 ? 11 : 10 }, (_, i) => g + i * 10),
 }))
+const MANUAL_MAX = 200
 const fmt = n => Number(n).toLocaleString('ru-RU')
 const bandLabel = h => { const n = Number(h); return n >= 600 ? `${n}` : `${n}–${n + 9}` }
 
@@ -194,9 +195,16 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
             onClick={onToggle} disabled={disabled} />
         : <span className="mixer-dot-gap" />}
       <div className="mixer-rail" title={manual ? tt.manual : tt.reset}>
-        <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k)}
-          disabled={disabled || manual} onChange={e => onK(posToK(Number(e.target.value)))}
-          onDoubleClick={() => onK(1)} />
+        {manual ? (
+          // у типа нет базы в нормах клана — ползунок двигает число штук напрямую (0…MANUAL_MAX), больше можно вписать
+          <input type="range" className="mixer-range" min={0} max={1000} value={Math.min(1000, Math.round((Number(abs) || 0) / MANUAL_MAX * 1000))}
+            disabled={disabled} onChange={e => onAbs(Math.round(Number(e.target.value) / 1000 * MANUAL_MAX))}
+            onDoubleClick={() => onAbs('')} />
+        ) : (
+          <input type="range" className="mixer-range" min={0} max={1000} value={kToPos(k)}
+            disabled={disabled} onChange={e => onK(posToK(Number(e.target.value)))}
+            onDoubleClick={() => onK(1)} />
+        )}
       </div>
       <input className="input-dark mixer-k" type="text" inputMode="decimal" value={draft ?? abs} disabled={disabled}
         title={manual ? tt.manual : `${tt.abs} · ${tt.calc}: ${calc}`} onChange={type} onFocus={e => e.target.select()}
