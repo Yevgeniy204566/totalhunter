@@ -155,8 +155,9 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
               aria-valuenow={sel.cur[i]} onPointerDown={onDown(b, i)} onKeyDown={onKey(b, i)}>
               <title>{locked ? t.locked : `${t.hero} ${b}: ${sel.cur[i]}`}</title>
               <rect x={x - 24} y={y - 30} width="48" height="60" className="curve-hit" />
-              <rect x={x - 11} y={y - 15} width="22" height="30" rx="4" className="curve-cap" />
-              <line x1={x - 11} x2={x + 11} y1={y} y2={y} stroke={sel.color} strokeWidth="3" />
+              <rect x={x - 11} y={y - 15} width="22" height="30" rx="4" className="curve-cap"
+                style={{ fill: `color-mix(in srgb, ${sel.color} 42%, #0f1626)`, stroke: sel.color }} />
+              <line x1={x - 7} x2={x + 7} y1={y} y2={y} stroke={`color-mix(in srgb, ${sel.color} 35%, #ffffff)`} strokeWidth="3" strokeLinecap="round" />
               <text x={x} y={y > MT + 46 ? y - 21 : y + 36} textAnchor="middle" className="curve-val">{sel.cur[i]}</text>
             </g>
           )
