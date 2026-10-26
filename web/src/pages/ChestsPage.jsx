@@ -108,7 +108,7 @@ function allChestTypes(rows, catalogOptions) {
 // Подпись настроек пульта (персонализация + рычаги EMC + названия/цели квот) для индикатора «не сохранено»
 const mixerSig = s => JSON.stringify([s?.personal, (s?.quotas || []).map(q => [q.slot, q.name, String(q.target ?? ''), q.emc])])
 
-export function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc }) {
+export function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpenEmc, inMixer = false }) {
   const set = (slot, field, value) => onChange(quotas.map(q => (q.slot === slot ? { ...q, [field]: value } : q)))
   const flag = { 1: 'crypts', 2: 'emc' }
   return (
@@ -139,7 +139,7 @@ export function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpen
               </label>
               {on && (
                 <div className="quota-hero">
-                  <small>{q.slot === 1 ? cx.personalCryptsHint : cx.quotaPersonalHint}</small>
+                  <small>{q.slot === 1 ? cx.personalCryptsHint : (inMixer ? cx.quotaPersonalHintHere : cx.quotaPersonalHint)}</small>
                   {q.slot === 2 && onOpenEmc && (
                     <button type="button" className="chest-pill-btn chest-pill-btn--sm" onClick={onOpenEmc}>
                       {cx.openEmcTab}
@@ -1092,7 +1092,7 @@ export default function ChestsPage() {
               dirty={mixerSig(seasonByCollector[collector.slug]) !== savedSigByCollector[collector.slug] || !!pultRowsDirty[collector.slug]}
               onAddChest={(tab, id, points) => addChestFromPult(collector.slug, tab, id, points)}
               quotaEditor={(
-                <QuotaEditor
+                <QuotaEditor inMixer
                   quotas={seasonByCollector[collector.slug]?.quotas || DEFAULT_QUOTAS}
                   personal={seasonByCollector[collector.slug]?.personal || DEFAULT_PERSONAL}
                   cx={cx}

@@ -161,6 +161,7 @@ export const DASHBOARD = {
     personalCryptsHint: "Each player's target is in points: the norm for their Hero level minus the EMC share. Points per chest also depend on Hero level (the lower the Hero, the more points per chest). Players see the norms on the 'Hero norms' tab.",
     quotaPersonalHint: "Each player's target depends on their Hero level: the higher the Hero, the more chests are expected. Targets by level are set on the 'Personal player norms' tab below.",
     quotaPersonalLegacy: 'The previous personal target is on. To switch to the "EMC calculator" table below, turn the switch off and on again.',
+    quotaPersonalHintHere: "Each player's target depends on their Hero level: the higher the Hero, the more chests are expected. Set by the consoles and charts below.",
     openEmcTab: 'Open "Personal player norms" ↓',
     quotaNameHint: 'Column name',
     quotaTargetHint: 'Chests per season',
