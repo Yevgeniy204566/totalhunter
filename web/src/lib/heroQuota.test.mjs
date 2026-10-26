@@ -407,3 +407,13 @@ test('синхронизация пульта и публичной страни
   assert.equal(emcOthersTotal(meta, 400), 7)         // «Тыква» = среднее четырёх, как в пульте
   assert.equal(emcCountAt('Pumpkin Chest', 400), 7)
 })
+
+test('главный фейдер группы множит очки всех типов своей группы и только её', () => {
+  const s = { mix: { g: { crypts: { all: 0.5 } } } }
+  // очки кратны 5: ждём половину с допуском округления
+  for (const id of ['Epic Crypt 35', 'Citadel 30']) assert.ok(Math.abs(weightAt(id, 300, s) - weightAt(id, 300) * 0.5) <= 5, id)
+  assert.equal(weightAt('Epic Fire Hydra', 300, s), weightAt('Epic Fire Hydra', 300))
+  const e = { mix: { g: { emc: { all: 2 } } } }
+  assert.ok(Math.abs(weightAt('Epic Fire Hydra', 300, e) - weightAt('Epic Fire Hydra', 300) * 2) <= 5)
+  assert.equal(weightAt('Epic Crypt 35', 300, e), weightAt('Epic Crypt 35', 300))
+})

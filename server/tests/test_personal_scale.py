@@ -151,6 +151,18 @@ MIX = {"w": {"Epic Crypt 35": {"on": True, "all": 1.2, "bands": {"380": 0.5}},
 
 
 @pytest.mark.asyncio
+async def test_group_master_saved_and_unknown_group_rejected(db_session):
+    c, h = await _owner(db_session, f"ps12{secrets.token_hex(2)}@example.com")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        ok = await _patch(client, c, h, {"personal": {**ON, "mix": {"g": {"crypts": {"all": 0.8}, "emc": {"all": 1.5}}}}})
+        t = await _public(client, c)
+        bad = await _patch(client, c, h, {"personal": {**ON, "mix": {"g": {"other": {"all": 2}}}}})
+    assert ok.status_code == 200
+    assert t["personal"]["mix"]["g"]["crypts"]["all"] == 0.8 and t["personal"]["mix"]["g"]["emc"]["all"] == 1.5
+    assert bad.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_mixer_values_saved_and_exposed(db_session):
     c, h = await _owner(db_session, f"ps11{secrets.token_hex(2)}@example.com")
     emc = {"global": 1.0, "monsters": {"hydra": 1, "undead": 1, "arachna": 1, "shadow": 1}, "ranges": [],

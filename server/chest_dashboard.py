@@ -743,6 +743,9 @@ class Mix(BaseModel):
     # c — штуки по типам склепов (режим «Количество» вкладки Crypts), те же ключи, что у w
     c: Dict[str, MixEntry] = Field(default_factory=dict, max_length=80)
     epic: Optional[MixEntry] = None
+    # g — главный фейдер консоли пульта (владелец 2026-10-26): множитель очков всех типов группы —
+    # crypts (склепы и цитадели) или emc (эпические монстры); ключ вне этих двух не принимается
+    g: Dict[Literal["crypts", "emc"], MixEntry] = Field(default_factory=dict)
 
     @field_validator("w", "c")
     @classmethod

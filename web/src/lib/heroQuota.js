@@ -125,11 +125,16 @@ function mixFactor(entry, hero) {
   return clampMultiplier(entry?.all) * clampMultiplier(entry?.bands?.[bandKey(hero)])
 }
 
+// Главный фейдер консоли пульта (владелец 2026-10-26): множитель очков всех типов своей группы —
+// склепы и цитадели либо эпические монстры. Группу задаёт сам тип: в шкале склепы/цитадели перечислены в CRYPT_TYPES.
+const groupK = (group, settings) => clampMultiplier(settings.mix?.g?.[group]?.all)
+
 export function weightAt(id, hero, settings = DEFAULT_SETTINGS) {
   const key = weightKey(id)
   const base = baseWeight(key, hero)
   if (base == null) return null
-  return round5(base * clampMultiplier(settings.weights) * mixFactor(settings.mix?.w?.[key], hero))
+  const group = CRYPT_TYPES.includes(key) ? 'crypts' : 'emc'
+  return round5(base * clampMultiplier(settings.weights) * mixFactor(settings.mix?.w?.[key], hero) * groupK(group, settings))
 }
 
 function rangeK(hero, ranges) {
@@ -188,7 +193,7 @@ export function scoreOf(counts, meta, hero, settings = DEFAULT_SETTINGS, slot = 
     const scaled = m ? weightAt(m.id, h, settings) : null
     if (scaled == null) {
       // тип вне шкалы: очки клана из «Учёта»; фейдер пульта (mix.w) множит их, mute обнуляет
-      const f = m ? mixFactor(settings.mix?.w?.[m.id], h) : 1
+      const f = m ? mixFactor(settings.mix?.w?.[m.id], h) * groupK(typeTab(m.id, m.slot), settings) : 1
       score += n * Math.round((m?.points || 0) * f)
       fallback.push(name)
     } else {
