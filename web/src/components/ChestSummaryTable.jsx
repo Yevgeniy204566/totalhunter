@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
+import { computeRow } from '../lib/emcQuota.js'
 import {
-  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcQuotaTotal, DEFAULT_HERO,
+  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcCountAt, emcQuotaTotal, countAt, typeTab, weightKey,
+  EPIC_CRYPTS, EMC_FOUR, DEFAULT_HERO,
 } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
@@ -217,6 +219,23 @@ function pointsHitTarget(player, targets) {
 // Столбцы квот (владелец 2026-09-26): по одному на квоту из targets.quotas; архив, закрытый
 // до квот (нет targets.quotas), — прежний один столбец «Epic-склепы» из quota_chests.
 // Игрок без указанного Героя считается по «типичному» Герою 400 со знаком «?» (как у per_player).
+const EMC_DEFAULT_HERO = 400
+function emcModel(targets) {
+  const q = (targets?.quotas || []).find(x => x.mode === 'emc_table')
+  return q ? (q.emc || {}) : null
+}
+// Столбец сундука → индекс монстра в модели EMC (Hydra, Undead, Arachna/Arachne, Shadow City).
+function monsterIndex(typeName) {
+  const n = typeName.toLowerCase()
+  if (n.includes('hydra')) return 0
+  if (n.includes('undead')) return 1
+  if (n.includes('arach')) return 2
+  if (n.includes('shadow')) return 3
+  return -1
+}
+function emcRowOf(player, model) {
+  return computeRow(player.hero_level || EMC_DEFAULT_HERO, model)
+}
 export function quotaColumns(targets, epicLabel, typeMeta = null) {
   if (Array.isArray(targets?.quotas)) {
     // «Персонализированный учёт по Герою» — тумблер на каждой квоте (targets.personal.crypts/emc);
@@ -436,11 +455,13 @@ const TABLE_TXT = {
 export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta), [targets, tt.epic, chestTypeMeta])
+  const emc = useMemo(() => emcModel(targets), [targets])
   const typeMeta = chestTypeMeta
   const pers = targets?.personal || {}
   const personalCrypts = !!pers.crypts
   const personalEmc = !!pers.emc
   const scale = useMemo(() => ({ norm: pers.norm, weights: pers.weights, ranges: pers.ranges, mix: pers.mix }), [pers])
+  const emcLevers = (targets?.quotas || []).find(q => q.slot === 2)?.emc
   // Столбец «Очки» — единая сумма всех сундуков в учёте (склепы + EMC + прочие). Когда включена
   // персонализация (владелец 2026-10-21), считаем её по шкале очков для Героя игрока и сравниваем с
   // нормой по Герою; иначе — прежние очки клана и общая цель сезона.
@@ -761,8 +782,29 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                     </>}
                   {chestTypes.map(t => {
                     const value = p.counts[t] || 0
-                    // Норм по отдельным типам сундуков нет (владелец 2026-10-27): есть три общие — очки, эпик-склепы суммой и EMC
-                    // по количеству. Какими сундуками набрать — решает игрок, поэтому столбцы типов — просто числа.
+                    const meta = typeMeta?.[t]
+                    // Типы с целью по штукам из пульта (те же правила, что во вкладке «Пульт»): склепы вне эпиков —
+                    // если число задано вручную; эпические монстры вне четырёх и свои события слота EMC
+                    // (эпик-склепы идут итогом в колонке Crypts, четыре монстра — ниже по своей таблице)
+                    if (meta) {
+                      const kind = typeTab(meta.id, meta.slot)
+                      const hero = p.hero_level || DEFAULT_HERO
+                      let need = 0
+                      if (personalCrypts && kind === 'crypts' && !EPIC_CRYPTS.includes(weightKey(meta.id))) {
+                        need = countAt(meta.id, hero, scale)
+                      } else if (personalEmc && kind === 'emc' && !(meta.id in EMC_FOUR)) {
+                        need = emcCountAt(meta.id, hero, scale, emcLevers)
+                      }
+                      if (need > 0) {
+                        return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint} target={need} />
+                      }
+                    }
+                    const mi = emc ? monsterIndex(t) : -1
+                    if (mi >= 0) {
+                      const row = emcRowOf(p, emc)
+                      return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint}
+                                           target={[row.finalH, row.finalU, row.finalA, row.finalS][mi]} />
+                    }
                     return (
                       <td key={t} className={[
                         isEpicColumn(t) && 'public-epic-cell',
