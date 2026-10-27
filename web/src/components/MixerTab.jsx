@@ -2,10 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
 } from '../lib/emcQuota.js'
-import TierPresetEditor from './TierPresetEditor.jsx'
 import CurveEditor from './CurveEditor.jsx'
 import { pointsLines, countLines, writeBands } from '../lib/curveLines.js'
-import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
+import { posToK, kToPos, solveK } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
   weightKey, weightAt, fallbackWeight, normAt, countAt, emcCountAt, emcQuotaTotal, typeTab, epicCountTotal,
@@ -405,21 +404,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     setNote(t.loaded)
   }
 
-  // Пресет клана → очки за сундук (владелец 2026-10-21): по всем типам «Учёта», обеих вкладок
-  // items — пресет вместе с правками клана из редактора ниже; возвращает, сколько типов изменено
-  const loadClanPreset = items => {
-    if (!items) return 0
-    const seen = new Set()
-    const all = types.map(x => ({ ...x, key: weightKey(x.id) })).filter(x => (seen.has(x.key) ? false : seen.add(x.key)))
-    const calcFor = x => pointsCol(x).calc
-    const w = presetMixW(items, all, mix.w, { calcFor, withK, keyOf: weightKey })
-    const changed = Object.keys(w).filter(k => w[k] !== mix.w?.[k]).length
-    setPersonal({ mix: { ...mix, w } })
-    return changed
-  }
-
-  // Нижняя строка редактора пресета (как в классических окнах): выбор набора, название, «Сохранить» / «Загрузить»
-  const hasTiers = ['T5', 'T6', 'T7', 'T8', 'T9'].some(n => clanPresets?.[n])
   const setsControls = (
     <>
       <select className="input-dark pult-select" value={presetSlot} aria-label={t.presets} onChange={e => pickSlot(e.target.value)}>
@@ -573,10 +557,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         </div>
       </section>
 
-      <TierPresetEditor lang={lang} clanPresets={clanPresets} personal={personal} onPersonal={onPersonal} sets={setsControls} setsNote={note}
-        onLoad={loadClanPreset}
-        setsTitle={t.presets} setsHint={t.presetHint}
-        catalogItems={allChestTypes || [...new Set([...CRYPT_TYPES, ...EMC_TYPES, ...types.map(x => x.id)])].map(id => ({ id, label: id }))} />
 
 
       {/* Герой — первым делом: выбрали Героя/ступени и сразу двигаем главные фейдеры ниже (владелец 2026-10-24) */}
