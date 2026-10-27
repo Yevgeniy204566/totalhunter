@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
+import { barColor, barFillColor } from '../lib/progressColor.js'
 import {
   scoreOf, normAt, epicCountTotal, epicCryptsOf, emcQuotaTotal, countAt, typeTab, weightKey,
   EPIC_CRYPTS, DEFAULT_HERO,
@@ -261,15 +262,6 @@ function isEpicColumn(typeName) {
 // Заливка всей ячейки (владелец 2026-10-19): палитра от фиолетового к неоново-зелёному
 // (красный «вырви глаз»). Ноль — тёмный тихий фиолет, почти фон; к ста процентам светлеет и
 // насыщается через синий и бирюзовый до неоново-зелёного.
-function barColor(pct) {
-  const k = Math.min(Math.max(pct, 0), 100) / 100
-  // Заливка еле заметная (владелец 2026-10-21): чуть светлее фона строки, чтобы таблица читалась;
-  // от тихого фиолетового к тихому зелёному, насыщенность и яркость минимальны
-  const hue = Math.round(260 - k * 110)
-  const sat = Math.round(18 + k * 10)
-  const light = Math.round(12 + k * 4)
-  return `hsl(${hue} ${sat}% ${light}%)`
-}
 // Ячейка = целый прогресс-бар (владелец 2026-10-20): заливка слева направо на pct% ширины всей
 // ячейки, остальное — тёмный фон; цвет заливки по той же палитре, что и раньше.
 function barBackground(pct) {
@@ -344,12 +336,6 @@ function ProgressCell({ value, target, partial, hint = '', showPct = false, clas
 // Три главных столбца (владелец 2026-10-21, макет «Лидерборд»): широкая ячейка «факт / цель», под ней тонкая
 // полоса и процент справа. Цвет заливки — прежний путь от фиолетового к зелёному по проценту, на 100% и выше
 // — #287A50 (HSL 147 51% 32%). Ширина заливки обрезается на 100%, сам процент показывается как есть.
-const BAR_DONE = '#287A50'
-function barFillColor(pct) {
-  const k = Math.min(Math.max(pct, 0), 100) / 100
-  if (k >= 1) return BAR_DONE
-  return `hsl(${Math.round(260 - k * 113)} ${Math.round(45 + k * 6)}% ${Math.round(40 - k * 8)}%)`
-}
 function MainIcon({ kind }) {
   const common = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2,
     strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, className: 'public-main-icon' }
