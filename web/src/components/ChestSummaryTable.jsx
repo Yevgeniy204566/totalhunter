@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { barColor, barFillColor } from '../lib/progressColor.js'
+import { orderChestTypes } from '../lib/chestTypeOrder.js'
 import {
-  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcQuotaTotal, countAt, typeTab, weightKey,
-  EPIC_CRYPTS, DEFAULT_HERO,
+  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcQuotaTotal, DEFAULT_HERO,
 } from '../lib/heroQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
@@ -425,6 +425,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta), [targets, tt.epic, chestTypeMeta])
   const typeMeta = chestTypeMeta
+  const orderedTypes = useMemo(() => orderChestTypes(chestTypes, chestTypeMeta), [chestTypes, chestTypeMeta])
   const pers = targets?.personal || {}
   const personalCrypts = !!pers.crypts
   const personalEmc = !!pers.emc
@@ -595,7 +596,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                     <th key={c.key} className="public-epic-cell">{fmtAvg(columnAverage(players, c.get))}</th>
                   ))}
                 </>}
-              {chestTypes.map(t => (
+              {orderedTypes.map(t => (
                 <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''}>
                   {fmtAvg(columnAverage(players, p => p.counts[t]))}
                 </th>
@@ -632,7 +633,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                     </th>
                   ))}
                 </>}
-              {chestTypes.map(t => (
+              {orderedTypes.map(t => (
                 <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
                     onClick={() => toggleSort(t)}>
                   <span translate="no" className="notranslate">{t}</span>{sortMark(t)}
@@ -747,22 +748,10 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                         )
                       })}
                     </>}
-                  {chestTypes.map(t => {
+                  {orderedTypes.map(t => {
                     const value = p.counts[t] || 0
-                    const meta = typeMeta?.[t]
-                    // Цель по штукам из пульта есть только у склепов вне эпиков (эпик-склепы идут итогом в колонке Crypts).
-                    // У монстров EMC целей по видам нет (владелец 2026-10-27): игрок сам выбирает, кого бить, норма одна — общая.
-                    if (meta) {
-                      const kind = typeTab(meta.id, meta.slot)
-                      const hero = p.hero_level || DEFAULT_HERO
-                      let need = 0
-                      if (personalCrypts && kind === 'crypts' && !EPIC_CRYPTS.includes(weightKey(meta.id))) {
-                        need = countAt(meta.id, hero, scale)
-                      }
-                      if (need > 0) {
-                        return <ProgressCell key={t} value={value} partial={!p.hero_level} hint={tt.partialHint} target={need} />
-                      }
-                    }
+                    // Норм по отдельным видам сундуков нет (владелец 2026-10-27): есть квота по эпическим склепам суммой, общая норма
+                    // EMC по количеству и очки. Чем добирать остальное, решает игрок — столбцы видов просто числа.
                     return (
                       <td key={t} className={[
                         isEpicColumn(t) && 'public-epic-cell',
