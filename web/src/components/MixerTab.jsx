@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX,
+  DEFAULT_SETTINGS as EMC_DEFAULTS, computeRow, clampMultiplier, MULTIPLIER_MIN, MULTIPLIER_MAX, hasLevels, dropLevels,
 } from '../lib/emcQuota.js'
 import CurveEditor from './CurveEditor.jsx'
 import { pointsLines, countLines, writeBands } from '../lib/curveLines.js'
@@ -304,11 +304,11 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   })
 
   // значение фейдера для текущего выбора ступеней
-  const entryVals = entry => (isAll ? [entry?.all ?? 1] : bands.map(b => entry?.bands?.[b] ?? 1))
-  const entryK = entry => entryVals(entry)[0]
+  const entryVals = entry => (isAll ? [entry?.all ?? 1] : bands.map(b => (hasLevels(entry?.bands, b) ? `~${b}` : entry?.bands?.[b] ?? 1))) // «~» — внутри ступени есть правки отдельных уровней
+  const entryK = entry => { const v = entryVals(entry)[0]; return typeof v === 'string' ? 1 : v }
   const isMixed = entry => new Set(entryVals(entry)).size > 1
   const withK = (entry, k) => (isAll ? { ...(entry || {}), all: k }
-    : { ...(entry || {}), bands: { ...(entry?.bands || {}), ...Object.fromEntries(bands.map(b => [b, k])) } })
+    : { ...(entry || {}), bands: { ...dropLevels(entry?.bands, bands), ...Object.fromEntries(bands.map(b => [b, k])) } })
 
   // Один пульт на группу: Crypts — «Квота 1» и «В учёте», EMC — только «Квота 2»; нет сундуков группы —
   // типы шкалы по умолчанию. Вкладок больше нет: обе консоли на странице сразу.
@@ -342,7 +342,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         if (!(k >= 0 && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return } // за границей — не применяем вовсе
         next[String(b)] = Math.round(k * 1e6) / 1e6
       }
-      setMixEntry('w', x.key, { bands: next })
+      setMixEntry('w', x.key, { bands: dropLevels(next, levels) })
     }
     return { ...col, base: 0, manual: true, free: true, manualValue: now, setAbs, manualTip: t.zeroPts }
   }
@@ -382,7 +382,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           if (!(k >= 0 && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return }
           next[String(b)] = Math.round(k * 1e6) / 1e6
         }
-        setMixEntry('c', x.key, { bands: next })
+        setMixEntry('c', x.key, { bands: dropLevels(next, levels) })
       }
       return { ...col, base: 0, manual: true, free: true, manualValue: fn(x.key, exHero, scale, emc), setAbs, manualTip: t.zeroCnt }
     }
@@ -409,12 +409,12 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       MONSTERS.forEach(([key, label, id], i) => {
         if (!fallback && !present.has(id)) return
         const isOff = (emc.off || []).includes(key)
-        const valsOf = () => (isAll ? [emc.monsters?.[key] ?? 1] : bands.map(b => emc.cells?.[key]?.[b] ?? 1))
+        const valsOf = () => (isAll ? [emc.monsters?.[key] ?? 1] : bands.map(b => (hasLevels(emc.cells?.[key], b) ? `~${b}` : emc.cells?.[key]?.[b] ?? 1)))
         const withEmcK = k => (isAll
           ? { ...emc, monsters: { ...emc.monsters, [key]: k } }
-          : { ...emc, cells: { ...(emc.cells || {}), [key]: { ...(emc.cells?.[key] || {}), ...Object.fromEntries(bands.map(b => [b, k])) } } })
+          : { ...emc, cells: { ...(emc.cells || {}), [key]: { ...dropLevels(emc.cells?.[key], bands), ...Object.fromEntries(bands.map(b => [b, k])) } } })
         const col = {
-          key, title: label, on: !isOff, k: valsOf()[0], mixed: new Set(valsOf()).size > 1,
+          key, title: label, on: !isOff, k: typeof valsOf()[0] === 'string' ? 1 : valsOf()[0], mixed: new Set(valsOf()).size > 1,
           calc: k => computeRow(exHero, withEmcK(k))[keys[i]], base: baseRow[keys[i]],
           onK: k => setEmc({ ...withEmcK(k), off: (emc.off || []).filter(x => x !== key) }),
           onToggle: () => setEmc({ ...emc, off: isOff ? emc.off.filter(x => x !== key) : [...(emc.off || []), key] }),
@@ -433,7 +433,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
             next[String(b)] = Math.round(k * 1e6) / 1e6
           }
           const cells = { ...(emc.cells || {}) }
-          if (Object.keys(next).length) cells[key] = next; else delete cells[key]
+          const clean = dropLevels(next, levels)
+          if (Object.keys(clean).length) cells[key] = clean; else delete cells[key]
           setEmc({ ...emc, cells })
         }
         four.push({ ...col, base: 0, manual: true, free: true, manualValue: computeRow(exHero, emc)[keys[i]], onSet: setAbs, manualTip: t.zeroCnt })

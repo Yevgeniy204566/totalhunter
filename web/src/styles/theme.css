@@ -1230,3 +1230,9 @@ a:hover { color: var(--on-surface); }
   .mixer-console-banner-text { font-size: 20px; }
   .mixer-console-actions select, .mixer-console-actions input { width: 100%; box-sizing: border-box; min-height: 44px; }
 }
+
+.curve-viewbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
+.curve-viewbar > span { font-size: 15px; font-weight: 700; color: #fff; }
+.curve-viewbar button:not(.chest-pill-btn) { width: 34px; height: 34px; font-size: 22px; font-weight: 700; line-height: 1; font-family: inherit; color: var(--on-surface); background: var(--elevated); border: 1px solid var(--outline); border-radius: 8px; cursor: pointer; }
+.curve-viewbar button:disabled { opacity: 0.35; cursor: default; }
+.curve-viewbar .curve-viewrange { font-weight: 400; color: var(--on-surface); }

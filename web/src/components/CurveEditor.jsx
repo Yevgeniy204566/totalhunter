@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { BANDS, HANDLE_BANDS, centerOf, applyDrag, bandsFromTargets, bandsOutOfRange } from '../lib/curveEdit.js'
+import { BANDS, HANDLE_BANDS, DECADE_PTS, levelPts, applyDrag, bandsFromTargets, bandsOutOfRange } from '../lib/curveEdit.js'
 
 // Кривая по уровням Героя (владелец 2026-10-26): как EQ в цифровом пульте — тянешь ручку, соседние точки плавно идут
 // следом. Режим «Очки» — очки за сундук, «Количество» — штуки на игрока. Правит одну линию за раз; линии готовит
@@ -8,8 +8,9 @@ import { BANDS, HANDLE_BANDS, centerOf, applyDrag, bandsFromTargets, bandsOutOfR
 const TXT = {
   ru: {
     titlePoints: 'Очки за сундук по уровням Героя', titleCount: 'Количество сундуков по уровням Героя',
-    hintPoints: 'Выберите сундук внизу и тяните квадратные ручки вверх-вниз — соседние уровни идут следом. Полоска Zoom задаёт, сколько уровней ручка тянет за собой. Пунктир — шкала по умолчанию (рядом с ним ручка «прилипает»), закрашено — ваше отличие.',
-    zoom: 'Zoom', zoomIn: 'Ручка тянет за собой больше соседних уровней', zoomOut: 'Ручка тянет за собой меньше соседних уровней (в минимуме — одна ступень)',
+    hintPoints: 'Выберите сундук внизу и тяните квадратные ручки вверх-вниз — соседние уровни идут следом. «Захват» задаёт, сколько уровней ручка тянет за собой, а «Приближение» растягивает график до одного уровня Героя: там у каждого уровня своя ручка. Пунктир — шкала по умолчанию (рядом с ним ручка «прилипает»), закрашено — ваше отличие.',
+    zoom: 'Захват', zoomIn: 'Ручка тянет за собой больше соседних уровней', zoomOut: 'Ручка тянет за собой меньше соседних уровней (в минимуме — одна ступень)',
+    zoomView: 'Приближение', viewIn: 'Приблизить график по оси Героя', viewOut: 'Отдалить график по оси Героя', viewPan: 'Сдвинуть окно графика по уровням Героя', viewAll: 'Весь график 100–600', levels: 'Герои',
     reset: 'Сброс', resetTip: 'Вернуть выбранную линию на всех уровнях к шкале',
     resetAll: 'Сбросить все линии',
     outOfRange: 'Такое значение записать нельзя: оно выходит за границы хранения (множитель 0,01…1000). Ничего не изменено.',
@@ -20,8 +21,9 @@ const TXT = {
   },
   en: {
     titlePoints: 'Chest points by Hero level', titleCount: 'Chest count by Hero level',
-    hintPoints: 'Pick a chest below and drag the square handles up and down — neighbouring levels follow. The Zoom strip sets how many levels a handle pulls along. Dashed — the default scale (a handle snaps onto it), filled — your difference.',
-    zoom: 'Zoom', zoomIn: 'A handle pulls more neighbouring levels along', zoomOut: 'A handle pulls fewer neighbouring levels along (at the minimum — one step)',
+    hintPoints: 'Pick a chest below and drag the square handles up and down — neighbouring levels follow. “Reach” sets how many levels a handle pulls along; “Zoom” stretches the chart down to a single Hero level, where every level has its own handle. Dashed — the default scale (a handle snaps onto it), filled — your difference.',
+    zoom: 'Reach', zoomIn: 'A handle pulls more neighbouring levels along', zoomOut: 'A handle pulls fewer neighbouring levels along (at the minimum — one step)',
+    zoomView: 'Zoom', viewIn: 'Zoom the chart in along the Hero axis', viewOut: 'Zoom the chart out along the Hero axis', viewPan: 'Move the chart window along Hero levels', viewAll: 'Whole chart 100–600', levels: 'Heroes',
     reset: 'Reset', resetTip: 'Return the selected line to the scale on all levels',
     resetAll: 'Reset all lines',
     outOfRange: 'This value cannot be stored: it is out of bounds (multiplier 0.01…1000). Nothing was changed.',
@@ -35,7 +37,8 @@ const TXT = {
 const COLORS = ['#a78bfa', '#f59e0b', '#38bdf8', '#4ade80', '#f472b6', '#fb923c', '#22d3ee', '#facc15', '#c084fc', '#34d399', '#f87171', '#94a3b8']
 
 const W = 1000, H = 400, ML = 58, MR = 16, MT = 16, MB = 62
-const xOf = h => ML + (h - 100) / 500 * (W - ML - MR)
+// окна приближения по оси Героя: весь график (по ступеням) и до одного уровня (500 → 100 → 50 → 25 → 10 уровней в окне)
+const SPANS = [500, 100, 50, 25, 10]
 // верх оси — ближайшее «круглое» число с запасом 30%; линий сетки всегда пять
 const NICE = [5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 125, 150, 200, 250, 300, 400, 500, 600, 800, 1000, 1500, 2000, 3000, 5000, 10000]
 const niceMax = v => NICE.find(n => n >= v * 1.3) ?? Math.ceil(v * 1.3 / 1000) * 1000
@@ -44,29 +47,43 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
   const t = TXT[lang] || TXT.ru
   const [selKey, setSelKey] = useState(null)
   const [softness, setSoftness] = useState(40)
-  const [hover, setHover] = useState(null)
+  const [hover, setHover] = useState(null) // уровень Героя под курсором
+  const [spanIdx, setSpanIdx] = useState(0)
+  const [lo0, setLo] = useState(100)
   const drag = useRef(null)
   const svgRef = useRef(null)
   const unitWord = mode === 'count' ? t.count : t.points
 
+  const span = SPANS[spanIdx]
+  const lo = Math.min(600 - span, Math.max(100, lo0)), hi = lo + span
+  const fine = span <= 50 // приближено до уровня: точка и ручка на каждый уровень Героя, поправки пишутся ключом «L405»
+  const xOf = h => ML + (h - lo) / (hi - lo) * (W - ML - MR)
+
   const series = useMemo(() => lines.map((x, i) => ({ ...x, color: COLORS[i % COLORS.length] })), [lines])
+  const sel0 = series.find(x => x.key === selKey) || series[0]
+  const pts = useMemo(() => (fine ? levelPts(lo, hi) : DECADE_PTS), [fine, lo, hi])
+  // одна линия на тех же функциях, что читают пульт и страница: в приближении — по уровню на точку
+  const view = useMemo(() => (sel0 ? (fine ? { ...sel0, ...sel0.rebuild(pts) } : sel0) : null), [sel0, fine, pts])
+  const levels = useMemo(() => Array.from({ length: hi - lo + 1 }, (_, i) => lo + i), [lo, hi])
+  const curArr = useMemo(() => (view ? levels.map(h => view.curAt(h)) : []), [view, levels])
+  const baseArr = useMemo(() => (view ? levels.map(h => view.baseAt(h)) : []), [view, levels])
   if (!series.length) return <p className="emc-text"><small>{t.none}</small></p>
 
-  const sel = series.find(x => x.key === selKey) || series[0]
+  const sel = view
   // ось Y не прыгает во время перетаскивания
-  const ymax = drag.current?.ymax ?? niceMax(Math.max(...sel.cur, ...sel.base, 1))
+  const ymax = drag.current?.ymax ?? niceMax(Math.max(...sel0.cur, ...sel0.base, ...curArr, ...baseArr, 1))
   const yOf = v => MT + (1 - Math.min(v, ymax) / ymax) * (H - MT - MB)
   const canEdit = !disabled && !sel.muted
 
-  const pathOf = vals => vals.map((v, i) => `${i ? 'L' : 'M'}${xOf(centerOf(BANDS[i])).toFixed(1)} ${yOf(v).toFixed(1)}`).join(' ')
-  const areaOf = (a, b) => `${pathOf(a)} ${[...b].map((v, i) => [v, i]).reverse().map(([v, i]) => `L${xOf(centerOf(BANDS[i])).toFixed(1)} ${yOf(v).toFixed(1)}`).join(' ')} Z`
+  const pathOf = vals => vals.map((v, i) => `${i ? 'L' : 'M'}${xOf(levels[i]).toFixed(1)} ${yOf(v).toFixed(1)}`).join(' ')
+  const areaOf = (a, b) => `${pathOf(a)} ${[...b].map((v, i) => [v, i]).reverse().map(([v, i]) => `L${xOf(levels[i]).toFixed(1)} ${yOf(v).toFixed(1)}`).join(' ')} Z`
 
-  const commit = (handleBand, start, delta, existing) => {
-    const target = applyDrag(start, handleBand, delta, softness, sel.locked)
+  const commit = (handlePos, start, delta, existing) => {
+    const target = applyDrag(start, handlePos, delta, softness, sel.locked, pts)
     const changed = target.map((v, i) => Math.abs(v - start[i]) > 1e-9)
-    // значение за границами множителя (0,01…1000) вписать нельзя: правка не применяется и сказано почему, ничего не обрезается молча
+    // значение за границами множителя (0…1000) вписать нельзя: правка не применяется и сказано почему, ничего не обрезается молча
     if (bandsOutOfRange(target, sel.ref, changed, sel.zero)) { onReject?.(t.outOfRange); return }
-    onBands(sel, bandsFromTargets(target, sel.ref, existing, changed, sel.zero))
+    onBands(sel0, bandsFromTargets(target, sel.ref, existing, changed, sel.zero, pts))
   }
 
   const pointerValue = e => {
@@ -75,45 +92,68 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
     return Math.max(0, (1 - (y - MT) / (H - MT - MB)) * drag.current.ymax)
   }
 
-  const onDown = (band, i) => e => {
-    if (!canEdit || sel.locked.has(band)) return
+  const onDown = (pt, i) => e => {
+    if (!canEdit || sel.locked.has(pt.pos)) return
     e.preventDefault()
     svgRef.current.setPointerCapture(e.pointerId)
-    drag.current = { band, start: [...sel.cont], existing: { ...sel.bands }, ymax, v0: sel.cont[i], scaleV: sel.scaleV?.[i] ?? sel.ref[i] }
+    drag.current = { pos: pt.pos, start: [...sel.cont], existing: { ...sel.bands }, ymax, v0: sel.cont[i], scaleV: sel.scaleV?.[i] ?? sel.ref[i] }
   }
   const onMove = e => {
     const d = drag.current
     const r = svgRef.current.getBoundingClientRect()
-    const hero = 100 + ((e.clientX - r.left) / r.width * W - ML) / (W - ML - MR) * 500
-    setHover(Math.min(BANDS.length - 1, Math.max(0, Math.floor((hero - 100) / 10))))
+    const hero = lo + ((e.clientX - r.left) / r.width * W - ML) / (W - ML - MR) * (hi - lo)
+    setHover(Math.min(hi, Math.max(lo, Math.round(hero))))
     if (!d) return
     // магнит к шкале: когда ручка показывает то же число, что и шкала (значения целые), она встаёт ровно на значение шкалы —
     // так линию можно вернуть в исходное без следа в данных
     let v = pointerValue(e)
     if (Math.round(v) === Math.round(d.scaleV) || Math.abs(v - d.scaleV) < Math.max(0.5, d.ymax * 0.02)) v = d.scaleV
-    commit(d.band, d.start, v - d.v0, d.existing)
+    commit(d.pos, d.start, v - d.v0, d.existing)
   }
   const onUp = () => { drag.current = null }
-  const onKey = (band, i) => e => {
-    if (!canEdit || sel.locked.has(band)) return
+  const onKey = (pt, i) => e => {
+    if (!canEdit || sel.locked.has(pt.pos)) return
     const step = e.shiftKey ? 5 : 1
     const delta = e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0
     if (!delta) return
     e.preventDefault()
-    commit(band, [...sel.cont], delta, { ...sel.bands })
+    commit(pt.pos, [...sel.cont], delta, { ...sel.bands })
   }
 
-  const hi = hover ?? BANDS.indexOf(400)
-  const readout = `${t.hero} ${BANDS[hi]}${BANDS[hi] >= 600 ? '' : '–' + (BANDS[hi] + 9)}: ${sel.title} — ${sel.cur[hi]} ${unitWord} (${t.scale} ${sel.base[hi]})`
+  const hv = hover ?? Math.min(hi, Math.max(lo, 400))
+  const readout = `${t.hero} ${hv}: ${sel.title} — ${sel.curAt(hv)} ${unitWord} (${t.scale} ${sel.baseAt(hv)})`
   const gridStep = ymax / 5
   const grid = [0, 1, 2, 3, 4, 5].map(k => k * gridStep)
   const dirty = Object.keys(sel.bands || {}).length > 0
+  const tickStep = span >= 300 ? 50 : span >= 80 ? 10 : span > 25 ? 5 : 1
+  const ticks = []
+  for (let h = Math.ceil(lo / tickStep) * tickStep; h <= hi; h += tickStep) ticks.push(h)
+  // ручки: обзор — через 50 уровней, окно в 100 — по ступени, приближение — на каждый уровень
+  const handleIdx = pts.map((pt, i) => i).filter(i => pts[i].h >= lo && pts[i].h <= hi && (fine || span === 100 || HANDLE_BANDS.includes(pts[i].pos)))
+  const zoomTo = idx => {
+    const c = hover ?? lo + (hi - lo) / 2
+    const sp = SPANS[idx]
+    setSpanIdx(idx)
+    setLo(Math.min(600 - sp, Math.max(100, Math.round(c - sp / 2))))
+  }
 
   return (
     <div className={`curve${disabled ? ' curve--off' : ''}`}>
       <h4 className="curve-title">{mode === 'count' ? t.titleCount : t.titlePoints}</h4>
       <p className="curve-hint">{t.hintPoints}</p>
       {disabled && <p className="emc-text"><small>{t.off}</small></p>}
+
+      <div className="curve-viewbar" role="group" aria-label={t.zoomView}>
+        <span>{t.zoomView}</span>
+        <button type="button" title={t.viewOut} aria-label={`${t.zoomView} −`} disabled={spanIdx <= 0} onClick={() => zoomTo(spanIdx - 1)}>−</button>
+        <button type="button" title={t.viewIn} aria-label={`${t.zoomView} +`} disabled={spanIdx >= SPANS.length - 1} onClick={() => zoomTo(spanIdx + 1)}>+</button>
+        <span className="curve-viewrange">{t.levels} {lo}–{hi}</span>
+        {span < 500 && (
+          <input type="range" className="curve-zoom-strip" min={100} max={600 - span} step={1} value={lo} aria-label={t.viewPan}
+            title={t.viewPan} style={{ '--p': `${(lo - 100) / (500 - span) * 100}%` }} onChange={e => setLo(Number(e.target.value))} />
+        )}
+        {span < 500 && <button type="button" className="chest-pill-btn" onClick={() => { setSpanIdx(0); setLo(100) }}>{t.viewAll}</button>}
+      </div>
 
       <div className="curve-wrap">
       <div className="curve-zoom" role="group" aria-label={t.zoom}>
@@ -132,7 +172,7 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
             <text x={ML - 8} y={yOf(v) + 5} textAnchor="end" className="curve-axis">{Math.round(v * 100) / 100}</text>
           </g>
         ))}
-        {[100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600].map(h => (
+        {ticks.map(h => (
           <g key={h}>
             <line x1={xOf(h)} x2={xOf(h)} y1={H - MB} y2={H - MB + 7} className="curve-tick" />
             <text x={xOf(h)} y={H - MB + 25} textAnchor="middle" className="curve-axis">{h}</text>
@@ -141,28 +181,29 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
         <text x={(ML + W - MR) / 2} y={H - 8} textAnchor="middle" className="curve-axis-title">{t.axisX}</text>
         <text x={ML} y={MT - 3} className="curve-axis-title">{mode === 'count' ? t.axisYCount : t.axisYPoints}</text>
 
-        <path d={areaOf(sel.cur, sel.base)} fill={sel.color} opacity="0.2" />
-        <path d={pathOf(sel.base)} fill="none" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="7 6" opacity="0.7" />
-        <path d={pathOf(sel.cur)} fill="none" stroke={sel.color} strokeWidth="4.5" strokeLinejoin="round" opacity={sel.muted ? 0.35 : 1} />
+        <path d={areaOf(curArr, baseArr)} fill={sel.color} opacity="0.2" />
+        <path d={pathOf(baseArr)} fill="none" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="7 6" opacity="0.7" />
+        <path d={pathOf(curArr)} fill="none" stroke={sel.color} strokeWidth="4.5" strokeLinejoin="round" opacity={sel.muted ? 0.35 : 1} />
 
         {hover != null && (
-          <line x1={xOf(centerOf(BANDS[hover]))} x2={xOf(centerOf(BANDS[hover]))} y1={MT} y2={H - MB} className="curve-cross" />
+          <line x1={xOf(hover)} x2={xOf(hover)} y1={MT} y2={H - MB} className="curve-cross" />
         )}
 
-        {HANDLE_BANDS.map(b => {
-          const i = BANDS.indexOf(b)
-          const locked = sel.locked.has(b)
-          const x = xOf(centerOf(b)), y = yOf(sel.cur[i])
+        {handleIdx.map(i => {
+          const pt = pts[i]
+          const locked = sel.locked.has(pt.pos)
+          const x = xOf(pt.h), y = yOf(sel.cur[i])
+          const narrow = fine && span > 25 // на 50 уровнях ручки стоят часто — уже
           return (
-            <g key={b} className={`curve-handle${locked ? ' curve-handle--locked' : ''}`} style={{ touchAction: 'none' }}
-              tabIndex={canEdit && !locked ? 0 : -1} role="slider" aria-label={`${t.hero} ${b}`} aria-valuemin={0} aria-valuemax={Math.round(ymax)}
-              aria-valuenow={sel.cur[i]} onPointerDown={onDown(b, i)} onKeyDown={onKey(b, i)}>
-              <title>{locked ? t.locked : `${t.hero} ${b}: ${sel.cur[i]}`}</title>
-              <rect x={x - 24} y={y - 30} width="48" height="60" className="curve-hit" />
-              <rect x={x - 11} y={y - 15} width="22" height="30" rx="4" className="curve-cap"
+            <g key={pt.key} className={`curve-handle${locked ? ' curve-handle--locked' : ''}`} style={{ touchAction: 'none' }}
+              tabIndex={canEdit && !locked ? 0 : -1} role="slider" aria-label={`${t.hero} ${pt.h}`} aria-valuemin={0} aria-valuemax={Math.round(ymax)}
+              aria-valuenow={sel.cur[i]} onPointerDown={onDown(pt, i)} onKeyDown={onKey(pt, i)}>
+              <title>{locked ? t.locked : `${t.hero} ${pt.h}: ${sel.cur[i]}`}</title>
+              <rect x={x - (narrow ? 9 : 24)} y={y - 30} width={narrow ? 18 : 48} height="60" className="curve-hit" />
+              <rect x={x - (narrow ? 7 : 11)} y={y - 15} width={narrow ? 14 : 22} height="30" rx="4" className="curve-cap"
                 style={{ fill: `color-mix(in srgb, ${sel.color} 42%, #0f1626)`, stroke: sel.color }} />
-              <line x1={x - 7} x2={x + 7} y1={y} y2={y} stroke={`color-mix(in srgb, ${sel.color} 35%, #ffffff)`} strokeWidth="3" strokeLinecap="round" />
-              <text x={x} y={y > MT + 46 ? y - 21 : y + 36} textAnchor="middle" className="curve-val">{sel.cur[i]}</text>
+              <line x1={x - (narrow ? 4 : 7)} x2={x + (narrow ? 4 : 7)} y1={y} y2={y} stroke={`color-mix(in srgb, ${sel.color} 35%, #ffffff)`} strokeWidth="3" strokeLinecap="round" />
+              {(!narrow || i % 5 === 0) && <text x={x} y={y > MT + 46 ? y - 21 : y + 36} textAnchor="middle" className="curve-val">{sel.cur[i]}</text>}
             </g>
           )
         })}

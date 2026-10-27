@@ -674,7 +674,7 @@ class EmcRange(BaseModel):
         return self
 
 
-_BAND_KEYS = {str(h) for h in range(100, 601, 10)}   # ступени Героя пульта: «310» = Герой 310–319
+_BAND_KEYS = {str(h) for h in range(100, 601, 10)} | {f"L{h}" for h in range(100, 601)}   # «310» = Герой 310–319; «L315» = ровно Герой 315
 _MONSTERS = ("hydra", "undead", "arachna", "shadow")
 
 
@@ -687,7 +687,7 @@ def _check_bands(bands: dict) -> dict:
     return bands
 
 
-_BAND_KEYS = {str(h) for h in range(100, 601, 10)}   # ступени Героя пульта: «310» = Герой 310–319
+_BAND_KEYS = {str(h) for h in range(100, 601, 10)} | {f"L{h}" for h in range(100, 601)}   # «310» = Герой 310–319; «L315» = ровно Герой 315
 _MONSTERS = ("hydra", "undead", "arachna", "shadow")
 
 
@@ -726,7 +726,7 @@ class MixEntry(BaseModel):
     bands — поправка отдельных ступеней Героя поверх него."""
     on: bool = True
     all: float = Field(default=1.0, ge=0.01, le=1000.0)
-    bands: Dict[str, float] = Field(default_factory=dict, max_length=51)
+    bands: Dict[str, float] = Field(default_factory=dict, max_length=600)
     # set — число штук, заданное вручную (для типов, у которых клан штук не называет)
     set: Optional[int] = Field(default=None, ge=0, le=9999)
 

@@ -9,7 +9,7 @@
 // выше последней — постоянный. Всё, что не стена клана, — РАСЧЁТ, не требование клана.
 // Очки за сундук округляются до целых (владелец 2026-10-26: шаг 1, не 5), общая норма — до сотен.
 
-import { clampMultiplier, bandMultiplier, computeRow, bandKey, emcChimeraAt, emcChimeraBaseAt, round as roundEmc } from './emcQuota.js'
+import { clampMultiplier, bandMultiplier, computeRow, bandKey, levelEntry, emcChimeraAt, emcChimeraBaseAt, round as roundEmc } from './emcQuota.js'
 import { NORM_LOW, normBase } from './normCurve.js'
 
 const P = 298
@@ -122,7 +122,7 @@ function baseWeight(key, h) {
 // Фейдер пульта на тип: «все уровни» × ступень Героя; on === false — тип не считается (mute).
 function mixFactor(entry, hero) {
   if (entry?.on === false) return 0
-  return clampMultiplier(entry?.all) * bandMultiplier(entry?.bands?.[bandKey(hero)])
+  return clampMultiplier(entry?.all) * bandMultiplier(levelEntry(entry?.bands, hero))
 }
 
 // Главный фейдер консоли пульта (владелец 2026-10-26): множитель очков всех типов своей группы —
@@ -133,7 +133,7 @@ const groupK = (group, settings) => clampMultiplier(settings.mix?.g?.[group]?.al
 // ноль на любое число равен нулю. Поэтому там правка ступени (mix.w[тип].bands) — это сами очки: считаем от условной единицы.
 // Без правки ступени там по-прежнему 0.
 export const ZERO_UNIT = 1
-const hasBand = (entry, hero) => entry?.bands?.[bandKey(hero)] != null
+const hasBand = (entry, hero) => levelEntry(entry?.bands, hero) != null
 
 // Очки типа по шкале на уровне Героя без всяких правок (0 — шкала не засчитывает тип на этом уровне; null — типа нет в шкале).
 export function scaleBaseAt(id, hero) {

@@ -321,6 +321,7 @@ async def test_slot_preset_keeps_tier_preset_edits(db_session):
     {"w": {"Epic Crypt 35": {"bands": {"400": 0}}}},                         # ноль на одном уровне (полная свобода правки, 2026-10-27)
     {"w": {"Epic Crypt 35": {"bands": {"300": 0.0011, "450": 1000}}}},       # любое малое значение и верхняя граница
     {"c": {"Epic Crypt 30": {"bands": {"500": 0}}}},
+    {"w": {"Epic Crypt 35": {"bands": {"400": 1.2, "L405": 0, "L449": 3, "L100": 1, "L600": 1}}}},   # один уровень Героя (2026-10-28)
 ])
 async def test_band_multiplier_accepts_zero_and_small(db_session, mix):
     c, h = await _owner(db_session, f"ps21{secrets.token_hex(3)}@example.com")
@@ -344,3 +345,12 @@ async def test_emc_cells_accept_zero_and_small(db_session):
         t = await _public(client, c)
     assert r.status_code == 200, r.text
     assert next(q for q in t["quotas"] if q["slot"] == 2)["emc"]["cells"] == {"hydra": {"400": 0, "150": 0.0011}}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("key", ["L99", "L601", "L4o5", "405", "L405.5"])
+async def test_level_key_must_be_a_real_hero_level(db_session, key):
+    c, h = await _owner(db_session, f"ps23{secrets.token_hex(3)}@example.com")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"personal": {**ON, "mix": {"w": {"Epic Crypt 35": {"bands": {key: 1.1}}}}}})
+    assert r.status_code == 422, r.text

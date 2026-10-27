@@ -96,6 +96,14 @@ export const bandMultiplier = v => {
 // Ступень Героя 100…600 с шагом 10 (в пульте — «Герой 310–319»); ключ ступени — её начало.
 export const bandKey = hero => String(Math.min(600, Math.max(100, Math.floor(hero / 10) * 10)))
 
+// Поправка на один уровень Героя (владелец 2026-10-28: точность вплоть до 1, 2, 3): ключ «L405» — ровно Герой 405.
+// Она сильнее поправки ступени («400» = 400–409) и действует только на своём уровне; нет её — читается ступень.
+export const levelKey = hero => `L${Math.min(600, Math.max(100, Math.floor(hero)))}`
+// Правка ступени целиком (пультом) отменяет поправки отдельных уровней внутри неё — иначе они молча перекрыли бы новое значение.
+export const hasLevels = (bands, start) => { for (let h = Number(start); h < Number(start) + 10; h++) if (bands?.[`L${h}`] != null) return true; return false }
+export const dropLevels = (bands, starts) => { const out = { ...(bands || {}) }; for (const st of starts) for (let h = Number(st); h < Number(st) + 10; h++) delete out[`L${h}`]; return out }
+export const levelEntry = (bands, hero) => bands?.[levelKey(hero)] ?? bands?.[bandKey(hero)]
+
 const MONSTER_KEYS = ['hydra', 'undead', 'arachna', 'shadow']
 
 function levelMultiplier(hero, ranges) {
@@ -117,7 +125,7 @@ export function computeRow(hero, settings = DEFAULT_SETTINGS) {
   const globalK = clampMultiplier(settings.global)
   // пульт: множитель монстра на конкретную ступень Героя (cells) и «выкл» (off) — поверх прежних рычагов
   const band = bandKey(hero)
-  const cellK = MONSTER_KEYS.map(key => bandMultiplier(settings.cells?.[key]?.[band]))
+  const cellK = MONSTER_KEYS.map(key => bandMultiplier(levelEntry(settings.cells?.[key], hero)))
   const off = settings.off || []
   // Где модель даёт меньше единицы (слабые Герои, ниже ≈250), множитель бессмыслен: вписанная ступень монстра (cells) — сами штуки, от единицы
   // (полная свобода правки, владелец 2026-10-27). Без вписанной ступени там по-прежнему 0.
