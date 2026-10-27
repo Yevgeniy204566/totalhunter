@@ -198,10 +198,23 @@ export function weightTable(hero, settings = DEFAULT_SETTINGS) {
 export const DEFAULT_HERO = 400
 
 // Очки типа вне шкалы: очки клана из «Учёта» с фейдером пульта, главным фейдером группы и mute — одна функция для пульта и счёта.
+// Эпические монстры ведут себя одинаково, различается только цена (владелец 2026-10-27): событие EMC вне шкалы (Pumpkin, свои)
+// получает ту же зависимость от Героя, что у монстров шкалы (слабее Герой — больше очков, с 387,5 ровно), а цену берёт у клана.
+const emcShape = (m, hero) => (typeTab(m?.id, m?.slot) === 'emc' ? g(hero) : 1)
+
 export function fallbackWeight(m, hero, settings = DEFAULT_SETTINGS) {
   const f = mixFactor(settings.mix?.w?.[m.id], hero) * groupK(typeTab(m.id, m.slot), settings)
-  return Math.round((m?.points || 0) * f)
+  return Math.round((m?.points || 0) * f * emcShape(m, hero))
 }
+
+// Точное значение без поправок ступеней (опора графика «Очки»): очки клана × форма по Героям × «все уровни» × главный фейдер группы
+export function fallbackBase(m, hero, settings = DEFAULT_SETTINGS) {
+  const entry = settings.mix?.w?.[m.id]
+  return (m?.points || 0) * emcShape(m, hero) * clampMultiplier(entry?.all) * groupK(typeTab(m.id, m.slot), settings)
+}
+
+// Значение «по умолчанию» (пунктир графика): очки клана с формой по Героям, без фейдеров
+export const fallbackDefault = (m, hero) => Math.round((m?.points || 0) * emcShape(m, hero))
 
 // Счёт игрока: Σ штук × вес типа при его Герое. Тип вне шкалы — очки клана из «Учёта»
 // (запасной вариант, перечислен в fallback). Нет Героя — считаем по 400 и ставим partial.

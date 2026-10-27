@@ -63,3 +63,32 @@ test('writeBands: пустые поправки не создают записе
   const withCell = writeBands(st, { path: 'cell', key: 'hydra' }, { 400: 2 })
   assert.deepEqual(writeBands(withCell, { path: 'cell', key: 'hydra' }, {}).emc.cells, {})
 })
+
+// ---- Событие EMC вне шкалы (Pumpkin) есть и в пульте, и на графике «Очки» ----
+test('график «Очки»: событие вне шкалы (Pumpkin) рисуется, как и фейдер в пульте, и правится без следа', () => {
+  const list = [{ key: 'Epic Fire Hydra', title: 'Hydra', points: 1, slot: 2 }, { key: 'Pumpkin', title: 'Pumpkin', points: 1, slot: 2 }]
+  const scale = { ...DEFAULT_SETTINGS, mix: { w: { Pumpkin: { all: 25 } } } }
+  const lines = pointsLines(list, scale)
+  const line = lines.find(l => l.key === 'Pumpkin')
+  assert.ok(line, 'линия Pumpkin есть')
+  assert.deepEqual(line.target, { path: 'w', key: 'Pumpkin' })
+  const i450 = BANDS.indexOf(450), i300 = BANDS.indexOf(300)
+  assert.equal(line.cur[i450], 25) // 1 очко клана × 25 на уровнях, где слабый Герой уже не прибавляет
+  assert.ok(line.cur[i300] > line.cur[i450]) // слабее Герой — больше очков, как у монстров шкалы
+  assert.ok(lines.some(l => l.key === 'Epic Fire Hydra'))
+  // правка и возврат без следа
+  let st = { mix: { w: { Pumpkin: { all: 25 } } }, emc: structuredClone(EMC_DEFAULTS) }
+  const lineOf = () => pointsLines(list, { ...DEFAULT_SETTINGS, mix: st.mix }).find(l => l.key === 'Pumpkin')
+  const base = lineOf()
+  const step = d => { const l = lineOf(); const t = applyDrag(l.cont, 450, d, 30, l.locked); st = writeBands(st, l.target, bandsFromTargets(t, l.ref, l.bands, t.map((v, k) => Math.abs(v - l.cont[k]) > 1e-9))) }
+  step(10)
+  assert.ok(lineOf().cur[i450] > base.cur[i450])
+  step(-10)
+  assert.deepEqual(lineOf().bands, {})
+  assert.deepEqual(lineOf().cur, base.cur)
+})
+
+test('график «Очки»: тип без очков клана и вне шкалы линии не даёт (рисовать нечего)', () => {
+  const lines = pointsLines([{ key: 'Nothing', title: 'N', points: 0, slot: 2 }], { ...DEFAULT_SETTINGS, mix: {} })
+  assert.equal(lines.length, 0)
+})

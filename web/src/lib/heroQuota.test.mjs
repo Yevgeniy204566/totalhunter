@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { fallbackWeight, CRYPT_TYPES,
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, cryptsBaseAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, emcQuotaTotal, epicCountTotal, epicCryptsOf, typeTab,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, cryptsBaseAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, emcQuotaTotal, fallbackBase, epicCountTotal, epicCryptsOf, typeTab,
 } from './heroQuota.js'
 import { normBase } from './normCurve.js'
 
@@ -501,4 +501,28 @@ test('цель EMC: рычаги пульта (все EMC, монстр, диа�
   assert.equal(emcQuotaTotal(456, muted), computeRow(456).emc) // Chimera выключена в пульте — её штук в цели нет
   const hydraOff = { ...EMC_DEFAULTS, off: ['hydra'] }
   assert.equal(emcQuotaTotal(456, DEFAULT_SETTINGS, hydraOff), 107 - computeRow(456).finalH)
+})
+
+// ---- События EMC вне шкалы (Pumpkin и свои): ведут себя как монстры шкалы, различается только цена (владелец 2026-10-27) ----
+test('событие EMC вне шкалы повторяет форму монстра шкалы по Героям: слабее Герой — больше очков, с 387,5 ровно', () => {
+  const x = points => ({ id: 'My Event', slot: 2, points })
+  // тот же ход по уровням, что у Hydra (30 очков на 450): очки клана 30 дают те же числа
+  for (const h of [100, 200, 298, 300, 350, 387, 388, 450, 500, 600]) {
+    assert.equal(fallbackWeight(x(30), h), weightAt('Epic Fire Hydra', h), `@${h}`)
+  }
+  assert.equal(fallbackWeight(x(20), 450), 20)
+  assert.ok(fallbackWeight(x(20), 300) > fallbackWeight(x(20), 450))
+})
+
+test('событие в слоте не EMC (обычный склеп вне шкалы) от Героя по-прежнему не зависит', () => {
+  const crypt = { id: 'My Crypt', slot: null, points: 20 }
+  for (const h of [100, 300, 450, 600]) assert.equal(fallbackWeight(crypt, h), 20)
+})
+
+test('fallbackBase: точное значение без поправок ступеней, с «все уровни» и главным фейдером группы', () => {
+  const m = { id: 'My Event', slot: 2, points: 10 }
+  const s = { ...DEFAULT_SETTINGS, mix: { w: { 'My Event': { all: 2, bands: { 300: 3 } } }, g: { emc: { all: 1.5 } } } }
+  const shape = fallbackBase({ ...m, points: 1 }, 300, DEFAULT_SETTINGS)
+  assert.ok(Math.abs(fallbackBase(m, 300, s) - 10 * shape * 2 * 1.5) < 1e-9) // ступени (×3) не входят
+  assert.equal(fallbackWeight(m, 300, s), Math.round(fallbackBase(m, 300, s) * 3))
 })

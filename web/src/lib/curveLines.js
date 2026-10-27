@@ -2,8 +2,8 @@
 // штуки на игрока по уровням Героя (эпик-склепы, монстры EMC). Хранение прежнее:
 //   очки — mix.w[тип].bands; штуки склепов и прочих монстров — mix.c[тип].bands; четыре монстра с историей — emc.cells[монстр].
 // Типы без базового числа (свой склеп вне шкалы) и со старым вписанным числом (set), которое одно на все уровни, на графике количества не показываются.
-import { makeSeries, seriesOf } from './curveEdit.js'
-import { DEFAULT_SETTINGS, countRaw, countAt, emcCountAt, emcOtherRaw, CRYPT_TYPES, EMC_FOUR } from './heroQuota.js'
+import { makeSeries, seriesOf, fallbackSeriesOf } from './curveEdit.js'
+import { DEFAULT_SETTINGS, countRaw, countAt, emcCountAt, emcOtherRaw, weightBase, CRYPT_TYPES, EMC_FOUR } from './heroQuota.js'
 import { computeRow, DEFAULT_SETTINGS as EMC_DEFAULTS } from './emcQuota.js'
 
 const MONSTER_BY_ID = { 'Epic Fire Hydra': 'hydra', 'Epic Undead': 'undead', 'Epic Arachne': 'arachna', 'Epic Shadow City': 'shadow' }
@@ -13,9 +13,13 @@ const RAW_INDEX = { 'Epic Fire Hydra': 0, 'Epic Undead': 1, 'Epic Arachne': 2, '
 // без своей поправки ступеней: ref считается от записи типа с пустыми bands
 const withoutBands = (scale, key) => ({ ...scale, mix: { ...scale.mix, c: { ...(scale.mix?.c || {}), [key]: { ...(scale.mix?.c?.[key] || {}), bands: {} } } } })
 
+// Тип вне шкалы проекта (Pumpkin, свои события) на графике тоже есть — по очкам клана с формой монстров EMC (ту же числа даёт фейдер в пульте)
+const outsideScale = key => weightBase(key, 450, DEFAULT_SETTINGS) == null
+
 export function pointsLines(list, scale) {
   return list
-    .map(x => ({ key: x.key, title: x.title, unit: 'points', target: { path: 'w', key: x.key }, muted: scale.mix?.w?.[x.key]?.on === false, ...seriesOf(x.key, scale) }))
+    .map(x => ({ key: x.key, title: x.title, unit: 'points', target: { path: 'w', key: x.key }, muted: scale.mix?.w?.[x.key]?.on === false,
+      ...(outsideScale(x.key) && x.points != null ? fallbackSeriesOf({ id: x.key, slot: x.slot, points: x.points }, scale) : seriesOf(x.key, scale)) }))
     .filter(x => x.ref.some(r => r > 0) || x.base.some(b => b > 0))
 }
 

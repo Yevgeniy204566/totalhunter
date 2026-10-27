@@ -1,6 +1,6 @@
 // Правка очков за сундук по уровням Героя «кривой» (владелец 2026-10-26): тянешь точку, соседние идут плавно.
 // Хранение прежнее — поправки ступеней Героя mix.w[тип].bands; график показывает и пишет только очки.
-import { weightAt, weightBase, DEFAULT_SETTINGS } from './heroQuota.js'
+import { weightAt, weightBase, fallbackWeight, fallbackBase, fallbackDefault, DEFAULT_SETTINGS } from './heroQuota.js'
 import { MULTIPLIER_MIN, MULTIPLIER_MAX, clampMultiplier } from './emcQuota.js'
 
 export const BANDS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
@@ -50,6 +50,15 @@ export function seriesOf(key, scale) {
     base: h => weightAt(key, h, DEFAULT_SETTINGS) ?? 0,
     ref: h => weightBase(key, h, scale) ?? 0,
   }, scale.mix?.w?.[key]?.bands || {})
+}
+
+// Тип вне шкалы (Pumpkin, свои события): очки клана с той же формой по Героям, что у монстров шкалы; m = { id, slot, points }
+export function fallbackSeriesOf(m, scale) {
+  return makeSeries({
+    cur: h => fallbackWeight(m, h, scale),
+    base: h => fallbackDefault(m, h),
+    ref: h => fallbackBase(m, h, scale),
+  }, scale.mix?.w?.[m.id]?.bands || {})
 }
 
 // Ступени Героя из желаемых очков: поправка = желаемое / расчётное. Трогаем только ступени, где очки изменились

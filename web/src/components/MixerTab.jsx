@@ -365,7 +365,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       cols.unshift(...four)
     }
     return { tab, title: tab === 'crypts' ? t.consoleCrypts : t.consoleEmc, enabled: !!personal[tab], fallback, cols, master: groupMaster(tab, list), ownIds: new Set(types.map(x => x.id)),
-      lines: mode === 'points' ? pointsLines(list.map(x => ({ key: x.key, title: titleOf(x) })), scale)
+      lines: mode === 'points' ? pointsLines(list.map(x => ({ key: x.key, title: titleOf(x), points: x.points, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot })), scale)
         : countLines(tab, list.map(x => ({ key: x.key, title: titleOf(x) })), scale, emc) }
   }
 
