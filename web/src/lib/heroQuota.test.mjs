@@ -1,10 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { fallbackWeight, CRYPT_TYPES,
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf, typeTab,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, cryptsBaseAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf, typeTab,
 } from './heroQuota.js'
+import { normBase } from './normCurve.js'
 
 const w = (id, hero, s = DEFAULT_SETTINGS) => weightAt(id, hero, s)
+const cryptsUnrounded = h => normBase(h)
+const crypts_unrounded = cryptsUnrounded
 
 test('опора Феникса (298): стена клана воспроизводится после округления до 5', () => {
   const wall = {
@@ -65,20 +68,20 @@ test('неизвестный тип сундука — нет веса шкал�
 })
 
 test('общая норма: кривая проходит ровно через стены Старта, ЭДО и Берсерков (Герой 450, 25 000)', () => {
-  assert.equal(normAt(279), 5000)
-  assert.equal(normAt(387.5), 14000)
-  assert.equal(normAt(450), 25000)
+  assert.equal(cryptsBaseAt(279), 5000)
+  assert.equal(cryptsBaseAt(387.5), 14000)
+  assert.equal(cryptsBaseAt(450), 25000)
 })
 
 test('общая норма гладкая: рост на каждые 10 уровней Героя почти постоянный (≈×1.10), без изломов в стыках', () => {
   for (let h = 230; h <= 450; h += 10) { // ниже норма в тысячах — округление до сотен даёт шум в процентах
-    const k = normAt(h) / normAt(h - 10)
+    const k = cryptsBaseAt(h) / cryptsBaseAt(h - 10)
     assert.ok(k > 1.06 && k < 1.14, `@${h}: ×${k.toFixed(3)}`) // запас на округление до сотен
   }
   // нет скачка наклона на опорах: рост до и после стыка отличается меньше, чем на округление
   for (const h of [279, 387.5, 450]) {
-    const before = normAt(h) / normAt(h - 20)
-    const after = normAt(h + 20) / normAt(h)
+    const before = cryptsBaseAt(h) / cryptsBaseAt(h - 20)
+    const after = cryptsBaseAt(h + 20) / cryptsBaseAt(h)
     assert.ok(Math.abs(after - before) < 0.06, `@${h}: ×${before.toFixed(3)} → ×${after.toFixed(3)}`)
   }
 })
@@ -86,7 +89,7 @@ test('общая норма гладкая: рост на каждые 10 уро
 test('общая норма на всём диапазоне 100–600: растёт с уровнем, положительна, кратна 100, без обрезки', () => {
   let prev = 0
   for (const h of HERO_LEVELS) {
-    const n = normAt(h)
+    const n = cryptsBaseAt(h)
     assert.ok(n >= prev && n > 0, `@${h}`)
     assert.equal(n % 100, 0, `@${h}`)
     prev = n
@@ -95,19 +98,19 @@ test('общая норма на всём диапазоне 100–600: раст
 
 test('рычаги: множитель нормы и множитель весов', () => {
   const s = { ...DEFAULT_SETTINGS, norm: 1.2, weights: 0.5 }
-  assert.equal(normAt(387.5, s), 16800)
+  assert.equal(cryptsBaseAt(387.5, s), 16800)
   assert.equal(w('Epic Crypt 35', 387.5, s), 68) // 135×0.5=67.5 → ближайшее целое
 })
 
 test('рычаг по диапазону Героев меняет только норму этого диапазона', () => {
   const s = { ...DEFAULT_SETTINGS, ranges: [{ from: 300, to: 399, k: 2 }] }
-  assert.equal(normAt(387.5, s), 28000)
-  assert.equal(normAt(279, s), 5000)
+  assert.equal(cryptsBaseAt(387.5, s), 28000)
+  assert.equal(cryptsBaseAt(279, s), 5000)
 })
 
 test('множители зажимаются в 0.01…1000', () => {
-  assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99 }), 1386000)
-  assert.equal(normAt(387.5, { ...DEFAULT_SETTINGS, norm: 99999 }), 14000000)
+  assert.equal(cryptsBaseAt(387.5, { ...DEFAULT_SETTINGS, norm: 99 }), 1386000)
+  assert.equal(cryptsBaseAt(387.5, { ...DEFAULT_SETTINGS, norm: 99999 }), 14000000)
 })
 
 test('ориентир по эпикам: проходит через стены Старта 50 и Берсерков 300, ЕДО по общей кривой ≈166 (стена 200 была выбросом), монотонно растёт', () => {
@@ -175,13 +178,13 @@ test('цель Crypts не уходит ниже нуля', () => {
 })
 
 test('края диапазона: вверх и вниз та же закономерность, без искусственных обрезаний хвостов', () => {
-  assert.equal(normAt(100), 900)
-  assert.equal(normAt(600), 96600)
+  assert.equal(cryptsBaseAt(100), 900)
+  assert.equal(cryptsBaseAt(600), 96600)
   assert.equal(epicRefAt(100), 7)
   assert.equal(epicRefAt(600), 1159) // эпик-цель идёт вместе с нормой
   // рост на каждые 10 уровней одинаков на хвостах и в середине (≈×1.09–1.10)
   for (const h of [500, 550, 600]) {
-    const k = normAt(h) / normAt(h - 10)
+    const k = cryptsBaseAt(h) / cryptsBaseAt(h - 10)
     assert.ok(k > 1.08 && k < 1.11, `@${h}: ×${k.toFixed(3)}`)
   }
 })
@@ -247,7 +250,7 @@ test('количество эпик-склепов: ориентир клана 
 test('эпики × средние очки эпика на Герое 387.5 ≈ 85% нормы (между Стартом 81% и Берсерками 86%), без горба 102%', () => {
   const ids = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
   const pts = ids.reduce((sum, id) => sum + countAt(id, 387.5) * weightAt(id, 387.5), 0)
-  assert.ok(Math.abs(pts / normAt(387.5) - 0.85) < 0.03, String(pts))
+  assert.ok(Math.abs(pts / cryptsBaseAt(387.5) - 0.85) < 0.03, String(pts))
 })
 
 test('Rare/Common/Citadel: штук столько же, сколько у эпик-типа, пока у типа есть очки; вписанное число (set) перекрывает', () => {
@@ -281,14 +284,14 @@ test('количество эпиков: фейдер, mute (доля остал
 })
 
 test('EMC: четыре известных монстра — по истории, прочие — среднее четырёх', () => {
-  assert.equal(emcCountAt('Epic Fire Hydra', 400), 17)
+  assert.equal(emcCountAt('Epic Fire Hydra', 400), 15)
   assert.equal(emcCountAt('Epic Shadow City', 400), 3)
-  // среднее по 17/6/3/3 = 7.25 -> 7
-  assert.equal(emcCountAt('Epic Briareus', 400), 7)
-  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 15) // 7.25 × 2 = 14.5 -> 15
+  // среднее по 15/5/2/3 = 6.25 -> 6
+  assert.equal(emcCountAt('Epic Briareus', 400), 6)
+  assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { all: 2 } } } }), 13) // 6.25 × 2 = 12.5 -> 13
   // Chimera — пятый эпик-монстр ELDORADO со своей базой (52% всего EMC), а не «прочий»
-  assert.equal(emcCountAt('Epic Chimera', 400), 32)
-  assert.equal(emcCountAt('Epic Chimera', 450), 112)
+  assert.equal(emcCountAt('Epic Chimera', 400), 28)
+  assert.equal(emcCountAt('Epic Chimera', 450), 52)
   assert.equal(emcCountAt('Yogwai', 400, { ...DEFAULT_SETTINGS, mix: { c: { Yogwai: { on: false } } } }), 0)
 })
 
@@ -297,7 +300,7 @@ test('EMC: цель «прочих» монстров слота 2 суммир�
     A: { id: 'Epic Briareus', points: 45, slot: 2 }, B: { id: 'Epic Fire Hydra', points: 30, slot: 2 },
     C: { id: 'Yogwai', points: 40, slot: 1 },
   }
-  assert.equal(emcOthersTotal(meta, 400), 7) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
+  assert.equal(emcOthersTotal(meta, 400), 6) // только Briareus: Hydra — из четырёх, Yogwai вне слота EMC
 })
 
 test('тип вне шкалы: очки клана × фейдер, mute обнуляет', () => {
@@ -336,7 +339,7 @@ test('согласованность по всей шкале: очки эпик
   const ids = ['Epic Crypt 20', 'Epic Crypt 25', 'Epic Crypt 30', 'Epic Crypt 35']
   for (let h = 150; h <= 600; h += 10) { // ниже 150 штуки эпиков в единицах — округление по типам дробит процент
     const pts = ids.reduce((sum, id) => sum + countAt(id, h) * weightAt(id, h), 0)
-    const ratio = pts / normAt(h)
+    const ratio = pts / cryptsBaseAt(h)
     assert.ok(ratio > 0.75 && ratio < 1.1, `@${h}: ${(ratio * 100).toFixed(0)}%`)
   }
 })
@@ -344,7 +347,7 @@ test('согласованность по всей шкале: очки эпик
 test('без горба: эпик-склепов на 1000 очков нормы не выше уровня Берсерков (12) на всём 280–600 и растёт плавно между стенами', () => {
   let prev = 0
   for (let h = 280; h <= 600; h += 10) {
-    const rate = 1000 * epicRefAt(h) / normAt(h)
+    const rate = 1000 * epicRefAt(h) / cryptsBaseAt(h)
     assert.ok(rate <= 12.3, `@${h}: ${rate.toFixed(1)}`)
     assert.ok(rate >= prev - 0.3, `@${h}: провал ${rate.toFixed(1)} < ${prev.toFixed(1)}`)
     prev = rate
@@ -354,8 +357,8 @@ test('без горба: эпик-склепов на 1000 очков нормы
 test('главный фейдер «все EMC» (emc.global) двигает всех монстров, включая Chimera и прочих', () => {
   const g2 = { ...EMC_DEFAULTS, global: 2 }
   assert.ok(Math.abs(emcCountAt('Epic Chimera', 450, DEFAULT_SETTINGS, g2) - 2 * emcCountAt('Epic Chimera', 450)) <= 1) // округление после умножения
-  assert.equal(emcCountAt('Yogwai', 400, DEFAULT_SETTINGS, g2), Math.round(7.25 * 2))
-  assert.equal(emcCountAt('Epic Fire Hydra', 400, DEFAULT_SETTINGS, g2), 34) // 17.2 × 2 = 34.5 → 34 (округление после умножения)
+  assert.equal(emcCountAt('Yogwai', 400, DEFAULT_SETTINGS, g2), Math.round(6.25 * 2))
+  assert.equal(emcCountAt('Epic Fire Hydra', 400, DEFAULT_SETTINGS, { ...EMC_DEFAULTS, global: 1.5 }), 22) // 14.84 × 1.5 = 22.3 → 22 (округление после умножения, а не 15 × 1.5 → 23)
   // итог по всем монстрам (четыре + Chimera) вырос вдвое, не только четыре
   const total = s => computeRow(450, s).emc + emcCountAt('Epic Chimera', 450, DEFAULT_SETTINGS, s)
   assert.ok(Math.abs(total(g2) - 2 * total(EMC_DEFAULTS)) <= 2)
@@ -389,7 +392,7 @@ test('очки: склепы и EMC складываются в одну сум�
 
 test('очки: норму можно закрыть только склепами, только EMC или смесью — важна сумма', () => {
   const h = 413
-  const norm = normAt(h)
+  const norm = cryptsBaseAt(h)
   const per = id => weightAt(id, h)
   const onlyCrypts = Math.ceil(norm / per('Epic Crypt 35'))
   const onlyEmc = Math.ceil(norm / per('Epic Shadow City'))
@@ -419,8 +422,8 @@ test('синхронизация пульта и публичной страни
   assert.equal(typeTab('Yogwai', null), 'crypts')            // без «Квоты 2» — не EMC, как бы ни назывался
   assert.equal(typeTab('Epic Fire Hydra', 1), 'crypts')
   const meta = { 'Тыква': { id: 'Pumpkin Chest', points: 1, slot: 2 }, Hydra: { id: 'Epic Fire Hydra', points: 1, slot: 2 } }
-  assert.equal(emcOthersTotal(meta, 400), 7)         // «Тыква» = среднее четырёх, как в пульте
-  assert.equal(emcCountAt('Pumpkin Chest', 400), 7)
+  assert.equal(emcOthersTotal(meta, 400), 6)         // «Тыква» = среднее четырёх, как в пульте
+  assert.equal(emcCountAt('Pumpkin Chest', 400), 6)
 })
 
 test('главный фейдер группы множит очки всех типов своей группы и только её', () => {
@@ -438,4 +441,46 @@ test('тип вне шкалы: очки клана с главным фейде
   assert.equal(fallbackWeight(m, 400, { mix: { g: { emc: { all: 2 } } } }), 10)
   assert.equal(fallbackWeight(m, 400, { mix: { w: { Pumpkin: { on: false } } } }), 0)
   assert.equal(scoreOf({ Pumpkin: 3 }, { Pumpkin: m }, 400, { mix: { g: { emc: { all: 2 } } } }).score, 30)
+})
+
+
+// ---- Полная норма очков = норма склепов (стены кланов, без EMC) + очки EMC по штукам таблицы (владелец 2026-10-27) ----
+test('норма очков включает EMC: склепная часть — прежняя кривая, плюс EMC-очки по штукам и весам T9', () => {
+  for (const h of [150, 250, 300, 383, 387.5, 400, 450, 456, 500, 600]) {
+    const crypts = cryptsBaseAt(h)
+    const emc = emcPointsAt(h, undefined, DEFAULT_SETTINGS)
+    assert.equal(normAt(h), Math.round((crypts_unrounded(h) + emc) / 100) * 100, `@${h}`)
+    assert.ok(normAt(h) >= crypts, `@${h}`)
+  }
+})
+
+test('ниже Героя 200 эпических монстров нет — норма та же, что у склепов', () => {
+  for (const h of [100, 150, 199]) assert.equal(normAt(h), cryptsBaseAt(h), `@${h}`)
+})
+
+test('норма с EMC на опорных Героях: ELDORADO 387.5 ≈ 15 300, Берсерки 450 ≈ 27 600, 600 ≈ 111 800', () => {
+  assert.equal(normAt(387.5), 15300)
+  assert.equal(normAt(450), 27600)
+  assert.equal(normAt(600), 111800)
+})
+
+test('склепная часть нормы осталась прежней: стены Старта 5000, ЭДО 14000, Берсерков 25000', () => {
+  assert.equal(cryptsBaseAt(387.5), 14000)
+  assert.equal(cryptsBaseAt(450), 25000)
+  assert.ok(Math.abs(cryptsNormAt(387.5) - 14000) <= 100)
+  assert.ok(Math.abs(cryptsNormAt(450) - 25000) <= 100)
+})
+
+test('норма с EMC растёт плавно: рост за 10 уровней 9–12% на 300–600, без скачков больше 1.5 пунктов', () => {
+  let prev = null
+  for (let h = 300; h <= 600; h += 10) {
+    const g = normAt(h) / normAt(h - 10) - 1
+    assert.ok(g > 0.085 && g < 0.125, `@${h}: ${(g * 100).toFixed(1)}%`)
+    if (prev != null) assert.ok(Math.abs(g - prev) < 0.025, `скачок @${h}`)
+    prev = g
+  }
+})
+
+test('рычаг «норма» двигает полную норму (склепы и EMC вместе)', () => {
+  assert.equal(normAt(450, { ...DEFAULT_SETTINGS, norm: 2 }), Math.round(2 * (cryptsUnrounded(450) + emcPointsAt(450, undefined, DEFAULT_SETTINGS)) / 100) * 100)
 })

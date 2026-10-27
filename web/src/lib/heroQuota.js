@@ -152,8 +152,16 @@ function rangeK(hero, ranges) {
   return r ? clampMultiplier(r.k) : 1
 }
 
-export function normAt(hero, settings = DEFAULT_SETTINGS) {
+// Норма склепов — стены кланов (Старт 5000, ЭДО 14000, Берсерки 25000) БЕЗ EMC: эти числа были даны до учёта EMC.
+export function cryptsBaseAt(hero, settings = DEFAULT_SETTINGS) {
   const base = normBase(hero) // без обрезки: шкала задана на всём диапазоне 100–600 (владелец 2026-10-20)
+  return round100(base * rangeK(hero, settings.ranges) * clampMultiplier(settings.norm))
+}
+
+// Полная норма очков (владелец 2026-10-27): склепы по стенам + очки EMC (штуки таблицы × очки за монстра по T9 при
+// настройках по умолчанию). Рычаги нормы и диапазонов двигают сумму целиком. Ниже Героя 200 EMC нет — норма как у склепов.
+export function normAt(hero, settings = DEFAULT_SETTINGS) {
+  const base = normBase(hero) + emcPointsAt(hero, undefined, DEFAULT_SETTINGS)
   return round100(base * rangeK(hero, settings.ranges) * clampMultiplier(settings.norm))
 }
 

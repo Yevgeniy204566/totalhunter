@@ -6,26 +6,38 @@
 //  • ELDORADO, сезон 24.09–08.10: 121 игрок, 5518 монстров → 45,6 на игрока, средний Герой 383; доли монстров:
 //    Hydra 1532, Undead 547, Arachna 239, Shadow City 311, Chimera 2889 (Chimera — больше половины);
 //  • Берсерки (Герой в среднем 450): сумма трёх колонок замера у 95 игроков = 20413 → 214,9 на игрока.
-// Внутри ELDORADO EMC растёт с Героем так же, как норма в очках (×1.10 на 10 уровней), поэтому EMC = норма × доля,
-// где доля EMC в норме: ниже ELDORADO — как у ELDORADO, между ELDORADO и Берсерками плавно (в логарифме) растёт
-// до доли Берсерков, выше — как у Берсерков. Без искусственных обрезаний хвостов.
+// Пересмотр 2026-10-27 (владелец): игроки Берсерков пишут, что их нормы завышены вдвое — они играют круглосуточно, и
+// замер 214,9 на игрока для общей шкалы берём вдвое меньше (100 на Герое 450). Растёт НОРМА (штуки), а не цена монстра:
+// очки за штуку заданы таблицей T9 (Excel «СУНДУКИ учет») и от Героя выше 387,5 не зависят.
+// До Героя 383 — как раньше (ELDORADO, EMC = норма × доля клана); 383→450 — плавная дуга роста штук за 10 уровней
+// (8% → 14% → 12%, без скачков), выше 450 EMC растёт на ≈3 пункта за 10 уровней быстрее нормы Crypts.
 import { normBase, B as HERO_BERSERK } from './normCurve.js'
 
 const ELDO = { hero: 383, players: 121, total: 5518, split: { hydra: 1532, undead: 547, arachna: 239, shadow: 311, chimera: 2889 } }
+// замер: 20413 монстров у 95 игроков = 214,9 на игрока; в шкалу берём BERS_NORM (вдвое меньше замера)
 const BERS = { hero: HERO_BERSERK, players: 95, total: 20413 }
+export const BERS_NORM = 100
 
 const shareEldo = (ELDO.total / ELDO.players) / normBase(ELDO.hero)
-const shareBers = (BERS.total / BERS.players) / normBase(BERS.hero)
 
-// Переход доли от ELDORADO к Берсеркам идёт по smoothstep в логарифме: значения в обеих опорах те же (ELDORADO 45,6 на
-// Герое 383, Берсерки 214,9 на 450), но без изломов на 383 и 450 — касательная плавно выходит из полки и входит в неё
-// (владелец 2026-10-24: сглаживать общей кривой, опоры не менять). Один закон на все кланы.
-const smoothstep = t => t * t * (3 - 2 * t)
-function emcShare(hero) {
-  if (hero <= ELDO.hero) return shareEldo
-  if (hero >= BERS.hero) return shareBers
-  const t = smoothstep((hero - ELDO.hero) / (BERS.hero - ELDO.hero))
-  return Math.exp(Math.log(shareEldo) + (Math.log(shareBers) - Math.log(shareEldo)) * t)
+// Узлы дуги 383→450 (штук на игрока): темп роста за 10 уровней задан плавной формой 7% → 14% → 12%, масштаб подобран
+// так, чтобы на 450 вышло ровно BERS_NORM; между узлами — прямая в логарифме.
+const RAMP = [[ELDO.hero, ELDO.total / ELDO.players], [390, 48.2601], [400, 53.462], [410, 60.1825], [420, 68.4033],
+  [430, 78.0114], [440, 88.7224], [BERS.hero, BERS_NORM]]
+// добавка роста выше 450: ln(1 + 0,03 / 1,097) на 10 уровней
+const EXTRA_PER_LEVEL = 0.0027
+
+function emcCount(hero) {
+  if (hero <= ELDO.hero) return shareEldo * normBase(hero)
+  if (hero >= BERS.hero) {
+    return BERS_NORM * (normBase(hero) / normBase(BERS.hero)) * Math.exp(EXTRA_PER_LEVEL * (hero - BERS.hero))
+  }
+  for (let i = 0; i < RAMP.length - 1; i++) {
+    const [x0, y0] = RAMP[i]
+    const [x1, y1] = RAMP[i + 1]
+    if (hero <= x1) return Math.exp(Math.log(y0) + (Math.log(y1) - Math.log(y0)) * (hero - x0) / (x1 - x0))
+  }
+  return BERS_NORM
 }
 
 // Слабые Герои не бьют эпических монстров вовсе (владелец 2026-10-23: у Сарацинов и Старта мощи не хватает) — ниже этого
@@ -33,7 +45,7 @@ function emcShare(hero) {
 export const EMC_MIN_HERO = 200
 
 // Все эпик-монстры вместе (до округления)
-export const emcTotalAt = hero => (hero < EMC_MIN_HERO ? 0 : emcShare(hero) * normBase(hero))
+export const emcTotalAt = hero => (hero < EMC_MIN_HERO ? 0 : emcCount(hero))
 
 // Деление общего EMC по монстрам — доли ELDORADO (у Берсерков в замере монстры не названы: важно число, не название)
 const SPLIT = Object.fromEntries(Object.entries(ELDO.split).map(([k, v]) => [k, v / ELDO.total]))
@@ -129,15 +141,15 @@ export function quotaCsv(table, lang = 'ru') {
 
 export const EXTRAPOLATION_NOTES = {
   ru: [
-    'Опора 1 — ELDORADO, сезон 24.09–08.10: столбец EMC в истории (все эпик-монстры вместе) в среднем 45,6 на игрока при Герое 383; внутри клана EMC растёт с Героем так же, как норма очков.',
-    'Опора 2 — Берсерки (Герой в среднем 450): 214,9 на игрока — сумма трёх колонок замера.',
-    'EMC = норма × доля. Ниже Героя 383 доля как у ELDORADO, между 383 и 450 доля плавно растёт до доли Берсерков, выше 450 — как у Берсерков. Округление до целого, меньше 1 — 0. Ниже Героя 200 эпических монстров не бьют — EMC 0.',
+    'Опора 1 — ELDORADO, сезон 24.09–08.10: столбец EMC в истории (все эпик-монстры вместе) в среднем 45,6 на игрока при Герое 383 (из них Chimera 23,9).',
+    'Опора 2 — Берсерки (Герой в среднем 450): замер 214,9 на игрока. Игроки этого клана играют круглосуточно, поэтому в общую шкалу взято вдвое меньше — 100 на Герое 450.',
+    'Между 383 и 450 штуки растут плавной дугой (темп за 10 уровней ≈ 8% → 14% → 12%), выше 450 — как норма Crypts плюс ≈3 пункта за 10 уровней. Растёт норма (штуки), а не цена монстра: очки за штуку заданы таблицей T9 и от Героя не зависят. Округление до целого, меньше 1 — 0. Ниже Героя 200 эпических монстров не бьют — EMC 0.',
     'Деление по монстрам — по долям ELDORADO (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): у Берсерков монстры в замере не названы.',
   ],
   en: [
-    'Anchor 1 — ELDORADO, season 24.09–08.10: the EMC column of the history (all epic monsters together) averages 45.6 per player at Hero 383; inside the clan EMC grows with Hero like the points norm.',
-    'Anchor 2 — Berserki (average Hero 450): 214.9 per player, the sum of the three sample columns.',
-    'EMC = norm × share. Below Hero 383 the share is ELDORADO\'s, between 383 and 450 it grows smoothly to the Berserki share, above 450 it stays as Berserki\'s. Rounded to an integer, below 1 is 0. Below Hero 200 epic monsters are not killed at all, EMC is 0.',
+    'Anchor 1 — ELDORADO, season 24.09–08.10: the EMC column of the history (all epic monsters together) averages 45.6 per player at Hero 383 (Chimera 23.9 of them).',
+    'Anchor 2 — Berserki (average Hero 450): measured 214.9 per player. Players of this clan play around the clock, so the common scale takes half of it — 100 at Hero 450.',
+    'Between 383 and 450 the counts rise in a smooth arc (growth per 10 levels ≈ 8% → 14% → 12%); above 450 they grow like the Crypts norm plus about 3 points per 10 levels. It is the norm (counts) that grows, not the price of a monster: points per chest come from the T9 table and do not depend on Hero. Rounded to an integer, below 1 is 0. Below Hero 200 epic monsters are not killed at all, EMC is 0.',
     'Split by monster follows ELDORADO shares (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): Berserki monsters are not named in the sample.',
   ],
 }
