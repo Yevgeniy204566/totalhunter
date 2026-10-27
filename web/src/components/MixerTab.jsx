@@ -41,6 +41,7 @@ const TXT = {
     calc: 'расчёт',
     countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. У Rare, Common и Citadel штук столько же, сколько у эпик-типа, пока у типа на этом уровне Героя есть очки (нет очков — нет и штук); на цель «Epic Crypts» они не влияют.',
     deadAt: 'нет на Герое {h}', deadTip: 'На выбранном уровне Героя у этого типа 0 в шкале — он не учитывается, поэтому ручка не работает. Выберите другой уровень Героя вверху.', undoTip: 'Вернуть эту колонку к расчёту',
+    saveBtn: 'Сохранить', loadBtn: 'Загрузить',
     save: '💾 Сохранить настройки', saved: 'Применяет настройки пультов к сезону. Игроки видят результат на публичной странице.',
     dirtyOn: '● Есть несохранённые изменения', dirtyOff: '✓ Всё сохранено',
     editing: 'Правим: {what}',
@@ -89,6 +90,7 @@ const TXT = {
     calc: 'calc.',
     countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel get the same count as an epic type while the type has points at this Hero level (no points — no pieces); they do not affect the "Epic Crypts" target.',
     deadAt: 'none at Hero {h}', deadTip: 'At the chosen Hero level this type is 0 in the scale — it is not counted, so the handle does nothing. Pick another Hero level above.', undoTip: 'Return this column to the calculated value',
+    saveBtn: 'Save', loadBtn: 'Load',
     save: '💾 Save settings', saved: 'Applies the consoles\' settings to the season. Players see the result on the public page.',
     dirtyOn: '● Unsaved changes', dirtyOff: '✓ All saved',
     editing: 'Editing: {what}',
@@ -232,8 +234,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   const [modes, setModes] = useState({ crypts: 'points', emc: 'points' })
   const [sel, setSel] = useState(() => new Set(['all']))
   const [sample, setSample] = useState(400)
-  const [presetName, setPresetName] = useState('')
-  const [presetSlot, setPresetSlot] = useState('1')
+  const presetSlot = '1' // один набор: «Сохранить» записывает текущие настройки, «Загрузить» возвращает записанные (владелец 2026-10-27)
   const [note, setNote] = useState('')
   const [adding, setAdding] = useState(null) // { tab, id } — выбор сундука для добавления в пульт
 
@@ -381,13 +382,11 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   }
 
   const presets = personal.presets || {}
-  const slotLabel = slot => `${slot}. ${presets[slot]?.name || t.empty}`
-  const pickSlot = slot => { setPresetSlot(slot); setPresetName(presets[slot]?.name || ''); setNote('') }
   const savePreset = () => {
     const slot = presetSlot
     const next = {
       ...personal,
-      presets: { ...presets, [slot]: { name: (presetName.trim() || presets[slot]?.name || `${t.slot} ${slot}`).slice(0, 30),
+      presets: { ...presets, [slot]: { name: presets[slot]?.name || `${t.slot} ${slot}`,
         norm: personal.norm ?? 1, weights: personal.weights ?? 1, mix, emc, tier_presets: personal.tier_presets || {} } },
     }
     onPersonal(next)
@@ -404,16 +403,12 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     setNote(t.loaded)
   }
 
-  const setsControls = (
-    <>
-      <select className="input-dark pult-select" value={presetSlot} aria-label={t.presets} onChange={e => pickSlot(e.target.value)}>
-        {['1', '2', '3'].map(slot => <option key={slot} value={slot}>{slotLabel(slot)}</option>)}
-      </select>
-      <input className="input-dark pult-name" maxLength={30} placeholder={t.presetName} value={presetName}
-        onChange={e => setPresetName(e.target.value)} />
-      <button type="button" className="chest-pill-btn" onClick={savePreset}>{t.saveSlot}</button>
-      <button type="button" className="chest-pill-btn" disabled={!presets[presetSlot]} onClick={loadPreset}>{t.load}</button>
-    </>
+  // Одно обведённое окно с двумя кнопками — под графиком, там же, где правятся настройки (владелец 2026-10-27)
+  const saveBox = (
+    <div className="pult-savebox">
+      <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={savePreset}>{t.saveBtn}</button>
+      <button type="button" className="chest-pill-btn" disabled={!presets[presetSlot]} onClick={loadPreset}>{t.loadBtn}</button>
+    </div>
   )
 
   const emcMeta = Object.fromEntries(types.map(x => [x.id, { id: x.id, slot: typeTab(x.id, x.slot) === 'emc' ? 2 : x.slot }]))
@@ -515,7 +510,6 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
           )}
           <div className="mixer-hero-actions">
             <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
-            <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
           </div>
         </div>
         <details className="mixer-levels-fold">
@@ -618,27 +612,14 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                   abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReset={b.master.onReset} resetOff={b.master.resetOff} />
               </div>
             </div>
-            {/* Сохранить / загрузить — в каждом модуле сразу под ручками (владелец 2026-10-26): настроил — и тут же сохранил */}
-            <div className="mixer-console-actions">
-              <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
-              <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
-              {setsControls}
-            </div>
             <CurveEditor lang={lang} mode={modes[b.tab]} lines={b.lines} disabled={!b.enabled}
               onBands={applyBands} onResetAll={() => resetLines(b.lines)}
               hasLines={b.lines.some(l => Object.keys(l.bands || {}).length > 0)}
-              footer={<>{setsControls}</>} note={note} />
+              footer={saveBox} note={note} />
           </section>
         )
       })}
 
-      <section className="pult-card pult-card--main">
-        <div className="pult-actions">
-          <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={() => onSave()}>{t.save}</button>
-          <b className={dirty ? 'mixer-dirty' : 'mixer-clean'}>{dirty ? t.dirtyOn : t.dirtyOff}</b>
-        </div>
-        <p className="pult-hint">{t.saved}</p>
-      </section>
 
     </div>
   )
