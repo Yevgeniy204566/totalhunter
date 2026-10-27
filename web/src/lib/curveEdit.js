@@ -1,7 +1,7 @@
 // Правка очков за сундук по уровням Героя «кривой» (владелец 2026-10-26): тянешь точку, соседние идут плавно.
 // Хранение прежнее — поправки ступеней Героя mix.w[тип].bands; график показывает и пишет только очки.
 import { weightAt, weightBase, scaleBaseAt, fallbackWeight, fallbackBase, fallbackDefault, DEFAULT_SETTINGS } from './heroQuota.js'
-import { MULTIPLIER_MIN, MULTIPLIER_MAX, clampMultiplier } from './emcQuota.js'
+import { MULTIPLIER_MAX, clampMultiplier, bandMultiplier } from './emcQuota.js'
 
 export const BANDS = Array.from({ length: 51 }, (_, i) => 100 + i * 10)
 // ручки — через каждые 50 уровней: 100, 150 … 600
@@ -42,7 +42,7 @@ export function makeSeries({ cur, base, ref, zero }, bands = {}) {
     out.zero.push(z)
     out.scaleV.push(z ? 0 : r)
     // точные значения без округления: правка стартует от них, поэтому «вверх и обратно» возвращает исходное без следа
-    out.cont.push(z && bands[String(band)] == null ? 0 : r * clampMultiplier(bands[String(band)]))
+    out.cont.push(z && bands[String(band)] == null ? 0 : r * bandMultiplier(bands[String(band)]))
     if (!(r > 0)) out.locked.add(band)
   })
   return out
@@ -79,7 +79,7 @@ export function bandsOutOfRange(target, ref, changed = null, zero = null) {
     const scale = zero?.[i] ? 0 : ref[i]
     if (Math.abs(target[i] - scale) < 0.5) return false // возврат к шкале — не правка
     const k = target[i] / ref[i]
-    return !(k >= MULTIPLIER_MIN && k <= MULTIPLIER_MAX)
+    return !(k >= 0 && k <= MULTIPLIER_MAX)
   })
 }
 
@@ -95,10 +95,10 @@ export function bandsFromTargets(target, ref, existing = {}, changed = null, zer
     // хранимой поправки не сдвигало порог при возврате
     if (Math.abs(target[i] - scaleAt(i)) < 0.5) delete out[String(band)]
     // за границей множителя ступень не трогаем (прежняя поправка остаётся): значение не подтягивается к границе молча
-    else if (ratio >= MULTIPLIER_MIN && ratio <= MULTIPLIER_MAX) out[String(band)] = Math.round(ratio * 1e6) / 1e6
+    else if (ratio >= 0 && ratio <= MULTIPLIER_MAX) out[String(band)] = Math.round(ratio * 1e6) / 1e6
   })
   // если ни на одной ступени значение на странице не отличается от шкалы — в данных не должно оставаться ничего
   const visible = BANDS.some((band, i) => ref[i] > 0 && out[String(band)] != null
-    && Math.round(ref[i] * clampMultiplier(out[String(band)])) !== Math.round(scaleAt(i)))
+    && Math.round(ref[i] * bandMultiplier(out[String(band)])) !== Math.round(scaleAt(i)))
   return visible ? out : {}
 }

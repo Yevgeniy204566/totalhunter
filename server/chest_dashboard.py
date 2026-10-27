@@ -682,8 +682,8 @@ def _check_bands(bands: dict) -> dict:
     for band, k in bands.items():
         if band not in _BAND_KEYS:
             raise ValueError(f"unknown hero band {band!r}")
-        if not 0.01 <= k <= 1000.0:
-            raise ValueError("multiplier must be 0.01…1000")
+        if not 0.0 <= k <= 1000.0:
+            raise ValueError("band multiplier must be 0…1000")
     return bands
 
 
@@ -695,8 +695,8 @@ def _check_bands(bands: dict) -> dict:
     for band, k in bands.items():
         if band not in _BAND_KEYS:
             raise ValueError(f"unknown hero band {band!r}")
-        if not 0.01 <= k <= 1000.0:
-            raise ValueError("multiplier must be 0.01…1000")
+        if not 0.0 <= k <= 1000.0:
+            raise ValueError("band multiplier must be 0…1000")
     return bands
 
 

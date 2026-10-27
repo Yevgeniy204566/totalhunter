@@ -185,8 +185,9 @@ test('граница множителя 0,01…1000: ступень, котор�
   assert.deepEqual(bandsFromTargets(up, line.ref, {}, changed, line.zero), {}, 'ничего не записано')
   const keep = bandsFromTargets(up, line.ref, { 400: 2 }, changed, line.zero)
   assert.equal(keep[400], 2, 'прежняя поправка осталась как была, а не стала 1000')
-  const down = line.cont.map((v, k) => (k === i ? 0 : v))                     // 0 очков при базе 135 — множитель 0 за границей
-  assert.equal(bandsOutOfRange(down, line.ref, changed, line.zero), true)
+  const down = line.cont.map((v, k) => (k === i ? 0 : v))                     // 0 очков при базе 135 — множитель ступени 0 допустим (от 0 до 1000)
+  assert.equal(bandsOutOfRange(down, line.ref, changed, line.zero), false)
+  assert.equal(bandsFromTargets(down, line.ref, {}, changed, line.zero)[400], 0, 'ноль записан как есть')
 })
 
 test('в границах и возврат к шкале — не «за границей»', () => {
@@ -199,4 +200,18 @@ test('в границах и возврат к шкале — не «за гра
   const j = BANDS.indexOf(450)
   assert.equal(bandsOutOfRange(z.cont.map((v, k) => (k === j ? 40 : v)), z.ref, BANDS.map((_, k) => k === j), z.zero), false, 'на нулевом уровне 40 очков — в границах')
   assert.equal(bandsOutOfRange(z.cont.map((v, k) => (k === j ? 0 : v)), z.ref, BANDS.map((_, k) => k === j), z.zero), false, 'на нулевом уровне 0 — это шкала')
+})
+
+// ---- Вниз до нуля и до любого малого значения на любом уровне у любого сундука (полная свобода правки) ----
+test('любое значение 0…1000 на любой ступени у типа с большой базой (Epic Crypt 35, 135 очков): ноль, 1, 2, 5, 100, 1000', () => {
+  const id = 'Epic Crypt 35'
+  for (const b of [100, 300, 400, 450, 600]) for (const want of [0, 1, 2, 5, 100, 1000]) {
+    const line = seriesOf(id, { ...DEFAULT_SETTINGS, mix: {} })
+    const i = BANDS.indexOf(b)
+    const target = line.cont.map((v, k) => (k === i ? want : v))
+    const changed = BANDS.map((_, k) => k === i)
+    assert.equal(bandsOutOfRange(target, line.ref, changed, line.zero), false, `${b}→${want}`)
+    const bands = bandsFromTargets(target, line.ref, {}, changed, line.zero)
+    assert.equal(weightAt(id, centerOf(b), { ...DEFAULT_SETTINGS, mix: { w: { [id]: { bands } } } }), want, `Герой ${b}: вписано ${want}`)
+  }
 })

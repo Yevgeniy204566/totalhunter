@@ -9,7 +9,7 @@
 // выше последней — постоянный. Всё, что не стена клана, — РАСЧЁТ, не требование клана.
 // Очки за сундук округляются до целых (владелец 2026-10-26: шаг 1, не 5), общая норма — до сотен.
 
-import { clampMultiplier, computeRow, bandKey, emcChimeraAt, emcChimeraBaseAt, round as roundEmc } from './emcQuota.js'
+import { clampMultiplier, bandMultiplier, computeRow, bandKey, emcChimeraAt, emcChimeraBaseAt, round as roundEmc } from './emcQuota.js'
 import { NORM_LOW, normBase } from './normCurve.js'
 
 const P = 298
@@ -122,7 +122,7 @@ function baseWeight(key, h) {
 // Фейдер пульта на тип: «все уровни» × ступень Героя; on === false — тип не считается (mute).
 function mixFactor(entry, hero) {
   if (entry?.on === false) return 0
-  return clampMultiplier(entry?.all) * clampMultiplier(entry?.bands?.[bandKey(hero)])
+  return clampMultiplier(entry?.all) * bandMultiplier(entry?.bands?.[bandKey(hero)])
 }
 
 // Главный фейдер консоли пульта (владелец 2026-10-26): множитель очков всех типов своей группы —

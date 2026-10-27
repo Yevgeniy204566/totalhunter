@@ -185,6 +185,7 @@ async def test_mixer_values_saved_and_exposed(db_session):
     {"w": {"Epic Crypt 35": {"bands": {"385": 1.0}}}},        # ступень — только 100,110…600
     {"w": {"Epic Crypt 35": {"bands": {"650": 1.0}}}},
     {"w": {"Epic Crypt 35": {"bands": {"400": 1500}}}},
+    {"w": {"Epic Crypt 35": {"bands": {"400": -1}}}},
     {"w": {"x" * 61: {"all": 1}}},
     {"w": {f"T{i}": {"all": 1} for i in range(81)}},
     {"c": {"Epic Crypt 30": {"all": 1500}}},
@@ -313,3 +314,33 @@ async def test_slot_preset_keeps_tier_preset_edits(db_session):
     saved = pub["personal"]["presets"]["1"]["tier_presets"]["T9"]
     assert saved["points"]["Epic Crypt 35"] == 140 and saved["removed"] == ["Yogwai"]
     assert CHEST_PRESETS["T9"] == before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mix", [
+    {"w": {"Epic Crypt 35": {"bands": {"400": 0}}}},                         # ноль на одном уровне (полная свобода правки, 2026-10-27)
+    {"w": {"Epic Crypt 35": {"bands": {"300": 0.0011, "450": 1000}}}},       # любое малое значение и верхняя граница
+    {"c": {"Epic Crypt 30": {"bands": {"500": 0}}}},
+])
+async def test_band_multiplier_accepts_zero_and_small(db_session, mix):
+    c, h = await _owner(db_session, f"ps21{secrets.token_hex(3)}@example.com")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"personal": {**ON, "mix": mix}})
+        data = (await client.get("/web/dashboard/chests", headers=h)).json()
+    assert r.status_code == 200, r.text
+    mine = next(x for x in data["collectors"] if x["slug"] == c.slug)
+    for grp, types in mix.items():
+        for key, entry in types.items():
+            assert mine["personal_scale"]["mix"][grp][key]["bands"] == entry["bands"], "значения вернулись ровно такими, без обрезки"
+
+
+@pytest.mark.asyncio
+async def test_emc_cells_accept_zero_and_small(db_session):
+    c, h = await _owner(db_session, f"ps22{secrets.token_hex(3)}@example.com")
+    emc = {"global": 1, "monsters": {"hydra": 1, "undead": 1, "arachna": 1, "shadow": 1}, "ranges": [],
+           "cells": {"hydra": {"400": 0, "150": 0.0011}}, "off": []}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await _patch(client, c, h, {"quotas": [Q1, {**Q2, "emc": emc}], "personal": ON})
+        t = await _public(client, c)
+    assert r.status_code == 200, r.text
+    assert next(q for q in t["quotas"] if q["slot"] == 2)["emc"]["cells"] == {"hydra": {"400": 0, "150": 0.0011}}

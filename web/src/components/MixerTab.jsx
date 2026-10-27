@@ -339,7 +339,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         const unit = unitAt(centerOf(b))
         if (v === null || !(v >= 0.5)) { delete next[String(b)]; continue }
         const k = v / unit
-        if (!(k >= MULTIPLIER_MIN && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return } // за границей — не применяем вовсе
+        if (!(k >= 0 && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return } // за границей — не применяем вовсе
         next[String(b)] = Math.round(k * 1e6) / 1e6
       }
       setMixEntry('w', x.key, { bands: next })
@@ -379,7 +379,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         for (const b of levels) {
           if (v === null || !(v >= 0.5)) { delete next[String(b)]; continue }
           const k = v / unitAt(centerOf(b))
-          if (!(k >= MULTIPLIER_MIN && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return }
+          if (!(k >= 0 && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return }
           next[String(b)] = Math.round(k * 1e6) / 1e6
         }
         setMixEntry('c', x.key, { bands: next })
@@ -429,7 +429,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
             if (v === null || !(v >= 0.5)) { delete next[String(b)]; continue }
             const r = computeRow(centerOf(b), { ...emc, cells: { ...(emc.cells || {}), [key]: {} } })
             const k = v / (r.levelK * r.monsterK[i] * r.globalK)
-            if (!(k >= MULTIPLIER_MIN && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return }
+            if (!(k >= 0 && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return }
             next[String(b)] = Math.round(k * 1e6) / 1e6
           }
           const cells = { ...(emc.cells || {}) }
@@ -453,10 +453,16 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     return {
       abs: c.calc(c.k),
       onAbs: num => {
-        if (num === 0) { if (c.on !== false && c.onToggle) c.onToggle(); return }
+        // выбраны ступени Героя: ноль и любое малое число пишутся в множитель ступени (от 0), без выключения всего типа
+        const lowK = isAll ? MULTIPLIER_MIN : 0
+        if (num === 0) {
+          if (!isAll) { c.onK(0); return }
+          if (c.on !== false && c.onToggle) c.onToggle()
+          return
+        }
         // достижимо только в границах множителя: за ними значение не применяем и говорим об этом, а не подтягиваем к границе
-        if (!(c.calc(MULTIPLIER_MAX) >= num) || c.calc(MULTIPLIER_MIN) > num) { setNote(t.limitMsg); return }
-        c.onK(solveK(c.calc, num, MULTIPLIER_MIN, MULTIPLIER_MAX))
+        if (!(c.calc(MULTIPLIER_MAX) >= num) || c.calc(lowK) > num) { setNote(t.limitMsg); return }
+        c.onK(solveK(c.calc, num, isAll ? MULTIPLIER_MIN : 1e-9, MULTIPLIER_MAX))
       },
       calcText: c.fmt ? fmt(c.base) : c.base,
     }

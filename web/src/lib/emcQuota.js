@@ -84,6 +84,15 @@ export function clampMultiplier(value) {
   return Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, n))
 }
 
+// Множитель ступени Героя (поправка одного уровня): от 0 до 1000. Ноль — на этом уровне ровно 0 (полная свобода правки);
+// пусто — нет поправки (×1). В отличие от общих рычагов, к минимуму 0.01 не подтягивается.
+export const bandMultiplier = v => {
+  if (v === '' || v == null) return 1
+  const n = Number(v)
+  if (!Number.isFinite(n)) return 1
+  return Math.min(MULTIPLIER_MAX, Math.max(0, n))
+}
+
 // Ступень Героя 100…600 с шагом 10 (в пульте — «Герой 310–319»); ключ ступени — её начало.
 export const bandKey = hero => String(Math.min(600, Math.max(100, Math.floor(hero / 10) * 10)))
 
@@ -108,7 +117,7 @@ export function computeRow(hero, settings = DEFAULT_SETTINGS) {
   const globalK = clampMultiplier(settings.global)
   // пульт: множитель монстра на конкретную ступень Героя (cells) и «выкл» (off) — поверх прежних рычагов
   const band = bandKey(hero)
-  const cellK = MONSTER_KEYS.map(key => clampMultiplier(settings.cells?.[key]?.[band]))
+  const cellK = MONSTER_KEYS.map(key => bandMultiplier(settings.cells?.[key]?.[band]))
   const off = settings.off || []
   // Где модель даёт меньше единицы (слабые Герои, ниже ≈250), множитель бессмыслен: вписанная ступень монстра (cells) — сами штуки, от единицы
   // (полная свобода правки, владелец 2026-10-27). Без вписанной ступени там по-прежнему 0.

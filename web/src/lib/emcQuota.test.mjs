@@ -178,3 +178,9 @@ test('слабые Герои (ниже 200) бьют ноль, но правк�
   const withTwo = { ...DEFAULT_SETTINGS, global: 2, monsters: { ...DEFAULT_SETTINGS.monsters, hydra: 3 }, cells: { hydra: { 150: 5 } } }
   assert.equal(row(155, withTwo).finalH, 30, 'вписанное уважает общий множитель и множитель монстра: 5 × 2 × 3')
 })
+
+test('множитель ступени монстра от 0: ноль на уровне даёт 0, малое значение не подтягивается к 0,01', () => {
+  assert.equal(row(400, { ...DEFAULT_SETTINGS, cells: { hydra: { 400: 0 } } }).finalH, 0)
+  assert.equal(row(400, { ...DEFAULT_SETTINGS, cells: { hydra: { 400: 0.0001 } } }).finalH, 0)
+  assert.ok(row(400, { ...DEFAULT_SETTINGS, cells: { hydra: { 400: 0.5 } } }).finalH > 0)
+})
