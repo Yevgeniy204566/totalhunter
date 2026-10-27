@@ -228,13 +228,16 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
   )
 }
 
+// Радужный перелив имени победителя ×10 (Легенда I на публичной таблице): два цвета через 120°, палитра дважды на плитку 200%
+const LEGEND_I_GRADIENT = 'linear-gradient(90deg, hsl(160 100% 64%) 0%, hsl(280 100% 64%) 25%, hsl(160 100% 64%) 50%, hsl(280 100% 64%) 75%, hsl(160 100% 64%) 100%)'
+
 export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, onQuotas, onSave, types = [], allChestTypes = null, dirty = false, clanPresets = null, quotaEditor = null, onAddChest = null }) {
   const t = TXT[lang] || TXT.ru
   // режим «Очки/Количество» — свой у каждого пульта (владелец 2026-10-26)
   const [modes, setModes] = useState({ crypts: 'points', emc: 'points' })
   const [sel, setSel] = useState(() => new Set(['all']))
   const [sample, setSample] = useState(400)
-  const presetSlot = '1' // один набор: «Сохранить» записывает текущие настройки, «Загрузить» возвращает записанные (владелец 2026-10-27)
+  const [presetSlot, setPresetSlot] = useState('1')
   const [note, setNote] = useState('')
   const [adding, setAdding] = useState(null) // { tab, id } — выбор сундука для добавления в пульт
 
@@ -382,11 +385,14 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   }
 
   const presets = personal.presets || {}
+  // подпись слота — когда записан: так видно, что именно загрузится (владелец 2026-10-27)
+  const slotLabel = slot => `${slot} · ${presets[slot]?.name || t.empty}`
+  const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${z(d.getDate())}.${z(d.getMonth() + 1)} ${z(d.getHours())}:${z(d.getMinutes())}` }
   const savePreset = () => {
     const slot = presetSlot
     const next = {
       ...personal,
-      presets: { ...presets, [slot]: { name: presets[slot]?.name || `${t.slot} ${slot}`,
+      presets: { ...presets, [slot]: { name: stamp(),
         norm: personal.norm ?? 1, weights: personal.weights ?? 1, mix, emc, tier_presets: personal.tier_presets || {} } },
     }
     onPersonal(next)
@@ -403,9 +409,12 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
     setNote(t.loaded)
   }
 
-  // Одно обведённое окно с двумя кнопками — под графиком, там же, где правятся настройки (владелец 2026-10-27)
+  // Слот, «Сохранить» (синяя) и «Загрузить» — одним рядом под графиком, где правятся настройки; без рамки и лишних слов
   const saveBox = (
     <div className="pult-savebox">
+      <select className="input-dark pult-select" value={presetSlot} aria-label={t.presets} onChange={e => { setPresetSlot(e.target.value); setNote('') }}>
+        {['1', '2', '3'].map(slot => <option key={slot} value={slot}>{slotLabel(slot)}</option>)}
+      </select>
       <button type="button" className="chest-pill-btn chest-pill-btn--primary" onClick={savePreset}>{t.saveBtn}</button>
       <button type="button" className="chest-pill-btn" disabled={!presets[presetSlot]} onClick={loadPreset}>{t.loadBtn}</button>
     </div>
@@ -565,8 +574,12 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         const ma = absProps(b.master)
         return (
           <section key={b.tab} className="mixer-console" aria-label={b.title}>
+            <div className="mixer-console-banner">
+              <span className="public-name-banner public-name-banner--blue">
+                <span className="public-name-legendary mixer-console-banner-text" style={{ backgroundImage: LEGEND_I_GRADIENT }}>{b.title}</span>
+              </span>
+            </div>
             <div className="mixer-console-head">
-              <h3 className="mixer-console-title">{b.title}</h3>
               <div className="mixer-switch">
                 {[['points', t.points], ['count', t.count]].map(([id, label]) => (
                   <button key={id} type="button" className={`chest-pill-btn chest-pill-btn--sm${modes[b.tab] === id ? ' chest-pill-btn--green' : ''}`}
