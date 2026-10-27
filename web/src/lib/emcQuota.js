@@ -6,39 +6,39 @@
 //  • ELDORADO, сезон 24.09–08.10: 121 игрок, 5518 монстров → 45,6 на игрока, средний Герой 383; доли монстров:
 //    Hydra 1532, Undead 547, Arachna 239, Shadow City 311, Chimera 2889 (Chimera — больше половины);
 //  • Берсерки (Герой в среднем 450): сумма трёх колонок замера у 95 игроков = 20413 → 214,9 на игрока.
-// Пересмотр 2026-10-27 (владелец): растёт НОРМА (штуки), а не цена монстра — очки за штуку заданы таблицей T9 (Excel «СУНДУКИ
-// учет») и от Героя не зависят. Слабый Герой эпического монстра почти не выбивает: на Герое 300 игрок видит около 5 штук,
-// дальше норма нарастает плавно (в логарифме парабола через три точки), к Герою 456 — около 100 на странице.
-// Опоры (штук всех эпик-монстров на игрока за 2 недели, Chimera включена):
-//  • Герой 300 — 12 (на странице ≈5: четыре монстра и «прочие»; Chimera в учёте нет);
-//  • ELDORADO 383 — 45,6 (121 игрок, 5518 монстров за сезон 24.09–08.10, из них Chimera 23,9);
-//  • Герой 456 — 168 (на странице ≈100). Замер Берсерков: 214,9 на игрока при Герое 450, но игроки играют круглосуточно —
-//    в общую шкалу взято вдвое меньше замера плюс запас на небольшой рост от 450 до 456.
-// Выше 456 EMC растёт на ≈3 пункта за 10 уровней быстрее нормы Crypts; темп плавно сходит от конца дуги к этому значению.
-import { normBase, lnNormSlope } from './normCurve.js'
+// Модель по стилю свободной игры ELDORADO (владелец 2026-10-27). Берсерков берём не как опору, а вдвое меньше замера — они играют
+// круглосуточно. Растёт НОРМА (штуки), а не цена монстра: очки за штуку заданы таблицей T9 и от Героя выше 387,5 не зависят.
+// Опоры (штук всех эпик-монстров на игрока за 2 недели):
+//  • Герой 300 — 5,5 (минимум: эпического монстра на слабом Герое почти не выбить; по монстрам это ровно 5);
+//  • ELDORADO 383 — 45,6 (121 игрок, 5518 монстров за сезон 24.09–08.10);
+//  • Герой 450 — 100 (Берсерки: замер 214,9 вдвое меньше).
+// Рост штук = рост нормы Crypts + добавка, которая затухает с Героем: быстрый старт на 300 и плавный выход к темпу нормы.
+//   ln n(h) = ln n(300) + [ln норма(h) − ln норма(300)] + A·L·(1 − e^{−(h−300)/L}); A и L подобраны так, чтобы попасть в 383 и 450.
+import { normBase } from './normCurve.js'
 
 const ELDO = { hero: 383, players: 121, total: 5518, split: { hydra: 1532, undead: 547, arachna: 239, shadow: 311, chimera: 2889 } }
-const A = { hero: 300, count: 12 }
-const B = { hero: ELDO.hero, count: ELDO.total / ELDO.players }
-const C = { hero: 456, count: 168 }
+const A_ANCHOR = { hero: 300, count: 5.5 }
+const B_ANCHOR = { hero: ELDO.hero, count: ELDO.total / ELDO.players }
+const C_ANCHOR = { hero: 450, count: 100 }
 
-// ln(штук) = парабола через три опоры (форма Ньютона): без изломов, темп роста плавно гаснет
-const LN_B = (Math.log(B.count) - Math.log(A.count)) / (B.hero - A.hero)
-const LN_F = (Math.log(C.count) - Math.log(B.count)) / (C.hero - B.hero)
-const LN_C = (LN_F - LN_B) / (C.hero - A.hero)
-const lnSlopeArc = h => LN_B + LN_C * (2 * h - A.hero - B.hero)
-const lnCountArc = h => Math.log(A.count) + LN_B * (h - A.hero) + LN_C * (h - A.hero) * (h - B.hero)
-
-// добавка роста выше 456: ln(1 + 0,03 / 1,097) на 10 уровней; TAU — расстояние, на котором темп сходит к норме Crypts + добавка
-const EXTRA_PER_LEVEL = 0.0027
-const TAU = 30
-const EXCESS_AT_END = lnSlopeArc(C.hero) - (lnNormSlope(C.hero) + EXTRA_PER_LEVEL)
-
-function emcCount(hero) {
-  if (hero <= C.hero) return Math.exp(lnCountArc(hero))
-  const d = hero - C.hero
-  return C.count * (normBase(hero) / normBase(C.hero)) * Math.exp(EXTRA_PER_LEVEL * d + EXCESS_AT_END * TAU * (1 - Math.exp(-d / TAU)))
+const lnNormRel = h => Math.log(normBase(h) / normBase(A_ANCHOR.hero))
+const lnExtra = (h, amp, len) => amp * len * (1 - Math.exp(-(h - A_ANCHOR.hero) / len))
+const needB = Math.log(B_ANCHOR.count / A_ANCHOR.count) - lnNormRel(B_ANCHOR.hero)
+const needC = Math.log(C_ANCHOR.count / A_ANCHOR.count) - lnNormRel(C_ANCHOR.hero)
+// длину затухания L находим делением пополам (амплитуда A выводится из опоры 383), поэтому обе опоры попадают точно
+const dB = B_ANCHOR.hero - A_ANCHOR.hero
+const ampFor = len => needB / (len * (1 - Math.exp(-dB / len)))
+let lenLo = 5
+let lenHi = 400
+for (let i = 0; i < 100; i++) {
+  const mid = (lenLo + lenHi) / 2
+  if (lnExtra(C_ANCHOR.hero, ampFor(mid), mid) > needC) lenHi = mid
+  else lenLo = mid
 }
+const DECAY_LEN = (lenLo + lenHi) / 2
+const DECAY_AMP = ampFor(DECAY_LEN)
+
+const emcCount = hero => A_ANCHOR.count * Math.exp(lnNormRel(hero) + lnExtra(hero, DECAY_AMP, DECAY_LEN))
 
 // Слабые Герои не бьют эпических монстров вовсе (владелец 2026-10-23: у Сарацинов и Старта мощи не хватает) — ниже этого
 // уровня EMC равен 0.
@@ -141,15 +141,15 @@ export function quotaCsv(table, lang = 'ru') {
 
 export const EXTRAPOLATION_NOTES = {
   ru: [
-    'Опора 1 — ELDORADO, сезон 24.09–08.10: столбец EMC в истории (все эпик-монстры вместе) в среднем 45,6 на игрока при Герое 383 (из них Chimera 23,9).',
-    'Опора 2 — Берсерки (Герой в среднем 450): замер 214,9 на игрока. Игроки этого клана играют круглосуточно, поэтому в общую шкалу взято вдвое меньше — 100 на Герое 450.',
-    'Между 383 и 450 штуки растут плавной дугой (темп за 10 уровней ≈ 8% → 14% → 12%), выше 450 — как норма Crypts плюс ≈3 пункта за 10 уровней. Растёт норма (штуки), а не цена монстра: очки за штуку заданы таблицей T9 и от Героя не зависят. Округление до целого, меньше 1 — 0. Ниже Героя 200 эпических монстров не бьют — EMC 0.',
+    'Опора 1 — ELDORADO, сезон 24.09–08.10: столбец EMC в истории (все эпик-монстры вместе) в среднем 45,6 на игрока при Герое 383.',
+    'Опора 2 — Берсерки (Герой в среднем 450): замер 214,9 на игрока. Игроки этого клана играют круглосуточно, поэтому в общую шкалу взято вдвое меньше — 100 на Герое 450. Минимум — Герой 300: 5.',
+    'Рост штук = рост нормы Crypts плюс затухающая добавка: быстрый старт на слабых Героях и плавный выход к темпу нормы. Растёт норма (штуки), а не цена монстра: очки за штуку заданы таблицей T9 и от Героя не зависят. Округление до целого, меньше 1 — 0. Ниже Героя 200 эпических монстров не бьют — EMC 0.',
     'Деление по монстрам — по долям ELDORADO (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): у Берсерков монстры в замере не названы.',
   ],
   en: [
-    'Anchor 1 — ELDORADO, season 24.09–08.10: the EMC column of the history (all epic monsters together) averages 45.6 per player at Hero 383 (Chimera 23.9 of them).',
-    'Anchor 2 — Berserki (average Hero 450): measured 214.9 per player. Players of this clan play around the clock, so the common scale takes half of it — 100 at Hero 450.',
-    'Between 383 and 450 the counts rise in a smooth arc (growth per 10 levels ≈ 8% → 14% → 12%); above 450 they grow like the Crypts norm plus about 3 points per 10 levels. It is the norm (counts) that grows, not the price of a monster: points per chest come from the T9 table and do not depend on Hero. Rounded to an integer, below 1 is 0. Below Hero 200 epic monsters are not killed at all, EMC is 0.',
+    'Anchor 1 — ELDORADO, season 24.09–08.10: the EMC column of the history (all epic monsters together) averages 45.6 per player at Hero 383.',
+    'Anchor 2 — Berserki (average Hero 450): measured 214.9 per player. Players of this clan play around the clock, so the common scale takes half of it — 100 at Hero 450. The minimum is Hero 300: 5.',
+    'Counts grow like the Crypts norm plus a fading addition: a fast start on weak Heroes and a smooth approach to the pace of the norm. It is the norm (counts) that grows, not the price of a monster: points per chest come from the T9 table and do not depend on Hero. Rounded to an integer, below 1 is 0. Below Hero 200 epic monsters are not killed at all, EMC is 0.',
     'Split by monster follows ELDORADO shares (Chimera 52%, Hydra 28%, Undead 10%, Shadow City 6%, Arachna 4%): Berserki monsters are not named in the sample.',
   ],
 }
