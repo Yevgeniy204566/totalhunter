@@ -3,7 +3,7 @@
 //   очки — mix.w[тип].bands; штуки склепов и прочих монстров — mix.c[тип].bands; четыре монстра с историей — emc.cells[монстр].
 // Типы без базового числа (свой склеп вне шкалы) и со старым вписанным числом (set), которое одно на все уровни, на графике количества не показываются.
 import { makeSeries, seriesOf, fallbackSeriesOf } from './curveEdit.js'
-import { DEFAULT_SETTINGS, countRaw, countAt, emcCountAt, emcOtherRaw, weightBase, CRYPT_TYPES, EMC_FOUR } from './heroQuota.js'
+import { DEFAULT_SETTINGS, countAt, countZeroAt, countBaseAt, emcCountAt, emcOtherRaw, emcOtherZero, weightBase, CRYPT_TYPES, EMC_FOUR, ZERO_UNIT } from './heroQuota.js'
 import { computeRow, DEFAULT_SETTINGS as EMC_DEFAULTS } from './emcQuota.js'
 
 const MONSTER_BY_ID = { 'Epic Fire Hydra': 'hydra', 'Epic Undead': 'undead', 'Epic Arachne': 'arachna', 'Epic Shadow City': 'shadow' }
@@ -33,10 +33,9 @@ export function countLines(tab, list, scale, emc) {
     const muted = entry?.on === false
     if (tab === 'crypts') {
       if (!CRYPT_TYPES.includes(key)) return
-      const s2 = withoutBands(scale, key)
       out.push({ key, title: x.title, unit: 'count', target: { path: 'c', key }, muted,
         ...makeSeries({ cur: h => countAt(key, h, scale), base: h => countAt(key, h, DEFAULT_SETTINGS),
-          ref: h => countRaw(key, h, s2) }, entry?.bands || {}) })
+          ref: h => countBaseAt(key, h, scale), zero: h => countZeroAt(key, h) }, entry?.bands || {}) })
       return
     }
     if (key in EMC_FOUR) {
@@ -44,13 +43,14 @@ export function countLines(tab, list, scale, emc) {
       const noCell = { ...emc, cells: { ...(emc.cells || {}), [mk]: {} } }
       out.push({ key, title: x.title, unit: 'count', target: { path: 'cell', key: mk }, muted: (emc.off || []).includes(mk),
         ...makeSeries({ cur: h => computeRow(h, emc)[FINAL_BY_ID[key]], base: h => computeRow(h, EMC_DEFAULTS)[FINAL_BY_ID[key]],
-          ref: h => computeRow(h, noCell).raw[RAW_INDEX[key]] }, emc.cells?.[mk] || {}) })
+          ref: h => { const r = computeRow(h, noCell), i = RAW_INDEX[key]; return r.base[i] >= 1 ? r.raw[i] : ZERO_UNIT * r.levelK * r.monsterK[i] * r.globalK },
+          zero: h => computeRow(h, EMC_DEFAULTS).base[RAW_INDEX[key]] < 1 }, emc.cells?.[mk] || {}) })
       return
     }
     const s2 = withoutBands(scale, key)
     out.push({ key, title: x.title, unit: 'count', target: { path: 'c', key }, muted,
       ...makeSeries({ cur: h => emcCountAt(key, h, scale, emc), base: h => emcCountAt(key, h, DEFAULT_SETTINGS, EMC_DEFAULTS),
-        ref: h => emcOtherRaw(key, h, s2, emc) }, entry?.bands || {}) })
+        ref: h => emcOtherRaw(key, h, s2, emc), zero: h => emcOtherZero(key, h) }, entry?.bands || {}) })
   })
   return out.filter(x => x.ref.some(r => r > 0) || x.base.some(b => b > 0))
 }

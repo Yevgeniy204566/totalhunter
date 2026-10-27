@@ -864,9 +864,10 @@ export default function ChestsPage() {
                       <td>
                         <input
                           className="input-dark"
-                          type="number"
+                          type="number" min={0} step={1}
                           value={row.points === 0 ? '' : row.points}
-                          onChange={e => updateRow(collector.slug, i, 'points', parseInt(e.target.value, 10) || 0)}
+                          // только целые: дробное и буквы поле не принимает (раньше parseInt молча отбрасывал дробную часть и менял на 0)
+                          onChange={e => { const v = e.target.value; if (v !== '' && !/^\d+$/.test(v)) return; updateRow(collector.slug, i, 'points', v === '' ? 0 : Number(v)) }}
                         />
                       </td>
                       <td>

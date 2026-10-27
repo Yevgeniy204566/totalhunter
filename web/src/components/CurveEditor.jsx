@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { BANDS, HANDLE_BANDS, centerOf, applyDrag, bandsFromTargets } from '../lib/curveEdit.js'
+import { BANDS, HANDLE_BANDS, centerOf, applyDrag, bandsFromTargets, bandsOutOfRange } from '../lib/curveEdit.js'
 
 // Кривая по уровням Героя (владелец 2026-10-26): как EQ в цифровом пульте — тянешь ручку, соседние точки плавно идут
 // следом. Режим «Очки» — очки за сундук, «Количество» — штуки на игрока. Правит одну линию за раз; линии готовит
@@ -12,6 +12,7 @@ const TXT = {
     zoom: 'Zoom', zoomIn: 'Ручка тянет за собой больше соседних уровней', zoomOut: 'Ручка тянет за собой меньше соседних уровней (в минимуме — одна ступень)',
     reset: 'Сброс', resetTip: 'Вернуть выбранную линию на всех уровнях к шкале',
     resetAll: 'Сбросить все линии',
+    outOfRange: 'Такое значение записать нельзя: оно выходит за границы хранения (множитель 0,01…1000). Ничего не изменено.',
     hero: 'Герой', points: 'очков', count: 'шт.', scale: 'по шкале', muted: 'Тип выключен кнопкой — включите его, чтобы править линию.',
     locked: 'В шкале на этом уровне 0 — поднять нельзя.', off: 'Включите «Персонализированный учёт», чтобы править линии.',
     axisX: 'Уровень Героя', axisYPoints: 'Очки за сундук', axisYCount: 'Штук на игрока',
@@ -23,6 +24,7 @@ const TXT = {
     zoom: 'Zoom', zoomIn: 'A handle pulls more neighbouring levels along', zoomOut: 'A handle pulls fewer neighbouring levels along (at the minimum — one step)',
     reset: 'Reset', resetTip: 'Return the selected line to the scale on all levels',
     resetAll: 'Reset all lines',
+    outOfRange: 'This value cannot be stored: it is out of bounds (multiplier 0.01…1000). Nothing was changed.',
     hero: 'Hero', points: 'points', count: 'pcs', scale: 'by scale', muted: 'This type is switched off — turn it on to edit the line.',
     locked: 'The scale gives 0 at this level — it cannot be raised.', off: 'Turn on "Personalized accounting" to edit the lines.',
     axisX: 'Hero level', axisYPoints: 'Points per chest', axisYCount: 'Pieces per player',
@@ -38,7 +40,7 @@ const xOf = h => ML + (h - 100) / 500 * (W - ML - MR)
 const NICE = [5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 125, 150, 200, 250, 300, 400, 500, 600, 800, 1000, 1500, 2000, 3000, 5000, 10000]
 const niceMax = v => NICE.find(n => n >= v * 1.3) ?? Math.ceil(v * 1.3 / 1000) * 1000
 
-export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], disabled = false, onBands, onResetAll, hasLines = false, footer = null, note = '' }) {
+export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], disabled = false, onBands, onResetAll, hasLines = false, footer = null, note = '', onReject = null }) {
   const t = TXT[lang] || TXT.ru
   const [selKey, setSelKey] = useState(null)
   const [softness, setSoftness] = useState(40)
@@ -62,7 +64,9 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
   const commit = (handleBand, start, delta, existing) => {
     const target = applyDrag(start, handleBand, delta, softness, sel.locked)
     const changed = target.map((v, i) => Math.abs(v - start[i]) > 1e-9)
-    onBands(sel, bandsFromTargets(target, sel.ref, existing, changed))
+    // значение за границами множителя (0,01…1000) вписать нельзя: правка не применяется и сказано почему, ничего не обрезается молча
+    if (bandsOutOfRange(target, sel.ref, changed, sel.zero)) { onReject?.(t.outOfRange); return }
+    onBands(sel, bandsFromTargets(target, sel.ref, existing, changed, sel.zero))
   }
 
   const pointerValue = e => {
@@ -75,7 +79,7 @@ export default function CurveEditor({ lang = 'ru', mode = 'points', lines = [], 
     if (!canEdit || sel.locked.has(band)) return
     e.preventDefault()
     svgRef.current.setPointerCapture(e.pointerId)
-    drag.current = { band, start: [...sel.cont], existing: { ...sel.bands }, ymax, v0: sel.cont[i], scaleV: sel.ref[i] }
+    drag.current = { band, start: [...sel.cont], existing: { ...sel.bands }, ymax, v0: sel.cont[i], scaleV: sel.scaleV?.[i] ?? sel.ref[i] }
   }
   const onMove = e => {
     const d = drag.current

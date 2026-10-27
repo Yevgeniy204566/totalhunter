@@ -9,7 +9,7 @@
 // выше последней — постоянный. Всё, что не стена клана, — РАСЧЁТ, не требование клана.
 // Очки за сундук округляются до целых (владелец 2026-10-26: шаг 1, не 5), общая норма — до сотен.
 
-import { clampMultiplier, computeRow, bandKey, emcChimeraAt, emcChimeraBaseAt } from './emcQuota.js'
+import { clampMultiplier, computeRow, bandKey, emcChimeraAt, emcChimeraBaseAt, round as roundEmc } from './emcQuota.js'
 import { NORM_LOW, normBase } from './normCurve.js'
 
 const P = 298
@@ -129,20 +129,34 @@ function mixFactor(entry, hero) {
 // склепы и цитадели либо эпические монстры. Группу задаёт сам тип: в шкале склепы/цитадели перечислены в CRYPT_TYPES.
 const groupK = (group, settings) => clampMultiplier(settings.mix?.g?.[group]?.all)
 
-export function weightAt(id, hero, settings = DEFAULT_SETTINGS) {
-  const key = weightKey(id)
-  const base = baseWeight(key, hero)
-  if (base == null) return null
-  const group = CRYPT_TYPES.includes(key) ? 'crypts' : 'emc'
-  return round1(base * clampMultiplier(settings.weights) * mixFactor(settings.mix?.w?.[key], hero) * groupK(group, settings))
+// Полная свобода правки (владелец 2026-10-27): на уровне, где шкала даёт 0 («тип не засчитывается»), множитель бессмыслен —
+// ноль на любое число равен нулю. Поэтому там правка ступени (mix.w[тип].bands) — это сами очки: считаем от условной единицы.
+// Без правки ступени там по-прежнему 0.
+export const ZERO_UNIT = 1
+const hasBand = (entry, hero) => entry?.bands?.[bandKey(hero)] != null
+
+// Очки типа по шкале на уровне Героя без всяких правок (0 — шкала не засчитывает тип на этом уровне; null — типа нет в шкале).
+export function scaleBaseAt(id, hero) {
+  return baseWeight(weightKey(id), hero)
 }
 
-// Очки типа на уровне Героя без округления и без поправки ступеней: опора, от которой график пересчитывает «желаемые очки»
-// в поправку ступени. null — типа нет в шкале.
+export function weightAt(id, hero, settings = DEFAULT_SETTINGS) {
+  const key = weightKey(id)
+  let base = baseWeight(key, hero)
+  if (base == null) return null
+  const entry = settings.mix?.w?.[key]
+  if (!(base > 0) && hasBand(entry, hero)) base = ZERO_UNIT
+  const group = CRYPT_TYPES.includes(key) ? 'crypts' : 'emc'
+  return round1(base * clampMultiplier(settings.weights) * mixFactor(entry, hero) * groupK(group, settings))
+}
+
+// Очки типа на уровне Героя без округления и без поправки ступени: опора, от которой график пересчитывает «желаемые очки»
+// в поправку ступени. null — типа нет в шкале. На нулевом уровне шкалы опора — условная единица (чтобы линию можно было вести).
 export function weightBase(id, hero, settings = DEFAULT_SETTINGS) {
   const key = weightKey(id)
-  const base = baseWeight(key, hero)
+  let base = baseWeight(key, hero)
   if (base == null) return null
+  if (!(base > 0)) base = ZERO_UNIT
   const group = CRYPT_TYPES.includes(key) ? 'crypts' : 'emc'
   return base * clampMultiplier(settings.weights) * clampMultiplier(settings.mix?.w?.[key]?.all) * groupK(group, settings)
 }
@@ -203,14 +217,19 @@ export const DEFAULT_HERO = 400
 const emcShape = (m, hero) => (typeTab(m?.id, m?.slot) === 'emc' ? g(hero) : 1)
 
 export function fallbackWeight(m, hero, settings = DEFAULT_SETTINGS) {
-  const f = mixFactor(settings.mix?.w?.[m.id], hero) * groupK(typeTab(m.id, m.slot), settings)
+  const entry = settings.mix?.w?.[m.id]
+  const f = mixFactor(entry, hero) * groupK(typeTab(m.id, m.slot), settings)
+  // очки клана 0 — тип не считается; правка ступени там задаёт сами очки (как на нулевых уровнях шкалы)
+  if (!((m?.points || 0) > 0)) return hasBand(entry, hero) ? Math.round(ZERO_UNIT * f) : 0
   return Math.round((m?.points || 0) * f * emcShape(m, hero))
 }
 
 // Точное значение без поправок ступеней (опора графика «Очки»): очки клана × форма по Героям × «все уровни» × главный фейдер группы
 export function fallbackBase(m, hero, settings = DEFAULT_SETTINGS) {
   const entry = settings.mix?.w?.[m.id]
-  return (m?.points || 0) * emcShape(m, hero) * clampMultiplier(entry?.all) * groupK(typeTab(m.id, m.slot), settings)
+  const pts = m?.points || 0
+  const unit = pts > 0 ? pts * emcShape(m, hero) : ZERO_UNIT
+  return unit * clampMultiplier(entry?.all) * groupK(typeTab(m.id, m.slot), settings)
 }
 
 // Значение «по умолчанию» (пунктир графика): очки клана с формой по Героям, без фейдеров
@@ -275,11 +294,26 @@ export function countRaw(id, hero, settings) {
   if (!CRYPT_TYPES.includes(key)) return 0
   // очки у типа на этом уровне Героя нулевые — значит, он не учитывается и штук тоже нет (владелец 2026-10-26: очки есть,
   // а штук 0 быть не может, и наоборот)
-  if (!EPIC_CRYPTS.includes(key) && !(baseWeight(key, hero) >= 0.5)) return 0
+  if (!EPIC_CRYPTS.includes(key) && !(baseWeight(key, hero) >= 0.5)) return hasBand(entry, hero) ? ZERO_UNIT * mixFactor({ ...entry, on: true }, hero) : 0
   const active = EPIC_CRYPTS.filter(t => mixC[t]?.on !== false)
   // Rare, Common и Citadel — столько же штук, сколько у типа эпик-склепа: клан называет норму только по эпикам, у остальных
   // типов это ориентир, на публичные цели (сумма эпик-склепов) он не влияет
   return epicRefAt(hero, settings) / active.length * mixFactor({ ...entry, on: true }, hero)
+}
+
+// Уровень, где у типа склепов нет штук (нет очков в шкале): по умолчанию 0, правка ступени — сами штуки (любое число)
+export const countZeroAt = (id, hero) => {
+  const key = weightKey(id)
+  return CRYPT_TYPES.includes(key) && !EPIC_CRYPTS.includes(key) && !(baseWeight(key, hero) >= 0.5)
+}
+
+// Штуки типа без поправки его ступеней (опора графика «Количество»); на нулевом уровне — условная единица × «все уровни»
+export function countBaseAt(id, hero, settings = DEFAULT_SETTINGS) {
+  const key = weightKey(id)
+  const entry = settings.mix?.c?.[key]
+  if (countZeroAt(key, hero)) return ZERO_UNIT * clampMultiplier(entry?.all)
+  const s2 = { ...settings, mix: { ...(settings.mix || {}), c: { ...(settings.mix?.c || {}), [key]: { ...(entry || {}), bands: {} } } } }
+  return countRaw(key, hero, s2)
 }
 
 export function countAt(id, hero, settings = DEFAULT_SETTINGS) {
@@ -299,10 +333,22 @@ export function emcCountAt(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
   if (id in EMC_FOUR) return row[EMC_FINALS[EMC_FOUR[id]]]
   // общий множитель «все EMC» (главный фейдер пульта, emc.global) — для ВСЕХ монстров, включая Chimera и прочих
   const globalK = clampMultiplier(emcModel?.global)
-  if (id === 'Epic Chimera') return emcChimeraAt(hero, mixFactor({ ...entry, on: true }, hero) * globalK)
+  const f = mixFactor({ ...entry, on: true }, hero) * globalK
+  if (id === 'Epic Chimera') {
+    if (emcChimeraBaseAt(hero) >= 1 || !hasBand(entry, hero)) return emcChimeraAt(hero, f)
+    return roundEmc(ZERO_UNIT * f) // уровень ниже единицы: вписанная ступень — сами штуки
+  }
   const base = computeRow(hero)
   const mean = EMC_FINALS.reduce((sum, k) => sum + base[k], 0) / 4
-  return Math.round(mean * mixFactor({ ...entry, on: true }, hero) * globalK)
+  if (mean < 1 && hasBand(entry, hero)) return roundEmc(ZERO_UNIT * f)
+  return Math.round(mean * f)
+}
+
+// Нулевой уровень типа EMC (Chimera и прочие): модель даёт 0 — правка ступени там задаёт сами штуки
+export function emcOtherZero(id, hero) {
+  if (id === 'Epic Chimera') return !(emcChimeraBaseAt(hero) >= 1)
+  const row = computeRow(hero)
+  return !(EMC_FINALS.reduce((sum, k) => sum + row[k], 0) / 4 >= 1)
 }
 
 // К какой вкладке пульта относится тип — единое правило для пульта и публичной страницы (владелец 2026-10-20):
@@ -347,8 +393,9 @@ export function emcOtherRaw(id, hero, settings = DEFAULT_SETTINGS, emcModel) {
   const entry = settings.mix?.c?.[id]
   const globalK = clampMultiplier(emcModel?.global)
   const f = mixFactor({ ...entry, on: true }, hero)
-  if (id === 'Epic Chimera') return emcChimeraBaseAt(hero) * f * globalK
+  // на уровне, где модель даёт меньше единицы (на странице это 0), опора графика — условная единица: правка ступени там — сами штуки
+  if (id === 'Epic Chimera') return (emcChimeraBaseAt(hero) >= 1 ? emcChimeraBaseAt(hero) : ZERO_UNIT) * f * globalK
   const row = computeRow(hero)
   const mean = EMC_FINALS.reduce((sum, k) => sum + row[k], 0) / 4
-  return mean * f * globalK
+  return (mean >= 1 ? mean : ZERO_UNIT) * f * globalK
 }

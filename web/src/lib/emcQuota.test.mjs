@@ -168,3 +168,13 @@ test('CSV: английский заголовок', () => {
   const csv = quotaCsv(computeTable(DEFAULT_SETTINGS), 'en')
   assert.equal(csv.slice(1).split('\r\n')[0], 'Hero;Hydra;Undead;Arachna;Shadow City;EMC')
 })
+
+test('слабые Герои (ниже 200) бьют ноль, но правка ступени задаёт сами штуки монстра (полная свобода, 2026-10-27)', () => {
+  assert.equal(row(150).emc, 0)
+  const withHydra = { ...DEFAULT_SETTINGS, cells: { hydra: { 150: 7 } } }
+  assert.equal(row(155, withHydra).finalH, 7)
+  assert.equal(row(155, withHydra).finalU, 0)
+  assert.equal(row(255, withHydra).finalH, row(255).finalH, 'уровни со шкалой не тронуты')
+  const withTwo = { ...DEFAULT_SETTINGS, global: 2, monsters: { ...DEFAULT_SETTINGS.monsters, hydra: 3 }, cells: { hydra: { 150: 5 } } }
+  assert.equal(row(155, withTwo).finalH, 30, 'вписанное уважает общий множитель и множитель монстра: 5 × 2 × 3')
+})

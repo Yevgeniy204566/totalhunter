@@ -110,7 +110,14 @@ export function computeRow(hero, settings = DEFAULT_SETTINGS) {
   const band = bandKey(hero)
   const cellK = MONSTER_KEYS.map(key => clampMultiplier(settings.cells?.[key]?.[band]))
   const off = settings.off || []
-  const raw = base.map((b, k) => (off.includes(MONSTER_KEYS[k]) ? 0 : b * levelK * monsterK[k] * cellK[k] * globalK))
+  // Где модель даёт меньше единицы (слабые Герои, ниже ≈250), множитель бессмыслен: вписанная ступень монстра (cells) — сами штуки, от единицы
+  // (полная свобода правки, владелец 2026-10-27). Без вписанной ступени там по-прежнему 0.
+  const raw = base.map((b, k) => {
+    if (off.includes(MONSTER_KEYS[k])) return 0
+    // база ниже 1 на странице всё равно округляется в 0, поэтому вписанная ступень там — сами штуки, а не множитель к дроби
+    const b0 = b >= 1 ? b : (settings.cells?.[MONSTER_KEYS[k]]?.[band] != null ? 1 : b)
+    return b0 * levelK * monsterK[k] * cellK[k] * globalK
+  })
   const fin = raw.map(round)
   return {
     raw,

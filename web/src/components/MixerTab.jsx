@@ -7,8 +7,10 @@ import { pointsLines, countLines, writeBands } from '../lib/curveLines.js'
 import { posToK, kToPos, solveK } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
-  weightKey, weightAt, fallbackWeight, normAt, countAt, emcCountAt, emcQuotaTotal, typeTab, epicCountTotal,
+  weightKey, weightAt, weightBase, scaleBaseAt, fallbackWeight, fallbackBase, normAt, countAt, countZeroAt, countBaseAt, emcCountAt, emcOtherZero, emcOtherRaw,
+  emcQuotaTotal, typeTab, epicCountTotal,
 } from '../lib/heroQuota.js'
+import { BANDS, centerOf } from '../lib/curveEdit.js'
 
 // «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
 // тип сундука из «Учёта» клана, фейдер: середина = рассчитанное значение (×1), вверх — больше, вниз —
@@ -37,6 +39,11 @@ const TXT = {
     reset: 'Двойной щелчок по ползунку — вернуть расчётное значение',
     mute: 'Зелёный — участвует в подсчёте, красный — не участвует (выключен или значение 0). Нажмите, чтобы включить или выключить',
     abs: 'Значение: сотрите и впишите своё число (0 — выключить тип)',
+    limitMsg: 'Это значение вписать нельзя: оно выходит за границы хранения (число 0…1000, множитель 0,01…1000). Ничего не изменено.',
+    intOnly: 'Вписывайте целое число от 0 до 1000: очки и штуки целые.',
+    heroRange: 'Герой — целое число от 100 до 600.',
+    zeroCnt: 'На этом уровне Героя штук по шкале нет. Двигайте ручку вверх (до 200) или впишите любое число — это будут штуки на уровнях, где шкала штук не даёт (все уровни или выбранные ступени); двойной щелчок — вернуть 0',
+    zeroPts: 'На этом уровне Героя шкала даёт 0. Двигайте ручку вверх (до 200) или впишите любое число — это будут очки за сундук на уровнях, где шкала даёт 0 (все уровни или выбранные ступени); двойной щелчок — вернуть 0',
     manual: 'Этого типа нет в шкале, штук по норме нет. По умолчанию 0 — ручка по центру; двигайте её вверх (до 200) или впишите число вручную; двойной щелчок — сбросить в 0',
     calc: 'расчёт',
     countNote: 'Эпик-склепы: общая норма клана делится поровну между включёнными типами эпик-склепов. У Rare, Common и Citadel штук столько же, сколько у эпик-типа, пока у типа на этом уровне Героя есть очки (нет очков — нет и штук); на цель «Epic Crypts» они не влияют.',
@@ -86,6 +93,11 @@ const TXT = {
     reset: 'Double-click a slider to return the calculated value',
     mute: 'Green — counted, red — not counted (off or value 0). Click to turn on or off',
     abs: 'Value: erase and type your own number (0 turns the type off)',
+    limitMsg: 'This value cannot be entered: it is out of the storage bounds (number 0…1000, multiplier 0.01…1000). Nothing was changed.',
+    intOnly: 'Enter a whole number from 0 to 1000: points and pieces are whole.',
+    heroRange: 'Hero is a whole number from 100 to 600.',
+    zeroCnt: 'The scale gives no pieces at this Hero level. Move the handle up (to 200) or type any number — it becomes the pieces at the levels where the scale gives none (all levels or the selected steps); double-click returns 0',
+    zeroPts: 'The scale gives 0 at this Hero level. Move the handle up (to 200) or type any number — it becomes the points per chest at the levels where the scale gives 0 (all levels or the selected steps); double-click returns 0',
     manual: 'This type is not in the scale, so there is no norm count. The default is 0 — the handle sits in the centre; move it up (to 200) or type a number; double-click resets to 0',
     calc: 'calc.',
     countNote: 'Epic crypts: the clan total norm is split equally between the enabled epic crypt types. Rare, Common and Citadel get the same count as an epic type while the type has points at this Hero level (no points — no pieces); they do not affect the "Epic Crypts" target.',
@@ -123,6 +135,8 @@ const GROUPS = [100, 200, 300, 400, 500].map(g => ({
   g, bands: Array.from({ length: g === 500 ? 11 : 10 }, (_, i) => g + i * 10),
 }))
 const MANUAL_MAX = 200
+// Вписанное число — целое от 0 до 1000 (граница хранения сервера); больше вписать нельзя, и ничего не обрезается молча (владелец 2026-10-27)
+const TYPED_MAX = 1000
 const fmt = n => Number(n).toLocaleString('ru-RU')
 const bandLabel = h => { const n = Number(h); return n >= 600 ? `${n}` : `${n}–${n + 9}` }
 
@@ -148,7 +162,7 @@ function sortTypes(list, tab) {
 
 // Ручки точной подстройки главного фейдера (владелец 2026-10-24): ±1% от текущего множителя (0,1% убрано по просьбе),
 // при удержании кнопки — повтор. Актуальные k/onK берём из ref: за время удержания фейдер перерисовывается.
-function FineKnobs({ k, onK, disabled, tt }) {
+function FineKnobs({ k, onK, disabled, tt, onLimit = null }) {
   const ref = useRef({ k, onK })
   ref.current = { k, onK }
   const timers = useRef({ start: null, tick: null })
@@ -156,7 +170,9 @@ function FineKnobs({ k, onK, disabled, tt }) {
   useEffect(() => stop, [])
   const nudge = d => {
     const next = ref.current.k * (1 + d)
-    ref.current.onK(Math.round(Math.min(MULTIPLIER_MAX, Math.max(MULTIPLIER_MIN, next)) * 10000) / 10000)
+    // за границу множителя не шагаем и говорим об этом (ничего не обрезается молча)
+    if (next > MULTIPLIER_MAX || next < MULTIPLIER_MIN) { onLimit?.(tt.limitMsg); return }
+    ref.current.onK(Math.round(next * 10000) / 10000)
   }
   const hold = d => e => {
     e.preventDefault()
@@ -176,7 +192,7 @@ function FineKnobs({ k, onK, disabled, tt }) {
   )
 }
 
-function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, tt, master = false, accent, tip, onReset, resetOff, mk = 1, dead = false, deadText = '' }) {
+function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual, manualTip = '', onReject = null, tt, master = false, accent, tip, onReset, resetOff, mk = 1, dead = false, deadText = '' }) {
   // Число вводится свободно (владелец 2026-10-21): пока поле в фокусе, показываем то, что набирает человек
   // (можно стереть всё и набрать заново), результат применяем на каждый валидный набор.
   const [draft, setDraft] = useState(null)
@@ -185,11 +201,14 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
   // главный фейдер группы сдвинут — ручки группы идут за ним, а числа под ними крупнее и подсвечены (владелец 2026-10-26)
   const lifted = !master && Math.abs(mk - 1) > 1e-9
   const type = e => {
-    const v = e.target.value.replace(',', '.')
-    if (!/^\d*\.?\d*$/.test(v)) return
+    const v = e.target.value
+    // только целые: очки и штуки на странице целые, дробное молча округлялось бы
+    if (!/^\d*$/.test(v)) { onReject?.(tt.intOnly); return }
+    // больше границы вписать нельзя: поле просто не принимает такое значение и говорит почему
+    if (v !== '' && Number(v) > TYPED_MAX) { onReject?.(tt.limitMsg); return }
     setDraft(v)
     if (v === '') { if (manual) onAbs(''); return }
-    if (v !== '.') onAbs(Number(v))
+    onAbs(Number(v))
   }
   return (
     <div className={`mixer-col${master ? ' mixer-col--master' : ''}${lifted ? ' mixer-col--lift' : ''}${dead ? ' mixer-col--dead' : ''}${disabled ? ' mixer-col--disabled' : ''}${on === false ? ' mixer-col--muted' : ''}`}
@@ -199,7 +218,7 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
         ? <button type="button" className={`mixer-dot${counted ? '' : ' mixer-dot--off'}`} title={tt.mute}
             onClick={onToggle} disabled={disabled} />
         : <span className="mixer-dot-gap" />}
-      <div className="mixer-rail" title={manual ? tt.manual : tt.reset}>
+      <div className="mixer-rail" title={manual ? (manualTip || tt.manual) : tt.reset}>
         {manual ? (
           // у типа нет базы в нормах клана — ползунок двигает число штук напрямую (0…MANUAL_MAX), больше можно вписать
           <input type="range" className="mixer-range" min={0} max={1000} value={500 + Math.min(500, Math.round((Number(abs) || 0) / MANUAL_MAX * 500))}
@@ -212,14 +231,14 @@ function Fader({ k, onK, abs, onAbs, calc, on, onToggle, title, disabled, manual
         )}
       </div>
       <input className="input-dark mixer-k" type="text" inputMode="decimal" value={draft ?? abs} disabled={disabled}
-        title={manual ? tt.manual : `${tt.abs} · ${tt.calc}: ${calc}`} onChange={type} onFocus={e => e.target.select()}
+        title={manual ? (manualTip || tt.manual) : `${tt.abs} · ${tt.calc}: ${calc}`} onChange={type} onFocus={e => e.target.select()}
         onBlur={() => setDraft(null)} />
       {dead && <small className="mixer-dead" title={tt.deadTip}>{deadText}</small>}
       {/* видимый возврат одной колонки к расчёту (двойной щелчок по ручке — то же, но скрыто) */}
       {!master && !manual && !dead && Math.abs(k - 1) > 1e-9 && (
         <button type="button" className="mixer-undo" title={tt.undoTip} aria-label={tt.undoTip} disabled={disabled} onClick={() => onK(1)}>↺</button>
       )}
-      {master && <FineKnobs k={k} onK={onK} disabled={disabled} tt={tt} />}
+      {master && <FineKnobs k={k} onK={onK} disabled={disabled} tt={tt} onLimit={onReject} />}
       {master && onReset && (
         <button type="button" className="mixer-fine-btn mixer-reset-btn" title={tt.resetMasterTip}
           disabled={disabled || (resetOff ?? Math.abs(k - 1) < 1e-9)} onClick={onReset}>{tt.resetMaster}</button>
@@ -236,7 +255,8 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   // режим «Очки/Количество» — свой у каждого пульта (владелец 2026-10-26)
   const [modes, setModes] = useState({ crypts: 'points', emc: 'points' })
   const [sel, setSel] = useState(() => new Set(['all']))
-  const [sample, setSample] = useState(400)
+  const [sample, setSample] = useState(400) // последнее допустимое значение Героя «Примера» (100…600)
+  const [sampleDraft, setSampleDraft] = useState(null) // что набирают сейчас
   const [presetSlot, setPresetSlot] = useState('1')
   const [note, setNote] = useState('')
   const [adding, setAdding] = useState(null) // { tab, id } — выбор сундука для добавления в пульт
@@ -250,7 +270,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   // по отмеченным ступеням (200–299 → 250); если среднее попало в неотмеченную ступень (несмежный выбор) —
   // ближайшая отмеченная.
   const exHero = (() => {
-    if (isAll) return Number(sample) || 400
+    if (isAll) return sample
     const nums = bands.map(Number)
     if (!nums.length) return 405
     if (nums.length === 1) return nums[0] + 5
@@ -303,8 +323,28 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       // тип вне шкалы: базой служат очки клана из «Сундуков» — считает та же функция, что и публичный счёт
       return fallbackWeight({ id: x.key, slot: x.slot, points: clan }, exHero, { ...scale, mix: m })
     }
-    return { key: x.key, title: titleOf(x), e, path: 'w', calc,
+    const col = { key: x.key, title: titleOf(x), e, path: 'w', calc,
       base: weightAt(x.key, exHero, SCALE_DEFAULTS) ?? clan }
+    // Полная свобода правки (владелец 2026-10-27): где шкала даёт 0, множитель к нулю бессмыслен — ползунок и число двигают сами
+    // очки, они записываются в поправки тех ступеней, где шкала даёт 0 (все уровни или выбранные ступени).
+    const m = { id: x.key, slot: x.slot, points: clan }
+    const zeroAt = h => { const b = scaleBaseAt(x.key, h); return b == null ? !(clan > 0) : b === 0 }
+    if (!zeroAt(exHero)) return col
+    const unitAt = h => weightBase(x.key, h, scale) ?? fallbackBase(m, h, scale)
+    const levels = (isAll ? BANDS : bands.map(Number)).filter(b => zeroAt(centerOf(b)))
+    const now = weightAt(x.key, exHero, scale) ?? fallbackWeight(m, exHero, scale)
+    const setAbs = v => {
+      const next = { ...(e?.bands || {}) }
+      for (const b of levels) {
+        const unit = unitAt(centerOf(b))
+        if (v === null || !(v >= 0.5)) { delete next[String(b)]; continue }
+        const k = v / unit
+        if (!(k >= MULTIPLIER_MIN && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return } // за границей — не применяем вовсе
+        next[String(b)] = Math.round(k * 1e6) / 1e6
+      }
+      setMixEntry('w', x.key, { bands: next })
+    }
+    return { ...col, base: 0, manual: true, free: true, manualValue: now, setAbs, manualTip: t.zeroPts }
   }
 
   function buildBoard(tab) {
@@ -322,11 +362,29 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
       const isEmc = tab === 'emc'
       const fn = isEmc ? emcCountAt : countAt
       const zeroBase = !isEmc && !CRYPT_TYPES.includes(x.key)
-      return {
+      const col = {
         key: x.key, title: titleOf(x), e, path: 'c', manual: zeroBase,
         calc: k => fn(x.key, exHero, { ...scale, mix: { ...mix, c: { ...(mix.c || {}), [x.key]: withK(e, k) } } }, emc),
         base: fn(x.key, exHero, SCALE_DEFAULTS, emc),
       }
+      // Полная свобода правки (владелец 2026-10-27): где штук по шкале нет (0), ползунок и число двигают сами штуки; они
+      // записываются в поправки тех ступеней, где шкала даёт 0 (все уровни или выбранные ступени)
+      const zeroAt = h => (isEmc ? emcOtherZero(x.key, h) : countZeroAt(x.key, h))
+      if (zeroBase || !zeroAt(exHero)) return col
+      const levels = (isAll ? BANDS : bands.map(Number)).filter(b => zeroAt(centerOf(b)))
+      const s2 = { ...scale, mix: { ...mix, c: { ...(mix.c || {}), [x.key]: { ...(e || {}), bands: {} } } } }
+      const unitAt = h => (isEmc ? emcOtherRaw(x.key, h, s2, emc) : countBaseAt(x.key, h, scale))
+      const setAbs = v => {
+        const next = { ...(e?.bands || {}) }
+        for (const b of levels) {
+          if (v === null || !(v >= 0.5)) { delete next[String(b)]; continue }
+          const k = v / unitAt(centerOf(b))
+          if (!(k >= MULTIPLIER_MIN && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return }
+          next[String(b)] = Math.round(k * 1e6) / 1e6
+        }
+        setMixEntry('c', x.key, { bands: next })
+      }
+      return { ...col, base: 0, manual: true, free: true, manualValue: fn(x.key, exHero, scale, emc), setAbs, manualTip: t.zeroCnt }
     }
 
     const raw = []
@@ -336,10 +394,10 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
     const cols = raw.map(c => ({
       key: c.key, title: c.title, on: c.e?.on !== false, k: entryK(c.e), calc: c.calc, base: c.base,
-      mixed: isMixed(c.e), manual: c.manual, manualValue: c.e?.set,
+      mixed: isMixed(c.e), manual: c.manual, free: c.free, manualTip: c.manualTip, manualValue: c.manualValue ?? c.e?.set,
       onK: k => setMixEntry(c.path, c.key, { ...withK(c.e, k), ...(c.e?.on === false ? { on: true } : {}) }),
       onToggle: () => setMixEntry(c.path, c.key, { on: c.e?.on === false }),
-      onSet: v => setMixEntry(c.path, c.key, { set: v }),
+      onSet: c.setAbs ?? (v => setMixEntry(c.path, c.key, { set: v })),
     }))
 
     // четыре монстра с историей клана — рычаги EMC (монстр × ступень), остальные — mix.c
@@ -355,12 +413,30 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         const withEmcK = k => (isAll
           ? { ...emc, monsters: { ...emc.monsters, [key]: k } }
           : { ...emc, cells: { ...(emc.cells || {}), [key]: { ...(emc.cells?.[key] || {}), ...Object.fromEntries(bands.map(b => [b, k])) } } })
-        four.push({
+        const col = {
           key, title: label, on: !isOff, k: valsOf()[0], mixed: new Set(valsOf()).size > 1,
           calc: k => computeRow(exHero, withEmcK(k))[keys[i]], base: baseRow[keys[i]],
           onK: k => setEmc({ ...withEmcK(k), off: (emc.off || []).filter(x => x !== key) }),
           onToggle: () => setEmc({ ...emc, off: isOff ? emc.off.filter(x => x !== key) : [...(emc.off || []), key] }),
-        })
+        }
+        // слабые Герои (ниже 200) монстров не бьют — модель даёт 0; ползунок и число двигают сами штуки (полная свобода правки)
+        const zeroAt = h => computeRow(h, EMC_DEFAULTS).base[i] < 1
+        if (!zeroAt(exHero)) { four.push(col); return }
+        const levels = (isAll ? BANDS : bands.map(Number)).filter(b => zeroAt(centerOf(b)))
+        const setAbs = v => {
+          const next = { ...(emc.cells?.[key] || {}) }
+          for (const b of levels) {
+            if (v === null || !(v >= 0.5)) { delete next[String(b)]; continue }
+            const r = computeRow(centerOf(b), { ...emc, cells: { ...(emc.cells || {}), [key]: {} } })
+            const k = v / (r.levelK * r.monsterK[i] * r.globalK)
+            if (!(k >= MULTIPLIER_MIN && k <= MULTIPLIER_MAX)) { setNote(t.limitMsg); return }
+            next[String(b)] = Math.round(k * 1e6) / 1e6
+          }
+          const cells = { ...(emc.cells || {}) }
+          if (Object.keys(next).length) cells[key] = next; else delete cells[key]
+          setEmc({ ...emc, cells })
+        }
+        four.push({ ...col, base: 0, manual: true, free: true, manualValue: computeRow(exHero, emc)[keys[i]], onSet: setAbs, manualTip: t.zeroCnt })
       })
       cols.unshift(...four)
     }
@@ -371,13 +447,15 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
 
   const absProps = c => {
     if (c.manual) {
-      return { abs: c.manualValue ?? '', calcText: c.base, onAbs: v => c.onSet(v === '' ? null : Math.min(9999, Math.round(Math.max(0, Number(v) || 0)))) }
+      // число вписывается напрямую (целое 0…1000, поле другого не принимает)
+      return { abs: c.manualValue ?? '', calcText: c.base, onAbs: v => c.onSet(v === '' ? null : Number(v)) }
     }
     return {
       abs: c.calc(c.k),
       onAbs: num => {
         if (num === 0) { if (c.on !== false && c.onToggle) c.onToggle(); return }
-        if (!(c.calc(MULTIPLIER_MAX) > 0)) return
+        // достижимо только в границах множителя: за ними значение не применяем и говорим об этом, а не подтягиваем к границе
+        if (!(c.calc(MULTIPLIER_MAX) >= num) || c.calc(MULTIPLIER_MIN) > num) { setNote(t.limitMsg); return }
         c.onK(solveK(c.calc, num, MULTIPLIER_MIN, MULTIPLIER_MAX))
       },
       calcText: c.fmt ? fmt(c.base) : c.base,
@@ -509,8 +587,17 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
         <div className="mixer-hero-row">
           <span className="pult-hero-label">{t.hero}</span>
           {isAll ? (
-            <input className="input-dark pult-hero-input" type="number" min={100} max={600} value={sample}
-              aria-label={t.sample} title={t.sample} onChange={e => setSample(e.target.value)} />
+            <input className="input-dark pult-hero-input" type="number" min={100} max={600}
+              aria-label={t.sample} title={t.sample} value={sampleDraft ?? sample}
+              onChange={e => {
+                const v = e.target.value
+                // вне 100…600 вписать нельзя: поле не принимает такое значение и говорит почему (ничего не подменяется молча)
+                if (!/^\d{0,3}$/.test(v) || Number(v) > 600) { setNote(t.heroRange); return }
+                setSampleDraft(v)
+                const n = Number(v)
+                if (v !== '' && n >= 100) setSample(n)
+              }}
+              onBlur={() => { if (sampleDraft !== null && !(Number(sampleDraft) >= 100)) setNote(t.heroRange); setSampleDraft(null) }} />
           ) : (
             <>
               <b className="pult-hero-badge">{editing}</b>
@@ -616,17 +703,17 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
                     <Fader key={c.key} tt={t} title={c.title} k={c.k} onK={c.onK} on={c.on} onToggle={c.onToggle}
                       dead={!c.manual && !(c.calc(MULTIPLIER_MAX) > 0)} deadText={t.deadAt.replace('{h}', exHero)}
                       mk={c.manual ? 1 : b.master.k} accent={!c.manual && Math.abs(b.master.k - 1) > 1e-9 ? b.master.accent : undefined}
-                      abs={a.abs} onAbs={a.onAbs} calc={a.calcText} manual={c.manual} disabled={!b.enabled} />
+                      abs={a.abs} onAbs={a.onAbs} calc={a.calcText} manual={c.manual} manualTip={c.manualTip} onReject={setNote} disabled={!b.enabled} />
                   )
                 })}
               </div>
               <div className="mixer-master">
                 <Fader tt={t} master accent={b.master.accent} tip={b.master.tip} title={b.master.title} k={b.master.k} onK={b.master.onK}
-                  abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReset={b.master.onReset} resetOff={b.master.resetOff} />
+                  abs={ma.abs} onAbs={ma.onAbs} calc={ma.calcText} disabled={b.master.disabled} onReject={setNote} onReset={b.master.onReset} resetOff={b.master.resetOff} />
               </div>
             </div>
             <CurveEditor lang={lang} mode={modes[b.tab]} lines={b.lines} disabled={!b.enabled}
-              onBands={applyBands} onResetAll={() => resetLines(b.lines)}
+              onBands={applyBands} onReject={setNote} onResetAll={() => resetLines(b.lines)}
               hasLines={b.lines.some(l => Object.keys(l.bands || {}).length > 0)}
               footer={saveBox} note={note} />
           </section>

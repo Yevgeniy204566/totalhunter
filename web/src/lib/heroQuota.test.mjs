@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { fallbackWeight, CRYPT_TYPES,
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, cryptsBaseAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, emcQuotaTotal, fallbackBase, epicCountTotal, epicCryptsOf, typeTab,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, cryptsBaseAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, emcQuotaTotal, fallbackBase, scaleBaseAt, weightBase, countZeroAt, countBaseAt, epicCountTotal, epicCryptsOf, typeTab,
 } from './heroQuota.js'
 import { normBase } from './normCurve.js'
 
@@ -525,4 +525,60 @@ test('fallbackBase: точное значение без поправок сту
   const shape = fallbackBase({ ...m, points: 1 }, 300, DEFAULT_SETTINGS)
   assert.ok(Math.abs(fallbackBase(m, 300, s) - 10 * shape * 2 * 1.5) < 1e-9) // ступени (×3) не входят
   assert.equal(fallbackWeight(m, 300, s), Math.round(fallbackBase(m, 300, s) * 3))
+})
+
+// ---- Полная свобода правки (владелец 2026-10-27): на уровнях, где шкала даёт 0, вписанное число — это сами очки ----
+test('scaleBaseAt: где шкала даёт 0 (Common Crypt 25 с Героя 400, Rare/Common/Citadel 20 с 387,5), там 0; вне шкалы — null', () => {
+  assert.equal(scaleBaseAt('Common Crypt 25', 405), 0)
+  assert.ok(scaleBaseAt('Common Crypt 25', 350) > 0)
+  for (const id of ['Rare Crypt 20', 'Common Crypt 20', 'Citadel 20']) assert.equal(scaleBaseAt(id, 450), 0, id)
+  assert.equal(scaleBaseAt('Pumpkin', 450), null)
+})
+
+test('очки на уровне, где шкала даёт 0: по умолчанию 0, правка ступени — это сами очки (любое число), остальные уровни не тронуты', () => {
+  const id = 'Common Crypt 25'
+  assert.equal(weightAt(id, 405), 0)
+  for (const n of [1, 7, 25, 61, 150, 999]) {
+    const s = { ...DEFAULT_SETTINGS, mix: { w: { [id]: { bands: { 400: n } } } } }
+    assert.equal(weightAt(id, 405, s), n, `вписано ${n}`)
+    assert.equal(weightAt(id, 350, s), weightAt(id, 350), 'уровень со шкалой не изменился')
+    assert.equal(weightAt(id, 455, s), 0, 'соседняя ступень без правки осталась 0')
+  }
+})
+
+test('вписанное на нулевом уровне уважает «все уровни», главный фейдер и рычаг очков так, чтобы итог был ровно вписанным', () => {
+  const id = 'Common Crypt 25'
+  const base = { ...DEFAULT_SETTINGS, weights: 2, mix: { g: { crypts: { all: 1.5 } }, w: { [id]: { all: 2 } } } }
+  const ref = weightBase(id, 405, base)
+  assert.ok(ref > 0, 'опора графика на нуле > 0')
+  const k = 30 / ref
+  const s = { ...base, mix: { ...base.mix, w: { [id]: { all: 2, bands: { 400: k } } } } }
+  assert.equal(weightAt(id, 405, s), 30)
+})
+
+test('mute (on: false) на нулевом уровне по-прежнему даёт 0, и без правки ступени ничего не появляется само', () => {
+  const id = 'Rare Crypt 20'
+  assert.equal(weightAt(id, 450, { ...DEFAULT_SETTINGS, mix: { w: { [id]: { on: false, bands: { 450: 40 } } } } }), 0)
+  assert.equal(weightAt(id, 450, { ...DEFAULT_SETTINGS, mix: { w: { [id]: { all: 5 } } } }), 0) // «все уровни» к нулю — по-прежнему 0
+})
+
+test('тип вне шкалы без очков клана: правка ступени задаёт очки, без правки 0', () => {
+  const m = { id: 'My Event', slot: 2, points: 0 }
+  assert.equal(fallbackWeight(m, 450), 0)
+  assert.ok(fallbackBase(m, 450) > 0, 'опора графика > 0')
+  assert.equal(fallbackWeight(m, 450, { ...DEFAULT_SETTINGS, mix: { w: { 'My Event': { bands: { 450: 33 } } } } }), 33)
+})
+
+test('штуки типа без очков на уровне (Rare Crypt 20 с 387,5): по умолчанию 0, правка ступени — сами штуки (любое число)', () => {
+  const id = 'Rare Crypt 20'
+  assert.equal(countZeroAt(id, 450), true)
+  assert.equal(countZeroAt('Epic Crypt 25', 450), false)
+  assert.equal(countAt(id, 450), 0)
+  for (const n of [1, 9, 40, 300, 999]) {
+    const s = { ...DEFAULT_SETTINGS, mix: { c: { [id]: { bands: { 450: n } } } } }
+    assert.equal(countAt(id, 455, s), n, `вписано ${n}`)
+    assert.equal(countAt(id, 355, s), countAt(id, 355), 'уровень со шкалой не изменился')
+    assert.equal(countAt(id, 505, s), 0, 'соседняя ступень без правки осталась 0')
+  }
+  assert.ok(countBaseAt(id, 450, DEFAULT_SETTINGS) > 0, 'опора графика > 0')
 })
