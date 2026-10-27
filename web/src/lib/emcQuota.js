@@ -6,38 +6,38 @@
 //  • ELDORADO, сезон 24.09–08.10: 121 игрок, 5518 монстров → 45,6 на игрока, средний Герой 383; доли монстров:
 //    Hydra 1532, Undead 547, Arachna 239, Shadow City 311, Chimera 2889 (Chimera — больше половины);
 //  • Берсерки (Герой в среднем 450): сумма трёх колонок замера у 95 игроков = 20413 → 214,9 на игрока.
-// Пересмотр 2026-10-27 (владелец): игроки Берсерков пишут, что их нормы завышены вдвое — они играют круглосуточно, и
-// замер 214,9 на игрока для общей шкалы берём вдвое меньше (100 на Герое 450). Растёт НОРМА (штуки), а не цена монстра:
-// очки за штуку заданы таблицей T9 (Excel «СУНДУКИ учет») и от Героя выше 387,5 не зависят.
-// До Героя 383 — как раньше (ELDORADO, EMC = норма × доля клана); 383→450 — плавная дуга роста штук за 10 уровней
-// (8% → 14% → 12%, без скачков), выше 450 EMC растёт на ≈3 пункта за 10 уровней быстрее нормы Crypts.
-import { normBase, B as HERO_BERSERK } from './normCurve.js'
+// Пересмотр 2026-10-27 (владелец): растёт НОРМА (штуки), а не цена монстра — очки за штуку заданы таблицей T9 (Excel «СУНДУКИ
+// учет») и от Героя не зависят. Слабый Герой эпического монстра почти не выбивает: на Герое 300 игрок видит около 5 штук,
+// дальше норма нарастает плавно (в логарифме парабола через три точки), к Герою 456 — около 100 на странице.
+// Опоры (штук всех эпик-монстров на игрока за 2 недели, Chimera включена):
+//  • Герой 300 — 12 (на странице ≈5: четыре монстра и «прочие»; Chimera в учёте нет);
+//  • ELDORADO 383 — 45,6 (121 игрок, 5518 монстров за сезон 24.09–08.10, из них Chimera 23,9);
+//  • Герой 456 — 168 (на странице ≈100). Замер Берсерков: 214,9 на игрока при Герое 450, но игроки играют круглосуточно —
+//    в общую шкалу взято вдвое меньше замера плюс запас на небольшой рост от 450 до 456.
+// Выше 456 EMC растёт на ≈3 пункта за 10 уровней быстрее нормы Crypts; темп плавно сходит от конца дуги к этому значению.
+import { normBase, lnNormSlope } from './normCurve.js'
 
 const ELDO = { hero: 383, players: 121, total: 5518, split: { hydra: 1532, undead: 547, arachna: 239, shadow: 311, chimera: 2889 } }
-// замер: 20413 монстров у 95 игроков = 214,9 на игрока; в шкалу берём BERS_NORM (вдвое меньше замера)
-const BERS = { hero: HERO_BERSERK, players: 95, total: 20413 }
-export const BERS_NORM = 100
+const A = { hero: 300, count: 12 }
+const B = { hero: ELDO.hero, count: ELDO.total / ELDO.players }
+const C = { hero: 456, count: 168 }
 
-const shareEldo = (ELDO.total / ELDO.players) / normBase(ELDO.hero)
+// ln(штук) = парабола через три опоры (форма Ньютона): без изломов, темп роста плавно гаснет
+const LN_B = (Math.log(B.count) - Math.log(A.count)) / (B.hero - A.hero)
+const LN_F = (Math.log(C.count) - Math.log(B.count)) / (C.hero - B.hero)
+const LN_C = (LN_F - LN_B) / (C.hero - A.hero)
+const lnSlopeArc = h => LN_B + LN_C * (2 * h - A.hero - B.hero)
+const lnCountArc = h => Math.log(A.count) + LN_B * (h - A.hero) + LN_C * (h - A.hero) * (h - B.hero)
 
-// Узлы дуги 383→450 (штук на игрока): темп роста за 10 уровней задан плавной формой 7% → 14% → 12%, масштаб подобран
-// так, чтобы на 450 вышло ровно BERS_NORM; между узлами — прямая в логарифме.
-const RAMP = [[ELDO.hero, ELDO.total / ELDO.players], [390, 48.2601], [400, 53.462], [410, 60.1825], [420, 68.4033],
-  [430, 78.0114], [440, 88.7224], [BERS.hero, BERS_NORM]]
-// добавка роста выше 450: ln(1 + 0,03 / 1,097) на 10 уровней
+// добавка роста выше 456: ln(1 + 0,03 / 1,097) на 10 уровней; TAU — расстояние, на котором темп сходит к норме Crypts + добавка
 const EXTRA_PER_LEVEL = 0.0027
+const TAU = 30
+const EXCESS_AT_END = lnSlopeArc(C.hero) - (lnNormSlope(C.hero) + EXTRA_PER_LEVEL)
 
 function emcCount(hero) {
-  if (hero <= ELDO.hero) return shareEldo * normBase(hero)
-  if (hero >= BERS.hero) {
-    return BERS_NORM * (normBase(hero) / normBase(BERS.hero)) * Math.exp(EXTRA_PER_LEVEL * (hero - BERS.hero))
-  }
-  for (let i = 0; i < RAMP.length - 1; i++) {
-    const [x0, y0] = RAMP[i]
-    const [x1, y1] = RAMP[i + 1]
-    if (hero <= x1) return Math.exp(Math.log(y0) + (Math.log(y1) - Math.log(y0)) * (hero - x0) / (x1 - x0))
-  }
-  return BERS_NORM
+  if (hero <= C.hero) return Math.exp(lnCountArc(hero))
+  const d = hero - C.hero
+  return C.count * (normBase(hero) / normBase(C.hero)) * Math.exp(EXTRA_PER_LEVEL * d + EXCESS_AT_END * TAU * (1 - Math.exp(-d / TAU)))
 }
 
 // Слабые Герои не бьют эпических монстров вовсе (владелец 2026-10-23: у Сарацинов и Старта мощи не хватает) — ниже этого

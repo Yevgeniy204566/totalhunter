@@ -15,39 +15,38 @@ test('таблица: каждый уровень 100..600 с шагом 10', ()
   assert.equal(computeTable(DEFAULT_SETTINGS).length, 51)
 })
 
-test('опоры модели: ELDORADO — 45,6 на игрока при Герое 383, Берсерки при Герое 450 — 100 (замер 214,9 вдвое меньше: играют круглосуточно)', () => {
+test('опоры модели: Герой 300 — 12 в модели (на странице ≈5), ELDORADO 383 — 45,6 на игрока, Герой 456 — 168 (на странице ≈100)', () => {
+  assert.ok(Math.abs(emcTotalAt(300) - 12) < 1e-9)
   assert.ok(Math.abs(emcTotalAt(383) - 5518 / 121) < 1e-9)
-  assert.ok(Math.abs(emcTotalAt(450) - 100) < 1e-9)
+  assert.ok(Math.abs(emcTotalAt(456) - 168) < 1e-9)
   // четыре монстра пульта + Chimera = все эпик-монстры
-  for (const h of [100, 250, 383, 400, 450, 600]) {
+  for (const h of [100, 250, 300, 383, 400, 456, 600]) {
     const sum = baseAt(h).reduce((a, b) => a + b, 0) + emcChimeraAt(h) // emcChimeraAt уже округлена — сверяем с допуском
     assert.ok(Math.abs(sum - emcTotalAt(h)) < 1, `@${h}`)
   }
 })
 
-test('сглаживание: опоры не сдвинуты, а переход 383→450 без изломов (скорость роста плавно набирается и гасится)', () => {
-  assert.ok(Math.abs(emcTotalAt(383) - 5518 / 121) < 1e-9)
-  assert.ok(Math.abs(emcTotalAt(450) - 100) < 1e-9)
-  // темп роста штук за 10 уровней: плавная дуга 8% → 14% → 12%, а не скачки (владелец 2026-10-27)
-  const g = h => emcTotalAt(h + 10) / emcTotalAt(h)
-  assert.ok(g(380) < 1.13, `380: ${g(380)}`)
-  assert.ok(g(430) < 1.15, `430: ${g(430)}`)
-  assert.ok(g(450) < 1.14, `450: ${g(450)}`)
-  const rates = [390, 400, 410, 420, 430, 440, 450].map(g)
-  const peak = rates.indexOf(Math.max(...rates))
-  for (let i = 1; i <= peak; i++) assert.ok(rates[i] >= rates[i - 1] - 1e-9, 'темп сначала только растёт')
-  for (let i = peak + 1; i < rates.length; i++) assert.ok(rates[i] <= rates[i - 1] + 1e-9, 'потом только падает')
-  // соседние шаги не прыгают больше чем на 3 пункта
-  for (let i = 1; i < rates.length; i++) assert.ok(Math.abs(rates[i] - rates[i - 1]) < 0.03, `скачок темпа @${390 + i * 10}`)
+test('что видит игрок на странице: четыре монстра + «прочие» (среднее четырёх) — на 300 около 5, на 456 около 100', () => {
+  const shown = h => { const r = computeRow(h); return r.emc + Math.round(r.emc / 4) }
+  assert.equal(shown(300), 5)
+  assert.ok(Math.abs(shown(456) - 100) <= 2, `456: ${shown(456)}`)
 })
 
-test('выше 450 EMC продолжает расти и быстрее нормы Crypts (владелец 2026-10-27): доля EMC к норме поднимается', () => {
-  const share = h => emcTotalAt(h) / normBase(h)
-  for (let h = 450; h < 600; h += 10) assert.ok(share(h + 10) > share(h), `доля @${h + 10}`)
+test('нарастающий плавный рост: темп за 10 уровней на 300–450 не скачет и плавно гаснет, без изломов на стыках', () => {
   const g = h => emcTotalAt(h + 10) / emcTotalAt(h)
-  for (const h of [460, 500, 560]) assert.ok(g(h) > normBase(h + 10) / normBase(h), `быстрее нормы @${h}`)
-  assert.ok(Math.abs(emcTotalAt(500) - 181) < 1.5, `500: ${emcTotalAt(500)}`)
-  assert.ok(Math.abs(emcTotalAt(600) - 580) < 4, `600: ${emcTotalAt(600)}`)
+  const rates = []
+  for (let h = 300; h <= 500; h += 10) rates.push(g(h))
+  for (let i = 1; i < rates.length; i++) {
+    assert.ok(Math.abs(rates[i] - rates[i - 1]) < 0.02, `скачок темпа @${300 + i * 10}: ${rates[i - 1].toFixed(3)} → ${rates[i].toFixed(3)}`)
+  }
+  assert.ok(rates[0] > 1.15 && rates[0] < 1.35, `300: ${rates[0]}`)
+})
+
+test('выше 456 EMC продолжает расти и быстрее нормы Crypts (владелец 2026-10-27): доля EMC к норме поднимается', () => {
+  const share = h => emcTotalAt(h) / normBase(h)
+  for (let h = 470; h < 600; h += 10) assert.ok(share(h + 10) > share(h), `доля @${h + 10}`)
+  const g = h => emcTotalAt(h + 10) / emcTotalAt(h)
+  for (const h of [470, 500, 560]) assert.ok(g(h) > normBase(h + 10) / normBase(h), `быстрее нормы @${h}`)
 })
 
 test('EMC растёт с уровнем Героя без провалов и на всём диапазоне 100–600', () => {
@@ -77,12 +76,12 @@ test('округление: меньше 1 — это 0, от 1 — до цел�
 })
 
 test('при множителях 1.00 итог = таблица модели (сверено независимым расчётом)', () => {
-  // значения посчитаны отдельно на Python по той же модели (2026-10-27): до 383 — EMC = норма × доля ELDORADO, 383→450 — дуга
-  // роста штук до 100, выше 450 — норма Crypts плюс 3 пункта за 10 уровней; монстры делятся по долям ELDORADO
+  // значения посчитаны отдельно на Python по той же модели (2026-10-27): парабола в логарифме через 300 → 12, 383 → 45,6,
+  // 456 → 168, выше 456 — норма Crypts плюс 3 пункта за 10 уровней; монстры делятся по долям ELDORADO
   const expected = {
-    100: [0, 0, 0, 0, 0], 250: [4, 1, 0, 0, 5], 300: [6, 2, 0, 1, 9],
-    360: [10, 4, 2, 2, 18], 383: [13, 5, 2, 3, 23], 400: [15, 5, 2, 3, 25],
-    440: [25, 9, 4, 5, 43], 450: [28, 10, 4, 6, 48], 520: [63, 23, 10, 13, 109], 600: [161, 57, 25, 33, 276],
+    100: [0, 0, 0, 0, 0], 250: [2, 0, 0, 0, 2], 300: [3, 1, 0, 0, 4],
+    360: [9, 3, 1, 2, 15], 383: [13, 5, 2, 3, 23], 400: [17, 6, 3, 3, 29],
+    440: [35, 12, 5, 7, 59], 450: [42, 15, 7, 8, 72], 520: [119, 42, 19, 24, 204], 600: [308, 110, 48, 63, 529],
   }
   for (const [hero, vals] of Object.entries(expected)) {
     assert.deepEqual(finals(row(Number(hero))), vals, `Герой ${hero}`)
@@ -91,22 +90,22 @@ test('при множителях 1.00 итог = таблица модели (�
 
 test('базовые значения монстров на Герое 400 (до округления)', () => {
   const [h, u, a, s] = baseAt(400)
-  for (const [got, want] of [[h, 14.843], [u, 5.3], [a, 2.316], [s, 3.013]]) assert.ok(Math.abs(got - want) < 0.001)
+  for (const [got, want] of [[h, 16.968], [u, 6.059], [a, 2.647], [s, 3.445]]) assert.ok(Math.abs(got - want) < 0.001)
 })
 
 test('общий множитель масштабирует всё', () => {
   const r = row(400, { ...DEFAULT_SETTINGS, global: 1.2 })
-  assert.deepEqual(finals(r), [18, 6, 3, 4, 31]) // 14.84, 5.30, 2.32, 3.01 ×1.2 → 17.8, 6.4, 2.8, 3.6
+  assert.deepEqual(finals(r), [20, 7, 3, 4, 34]) // 16.97, 6.06, 2.65, 3.45 ×1.2 → 20.4, 7.3, 3.2, 4.1
 })
 
 test('множитель монстра меняет только своего монстра и EMC', () => {
   const base = row(400)
   const r = row(400, { ...DEFAULT_SETTINGS, monsters: { ...DEFAULT_SETTINGS.monsters, hydra: 1.3 } })
-  assert.equal(r.finalH, 19) // 14.84 × 1.3 = 19.3
+  assert.equal(r.finalH, 22) // 16.97 × 1.3 = 22.06
   assert.equal(r.finalU, base.finalU)
   assert.equal(r.finalA, base.finalA)
   assert.equal(r.finalS, base.finalS)
-  assert.equal(r.emc, base.emc - base.finalH + 19)
+  assert.equal(r.emc, base.emc - base.finalH + 22)
 })
 
 test('множитель диапазона уровней меняет только уровни этого диапазона', () => {
@@ -129,8 +128,8 @@ test('уровень вне всех диапазонов получает мн�
 })
 
 test('порядок: округление один раз в конце, промежуточные значения дробные', () => {
-  // Arachna на 400: база 2.316; ×0.65 ×1.3 = 1.96 -> 2. Если бы округляли после каждого шага,
-  // вышло бы 3 (2.316×0.65 = 1.51 -> 2; ×1.3 = 2.6 -> 3).
+  // Arachna на 400: база 2.647; ×0.65 ×1.3 = 2.24 -> 2. Если бы округляли после каждого шага,
+  // вышло бы 3 (2.647×0.65 = 1.72 -> 2; ×1.3 = 2.6 -> 3).
   const s = {
     global: 1.3, monsters: { hydra: 1, undead: 1, arachna: 0.65, shadow: 1 },
     ranges: [{ from: 100, to: 600, k: 1 }],
@@ -156,8 +155,8 @@ test('CSV: заголовок, 51 строка, итоги совпадают с
   assert.equal(lines.length, 52)
   assert.equal(lines[0], 'Герой;Hydra;Undead;Arachna;Shadow City;EMC')
   assert.equal(lines[1], '100-109;0;0;0;0;0')
-  assert.equal(lines[31], '400-409;15;5;2;3;25')
-  assert.equal(lines[51], '600;161;57;25;33;276')
+  assert.equal(lines[31], '400-409;17;6;3;3;29')
+  assert.equal(lines[51], '600;308;110;48;63;529')
 })
 
 test('CSV: английский заголовок', () => {
