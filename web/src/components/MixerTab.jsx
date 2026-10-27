@@ -8,7 +8,7 @@ import { pointsLines, countLines, writeBands } from '../lib/curveLines.js'
 import { posToK, kToPos, solveK, presetMixW } from '../lib/mixer.js'
 import {
   DEFAULT_SETTINGS as SCALE_DEFAULTS, CRYPT_TYPES, EMC_TYPES, EMC_FOUR, EPIC_CRYPTS,
-  weightKey, weightAt, fallbackWeight, normAt, countAt, emcCountAt, emcOthersTotal, typeTab, epicCountTotal,
+  weightKey, weightAt, fallbackWeight, normAt, countAt, emcCountAt, emcQuotaTotal, typeTab, epicCountTotal,
 } from '../lib/heroQuota.js'
 
 // «Пульт» (владелец 2026-10-20/21): единый центр персональных настроек. Вкладки Crypts / EMC, колонка на
@@ -438,7 +438,7 @@ export default function MixerTab({ lang = 'ru', personal, onPersonal, quotas, on
   // emc.global (все эпические монстры, включая Chimera) и personal.norm (итоговая норма очков).
   // Сколько штук/очков получается для Героя «Примера», показывает число под ползунком; можно вписать своё.
   const mixEpic = mix.epic || {}
-  const emcAll = (model, sc) => computeRow(exHero, model).emc + emcOthersTotal(emcMeta, exHero, sc, model)
+  const emcAll = (model, sc) => emcQuotaTotal(exHero, sc, model)
   // Главный фейдер каждой консоли (владелец 2026-10-26): справа от своего пульта, двигает все сундуки группы.
   // «Очки»: множитель очков типов группы (mix.g); «Количество»: склепы — норма эпик-склепов (mix.epic),
   // EMC — все эпические монстры вместе, включая Chimera (emc.global). Число под ползунком — что получается для Героя «Примера».

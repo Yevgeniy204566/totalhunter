@@ -306,6 +306,12 @@ export function emcOthersTotal(typeMeta, hero, settings = DEFAULT_SETTINGS, emcM
     .reduce((sum, m) => sum + emcCountAt(m.id, hero, settings, emcModel), 0)
 }
 
+// Цель квоты EMC — КОЛИЧЕСТВО (владелец 2026-10-27): какие именно сундуки будут бить игроки и есть ли они в списке типов клана,
+// значения не имеет. Поэтому цель = общая цифра модели: четыре монстра по таблице + Chimera, с рычагами пульта; от типов не зависит.
+export function emcQuotaTotal(hero, settings = DEFAULT_SETTINGS, emcModel) {
+  return computeRow(hero, emcModel || undefined).emc + emcCountAt('Epic Chimera', hero, settings, emcModel)
+}
+
 // Обязательная норма клана — эпик-склепы суммой (любой уровень 20–35): Старт 50, Берсерки 300 — стены, между ними и
 // выше/ниже — общая кривая (Герой 456 → 317). Сумма долей типов, поэтому фейдеры и mute пульта её меняют.
 export function epicCountTotal(hero, settings = DEFAULT_SETTINGS) {

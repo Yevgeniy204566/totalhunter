@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { computeRow } from '../lib/emcQuota.js'
 import {
-  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcCountAt, emcOthersTotal, countAt, typeTab, weightKey,
+  scoreOf, normAt, epicCountTotal, epicCryptsOf, emcCountAt, emcQuotaTotal, countAt, typeTab, weightKey,
   EPIC_CRYPTS, EMC_FOUR, DEFAULT_HERO,
 } from '../lib/heroQuota.js'
 
@@ -254,8 +254,7 @@ export function quotaColumns(targets, epicLabel, typeMeta = null) {
         // личная цель игрока: Crypts — штуки эпик-склепов по Герою, EMC — штуки по таблице уровней и
         // рычагам клана (lib/emcQuota.js), per_player — старые архивы (считал сервер)
         targetOf: p => (epicPersonal ? epicCountTotal(p.hero_level || DEFAULT_HERO, scale)
-          : q.mode === 'emc_table' ? emcRowOf(p, q.emc || {}).emc
-            + (typeMeta ? emcOthersTotal(typeMeta, p.hero_level || DEFAULT_HERO, scale, q.emc) : 0)
+          : q.mode === 'emc_table' ? emcQuotaTotal(p.hero_level || DEFAULT_HERO, scale, q.emc || {})
           : q.mode === 'per_player' ? p.quota_targets?.[String(q.slot)] : q.target),
         partialOf: p => (epicPersonal || q.mode === 'emc_table' ? !p.hero_level
           : !!p.quota_targets_partial?.[String(q.slot)]),

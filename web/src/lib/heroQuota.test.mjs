@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { fallbackWeight, CRYPT_TYPES,
-  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, cryptsBaseAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, epicCountTotal, epicCryptsOf, typeTab,
+  DEFAULT_SETTINGS, HERO_LEVELS, weightAt, normAt, cryptsBaseAt, epicRefAt, weightTable, scoreOf, weightKey, emcPointsAt, cryptsNormAt, countAt, emcCountAt, emcOthersTotal, emcQuotaTotal, epicCountTotal, epicCryptsOf, typeTab,
 } from './heroQuota.js'
 import { normBase } from './normCurve.js'
 
@@ -483,4 +483,22 @@ test('норма с EMC растёт плавно: рост за 10 уровне
 
 test('рычаг «норма» двигает полную норму (склепы и EMC вместе)', () => {
   assert.equal(normAt(450, { ...DEFAULT_SETTINGS, norm: 2 }), Math.round(2 * (cryptsUnrounded(450) + emcPointsAt(450, undefined, DEFAULT_SETTINGS)) / 100) * 100)
+})
+
+// ---- Цель EMC — это количество: какие именно сундуки (и есть ли они в списке типов клана) значения не имеет (владелец 2026-10-27) ----
+test('цель EMC = общая цифра модели (четыре монстра + Chimera), без привязки к списку типов клана', () => {
+  assert.equal(emcQuotaTotal(456), computeRow(456).emc + emcCountAt('Epic Chimera', 456))
+  assert.equal(emcQuotaTotal(456), 107) // лидер ELDORADO на 456: столько же, сколько в таблице модели
+  assert.equal(emcQuotaTotal(450), 100) // опора Берсерков вдвое меньше замера
+  assert.equal(emcQuotaTotal(300), 5)   // минимум
+  assert.equal(emcQuotaTotal(150), 0)   // слабые Герои эпических монстров не бьют
+})
+
+test('цель EMC: рычаги пульта (все EMC, монстр, диапазон, mute) двигают общую цифру', () => {
+  const g2 = { ...EMC_DEFAULTS, global: 2 }
+  assert.ok(Math.abs(emcQuotaTotal(456, DEFAULT_SETTINGS, g2) - 2 * emcQuotaTotal(456)) <= 2)
+  const muted = { ...DEFAULT_SETTINGS, mix: { c: { 'Epic Chimera': { on: false } } } }
+  assert.equal(emcQuotaTotal(456, muted), computeRow(456).emc) // Chimera выключена в пульте — её штук в цели нет
+  const hydraOff = { ...EMC_DEFAULTS, off: ['hydra'] }
+  assert.equal(emcQuotaTotal(456, DEFAULT_SETTINGS, hydraOff), 107 - computeRow(456).finalH)
 })
