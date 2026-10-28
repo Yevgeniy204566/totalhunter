@@ -462,13 +462,9 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
       ...quotaCols.map(c => ({ ...c, icon: c.key === 'quota:2' ? 'dragon' : 'chest' })),
     ]
   }, [pointsPersonal, quotaCols, tt])
-  // По умолчанию — порядок сервера (по очкам). «#» всегда место по очкам, не по текущей сортировке.
+  // По умолчанию — порядок сервера (по очкам). «#» — номер строки в текущем порядке: при любой сортировке 1, 2, 3… сверху вниз
+  // (владелец 2026-10-28; раньше «#» был местом по очкам и при другой сортировке шёл вразнобой).
   const [sort, setSort] = useState(() => (pointsPersonal ? { key: 'points', mode: 'abs', dir: 'desc' } : null))
-  const pointsRank = useMemo(() => {
-    const m = {}
-    players.forEach((p, i) => { m[p.name] = i + 1 })
-    return m
-  }, [players])
   const shownPlayers = useMemo(
     () => (sort ? sortPlayers(players, sort, chestTypes, quotaCols) : players),
     [players, sort, chestTypes, quotaCols],
@@ -642,10 +638,10 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
             </tr>
           </thead>
           <tbody>
-            {shownPlayers.map(p => {
+            {shownPlayers.map((p, rowIdx) => {
               return (
                 <tr key={p.name}>
-                  <td className="public-num-cell">{pointsRank[p.name]}</td>
+                  <td className="public-num-cell">{rowIdx + 1}</td>
                   <td className="public-hero-cell"><HeroShield level={p.hero_level} /></td>
                   <td title={p.name} translate="no" className="notranslate public-name-cell">
                     {renderPlayerName(p, nameTargets)}
