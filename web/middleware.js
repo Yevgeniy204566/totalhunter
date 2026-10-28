@@ -10,8 +10,8 @@ const API_PREFIXES = ['/api/api/v1/chests/', '/api/api/v1/ancients/public/']
 const STATIC_PREFIXES = ['/icons/']
 
 export const config = {
-  // assets/ и img/ не трогаем: хешированные файлы сборки не должны тратить вызовы middleware
-  matcher: ['/((?!assets/|img/).*)'],
+  // assets/ не трогаем: хешированные файлы сборки не должны тратить вызовы middleware
+  matcher: ['/((?!assets/).*)'],
 }
 
 export default function middleware(request) {
