@@ -133,14 +133,14 @@ export default function ChestSummaryPage({ neutral = false }) {
   // Открыли по «сырому» адресу (/c/229/Феникс → %D0%A4...) или старому /chests/{slug} —
   // показываем в адресной строке читаемую ссылку с сервера (/c/229/feniks).
   useEffect(() => {
-    if (!data?.public_url) return
+    if (!data?.public_url && !data?.public_path) return
     try {
-      const path = new URL(data.public_url).pathname
+      const path = data.public_path || new URL(data.public_url).pathname
       if (decodeURIComponent(window.location.pathname) !== decodeURIComponent(path)) {
         navigate(path, { replace: true })
       }
     } catch { /* некорректный url — оставляем как есть */ }
-  }, [data?.public_url])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [data?.public_url, data?.public_path])  // eslint-disable-line react-hooks/exhaustive-deps
   const t = TXT[lang]
   function toggleLang() {
     const next = lang === 'ru' ? 'en' : 'ru'

@@ -3,8 +3,11 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ChestSummaryPage from './pages/ChestSummaryPage.jsx'
 import PublicAncientsPage from './pages/PublicAncientsPage.jsx'
+import { setNeutralMode } from './api.js'
 import './styles/theme.css'
 import './styles/mobile.css'
+
+setNeutralMode()
 
 // Отдельная точка входа для нейтрального домена: в бандле только публичные страницы клана —
 // ни лендинга, ни кабинета, ни гайда (их строки не должны попадать в JS этого домена).

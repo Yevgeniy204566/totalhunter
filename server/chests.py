@@ -22,7 +22,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail
-from chest_slug import clan_to_slug, public_url
+from chest_slug import SITE, clan_to_slug, public_url
 from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of, targets_of
 from database import get_db
 from models import (
@@ -258,8 +258,18 @@ async def import_chests(payload: ChestImportPayload, db: AsyncSession = Depends(
     return {"ok": True, "count": len(new_items), "collector_slug": collector_slug}
 
 
+def _set_public_link(result: dict, collector, neutral: bool) -> None:
+    """Ссылка на публичную таблицу. Для нейтрального домена (?neutral=1, владелец 2026-10-28) — только путь: полный
+    адрес сервиса во вкладке Network связал бы страницу с Total Hunter."""
+    url = public_url(collector.kingdom, collector.clan, collector.custom_slug, collector.slug)
+    if neutral:
+        result["public_path"] = url.removeprefix(SITE)
+    else:
+        result["public_url"] = url
+
+
 @router.get("/summary/{slug}")
-async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
+async def get_chest_summary(slug: str, neutral: bool = False, db: AsyncSession = Depends(get_db)):
     collector = (await db.execute(
         select(ChestCollector).where(ChestCollector.slug == slug)
     )).scalar_one_or_none()
@@ -286,8 +296,7 @@ async def get_chest_summary(slug: str, db: AsyncSession = Depends(get_db)):
     await enrich_with_profiles(db, collector.id, result, collector.quotas)
 
     result["collector_slug"] = collector.slug
-    result["public_url"] = public_url(collector.kingdom, collector.clan,
-                                      collector.custom_slug, collector.slug)
+    _set_public_link(result, collector, neutral)
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None
@@ -387,7 +396,7 @@ async def find_collector_by_kingdom_name(db: AsyncSession, kingdom: str, name: s
 
 
 @router.get("/by/{kingdom}/{custom_slug}")
-async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
+async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str, neutral: bool = False,
                                     db: AsyncSession = Depends(get_db)):
     collector = await find_collector_by_kingdom_name(db, kingdom, custom_slug)
     if not collector:
@@ -413,8 +422,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str,
     await enrich_with_profiles(db, collector.id, result, collector.quotas)
 
     result["collector_slug"] = collector.slug
-    result["public_url"] = public_url(collector.kingdom, collector.clan,
-                                      collector.custom_slug, collector.slug)
+    _set_public_link(result, collector, neutral)
     result["updated_at"] = updated_at.isoformat() if updated_at else None
     result["period_start"] = collector.period_start.isoformat() if collector.period_start else None
     result["period_end"] = collector.period_end.isoformat() if collector.period_end else None

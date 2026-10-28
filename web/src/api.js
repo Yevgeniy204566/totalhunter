@@ -126,14 +126,19 @@ export const api = {
     request('POST', '/web/dashboard/ancients/create', { kingdom, clan }),
 }
 
+// Нейтральный домен: просим у сервера ответ без адреса сервиса (иначе он виден во вкладке Network)
+let neutralMode = false
+export function setNeutralMode() { neutralMode = true }
+const neutralQuery = () => (neutralMode ? '?neutral=1' : '')
+
 export async function fetchChestSummary(slug) {
-  const res = await fetch(`${BASE}/api/v1/chests/summary/${slug}`)
+  const res = await fetch(`${BASE}/api/v1/chests/summary/${slug}${neutralQuery()}`)
   if (!res.ok) throw new Error('Not found')
   return res.json()
 }
 
 export async function fetchChestByKingdomSlug(kingdom, slug) {
-  const res = await fetch(`${BASE}/api/v1/chests/by/${encodeURIComponent(kingdom)}/${encodeURIComponent(slug)}`)
+  const res = await fetch(`${BASE}/api/v1/chests/by/${encodeURIComponent(kingdom)}/${encodeURIComponent(slug)}${neutralQuery()}`)
   if (!res.ok) throw new Error('Not found')
   return res.json()
 }
