@@ -161,6 +161,113 @@ export function QuotaEditor({ quotas, personal, cx, onChange, onPersonal, onOpen
   )
 }
 
+// Просмотр норм кланов из «Профиля» без прав правки (владелец 2026-10-28): цель — показать игрокам, как считаются нормы.
+// Данные приходят урезанными с сервера (без людей), а блокировка <fieldset disabled> гасит все поля и кнопки панелей.
+const NOOP = () => {}
+const VIEW_FIELDSET = { border: 0, padding: 0, margin: 0, minWidth: 0 }
+
+function ChestsViewer({ cx, lang, noOwn }) {
+  const [cols, setCols] = useState(null)
+  const [tabByClan, setTabByClan] = useState({})
+  useEffect(() => { api.dashboardChestsView().then(r => setCols(r.collectors || [])).catch(() => setCols([])) }, [])
+  if (!cols) return null
+  if (cols.length === 0) return noOwn ? <div className="text-muted" style={{ marginTop: 16 }}>{cx.viewerHint}</div> : null
+
+  return (
+    <div style={{ marginTop: 32 }}>
+      <h3 style={{ marginBottom: 6 }}>{cx.viewerTitle}</h3>
+      <div className="text-muted" style={{ marginBottom: 16 }}>{cx.viewerSub}</div>
+      {cols.map(c => {
+        const key = `${c.kingdom}/${c.clan}`
+        const tab = tabByClan[key] || 'chests'
+        const quotas = [1, 2].map(slot => {
+          const q = (c.quotas || []).find(x => x.slot === slot)
+          const d = DEFAULT_QUOTAS[slot - 1]
+          return q ? { slot, name: q.name, target: q.target ?? '', mode: q.mode || 'fixed', persisted: true,
+                       ...(q.emc ? { emc: q.emc } : {}) } : { ...d }
+        })
+        const personal = { ...DEFAULT_PERSONAL, ...(c.personal_scale || {}) }
+        const accKey = r => (r.quota_slot ? String(r.quota_slot) : (r.is_in_pattern ? 'on' : 'off'))
+        const accLabel = r => (r.quota_slot ? quotas.find(q => q.slot === r.quota_slot)?.name : (r.is_in_pattern ? cx.accOn : cx.accOff))
+        return (
+          <div className="collector-card" key={key}>
+            <div className="collector-header">
+              <div className="collector-title">
+                <div className="collector-identity">
+                  <span className="collector-clan-name">{c.clan}</span>
+                  <span className="collector-kingdom-tag">{c.kingdom}</span>
+                </div>
+              </div>
+              <div className="collector-links">
+                <span className="public-season-badge">{cx.viewerBadge}</span>
+                <a href={c.public_url} target="_blank" rel="noreferrer" className="chest-pill-btn chest-pill-btn--primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginTop: 8 }}>
+                  🔗 {cx.publicLink}
+                </a>
+              </div>
+            </div>
+
+            <div className="mode-switch" role="tablist">
+              {[['chests', cx.modeClanTitle, cx.modeClanSub], ['mixer', cx.modePersonalTitle, cx.modePersonalSub]].map(([id, title, sub]) => (
+                <button key={id} type="button" role="tab" aria-selected={tab === id}
+                  className={`mode-btn mode-btn--${id === 'chests' ? 'general' : 'personal'} ${tab === id ? 'mode-btn--active' : ''}`}
+                  onClick={() => setTabByClan(prev => ({ ...prev, [key]: id }))}>
+                  <span className="mode-btn-title">{title}</span>
+                  <span className="mode-btn-sub">{sub}</span>
+                </button>
+              ))}
+            </div>
+
+            <fieldset disabled style={VIEW_FIELDSET}>
+              {tab === 'chests' && (
+                <div className="norm-panel norm-panel--general">
+                  <div className="norm-panel-head"><b>{cx.modeClanTitle}</b><span>{cx.modeClanInfo}</span></div>
+                  <QuotaEditor quotas={quotas} personal={personal} cx={cx} onChange={NOOP} onPersonal={NOOP} />
+                  <div style={{ overflowX: 'auto', marginTop: 12 }}>
+                    <table className="chest-table">
+                      <thead>
+                        <tr><th style={{ minWidth: 240 }}>{cx.catalogCol}</th><th style={{ minWidth: 70 }}>{cx.pointsCol}</th><th style={{ minWidth: 170 }}>{cx.accountingCol}</th></tr>
+                      </thead>
+                      <tbody>
+                        {c.rows.map(r => (
+                          <tr key={r.catalog_id}>
+                            <td translate="no" className="notranslate">{r.custom_name || r.catalog_id}</td>
+                            <td>{r.points}</td>
+                            <td>
+                              <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 6, border: '1px solid var(--outline)',
+                                             fontWeight: 600, ...ACCOUNTING_BG[accKey(r)] }}>{accLabel(r)}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'mixer' && (
+                <div className="norm-panel norm-panel--personal">
+                  <div className="norm-panel-head"><b>{cx.modePersonalTitle}</b><span>{cx.modePersonalInfo}</span></div>
+                  <MixerTab lang={lang}
+                    personal={personal} onPersonal={NOOP}
+                    quotas={quotas} onQuotas={NOOP}
+                    types={mixerTypes(c.rows)}
+                    allChestTypes={allChestTypes(c.rows, c.catalog_options)}
+                    clanPresets={null}
+                    dirty={false}
+                    onAddChest={null}
+                    quotaEditor={<QuotaEditor inMixer quotas={quotas} personal={personal} cx={cx} onChange={NOOP} onPersonal={NOOP} />}
+                    onSave={NOOP} />
+                </div>
+              )}
+            </fieldset>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function ChestsPage() {
   const [collectors, setCollectors] = useState(null)
   // Свёрнутые ростеры (стрелка в шапке): остаётся полоса с названием клана. Только удобство просмотра, хранится в браузере.
@@ -1202,6 +1309,8 @@ export default function ChestsPage() {
           </div>}
         </div>
       ))}
+
+      <ChestsViewer cx={cx} lang={lang} noOwn={collectors.length === 0} />
 
       {msg && <div className="text-muted" style={{ marginTop: 12 }}>{msg}</div>}
     </div>

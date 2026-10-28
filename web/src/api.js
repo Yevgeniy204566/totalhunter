@@ -50,6 +50,7 @@ export const api = {
   earnStatus:       ()         => request('GET',  '/web/earn/status'),
   earnReward:       ()         => request('POST', '/web/earn/reward'),
   dashboardChests:      ()              => request('GET',   '/web/dashboard/chests'),
+  dashboardChestsView:  ()              => request('GET',   '/web/dashboard/chests/view'),
   dashboardChestsSave:  (slug, rows)    => request('POST',  '/web/dashboard/chests/rows', { collector_slug: slug, rows }),
   dashboardChestsPlayerAliases: (slug, rows) => request('POST', '/web/dashboard/chests/player-aliases', { collector_slug: slug, rows }),
   dashboardChestsPlayerHide: (slug, name, hidden = true) => request('POST', '/web/dashboard/chests/player-hide', { collector_slug: slug, canonical_name: name, hidden }),

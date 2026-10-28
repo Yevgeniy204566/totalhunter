@@ -370,6 +370,45 @@ async def get_dashboard_chests(user: User = Depends(get_web_user),
     return {"collectors": result, "my_nick": user.game_nick}
 
 
+@router.get("/view")
+async def get_view_only_chests(user: User = Depends(get_web_user),
+                               db: AsyncSession = Depends(get_db)):
+    """Нормы кланов из «Профиля» (saved_chest_links) — только чтение (владелец 2026-10-28).
+
+    Цель — показать игрокам, как считаются нормы, без имён: отдаём только настройки (типы сундуков и очки, квоты, шкала
+    Героя). Игроков, привязок ников, руководителей, токенов, слага и счётчиков сундуков здесь нет. Доступ не проверяет
+    «из этого ли клана»: нормы и так открыты на публичной странице клана. Свой/управляемый ростер пропускаем — он в полном
+    кабинете."""
+    from chests import find_collector_by_kingdom_name
+
+    mine_ids = set((await db.execute(
+        select(ChestCollector.id).where(ChestCollector.user_id == user.id)
+    )).scalars().all()) | set((await db.execute(
+        select(ChestManager.collector_id).where(ChestManager.user_id == user.id)
+    )).scalars().all())
+
+    out, seen = [], set()
+    for link in user.saved_chest_links or []:
+        c = await find_collector_by_kingdom_name(db, link.get("kingdom", ""), link.get("clan", ""))
+        if not c or c.id in mine_ids or c.id in seen:
+            continue
+        seen.add(c.id)
+        rows = [
+            {k: r[k] for k in ("catalog_id", "custom_name", "points", "is_in_pattern", "quota_slot")}
+            for r in await _collector_rows(db, c) if r.get("catalog_id")
+        ]
+        out.append({
+            "kingdom": c.kingdom, "clan": c.clan,
+            "public_url": public_url(c.kingdom, c.clan, c.custom_slug, c.slug),
+            "rows": rows,
+            "catalog_options": await _load_catalog_options(db, rows),
+            "quotas": c.quotas or [],
+            "personal_scale": c.personal_scale,
+            "target_points": c.target_points,
+        })
+    return {"collectors": out}
+
+
 class RowIn(BaseModel):
     raw_type: Optional[str] = None
     catalog_id: Optional[str] = None
