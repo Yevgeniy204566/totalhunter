@@ -41,7 +41,7 @@ export default function EmcQuotaPublic({ model, lang = 'ru' }) {
               <th className="emc-emc-col">EMC</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody translate="no">
             {table.map(r => (
               <tr key={r.hero}>
                 <td><b>{heroRangeLabel(r.hero)}</b></td>

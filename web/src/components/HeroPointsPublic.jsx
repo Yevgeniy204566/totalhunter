@@ -91,8 +91,8 @@ export default function HeroPointsPublic({ model = {}, emcModel, players = [], m
       </div>
 
       <p className="emc-text">
-        {t.hero} <b>{level}</b>{hero ? '' : ' *'} · {t.norm}: <b>{norm.toLocaleString('ru-RU')}</b> ({t.cryptsPart}: <b>{cryptsNorm.toLocaleString('ru-RU')}</b>) · {t.epicRef}: <b>{epicRefAt(level, model)}</b>
-        {mine && <> · {t.yours}: <b>{mine.score.toLocaleString('ru-RU')}</b> ({norm ? Math.round(mine.score / norm * 100) : 0}%)</>}
+        {t.hero} <b translate="no">{level}</b>{hero ? '' : ' *'} · {t.norm}: <b translate="no">{norm.toLocaleString('ru-RU')}</b> ({t.cryptsPart}: <b translate="no">{cryptsNorm.toLocaleString('ru-RU')}</b>) · {t.epicRef}: <b translate="no">{epicRefAt(level, model)}</b>
+        {mine && <> · {t.yours}: <b translate="no">{mine.score.toLocaleString('ru-RU')}</b> ({norm ? Math.round(mine.score / norm * 100) : 0}%)</>}
       </p>
       {mine?.fallback.length > 0 && (
         <p className="emc-text"><small>{t.fallback} {mine.fallback.join(', ')}</small></p>
@@ -105,7 +105,7 @@ export default function HeroPointsPublic({ model = {}, emcModel, players = [], m
             {rows.map(r => (
               <tr key={r.id}>
                 <td>{r.id}</td>
-                <td>{r.points > 0 ? <b>{r.points}</b> : t.zero}</td>
+                <td>{r.points > 0 ? <b translate="no">{r.points}</b> : t.zero}</td>
               </tr>
             ))}
           </tbody>
@@ -124,9 +124,9 @@ export default function HeroPointsPublic({ model = {}, emcModel, players = [], m
           <tbody>
             {table.map(r => (
               <tr key={r.hero}>
-                <td><b>{r.hero}</b></td>
-                <td className="emc-emc-col"><b>{r.norm.toLocaleString('ru-RU')}</b></td>
-                {r.w.map((v, i) => <td key={TABLE_TYPES[i]}>{v}</td>)}
+                <td translate="no"><b>{r.hero}</b></td>
+                <td translate="no" className="emc-emc-col"><b>{r.norm.toLocaleString('ru-RU')}</b></td>
+                {r.w.map((v, i) => <td key={TABLE_TYPES[i]} translate="no">{v}</td>)}
               </tr>
             ))}
           </tbody>

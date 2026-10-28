@@ -585,15 +585,15 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               {editMode && <th></th>}
               {editMode && <th></th>}
               {mainCols
-                ? mainCols.map(c => <th key={c.key} className="public-main-th">{fmtAvg(columnAverage(players, c.get))}</th>)
+                ? mainCols.map(c => <th key={c.key} translate="no" className="public-main-th">{fmtAvg(columnAverage(players, c.get))}</th>)
                 : <>
                   <th></th>
                   {quotaCols.map(c => (
-                    <th key={c.key} className="public-epic-cell">{fmtAvg(columnAverage(players, c.get))}</th>
+                    <th key={c.key} translate="no" className="public-epic-cell">{fmtAvg(columnAverage(players, c.get))}</th>
                   ))}
                 </>}
               {orderedTypes.map(t => (
-                <th key={t} className={isEpicColumn(t) ? 'public-epic-cell' : ''}>
+                <th key={t} translate="no" className={isEpicColumn(t) ? 'public-epic-cell' : ''}>
                   {fmtAvg(columnAverage(players, p => p.counts[t]))}
                 </th>
               ))}
@@ -637,7 +637,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody translate="no">
             {shownPlayers.map((p, rowIdx) => {
               return (
                 <tr key={p.name}>
