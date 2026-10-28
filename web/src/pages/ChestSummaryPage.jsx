@@ -117,7 +117,8 @@ function formatPeriodPoint(isoString) {
   return `${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')} ${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
 }
 
-export default function ChestSummaryPage() {
+// neutral — нейтральный домен: без логотипа и ссылки на лендинг сервиса
+export default function ChestSummaryPage({ neutral = false }) {
   const { slug, kingdom } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -152,6 +153,10 @@ export default function ChestSummaryPage() {
     const id = setTimeout(() => document.documentElement.setAttribute('lang', lang), 0)
     return () => clearTimeout(id)
   }, [lang])
+
+  useEffect(() => {
+    if (neutral && data?.clan) document.title = data.clan
+  }, [neutral, data?.clan])
 
   // kingdom param is present on /c/:kingdom/:slug route, absent on /chests/:slug route
   const internalSlug = data?.collector_slug || (!kingdom ? slug : null)
@@ -202,7 +207,8 @@ export default function ChestSummaryPage() {
   return (
     <div className="page-content public-summary-page">
       {/* Переход на лендинг — тот же логотип, что в шапке кабинета (владелец 2026-09-26) */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: neutral ? 'flex-end' : 'space-between', marginBottom: 12 }}>
+        {!neutral && (
         <Link to="/" translate="no" className="notranslate" style={{
           display: 'inline-flex', alignItems: 'center', gap: 10,
           textDecoration: 'none', fontWeight: 700, fontSize: 18, letterSpacing: '0.3px',
@@ -211,6 +217,7 @@ export default function ChestSummaryPage() {
           <span className="header-logo-text" style={{ color: 'var(--accent)', textShadow: '0 0 14px var(--accent-glow)' }}>Total</span>
           <span className="header-logo-text" style={{ color: 'var(--on-surface)' }}>Hunter</span>
         </Link>
+        )}
         <button type="button" className="public-avg-toggle notranslate" translate="no" onClick={toggleLang}>
           {lang === 'ru' ? 'EN' : 'RU'}
         </button>
