@@ -39,7 +39,7 @@ async def rosters_report(db: AsyncSession, *, now: datetime | None = None, q: st
 
     query = (
         select(ChestCollector.id, ChestCollector.kingdom, ChestCollector.clan, ChestCollector.slug,
-               User.id, User.email, User.hwid, today_n, week_n, total_n, last_at)
+               User.id, User.email, User.hwid, User.game_nick, today_n, week_n, total_n, last_at)
         .join(User, User.id == ChestCollector.user_id)
         .outerjoin(Chest, Chest.collector_id == ChestCollector.id)
         .group_by(ChestCollector.id, User.id)
@@ -53,9 +53,10 @@ async def rosters_report(db: AsyncSession, *, now: datetime | None = None, q: st
 
     rows = [
         {"collector_id": cid, "kingdom": kingdom, "clan": clan, "slug": slug, "owner_id": uid,
-         "owner_email": email, "owner_hwid": hwid, "today": int(t or 0), "week": int(w or 0), "total": int(tot or 0),
+         "owner_email": email, "owner_hwid": hwid, "owner_nick": nick,
+         "today": int(t or 0), "week": int(w or 0), "total": int(tot or 0),
          "last_upload_at": _iso(last)}
-        for cid, kingdom, clan, slug, uid, email, hwid, t, w, tot, last in (await db.execute(query)).all()
+        for cid, kingdom, clan, slug, uid, email, hwid, nick, t, w, tot, last in (await db.execute(query)).all()
     ]
 
     key = {"today": lambda r: r["today"], "week": lambda r: r["week"], "total": lambda r: r["total"],

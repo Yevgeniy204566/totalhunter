@@ -750,6 +750,7 @@ async def admin_users(
             "hwid":        u.hwid,
             "email":       u.email,
             "username":    u.username,
+            "game_nick":   u.game_nick,
             "credits":     u.credits,
             "ref_credits": u.ref_credits,
             "ref_code":    u.ref_code,
@@ -1023,19 +1024,19 @@ async def admin_activity(metric: str, db: AsyncSession = Depends(get_db)):
     ко всем вкладкам одинаково — не только к той, где действие произошло."""
     if metric in ("crypt", "exchange", "chest"):
         result = await db.execute(
-            select(User.id, User.hwid, User.email, User.username,
+            select(User.id, User.hwid, User.email, User.username, User.game_nick,
                    User.credits, User.last_seen, func.count(Hunt.id))
             .join(Hunt, Hunt.user_id == User.id)
             .where(Hunt.hunt_type == metric)
             .group_by(User.id)
             .order_by(func.count(Hunt.id).desc())
         )
-        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "credits": cr,
+        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "game_nick": gn, "credits": cr,
                  "last_seen": ls.isoformat() if ls else None, "count": c}
-                for uid, h, e, u, cr, ls, c in result.all()]
+                for uid, h, e, u, gn, cr, ls, c in result.all()]
     elif metric == "roulette":
         result = await db.execute(
-            select(User.id, User.hwid, User.email, User.username,
+            select(User.id, User.hwid, User.email, User.username, User.game_nick,
                    User.credits, User.last_seen,
                    func.count(Transaction.id), func.sum(Transaction.amount),
                    func.max(Transaction.created_at))
@@ -1044,13 +1045,13 @@ async def admin_activity(metric: str, db: AsyncSession = Depends(get_db)):
             .group_by(User.id)
             .order_by(func.count(Transaction.id).desc())
         )
-        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "credits": cr,
+        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "game_nick": gn, "credits": cr,
                  "last_seen": ls.isoformat() if ls else None, "count": c, "credits_total": s or 0,
                  "last_spin_at": ts.isoformat() if ts else None}
-                for uid, h, e, u, cr, ls, c, s, ts in result.all()]
+                for uid, h, e, u, gn, cr, ls, c, s, ts in result.all()]
     elif metric == "ancient":
         result = await db.execute(
-            select(User.id, User.hwid, User.email, User.username,
+            select(User.id, User.hwid, User.email, User.username, User.game_nick,
                    User.credits, User.last_seen,
                    func.sum(case((Log.event_type == "ancient_ocr_import", 1), else_=0)),
                    func.sum(case((Log.event_type == "ancient_quota_calc", 1), else_=0)))
@@ -1058,16 +1059,18 @@ async def admin_activity(metric: str, db: AsyncSession = Depends(get_db)):
             .where(Log.event_type.in_(["ancient_ocr_import", "ancient_quota_calc"]))
             .group_by(User.id)
         )
-        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "credits": cr,
+        rows = [{"user_id": uid, "hwid": h, "email": e, "username": u, "game_nick": gn, "credits": cr,
                  "last_seen": ls.isoformat() if ls else None, "ocr_imports": oi or 0, "quota_calcs": qc or 0}
-                for uid, h, e, u, cr, ls, oi, qc in result.all()]
+                for uid, h, e, u, gn, cr, ls, oi, qc in result.all()]
     else:
         raise HTTPException(status_code=400, detail="unknown metric")
 
     finance = await _activity_finance_summary(db, [r["user_id"] for r in rows])
     empty_finance = {"spent_total": 0, "purchased_total": 0, "earned_total": 0}
     for r in rows:
-        r.update(finance.get(r.pop("user_id"), empty_finance))
+        uid = r.pop("user_id")
+        r["id"] = uid   # ID рядом с почтой и ником в таблице админки
+        r.update(finance.get(uid, empty_finance))
 
     return {"metric": metric, "rows": rows}
 

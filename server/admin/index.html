@@ -674,7 +674,12 @@
                       <div style="font-weight:600" x-text="u.username||'—'"></div>
                       <div class="hwid-cell" :title="u.hwid" x-text="u.hwid"></div>
                     </td>
-                    <td style="color:var(--text-dim)" x-text="u.email||'—'"></td>
+                    <td>
+                      <div style="color:var(--text-dim)" x-text="u.email||'—'"></div>
+                      <div style="font-size:11px;color:var(--text-dim)">
+                        ID <b x-text="u.id"></b> · ник: <b style="color:var(--text)" x-text="u.game_nick||'не указан'"></b>
+                      </div>
+                    </td>
                     <td>
                       <span style="color:var(--accent);font-weight:700" x-text="u.credits"></span>
                       <span style="color:var(--text-dim)"> ◆</span>
@@ -737,6 +742,7 @@
                 <div class="user-row-info">
                   <div class="user-row-name" x-text="u.username||u.hwid"></div>
                   <div class="user-row-email" x-text="u.email||sessionLabel(u)"></div>
+                  <div class="user-row-email" x-text="'ID '+u.id+' · ник: '+(u.game_nick||'не указан')"></div>
                 </div>
 
                 <!-- Credits -->
@@ -1027,6 +1033,7 @@
                         <a href="#" @click.prevent="rosterOwner=g.owner_id;loadRosters()" style="font-weight:700;color:#D8C7A0"
                            x-text="g.owner_email||'бот без почты'"></a>
                         <span style="font-size:12px;color:var(--text-dim)" x-text="' · ' + g.rows.length + ' ' + (g.rows.length===1?'ростер':(g.rows.length<5?'ростера':'ростеров'))"></span>
+                        <div style="font-size:11px;color:var(--text-dim)" x-text="'ID '+g.owner_id+' · ник: '+(g.owner_nick||'не указан')"></div>
                         <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="g.owner_hwid||'—'"></div>
                       </td>
                       <td style="font-weight:700;color:var(--green)" x-text="g.today"></td>
@@ -1073,6 +1080,7 @@
                     <td style="color:var(--text-dim);font-weight:700" x-text="idx+1"></td>
                     <td>
                       <div style="font-weight:600" x-text="row.username||row.email||'—'"></div>
+                      <div style="font-size:11px;color:var(--text-dim)" x-text="'ID '+row.id+' · ник: '+(row.game_nick||'не указан')+(row.email&&row.username?' · '+row.email:'')"></div>
                       <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
                     </td>
                     <td style="font-weight:700;color:var(--accent)" x-text="row.count"></td>
@@ -1110,6 +1118,7 @@
                     <td style="color:var(--text-dim);font-weight:700" x-text="idx+1"></td>
                     <td>
                       <div style="font-weight:600" x-text="row.username||row.email||'—'"></div>
+                      <div style="font-size:11px;color:var(--text-dim)" x-text="'ID '+row.id+' · ник: '+(row.game_nick||'не указан')+(row.email&&row.username?' · '+row.email:'')"></div>
                       <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
                     </td>
                     <td style="font-weight:700;color:var(--accent)" x-text="row.count"></td>
@@ -1149,6 +1158,7 @@
                     <td style="color:var(--text-dim);font-weight:700" x-text="idx+1"></td>
                     <td>
                       <div style="font-weight:600" x-text="row.username||row.email||'—'"></div>
+                      <div style="font-size:11px;color:var(--text-dim)" x-text="'ID '+row.id+' · ник: '+(row.game_nick||'не указан')+(row.email&&row.username?' · '+row.email:'')"></div>
                       <div style="font-family:monospace;font-size:10px;color:var(--text-dim)" x-text="row.hwid||'—'"></div>
                     </td>
                     <td style="font-weight:700;color:var(--accent)" x-text="row.ocr_imports"></td>
@@ -1475,7 +1485,7 @@ function adminApp() {
     get rosterGroups() {
       const map = new Map();
       for (const r of this.rosters.rows) {
-        if (!map.has(r.owner_id)) map.set(r.owner_id, { owner_id: r.owner_id, owner_email: r.owner_email, owner_hwid: r.owner_hwid,
+        if (!map.has(r.owner_id)) map.set(r.owner_id, { owner_id: r.owner_id, owner_email: r.owner_email, owner_hwid: r.owner_hwid, owner_nick: r.owner_nick,
           rows: [], today: 0, week: 0, total: 0, last_upload_at: null });
         const g = map.get(r.owner_id);
         g.rows.push(r); g.today += r.today; g.week += r.week; g.total += r.total;
