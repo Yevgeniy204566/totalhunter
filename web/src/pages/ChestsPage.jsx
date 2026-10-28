@@ -13,6 +13,12 @@ const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветера
 const TIERS = ['5', '6', '7', '8', '9']
 const CUSTOM_TYPE = '__custom__'
 
+// Нейтральный домен публичных страниц: тот же путь, что у родной ссылки (/c/229/feniks)
+const NEUTRAL_ORIGIN = 'https://clbx.date'
+function neutralUrl(publicUrl) {
+  try { return NEUTRAL_ORIGIN + new URL(publicUrl).pathname } catch { return NEUTRAL_ORIGIN }
+}
+
 function parseTroop(troop_level) {
   if (!troop_level) return { g: '', s: '', m: '' }
   const mat = troop_level.match(/G(\d+) S(\d+) M(\d+)/)
@@ -601,6 +607,21 @@ export default function ChestsPage() {
                   style={{ fontSize: 13, color: '#60A5FA', marginTop: 6, display: 'block', wordBreak: 'break-all' }}>
                   {collector.public_url.replace('https://', '')}
                 </a>
+              )}
+              {/* Вторая ссылка — тот же путь на нейтральном домене без упоминания сервиса */}
+              {collector.public_url && (
+                <>
+                  <a href={neutralUrl(collector.public_url)} target="_blank" rel="noreferrer"
+                    className="chest-pill-btn"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginTop: 10 }}>
+                    🔗 {cx.publicLinkNeutral}
+                  </a>
+                  <a href={neutralUrl(collector.public_url)} target="_blank" rel="noreferrer"
+                    translate="no" className="notranslate"
+                    style={{ fontSize: 13, color: '#60A5FA', marginTop: 6, display: 'block', wordBreak: 'break-all' }}>
+                    {neutralUrl(collector.public_url).replace('https://', '')}
+                  </a>
+                </>
               )}
 
               <div className="collector-actions-row" style={{ marginTop: 8 }}>

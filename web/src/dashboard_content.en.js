@@ -170,6 +170,7 @@ export const DASHBOARD = {
     save: 'Save',
     saved: 'Saved',
     publicLink: 'Clan public page',
+    publicLinkNeutral: 'Neutral link (no Total Hunter mention)',
     generateToken: 'Invite a manager',
     claimPlaceholder: '2. Code from the roster owner',
     claimBtn: 'Become a manager',

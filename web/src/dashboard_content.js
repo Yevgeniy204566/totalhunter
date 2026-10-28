@@ -170,6 +170,7 @@ export const DASHBOARD = {
     save: 'Сохранить',
     saved: 'Сохранено',
     publicLink: 'Публичная страница клана',
+    publicLinkNeutral: 'Нейтральная ссылка (без упоминания Total Hunter)',
     generateToken: 'Пригласить руководителя',
     claimPlaceholder: '2. Код от хозяина ростера',
     claimBtn: 'Стать руководителем',
