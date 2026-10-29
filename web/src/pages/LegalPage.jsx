@@ -553,7 +553,7 @@ export default function LegalPage() {
         </button>
       </div>
 
-      <h2 style={{ marginBottom: 4 }}>{title}</h2>
+      <h1 className="legal-title">{title}</h1>
       <p className="text-muted" style={{ marginBottom: 28 }}>{updated}</p>
 
       {isRu ? <ContentRU /> : <ContentEN />}

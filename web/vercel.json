@@ -31,6 +31,12 @@
   ],
   "headers": [
     {
+      "source": "/ref/:code",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
       "source": "/dashboard/:path*",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, follow" }

@@ -1255,3 +1255,10 @@ button.cq-frame { display: block; width: 100%; border: 0; cursor: zoom-in; font:
 /* Список языков меню в шапке: на тёмной теме пункты выпадающего списка не должны быть светлыми на светлом */
 select.header-btn { appearance: auto; }
 select.header-btn option { background: #0d0f2a; color: #fff; }
+
+/* Заголовок страницы «Условия» — h1 для поисковиков, вид прежний: значения сняты с отрисованного h2 (общие стили h1 другие:
+   у h1 в index.css 56px и отрицательный межбуквенный интервал, поэтому здесь всё задано явно) */
+.legal-title {
+  font-weight: 700; font-size: 24px; line-height: normal; letter-spacing: normal; margin: 0 0 4px;
+}
+@media (max-width: 768px) { .legal-title { font-size: 18px; } }
