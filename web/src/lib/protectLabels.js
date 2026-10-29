@@ -8,8 +8,8 @@ import { LABEL_INDEX } from '../i18n/labelDict.js'
 import { getLabelCode, subscribeLabelLang } from '../i18n/labelStore.js'
 
 const MAX_LEN = 48
-// Игровые и платёжные термины, которые Chrome без контекста переводит неверно
-const TERM_RE = /сундук|склеп|бирж|реферал|баланс|недел|алмаз|кредит|герой|героя|героев|древн|квот|сезон|цитадел|ростер|chest|crypt|exchange|referral|balance|week\b|diamond|credit|hero|ancient|quota|season|citadel|roster/i
+// Название бренда и игры (никогда не переводятся) + игровые и платёжные термины, которые Chrome без контекста переводит неверно
+const TERM_RE = /total ?hunter|total ?battle|сундук|склеп|бирж|реферал|баланс|недел|алмаз|кредит|герой|героя|героев|древн|квот|сезон|цитадел|ростер|chest|crypt|exchange|referral|balance|week\b|diamond|credit|hero|ancient|quota|season|citadel|roster/i
 const SELECTOR = [
   'a', 'button', 'h1', 'h2', 'h3', 'h4', 'h5', 'th', 'label', 'summary', 'legend', 'option', '[role="tab"]',
   '[class*="tab"]', '[class*="nav"]', '[class*="label"]', '[class*="title"]', '[class*="badge"]',
@@ -27,6 +27,14 @@ function localizeTextNode(node) {
   const value = node.nodeValue || ''
   const core = value.trim()
   if (!core || core.length > MAX_LEN) return false
+  // Логотип «Total» + «Hunter» — название бренда: не подменять и не отдавать автопереводу («Total» → «Усього»)
+  if (/^(Total|Hunter)$/.test(core)) {
+    const sib = el.nextElementSibling || el.previousElementSibling
+    if (sib && /^(Total|Hunter)$/.test(sib.textContent.trim())) {
+      if (!el.hasAttribute('translate')) el.setAttribute('translate', 'no')
+      return true
+    }
+  }
   const st = textState.get(node)
   const full = st && core === st.shown ? st.src : core   // значение изменил React — это новый источник
   // значки и стрелки по краям («⬇ Скачать», «Войти →») в поиск не входят, но остаются на месте
