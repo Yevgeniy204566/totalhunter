@@ -5,7 +5,8 @@
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, pathToFileURL } from 'url'
+import { FAQ_ITEMS_RU, FAQ_ITEMS_EN } from './src/faq.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = resolve(__dirname, 'dist')
@@ -16,8 +17,8 @@ const ROUTES = [
   {
     path: '/',
     lang: 'en',
-    title:       'Total Hunter — Total Battle Automation | Exchanges & Crypts',
-    description: 'Automatic mercenary exchange and crypt finder for Total Battle. Neural network + player simulation. 100 free diamonds on registration.',
+    title:       'Total Hunter — Bot for Total Battle | Exchanges, Crypts & Clan Chests',
+    description: 'Automatic mercenary exchange search, crypt collection and clan chest accounting for Total Battle: public clan table, season goals and norms by Hero level. 300 free diamonds on registration.',
     canonical:   `${BASE}/`,
     enHref:      `${BASE}/`,
     ruHref:      `${BASE}/ru`,
@@ -36,7 +37,7 @@ const ROUTES = [
     path: '/download',
     lang: 'en',
     title:       'Download Total Hunter — Total Battle Bot | Windows 10/11',
-    description: 'Download Total Hunter for free. Mercenary exchange finder and crypt collector for Total Battle. 100 free diamonds on registration.',
+    description: 'Download Total Hunter for free. Mercenary exchange finder, crypt collector and clan chest accounting for Total Battle. 300 free diamonds on registration.',
     canonical:   `${BASE}/download`,
     enHref:      `${BASE}/download`,
     ruHref:      `${BASE}/ru/download`,
@@ -64,8 +65,8 @@ const ROUTES = [
   {
     path: '/ru',
     lang: 'ru',
-    title:       'Total Hunter — автоматизация Total Battle | Биржи и склепы',
-    description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle. Нейросеть + имитация игрока. 100 алмазов бесплатно при регистрации.',
+    title:       'Total Hunter — автоматизация Total Battle | Биржи, склепы, сундуки клана',
+    description: 'Автоматический поиск бирж наёмников, сбор склепов и учёт сундуков клана в Total Battle: публичная таблица, цели сезона и нормы по уровню Героя. 300 алмазов бесплатно при регистрации.',
     canonical:   `${BASE}/ru`,
     enHref:      `${BASE}/`,
     ruHref:      `${BASE}/ru`,
@@ -84,7 +85,7 @@ const ROUTES = [
     path: '/ru/download',
     lang: 'ru',
     title:       'Скачать Total Hunter — бот для Total Battle | Windows 10/11',
-    description: 'Скачать Total Hunter бесплатно. Поиск бирж наёмников и сбор склепов в Total Battle. 100 алмазов бесплатно при регистрации.',
+    description: 'Скачать Total Hunter бесплатно. Поиск бирж наёмников, сбор склепов и учёт сундуков клана в Total Battle. 300 алмазов бесплатно при регистрации.',
     canonical:   `${BASE}/ru/download`,
     enHref:      `${BASE}/download`,
     ruHref:      `${BASE}/ru/download`,
@@ -109,47 +110,19 @@ const ROUTES = [
   },
 ]
 
-// FAQ JSON-LD (EN)
-const FAQ_EN = JSON.stringify({
+// FAQPage JSON-LD строится из того же списка, что и видимый FAQ на главной (src/faq.js)
+const faqJson = items => JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'What is Total Hunter?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Total Hunter is a desktop bot for automating Total Battle. It automatically searches for mercenary exchanges and collects crypts, simulating real player actions.' } },
-    { '@type': 'Question', name: 'How much does Total Hunter cost?',
-      acceptedAnswer: { '@type': 'Answer', text: 'First 100 diamonds are free on registration — no credit card needed. Diamonds are spent only for successful actions: −10 for a found exchange, −1 for a collected crypt.' } },
-    { '@type': 'Question', name: 'Does the bot work with the browser and Total Battle client?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Yes. Total Hunter supports browser version (Chrome, Firefox) and the official Total Battle client. Settings are saved in profiles.' } },
-    { '@type': 'Question', name: 'Can I get banned for using the bot?',
-      acceptedAnswer: { '@type': 'Answer', text: 'The bot fully simulates human actions: random pauses 0.4–0.9 sec, random click offset ±5–8 pixels. Risk is minimal.' } },
-    { '@type': 'Question', name: 'Does the bot need my game password?',
-      acceptedAnswer: { '@type': 'Answer', text: 'No. The bot works on top of an already running game via screen screenshots. Your credentials are not needed.' } },
-    { '@type': 'Question', name: 'What systems does Total Hunter support?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Windows 10 and Windows 11 (64-bit). Installer includes all required components (VC++ Runtime).' } },
-  ],
+  mainEntity: items.map(({ q, a }) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
 })
-
-// FAQ JSON-LD (RU)
-const FAQ_RU = JSON.stringify({
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'Что такое Total Hunter?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Total Hunter — десктопный бот для автоматизации Total Battle. Автоматически ищет биржи наёмников и собирает склепы, имитируя действия реального игрока.' } },
-    { '@type': 'Question', name: 'Сколько стоит Total Hunter?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Первые 100 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп.' } },
-    { '@type': 'Question', name: 'Работает ли бот с браузером и клиентом Total Battle?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Да. Total Hunter поддерживает браузерную версию (Chrome, Firefox) и официальный клиент Total Battle. Настройки сохраняются в профилях.' } },
-    { '@type': 'Question', name: 'Могут ли меня забанить за использование бота?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Бот полностью имитирует действия человека: случайные паузы 0.4–0.9 сек, случайное отклонение кликов ±5–8 пикселей. Риск минимален.' } },
-    { '@type': 'Question', name: 'Нужен ли боту мой игровой пароль?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Нет. Бот работает поверх уже запущенной игры через скриншоты экрана. Ваши учётные данные нам не нужны.' } },
-    { '@type': 'Question', name: 'На каких системах работает Total Hunter?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Windows 10 и Windows 11 (64-bit). Установщик включает все необходимые компоненты (VC++ Runtime).' } },
-  ],
-})
+const FAQ_EN = faqJson(FAQ_ITEMS_EN)
+const FAQ_RU = faqJson(FAQ_ITEMS_RU)
 
 const template = readFileSync(resolve(DIST, 'index.html'), 'utf-8')
+
+// Серверная сборка React-приложения (vite build --ssr): текст страницы кладётся в HTML, а не рисуется скриптом
+const { render } = await import(pathToFileURL(resolve(__dirname, 'dist-ssr', 'entry-server.js')).href)
 
 for (const route of ROUTES) {
   let html = template
@@ -176,6 +149,11 @@ for (const route of ROUTES) {
   // Twitter
   html = html.replace(/(<meta name="twitter:title" content=")[^"]*(")/,       `$1${route.title}$2`)
   html = html.replace(/(<meta name="twitter:description" content=")[^"]*(")/,  `$1${route.description}$2`)
+
+  // Содержимое страницы: полный текст, заголовки и ссылки в исходном HTML (клиент гидрирует его из main.jsx)
+  const body = render(route.path)
+  if (!body || !template.includes('<div id="root"></div>')) throw new Error(`prerender: нет содержимого или корня для ${route.path}`)
+  html = html.replace('<div id="root"></div>', () => `<div id="root">${body}</div>`)
 
   // hreflang tags (inject before </head>)
   const hreflangTags = [

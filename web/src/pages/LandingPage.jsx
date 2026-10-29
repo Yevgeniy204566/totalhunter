@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api.js'
-import { isLoggedIn } from '../auth.js'
+import { useLoggedIn } from '../auth.js'
 import { LANDING as LANDING_RU } from '../constants.js'
 import { LANDING as LANDING_EN } from '../constants.en.js'
 import { DOWNLOAD as DL_RU } from '../constants.js'
@@ -9,40 +9,7 @@ import { DOWNLOAD as DL_EN } from '../constants.en.js'
 import { useLang } from '../lang.js'
 import { useMeta } from '../hooks/useMeta.js'
 import { track } from '@vercel/analytics'
-
-const FAQ_ITEMS_RU = [
-  { q: 'Что такое Total Hunter?',
-    a: 'Total Hunter — десктопный бот для автоматизации Total Battle. Ищет биржи наёмников, отправляет Картера в склепы и собирает сундуки клана, а сайт ведёт таблицу клана и калькулятор Древнего. Бот имитирует действия реального игрока.' },
-  { q: 'Сколько стоит Total Hunter?',
-    a: 'Первые 300 алмазов бесплатно при регистрации — без кредитной карты. Алмазы списываются только за успешные действия: −10 за найденную биржу, −1 за собранный склеп, −1 за каждые 100 сундуков, отправленных на сайт (округление до ближайшей сотни, минимум 1).' },
-  { q: 'Работает ли бот с браузером и клиентом Total Battle?',
-    a: 'Да. Total Hunter поддерживает браузерную версию (Chrome, Firefox) и официальный клиент Total Battle. Настройки сохраняются в профилях.' },
-  { q: 'Могут ли меня забанить за использование бота?',
-    a: 'Бот имитирует действия человека: паузы между кликами каждый раз разные, а клики немного смещаются случайным образом. Риск есть при любом боте, но он минимален.' },
-  { q: 'Нужен ли боту мой игровой пароль?',
-    a: 'Нет. Бот работает поверх уже запущенной игры через скриншоты экрана. Ваши учётные данные нам не нужны.' },
-  { q: 'На каких системах работает Total Hunter?',
-    a: 'Windows 10 и Windows 11 (64-bit). Программа поставляется архивом ZIP: распакуйте его в любую папку и запустите TotalHunter.exe — установка не нужна.' },
-  { q: 'Работает ли бот на телефоне (Android / iOS)?',
-    a: 'Бот работает на компьютере. Total Battle есть на компьютере, Android и iOS, поэтому найденные биржи и склепы вы сможете использовать с любого устройства.' },
-]
-
-const FAQ_ITEMS_EN = [
-  { q: 'What is Total Hunter?',
-    a: 'Total Hunter is a desktop bot for Total Battle automation. It finds mercenary exchanges, sends Carter to crypts and collects clan chests, while the website keeps the clan table and the Ancient calculator. The bot imitates real player actions.' },
-  { q: 'How much does Total Hunter cost?',
-    a: 'First 300 diamonds are free upon registration — no credit card required. Diamonds are charged only for successful actions: −10 per exchange found, −1 per crypt collected, −1 per 100 chests uploaded to the site (rounded to the nearest hundred, minimum 1).' },
-  { q: 'Does it work with both browser and client versions of Total Battle?',
-    a: 'Yes. Total Hunter supports both browser (Chrome, Firefox) and the official Total Battle client. Settings are saved in profiles.' },
-  { q: 'Can I get banned for using the bot?',
-    a: 'The bot imitates human actions: pauses between clicks are different every time and clicks are slightly shifted at random. Any bot carries some risk, but it is minimal.' },
-  { q: 'Does the bot need my game password?',
-    a: 'No. The bot works on top of an already running game via screen screenshots. Your credentials are never required.' },
-  { q: 'What systems does Total Hunter support?',
-    a: 'Windows 10 and Windows 11 (64-bit). The program comes as a ZIP archive: extract it to any folder and run TotalHunter.exe — no installation needed.' },
-  { q: 'Does the bot work on mobile (Android / iOS)?',
-    a: 'The bot runs on a PC. Total Battle is available on PC, Android and iOS, so the exchanges and crypts it finds can be used from any device.' },
-]
+import { FAQ_ITEMS_RU, FAQ_ITEMS_EN } from '../faq.js'
 
 function useCounter(target, duration = 1400) {
   const [value, setValue] = useState(0)
@@ -512,6 +479,7 @@ function DownloadWarningModal({ lang, source, onClose }) {
 }
 
 export default function LandingPage() {
+  const loggedIn = useLoggedIn()
   const [stats, setStats] = useState(null)
   const [dlSource, setDlSource] = useState(null)
   const [appVersion, setAppVersion] = useState(null)
@@ -520,9 +488,9 @@ export default function LandingPage() {
 
   useMeta(lang === 'en'
     ? { title: 'Total Hunter — Bot for Total Battle | Exchanges, Crypts & Clan Chests',
-        description: 'Automatic search for mercenary exchanges and crypt collection in Total Battle — MMO RTS by Scorewarrior. Neural network + player imitation. 300 free diamonds on registration.' }
+        description: 'Automatic mercenary exchange search, crypt collection and clan chest accounting for Total Battle: public clan table, season goals and norms by Hero level. 300 free diamonds on registration.' }
     : { title: 'Total Hunter — автоматизация Total Battle | Биржи, склепы, сундуки клана',
-        description: 'Автоматический поиск бирж наёмников и сбор склепов в Total Battle (Триумф: Рождение Империй) от Scorewarrior. Нейросеть + имитация игрока. 300 алмазов бесплатно.' }
+        description: 'Автоматический поиск бирж наёмников, сбор склепов и учёт сундуков клана в Total Battle: публичная таблица, цели сезона и нормы по уровню Героя. 300 алмазов бесплатно при регистрации.' }
   )
   useEffect(() => {
     api.globalStats().then(d => setStats(d)).catch(() => {})
@@ -551,8 +519,8 @@ export default function LandingPage() {
           <button onClick={toggle} className="landing-nav-btn landing-nav-btn--lang">
             {lang.toUpperCase()}
           </button>
-          <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse landing-nav-btn landing-nav-btn--cta">
-            <span className="landing-nav-cta-text">{isLoggedIn() ? 'Dashboard →' : (lang === 'en' ? 'Sign In' : 'Войти')}</span>
+          <Link to={loggedIn ? '/dashboard' : '/login'} className="btn-pulse landing-nav-btn landing-nav-btn--cta">
+            <span className="landing-nav-cta-text">{loggedIn ? 'Dashboard →' : (lang === 'en' ? 'Sign In' : 'Войти')}</span>
             <span className="landing-nav-cta-icon">→</span>
           </Link>
         </div>
@@ -643,13 +611,13 @@ export default function LandingPage() {
               <span style={{ fontSize: 24 }}>⬇</span>
               {lang === 'en' ? 'Download Free' : 'Скачать бесплатно'}
             </a>
-            <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
+            <Link to={loggedIn ? '/dashboard' : '/login'} style={{
               padding: '20px 36px', borderRadius: 12, fontSize: 17,
               background: 'transparent', color: '#FFFFFF',
               fontWeight: 600, textDecoration: 'none',
               border: '1px solid rgba(255,255,255,0.2)', display: 'inline-block',
             }}>
-              {isLoggedIn() ? (lang === 'en' ? 'Dashboard →' : 'Dashboard →') : (lang === 'en' ? 'Sign In →' : 'Войти →')}
+              {loggedIn ? (lang === 'en' ? 'Dashboard →' : 'Dashboard →') : (lang === 'en' ? 'Sign In →' : 'Войти →')}
             </Link>
           </div>
           <p className="landing-hero-download" style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
@@ -859,7 +827,7 @@ export default function LandingPage() {
                     </span>
                   )}
                 </div>
-                <Link to={isLoggedIn() ? '/dashboard/balance' : '/login'} style={{
+                <Link to={loggedIn ? '/dashboard/balance' : '/login'} style={{
                   display: 'block', padding: '13px 0', borderRadius: 10,
                   background: pkg.popular ? 'var(--accent)' : 'transparent',
                   border: `1px solid ${pkg.popular ? 'var(--accent)' : pkg.color + '66'}`,
@@ -916,12 +884,12 @@ export default function LandingPage() {
           <p style={{ fontSize: 16, color: '#C8D8F0', marginBottom: 44, lineHeight: 1.65 }}>
             {LANDING.ctaSub}
           </p>
-          <Link to={isLoggedIn() ? '/dashboard' : '/login'} className="btn-pulse" style={{
+          <Link to={loggedIn ? '/dashboard' : '/login'} className="btn-pulse" style={{
             padding: '18px 52px', borderRadius: 12, fontSize: 18,
             background: 'var(--accent)', color: '#FFFFFF',
             fontWeight: 700, textDecoration: 'none', display: 'inline-block',
           }}>
-            {isLoggedIn() ? (lang === 'en' ? 'Go to Dashboard →' : 'Перейти в Dashboard →') : LANDING.ctaBtn}
+            {loggedIn ? (lang === 'en' ? 'Go to Dashboard →' : 'Перейти в Dashboard →') : LANDING.ctaBtn}
           </Link>
         </div>
       </section>

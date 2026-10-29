@@ -21,7 +21,7 @@ export function LangProvider({ children }) {
   const urlLang  = pathname.startsWith('/ru') ? 'ru' : 'en'
 
   const [storedLang, setStoredLang] = useState(
-    () => localStorage.getItem('th_lang') || 'en'
+    () => (typeof localStorage === 'undefined' ? null : localStorage.getItem('th_lang')) || 'en'   // на сервере (пререндер) хранилища нет
   )
 
   const lang = onPublic ? urlLang : storedLang

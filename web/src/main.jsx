@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
@@ -13,12 +13,19 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 const container = document.getElementById('root')
 
+// Подмена подписей и защита названий стартуют ТОЛЬКО после гидратации: эффект корня срабатывает, когда React
+// закончил сверять страницу с серверной разметкой, иначе правки DOM вызвали бы расхождение.
+function Boot({ children }) {
+  useEffect(() => { startProtectLabels() }, [])
+  return children
+}
+
 const app = (
   <React.StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <BrowserRouter>
         <LangProvider>
-          <App />
+          <Boot><App /></Boot>
         </LangProvider>
       </BrowserRouter>
     </GoogleOAuthProvider>
@@ -31,6 +38,3 @@ if (container.hasChildNodes()) {
 } else {
   ReactDOM.createRoot(container).render(app)
 }
-
-// после гидратации, чтобы атрибуты не расходились с серверной разметкой
-window.addEventListener('load', () => setTimeout(startProtectLabels, 0))

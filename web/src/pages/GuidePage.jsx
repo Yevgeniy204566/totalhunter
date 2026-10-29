@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { isLoggedIn } from '../auth.js'
+import { useLoggedIn } from '../auth.js'
 import { useLang } from '../lang.js'
 import { GUIDE as GUIDE_RU } from '../guide_content.js'
 import { GUIDE as GUIDE_EN } from '../guide_content.en.js'
@@ -100,6 +100,7 @@ function Note({ children }) {
 }
 
 export default function GuidePage() {
+  const loggedIn = useLoggedIn()
   const { lang, toggle } = useLang()
   const G = lang === 'en' ? GUIDE_EN : GUIDE_RU
   const isEn = lang === 'en'
@@ -138,12 +139,12 @@ export default function GuidePage() {
           }}>
             {isEn ? 'RU' : 'EN'}
           </button>
-          <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
+          <Link to={loggedIn ? '/dashboard' : '/login'} style={{
             padding: '9px 22px', borderRadius: 8, fontSize: 17,
             background: 'var(--accent)', color: '#FFFFFF', fontWeight: 700, textDecoration: 'none',
             boxShadow: '0 0 14px var(--accent-glow)',
           }}>
-            {isLoggedIn() ? 'Dashboard →' : (isEn ? 'Login' : 'Войти')}
+            {loggedIn ? 'Dashboard →' : (isEn ? 'Login' : 'Войти')}
           </Link>
         </div>
       </nav>
@@ -793,13 +794,13 @@ export default function GuidePage() {
             <p style={{ fontSize: 17, color: 'var(--on-surface2)', marginBottom: 28, lineHeight: 1.7 }}>
               {G.cta.sub}
             </p>
-            <Link to={isLoggedIn() ? '/dashboard' : '/login'} style={{
+            <Link to={loggedIn ? '/dashboard' : '/login'} style={{
               display: 'inline-block', padding: '14px 40px', borderRadius: 10,
               background: 'linear-gradient(90deg, #3D7FFF, #00CFFF)',
               color: '#FFFFFF', fontSize: 16, fontWeight: 700, textDecoration: 'none',
               boxShadow: '0 0 30px rgba(0,207,255,0.35)',
             }}>
-              {isLoggedIn() ? G.cta.btnDashboard : G.cta.btnStart}
+              {loggedIn ? G.cta.btnDashboard : G.cta.btnStart}
             </Link>
             <div style={{ marginTop: 24, display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/download" style={{ color: 'var(--accent)', fontSize: 17, textDecoration: 'none', opacity: 0.85 }}>

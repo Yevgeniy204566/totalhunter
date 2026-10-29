@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react'
+
 const TOKEN_KEY = 'th_jwt'
 
 export function saveToken(token) {
@@ -5,7 +7,7 @@ export function saveToken(token) {
 }
 
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY)
+  return typeof localStorage === 'undefined' ? null : localStorage.getItem(TOKEN_KEY)   // на сервере (пререндер) хранилища нет
 }
 
 export function clearToken() {
@@ -23,4 +25,10 @@ export function isLoggedIn() {
   } catch {
     return false
   }
+}
+
+// Для публичных страниц: на сервере и при гидратации — «не вошёл» (иначе разметка разойдётся с серверной),
+// сразу после неё React перерисует по фактическому состоянию.
+export function useLoggedIn() {
+  return useSyncExternalStore(() => () => {}, isLoggedIn, () => false)
 }
