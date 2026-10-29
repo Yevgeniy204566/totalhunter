@@ -141,6 +141,8 @@ function PackageCard({ pkg, buying, onBuy }) {
         transform: hovered ? 'scale(1.04) translateY(-4px)' : 'scale(1)',
         transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
         overflow: 'hidden',
+        // Перевод браузера удлиняет подписи (USD → «Доллар»), а с letter-spacing они вылезали за рамку
+        overflowWrap: 'anywhere', boxSizing: 'border-box',
       }}
     >
       {/* Animated corner glow */}
