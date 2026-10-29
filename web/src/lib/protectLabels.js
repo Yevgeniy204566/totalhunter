@@ -59,6 +59,31 @@ function localizeTextNode(node) {
   return true
 }
 
+// Название сайта и игры внутри обычного текста оборачивается в блок translate="no" на всех языках.
+// Только когда текст — единственный потомок элемента: тогда React не держит текстовый узел отдельно
+// (одиночная строка — это textContent родителя) и при следующем обновлении сам перезапишет разметку.
+const NAME_RE = /(Total ?Hunter|Total ?Battle)/g
+function protectNames(el) {
+  if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3) return
+  if (el.closest('[translate="no"], script, style, textarea, noscript, title')) return
+  const text = el.firstChild.nodeValue || ''
+  if (!/Total ?(Hunter|Battle)/.test(text)) return
+  const parts = text.split(NAME_RE)
+  el.textContent = ''
+  parts.forEach((part, i) => {
+    if (!part) return
+    if (i % 2 === 1) {
+      const span = document.createElement('span')
+      span.setAttribute('translate', 'no')
+      span.className = 'notranslate'
+      span.textContent = part
+      el.appendChild(span)
+    } else {
+      el.appendChild(document.createTextNode(part))
+    }
+  })
+}
+
 function protectTerm(el) {
   const text = (el.textContent || '').trim()
   const need = isShort(text) && TERM_RE.test(text)
@@ -76,6 +101,7 @@ function process(root) {
   }
   const els = [root, ...root.querySelectorAll(SELECTOR)]
   for (const el of els) if (el.matches?.(SELECTOR) && !dictEls.has(el)) protectTerm(el)
+  for (const el of [root, ...root.querySelectorAll('*')]) protectNames(el)
 }
 
 export function startProtectLabels() {
