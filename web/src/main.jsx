@@ -5,6 +5,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Analytics } from '@vercel/analytics/react'
 import App from './App.jsx'
 import { LangProvider } from './lang.js'
+import { startProtectLabels } from './lib/protectLabels.js'
 import './styles/theme.css'
 import './styles/mobile.css'
 
@@ -30,3 +31,6 @@ if (container.hasChildNodes()) {
 } else {
   ReactDOM.createRoot(container).render(app)
 }
+
+// после гидратации, чтобы атрибуты не расходились с серверной разметкой
+window.addEventListener('load', () => setTimeout(startProtectLabels, 0))

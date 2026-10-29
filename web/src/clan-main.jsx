@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ChestSummaryPage from './pages/ChestSummaryPage.jsx'
 import PublicAncientsPage from './pages/PublicAncientsPage.jsx'
 import { setNeutralMode } from './api.js'
+import { startProtectLabels } from './lib/protectLabels.js'
 import './styles/theme.css'
 import './styles/mobile.css'
 
@@ -23,3 +24,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>
 )
+
+// после гидратации, чтобы атрибуты не расходились с серверной разметкой
+window.addEventListener('load', () => setTimeout(startProtectLabels, 0))
