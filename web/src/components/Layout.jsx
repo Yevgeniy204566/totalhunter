@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
 import { clearToken } from '../auth.js'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
+import { useNavLabels, LABEL_LANGS } from '../i18n/navLabels.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
 import { DASHBOARD as D_EN } from '../dashboard_content.en.js'
 
@@ -35,7 +36,8 @@ export default function Layout() {
   const [credits, setCredits] = useState(null)
   const { lang, toggle } = useLang()
   const D = lang === 'ru' ? D_RU : D_EN
-  const NAV = NAV_KEYS.map(n => ({ ...n, label: D.nav[n.key] }))
+  const { code: labelCode, labels, choose: chooseLabelLang } = useNavLabels()
+  const NAV = NAV_KEYS.map(n => ({ ...n, label: labels[n.key] || D.nav[n.key] }))
 
   useEffect(() => {
     api.me().then(d => setCredits(d.credits)).catch(() => {})
@@ -145,7 +147,11 @@ export default function Layout() {
             <img src="/img/discord.png" alt="Discord" width="18" height="18" style={{ objectFit: 'contain' }} />
           </a>
           <button className="header-btn" onClick={toggle}>{lang.toUpperCase()}</button>
-          <button className="header-btn header-btn--logout" onClick={logout}>{D.nav.logout}</button>
+          <select className="header-btn" value={labelCode} onChange={e => chooseLabelLang(e.target.value)}
+            aria-label="Menu language" translate="no" style={{ maxWidth: 110 }}>
+            {LABEL_LANGS.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
+          </select>
+          <button className="header-btn header-btn--logout" onClick={logout}>{labels.logout}</button>
         </div>
       </header>
 
@@ -173,7 +179,7 @@ export default function Layout() {
         <div style={{ flex: 1 }} />
         <a href="/guide" className="nav-item">
           <span className="nav-icon" style={{ fontSize: 14 }}>📖</span>
-          {D.nav.guide}
+          {labels.guide}
         </a>
       </nav>
 
