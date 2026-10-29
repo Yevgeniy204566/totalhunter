@@ -98,6 +98,16 @@ function Screenshot3D({ src, alt, rotY, rotX, glowColor, extraStyle = {} }) {
 // Только факты о том, что страница клана показывает на самом деле; без внутренних сокращений (EMC) — игрок их не знает.
 function ChestAccounting({ lang }) {
   const en = lang === 'en'
+  // 0 — закрыто, 1 — по размеру экрана, 2 — натуральный размер с прокруткой
+  const [zoom, setZoom] = useState(0)
+  useEffect(() => {
+    if (!zoom) return
+    const onKey = e => { if (e.key === 'Escape') setZoom(0) }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+  }, [zoom])
   const items = en ? [
     { title: 'All clan chests counted',
       desc: 'Crypts, citadels, epic monster chests and every other type: how many each player has opened.' },
@@ -143,15 +153,30 @@ function ChestAccounting({ lang }) {
           </ul>
         </div>
         <div className="cq-frame-wrap">
-          <div className="cq-frame">
+          <button type="button" className="cq-frame" onClick={() => setZoom(1)}
+            aria-label={en ? 'Enlarge the image' : 'Увеличить картинку'}>
             <img
               src="/img/chest-accounting.png" width="1810" height="1441" loading="lazy"
               alt={en ? 'Public clan table: chest counts, season goal progress bars and Hero levels'
                       : 'Публичная таблица клана: сундуки игроков, полосы выполнения целей сезона и уровни Героев'}
             />
-          </div>
+          </button>
+          <p className="cq-zoom-hint">{en ? 'Click the image to enlarge' : 'Нажмите на картинку, чтобы увеличить'}</p>
         </div>
       </div>
+      {zoom > 0 && (
+        <div className="cq-lightbox" role="dialog" aria-modal="true" onClick={() => setZoom(0)}>
+          <button type="button" className="cq-lightbox-close" onClick={() => setZoom(0)}
+            aria-label={en ? 'Close' : 'Закрыть'}>✕</button>
+          <div className={'cq-lightbox-scroll' + (zoom === 2 ? ' is-full' : '')}>
+            <img
+              src="/img/chest-accounting.png" alt=""
+              className={zoom === 2 ? 'is-full' : ''}
+              onClick={e => { e.stopPropagation(); setZoom(z => (z === 1 ? 2 : 1)) }}
+            />
+          </div>
+        </div>
+      )}
     </section>
   )
 }
