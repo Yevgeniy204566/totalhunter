@@ -308,7 +308,9 @@
   .public-table td { font-size: 8px !important; padding: 5px 6px !important; }
   /* Имена игроков крупнее чисел (владелец 2026-10-24): база имени 11px при числах 8px. Размеры в ячейках
      «Очки/Склепы/EM» заданы прямо в разметке (14/12/16px) — перебиваем, иначе числа выходили крупнее имён. */
-  .public-table { --public-name-base: 11px; }
+  .public-table { --public-name-base: 8px; }
+  /* Имена того же размера, что и цифры (владелец 2026-10-30): рост имени за очки задан инлайном — перебиваем только шрифт, размеры ячеек не трогаем. */
+  .public-table .public-name-plain, .public-table .public-name-shimmer, .public-table .public-name-legendary { font-size: 8px !important; }
   .public-table .public-bar-top, .public-table .public-bar-pct,
   .public-table .public-epic-cell div, .public-table .public-points-cell div { font-size: 8px !important; }
   /* Зум пальцами не блокируем (владелец 2026-10-24) */
