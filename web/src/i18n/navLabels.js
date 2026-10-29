@@ -1,8 +1,9 @@
 // Словарь подписей меню кабинета на 19 языках бота. Chrome переводит одиночные слова без контекста и ломает
 // термины («Сундуки» → «грудль»), поэтому меню переводим сами, а длинные тексты оставляем автопереводу.
 // Игровые термины (биржи, сундуки, рефералы, древний) взяты из LANGS в main.py бота — названия на сайте и в боте совпадают.
-import { useState, useEffect } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useLang } from '../lang.js'
+import { getLabelCode, chooseLabelLang, subscribeLabelLang } from './labelStore.js'
 
 export const LABEL_LANGS = [
   ['ru', 'Русский'], ['en', 'English'], ['uk', 'Українська'], ['de', 'Deutsch'], ['es', 'Español'],
@@ -14,10 +15,10 @@ export const LABEL_LANGS = [
 // roy — страница «Биржи» (пул найденных бирж), в боте это tab_hunt
 export const NAV_LABELS = {
   ru: { profile: 'Профиль', balance: 'Баланс', hunts: 'Охоты', referrals: 'Рефералы', devices: 'Устройства', transactions: 'Транзакции', feedback: 'Идеи', roy: 'Биржи', chests: 'Сундуки', ancients: 'Древний', guide: 'Гайд', logout: 'Выйти' },
-  en: { profile: 'Profile', balance: 'Balance', hunts: 'Hunts', referrals: 'Referrals', devices: 'Devices', transactions: 'Transactions', feedback: 'Ideas', roy: 'Exchanges', chests: 'Chests', ancients: 'Ancient', guide: 'Guide', logout: 'Log out' },
+  en: { profile: 'Profile', balance: 'Balance', hunts: 'Hunts', referrals: 'Referrals', devices: 'Devices', transactions: 'Transactions', feedback: 'Feedback', roy: 'Exchanges', chests: 'Chests', ancients: 'Ancient', guide: 'Guide', logout: 'Logout' },
   uk: { profile: 'Профіль', balance: 'Баланс', hunts: 'Полювання', referrals: 'Реферали', devices: 'Пристрої', transactions: 'Транзакції', feedback: 'Ідеї', roy: 'Біржі', chests: 'Скрині', ancients: 'Давній', guide: 'Гайд', logout: 'Вийти' },
   de: { profile: 'Profil', balance: 'Guthaben', hunts: 'Jagden', referrals: 'Partner', devices: 'Geräte', transactions: 'Transaktionen', feedback: 'Ideen', roy: 'Börsen', chests: 'Truhen', ancients: 'Uralter', guide: 'Anleitung', logout: 'Abmelden' },
-  es: { profile: 'Perfil', balance: 'Saldo', hunts: 'Cacerías', referrals: 'Referidos', devices: 'Dispositivos', transactions: 'Transacciones', feedback: 'Ideas', roy: 'Bolsas', chests: 'Cofres', ancients: 'Antiguo', guide: 'Guía', logout: 'Salir' },
+  es: { profile: 'Perfil', balance: 'Saldo', hunts: 'Cacerías', referrals: 'Referidos', devices: 'Dispositivos', transactions: 'Transacciones', feedback: 'Feedback', roy: 'Bolsas', chests: 'Cofres', ancients: 'Antiguo', guide: 'Guía', logout: 'Salir' },
   fr: { profile: 'Profil', balance: 'Solde', hunts: 'Chasses', referrals: 'Parrainages', devices: 'Appareils', transactions: 'Transactions', feedback: 'Idées', roy: 'Échanges', chests: 'Coffres', ancients: 'Ancien', guide: 'Guide', logout: 'Déconnexion' },
   it: { profile: 'Profilo', balance: 'Saldo', hunts: 'Cacce', referrals: 'Referral', devices: 'Dispositivi', transactions: 'Transazioni', feedback: 'Idee', roy: 'Borse', chests: 'Scrigni', ancients: 'Antico', guide: 'Guida', logout: 'Esci' },
   nl: { profile: 'Profiel', balance: 'Saldo', hunts: 'Jachten', referrals: 'Refs', devices: 'Apparaten', transactions: 'Transacties', feedback: 'Ideeën', roy: 'Beurzen', chests: 'Kisten', ancients: 'Aloude', guide: 'Gids', logout: 'Uitloggen' },
@@ -34,31 +35,10 @@ export const NAV_LABELS = {
   id: { profile: 'Profil', balance: 'Saldo', hunts: 'Perburuan', referrals: 'Referral', devices: 'Perangkat', transactions: 'Transaksi', feedback: 'Ide', roy: 'Bursa', chests: 'Peti', ancients: 'Kuno', guide: 'Panduan', logout: 'Keluar' },
 }
 
-const STORE_KEY = 'th_label_lang'
-
-// Язык браузера → код словаря; нет в словаре — undefined (останутся подписи языка сайта)
-export function detectLabelLang() {
-  const raw = (typeof navigator !== 'undefined' ? navigator.language || '' : '').toLowerCase().replace('-', '_')
-  if (/^zh_(tw|hk|mo|hant)/.test(raw)) return 'zh_tw'
-  const base = raw.split('_')[0]
-  if (base === 'nb' || base === 'nn') return 'no'
-  return NAV_LABELS[base] ? base : undefined
-}
-
-function readStored() {
-  try { const v = localStorage.getItem(STORE_KEY); return v && NAV_LABELS[v] ? v : undefined } catch { return undefined }
-}
-
-// Язык подписей меню: выбор игрока → язык браузера → язык сайта (ru/en)
+// Язык подписей: выбор игрока → язык браузера (если не ru/en) → язык сайта (кнопка RU/EN)
 export function useNavLabels() {
   const { lang } = useLang()
-  const [chosen, setChosen] = useState(readStored)
-  const [auto, setAuto] = useState(undefined)
-  useEffect(() => { setAuto(detectLabelLang()) }, [])
-  const code = chosen || auto || lang
-  function choose(v) {
-    setChosen(v)
-    try { localStorage.setItem(STORE_KEY, v) } catch { /* без хранилища выбор живёт до перезагрузки */ }
-  }
-  return { code, labels: NAV_LABELS[code] || NAV_LABELS.en, choose }
+  const stored = useSyncExternalStore(subscribeLabelLang, getLabelCode, () => undefined)
+  const code = stored || lang
+  return { code, labels: NAV_LABELS[code] || NAV_LABELS.en, choose: chooseLabelLang }
 }
