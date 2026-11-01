@@ -65,6 +65,7 @@ export const api = {
   dashboardChestsSeason: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/season`, payload),
   dashboardChestsLeader: (slug, payload) => request('PATCH', `/web/dashboard/chests/${slug}/leader`, payload),
   dashboardChestsPresets: ()            => request('GET',   '/web/dashboard/chests/presets'),
+  dashboardChestsNamePool: (slug) => request('GET', `/web/dashboard/chests/${slug}/name-pool`),
   dashboardChestsHistory: (slug) => request('GET', `/web/dashboard/chests/${slug}/history`),
   dashboardChestsStatsCsv: async (slug) => {
     const res = await fetch(`${BASE}/web/dashboard/chests/${slug}/stats.csv`, {

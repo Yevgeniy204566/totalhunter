@@ -7,6 +7,7 @@ import { useMeta } from '../hooks/useMeta.js'
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import ChestGuide from '../components/ChestGuide.jsx'
 import MixerTab from '../components/MixerTab.jsx'
+import { suggestNames } from '../lib/nameSuggest.js'
 import { DEFAULT_SETTINGS } from '../lib/emcQuota.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
@@ -281,6 +282,7 @@ export default function ChestsPage() {
   })
   const [rowsByCollector, setRowsByCollector] = useState({})
   const [playerRowsByCollector, setPlayerRowsByCollector] = useState({})
+  const [namePoolByCollector, setNamePoolByCollector] = useState({})
   const [activeTabByCollector, setActiveTabByCollector] = useState({})
   const [seasonByCollector, setSeasonByCollector] = useState({})
   // подпись сохранённых настроек пульта — по ней видно, есть ли несохранённые изменения
@@ -356,6 +358,12 @@ export default function ChestsPage() {
         return next
       })
       setPlayerRowsByCollector(nextPlayerRows)
+      // пул правильных имён для подсказок — не критичен, ошибка не должна ломать кабинет
+      for (const c of data.collectors) {
+        api.dashboardChestsNamePool(c.slug)
+          .then(p => setNamePoolByCollector(prev => ({ ...prev, [c.slug]: p.names || [] })))
+          .catch(() => {})
+      }
       setSeasonByCollector(nextSeason)
       setSavedSigByCollector(Object.fromEntries(Object.entries(nextSeason).map(([k, v]) => [k, mixerSig(v)])))
       setLeaderByCollector(nextLeader)
@@ -1094,6 +1102,19 @@ export default function ChestsPage() {
                           style={{ minWidth: 240 }}
                           onChange={e => updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}
                         />
+                        {(() => {
+                          const sugg = suggestNames(row.raw_name || row.canonical_name,
+                            namePoolByCollector[collector.slug]).filter(n => n !== row.canonical_name)
+                          if (!sugg.length) return null
+                          return (
+                            <select className="input-dark" value="" style={{ marginLeft: 6, width: 150 }}
+                              aria-label={cx.nameSuggest}
+                              onChange={e => e.target.value && updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}>
+                              <option value="">{cx.nameSuggest}</option>
+                              {sugg.map(n => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                          )
+                        })()}
                       </td>
                       <td>
                         <select

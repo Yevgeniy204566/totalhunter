@@ -121,6 +121,7 @@ export const DASHBOARD = {
     playerCanonicalCol: 'Правильное имя',
     addPlayerRow: 'Добавить игрока вручную',
     savePlayerAliases: 'Сохранить имена',
+    nameSuggest: 'Похожие имена…',
     seasonTitle: 'Настройки сезона',
     timezoneLabel: 'Часовой пояс',
     periodStartLabel: 'Начало периода',

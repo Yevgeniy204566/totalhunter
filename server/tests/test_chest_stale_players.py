@@ -134,6 +134,24 @@ async def test_rename_to_name_that_is_only_in_dictionary_is_saved(db_session):
 
 
 @pytest.mark.asyncio
+async def test_name_pool_has_alias_and_past_season_names(db_session):
+    from models import ChestSeasonHistory
+    user, token, c = await _setup(db_session)
+    now = datetime.now(timezone.utc)
+    db_session.add_all([
+        PlayerAlias(collector_id=c.id, raw_name="ККАКЕМ", canonical_name="КRАКЕN"),
+        ChestSeasonHistory(collector_id=c.id, period_start=now - timedelta(days=30), period_end=now - timedelta(days=15),
+                           summary_json={"players": [{"name": "Megin Two"}, {"name": "Finda"}]}),
+    ])
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.get(f"/web/dashboard/chests/{c.slug}/name-pool",
+                             headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    assert set(r.json()["names"]) == {"КRАКЕN", "Megin Two", "Finda"}
+
+
+@pytest.mark.asyncio
 async def test_no_uploads_for_weeks_table_does_not_go_empty(db_session):
     # бот не заливал давно: все сундуки старые — таблица остаётся полной (отсчёт от последнего сундука клана)
     _, _, c = await _setup(db_session)

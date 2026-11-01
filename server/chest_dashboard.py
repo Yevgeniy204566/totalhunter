@@ -1090,6 +1090,28 @@ async def get_dashboard_history(slug: str, user: User = Depends(get_web_user),
     return {"seasons": await build_history_list(db, collector.id)}
 
 
+@router.get("/{slug}/name-pool")
+async def get_name_pool(slug: str, user: User = Depends(get_web_user),
+                        db: AsyncSession = Depends(get_db)):
+    """Правильные имена клана для подсказок в списке «Игроки»: исправленные имена из словаря и все имена
+    из архива закрытых сезонов. Подсказка только предлагает — подставляет имя человек."""
+    collector, _ = await _get_collector_access(db, slug, user)
+    names: set[str] = set()
+    for n in (await db.execute(
+        select(PlayerAlias.canonical_name).where(PlayerAlias.collector_id == collector.id)
+    )).scalars().all():
+        if n and n.strip():
+            names.add(n.strip())
+    for summary in (await db.execute(
+        select(ChestSeasonHistory.summary_json).where(ChestSeasonHistory.collector_id == collector.id)
+    )).scalars().all():
+        for p in (summary or {}).get("players", []):
+            n = (p.get("name") or "").strip()
+            if n:
+                names.add(n)
+    return {"names": sorted(names, key=str.lower)}
+
+
 @router.get("/{slug}/history/{season_id}")
 async def get_dashboard_history_detail(slug: str, season_id: int,
                                        user: User = Depends(get_web_user),
