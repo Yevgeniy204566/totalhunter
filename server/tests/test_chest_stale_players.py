@@ -103,6 +103,37 @@ async def test_cabinet_players_list_hides_stale_but_saving_keeps_their_profile(d
 
 
 @pytest.mark.asyncio
+async def test_rename_to_name_that_is_only_in_dictionary_is_saved(db_session):
+    # Живой случай 2026-11-01: «Мест Two» → «Megin Two». Правильное имя уже было в словаре
+    # (чужой алиас без сундуков) и считалось скрытым, а сохранение молча выкидывало строку.
+    user, token, c = await _setup(db_session)
+    db_session.add_all([
+        _chest(c, "Fresh", 1), _chest(c, "Мест Two", 1),
+        PlayerAlias(collector_id=c.id, raw_name="Megin Tvvo", canonical_name="Megin Two"),
+        PlayerProfile(collector_id=c.id, canonical_name="Megin Two", rank="Офицер"),
+    ])
+    await db_session.commit()
+    auth = {"Authorization": f"Bearer {token}"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post("/web/dashboard/chests/player-aliases", headers=auth,
+                              json={"collector_slug": c.slug, "rows": [
+                                  {"raw_name": "Fresh", "canonical_name": "Fresh"},
+                                  {"raw_name": "Мест Two", "canonical_name": "Megin Two"}]})
+        assert r.status_code == 200
+        r = await client.post("/web/dashboard/chests/player-profiles", headers=auth,
+                              json={"collector_slug": c.slug, "rows": [
+                                  {"canonical_name": "Fresh"},
+                                  {"canonical_name": "Megin Two", "rank": "Лидер"}]})
+        assert r.status_code == 200
+    by_raw = {a.raw_name: a.canonical_name for a in (await db_session.execute(
+        select(PlayerAlias).where(PlayerAlias.collector_id == c.id))).scalars().all()}
+    assert by_raw["Мест Two"] == "Megin Two"
+    prof = (await db_session.execute(select(PlayerProfile).where(
+        PlayerProfile.collector_id == c.id, PlayerProfile.canonical_name == "Megin Two"))).scalars().all()
+    assert len(prof) == 1 and prof[0].rank == "Лидер"
+
+
+@pytest.mark.asyncio
 async def test_no_uploads_for_weeks_table_does_not_go_empty(db_session):
     # бот не заливал давно: все сундуки старые — таблица остаётся полной (отсчёт от последнего сундука клана)
     _, _, c = await _setup(db_session)

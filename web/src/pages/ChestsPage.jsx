@@ -1055,6 +1055,9 @@ export default function ChestsPage() {
               })
             return (
             <div style={{ overflowX: 'auto' }}>
+              <button className="chest-pill-btn chest-pill-btn--primary chest-save-float" onClick={() => savePlayerAliases(collector.slug)}>
+                {cx.savePlayerAliases}
+              </button>
               <div style={{ marginBottom: 8, textAlign: 'right' }}>
                 <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => savePlayerAliases(collector.slug)}>
                   {cx.savePlayerAliases}

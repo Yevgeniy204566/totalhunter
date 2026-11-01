@@ -15,7 +15,7 @@ from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail, purge_collector
@@ -528,14 +528,21 @@ async def post_player_aliases(payload: PlayerAliasesPayload, user: User = Depend
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
     # скрытые вручную и скрытые за 7 дней без сундуков в списке кабинета не видны — их записи не трогаем
-    hidden = list(set(collector.hidden_players or []) | await stale_player_names(db, collector))
-    await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector.id,
-                                               PlayerAlias.canonical_name.notin_(hidden)))
+    # Имя, которое владелец ввёл сейчас, не «скрытое»: правильное написание часто уже лежит в словаре
+    # без сундуков (считается устаревшим) — раньше такая правка молча выбрасывалась (Мест Two → Megin Two).
+    submitted = {(r.canonical_name or "").strip() for r in payload.rows}
+    hidden = list((set(collector.hidden_players or []) | await stale_player_names(db, collector)) - submitted)
+    submitted_raw = [r.raw_name for r in payload.rows]
+    await db.execute(delete(PlayerAlias).where(
+        PlayerAlias.collector_id == collector.id,
+        or_(PlayerAlias.canonical_name.notin_(hidden), PlayerAlias.raw_name.in_(submitted_raw))))
 
+    seen_raw: set[str] = set()
     for row in payload.rows:
         canonical = (row.canonical_name or "").strip()
-        if not canonical or canonical in hidden:
+        if not canonical or row.raw_name in seen_raw:
             continue
+        seen_raw.add(row.raw_name)
         db.add(PlayerAlias(collector_id=collector.id, raw_name=row.raw_name,
                            canonical_name=canonical))
 
@@ -563,7 +570,9 @@ async def post_player_profiles(payload: PlayerProfilesPayload,
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
     # скрытые вручную и скрытые за 7 дней без сундуков в списке кабинета не видны — их записи не трогаем
-    hidden = list(set(collector.hidden_players or []) | await stale_player_names(db, collector))
+    # то же, что в player-aliases: вводимое сейчас имя не считается скрытым
+    submitted = {(r.canonical_name or "").strip() for r in payload.rows}
+    hidden = list((set(collector.hidden_players or []) | await stale_player_names(db, collector)) - submitted)
     await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id,
                                                  PlayerProfile.canonical_name.notin_(hidden)))
 
