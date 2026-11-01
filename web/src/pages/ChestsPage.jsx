@@ -895,7 +895,7 @@ export default function ChestsPage() {
               </button>
             ))}
           </div>
-          <div className="chest-tabs">
+          <div className="chest-tabs chest-tabs--center">
             <button className={`chest-tab ${activeTab(collector.slug) === 'players' ? 'chest-tab--active' : ''}`}
               onClick={() => setTab(collector.slug, 'players')}>{cx.playersTab}</button>
             <button className={`chest-tab ${activeTab(collector.slug) === 'history' ? 'chest-tab--active' : ''}`}

@@ -351,6 +351,11 @@ a:hover { color: var(--on-surface); }
 }
 .chest-tab:hover { color: var(--on-surface); }
 .chest-tab--active { color: var(--on-surface); border-bottom-color: var(--accent); }
+/* Вкладки кабинета «Игроки / История»: по центру под блоками норм, крупнее и чуть светлее */
+.chest-tabs--center { justify-content: center; gap: 12px; margin-top: 8px; }
+.chest-tabs--center .chest-tab { font-size: 20px; padding: 12px 32px; color: #c8cde0; }
+.chest-tabs--center .chest-tab:hover { color: #ffffff; }
+.chest-tabs--center .chest-tab--active { color: #ffffff; border-bottom-width: 3px; }
 
 .chest-table { width: 100%; border-collapse: collapse; }
 .chest-table th {
