@@ -1088,6 +1088,7 @@ export default function ChestsPage() {
                         <input
                           className="input-dark"
                           value={row.canonical_name || ''}
+                          style={{ minWidth: 240 }}
                           onChange={e => updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}
                         />
                       </td>

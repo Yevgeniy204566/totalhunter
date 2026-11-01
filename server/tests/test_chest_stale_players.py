@@ -111,3 +111,27 @@ async def test_no_uploads_for_weeks_table_does_not_go_empty(db_session):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         r = await client.get(f"/api/v1/chests/summary/{c.slug}")
     assert _names(r) == {"A", "B"}   # Lag отстал от последнего сундука клана больше чем на 7 дней
+
+
+@pytest.mark.asyncio
+async def test_player_who_returns_within_season_keeps_all_his_chests(db_session):
+    # пропал на 10 дней, потом вернулся: в таблице ВСЕ его сундуки сезона, включая до перерыва
+    _, _, c = await _setup(db_session)
+    c.period_start = datetime.now(timezone.utc) - timedelta(days=40)
+    db_session.add_all([_chest(c, "Back", 30), _chest(c, "Back", 29), _chest(c, "Back", 0.2),
+                        _chest(c, "Steady", 0.5)])
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.get(f"/api/v1/chests/summary/{c.slug}")
+    back = next(p for p in r.json()["players"] if p["name"] == "Back")
+    assert back["total"] == 3, back
+
+
+@pytest.mark.asyncio
+async def test_player_absent_5_days_still_shown_absent_10_days_hidden_until_return(db_session):
+    _, _, c = await _setup(db_session)
+    db_session.add_all([_chest(c, "Gap5", 5), _chest(c, "Gap10", 10), _chest(c, "Steady", 0.1)])
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.get(f"/api/v1/chests/summary/{c.slug}")
+    assert _names(r) == {"Gap5", "Steady"}
