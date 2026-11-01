@@ -304,13 +304,13 @@
   .public-table td.public-bar-cell { min-width: 150px !important; }
 
   /* Меньший шрифт ячеек — больше колонок видно без скролла */
-  .public-table th,
-  .public-table td { font-size: 8px !important; padding: 5px 6px !important; }
-  /* Имена игроков крупнее чисел (владелец 2026-10-24): база имени 11px при числах 8px. Размеры в ячейках
+  .public-table th { font-size: 8px !important; padding: 5px 6px !important; }
+  .public-table td { font-size: 9px !important; padding: 5px 6px !important; }
+  /* Имена игроков крупнее чисел (владелец 2026-11-01): база имени 12px при числах 9px (было 11/8). Размеры в ячейках
      «Очки/Склепы/EM» заданы прямо в разметке (14/12/16px) — перебиваем, иначе числа выходили крупнее имён. */
-  .public-table { --public-name-base: 11px; }
+  .public-table { --public-name-base: 12px; }
   .public-table .public-bar-top, .public-table .public-bar-pct,
-  .public-table .public-epic-cell div, .public-table .public-points-cell div { font-size: 8px !important; }
+  .public-table .public-epic-cell div, .public-table .public-points-cell div { font-size: 9px !important; }
   /* Зум пальцами не блокируем (владелец 2026-10-24) */
   .public-table-wrap { touch-action: pan-x pan-y pinch-zoom; }
 
