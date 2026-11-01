@@ -300,9 +300,12 @@ export default function ChestSummaryPage({ neutral = false }) {
         {hasSeasonTargets && data.period_end && (
           <CountdownTimer periodEnd={data.period_end} offsetMinutes={data.timezone_offset_minutes ?? 0} t={t} />
         )}
+        {/* «Последнее обновление» — такая же плашка, как остальные в этой строке (владелец 2026-11-02) */}
+        <span className="public-season-badge">
+          {t.updated}: <b translate="no" className="public-target-num notranslate">{updatedLabel}</b>
+        </span>
       </div>
 
-      <div className="public-summary-updated">{t.updated}: <span className="public-summary-updated-time notranslate" translate="no">{updatedLabel}</span></div>
       <div className="public-summary-divider" />
 
       <div className="chest-tabs chest-tabs--pill">
