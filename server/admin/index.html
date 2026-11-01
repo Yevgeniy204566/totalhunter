@@ -1044,7 +1044,10 @@
                     <template x-for="r in g.rows" :key="r.collector_id">
                       <tr>
                         <td></td>
-                        <td style="font-weight:600;padding-left:18px" x-text="r.clan"></td>
+                        <td style="font-weight:600;padding-left:18px">
+                          <span x-text="r.clan"></span>
+                          <a :href="r.public_url" target="_blank" rel="noopener" title="Публичная страница клана" style="margin-left:8px;font-size:12px;font-weight:400">🔗 открыть</a>
+                        </td>
                         <td x-text="r.kingdom"></td>
                         <td style="color:var(--green)" x-text="r.today"></td>
                         <td style="color:var(--accent)" x-text="r.week"></td>

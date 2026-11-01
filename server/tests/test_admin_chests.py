@@ -132,3 +132,13 @@ async def test_endpoint_requires_admin_and_returns_report(db_session):
     assert denied.status_code in (401, 403)
     assert ok.status_code == 200 and {"rows", "totals", "today_from", "week_from"} <= set(ok.json())
     assert bad.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_roster_row_has_public_page_url(db_session):
+    # владелец смотрит из админки, как клан ведёт учёт: ссылка на публичную страницу в каждой строке
+    owner = await _user(db_session, "link@example.com")
+    await _roster(db_session, owner, "229", "Eldorado", [NOW - timedelta(days=1)])
+    await db_session.commit()
+    row = (await rosters_report(db_session, now=NOW, q="Eldorado"))["rows"][0]
+    assert row["public_url"] == "https://total-hunter.com/c/229/eldorado"

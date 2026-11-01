@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chest_slug import public_url
 from models import Chest, ChestCollector, User
 
 ADMIN_TZ = ZoneInfo("Europe/Kyiv")  # «сегодня» = календарные сутки владельца (владелец 2026-10-23)
@@ -39,7 +40,7 @@ async def rosters_report(db: AsyncSession, *, now: datetime | None = None, q: st
 
     query = (
         select(ChestCollector.id, ChestCollector.kingdom, ChestCollector.clan, ChestCollector.slug,
-               User.id, User.email, User.hwid, User.game_nick, today_n, week_n, total_n, last_at)
+               ChestCollector.custom_slug, User.id, User.email, User.hwid, User.game_nick, today_n, week_n, total_n, last_at)
         .join(User, User.id == ChestCollector.user_id)
         .outerjoin(Chest, Chest.collector_id == ChestCollector.id)
         .group_by(ChestCollector.id, User.id)
@@ -52,11 +53,12 @@ async def rosters_report(db: AsyncSession, *, now: datetime | None = None, q: st
                                 func.lower(ChestCollector.kingdom).like(like)))
 
     rows = [
-        {"collector_id": cid, "kingdom": kingdom, "clan": clan, "slug": slug, "owner_id": uid,
+        {"collector_id": cid, "kingdom": kingdom, "clan": clan, "slug": slug,
+         "public_url": public_url(kingdom, clan, custom_slug, slug), "owner_id": uid,
          "owner_email": email, "owner_hwid": hwid, "owner_nick": nick,
          "today": int(t or 0), "week": int(w or 0), "total": int(tot or 0),
          "last_upload_at": _iso(last)}
-        for cid, kingdom, clan, slug, uid, email, hwid, nick, t, w, tot, last in (await db.execute(query)).all()
+        for cid, kingdom, clan, slug, custom_slug, uid, email, hwid, nick, t, w, tot, last in (await db.execute(query)).all()
     ]
 
     key = {"today": lambda r: r["today"], "week": lambda r: r["week"], "total": lambda r: r["total"],
