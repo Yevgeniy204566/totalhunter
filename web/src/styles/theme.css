@@ -351,11 +351,14 @@ a:hover { color: var(--on-surface); }
 }
 .chest-tab:hover { color: var(--on-surface); }
 .chest-tab--active { color: var(--on-surface); border-bottom-color: var(--accent); }
-/* Вкладки кабинета «Игроки / История»: по центру под блоками норм, крупнее и чуть светлее */
-.chest-tabs--center { justify-content: center; gap: 12px; margin-top: 8px; }
-.chest-tabs--center .chest-tab { font-size: 20px; padding: 12px 32px; color: #c8cde0; }
-.chest-tabs--center .chest-tab:hover { color: #ffffff; }
-.chest-tabs--center .chest-tab--active { color: #ffffff; border-bottom-width: 3px; }
+/* Вкладки кабинета «Игроки / История»: по центру под блоками норм, крупные кнопки;
+   активная — яркая заливка, неактивные — кнопки с рамкой */
+.chest-tabs--center { justify-content: center; gap: 12px; margin-top: 8px; border-bottom: none; }
+.chest-tabs--center .chest-tab { font-size: 20px; padding: 12px 36px; color: #dfe3f2; border: 1px solid var(--outline) !important;
+  border-radius: 12px; background: var(--elevated); box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.chest-tabs--center .chest-tab:hover { color: #ffffff; border-color: var(--accent) !important; background: var(--accent-faint); }
+.chest-tabs--center .chest-tab--active { color: #ffffff; background: var(--accent); border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow), 0 3px 10px rgba(0,0,0,.45); }
 
 .chest-table { width: 100%; border-collapse: collapse; }
 .chest-table th {
