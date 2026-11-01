@@ -1095,7 +1095,7 @@ export default function ChestsPage() {
                     <tr>
                       <td>{idx + 1}</td>
                       <td>{row.raw_name || '—'}</td>
-                      <td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
                         <input
                           className="input-dark"
                           value={row.canonical_name || ''}
@@ -1107,7 +1107,9 @@ export default function ChestsPage() {
                             namePoolByCollector[collector.slug]).filter(n => n !== row.canonical_name)
                           if (!sugg.length) return null
                           return (
-                            <select className="input-dark" value="" style={{ marginLeft: 6, width: 150 }}
+                            <select className="input-dark" value=""
+                              style={{ marginLeft: 6, width: 150, verticalAlign: 'middle',
+                                       background: 'rgba(166,227,161,.14)', borderColor: 'rgba(166,227,161,.5)', color: '#c5ecc1' }}
                               aria-label={cx.nameSuggest}
                               onChange={e => e.target.value && updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}>
                               <option value="">{cx.nameSuggest}</option>
