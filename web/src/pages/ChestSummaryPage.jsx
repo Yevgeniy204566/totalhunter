@@ -4,6 +4,7 @@ import { fetchChestSummary, fetchChestByKingdomSlug, fetchChestHistory, fetchChe
 import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import EmcQuotaPublic from '../components/EmcQuotaPublic.jsx'
 import HeroPointsPublic from '../components/HeroPointsPublic.jsx'
+import { useQuotaLabel } from '../lib/quotaLabel.js'
 
 // Публичная таблица: RU/EN со своим переключателем (владелец 2026-09-26). Адрес /c/... не
 // несёт язык, поэтому общий useLang тут всегда дал бы 'en'. Остальные языки — переводчик
@@ -129,6 +130,7 @@ export default function ChestSummaryPage({ neutral = false }) {
   const [seasonDetail, setSeasonDetail] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [lang, setLang] = useState(initialLang)
+  const qLabel = useQuotaLabel(lang)
   const navigate = useNavigate()
   // Открыли по «сырому» адресу (/c/229/Феникс → %D0%A4...) или старому /chests/{slug} —
   // показываем в адресной строке читаемую ссылку с сервера (/c/229/feniks).
@@ -199,7 +201,7 @@ export default function ChestSummaryPage({ neutral = false }) {
     ...(targets.points != null ? [{ key: 'points', value: targets.points, after: ` ${t.pointsWord}` }] : []),
     ...(Array.isArray(targets.quotas)
       ? targets.quotas.filter(q => q.target != null)
-          .map(q => ({ key: `q${q.slot}`, before: `${q.name}: `, value: q.target }))
+          .map(q => ({ key: `q${q.slot}`, before: `${qLabel(q.name)}: `, value: q.target }))
       : (targets.chests != null ? [{ key: 'legacy', before: 'Epic: ', value: targets.chests }] : [])),
   ]
   const hasSeasonTargets = targetParts.length > 0

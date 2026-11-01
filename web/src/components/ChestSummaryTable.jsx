@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { barColor, barFillColor } from '../lib/progressColor.js'
 import { orderChestTypes } from '../lib/chestTypeOrder.js'
+import { useQuotaLabel } from '../lib/quotaLabel.js'
 import {
   scoreOf, normAt, epicCountTotal, epicCryptsOf, emcQuotaTotal, DEFAULT_HERO,
 } from '../lib/heroQuota.js'
@@ -423,6 +424,7 @@ const TABLE_TXT = {
 
 export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
+  const qLabel = useQuotaLabel(lang)
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta), [targets, tt.epic, chestTypeMeta])
   const typeMeta = chestTypeMeta
   const orderedTypes = useMemo(() => orderChestTypes(chestTypes, chestTypeMeta), [chestTypes, chestTypeMeta])
@@ -611,7 +613,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                     <div className="public-main-head">
                       <span className="public-sortable" title={tt.sortAbs} onClick={() => toggleSort(c.key, 'abs')}>
                         <MainIcon kind={c.icon} />
-                        <span translate="no" className="notranslate">{c.name}</span>{sortMark(c.key, 'abs')}
+                        <span translate="no" className="notranslate">{qLabel(c.name)}</span>{sortMark(c.key, 'abs')}
                       </span>
                       <span className="public-sortable public-main-abs" title={tt.sortPct} onClick={() => toggleSort(c.key, 'pct')}>
                         {tt.pctShort}{sortMark(c.key, 'pct')}
@@ -623,7 +625,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   <th className="public-sortable" onClick={() => toggleSort('points')}>{tt.points}{sortMark('points')}</th>
                   {quotaCols.map(c => (
                     <th key={c.key} className="public-epic-cell public-sortable" onClick={() => toggleSort(c.key)}>
-                      <span translate="no" className="notranslate">{c.name}</span>
+                      <span translate="no" className="notranslate">{qLabel(c.name)}</span>
                       {c.target != null && !c.personal && <span style={{ opacity: 0.6 }}> /{fmtNum(c.target)}</span>}
                       {sortMark(c.key)}
                     </th>
