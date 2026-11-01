@@ -276,7 +276,7 @@ async def get_chest_summary(slug: str, neutral: bool = False, db: AsyncSession =
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
 
-    rows = await query_summary_rows(db, collector, collector.period_start, collector.period_end)
+    rows = await query_summary_rows(db, collector, collector.period_start, collector.period_end, hide_stale=True)
 
     updated_at_query = select(func.max(Chest.collected_at)).where(
         Chest.collector_id == collector.id)
@@ -402,7 +402,7 @@ async def get_chest_by_kingdom_slug(kingdom: str, custom_slug: str, neutral: boo
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
 
-    rows = await query_summary_rows(db, collector, collector.period_start, collector.period_end)
+    rows = await query_summary_rows(db, collector, collector.period_start, collector.period_end, hide_stale=True)
 
     updated_at_query = select(func.max(Chest.collected_at)).where(
         Chest.collector_id == collector.id)

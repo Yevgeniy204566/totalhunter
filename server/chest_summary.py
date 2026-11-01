@@ -7,6 +7,8 @@ two may import from the other without creating a circular import, since
 chests.py needs chest_history.py's history endpoints helpers and
 chest_history.py needs this module's summary-building logic.
 """
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import Integer, and_, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -115,8 +117,38 @@ def pivot_summary(kingdom: str, clan: str, rows, *,
     }
 
 
+STALE_PLAYER_DAYS = 7
+
+
+async def stale_player_names(db: AsyncSession, collector: ChestCollector,
+                             days: int = STALE_PLAYER_DAYS) -> set:
+    """Канонические имена игроков, у которых последний сундук старше `days` дней (владелец 2026-11-01:
+    люди приходят и уходят, за всеми следить нельзя). Не удаление — имя вернётся с новым сундуком.
+    Смотрим все сундуки игрока, а не только текущий сезон; игроки без единого сундука не попадают.
+    Отсчёт — от последнего сундука клана: заливок не было — не скрывается никто."""
+    sender_expr = func.coalesce(PlayerAlias.canonical_name, Chest.sender_raw)
+    rows = (await db.execute(
+        select(sender_expr, func.max(Chest.collected_at))
+        .select_from(Chest)
+        .outerjoin(PlayerAlias, and_(PlayerAlias.collector_id == Chest.collector_id,
+                                     PlayerAlias.raw_name == Chest.sender_raw))
+        .where(Chest.collector_id == collector.id)
+        .group_by(sender_expr)
+    )).all()
+    def _aware(d):   # тестовая БД отдаёт naive, боевой PostgreSQL — aware
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    lasts = {name: _aware(last) for name, last in rows if last is not None}
+    if not lasts:
+        return set()
+    # Отсчёт от последнего сундука клана, а не от «сегодня» (владелец 2026-11-01): если бот неделю
+    # не заливал, таблица не пустеет — скрываются только отставшие от самых свежих игроков.
+    reference = min(max(lasts.values()), datetime.now(timezone.utc))
+    cutoff = reference - timedelta(days=days)
+    return {name for name, last in lasts.items() if last < cutoff}
+
+
 async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
-                             period_start, period_end):
+                             period_start, period_end, *, hide_stale: bool = False):
     sender_expr = func.coalesce(PlayerAlias.canonical_name, Chest.sender_raw)
     chest_type_expr = func.coalesce(ChestTypeAlias.catalog_id, Chest.chest_type_raw)
     display_expr = func.coalesce(ChestConfiguration.custom_name,
@@ -159,6 +191,8 @@ async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
     rows_query = rows_query.group_by(sender_expr, chest_type_expr, display_expr)
     rows = (await db.execute(rows_query)).all()
     hidden = set(collector.hidden_players or [])
+    if hide_stale:   # только живая публичная сводка: архивы и снимки сезонов остаются полными
+        hidden |= await stale_player_names(db, collector)
     # строка = (игрок по каноническому имени, тип, ...): скрытые игроки убираются целиком
     return [r for r in rows if r[0] not in hidden] if hidden else rows
 

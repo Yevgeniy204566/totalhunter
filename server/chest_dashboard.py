@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chest_history import build_history_list, build_history_detail, purge_collector
 from chest_slug import clan_to_slug, public_url
-from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of
+from chest_summary import enrich_with_profiles, pivot_summary, query_summary_rows, quota_slots_of, stale_player_names
 from database import get_db
 from models import (
     Chest, ChestCatalogReference, ChestCollector, ChestConfiguration, ChestLocalization,
@@ -245,9 +245,10 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
     profile_map = {p.canonical_name: p for p in profiles}
 
     hidden = set(collector.hidden_players or [])
+    stale = await stale_player_names(db, collector)   # 7 дней без сундуков — только прячем из списка
     rows = []
     for a in aliases:
-        if a.canonical_name in hidden:
+        if a.canonical_name in hidden or a.canonical_name in stale:
             continue
         profile = profile_map.get(a.canonical_name)
         rows.append({
@@ -267,7 +268,7 @@ async def _player_alias_rows(db: AsyncSession, collector: ChestCollector,
         if raw_name in mapped_raw_names:
             continue
         canonical = (global_alias_map or {}).get(raw_name)
-        if (canonical or raw_name) in hidden:
+        if (canonical or raw_name) in hidden or (canonical or raw_name) in stale or raw_name in stale:
             continue
         profile = profile_map.get(canonical or raw_name)
         rows.append({
@@ -526,7 +527,8 @@ async def post_player_aliases(payload: PlayerAliasesPayload, user: User = Depend
                               db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
-    hidden = list(collector.hidden_players or [])
+    # скрытые вручную и скрытые за 7 дней без сундуков в списке кабинета не видны — их записи не трогаем
+    hidden = list(set(collector.hidden_players or []) | await stale_player_names(db, collector))
     await db.execute(delete(PlayerAlias).where(PlayerAlias.collector_id == collector.id,
                                                PlayerAlias.canonical_name.notin_(hidden)))
 
@@ -560,7 +562,8 @@ async def post_player_profiles(payload: PlayerProfilesPayload,
                                db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
 
-    hidden = list(collector.hidden_players or [])
+    # скрытые вручную и скрытые за 7 дней без сундуков в списке кабинета не видны — их записи не трогаем
+    hidden = list(set(collector.hidden_players or []) | await stale_player_names(db, collector))
     await db.execute(delete(PlayerProfile).where(PlayerProfile.collector_id == collector.id,
                                                  PlayerProfile.canonical_name.notin_(hidden)))
 

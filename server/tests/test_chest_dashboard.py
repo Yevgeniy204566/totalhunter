@@ -2,7 +2,7 @@
 import os
 import secrets
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -382,7 +382,7 @@ async def test_get_chests_includes_unmapped_sender_as_player_alias_row(db_sessio
     db_session.add(Chest(collector_id=collector.id, sender_raw="Araiina",
                          sender_canonical="Araiina", chest_type_raw="X",
                          chest_type_canonical="X",
-                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+                         collected_at=datetime.utcnow() - timedelta(hours=1)))
     await db_session.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -402,7 +402,7 @@ async def test_get_chests_includes_existing_player_alias_with_canonical_name(db_
     db_session.add(Chest(collector_id=collector.id, sender_raw="Araiina",
                          sender_canonical="Arahna", chest_type_raw="X",
                          chest_type_canonical="X",
-                         collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+                         collected_at=datetime.utcnow() - timedelta(hours=1)))
     db_session.add(PlayerAlias(collector_id=collector.id, raw_name="Araiina",
                                canonical_name="Arahna"))
     await db_session.commit()
@@ -996,7 +996,7 @@ async def test_delete_collector_rejects_other_users_collector(db_session):
 async def _add_chest(db, collector_id, sender, ctype="Epic Arachne"):
     db.add(Chest(collector_id=collector_id, sender_raw=sender, sender_canonical=sender,
                  chest_type_raw=ctype, chest_type_canonical=ctype,
-                 collected_at=datetime.fromisoformat("2026-06-20T10:00:00")))
+                 collected_at=datetime.utcnow() - timedelta(hours=1)))   # свежий: старше 7 дней игрок скрывается
 
 
 @pytest.mark.asyncio
