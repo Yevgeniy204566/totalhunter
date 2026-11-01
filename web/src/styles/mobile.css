@@ -279,7 +279,7 @@
   .public-table th.public-name-cell,
   .public-table td.public-name-cell {
     box-sizing: border-box !important;
-    width: 30vw !important; min-width: 30vw !important; max-width: 30vw !important;
+    width: 45vw !important; min-width: 45vw !important; max-width: 45vw !important;
     left: 70px !important;
     overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
   }
