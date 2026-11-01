@@ -448,10 +448,44 @@ export default function ChestsPage() {
     } catch (e) { setMsg(e.message) }
   }
 
+  // Звание, состав и уровень Героя — свойства игрока (одно правильное имя), а не строки: когда несколько сырых
+  // написаний исправлены на одно имя (N A G L Y I), правка на любой строке сразу ложится на все строки группы.
+  const PROFILE_FIELDS = ['rank', 'troop_g', 'troop_s', 'troop_m', 'hero_level']
   function updatePlayerRow(slug, index, field, value) {
     setPlayerRowsByCollector(prev => {
       const rows = [...prev[slug]]
       rows[index] = { ...rows[index], [field]: value }
+      const name = (rows[index].canonical_name || '').trim()
+      if (name && PROFILE_FIELDS.includes(field)) {
+        rows.forEach((r, i) => {
+          if (i !== index && (r.canonical_name || '').trim() === name) rows[i] = { ...r, [field]: value }
+        })
+      }
+      return { ...prev, [slug]: rows }
+    })
+  }
+
+  // Строку присоединили к уже существующему имени (закончили ввод или выбрали из подсказок): берём данные
+  // игрока у тех, кто под этим именем уже есть; если у них пусто, а у этой строки введено — раздаём группе.
+  // Не на каждую букву: иначе посреди набора совпадение с чужим коротким именем подтянуло бы чужие данные.
+  function mergeByName(slug, index) {
+    setPlayerRowsByCollector(prev => {
+      const rows = [...prev[slug]]
+      const me = rows[index]
+      const name = ((me && me.canonical_name) || '').trim()
+      if (!name) return prev
+      const others = rows.map((_, i) => i).filter(i => i !== index && (rows[i].canonical_name || '').trim() === name)
+      if (!others.length) return prev
+      const filled = (r) => PROFILE_FIELDS.some(f => r[f])
+      const donor = others.map(i => rows[i]).find(filled)
+      if (donor) {
+        rows[index] = { ...me, ...Object.fromEntries(PROFILE_FIELDS.map(f => [f, donor[f] ?? ''])) }
+      } else if (filled(me)) {
+        const copy = Object.fromEntries(PROFILE_FIELDS.map(f => [f, me[f] ?? '']))
+        others.forEach(i => { rows[i] = { ...rows[i], ...copy } })
+      } else {
+        return prev
+      }
       return { ...prev, [slug]: rows }
     })
   }
@@ -1103,6 +1137,7 @@ export default function ChestsPage() {
                             value={row.canonical_name || ''}
                             style={{ flex: '1 1 0', minWidth: 0 }}
                             onChange={e => updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}
+                            onBlur={() => mergeByName(collector.slug, origIdx)}
                           />
                           {(() => {
                             const sugg = suggestNames(row.raw_name || row.canonical_name,
@@ -1112,7 +1147,11 @@ export default function ChestsPage() {
                               <select className="input-dark name-suggest" value=""
                                 style={{ flex: '1 1 0', minWidth: 0 }}
                                 aria-label={cx.nameSuggest}
-                                onChange={e => e.target.value && updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}>
+                                onChange={e => {
+                                  if (!e.target.value) return
+                                  updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)
+                                  mergeByName(collector.slug, origIdx)
+                                }}>
                                 <option value="">{cx.nameSuggest}</option>
                                 {sugg.map(n => <option key={n} value={n}>{n}</option>)}
                               </select>
