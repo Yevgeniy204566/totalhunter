@@ -1109,9 +1109,8 @@ export default function ChestsPage() {
                               namePoolByCollector[collector.slug]).filter(n => n !== row.canonical_name)
                             if (!sugg.length) return <div style={{ flex: '1 1 0', minWidth: 0 }} />
                             return (
-                              <select className="input-dark" value=""
-                                style={{ flex: '1 1 0', minWidth: 0,
-                                         background: 'rgba(166,227,161,.14)', borderColor: 'rgba(166,227,161,.5)', color: '#c5ecc1' }}
+                              <select className="input-dark name-suggest" value=""
+                                style={{ flex: '1 1 0', minWidth: 0 }}
                                 aria-label={cx.nameSuggest}
                                 onChange={e => e.target.value && updatePlayerRow(collector.slug, origIdx, 'canonical_name', e.target.value)}>
                                 <option value="">{cx.nameSuggest}</option>

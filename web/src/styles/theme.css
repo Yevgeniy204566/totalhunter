@@ -353,6 +353,9 @@ a:hover { color: var(--on-surface); }
 .chest-tab--active { color: var(--on-surface); border-bottom-color: var(--accent); }
 /* Вкладки кабинета «Игроки / История»: по центру под блоками норм, крупные кнопки;
    активная — яркая заливка, неактивные — кнопки с рамкой */
+/* Список подсказок имён: закрытый — мягкий зелёный, открытый — как остальные списки (тёмный фон, светлые имена) */
+.name-suggest { background: rgba(166,227,161,.14); border-color: rgba(166,227,161,.5); color: #c5ecc1; color-scheme: dark; }
+.name-suggest option { background: var(--elevated); color: var(--on-surface); }
 .chest-tabs--center { justify-content: center; gap: 12px; margin-top: 8px; border-bottom: none; }
 .chest-tabs--center .chest-tab { font-size: 20px; padding: 12px 36px; color: #dfe3f2; border: 1px solid var(--outline) !important;
   border-radius: 12px; background: var(--elevated); box-shadow: 0 2px 6px rgba(0,0,0,.35); }
