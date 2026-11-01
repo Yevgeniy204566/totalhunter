@@ -5,6 +5,7 @@ import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import EmcQuotaPublic from '../components/EmcQuotaPublic.jsx'
 import HeroPointsPublic from '../components/HeroPointsPublic.jsx'
 import { useQuotaLabel } from '../lib/quotaLabel.js'
+import { chooseLabelLang } from '../i18n/labelStore.js'
 
 // Публичная таблица: RU/EN со своим переключателем (владелец 2026-09-26). Адрес /c/... не
 // несёт язык, поэтому общий useLang тут всегда дал бы 'en'. Остальные языки — переводчик
@@ -147,6 +148,9 @@ export default function ChestSummaryPage({ neutral = false }) {
   function toggleLang() {
     const next = lang === 'ru' ? 'en' : 'ru'
     try { localStorage.setItem('th_lang', next) } catch { /* приватный режим */ }
+    // Кнопка RU/EN выбирает и язык подписей столбцов: раньше сохранённый выбор подписей («ru») был главнее кнопки,
+    // и после нажатия EN названия квот оставались русскими (владелец 2026-11-02)
+    chooseLabelLang(next)
     setLang(next)
   }
   // Общий LangProvider ставит <html lang="en"> для любого адреса вне /ru — перебиваем после

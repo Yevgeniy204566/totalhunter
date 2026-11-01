@@ -9,7 +9,10 @@ import { getLabelCode, subscribeLabelLang } from '../i18n/labelStore.js'
 export function quotaLabel(name, lang) {
   if (!name || !lang) return name
   const row = LABEL_INDEX.get(name.trim()) || LABEL_INDEX.get(name.trim().toLowerCase())
-  return row ? (row[lang] || row.en || name) : name
+  if (!row) return name
+  const target = row[lang] || row.en || name
+  // имя уже написано на нужном языке (отличается только регистром) — оставляем как задал клан
+  return target.toLowerCase() === name.trim().toLowerCase() ? name : target
 }
 
 // effectiveLang: выбор подписей игрока (или язык браузера, если не ru/en) важнее кнопки RU/EN страницы
