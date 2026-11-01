@@ -135,3 +135,41 @@ async def test_player_absent_5_days_still_shown_absent_10_days_hidden_until_retu
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         r = await client.get(f"/api/v1/chests/summary/{c.slug}")
     assert _names(r) == {"Gap5", "Steady"}
+
+
+async def _cabinet_names(client, token):
+    r = await client.get("/web/dashboard/chests", headers={"Authorization": f"Bearer {token}"})
+    return {x["canonical_name"] for x in r.json()["collectors"][0]["player_alias_rows"]}
+
+
+@pytest.mark.asyncio
+async def test_cabinet_hides_alias_names_with_no_chests_when_clan_has_chests(db_session):
+    # имя прошлого сезона: сундуки ушли в историю, алиас остался — в списке кабинета его быть не должно
+    _, token, c = await _setup(db_session)
+    db_session.add_all([_chest(c, "Fresh", 1),
+                        PlayerAlias(collector_id=c.id, raw_name="Gone", canonical_name="Gone")])
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert await _cabinet_names(client, token) == {"Fresh"}
+
+
+@pytest.mark.asyncio
+async def test_new_roster_without_any_chests_is_not_hidden(db_session):
+    _, token, c = await _setup(db_session)
+    db_session.add(PlayerAlias(collector_id=c.id, raw_name="Manual", canonical_name="Manual"))
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert await _cabinet_names(client, token) == {"Manual"}
+
+
+@pytest.mark.asyncio
+async def test_cabinet_matches_public_table_when_season_started_recently(db_session):
+    # сундук игрока за 2 дня до начала сезона: в таблице сезона его нет, значит и в списке кабинета нет
+    _, token, c = await _setup(db_session)
+    c.period_start = datetime.now(timezone.utc) - timedelta(days=1)
+    db_session.add_all([_chest(c, "InSeason", 0.2), _chest(c, "BeforeSeason", 2)])
+    await db_session.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert await _cabinet_names(client, token) == {"InSeason"}
+        pub = await client.get(f"/api/v1/chests/summary/{c.slug}")
+    assert _names(pub) == {"InSeason"}

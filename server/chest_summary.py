@@ -124,8 +124,11 @@ async def stale_player_names(db: AsyncSession, collector: ChestCollector,
                              days: int = STALE_PLAYER_DAYS) -> set:
     """Канонические имена игроков, у которых последний сундук старше `days` дней (владелец 2026-11-01:
     люди приходят и уходят, за всеми следить нельзя). Не удаление — имя вернётся с новым сундуком.
-    Смотрим все сундуки игрока, а не только текущий сезон; игроки без единого сундука не попадают.
-    Отсчёт — от последнего сундука клана: заливок не было — не скрывается никто."""
+    Отсчёт — от последнего сундука клана: заливок не было — не скрывается никто. Если задан текущий
+    сезон, точка отсчёта не раньше его начала (в таблице сезона только его сундуки). Имена из словаря,
+    у которых в базе сундуков нет совсем (сезон ушёл в историю, имя осталось), тоже скрываются — иначе
+    список кабинета разрастается именами прошлых сезонов (ELDORADO: 131 имя против 68 на странице).
+    Клан без единого сундука не скрывается целиком: новый ростер собирают вручную до первой заливки."""
     sender_expr = func.coalesce(PlayerAlias.canonical_name, Chest.sender_raw)
     rows = (await db.execute(
         select(sender_expr, func.max(Chest.collected_at))
@@ -144,7 +147,14 @@ async def stale_player_names(db: AsyncSession, collector: ChestCollector,
     # не заливал, таблица не пустеет — скрываются только отставшие от самых свежих игроков.
     reference = min(max(lasts.values()), datetime.now(timezone.utc))
     cutoff = reference - timedelta(days=days)
-    return {name for name, last in lasts.items() if last < cutoff}
+    if collector.period_start is not None:
+        cutoff = max(cutoff, _aware(collector.period_start))
+    stale = {name for name, last in lasts.items() if last < cutoff}
+    alias_names = (await db.execute(
+        select(PlayerAlias.canonical_name).where(PlayerAlias.collector_id == collector.id).distinct()
+    )).scalars().all()
+    stale |= {n for n in alias_names if n and n not in lasts}
+    return stale
 
 
 async def query_summary_rows(db: AsyncSession, collector: ChestCollector,
