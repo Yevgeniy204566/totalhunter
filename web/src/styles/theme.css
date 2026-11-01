@@ -443,8 +443,9 @@ a:hover { color: var(--on-surface); }
 }
 .chest-pill-btn--primary:hover { filter: brightness(1.1); }
 /* Кнопка «Сохранить» у левого края посреди экрана: список игроков длинный, верхняя и нижняя кнопки далеко */
-.chest-save-float { position: fixed; left: 8px; top: 50%; transform: translateY(-50%); z-index: 20;
+.chest-save-float { position: fixed; left: 232px; top: 50%; transform: translateY(-50%); z-index: 20;
   writing-mode: vertical-rl; padding: 18px 10px; box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+@media (max-width: 768px) { .chest-save-float { left: 4px; } }
 .chest-pill-btn--green {
   background: var(--green-btn); border: none; color: var(--on-surface); font-weight: 700;
 }
