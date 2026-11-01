@@ -302,7 +302,7 @@ export default function ChestSummaryPage({ neutral = false }) {
         )}
       </div>
 
-      <div className="public-summary-updated">{t.updated}: {updatedLabel}</div>
+      <div className="public-summary-updated">{t.updated}: <span className="public-summary-updated-time notranslate" translate="no">{updatedLabel}</span></div>
       <div className="public-summary-divider" />
 
       <div className="chest-tabs chest-tabs--pill">

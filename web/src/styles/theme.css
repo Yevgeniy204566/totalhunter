@@ -527,6 +527,8 @@ a:hover { color: var(--on-surface); }
   to { background-position: -200% center; }
 }
 .public-summary-updated { color: var(--on-surface2); font-size: 13px; margin-bottom: 12px; }
+/* Дата и время последнего обновления — ярче и жирнее подписи (владелец 2026-11-02) */
+.public-summary-updated-time { color: #ffffff; font-weight: 700; font-size: 14px; }
 .public-summary-divider {
   height: 1px; background: linear-gradient(90deg, var(--accent) 0%, transparent 80%);
   margin-bottom: 20px;
