@@ -1131,17 +1131,17 @@ export default function ChestsPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'nowrap' }}>
-                          <select className="input-dark" value={row.troop_g || ''} style={{ width: 44 }}
+                          <select className="input-dark troop-sel" value={row.troop_g || ''} style={{ width: 44 }}
                             onChange={e => updatePlayerRow(collector.slug, origIdx, 'troop_g', e.target.value)}>
                             <option value="">G</option>
                             {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
-                          <select className="input-dark" value={row.troop_s || ''} style={{ width: 44 }}
+                          <select className="input-dark troop-sel" value={row.troop_s || ''} style={{ width: 44 }}
                             onChange={e => updatePlayerRow(collector.slug, origIdx, 'troop_s', e.target.value)}>
                             <option value="">S</option>
                             {TIERS.map(v => <option key={v} value={v}>{v}</option>)}
                           </select>
-                          <select className="input-dark" value={row.troop_m || ''} style={{ width: 44 }}
+                          <select className="input-dark troop-sel" value={row.troop_m || ''} style={{ width: 44 }}
                             onChange={e => updatePlayerRow(collector.slug, origIdx, 'troop_m', e.target.value)}>
                             <option value="">M</option>
                             {TIERS.map(v => <option key={v} value={v}>{v}</option>)}

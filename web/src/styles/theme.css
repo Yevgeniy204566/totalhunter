@@ -360,7 +360,8 @@ a:hover { color: var(--on-surface); }
 .players-tab .chest-table th { font-size: 15px; }
 .players-tab .chest-table td { font-size: 17px; }
 .players-tab .input-dark { font-size: 17px; padding: 9px 11px; }
-.players-tab .chest-table select.input-dark { min-width: 56px; }
+/* Состав (G/S/M): поля узкие, поэтому буквы мельче и отступы минимальные — иначе обрезаются */
+.players-tab .chest-table select.troop-sel { font-size: 13px; padding: 8px 1px; min-width: 0; }
 .players-tab .chest-pill-btn { font-size: 16px; }
 .chest-tabs--center { justify-content: center; gap: 12px; margin-top: 8px; border-bottom: none; }
 .chest-tabs--center .chest-tab { font-size: 20px; padding: 12px 36px; color: #dfe3f2; border: 1px solid var(--outline) !important;
