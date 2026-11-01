@@ -224,7 +224,7 @@ export default function ChestSummaryPage({ neutral = false }) {
           <span className="header-logo-text" style={{ color: 'var(--on-surface)' }}>Hunter</span>
         </Link>
         )}
-        <button type="button" className="public-avg-toggle notranslate" translate="no" onClick={toggleLang}>
+        <button type="button" className="public-lang-toggle notranslate" translate="no" onClick={toggleLang}>
           {lang === 'ru' ? 'EN' : 'RU'}
         </button>
       </div>

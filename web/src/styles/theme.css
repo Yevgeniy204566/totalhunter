@@ -684,11 +684,11 @@ a:hover { color: var(--on-surface); }
 }
 .public-table thead tr.public-head-row th { top: 30px; }
 .public-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-.public-avg-toggle {
+.public-avg-toggle, .public-lang-toggle {
   font-size: 14px; padding: 6px 14px; border-radius: 8px; cursor: pointer;
   background: var(--elevated); color: var(--on-surface); border: 1px solid var(--outline);
 }
-.public-avg-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.public-avg-toggle:hover, .public-lang-toggle:hover { border-color: var(--accent); color: var(--accent); }
 .public-sortable:hover { color: var(--accent); }
 .public-sort-mark { opacity: 0.45; font-size: 0.85em; }
 .public-sort-mark--on { opacity: 1; color: var(--accent); }
