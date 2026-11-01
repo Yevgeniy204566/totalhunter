@@ -39,7 +39,7 @@ export function similarity(a, b) {
 }
 
 // До `limit` самых похожих имён из пула; сам текущий вариант не предлагаем.
-export function suggestNames(raw, pool, limit = 8, minScore = 0.4) {
+export function suggestNames(raw, pool, limit = 8, minScore = 0.55) {
   return (pool || [])
     .filter(n => n !== raw)
     .map(n => ({ n, s: similarity(raw, n) }))
