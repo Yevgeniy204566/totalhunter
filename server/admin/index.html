@@ -628,6 +628,12 @@
               <span class="dot" :class="onlineOnly?'dot-online':'dot-offline'"></span>
               Онлайн
             </button>
+            <button class="btn btn-sm" :class="favoritesOnly?'btn-accent':'btn-ghost'"
+              title="Показать только избранных"
+              @click="favoritesOnly=!favoritesOnly;page_num=1;loadUsers()">
+              <span style="font-size:15px;line-height:1" x-text="favoritesOnly?'★':'☆'"></span>
+              Избранные
+            </button>
             <button class="btn btn-ghost btn-sm" @click="loadUsers()">
               <span class="material-symbols-rounded" :class="{spinning:loading}" style="font-size:15px">refresh</span>
             </button>
@@ -640,6 +646,10 @@
             <table>
               <thead><tr>
                 <th>Статус</th>
+                <th class="th-sort" @click="sortBy('is_favorite')" title="Сортировать по звёздочке"
+                    style="cursor:pointer;user-select:none;width:42px;text-align:center">
+                  ★<span x-text="sortArrow('is_favorite')"></span>
+                </th>
                 <th class="th-sort" @click="sortBy('username')" style="cursor:pointer;user-select:none">
                   Игрок <span x-text="sortArrow('username')"></span>
                 </th>
@@ -669,6 +679,12 @@
                         <span style="color:var(--text-dim)"
                           x-text="u.is_banned?'BAN':(u.is_online?'Online':'Offline')"></span>
                       </div>
+                    </td>
+                    <td style="text-align:center">
+                      <button type="button" @click="toggleFavorite(u)"
+                        :title="u.is_favorite?'Убрать из избранных':'В избранные'"
+                        :style="'background:none;border:0;cursor:pointer;font-size:22px;line-height:1;padding:0 4px;color:'+(u.is_favorite?'#FFC83D':'var(--text-dim)')"
+                        x-text="u.is_favorite?'★':'☆'"></button>
                     </td>
                     <td>
                       <div style="font-weight:600" x-text="u.username||'—'"></div>
@@ -720,7 +736,7 @@
                   </tr>
                 </template>
                 <tr x-show="!loading&&users.length===0">
-                  <td colspan="9" style="text-align:center;color:var(--text-dim);padding:28px">
+                  <td colspan="10" style="text-align:center;color:var(--text-dim);padding:28px">
                     Пользователи не найдены
                   </td>
                 </tr>
@@ -737,6 +753,10 @@
                   :class="u.is_banned?'dot-banned':(u.is_online?'dot-online':'dot-offline')"
                   style="width:10px;height:10px;flex-shrink:0">
                 </span>
+
+                <button type="button" @click="toggleFavorite(u)"
+                  :style="'background:none;border:0;cursor:pointer;font-size:24px;line-height:1;padding:0 2px;flex-shrink:0;color:'+(u.is_favorite?'#FFC83D':'var(--text-dim)')"
+                  x-text="u.is_favorite?'★':'☆'"></button>
 
                 <!-- Name / email -->
                 <div class="user-row-info">
@@ -1234,7 +1254,7 @@ function adminApp() {
 
     stats: {},
     users: [], totalUsers: 0,
-    page_num: 1, search: '', onlineOnly: false,
+    page_num: 1, search: '', onlineOnly: false, favoritesOnly: false,
     sortKey: 'last_seen', sortDir: 'desc',
     logs: [],
     crashes: [],
@@ -1333,9 +1353,20 @@ function adminApp() {
       });
       if (this.search) q.append('search', this.search);
       if (this.onlineOnly) q.append('online_only', '1');
+      if (this.favoritesOnly) q.append('favorites_only', '1');
       const r = await fetch(`${API}/admin/users?${q}`, { headers: this.headers() });
       if (r.ok) { const d = await r.json(); this.users = d.users; this.totalUsers = d.total; }
       this.loading = false;
+    },
+
+    async toggleFavorite(u) {
+      const want = !u.is_favorite;
+      const r = await fetch(`${API}/admin/users/${u.id}/favorite?favorite=${want}`,
+        { method: 'POST', headers: this.headers() });
+      if (!r.ok) { this.showToast('Ошибка звёздочки'); return; }
+      u.is_favorite = want;
+      // В режиме «только избранные» снятая звёздочка убирает строку сразу, без перезагрузки.
+      if (this.favoritesOnly && !want) this.users = this.users.filter(x => x.id !== u.id);
     },
 
     sortBy(key) {

@@ -75,6 +75,8 @@ class User(Base):
     trial_used        = Column(Boolean, nullable=False, server_default=text('false'))
     ref_bonus_claimed = Column(Boolean, nullable=False, server_default=text('false'))
     is_banned         = Column(Boolean, nullable=False, server_default=text('false'))
+    # Звёздочка в админке: личная пометка владельца «свои игроки», на бота/лицензии не влияет.
+    is_favorite       = Column(Boolean, nullable=False, server_default=text('false'))
     bot_version   = Column(String(20))
     ip_address    = Column(String(45))   # последний IP (IPv4 до 15, IPv6 до 45 символов)
     last_seen     = Column(TIMESTAMP(timezone=True))

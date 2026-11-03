@@ -643,7 +643,7 @@ async def admin_stats(db: AsyncSession = Depends(get_db)):
 
 # ── GET /admin/users ──────────────────────────────────────────────────────────
 
-ADMIN_USERS_SORT_COLUMNS = {"username", "bot_version", "credits", "last_seen"}
+ADMIN_USERS_SORT_COLUMNS = {"username", "bot_version", "credits", "last_seen", "is_favorite"}
 
 
 def _admin_users_sort_key(u: User, sort: str):
@@ -655,6 +655,9 @@ def _admin_users_sort_key(u: User, sort: str):
         return tuple(int(p) for p in re.findall(r"\d+", u.bot_version))
     if sort == "last_seen":
         return u.last_seen
+    if sort == "is_favorite":
+        # Внутри группы звёздочек/без — по последнему входу (новые выше), а не случайный порядок.
+        return (bool(u.is_favorite), u.last_seen.timestamp() if u.last_seen else 0.0)
     return u.credits  # sort == "credits"
 
 
@@ -673,6 +676,7 @@ async def admin_users(
     db: AsyncSession = Depends(get_db),
     search: Optional[str] = None,
     online_only: Optional[str] = None,
+    favorites_only: Optional[str] = None,
     page: int = 1,
     per_page: int = 50,
     sort: Optional[str] = None,
@@ -703,6 +707,8 @@ async def admin_users(
         )
     if online_only == '1':
         query = query.where(User.last_seen >= online_threshold)
+    if favorites_only == '1':
+        query = query.where(User.is_favorite.is_(True))
 
     all_users = (await db.execute(query)).scalars().all()
 
@@ -755,6 +761,7 @@ async def admin_users(
             "ref_credits": u.ref_credits,
             "ref_code":    u.ref_code,
             "is_banned":   u.is_banned,
+            "is_favorite": bool(u.is_favorite),
             "is_online":   is_online,
             "ip_address":  u.ip_address,
             "bot_version": u.bot_version,
@@ -765,6 +772,19 @@ async def admin_users(
         })
 
     return {"total": total, "page": page, "per_page": per_page, "users": rows}
+
+
+# ── POST /admin/users/{user_id}/favorite ──────────────────────────────────────
+
+@app.post("/admin/users/{user_id}/favorite", dependencies=[Depends(require_admin)])
+async def admin_user_favorite(user_id: int, favorite: bool, db: AsyncSession = Depends(get_db)):
+    """Поставить/снять звёздочку «свой игрок» (только пометка для админки)."""
+    async with db.begin():
+        user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.is_favorite = favorite
+    return {"success": True, "id": user_id, "is_favorite": favorite}
 
 
 # ── POST /admin/ban ───────────────────────────────────────────────────────────
