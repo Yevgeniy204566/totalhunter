@@ -248,6 +248,11 @@ class Feedback(Base):
     text       = Column(Text, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False,
                         server_default=func.now())
+    # Переписка (владелец 2026-11-07): одна ветка на пользователя, user_id — связь с обращением.
+    # sender: 'user' — написал игрок, 'admin' — ответил администратор.
+    # read_at: когда сообщение прочитал получатель (админ — для 'user', игрок — для 'admin').
+    sender     = Column(String(8), nullable=False, server_default="user")
+    read_at    = Column(TIMESTAMP(timezone=True), nullable=True)
 
 
 # ─────────────────────────────────────────────

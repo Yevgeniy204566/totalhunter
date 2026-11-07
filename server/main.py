@@ -64,6 +64,7 @@ import ancient_retention
 from schemas import (
     BasicResponse,
     CheckAuthResponse,
+    FeedbackReplyRequest,
     HwidRequest,
     LeaderboardEntry,
     LeaderboardResponse,
@@ -863,49 +864,95 @@ async def admin_broadcast(message: str, db: AsyncSession = Depends(get_db)):
 
 @app.get("/admin/feedback/unread", dependencies=[Depends(require_admin)])
 async def feedback_unread(db: AsyncSession = Depends(get_db)):
-    """Количество непрочитанных отзывов (после последнего открытия Feedback)."""
-    last_read = await _get_setting("feedback_last_read_at", db)
-    query = select(func.count()).select_from(Feedback)
-    if last_read:
-        from datetime import datetime as _dt
-        ts = _dt.fromisoformat(last_read)
-        query = query.where(Feedback.created_at > ts)
-    row = await db.execute(query)
+    """Количество непрочитанных сообщений игроков (read_at пуст)."""
+    row = await db.execute(
+        select(func.count()).select_from(Feedback).where(
+            Feedback.sender == "user", Feedback.read_at.is_(None))
+    )
     return {"count": row.scalar() or 0}
 
 
-@app.post("/admin/feedback/mark_read", dependencies=[Depends(require_admin)])
-async def feedback_mark_read(db: AsyncSession = Depends(get_db)):
-    """Сбрасывает счётчик — вызывается при открытии вкладки Feedback."""
-    now = datetime.now(timezone.utc).isoformat()
-    async with db.begin():
-        existing = await db.execute(
-            select(AppSetting).where(AppSetting.key == "feedback_last_read_at")
-        )
-        row = existing.scalar_one_or_none()
-        if row:
-            row.value = now
-        else:
-            db.add(AppSetting(key="feedback_last_read_at", value=now))
+@app.get("/admin/feedback/threads", dependencies=[Depends(require_admin)])
+async def feedback_threads(db: AsyncSession = Depends(get_db)):
+    """Список переписок: по игроку, последнее сообщение, число новых; свежие сверху."""
+    rows = (await db.execute(
+        select(Feedback, User.email, User.username, User.game_nick)
+        .outerjoin(User, User.id == Feedback.user_id)
+        .order_by(Feedback.created_at, Feedback.id)
+    )).all()
+    threads: dict = {}
+    for f, email, username, nick in rows:
+        t = threads.setdefault(f.user_id, {
+            "user_id": f.user_id, "email": email, "username": username, "game_nick": nick,
+            "unread": 0, "count": 0})
+        t["count"] += 1
+        t["last_text"] = f.text
+        t["last_sender"] = f.sender
+        t["last_at"] = f.created_at.isoformat() if f.created_at else None
+        if f.sender == "user" and f.read_at is None:
+            t["unread"] += 1
+    return sorted(threads.values(), key=lambda t: t["last_at"] or "", reverse=True)
+
+
+@app.get("/admin/feedback/thread/{user_id}", dependencies=[Depends(require_admin)])
+async def feedback_thread(user_id: int, db: AsyncSession = Depends(get_db)):
+    """Одна переписка: данные игрока из таблицы пользователей + история. Открытие помечает
+    сообщения игрока прочитанными."""
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    msgs = (await db.execute(
+        select(Feedback).where(Feedback.user_id == user_id).order_by(Feedback.created_at, Feedback.id)
+    )).scalars().all()
+    purchases = (await db.execute(
+        select(func.count(), func.max(Transaction.created_at)).where(
+            Transaction.user_id == user_id, Transaction.type == "purchase")
+    )).one()
+    last_pkg = (await db.execute(
+        select(Transaction.package).where(Transaction.user_id == user_id, Transaction.type == "purchase")
+        .order_by(Transaction.created_at.desc()).limit(1)
+    )).scalar_one_or_none()
+    out = {
+        "user": {
+            "id": user.id, "game_nick": user.game_nick, "username": user.username, "email": user.email,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "credits": user.credits, "ref_credits": user.ref_credits,
+            "purchases": purchases[0] or 0,
+            "last_purchase_at": purchases[1].isoformat() if purchases[1] else None,
+            "last_package": last_pkg,
+            "is_banned": user.is_banned, "hwid": user.hwid, "bot_version": user.bot_version,
+            "last_seen": user.last_seen.isoformat() if user.last_seen else None,
+        },
+        "messages": [{
+            "id": m.id, "sender": m.sender, "text": m.text,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "is_new": m.sender == "user" and m.read_at is None,
+            "read": m.read_at is not None,
+        } for m in msgs],
+    }
+    now = datetime.now(timezone.utc)
+    changed = False
+    for m in msgs:
+        if m.sender == "user" and m.read_at is None:
+            m.read_at = now
+            changed = True
+    if changed:
+        await db.commit()
+    return out
+
+
+@app.post("/admin/feedback/reply", dependencies=[Depends(require_admin)])
+async def feedback_reply(req: FeedbackReplyRequest, db: AsyncSession = Depends(get_db)):
+    """Ответ администратора игроку — появится в кабинете: Идеи → Входящие."""
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty reply")
+    user = (await db.execute(select(User).where(User.id == req.user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.add(Feedback(user_id=user.id, text=text, sender="admin"))
+    await db.commit()
     return {"success": True}
-
-
-@app.get("/admin/feedback/list", dependencies=[Depends(require_admin)])
-async def feedback_list(db: AsyncSession = Depends(get_db), limit: int = 100):
-    """Список всех записей обратной связи (новые первыми)."""
-    result = await db.execute(
-        select(Feedback).order_by(Feedback.created_at.desc()).limit(limit)
-    )
-    items = result.scalars().all()
-    return [
-        {
-            "id":         f.id,
-            "user_id":    f.user_id,
-            "text":       f.text,
-            "created_at": f.created_at.isoformat() if f.created_at else None,
-        }
-        for f in items
-    ]
 
 
 # ── GET /admin/feedback/export ───────────────────────────────────────────────
@@ -924,6 +971,8 @@ async def feedback_export(db: AsyncSession = Depends(get_db)):
     for f, email, username in rows:
         ts = f.created_at.strftime("%Y-%m-%d %H:%M") if f.created_at else "—"
         author = email or username or f"user#{f.user_id}"
+        if f.sender == "admin":
+            author = f"ОТВЕТ АДМИНА → {author}"
         lines.append(f"[{ts}] {author}\n{f.text}\n{'-'*60}")
     return PlainTextResponse("\n".join(lines), media_type="text/plain; charset=utf-8")
 

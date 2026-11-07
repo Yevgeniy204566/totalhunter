@@ -365,6 +365,41 @@ async def send_feedback(
     return BasicResponse(success=True, message="Thank you for your feedback!")
 
 
+@router.get("/feedback/unread")
+async def feedback_unread_for_user(db: AsyncSession = Depends(get_db),
+                                   web_user: User = Depends(get_web_user)):
+    """Сколько ответов администратора игрок ещё не открыл (бейдж у пункта «Идеи»)."""
+    cnt = (await db.execute(
+        select(func.count()).select_from(Feedback).where(
+            Feedback.user_id == web_user.id, Feedback.sender == "admin", Feedback.read_at.is_(None))
+    )).scalar() or 0
+    return {"count": cnt}
+
+
+@router.get("/feedback/thread")
+async def feedback_thread_for_user(db: AsyncSession = Depends(get_db),
+                                   web_user: User = Depends(get_web_user)):
+    """«Входящие»: вся переписка игрока с администратором. Открытие помечает ответы прочитанными;
+    is_new в этом ответе показывает, что было не прочитано ДО открытия."""
+    rows = (await db.execute(
+        select(Feedback).where(Feedback.user_id == web_user.id).order_by(Feedback.created_at, Feedback.id)
+    )).scalars().all()
+    messages = [{
+        "id": m.id, "sender": m.sender, "text": m.text,
+        "created_at": m.created_at.isoformat() if m.created_at else None,
+        "is_new": m.sender == "admin" and m.read_at is None,
+    } for m in rows]
+    now = datetime.now(timezone.utc)
+    changed = False
+    for m in rows:
+        if m.sender == "admin" and m.read_at is None:
+            m.read_at = now
+            changed = True
+    if changed:
+        await db.commit()
+    return {"messages": messages}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # PUT /web/game-nick — игровой ник аккаунта (Профиль кабинета)
 # ─────────────────────────────────────────────────────────────────────────────

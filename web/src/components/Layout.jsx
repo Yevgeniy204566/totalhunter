@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, Link, useLocation } from 'react-router-dom'
 import { clearToken } from '../auth.js'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
@@ -39,9 +39,17 @@ export default function Layout() {
   const { code: labelCode, labels, choose: chooseLabelLang } = useNavLabels()
   const NAV = NAV_KEYS.map(n => ({ ...n, label: labels[n.key] || D.nav[n.key] }))
 
+  const [unreplies, setUnreplies] = useState(0)
+
   useEffect(() => {
     api.me().then(d => setCredits(d.credits)).catch(() => {})
   }, [])
+
+  // Новые ответы администратора (кабинет → Идеи → Входящие): обновляем при каждой смене страницы кабинета.
+  const { pathname } = useLocation()
+  useEffect(() => {
+    api.feedbackUnread().then(d => setUnreplies(d.count || 0)).catch(() => {})
+  }, [pathname])
 
   function logout() {
     clearToken()
@@ -167,13 +175,19 @@ export default function Layout() {
         paddingTop: 12,
         zIndex: 50,
       }}>
-        {NAV.map(({ to, icon, label, accent }) => (
+        {NAV.map(({ to, icon, label, accent, key }) => (
           <NavLink
             key={to} to={to} end
             className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}${accent ? ` nav-item--${accent}` : ''}`}
           >
             <span className="nav-icon">{icon}</span>
             {label}
+            {key === 'feedback' && unreplies > 0 && (
+              <span aria-label="new replies" style={{
+                marginLeft: 8, minWidth: 20, padding: '0 6px', borderRadius: 10, textAlign: 'center',
+                background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 700, lineHeight: '20px',
+              }}>{unreplies}</span>
+            )}
           </NavLink>
         ))}
         <div style={{ flex: 1 }} />

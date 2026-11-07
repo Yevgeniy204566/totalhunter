@@ -954,21 +954,71 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Время</th><th>User ID</th><th>Сообщение</th></tr></thead>
+              <thead><tr><th>Последнее</th><th>User ID</th><th>Игрок</th><th>Сообщение</th><th>Новых</th></tr></thead>
               <tbody>
-                <template x-for="f in feedbackItems" :key="f.id">
-                  <tr>
-                    <td style="white-space:nowrap;color:var(--text-dim)" x-text="formatDate(f.created_at)"></td>
+                <template x-for="f in feedbackItems" :key="f.user_id">
+                  <tr style="cursor:pointer" :style="thread && thread.user.id===f.user_id ? 'background:var(--surface-2,rgba(255,255,255,.06))' : ''"
+                      @click="openThread(f.user_id)">
+                    <td style="white-space:nowrap;color:var(--text-dim)" x-text="formatDate(f.last_at)"></td>
                     <td style="font-family:monospace;font-size:11px" x-text="f.user_id"></td>
-                    <td style="white-space:pre-wrap;word-break:break-word" x-text="f.text"></td>
+                    <td x-text="f.game_nick || f.username || f.email || '—'"></td>
+                    <td style="max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                        x-text="(f.last_sender==='admin' ? '↩ ' : '') + f.last_text"></td>
+                    <td><span class="nav-badge" x-show="f.unread>0" x-text="f.unread"></span></td>
                   </tr>
                 </template>
                 <tr x-show="feedbackItems.length===0">
-                  <td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Нет записей</td>
+                  <td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">Нет записей</td>
                 </tr>
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- Открытая переписка: карточка игрока из таблицы пользователей + история + ответ -->
+        <div class="section" x-show="thread" style="margin-top:16px">
+          <template x-if="thread">
+            <div>
+              <div class="section-header">
+                <div class="section-title" x-text="'Переписка · User ID ' + thread.user.id"></div>
+                <button class="btn btn-ghost btn-sm" @click="thread=null">
+                  <span class="material-symbols-rounded" style="font-size:15px">close</span>
+                </button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;padding:12px 16px;font-size:13px">
+                <div><span style="color:var(--text-dim)">Ник:</span> <span x-text="thread.user.game_nick || '—'"></span></div>
+                <div><span style="color:var(--text-dim)">Имя:</span> <span x-text="thread.user.username || '—'"></span></div>
+                <div><span style="color:var(--text-dim)">Email:</span> <span x-text="thread.user.email || '—'"></span></div>
+                <div><span style="color:var(--text-dim)">Регистрация:</span> <span x-text="formatDate(thread.user.created_at)"></span></div>
+                <div><span style="color:var(--text-dim)">Баланс:</span> <span x-text="thread.user.credits"></span>
+                  <span style="color:var(--text-dim)"> · реф.</span> <span x-text="thread.user.ref_credits"></span></div>
+                <div><span style="color:var(--text-dim)">Покупок:</span> <span x-text="thread.user.purchases"></span>
+                  <span x-show="thread.user.last_package" x-text="' · последний тариф ' + thread.user.last_package"></span></div>
+                <div><span style="color:var(--text-dim)">Последний вход:</span> <span x-text="formatDate(thread.user.last_seen)"></span></div>
+                <div><span style="color:var(--text-dim)">Бот:</span> <span x-text="thread.user.bot_version || '—'"></span>
+                  <span x-show="thread.user.is_banned" style="color:#f87171"> · забанен</span></div>
+              </div>
+              <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto">
+                <template x-for="m in thread.messages" :key="m.id">
+                  <div :style="'max-width:80%;padding:8px 12px;border-radius:10px;white-space:pre-wrap;word-break:break-word;' +
+                               (m.sender==='admin' ? 'align-self:flex-end;background:rgba(99,102,241,.22)' : 'align-self:flex-start;background:rgba(255,255,255,.07)')">
+                    <div style="font-size:11px;color:var(--text-dim);margin-bottom:2px">
+                      <span x-text="m.sender==='admin' ? 'Администратор' : 'Игрок'"></span> ·
+                      <span x-text="formatDate(m.created_at)"></span>
+                      <span x-show="m.sender==='user' && m.is_new" style="color:#fbbf24"> · новое</span>
+                      <span x-show="m.sender==='admin'" x-text="m.read ? ' · прочитано' : ' · не прочитано'"></span>
+                    </div>
+                    <div x-text="m.text"></div>
+                  </div>
+                </template>
+              </div>
+              <div style="padding:0 16px 16px;display:flex;gap:8px;align-items:flex-end">
+                <textarea x-model="replyText" rows="3" maxlength="2000" placeholder="Написать ответ…"
+                          style="flex:1;resize:vertical;padding:8px;border-radius:8px;background:var(--surface,#1e1e24);color:inherit;border:1px solid var(--border,#333);font:inherit"></textarea>
+                <button class="btn btn-primary" @click="sendReply()" :disabled="!replyText.trim()">Отправить</button>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </template>
@@ -1261,6 +1311,8 @@ function adminApp() {
     purchases: [],
     broadcastMsg: '',
     feedbackItems: [],
+    thread: null,
+    replyText: '',
     currentVersion: '',
     newVersion: '',
     leaderboard: [], lbPeriod: 'alltime',
@@ -1477,10 +1529,29 @@ function adminApp() {
     },
 
     async loadFeedback() {
-      const r = await fetch(`${API}/admin/feedback/list`, { headers: this.headers() });
+      const r = await fetch(`${API}/admin/feedback/threads`, { headers: this.headers() });
       if (r.ok) this.feedbackItems = await r.json();
-      await fetch(`${API}/admin/feedback/mark_read`, { method: 'POST', headers: this.headers() });
-      this.feedbackCount = 0;
+      await this.loadFeedbackBadge();
+    },
+
+    async openThread(userId) {
+      const r = await fetch(`${API}/admin/feedback/thread/${userId}`, { headers: this.headers() });
+      if (!r.ok) { this.showToast('Не удалось открыть переписку'); return; }
+      this.thread = await r.json();
+      this.replyText = '';
+      this.loadFeedback();   // обновит счётчики новых после открытия
+    },
+
+    async sendReply() {
+      const text = this.replyText.trim();
+      if (!text || !this.thread) return;
+      const r = await fetch(`${API}/admin/feedback/reply`, {
+        method: 'POST', headers: { ...this.headers(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: this.thread.user.id, text }),
+      });
+      if (!r.ok) { this.showToast('Ответ не отправлен'); return; }
+      this.showToast('Ответ отправлен');
+      await this.openThread(this.thread.user.id);
     },
 
     async exportFeedback() {

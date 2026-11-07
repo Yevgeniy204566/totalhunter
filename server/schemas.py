@@ -155,6 +155,11 @@ class FeedbackRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
 
 
+class FeedbackReplyRequest(BaseModel):
+    user_id: int
+    text: str = Field(min_length=1, max_length=2000)
+
+
 # ── Referral Tree ─────────────────────────────────────────────────────────────
 
 class TreeNodeL3(BaseModel):
