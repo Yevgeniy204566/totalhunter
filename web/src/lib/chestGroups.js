@@ -60,9 +60,17 @@ export function chestGroup(id, slot = null) {
   if (/^Rare Crypt\b/.test(s)) return 'rare'
   if (/^Common Crypt\b/.test(s)) return 'common'
   if (/Citadel/.test(s)) return 'citadel'
-  if (EMC_GROUP_IDS.has(s) || /^Pumpkin/.test(s)) return 'emc'
+  if (EMC_GROUP_IDS.has(s) || /^Pumpkin/.test(s) || /Ashen Squad/i.test(s)) return 'emc'
   return null
 }
 
-export const groupColor = (id, slot = null) => GROUP_COLOR[chestGroup(id, slot)] || null
+// На публичной странице у столбцов Олимпа и Рагнарека слово «Epic/Эпический…» в названии убрано (владелец 2026-11-07):
+// название группы уже говорит, что это за сундуки. Остальные группы названий не меняют.
+export function shortGroupName(name, group) {
+  if (group !== 'squad' && group !== 'tartaros') return name
+  const s = String(name).replace(/^(Epic|Эпический|Эпическая|Эпическое|Эпические|Эпик)\s+/i, '')
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+export const groupColor =(id, slot = null) => GROUP_COLOR[chestGroup(id, slot)] || null
 export const groupTitle = (group, lang, short = false) => ((short ? GROUP_SHORT : GROUP_TITLE)[lang] || (short ? GROUP_SHORT : GROUP_TITLE).en)[group]

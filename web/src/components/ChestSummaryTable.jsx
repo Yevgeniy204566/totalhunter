@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { barColor, barFillColor } from '../lib/progressColor.js'
 import { orderChestTypes } from '../lib/chestTypeOrder.js'
-import { chestGroup, groupColor, groupTitle, paletteCss } from '../lib/chestGroups.js'
+import { chestGroup, groupColor, groupTitle, paletteCss, shortGroupName } from '../lib/chestGroups.js'
 import { useQuotaLabel } from '../lib/quotaLabel.js'
 import {
   scoreOf, normAt, epicCountTotal, epicCryptsOf, emcQuotaTotal, DEFAULT_HERO,
@@ -668,7 +668,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                     style={colGroup[t] ? { ...paletteCss(colGroup[t].group), '--n': colGroup[t].n, '--k': colGroup[t].k,
                                            color: groupColor(idOf(t), typeMeta?.[t]?.slot), textShadow: 'none' } : undefined}
                     onClick={() => toggleSort(t)}>
-                  <span translate="no" className="notranslate">{t}</span>{sortMark(t)}
+                  <span translate="no" className="notranslate">{colGroup[t] ? shortGroupName(t, colGroup[t].group) : t}</span>{sortMark(t)}
                 </th>
               ))}
             </tr>

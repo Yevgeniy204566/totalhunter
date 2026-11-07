@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chestGroup, groupColor, GROUP_COLOR, groupTitle } from './chestGroups.js'
+import { chestGroup, groupColor, GROUP_COLOR, groupTitle, shortGroupName } from './chestGroups.js'
 import { orderChestTypes } from './chestTypeOrder.js'
 
 test('группы по каталожному id', () => {
@@ -62,4 +62,18 @@ test('красные «Эпические монстры» — только пя
   assert.equal(chestGroup('Epic Briareus', 2), 'tartaros')
   assert.equal(chestGroup('Epic Fenrir', 2), 'squad')
   assert.equal(chestGroup('Dark Omens Chest', null), null)
+})
+
+test('Ashen Squad — красная группа (любой вариант id)', () => {
+  assert.equal(chestGroup('Epic Ashen Squad'), 'emc')
+  assert.equal(chestGroup('Ashen Squad'), 'emc')
+})
+
+test('в Олимпе и Рагнареке слово Epic/Эпический в названии столбца убрано, в остальных группах — нет', () => {
+  assert.equal(shortGroupName('Epic Fenrir', 'squad'), 'Fenrir')
+  assert.equal(shortGroupName('Epic Briareus', 'tartaros'), 'Briareus')
+  assert.equal(shortGroupName('Эпический отряд Фенрира', 'squad'), 'Отряд Фенрира')
+  assert.equal(shortGroupName('Tartaros Crypt 35', 'tartaros'), 'Tartaros Crypt 35')
+  assert.equal(shortGroupName('Epic Undead', 'emc'), 'Epic Undead')
+  assert.equal(shortGroupName('Epic Crypt 35', 'epicCrypt'), 'Epic Crypt 35')
 })
