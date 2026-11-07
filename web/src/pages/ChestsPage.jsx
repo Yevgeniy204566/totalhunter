@@ -9,6 +9,7 @@ import ChestGuide from '../components/ChestGuide.jsx'
 import MixerTab from '../components/MixerTab.jsx'
 import { suggestNames } from '../lib/nameSuggest.js'
 import { DEFAULT_SETTINGS } from '../lib/emcQuota.js'
+import { chestGroup, groupColor, isEmcId, isEpicCryptId } from '../lib/chestGroups.js'
 
 const RANKS = ['', 'Глава', 'Старший', 'Офицер', 'Ветеран', 'Рядовой']
 const TIERS = ['5', '6', '7', '8', '9']
@@ -69,7 +70,17 @@ const ROSTER_SORT_VALUE = {
   total:  row => row.total_ever || 0,
 }
 
+// Порядок «Общих норм клана» при открытии (владелец 2026-11-07): эпические склепы → EMC → остальные позиции
+// в учёте → всё прочее. Только порядок показа: учёт и расчёт норм не затрагиваются.
+function defaultRank(row) {
+  const id = row.catalog_id
+  if (isEpicCryptId(id)) return 0
+  if (isEmcId(id) || row.quota_slot === 2) return 1
+  return (row.is_in_pattern || row.quota_slot) ? 2 : 3
+}
+
 function accountingOrder(rows, dir, key = 'acc') {
+  if (key === 'default') return rows.map((row, i) => ({ i, r: defaultRank(row) })).sort((a, b) => a.r - b.r || a.i - b.i).map(x => x.i)
   const sign = dir === 'desc' ? -1 : 1
   const value = ROSTER_SORT_VALUE[key] || accountingRank
   return rows.map((row, i) => ({ i, r: value(row) }))
@@ -230,9 +241,10 @@ function ChestsViewer({ cx, lang, noOwn }) {
                         <tr><th style={{ minWidth: 240 }}>{cx.catalogCol}</th><th style={{ minWidth: 70 }}>{cx.pointsCol}</th><th style={{ minWidth: 170 }}>{cx.accountingCol}</th></tr>
                       </thead>
                       <tbody>
-                        {c.rows.map(r => (
+                        {accountingOrder(c.rows, 'asc', 'default').map(i => c.rows[i]).map(r => (
                           <tr key={r.catalog_id}>
-                            <td translate="no" className="notranslate">{r.custom_name || r.catalog_id}</td>
+                            <td translate="no" className="notranslate"
+                                style={{ color: groupColor(r.catalog_id) || undefined, fontWeight: chestGroup(r.catalog_id) ? 600 : undefined }}>{r.custom_name || r.catalog_id}</td>
                             <td>{r.points}</td>
                             <td>
                               <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 6, border: '1px solid var(--outline)',
@@ -354,6 +366,10 @@ export default function ChestsPage() {
         const next = {}
         for (const [slug, s] of Object.entries(prev)) {
           if (s && nextRows[slug]) next[slug] = { key: s.key, dir: s.dir, order: accountingOrder(nextRows[slug], s.dir, s.key) }
+        }
+        // первая загрузка клана: порядок по умолчанию (снимок — строки не прыгают при правке учёта)
+        for (const slug of Object.keys(nextRows)) {
+          if (!next[slug]) next[slug] = { key: 'default', dir: 'asc', order: accountingOrder(nextRows[slug], 'asc', 'default') }
         }
         return next
       })
@@ -991,7 +1007,7 @@ export default function ChestsPage() {
                 <tbody>
                   {accSortedIndices(collector.slug).map(i => [rowsByCollector[collector.slug][i], i]).map(([row, i]) => (
                     <tr key={i}>
-                      <td style={{ whiteSpace: 'nowrap' }}>{row.raw_type || '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap', color: groupColor(row.catalog_id) || undefined, fontWeight: chestGroup(row.catalog_id) ? 600 : undefined }}>{row.raw_type || '—'}</td>
                       <td>
                         {row.is_custom ? (
                           <div style={{ display: 'flex', gap: 6 }}>
@@ -1006,6 +1022,7 @@ export default function ChestsPage() {
                         ) : (
                           <select
                             className="input-dark"
+                            style={groupColor(row.catalog_id) ? { color: groupColor(row.catalog_id), fontWeight: 600 } : undefined}
                             value={row.catalog_id || ''}
                             onChange={e => {
                               if (e.target.value === CUSTOM_TYPE) {

@@ -683,6 +683,17 @@ a:hover { color: var(--on-surface); }
   border-bottom: 1px solid var(--outline);
 }
 .public-table thead tr.public-head-row th { top: 30px; }
+/* Цветовые группы (2026-11-07): полоска над столбцами группы — новая строка шапки; три закреплённые строки
+   сдвигаются на её высоту, размеры существующих ячеек не меняются. */
+.public-table--grouped { --strip-h: 22px; }
+.public-table thead tr.public-group-row th {
+  top: 0; height: var(--strip-h); box-sizing: border-box; padding: 0 6px; font-size: 12px; font-weight: 700;
+  line-height: var(--strip-h); text-align: center; letter-spacing: 0.3px; color: #0b0b12;
+  max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: none;
+}
+.public-table thead tr.public-group-row th.public-group-lead { background: var(--elevated); }
+.public-table--grouped thead tr.public-avg-row th { top: var(--strip-h); }
+.public-table--grouped thead tr.public-head-row th { top: calc(var(--strip-h) + 30px); }
 .public-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
 .public-avg-toggle, .public-lang-toggle {
   font-size: 14px; padding: 6px 14px; border-radius: 8px; cursor: pointer;

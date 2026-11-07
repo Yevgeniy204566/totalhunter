@@ -6,6 +6,7 @@
 //  4) всё нестандартное (без уровня) — в конце.
 // Без метаданных типов (старый архив) порядок сервера не меняем: имена столбцов там локализованы, id неизвестны.
 import { weightAt } from './heroQuota.js'
+import { chestGroup } from './chestGroups.js'
 
 const levelOf = id => { const m = /(\d+)\s*$/.exec(String(id || '')); return m ? Number(m[1]) : null }
 const familyOf = id => String(id || '').replace(/\s*\d+\s*$/, '').replace(/^(Cursed|Elven) Citadel$/, 'Citadel')
@@ -23,13 +24,19 @@ export function orderChestTypes(chestTypes, meta) {
     return { name, i, id, lvl, points, epicCrypt, emc, family: familyOf(id) }
   })
   const epic = info.filter(x => x.epicCrypt).sort((a, b) => b.lvl - a.lvl || a.i - b.i)
-  const emc = info.filter(x => x.emc).sort((a, b) => b.points - a.points || a.i - b.i)
-  const rest = info.filter(x => !x.epicCrypt && !x.emc)
+  const byPoints = (a, b) => b.points - a.points || a.i - b.i
+  // Цветовые группы (2026-11-07): столбцы одной группы стоят подряд, чтобы над ними встала одна полоска.
+  // Внутри EMC: «Тартарос и Бриарей» (монстры по очкам, затем склепы Тартароса по уровню), затем отряды, затем остальные.
+  const tartarosEmc = info.filter(x => x.emc && chestGroup(x.id) === 'tartaros').sort(byPoints)
+  const tartarosCrypts = info.filter(x => !x.emc && chestGroup(x.id) === 'tartaros').sort((a, b) => b.lvl - a.lvl || a.i - b.i)
+  const squads = info.filter(x => x.emc && chestGroup(x.id) === 'squad').sort(byPoints)
+  const emc = info.filter(x => x.emc && !['tartaros', 'squad'].includes(chestGroup(x.id))).sort(byPoints)
+  const rest = info.filter(x => !x.epicCrypt && !x.emc && chestGroup(x.id) !== 'tartaros')
   const leveled = rest.filter(x => x.lvl != null)
   const bestOf = new Map()
   for (const x of leveled) bestOf.set(x.family, Math.max(bestOf.get(x.family) ?? -1, x.points))
   leveled.sort((a, b) => (bestOf.get(b.family) - bestOf.get(a.family)) || a.family.localeCompare(b.family)
     || b.lvl - a.lvl || a.id.localeCompare(b.id))
   const other = rest.filter(x => x.lvl == null).sort((a, b) => b.points - a.points || a.i - b.i)
-  return [...epic, ...emc, ...leveled, ...other].map(x => x.name)
+  return [...epic, ...tartarosEmc, ...tartarosCrypts, ...squads, ...emc, ...leveled, ...other].map(x => x.name)
 }

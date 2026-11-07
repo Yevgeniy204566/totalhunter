@@ -256,6 +256,10 @@
   .public-avg-toggle,
   .public-table thead tr.public-avg-row { display: none !important; }
   .public-table thead tr.public-head-row th { top: 0 !important; }
+  /* полоска групп (2026-11-07): мельче, строка заголовков закреплена под ней */
+  .public-table--grouped { --strip-h: 16px; }
+  .public-table thead tr.public-group-row th { font-size: 8px !important; padding: 0 3px !important; }
+  .public-table--grouped thead tr.public-head-row th { top: var(--strip-h) !important; }
 
   /* Тень-«намёк о скролле» (::after) убрана (владелец 2026-09-28): внутри прокручиваемой
      обёртки она уезжала вместе с таблицей и тёмной полосой резала столбец посередине.
