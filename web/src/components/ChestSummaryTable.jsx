@@ -523,8 +523,17 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
   const topScrollRef = useRef(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
 
+  // Ширина «ползунка-двойника» сверху = ширина содержимого + ширина вертикальной полосы таблицы: вертикальная полоса
+  // сужает видимую часть таблицы, и без этой добавки верхний ползунок в крайнем правом положении
+  // не доезжал до конца — последний столбец оставался под полосой (владелец 2026-11-07, полоса стала 24px).
   useEffect(() => {
-    if (tableWrapRef.current) setTableScrollWidth(tableWrapRef.current.scrollWidth)
+    const measure = () => {
+      const el = tableWrapRef.current
+      if (el) setTableScrollWidth(el.scrollWidth + (el.offsetWidth - el.clientWidth))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
   }, [chestTypes, players])
 
   const [editRows, setEditRows] = useState({})
