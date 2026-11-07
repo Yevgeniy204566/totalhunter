@@ -30,7 +30,9 @@ export function orderChestTypes(chestTypes, meta) {
   const tartarosEmc = info.filter(x => x.emc && chestGroup(x.id, x.slot) === 'tartaros').sort(byPoints)
   const tartarosCrypts = info.filter(x => !x.emc && chestGroup(x.id, x.slot) === 'tartaros').sort((a, b) => b.lvl - a.lvl || a.i - b.i)
   const squads = info.filter(x => x.emc && chestGroup(x.id, x.slot) === 'squad').sort(byPoints)
-  const emc = info.filter(x => x.emc && !['tartaros', 'squad'].includes(chestGroup(x.id, x.slot))).sort(byPoints)
+  // красные «Эпические монстры» подряд, затем остальные сундуки EMC без цвета (Yogwai, Dark Omens, события)
+  const emcRed = info.filter(x => x.emc && chestGroup(x.id, x.slot) === 'emc').sort(byPoints)
+  const emc = info.filter(x => x.emc && !['tartaros', 'squad', 'emc'].includes(chestGroup(x.id, x.slot))).sort(byPoints)
   const rest = info.filter(x => !x.epicCrypt && !x.emc && chestGroup(x.id, x.slot) !== 'tartaros')
   const leveled = rest.filter(x => x.lvl != null)
   const bestOf = new Map()
@@ -38,5 +40,5 @@ export function orderChestTypes(chestTypes, meta) {
   leveled.sort((a, b) => (bestOf.get(b.family) - bestOf.get(a.family)) || a.family.localeCompare(b.family)
     || b.lvl - a.lvl || a.id.localeCompare(b.id))
   const other = rest.filter(x => x.lvl == null).sort((a, b) => b.points - a.points || a.i - b.i)
-  return [...epic, ...tartarosEmc, ...tartarosCrypts, ...squads, ...emc, ...leveled, ...other].map(x => x.name)
+  return [...epic, ...tartarosEmc, ...tartarosCrypts, ...squads, ...emcRed, ...emc, ...leveled, ...other].map(x => x.name)
 }

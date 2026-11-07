@@ -12,9 +12,11 @@ test('группы по каталожному id', () => {
   assert.equal(chestGroup('Epic Crypt 30'), 'epicCrypt')
   assert.equal(chestGroup('Rare Crypt 25'), 'rare')
   assert.equal(chestGroup('Common Crypt 20'), 'common')
-  for (const id of ['Epic Fire Hydra', 'Epic Undead', 'Epic Arachne', 'Epic Shadow City', 'Yogwai', 'Dark Omens Chest']) {
+  for (const id of ['Epic Fire Hydra', 'Epic Undead', 'Epic Arachne', 'Epic Shadow City', 'Epic Hellforge', 'Yogwai', 'Pumpkin', 'Pumpkin Chest']) {
     assert.equal(chestGroup(id), 'emc', id)
   }
+  // прочие сундуки EMC красными не бывают
+  for (const id of ['Dark Omens Chest', 'Свой монстр']) assert.equal(chestGroup(id, 2), null, id)
   assert.equal(chestGroup('Elven Citadel 30'), 'citadel')
   assert.equal(chestGroup('Cursed Citadel 25'), 'citadel')
   assert.equal(chestGroup('Свой тип'), null)
@@ -38,7 +40,7 @@ test('названия групп: ru и en, на других языках — 
 
 test('на публичной странице столбцы одной группы стоят рядом (полоска над ними непрерывна)', () => {
   const ids = ['Epic Crypt 35', 'Epic Fenrir', 'Tartaros Crypt 35', 'Rare Crypt 30', 'Epic Briareus', 'Epic Fire Hydra',
-    'Epic Jormungander', 'Epic Chimera', 'Common Crypt 25', 'Tartaros Crypt 30', 'Epic Basilisk', 'Epic Undead']
+    'Epic Jormungander', 'Epic Chimera', 'Common Crypt 25', 'Tartaros Crypt 30', 'Epic Basilisk', 'Epic Undead', 'Yogwai', 'Epic Hellforge']
   const meta = Object.fromEntries(ids.map(id => [id, { id, points: 10, slot: /^Epic (?!Crypt)/.test(id) ? 2 : null }]))
   const out = orderChestTypes(ids, meta)
   assert.equal(out.length, ids.length)
@@ -54,10 +56,10 @@ test('на публичной странице столбцы одной гру�
   }
 })
 
-test('всё из квоты EMC (slot 2), что не в Олимпе и Рагнареке, — «Эпические монстры»', () => {
+test('красные «Эпические монстры» — только пять названных; Олимп и Рагнарек сильнее; прочее из EMC без цвета', () => {
   assert.equal(chestGroup('Pumpkin', 2), 'emc')
-  assert.equal(chestGroup('Свой монстр', 2), 'emc')
+  assert.equal(chestGroup('Свой монстр', 2), null)
   assert.equal(chestGroup('Epic Briareus', 2), 'tartaros')
   assert.equal(chestGroup('Epic Fenrir', 2), 'squad')
-  assert.equal(chestGroup('Pumpkin', null), null)
+  assert.equal(chestGroup('Dark Omens Chest', null), null)
 })

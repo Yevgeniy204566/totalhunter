@@ -49,7 +49,9 @@ export const isEmcId = id => {
   return !isEpicCryptId(s) && (/^Epic /.test(s) || s === 'Dark Omens Chest' || s === 'Yogwai')
 }
 
-// slot === 2 — сундук из квоты EMC: всё, что в EMC, но не в Олимпе/Рагнареке, — «Эпические монстры» (владелец 2026-11-07)
+// «Эпические монстры» (красные) — только перечисленные (владелец 2026-11-07): пять Epic…, Yogwai и тыква (Pumpkin…);
+// остальные сундуки EMC (Dark Omens и прочее) красными не бывают — без цвета. slot оставлен в сигнатуре для совместимости и не влияет.
+const EMC_GROUP_IDS = new Set(['Epic Arachne', 'Epic Fire Hydra', 'Epic Hellforge', 'Epic Shadow City', 'Epic Undead', 'Yogwai'])
 export function chestGroup(id, slot = null) {
   const s = String(id || '')
   if (SQUAD_IDS.has(s)) return 'squad'
@@ -58,7 +60,7 @@ export function chestGroup(id, slot = null) {
   if (/^Rare Crypt\b/.test(s)) return 'rare'
   if (/^Common Crypt\b/.test(s)) return 'common'
   if (/Citadel/.test(s)) return 'citadel'
-  if (isEmcId(s) || slot === 2) return 'emc'
+  if (EMC_GROUP_IDS.has(s) || /^Pumpkin/.test(s)) return 'emc'
   return null
 }
 
