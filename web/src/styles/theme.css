@@ -699,7 +699,7 @@ a:hover { color: var(--on-surface); }
   background-image: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.public-table thead tr.public-group-row th.public-group-strip::before,
+/* Линия — только над заголовками столбцов; над названиями групп («Олимп», «Рагнарек»…) убрана (владелец 2026-11-07) */
 .public-table thead th.public-grp-col::before {
   content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; pointer-events: none;
   background-image: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
