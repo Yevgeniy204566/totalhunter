@@ -587,10 +587,10 @@ a:hover { color: var(--on-surface); }
 .public-targets-mobile, .public-targets-break { display: none; }
 .public-target-num { color: var(--credits-gold); font-weight: 700; }
 
-.public-table-wrap::-webkit-scrollbar { height: 10px; }
+.public-table-wrap::-webkit-scrollbar { height: 16px; width: 16px; }
 .public-table-wrap::-webkit-scrollbar-track { background: var(--elevated); border-radius: 4px; }
-.public-table-wrap::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
-.public-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
+.public-table-wrap::-webkit-scrollbar-thumb { background: rgba(120, 130, 160, 0.55); border-radius: 6px; border: 3px solid var(--elevated); }
+.public-table-wrap::-webkit-scrollbar-thumb:hover { background: rgba(140, 150, 185, 0.75); }
 
 .row-success td { color: #50C878; font-weight: 600; }
 .row-lagging td { color: #FFB347; }
@@ -669,10 +669,10 @@ a:hover { color: var(--on-surface); }
 }
 
 .public-table-top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
-.public-table-top-scroll::-webkit-scrollbar { height: 10px; }
+.public-table-top-scroll::-webkit-scrollbar { height: 16px; }
 .public-table-top-scroll::-webkit-scrollbar-track { background: var(--elevated); border-radius: 4px; }
-.public-table-top-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
-.public-table-top-scroll::-webkit-scrollbar-thumb:hover { background: var(--accent-glow); }
+.public-table-top-scroll::-webkit-scrollbar-thumb { background: rgba(120, 130, 160, 0.55); border-radius: 6px; border: 3px solid var(--elevated); }
+.public-table-top-scroll::-webkit-scrollbar-thumb:hover { background: rgba(140, 150, 185, 0.75); }
 
 .public-table thead th {
   position: sticky; top: 0; z-index: 3; background: var(--elevated);

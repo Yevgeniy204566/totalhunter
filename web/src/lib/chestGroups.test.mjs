@@ -28,8 +28,10 @@ test('шесть цветов, все разные; светло-синий (р�
 })
 
 test('названия групп: ru и en, на других языках — английские', () => {
-  assert.equal(groupTitle('tartaros', 'ru'), 'Тартарос и Бриарей')
-  assert.equal(groupTitle('tartaros', 'en'), 'Tartaros & Briareus')
+  assert.equal(groupTitle('tartaros', 'ru'), 'Олимп')
+  assert.equal(groupTitle('squad', 'ru'), 'Рагнарек')
+  assert.equal(groupTitle('tartaros', 'en'), 'Olympus')
+  assert.equal(groupTitle('squad', 'en'), 'Ragnarok')
   assert.equal(groupTitle('rare', 'de'), 'Rare crypts')
 })
 
@@ -49,4 +51,12 @@ test('на публичной странице столбцы одной гру�
       seen.push(g)
     }
   }
+})
+
+test('всё из квоты EMC (slot 2), что не в Олимпе и Рагнареке, — «Эпические монстры»', () => {
+  assert.equal(chestGroup('Pumpkin', 2), 'emc')
+  assert.equal(chestGroup('Свой монстр', 2), 'emc')
+  assert.equal(chestGroup('Epic Briareus', 2), 'tartaros')
+  assert.equal(chestGroup('Epic Fenrir', 2), 'squad')
+  assert.equal(chestGroup('Pumpkin', null), null)
 })

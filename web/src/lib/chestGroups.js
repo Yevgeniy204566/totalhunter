@@ -1,32 +1,32 @@
 // Цветовые группы сундуков (владелец 2026-11-07): цвет = принадлежность к группе, а не тип сундука.
 // Один источник для публичной страницы и для «Сундуки → Общие нормы клана»: цвета одинаковы на всех языках.
-//   squad     — Эпический отряд Фенрира / Ёрмунганда        — тёмно-синий
-//   tartaros  — склепы Тартароса, отряд Бриарея, Химера, Василиск — золотой
+//   squad     — «Рагнарек»: Эпический отряд Фенрира / Ёрмунганда — тёмно-синий
+//   tartaros  — «Олимп»: склепы Тартароса, отряд Бриарея, Химера, Василиск — золотой
 //   epicCrypt — эпические склепы                            — фиолетовый
 //   rare      — редкие склепы                               — светло-синий
 //   common    — обычные склепы                              — зелёный
 //   emc       — остальные эпические монстры                 — неоновый
 // Цитадели и нестандартные типы вне групп: group = null, без цвета и без полоски.
 export const GROUP_COLOR = {
-  squad:     '#3a5ff0',
-  tartaros:  '#f5c518',
-  epicCrypt: '#a855f7',
-  rare:      '#7dd3fc',
-  common:    '#4ade80',
-  emc:       '#ff2bd6',
+  squad:     '#5468b4',
+  tartaros:  '#a8903f',
+  epicCrypt: '#8566a8',
+  rare:      '#6d9ab5',
+  common:    '#5f9272',
+  emc:       '#b0615f',
 }
 
 export const GROUP_TITLE = {
-  ru: { squad: 'Эпические отряды', tartaros: 'Тартарос и Бриарей', epicCrypt: 'Эпические склепы',
+  ru: { squad: 'Рагнарек', tartaros: 'Олимп', epicCrypt: 'Эпические склепы',
         rare: 'Редкие склепы', common: 'Обычные склепы', emc: 'Эпические монстры' },
-  en: { squad: 'Epic squads', tartaros: 'Tartaros & Briareus', epicCrypt: 'Epic crypts',
+  en: { squad: 'Ragnarok', tartaros: 'Olympus', epicCrypt: 'Epic crypts',
         rare: 'Rare crypts', common: 'Common crypts', emc: 'Epic monsters' },
 }
 
 // Короткие названия — для группы из одного столбца, где полное не поместится (читается целиком, без подсказок)
 export const GROUP_SHORT = {
-  ru: { squad: 'Отряды', tartaros: 'Тартарос', epicCrypt: 'Эпик', rare: 'Редкие', common: 'Обычные', emc: 'Монстры' },
-  en: { squad: 'Squads', tartaros: 'Tartaros', epicCrypt: 'Epic', rare: 'Rare', common: 'Common', emc: 'Monsters' },
+  ru: { squad: 'Рагнарек', tartaros: 'Олимп', epicCrypt: 'Эпик', rare: 'Редкие', common: 'Обычные', emc: 'Монстры' },
+  en: { squad: 'Ragnarok', tartaros: 'Olympus', epicCrypt: 'Epic', rare: 'Rare', common: 'Common', emc: 'Monsters' },
 }
 
 export const isEpicCryptId = id => /^Epic Crypt\s+\d+$/.test(String(id || ''))
@@ -40,16 +40,17 @@ export const isEmcId = id => {
   return !isEpicCryptId(s) && (/^Epic /.test(s) || s === 'Dark Omens Chest' || s === 'Yogwai')
 }
 
-export function chestGroup(id) {
+// slot === 2 — сундук из квоты EMC: всё, что в EMC, но не в Олимпе/Рагнареке, — «Эпические монстры» (владелец 2026-11-07)
+export function chestGroup(id, slot = null) {
   const s = String(id || '')
   if (SQUAD_IDS.has(s)) return 'squad'
   if (TARTAROS_IDS.has(s) || /^Tartaros Crypt\b/.test(s)) return 'tartaros'
   if (isEpicCryptId(s)) return 'epicCrypt'
   if (/^Rare Crypt\b/.test(s)) return 'rare'
   if (/^Common Crypt\b/.test(s)) return 'common'
-  if (isEmcId(s)) return 'emc'
+  if (isEmcId(s) || slot === 2) return 'emc'
   return null
 }
 
-export const groupColor = id => GROUP_COLOR[chestGroup(id)] || null
+export const groupColor = (id, slot = null) => GROUP_COLOR[chestGroup(id, slot)] || null
 export const groupTitle = (group, lang, short = false) => ((short ? GROUP_SHORT : GROUP_TITLE)[lang] || (short ? GROUP_SHORT : GROUP_TITLE).en)[group]

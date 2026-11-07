@@ -244,7 +244,7 @@ function ChestsViewer({ cx, lang, noOwn }) {
                         {accountingOrder(c.rows, 'asc', 'default').map(i => c.rows[i]).map(r => (
                           <tr key={r.catalog_id}>
                             <td translate="no" className="notranslate"
-                                style={{ color: groupColor(r.catalog_id) || undefined, fontWeight: chestGroup(r.catalog_id) ? 600 : undefined }}>{r.custom_name || r.catalog_id}</td>
+                                style={{ color: groupColor(r.catalog_id, r.quota_slot) || undefined, fontWeight: chestGroup(r.catalog_id, r.quota_slot) ? 600 : undefined }}>{r.custom_name || r.catalog_id}</td>
                             <td>{r.points}</td>
                             <td>
                               <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 6, border: '1px solid var(--outline)',
@@ -1007,7 +1007,7 @@ export default function ChestsPage() {
                 <tbody>
                   {accSortedIndices(collector.slug).map(i => [rowsByCollector[collector.slug][i], i]).map(([row, i]) => (
                     <tr key={i}>
-                      <td style={{ whiteSpace: 'nowrap', color: groupColor(row.catalog_id) || undefined, fontWeight: chestGroup(row.catalog_id) ? 600 : undefined }}>{row.raw_type || '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap', color: groupColor(row.catalog_id, row.quota_slot) || undefined, fontWeight: chestGroup(row.catalog_id, row.quota_slot) ? 600 : undefined }}>{row.raw_type || '—'}</td>
                       <td>
                         {row.is_custom ? (
                           <div style={{ display: 'flex', gap: 6 }}>
@@ -1022,7 +1022,7 @@ export default function ChestsPage() {
                         ) : (
                           <select
                             className="input-dark"
-                            style={groupColor(row.catalog_id) ? { color: groupColor(row.catalog_id), fontWeight: 600 } : undefined}
+                            style={groupColor(row.catalog_id, row.quota_slot) ? { color: groupColor(row.catalog_id, row.quota_slot), fontWeight: 600 } : undefined}
                             value={row.catalog_id || ''}
                             onChange={e => {
                               if (e.target.value === CUSTOM_TYPE) {

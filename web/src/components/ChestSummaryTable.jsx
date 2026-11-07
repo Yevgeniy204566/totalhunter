@@ -435,7 +435,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     if (!chestTypeMeta) return null
     const runs = []
     for (const t of orderedTypes) {
-      const g = chestGroup(idOf(t))
+      const g = chestGroup(idOf(t), chestTypeMeta?.[t]?.slot ?? null)
       const last = runs[runs.length - 1]
       if (last && last.group === g) last.n += 1
       else runs.push({ group: g, n: 1 })
@@ -654,7 +654,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                 </>}
               {orderedTypes.map(t => (
                 <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
-                    style={groupColor(idOf(t)) ? { color: groupColor(idOf(t)), textShadow: 'none', boxShadow: `inset 0 4px 0 ${groupColor(idOf(t))}` } : undefined}
+                    style={groupColor(idOf(t), typeMeta?.[t]?.slot) ? { color: groupColor(idOf(t), typeMeta?.[t]?.slot), textShadow: 'none', boxShadow: `inset 0 4px 0 ${groupColor(idOf(t), typeMeta?.[t]?.slot)}` } : undefined}
                     onClick={() => toggleSort(t)}>
                   <span translate="no" className="notranslate">{t}</span>{sortMark(t)}
                 </th>

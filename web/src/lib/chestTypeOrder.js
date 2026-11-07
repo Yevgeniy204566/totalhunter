@@ -21,17 +21,17 @@ export function orderChestTypes(chestTypes, meta) {
     const emc = !epicCrypt && (m?.slot === 2 || /^Epic /.test(id) || id === 'Dark Omens Chest' || id === 'Yogwai')
     // очки для порядка: таблица T9 (если тип в ней есть), иначе очки клана; у ELDORADO очки клана за монстров EMC — заглушки
     const points = Math.max(weightAt(id, 450) ?? 0, m?.points || 0)
-    return { name, i, id, lvl, points, epicCrypt, emc, family: familyOf(id) }
+    return { name, i, id, lvl, points, epicCrypt, emc, slot: m?.slot ?? null, family: familyOf(id) }
   })
   const epic = info.filter(x => x.epicCrypt).sort((a, b) => b.lvl - a.lvl || a.i - b.i)
   const byPoints = (a, b) => b.points - a.points || a.i - b.i
   // Цветовые группы (2026-11-07): столбцы одной группы стоят подряд, чтобы над ними встала одна полоска.
   // Внутри EMC: «Тартарос и Бриарей» (монстры по очкам, затем склепы Тартароса по уровню), затем отряды, затем остальные.
-  const tartarosEmc = info.filter(x => x.emc && chestGroup(x.id) === 'tartaros').sort(byPoints)
-  const tartarosCrypts = info.filter(x => !x.emc && chestGroup(x.id) === 'tartaros').sort((a, b) => b.lvl - a.lvl || a.i - b.i)
-  const squads = info.filter(x => x.emc && chestGroup(x.id) === 'squad').sort(byPoints)
-  const emc = info.filter(x => x.emc && !['tartaros', 'squad'].includes(chestGroup(x.id))).sort(byPoints)
-  const rest = info.filter(x => !x.epicCrypt && !x.emc && chestGroup(x.id) !== 'tartaros')
+  const tartarosEmc = info.filter(x => x.emc && chestGroup(x.id, x.slot) === 'tartaros').sort(byPoints)
+  const tartarosCrypts = info.filter(x => !x.emc && chestGroup(x.id, x.slot) === 'tartaros').sort((a, b) => b.lvl - a.lvl || a.i - b.i)
+  const squads = info.filter(x => x.emc && chestGroup(x.id, x.slot) === 'squad').sort(byPoints)
+  const emc = info.filter(x => x.emc && !['tartaros', 'squad'].includes(chestGroup(x.id, x.slot))).sort(byPoints)
+  const rest = info.filter(x => !x.epicCrypt && !x.emc && chestGroup(x.id, x.slot) !== 'tartaros')
   const leveled = rest.filter(x => x.lvl != null)
   const bestOf = new Map()
   for (const x of leveled) bestOf.set(x.family, Math.max(bestOf.get(x.family) ?? -1, x.points))
