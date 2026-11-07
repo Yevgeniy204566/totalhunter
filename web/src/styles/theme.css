@@ -692,6 +692,22 @@ a:hover { color: var(--on-surface); }
   max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: none;
 }
 .public-table thead tr.public-group-row th.public-group-lead { background: var(--elevated); }
+/* Без сплошной заливки (владелец 2026-11-07): полоса группы — фон шапки, название — градиентным текстом,
+   сверху тонкая линия-градиент; над столбцами группы линия непрерывна (--n столбцов, --k номер столбца). */
+.public-table thead tr.public-group-row th.public-group-strip { background: var(--elevated); color: transparent; }
+.public-group-label {
+  background-image: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.public-table thead tr.public-group-row th.public-group-strip::before,
+.public-table thead th.public-grp-col::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; pointer-events: none;
+  background-image: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
+}
+.public-table thead th.public-grp-col::before {
+  background-size: calc(var(--n, 1) * 100%) 100%;
+  background-position: calc(var(--k, 0) / max(var(--n, 1) - 1, 1) * 100%) 0;
+}
 .public-table--grouped thead tr.public-avg-row th { top: var(--strip-h); }
 .public-table--grouped thead tr.public-head-row th { top: calc(var(--strip-h) + 30px); }
 .public-sortable { cursor: pointer; user-select: none; white-space: nowrap; }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { postPublicPlayerProfile } from '../api.js'
 import { barColor, barFillColor } from '../lib/progressColor.js'
 import { orderChestTypes } from '../lib/chestTypeOrder.js'
-import { chestGroup, groupColor, groupTitle, GROUP_COLOR } from '../lib/chestGroups.js'
+import { chestGroup, groupColor, groupTitle, paletteCss } from '../lib/chestGroups.js'
 import { useQuotaLabel } from '../lib/quotaLabel.js'
 import {
   scoreOf, normAt, epicCountTotal, epicCryptsOf, emcQuotaTotal, DEFAULT_HERO,
@@ -442,6 +442,17 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     }
     return runs.some(r => r.group) ? runs : null
   }, [orderedTypes, chestTypeMeta])
+  // столбец → группа, число столбцов в подряд идущей группе и номер столбца в ней (для непрерывной линии)
+  const colGroup = useMemo(() => {
+    const m = {}
+    if (!groupRuns) return m
+    let pos = 0
+    for (const r of groupRuns) {
+      for (let k = 0; k < r.n; k++) if (r.group) m[orderedTypes[pos + k]] = { group: r.group, n: r.n, k }
+      pos += r.n
+    }
+    return m
+  }, [groupRuns, orderedTypes])
   const pers = targets?.personal || {}
   const personalCrypts = !!pers.crypts
   const personalEmc = !!pers.emc
@@ -597,7 +608,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               <th colSpan={3 + (editMode ? 3 : 0) + (mainCols ? mainCols.length : 1 + quotaCols.length)} className="public-group-lead"></th>
               {groupRuns.map((r, k) => r.group
                 ? <th key={k} colSpan={r.n} className="public-group-strip" translate="no"
-                      style={{ background: GROUP_COLOR[r.group] }}>{groupTitle(r.group, lang, r.n === 1)}</th>
+                      style={paletteCss(r.group)}><span className="public-group-label">{groupTitle(r.group, lang, r.n === 1)}</span></th>
                 : <th key={k} colSpan={r.n} className="public-group-lead"></th>)}
             </tr>}
             {showAvg && <tr className="public-avg-row">
@@ -653,8 +664,9 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                   ))}
                 </>}
               {orderedTypes.map(t => (
-                <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
-                    style={groupColor(idOf(t), typeMeta?.[t]?.slot) ? { color: groupColor(idOf(t), typeMeta?.[t]?.slot), textShadow: 'none', boxShadow: `inset 0 4px 0 ${groupColor(idOf(t), typeMeta?.[t]?.slot)}` } : undefined}
+                <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable${colGroup[t] ? ' public-grp-col' : ''}`}
+                    style={colGroup[t] ? { ...paletteCss(colGroup[t].group), '--n': colGroup[t].n, '--k': colGroup[t].k,
+                                           color: groupColor(idOf(t), typeMeta?.[t]?.slot), textShadow: 'none' } : undefined}
                     onClick={() => toggleSort(t)}>
                   <span translate="no" className="notranslate">{t}</span>{sortMark(t)}
                 </th>
