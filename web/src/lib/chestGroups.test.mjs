@@ -15,16 +15,17 @@ test('группы по каталожному id', () => {
   for (const id of ['Epic Fire Hydra', 'Epic Undead', 'Epic Arachne', 'Epic Shadow City', 'Yogwai', 'Dark Omens Chest']) {
     assert.equal(chestGroup(id), 'emc', id)
   }
-  assert.equal(chestGroup('Elven Citadel 30'), null)
+  assert.equal(chestGroup('Elven Citadel 30'), 'citadel')
+  assert.equal(chestGroup('Cursed Citadel 25'), 'citadel')
   assert.equal(chestGroup('Свой тип'), null)
   assert.equal(chestGroup(null), null)
 })
 
 test('шесть цветов, все разные; светло-синий (редкие) и тёмно-синий (отряды) — не один цвет', () => {
   const colors = Object.values(GROUP_COLOR)
-  assert.equal(new Set(colors).size, 6)
+  assert.equal(new Set(colors).size, 7)
   assert.notEqual(groupColor('Rare Crypt 25'), groupColor('Epic Fenrir'))
-  assert.equal(groupColor('Elven Citadel 25'), null)
+  assert.equal(groupColor('Arena'), null)
 })
 
 test('названия групп: ru и en, на других языках — английские', () => {

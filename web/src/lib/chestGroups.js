@@ -13,20 +13,21 @@ export const GROUP_COLOR = {
   epicCrypt: '#8566a8',
   rare:      '#6d9ab5',
   common:    '#5f9272',
+  citadel:   '#5a9a9a',
   emc:       '#b0615f',
 }
 
 export const GROUP_TITLE = {
   ru: { squad: 'Рагнарек', tartaros: 'Олимп', epicCrypt: 'Эпические склепы',
-        rare: 'Редкие склепы', common: 'Обычные склепы', emc: 'Эпические монстры' },
+        rare: 'Редкие склепы', common: 'Обычные склепы', citadel: 'Цитадели', emc: 'Эпические монстры' },
   en: { squad: 'Ragnarok', tartaros: 'Olympus', epicCrypt: 'Epic crypts',
-        rare: 'Rare crypts', common: 'Common crypts', emc: 'Epic monsters' },
+        rare: 'Rare crypts', common: 'Common crypts', citadel: 'Citadels', emc: 'Epic monsters' },
 }
 
 // Короткие названия — для группы из одного столбца, где полное не поместится (читается целиком, без подсказок)
 export const GROUP_SHORT = {
-  ru: { squad: 'Рагнарек', tartaros: 'Олимп', epicCrypt: 'Эпик', rare: 'Редкие', common: 'Обычные', emc: 'Монстры' },
-  en: { squad: 'Ragnarok', tartaros: 'Olympus', epicCrypt: 'Epic', rare: 'Rare', common: 'Common', emc: 'Monsters' },
+  ru: { squad: 'Рагнарек', tartaros: 'Олимп', epicCrypt: 'Эпик', rare: 'Редкие', common: 'Обычные', citadel: 'Цитадели', emc: 'Монстры' },
+  en: { squad: 'Ragnarok', tartaros: 'Olympus', epicCrypt: 'Epic', rare: 'Rare', common: 'Common', citadel: 'Citadels', emc: 'Monsters' },
 }
 
 export const isEpicCryptId = id => /^Epic Crypt\s+\d+$/.test(String(id || ''))
@@ -48,6 +49,7 @@ export function chestGroup(id, slot = null) {
   if (isEpicCryptId(s)) return 'epicCrypt'
   if (/^Rare Crypt\b/.test(s)) return 'rare'
   if (/^Common Crypt\b/.test(s)) return 'common'
+  if (/Citadel/.test(s)) return 'citadel'
   if (isEmcId(s) || slot === 2) return 'emc'
   return null
 }
