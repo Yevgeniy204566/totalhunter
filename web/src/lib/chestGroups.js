@@ -23,6 +23,12 @@ export const GROUP_TITLE = {
         rare: 'Rare crypts', common: 'Common crypts', emc: 'Epic monsters' },
 }
 
+// Короткие названия — для группы из одного столбца, где полное не поместится (читается целиком, без подсказок)
+export const GROUP_SHORT = {
+  ru: { squad: 'Отряды', tartaros: 'Тартарос', epicCrypt: 'Эпик', rare: 'Редкие', common: 'Обычные', emc: 'Монстры' },
+  en: { squad: 'Squads', tartaros: 'Tartaros', epicCrypt: 'Epic', rare: 'Rare', common: 'Common', emc: 'Monsters' },
+}
+
 export const isEpicCryptId = id => /^Epic Crypt\s+\d+$/.test(String(id || ''))
 
 const SQUAD_IDS = new Set(['Epic Fenrir', 'Epic Jormungander'])
@@ -46,4 +52,4 @@ export function chestGroup(id) {
 }
 
 export const groupColor = id => GROUP_COLOR[chestGroup(id)] || null
-export const groupTitle = (group, lang) => (GROUP_TITLE[lang] || GROUP_TITLE.en)[group]
+export const groupTitle = (group, lang, short = false) => ((short ? GROUP_SHORT : GROUP_TITLE)[lang] || (short ? GROUP_SHORT : GROUP_TITLE).en)[group]

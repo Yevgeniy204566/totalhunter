@@ -597,7 +597,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
               <th colSpan={3 + (editMode ? 3 : 0) + (mainCols ? mainCols.length : 1 + quotaCols.length)} className="public-group-lead"></th>
               {groupRuns.map((r, k) => r.group
                 ? <th key={k} colSpan={r.n} className="public-group-strip" translate="no"
-                      title={groupTitle(r.group, lang)} style={{ background: GROUP_COLOR[r.group] }}>{groupTitle(r.group, lang)}</th>
+                      style={{ background: GROUP_COLOR[r.group] }}>{groupTitle(r.group, lang, r.n === 1)}</th>
                 : <th key={k} colSpan={r.n} className="public-group-lead"></th>)}
             </tr>}
             {showAvg && <tr className="public-avg-row">
@@ -654,7 +654,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                 </>}
               {orderedTypes.map(t => (
                 <th key={t} className={`${isEpicColumn(t) ? 'public-epic-cell ' : ''}public-sortable`}
-                    style={groupColor(idOf(t)) ? { color: groupColor(idOf(t)), textShadow: 'none' } : undefined}
+                    style={groupColor(idOf(t)) ? { color: groupColor(idOf(t)), textShadow: 'none', boxShadow: `inset 0 4px 0 ${groupColor(idOf(t))}` } : undefined}
                     onClick={() => toggleSort(t)}>
                   <span translate="no" className="notranslate">{t}</span>{sortMark(t)}
                 </th>
