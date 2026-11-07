@@ -287,12 +287,17 @@
   .public-table td.public-name-cell {
     box-sizing: border-box !important;
     width: 30vw !important; min-width: 30vw !important; max-width: 30vw !important;
-    left: 70px !important;
     overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
   }
+  /* Имя на телефоне НЕ закреплено (владелец 2026-11-07): таблица прокручивается слева направо целиком,
+     закреплены только «#» и уровень героя. Ширина ячейки имени не менялась; у th остаётся только
+     вертикальный закреп шапки (top). Граница закрепа — тень на столбце героя. */
+  .public-table td.public-name-cell { position: static !important; box-shadow: none !important; }
+  .public-table th.public-name-cell { left: auto !important; box-shadow: none !important; }
+  .public-table th.public-hero-cell, .public-table td.public-hero-cell { box-shadow: 6px 0 8px -6px rgba(0, 0, 0, 0.7); }
   .public-table thead th.public-num-cell,
-  .public-table thead th.public-hero-cell,
-  .public-table thead th.public-name-cell { z-index: 5 !important; }
+  .public-table thead th.public-hero-cell { z-index: 5 !important; }
+  .public-table thead th.public-name-cell { z-index: 3 !important; }
   .hero-shield { width: 28px; height: 32px; }
   .public-main-icon { margin-right: 4px; }
   .public-main-chest, .public-main-dragon { width: 22px; height: 22px; vertical-align: -6px; }
