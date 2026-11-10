@@ -307,6 +307,8 @@ DEP_ID=$(curl -s "https://api.vercel.com/v6/deployments?projectId=$PROJECT&teamI
 curl -s -X POST "https://api.vercel.com/v2/deployments/$DEP_ID/aliases?teamId=$TEAM" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"alias":"total-hunter.com"}'
+# Шаг 3б — ОБЯЗАТЕЛЬНО то же для зеркала clbx.date (иначе зеркало отстаёт; случай 2026-11-10: стояло на деплое от 2 ноября)
+curl -s -X POST "https://api.vercel.com/v2/deployments/$DEP_ID/aliases?teamId=$TEAM"   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json"   -d '{"alias":"clbx.date"}'
 ```
 
 **Почему:** productionBranch=master в Vercel (не main). Push в main → Preview, не Production. Нужен hook + alias.
