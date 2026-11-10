@@ -641,7 +641,7 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
                 </th>
               ))}
             </tr>}
-            <tr className={showAvg ? 'public-head-row' : ''}>
+            <tr className={showAvg ? 'public-head-row' : 'public-head-plain'}>
               <th className="public-num-cell">#</th>
               <th className="public-sortable public-hero-cell" onClick={() => toggleSort('hero')}>{tt.heroCol}{sortMark('hero')}</th>
               <th className="public-sortable public-name-cell" onClick={() => toggleSort('name')}>{tt.player}{sortMark('name')}</th>
