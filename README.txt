@@ -10,10 +10,15 @@
 1. INSTALLATION
    Step 1. Extract the archive. Right-click TotalHunter.zip ->
            "Extract All..." (or WinRAR / 7-Zip -> "Extract to
-           TotalHunter\") into any folder, e.g. C:\TotalHunter.
+           TotalHunter\") into a folder you create on a disk,
+           e.g. C:\TotalHunter.
    Step 2. Open the extracted folder.
    Step 3. Run TotalHunter.exe FROM THIS FOLDER.
    Step 4. Sign in with your Google account.
+
+   IMPORTANT: Do NOT extract or install the bot on the Desktop.
+   Always create a folder on a disk (e.g. C:\TotalHunter) and extract
+   into it - the bot must be run only from a regular folder on a disk.
 
    IMPORTANT: Do NOT run TotalHunter.exe from inside the archive
    window (WinRAR / 7-Zip / Explorer zip view) - the bot then starts
@@ -223,10 +228,15 @@ Support    : totalhunter.support@gmail.com
 1. УСТАНОВКА
    Шаг 1. Распакуй архив. Правый клик по TotalHunter.zip ->
           «Извлечь всё...» (или WinRAR / 7-Zip -> «Извлечь в
-          TotalHunter\») в любую папку, например C:\TotalHunter.
+          TotalHunter\») в папку, которую ты создашь на диске,
+          например C:\TotalHunter.
    Шаг 2. Открой распакованную папку.
    Шаг 3. Запусти TotalHunter.exe ИЗ ЭТОЙ ПАПКИ.
    Шаг 4. Войди через Google-аккаунт.
+
+   ВАЖНО: НЕ распаковывай и НЕ устанавливай бота на рабочий стол.
+   Всегда создай папку на диске (например C:\TotalHunter) и распакуй
+   в неё — бот должен запускаться только из обычной папки на диске.
 
    ВАЖНО: НЕ запускай TotalHunter.exe прямо из окна архива
    (WinRAR / 7-Zip / просмотр zip в Проводнике) — бот стартует из
