@@ -597,10 +597,9 @@ def test_collect_chests_stops_at_batch_limit_even_with_more_available(tmp_path, 
     assert sum(result["counts"].values()) == 3
 
 
-def test_queue_limit_is_4000_and_batch_limit_is_10000():
+def test_batch_limit_is_10000():
     """Владелец 2026-11-14: батч вырос с 5000 до 10000 (события, когда 5000 мало), очередь
     обработки (кропы, ждущие OCR) — в 2 раза: 4000. Это два разных предела."""
-    assert cr.QUEUE_LIMIT == 4000
     assert cr.BATCH_LIMIT == 10000
 
 
@@ -1528,3 +1527,23 @@ def test_export_to_api_logs_attempts_and_result(tmp_path, monkeypatch):
     text = open(chest_log.current_file(), encoding="utf-8").read()
     assert "export attempt 1/2" in text and "Timeout" in text and "ok" in text
     assert "Alice" not in text     # ники игроков в лог не пишем
+
+
+def test_ocr_timeout_is_30_seconds(monkeypatch):
+    """Владелец 2026-11-11: лимит Tesseract на одну картинку 30 с вместо 5 — на слабых ПК режим Full
+    не укладывался в 5 с, поток OCR падал и очередь стояла."""
+    captured = {}
+
+    def fake(image, config, lang, timeout):
+        captured['timeout'] = timeout
+        return "x"
+
+    monkeypatch.setattr(cr.pytesseract, "image_to_string", fake)
+    cr.ocr_text(np.zeros((10, 10, 3), dtype=np.uint8))
+    assert captured['timeout'] == 30 == cr.OCR_TIMEOUT_S
+
+
+def test_queue_limit_is_5000():
+    """Владелец 2026-11-14: в живом сборе очередь ~45% от батча — 4000 упиралось, поднято до 5000.
+    Очередь — файлы на диске (~30–75 КБ на кроп), в памяти не лежит."""
+    assert cr.QUEUE_LIMIT == 5000

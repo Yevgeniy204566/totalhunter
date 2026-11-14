@@ -120,7 +120,7 @@ BATCH_LIMIT = 10000   # владелец 2026-11-14: было 5000, на соб�
 # уйдёт на сервер разом (деньги), очередь — сколько кропов одновременно лежит на диске в ожидании OCR.
 # При достижении producer не кликает «Открыть» и не режет новые кропы, пока OCR не разгребёт хвост;
 # сбор при этом не завершается (в отличие от BATCH_LIMIT).
-QUEUE_LIMIT = 4000   # владелец 2026-11-14: было 2000, вслед за батчем ×2
+QUEUE_LIMIT = 5000   # владелец 2026-11-14: было 2000; в живом сборе очередь ~45% батча — упиралось
 
 
 def detect_dialog_bbox(frame):
@@ -182,10 +182,15 @@ def preprocess_for_ocr(roi):
     return binary
 
 
+# Владелец 2026-11-11: 30 с на картинку (было 5) — на слабом ПК в режиме Full 5 с не хватало.
+OCR_TIMEOUT_S = 30
+
+
 def ocr_text(roi, psm=7, lang='rus+eng', extra_config=''):
     processed = preprocess_for_ocr(roi)
     config = f'--psm {psm} {extra_config}'.strip()
-    return pytesseract.image_to_string(processed, config=config, lang=lang, timeout=5).strip()
+    return pytesseract.image_to_string(processed, config=config, lang=lang,
+                                       timeout=OCR_TIMEOUT_S).strip()
 
 
 def clean_name(text):
