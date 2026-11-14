@@ -26,9 +26,13 @@ def _app(running=True):
     app.chest_send_btn = MagicMock()
     app._chest_delete_batch_btn = MagicMock()
     app.chest_recog_btn = MagicMock()
+    app.chest_time_label = MagicMock()
+    app._chest_elapsed = 0.0
+    app._chest_t0 = None
+    app._chest_timer_job = None
     app._update_chest_counts_display = MagicMock()
     app._refresh_chest_queue = MagicMock()
-    app.after = lambda ms, fn=None, *a: fn() if fn else None
+    app.after = lambda ms, fn=None, *a: fn() if (fn and ms == 0) else None
     return app
 
 

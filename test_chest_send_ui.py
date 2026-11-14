@@ -46,6 +46,10 @@ def test_collection_done_shows_error_instead_of_plain_stopped():
     app = _app()
     app.chest_start_btn = MagicMock()
     app.chest_recog_btn = MagicMock()
+    app.chest_time_label = MagicMock()
+    app._chest_elapsed = 0.0
+    app._chest_t0 = None
+    app._chest_timer_job = None
     app._chest_delete_batch_btn = MagicMock()
     app._update_chest_counts_display = MagicMock()
     app._refresh_chest_queue = MagicMock()

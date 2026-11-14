@@ -2220,6 +2220,9 @@ class TotalHunterApp(ctk.CTk):
         self._chest_running = False
         self._chest_stop_event = threading.Event()
         self._chest_abort_event = threading.Event()
+        self._chest_elapsed = 0.0       # таймер сбора: накоплено секунд
+        self._chest_t0 = None           # момент последнего запуска (None — стоит)
+        self._chest_timer_job = None
         saved_lang = {}
         if os.path.exists(GUI_CONFIG_PATH):
             try:
@@ -3484,6 +3487,7 @@ class TotalHunterApp(ctk.CTk):
         run_kingdom = self.chest_kingdom_entry.get().strip()
         run_clan = self.chest_clan_entry.get().strip()
         self._chest_running = True
+        self._chest_timer_start()
         self._chest_stop_event = threading.Event()
         self._chest_abort_event = threading.Event()
         abort_event = self._chest_abort_event
@@ -3501,18 +3505,24 @@ class TotalHunterApp(ctk.CTk):
             self.after(0, lambda c=dict(counts): (
                 self._update_chest_counts_display(c), self._refresh_chest_queue()))
 
+        last_send_status = {}
+        continue_after_send = {"value": False}
+
+        def _on_batch_ready(reason):
+            self._chest_auto_send(reason, run_kingdom, run_clan, L, last_send_status, continue_after_send)
+
         def _worker():
             chest_log.report("кнопка «Запустить распознавание»: старт")
             try:
                 result = chest_reader.collect_chests(
                     stop_now, on_update=_on_update, abort_flag=stop_now,
                     full_lang=full_lang, kingdom=run_kingdom or None, clan=run_clan or None,
-                    collect=False)
+                    collect=False, on_batch_ready=_on_batch_ready)
             except Exception as exc:
                 chest_log.log_exc("распознавание очереди: исключение")
                 chest_log.report(f"распознавание очереди: сбой {type(exc).__name__}: {exc}", "ERROR")
                 result = {"counts": {}, "error": f"{type(exc).__name__}: {exc}"}
-            self.after(0, lambda: self._on_chest_collection_done(result))
+            self.after(0, lambda: self._on_chest_collection_done(result, last_send_status))
 
         threading.Thread(target=_worker, daemon=True).start()
 
@@ -3554,6 +3564,7 @@ class TotalHunterApp(ctk.CTk):
             return
 
         self._chest_running = True
+        self._chest_timer_start()
         self._chest_stop_event = threading.Event()
         self._chest_abort_event = threading.Event()   # свежий на КАЖДЫЙ старт, иначе старый abort глушит сбор
         import chest_reader
@@ -3592,31 +3603,7 @@ class TotalHunterApp(ctk.CTk):
                 self._update_chest_counts_display(c), self._refresh_chest_queue()))
 
         def _on_batch_ready(reason):
-            if not self.chest_auto_send_var.get():
-                return   # тумблер выключен — работает как 1.0, только ручная кнопка
-            send_result = self._send_chest_batch(run_kingdom, run_clan)
-            # success теперь всегда означает "весь батч на сервере" (см. _send_chest_batch) —
-            # partial_info у ответа лишь информационная пометка, сбор продолжать можно.
-            continue_after_send["value"] = (reason == "batch_full"
-                                            and bool(send_result.get("success")))
-
-            def _update():
-                if send_result.get("empty"):
-                    return
-                self._show_chest_sent(send_result.get("sent", 0))
-                if send_result.get("success"):
-                    text, color = L["chest_send_success"], MD3["secondary"]
-                    self._update_chest_counts_display({})
-                elif send_result.get("missing_fields"):
-                    text, color = L["chest_missing_fields"], MD3["error_text"]
-                elif send_result.get("low_credits"):
-                    messagebox.showwarning("Hunter", chest_low_credits_text(L, send_result))
-                    text, color = L["chest_status_stopped"], MD3["on_surface2"]
-                else:
-                    text, color = L["chest_send_failed"], MD3["error_text"]
-                last_send_status.update(text=text, color=color)
-                self.chest_status_label.configure(text=text, text_color=color)
-            self.after(0, _update)
+            self._chest_auto_send(reason, run_kingdom, run_clan, L, last_send_status, continue_after_send)
 
         def _worker():
             result = {"counts": {}, "items": []}
@@ -3642,6 +3629,77 @@ class TotalHunterApp(ctk.CTk):
             self.after(0, lambda: self._on_chest_collection_done(result, last_send_status))
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    def _chest_auto_send(self, reason, run_kingdom, run_clan, L, last_send_status, continue_after_send):
+        """Автоотправка батча (сбор дошёл до конца списка / батч полон / очередь распознана заново)."""
+        if not self.chest_auto_send_var.get():
+            return   # тумблер выключен — работает как 1.0, только ручная кнопка
+        send_result = self._send_chest_batch(run_kingdom, run_clan)
+        # success теперь всегда означает "весь батч на сервере" (см. _send_chest_batch) —
+        # partial_info у ответа лишь информационная пометка, сбор продолжать можно.
+        continue_after_send["value"] = (reason == "batch_full"
+                                        and bool(send_result.get("success")))
+
+        def _update():
+            if send_result.get("empty"):
+                return
+            self._show_chest_sent(send_result.get("sent", 0))
+            if send_result.get("success"):
+                text, color = L["chest_send_success"], MD3["secondary"]
+                self._update_chest_counts_display({})
+            elif send_result.get("missing_fields"):
+                text, color = L["chest_missing_fields"], MD3["error_text"]
+            elif send_result.get("low_credits"):
+                messagebox.showwarning("Hunter", chest_low_credits_text(L, send_result))
+                text, color = L["chest_status_stopped"], MD3["on_surface2"]
+            else:
+                text, color = L["chest_send_failed"], MD3["error_text"]
+            last_send_status.update(text=text, color=color)
+            self.chest_status_label.configure(text=text, text_color=color)
+        self.after(0, _update)
+
+    # ── Таймер сбора (владелец 2026-11-14): справа от «Отправлено», стоит на паузе/остановке, при отправке 0 ──
+
+    @staticmethod
+    def _fmt_elapsed(seconds) -> str:
+        s = max(0, int(seconds))
+        return f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}"
+
+    def _chest_elapsed_now(self) -> float:
+        extra = (time.monotonic() - self._chest_t0) if self._chest_t0 is not None else 0.0
+        return self._chest_elapsed + extra
+
+    def _chest_timer_render(self) -> None:
+        self.chest_time_label.configure(text=self._fmt_elapsed(self._chest_elapsed_now()))
+
+    def _chest_timer_tick(self) -> None:
+        self._chest_timer_job = None
+        self._chest_timer_render()
+        if self._chest_t0 is not None:
+            self._chest_timer_job = self.after(1000, self._chest_timer_tick)
+
+    def _chest_timer_start(self) -> None:
+        if self._chest_t0 is None:
+            self._chest_t0 = time.monotonic()
+        if self._chest_timer_job is None:
+            self._chest_timer_tick()
+
+    def _chest_timer_stop(self) -> None:
+        if self._chest_t0 is not None:
+            self._chest_elapsed += time.monotonic() - self._chest_t0
+            self._chest_t0 = None
+        self._chest_timer_render()
+
+    def _chest_timer_reset(self) -> None:
+        self._chest_elapsed = 0.0
+        if self._chest_t0 is not None:
+            self._chest_t0 = time.monotonic()   # сбор продолжается следующей порцией — отсчёт с нуля
+        self._chest_timer_render()
+
+    def _reset_timer_after_send(self, send_result) -> None:
+        """Время обнуляется вместе с «Отправлено», когда батч реально ушёл на сервер."""
+        if send_result.get("success") and not send_result.get("empty"):
+            self._chest_timer_reset()
 
     def _send_chest_batch(self, kingdom, clan):
         """Общая логика отправки батча — переиспользуется и ручной кнопкой
@@ -3691,6 +3749,7 @@ class TotalHunterApp(ctk.CTk):
                 else:
                     result = dict(group_result)
             result["sent"] = sent   # «Отправлено: N» под СТАРТ — только реально ушедшие сундуки
+            self.after(0, lambda r=dict(result): self._reset_timer_after_send(r))
             return result
         finally:
             conn.close()
@@ -3698,6 +3757,7 @@ class TotalHunterApp(ctk.CTk):
     def _on_chest_collection_done(self, result, last_send_status=None):
         L = LANGS[self.current_lang]
         self._chest_running = False
+        self._chest_timer_stop()
         self.chest_start_btn.configure(text=L["chest_start_btn"],
                                        fg_color=MD3["green_btn"], hover_color=MD3["green_hover"])
         # Баг сессии #149: раньше это ВСЕГДА писало «Остановлено», затирая сообщение
@@ -6072,10 +6132,17 @@ class TotalHunterApp(ctk.CTk):
         self.chest_recog_btn.pack(padx=20, pady=(0, 4), fill="x")
         # Владелец 2026-09-28: сколько сундуков ушло на сервер в последнем батче
         self._chest_last_sent = None
-        self.chest_sent_label = ctk.CTkLabel(self.tab_chest, text="",
+        sent_row = ctk.CTkFrame(self.tab_chest, fg_color="transparent")
+        sent_row.pack(padx=20, pady=(0, 14), fill="x")
+        self.chest_sent_label = ctk.CTkLabel(sent_row, text="",
                                              font=ctk.CTkFont(size=14),
                                              text_color=MD3["on_surface2"])
-        self.chest_sent_label.pack(padx=20, pady=(0, 14))
+        self.chest_sent_label.pack(side="left")
+        # Таймер сбора (владелец 2026-11-14): справа от «Отправлено»; стоит на остановке, при отправке 0.
+        self.chest_time_label = ctk.CTkLabel(sent_row, text=self._fmt_elapsed(0),
+                                             font=ctk.CTkFont(size=14),
+                                             text_color=MD3["on_surface2"])
+        self.chest_time_label.pack(side="right")
         self._render_chest_sent()
 
         # ── Показать текущий невыгруженный остаток сразу при открытии вкладки,

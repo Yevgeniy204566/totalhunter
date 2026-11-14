@@ -828,10 +828,14 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     if consumer_status.get('dead'):
         result['error'] = f"OCR: {consumer_status.get('error')}"
 
-    if on_batch_ready and (batch_full or list_ended):
-        chest_log.log("INFO", f"on_batch_ready: {'batch_full' if batch_full else 'list_ended'}")
+    # «Запустить распознавание» (collect=False): очередь разобрана штатно — автоотправка должна сработать так же,
+    # как после конца списка (владелец 2026-11-14: без этого после «Стоп» → распознавание батч не уходил сам).
+    recognized = (not collect) and not aborted and not consumer_status.get('dead')
+    if on_batch_ready and (batch_full or list_ended or recognized):
+        reason = 'batch_full' if batch_full else ('list_ended' if list_ended else 'recognized')
+        chest_log.log("INFO", f"on_batch_ready: {reason}")
         try:
-            on_batch_ready('batch_full' if batch_full else 'list_ended')
+            on_batch_ready(reason)
         except Exception as e:
             result['batch_ready_error'] = f"{type(e).__name__}: {e}"
             chest_log.log_exc("on_batch_ready упал")

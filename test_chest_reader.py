@@ -1632,7 +1632,7 @@ def test_collect_chests_abort_returns_fast_and_does_not_send(tmp_path, monkeypat
 
 def test_collect_chests_recognition_only_processes_queue_without_clicking(tmp_path, monkeypatch):
     """collect=False — режим «Запустить распознавание»: дорабатывает очередь, не трогает игру
-    (ни кадров, ни кликов) и ничего не отправляет."""
+    (ни кадров, ни кликов); по штатному завершению сообщает «recognized» (автоотправка решает сама)."""
     _write_crops(str(tmp_path / "p"), 3)
     monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Тип", "Игрок"))
 
@@ -1647,4 +1647,4 @@ def test_collect_chests_recognition_only_processes_queue_without_clicking(tmp_pa
 
     assert cr.count_pending(str(tmp_path / "p")) == 0
     assert sum(result["counts"].values()) == 3
-    assert sent == [] and not result["list_ended"] and not result["batch_full"]
+    assert sent == ["recognized"] and not result["list_ended"] and not result["batch_full"]
