@@ -99,14 +99,11 @@
       1 diamond per 100 chests (rounded to the nearest hundred: 149 - 1,
       150 - 2; minimum 1 diamond per send).
       With "Auto-send" on, the bot sends by itself when the list ends
-      or 5000 chests are collected. After a successful send the
+      or 10000 chests are collected. After a successful send the
       records are removed from the PC.
 
-   Click speed  - pause between clicks (actual pause is always 0.3+ s
-                  due to recognition time)
-   Light / Full - OCR languages for player names
-                  Light = Latin + Cyrillic (fast)
-                  Full  = all 19 languages (slower, for non-Latin names)
+   Click speed  - slider to the RIGHT = faster, to the LEFT = slower
+                  (actual pause is always 0.3+ s due to recognition time)
 
    TUNING (if the bot clicks in the wrong place):
      Calibration tab -> Tuning -> select the item -> D-Pad arrows.
@@ -315,11 +312,8 @@ Support    : totalhunter.support@gmail.com
       закончился или набралось 10000 сундуков. После успешной отправки
       записи на ПК удаляются.
 
-   Скорость клика — пауза между кликами (реальная пауза всегда 0.3+ с
-                    из-за времени распознавания)
-   Light / Full   — языки OCR для имён игроков
-                    Light = Латиница + Кириллица (быстро)
-                    Full  = все 19 языков (медленнее, для нелатинских имён)
+   Скорость клика — ползунок ВПРАВО = быстрее, ВЛЕВО = медленнее
+                    (реальная пауза всегда 0.3+ с из-за времени распознавания)
 
    ТЮНИНГ (если бот кликает не туда):
      Вкладка Калибровка -> Тюнинг -> выбери пункт -> стрелки D-Pad.

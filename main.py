@@ -3475,8 +3475,9 @@ class TotalHunterApp(ctk.CTk):
         _conn = chest_reader.init_db()
         self._update_chest_counts_display(chest_reader.get_unsynced_counts(_conn))
         _conn.close()
-        pause_range = self._chest_pause_range(self.chest_speed_slider.get())
-        full_lang = bool(self.chest_full_lang_var.get())
+        pause_range = self._chest_pause_range(
+            self._chest_pause_from_slider(self.chest_speed_slider.get()))
+        full_lang = False   # владелец 2026-11-14: Full убран с вкладки «Сундуки», всегда Light
         self.chest_start_btn.configure(text=L["chest_stop_btn"],
                                        fg_color=MD3["error"], hover_color=MD3["error_hover"])
         self.chest_status_label.configure(text=L["chest_status_running"],
@@ -5717,6 +5718,17 @@ class TotalHunterApp(ctk.CTk):
 
     CHEST_PAUSE_FLOOR = 0.3  # владелец 2026-09-25: пол вернул — раньше 0.3с+ гарантировал OCR
 
+    @staticmethod
+    def _chest_slider_from_pause(pause: float) -> float:
+        """Владелец 2026-11-14: ползунок «как везде» — вправо быстрее. В gui_config хранится ПАУЗА
+        (chest_click_pause), её смысл не менялся — настройки игроков не трогаем; позиция ползунка =
+        1 − пауза."""
+        return round(1.0 - min(1.0, max(0.0, float(pause))), 2)
+
+    @staticmethod
+    def _chest_pause_from_slider(position: float) -> float:
+        return round(1.0 - min(1.0, max(0.0, float(position))), 2)
+
     def _chest_pause_range(self, slider_value: float) -> tuple:
         """Пол 0.3с ВОЗВРАЩЁН (сессия #149, 2026-09-25): конвейер убрал OCR из цикла клика
         (был убран 2026-06-25 именно потому, что OCR ВСЕГДА давал 0.3+ с реальной паузы —
@@ -5929,22 +5941,8 @@ class TotalHunterApp(ctk.CTk):
         self.chest_speed_slider = ctk.CTkSlider(
             self.tab_chest, from_=0.0, to=1.0, number_of_steps=100,
             command=self._on_chest_speed_change)
-        self.chest_speed_slider.set(saved_pause)
+        self.chest_speed_slider.set(self._chest_slider_from_pause(saved_pause))
         self.chest_speed_slider.pack(padx=20, pady=(0, 8), fill="x")
-
-        # ── Light/Full — переключатель набора языков OCR имени игрока ────
-        saved_full_lang = self._load_gui_config().get("chest_full_lang_ocr", False)
-        self.chest_full_lang_var = ctk.BooleanVar(value=saved_full_lang)
-        lang_toggle_row = ctk.CTkFrame(self.tab_chest, fg_color="transparent")
-        lang_toggle_row.pack(fill="x", padx=20, pady=(0, 8))
-        ctk.CTkLabel(lang_toggle_row, text="Light", font=ctk.CTkFont(size=12)).pack(side="left")
-        self.chest_full_lang_switch = ctk.CTkSwitch(
-            lang_toggle_row, text="Full", variable=self.chest_full_lang_var,
-            onvalue=True, offvalue=False,
-            command=self._on_chest_full_lang_change,
-            fg_color=MD3["outline"], progress_color=MD3["primary"],
-        )
-        self.chest_full_lang_switch.pack(side="right")
 
         # ── Старт/Стоп — внизу, всегда после счётчика ────────────────────
         self.chest_start_btn = ctk.CTkButton(
@@ -6041,11 +6039,9 @@ class TotalHunterApp(ctk.CTk):
 
     def _on_chest_speed_change(self, value):
         L = LANGS[self.current_lang]
-        self._save_gui_config_key("chest_click_pause", round(float(value), 2))
-        self.chest_speed_label.configure(text=f"{L['chest_speed_lb']} {float(value):.2f} {L['sec']}")
-
-    def _on_chest_full_lang_change(self):
-        self._save_gui_config_key("chest_full_lang_ocr", bool(self.chest_full_lang_var.get()))
+        pause = self._chest_pause_from_slider(value)
+        self._save_gui_config_key("chest_click_pause", pause)
+        self.chest_speed_label.configure(text=f"{L['chest_speed_lb']} {pause:.2f} {L['sec']}")
 
     def _on_chest_auto_send_change(self):
         self._save_gui_config_key("chest_auto_send", bool(self.chest_auto_send_var.get()))
