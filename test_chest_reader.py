@@ -1648,3 +1648,50 @@ def test_collect_chests_recognition_only_processes_queue_without_clicking(tmp_pa
     assert cr.count_pending(str(tmp_path / "p")) == 0
     assert sum(result["counts"].values()) == 3
     assert sent == ["recognized"] and not result["list_ended"] and not result["batch_full"]
+
+
+def _patch_list(monkeypatch):
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: (10, 10))
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Тип", "Игрок"))
+
+
+def test_stop_then_queue_drained_calls_on_batch_ready_stopped(tmp_path, monkeypatch):
+    """Владелец 2026-11-14: ESC/«Стоп» посреди сбора, очередь дообработана — при включённой
+    автоотправке батч обязан уйти (раньше уходил только после «конца списка» / «батч полон»)."""
+    _patch_list(monkeypatch)
+    calls = {"n": 0}
+
+    def stop_after_some():
+        calls["n"] += 1
+        return calls["n"] > 6          # несколько кликов, потом нажали «Стоп»
+    reasons = []
+    result = cr.collect_chests(stop_after_some, db_path=str(tmp_path / "b.db"), pending_dir=str(tmp_path / "p"),
+                               pause_range=(0, 0), on_batch_ready=reasons.append)
+    assert reasons == ["stopped"]
+    assert cr.count_pending(str(tmp_path / "p")) == 0
+    assert result["list_ended"] is False and result["batch_full"] is False
+
+
+def test_emergency_abort_does_not_call_on_batch_ready(tmp_path, monkeypatch):
+    _patch_list(monkeypatch)
+    reasons = []
+    cr.collect_chests(lambda: True, db_path=str(tmp_path / "b.db"), pending_dir=str(tmp_path / "p"),
+                      pause_range=(0, 0), abort_flag=lambda: True, on_batch_ready=reasons.append)
+    assert reasons == []
+
+
+def test_dead_consumer_does_not_call_on_batch_ready(tmp_path, monkeypatch):
+    _patch_list(monkeypatch)
+
+    def boom(combined, full_lang=False):
+        raise RuntimeError("dead")
+    monkeypatch.setattr(cr, "ocr_top_row_crops", boom)
+    reasons = []
+    result = cr.collect_chests(lambda: False, db_path=str(tmp_path / "b.db"), pending_dir=str(tmp_path / "p"),
+                               pause_range=(0, 0), on_batch_ready=reasons.append)
+    assert reasons == [] and "error" in result

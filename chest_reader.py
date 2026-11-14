@@ -830,9 +830,15 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
 
     # «Запустить распознавание» (collect=False): очередь разобрана штатно — автоотправка должна сработать так же,
     # как после конца списка (владелец 2026-11-14: без этого после «Стоп» → распознавание батч не уходил сам).
-    recognized = (not collect) and not aborted and not consumer_status.get('dead')
-    if on_batch_ready and (batch_full or list_ended or recognized):
-        reason = 'batch_full' if batch_full else ('list_ended' if list_ended else 'recognized')
+    # Обычный «Стоп»/ESC (stop_reason == 'stop_flag'): очередь дообработана до конца — автоотправка
+    # тоже обязана сработать (владелец 2026-11-14: «очередь разобрана — батч уходит»). Аварийная
+    # остановка и смерть OCR не отправляют.
+    drained_ok = not aborted and not consumer_status.get('dead')
+    recognized = (not collect) and drained_ok
+    stopped = collect and drained_ok and stop_reason == 'stop_flag'
+    if on_batch_ready and (batch_full or list_ended or recognized or stopped):
+        reason = ('batch_full' if batch_full else 'list_ended' if list_ended
+                  else 'stopped' if stopped else 'recognized')
         chest_log.log("INFO", f"on_batch_ready: {reason}")
         try:
             on_batch_ready(reason)
