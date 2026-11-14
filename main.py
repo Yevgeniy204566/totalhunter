@@ -3437,6 +3437,8 @@ class TotalHunterApp(ctk.CTk):
     def toggle_chest_bot(self):
         L = LANGS[self.current_lang]
         if self._chest_running:
+            import chest_log
+            chest_log.log("INFO", "кнопка Стоп нажата")
             self._chest_stop_event.set()
             return
 
@@ -3539,7 +3541,10 @@ class TotalHunterApp(ctk.CTk):
                         kingdom=run_kingdom, clan=run_clan,
                     )
                 except Exception as exc:
-                    result = {"counts": {}, "error": str(exc)}
+                    import chest_log
+                    chest_log.log_exc("collect_chests: исключение")
+                    chest_log.report(f"collect: сбой {type(exc).__name__}: {exc}", "ERROR")
+                    result = {"counts": {}, "error": f"{type(exc).__name__}: {exc}"}
                     break
                 if result.get("batch_full") and continue_after_send["value"] and not stop_event.is_set():
                     continue_after_send["value"] = False
@@ -3587,6 +3592,9 @@ class TotalHunterApp(ctk.CTk):
             for (k, c), rows in groups:
                 items = [{"chest_type": r[2], "sender": r[1], "timestamp": r[3]} for r in rows]
                 group_result = chest_reader.export_to_api(k, c, items)
+                import chest_log
+                chest_log.report(f"send: клан-пара {len(items)} шт., success={group_result.get('success')}"
+                                 + (", мало алмазов" if group_result.get("low_credits") else ""))
                 if group_result.get("success"):
                     # Отправленная пара удаляется сразу — провал следующей её не вернёт.
                     chest_reader.delete_sent(conn, [r[0] for r in rows])
@@ -3607,7 +3615,12 @@ class TotalHunterApp(ctk.CTk):
         # об успешной/частичной авто-отправке, показанное секундами раньше (_on_batch_ready) —
         # владелец не видел, что данные реально ушли на сервер. Показываем финальный
         # результат отправки, если она была; иначе — обычное «Остановлено».
-        if last_send_status and last_send_status.get("text"):
+        if result.get("error"):
+            # Сессия #167: раньше result["error"] нигде не показывался — сбор «просто останавливался».
+            self.chest_status_label.configure(
+                text=f"{L['chest_status_stopped']}: {str(result['error'])[:120]}",
+                text_color=MD3["error_text"])
+        elif last_send_status and last_send_status.get("text"):
             self.chest_status_label.configure(text=last_send_status["text"],
                                               text_color=last_send_status["color"])
         elif result.get("batch_full"):
@@ -3640,7 +3653,21 @@ class TotalHunterApp(ctk.CTk):
         self.chest_send_btn.configure(state="disabled")
 
         def _worker():
-            result = self._send_chest_batch(kingdom, clan)
+            import chest_log
+            if not chest_log.current_file():
+                chest_log.start_run()   # отправка без сбора: лог всё равно нужен
+            chest_log.report("send (кнопка): старт")
+            try:
+                result = self._send_chest_batch(kingdom, clan)
+            except Exception as exc:
+                # Сессия #167: раньше исключение здесь молча оставляло кнопку выключенной навсегда
+                # («жму Отправить — ничего не происходит»).
+                chest_log.log_exc("send (кнопка): исключение")
+                chest_log.report(f"send (кнопка): сбой {type(exc).__name__}: {exc}", "ERROR")
+                result = {"success": False}
+            else:
+                chest_log.report(f"send (кнопка): итог success={result.get('success')}, "
+                                 f"отправлено={result.get('sent', 0)}")
 
             def _update():
                 self.chest_send_btn.configure(state="normal")

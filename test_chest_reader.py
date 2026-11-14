@@ -1417,3 +1417,114 @@ def test_migrate_removes_empty_legacy_pending_dir(tmp_path):
     cr.migrate_legacy_storage(str(legacy), str(tmp_path / "s" / "chest_buffer.db"),
                               str(tmp_path / "s" / "chest_pending"))
     assert not (legacy / "chest_pending").exists()
+
+
+# ── Сессия #167: поток OCR не умирает молча, сбои и отправки пишутся в лог ──────────────────
+
+def _write_crops(pending_dir, n):
+    os.makedirs(pending_dir, exist_ok=True)
+    for i in range(1, n + 1):
+        cv2.imwrite(os.path.join(pending_dir, cr._crop_name("20260101000000000000", i)),
+                    np.zeros((10, 10, 3), dtype=np.uint8))
+
+
+def _run_consumer(tmp_path, monkeypatch, ocr):
+    import chest_log
+    chest_log.start_run(log_dir=str(tmp_path / "logs"))
+    monkeypatch.setattr(cr, "ocr_top_row_crops", ocr)
+    pending = str(tmp_path / "pending")
+    done = threading.Event()
+    done.set()
+    status = {}
+    cr._chest_consumer_loop(pending, str(tmp_path / "b.db"), None, False, done, [],
+                            status=status)
+    return pending, status
+
+
+def test_consumer_survives_one_bad_crop_and_quarantines_it(tmp_path, monkeypatch):
+    _write_crops(str(tmp_path / "pending"), 3)
+    calls = []
+
+    def ocr(combined, full_lang=False):
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("Tesseract process timeout")
+        return ("Тип", "Игрок")
+
+    pending, status = _run_consumer(tmp_path, monkeypatch, ocr)
+
+    assert cr.count_pending(pending) == 0                       # очередь разобрана целиком
+    assert len(os.listdir(os.path.join(pending, "failed"))) == 1  # сбойный кроп не потерян
+    conn = cr.init_db(str(tmp_path / "b.db"))
+    assert sum(cr.get_unsynced_counts(conn).values()) == 2
+    conn.close()
+    assert not status.get("dead")
+    log_text = open(__import__("chest_log").current_file(), encoding="utf-8").read()
+    assert "RuntimeError" in log_text and "Tesseract process timeout" in log_text
+
+
+def test_consumer_gives_up_after_consecutive_failures(tmp_path, monkeypatch):
+    _write_crops(str(tmp_path / "pending"), cr.CONSUMER_MAX_FAILS + 3)
+
+    def ocr(combined, full_lang=False):
+        raise RuntimeError("tesseract is dead")
+
+    pending, status = _run_consumer(tmp_path, monkeypatch, ocr)
+
+    assert status["dead"] is True
+    assert "tesseract is dead" in status["error"]
+    assert cr.count_pending(pending) == 3     # остальные остались в очереди, не потеряны
+
+
+def test_collect_chests_returns_error_when_consumer_dies(tmp_path, monkeypatch):
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: (10, 10))
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+
+    def ocr(combined, full_lang=False):
+        raise RuntimeError("tesseract is dead")
+    monkeypatch.setattr(cr, "ocr_top_row_crops", ocr)
+
+    holder = {}
+    t = threading.Thread(target=lambda: holder.update(r=cr.collect_chests(
+        lambda: False, db_path=str(tmp_path / "b.db"), pending_dir=str(tmp_path / "p"),
+        pause_range=(0, 0))), daemon=True)
+    t.start()
+    t.join(timeout=20)
+
+    assert not t.is_alive(), "сбор завис после смерти OCR-потока"
+    assert "tesseract is dead" in holder["r"]["error"]
+
+
+def test_collect_chests_writes_start_and_stop_to_log(tmp_path, monkeypatch):
+    import chest_log
+    monkeypatch.setattr(chest_log, "_default_log_dir", lambda: str(tmp_path / "logs"))
+    monkeypatch.setattr(chest_log, "_spawn", lambda fn, *a: None)
+    cr.collect_chests(lambda: True, db_path=str(tmp_path / "b.db"), pending_dir=str(tmp_path / "p"))
+    text = open(chest_log.current_file(), encoding="utf-8").read()
+    assert "start" in text and "stop" in text and "reason=stop_flag" in text
+
+
+def test_export_to_api_logs_attempts_and_result(tmp_path, monkeypatch):
+    import chest_log
+    chest_log.start_run(log_dir=str(tmp_path))
+    monkeypatch.setattr(chest_log, "_spawn", lambda fn, *a: None)
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(1)
+        if len(calls) == 1:
+            raise cr.requests.Timeout("timed out")
+        return _FakeResponse(200, count=2)
+
+    monkeypatch.setattr(cr.requests, "post", fake_post)
+    monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
+    items = [{"chest_type": "T", "sender": "Alice", "timestamp": "2026-06-17T10:00:00"}] * 2
+    cr.export_to_api("K229", "Legion", items)
+
+    text = open(chest_log.current_file(), encoding="utf-8").read()
+    assert "export attempt 1/2" in text and "Timeout" in text and "ok" in text
+    assert "Alice" not in text     # ники игроков в лог не пишем

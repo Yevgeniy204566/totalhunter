@@ -24,6 +24,7 @@ import requests
 from auth import SERVER_URL, get_hwid, log_error_to_server
 from button_finder import find_colored_button
 from coord_manager import coord_manager
+import chest_log
 from tesseract_setup import configure_pytesseract
 
 configure_pytesseract(pytesseract)
@@ -598,14 +599,40 @@ def _unique_chest_timestamp() -> str:
     return ts.isoformat(timespec='microseconds')
 
 
+CONSUMER_MAX_FAILS = 5   # столько сбоев OCR подряд — и поток сдаётся с понятной ошибкой
+
+
+def _quarantine_crop(src: str, pending_dir: str) -> None:
+    """Сбойный кроп уходит в pending_dir/failed/ — иначе он остаётся головой очереди и валит каждый
+    следующий проход (случай игрока 288: очередь копится, записей 0). Не удаляем: кроп можно разобрать."""
+    try:
+        failed_dir = os.path.join(pending_dir, 'failed')
+        os.makedirs(failed_dir, exist_ok=True)
+        os.replace(src, os.path.join(failed_dir, os.path.basename(src)))
+    except OSError:
+        try:
+            os.remove(src)
+        except OSError:
+            pass
+
+
 def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: bool,
                          producer_done: threading.Event, items_out: list,
-                         kingdom=None, clan=None) -> None:
+                         kingdom=None, clan=None, status=None) -> None:
     """Фоновый consumer: разбирает очередь кропов независимо от скорости producer'а (клики не
     ждут OCR). Останавливается, только когда очередь пуста И producer точно закончил (иначе
     кроп, записанный между проверками, был бы пропущен) — тот же порядок проверки, что и в
-    Бирже 2.0 (exchange_scout.py:_consumer_loop)."""
+    Бирже 2.0 (exchange_scout.py:_consumer_loop).
+
+    Сессия #167: исключение на одном кропе (таймаут Tesseract, занятая БД…) больше не убивает
+    поток молча — оно пишется в лог, кроп уходит в failed/, поток идёт дальше. CONSUMER_MAX_FAILS
+    сбоев ПОДРЯД — поток сдаётся и кладёт причину в status (dead/error), чтобы producer не копил
+    очередь бесконечно."""
+    if status is None:
+        status = {}
     pair_cache = {}
+    fails = 0
+    processed = 0
     while True:
         queue = _pending_queue(pending_dir)
         if not queue:
@@ -626,16 +653,31 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
                 pass
             continue
 
-        chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
-        timestamp = _unique_chest_timestamp()
-        crop_kingdom, crop_clan = _pair_for_crop(src, pair_cache) or (kingdom, clan)
-
-        conn = init_db(db_path)
         try:
-            insert_chest(conn, chest_type, sender, timestamp, crop_kingdom, crop_clan)
-            counts = get_unsynced_counts(conn)
-        finally:
-            conn.close()
+            chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
+            timestamp = _unique_chest_timestamp()
+            crop_kingdom, crop_clan = _pair_for_crop(src, pair_cache) or (kingdom, clan)
+
+            conn = init_db(db_path)
+            try:
+                insert_chest(conn, chest_type, sender, timestamp, crop_kingdom, crop_clan)
+                counts = get_unsynced_counts(conn)
+            finally:
+                conn.close()
+        except Exception as exc:
+            fails += 1
+            chest_log.log_exc(f"consumer: сбой на кропе {os.path.basename(src)} "
+                              f"(подряд {fails}/{CONSUMER_MAX_FAILS}): {type(exc).__name__}: {exc}")
+            _quarantine_crop(src, pending_dir)
+            if fails >= CONSUMER_MAX_FAILS:
+                status['dead'] = True
+                status['error'] = f"{type(exc).__name__}: {exc}"
+                chest_log.report(f"consumer остановлен: {fails} сбоев подряд, "
+                                 f"последний {status['error']}", "ERROR")
+                return
+            continue
+        fails = 0
+        processed += 1
 
         try:
             os.remove(src)
@@ -644,7 +686,11 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 
         items_out.append({'chest_type': chest_type, 'sender': sender, 'timestamp': timestamp})
         if on_update:
-            on_update(counts)
+            try:
+                on_update(counts)
+            except Exception:
+                chest_log.log_exc("consumer: on_update упал")
+    chest_log.log("INFO", f"consumer: вышел штатно, распознано {processed}")
 
 
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
@@ -672,15 +718,21 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     'counts' — из БД (get_unsynced_counts), не сессионный счётчик, всегда полный бэклог.
     pause_range/full_lang — как раньше (анти-детект клика; язык OCR имени отправителя)."""
     os.makedirs(pending_dir, exist_ok=True)
+    chest_log.start_run()
     run_id = _new_run_id()
     if kingdom and clan:
         _write_run_pair(pending_dir, run_id, kingdom, clan)
+    chest_log.report(f"start: в очереди {count_pending(pending_dir)}, в БД не отправлено "
+                     f"{_batch_size(pending_dir, db_path) - count_pending(pending_dir)}, "
+                     f"full_lang={full_lang}, batch_limit={batch_limit}, queue_limit={queue_limit}")
 
     producer_done = threading.Event()
     items = []
+    consumer_status = {}
     consumer_thread = threading.Thread(
         target=_chest_consumer_loop,
-        args=(pending_dir, db_path, on_update, full_lang, producer_done, items, kingdom, clan),
+        args=(pending_dir, db_path, on_update, full_lang, producer_done, items, kingdom, clan,
+              consumer_status),
         daemon=True,
     )
     consumer_thread.start()
@@ -689,10 +741,15 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     list_ended = False
     empty_streak = 0
     frame_id = 0
+    stop_reason = 'stop_flag'
     try:
         while not stop_flag():
+            if consumer_status.get('dead') or not consumer_thread.is_alive():
+                stop_reason = 'consumer_dead'
+                break
             if _batch_size(pending_dir, db_path) >= batch_limit:
                 batch_full = True
+                stop_reason = 'batch_full'
                 break
 
             if count_pending(pending_dir) >= queue_limit:
@@ -713,6 +770,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                 empty_streak += 1
                 if empty_streak >= EMPTY_BUTTON_RETRY_LIMIT:
                     list_ended = True
+                    stop_reason = 'list_ended'
                     break
                 time.sleep(EMPTY_BUTTON_RETRY_PAUSE)
                 continue
@@ -724,18 +782,29 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
             save_crop_atomic(combined, frame_path)
 
             click_open_button(pause_range)
+    except BaseException:
+        chest_log.log_exc("producer: исключение в сборе")
+        raise
     finally:
+        chest_log.report(f"stop: reason={stop_reason}, кадров={frame_id}, ждём OCR "
+                         f"({count_pending(pending_dir)} в очереди)")
         producer_done.set()
+        t_join = time.monotonic()
         consumer_thread.join()   # владелец 2026-09-25: ждать полного OCR, не частичный батч
+        chest_log.log("INFO", f"consumer join: {time.monotonic() - t_join:.1f} с")
         _cleanup_run_pairs(pending_dir)
 
     result = {'items': items, 'batch_full': batch_full, 'list_ended': list_ended}
+    if consumer_status.get('dead'):
+        result['error'] = f"OCR: {consumer_status.get('error')}"
 
     if on_batch_ready and (batch_full or list_ended):
+        chest_log.log("INFO", f"on_batch_ready: {'batch_full' if batch_full else 'list_ended'}")
         try:
             on_batch_ready('batch_full' if batch_full else 'list_ended')
         except Exception as e:
             result['batch_ready_error'] = f"{type(e).__name__}: {e}"
+            chest_log.log_exc("on_batch_ready упал")
 
     # 'counts' считается ПОСЛЕ on_batch_ready — регрессия сессии #149 (живая жалоба
     # владельца): раньше счёт брался ДО отправки, и main.py показывал в окне сундуков
@@ -773,12 +842,17 @@ def export_to_api(kingdom, clan, items):
         "items": items,
     }
     reason = None
-    for _ in range(EXPORT_MAX_ATTEMPTS):
+    for attempt in range(1, EXPORT_MAX_ATTEMPTS + 1):
+        t0 = time.monotonic()
+        chest_log.log("INFO", f"export attempt {attempt}/{EXPORT_MAX_ATTEMPTS}: {len(items)} шт.")
         try:
             response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=EXPORT_TIMEOUT_S)
         except requests.RequestException as exc:
             reason = f"{type(exc).__name__}: {exc}"
+            chest_log.log("WARN", f"export attempt {attempt}: {reason} за {time.monotonic() - t0:.1f} с")
             continue
+        chest_log.log("INFO", f"export attempt {attempt}: http {response.status_code} "
+                              f"за {time.monotonic() - t0:.1f} с")
         if response.status_code == 402:
             low = {"success": False, "low_credits": True}
             try:
@@ -795,7 +869,9 @@ def export_to_api(kingdom, clan, items):
                 count = response.json().get("count", len(items))
             except ValueError:
                 count = len(items)  # ответ без валидного JSON-тела — не считать это провалом
+            chest_log.log("INFO", f"export ok: принято {count} из {len(items)}")
             return {"success": True, "count": count}
         reason = f"http_{response.status_code}"
+    chest_log.log("ERROR", f"export failed: {reason}")
     log_error_to_server(f"chest_export_failed after {EXPORT_MAX_ATTEMPTS} attempts: {reason}")
     return {"success": False}
