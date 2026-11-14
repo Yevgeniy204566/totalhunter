@@ -53,7 +53,7 @@ from version import VERSION
 
 if getattr(sys, 'frozen', False):
     _config_dir = os.path.dirname(sys.executable)
-    _bundled_config = os.path.join(sys._MEIPASS, 'gui_config.json')
+    _bundled_config = os.path.join(sys._MEIPASS, 'gui_config.default.json')   # чистый шаблон, не рабочий конфиг владельца
 else:
     _config_dir = os.path.dirname(os.path.abspath(__file__))
     _bundled_config = None
