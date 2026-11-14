@@ -718,6 +718,21 @@ a:hover { color: var(--on-surface); }
   background: var(--elevated); color: var(--on-surface); border: 1px solid var(--outline);
 }
 .public-avg-toggle:hover, .public-lang-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.public-pin-toggle {
+  font-size: 14px; padding: 6px 14px; border-radius: 8px; cursor: pointer; margin-left: 8px;
+  background: var(--elevated); color: var(--on-surface); border: 1px solid var(--outline);
+}
+.public-pin-toggle:hover, .public-pin-toggle--on { border-color: var(--accent); color: var(--accent); }
+.public-pin-hint { font-size: 14px; color: var(--on-surface2); margin: 0 0 6px; text-align: right; }
+/* «Это я»: булавка рисуется ПОВЕРХ номера (номер остаётся в ячейке прозрачным) — размеры ячеек не меняются
+   (запрет 2026-10-26). Закреплённая строка помечена полоской внутри ячейки (inset, без влияния на размеры). */
+.public-table td.public-num-cell--pin { position: sticky; cursor: pointer; color: transparent; }
+.public-table td.public-num-cell--pin::after {
+  content: '📌'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--on-surface); font-size: 16px; line-height: 1; opacity: 0.55;
+}
+.public-table td.public-num-cell--pin:hover::after, .public-table td.public-num-cell--mine::after { opacity: 1; }
+.public-table td.public-num-cell--mine { box-shadow: inset 3px 0 0 var(--accent); }
 .public-sortable:hover { color: var(--accent); }
 .public-sort-mark { opacity: 0.45; font-size: 0.85em; }
 .public-sort-mark--on { opacity: 1; color: var(--accent); }

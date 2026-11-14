@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { loadPinned, savePinned, pinFirst } from '../lib/pinnedPlayer.js'
 import { postPublicPlayerProfile } from '../api.js'
 import { barColor, barFillColor } from '../lib/progressColor.js'
 import { orderChestTypes } from '../lib/chestTypeOrder.js'
@@ -416,14 +417,16 @@ export function sortPlayers(players, sort, chestTypes, quotaCols = []) {
 
 const TABLE_TXT = {
   ru: { total: 'Всего', player: 'Игрок', points: 'Очки', epic: 'Epic-склепы', avg: 'Среднее', rank: 'Звание', troops: 'Состав', hero: 'Герой',
-        hideAvg: 'Скрыть средние', showAvg: 'Показать средние', saveError: 'Ошибка сохранения: ',
+        hideAvg: 'Скрыть средние', showAvg: 'Показать средние',
+        pinBtn: '📌 Это я', pinHint: 'Нажмите 📌 напротив своего имени — строка встанет первой. Повторное нажатие снимает закрепление.', saveError: 'Ошибка сохранения: ',
         sortPct: 'Сортировка по успеваемости: выполнение нормы своего Героя, %', sortAbs: 'Сортировка по абсолютному значению: максимум в числах', abs: 'абс.', pctShort: '% нормы', heroCol: 'Герой', partialHint: 'Уровень Героя не указан — цель посчитана по Герою 400' },
   en: { total: 'Total', player: 'Player', points: 'Points', epic: 'Epic Crypts', avg: 'Average', rank: 'Rank', troops: 'Troops', hero: 'Hero',
-        hideAvg: 'Hide averages', showAvg: 'Show averages', saveError: 'Save error: ',
+        hideAvg: 'Hide averages', showAvg: 'Show averages',
+        pinBtn: "📌 That's me", pinHint: 'Tap 📌 next to your name — your row moves to the top. Tap again to unpin.', saveError: 'Save error: ',
         sortPct: 'Sort by performance: % of the own Hero norm', sortAbs: 'Sort by absolute value: highest numbers', abs: 'abs.', pctShort: '% of norm', heroCol: 'Hero', partialHint: 'Hero level not set — target is calculated for Hero 400' },
 }
 
-export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null }) {
+export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, players: rawPlayers, targets, editMode = false, collectorSlug, lang = 'en', editButton = null, allowPin = false }) {
   const tt = TABLE_TXT[lang] || TABLE_TXT.en
   const qLabel = useQuotaLabel(lang)
   const quotaCols = useMemo(() => quotaColumns(targets, tt.epic, chestTypeMeta), [targets, tt.epic, chestTypeMeta])
@@ -519,6 +522,18 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
     })
   }
 
+  // «Это я» (владелец 2026-11-14): режим булавок + закреплённый игрок, помнится в этом браузере.
+  const [pinMode, setPinMode] = useState(false)
+  const [pinned, setPinned] = useState(() => (allowPin ? loadPinned(collectorSlug) : null))
+  function togglePin(name) {
+    setPinned(prev => {
+      const next = prev === name ? null : name
+      savePinned(collectorSlug, next)
+      return next
+    })
+  }
+  const rowsToShow = useMemo(() => (allowPin ? pinFirst(shownPlayers, pinned) : shownPlayers), [allowPin, shownPlayers, pinned])
+
   const tableWrapRef = useRef(null)
   const topScrollRef = useRef(null)
   const [tableScrollWidth, setTableScrollWidth] = useState(0)
@@ -600,7 +615,14 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
         <button type="button" className="public-avg-toggle" onClick={toggleAvg}>
           {showAvg ? tt.hideAvg : tt.showAvg}
         </button>
+        {allowPin && (
+          <button type="button" className={`public-pin-toggle${pinMode ? ' public-pin-toggle--on' : ''}`}
+                  aria-pressed={pinMode} onClick={() => setPinMode(v => !v)}>
+            {tt.pinBtn}
+          </button>
+        )}
       </div>
+      {allowPin && pinMode && <div className="public-pin-hint">{tt.pinHint}</div>}
       <HeroShieldDefs />
       <div
         className="public-table-top-scroll"
@@ -683,10 +705,12 @@ export default function ChestSummaryTable({ chestTypes, chestTypeMeta = null, pl
             </tr>
           </thead>
           <tbody translate="no">
-            {shownPlayers.map((p, rowIdx) => {
+            {rowsToShow.map((p, rowIdx) => {
+              const isPinned = allowPin && pinned === p.name
               return (
                 <tr key={p.name}>
-                  <td className="public-num-cell">{rowIdx + 1}</td>
+                  <td className={`public-num-cell${allowPin && pinMode ? ' public-num-cell--pin' : ''}${isPinned ? ' public-num-cell--mine' : ''}`}
+                      onClick={allowPin && pinMode ? () => togglePin(p.name) : undefined}>{rowIdx + 1}</td>
                   <td className="public-hero-cell"><HeroShield level={p.hero_level} /></td>
                   <td title={p.name} translate="no" className="notranslate public-name-cell">
                     {renderPlayerName(p, nameTargets)}

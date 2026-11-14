@@ -355,6 +355,7 @@ export default function ChestSummaryPage({ neutral = false }) {
             editMode={editMode}
             collectorSlug={internalSlug}
             lang={lang}
+            allowPin={!editMode}
             // «Войска» — рядом с «Герой» над таблицей (владелец 2026-09-28)
             editButton={
               <button
