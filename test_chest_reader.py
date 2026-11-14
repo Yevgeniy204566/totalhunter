@@ -597,11 +597,11 @@ def test_collect_chests_stops_at_batch_limit_even_with_more_available(tmp_path, 
     assert sum(result["counts"].values()) == 3
 
 
-def test_queue_limit_is_2000_and_batch_limit_stays_5000():
-    """Владелец 2026-10-24: очередь обработки (кропы, ждущие OCR) — не больше 2000, а лимит батча
-    (сундуки, которые платно уходят на сервер разом) остаётся 5000. Это два разных предела."""
-    assert cr.QUEUE_LIMIT == 2000
-    assert cr.BATCH_LIMIT == 5000
+def test_queue_limit_is_4000_and_batch_limit_is_10000():
+    """Владелец 2026-11-14: батч вырос с 5000 до 10000 (события, когда 5000 мало), очередь
+    обработки (кропы, ждущие OCR) — в 2 раза: 4000. Это два разных предела."""
+    assert cr.QUEUE_LIMIT == 4000
+    assert cr.BATCH_LIMIT == 10000
 
 
 def test_collect_chests_pauses_clicking_while_queue_is_full(tmp_path, monkeypatch):
@@ -870,7 +870,7 @@ def test_export_to_api_low_credits(monkeypatch):
     assert cr.export_to_api("K229", "Legion", []) == {"success": False, "low_credits": True}
 
 
-def test_export_to_api_uses_45_second_timeout(monkeypatch):
+def test_export_to_api_uses_75_second_timeout(monkeypatch):
     captured = {}
 
     def fake_post(url, json, timeout):
@@ -880,7 +880,7 @@ def test_export_to_api_uses_45_second_timeout(monkeypatch):
     monkeypatch.setattr(cr.requests, "post", fake_post)
     monkeypatch.setattr(cr, "get_hwid", lambda: "ABCD1234")
     cr.export_to_api("K229", "Legion", [])
-    assert captured['timeout'] == 45
+    assert captured['timeout'] == 75
 
 
 def test_export_to_api_retries_once_on_timeout_then_succeeds(monkeypatch):

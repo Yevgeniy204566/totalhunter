@@ -106,20 +106,20 @@ API_IMPORT_PATH = '/api/v1/chests/import'
 # место не в диске/памяти.
 PENDING_DIR = os.path.join(STORAGE_DIR, 'chest_pending')
 
-# Лимит батча — НЕ защита от потери данных (кропы и так надёжны), а денежное решение владельца
-# (2026-09-25): CHEST_IMPORT_COST на сервере (server/chests.py) списывает 10◆ ФЛЭТОМ за отправку
-# батча целиком, независимо от размера — без потолка пользователь мог бы копить неограниченный
-# батч за одну и ту же фиксированную оплату. При достижении лимита producer останавливает приём
+# Лимит батча — НЕ защита от потери данных (кропы и так надёжны), а потолок размера одной
+# отправки (один запрос на сервер). Цена на сервере считается по числу сундуков
+# (chest_import_cost в server/chests.py), а не флэтом — раньше (2026-09-25) было 10◆ за батч.
+# При достижении лимита producer останавливает приём
 # новых сундуков (просто перестаёт жать «Собрать» — уже находящиеся в игре сундуки никуда не
 # делись, их можно забрать следующим стартом), consumer дообрабатывает хвост, затем должна
 # сработать отправка батча (on_batch_ready, реализуется вызывающим кодом в main.py).
-BATCH_LIMIT = 5000
+BATCH_LIMIT = 10000   # владелец 2026-11-14: было 5000, на событиях не хватало
 
 # Лимит очереди обработки (владелец 2026-10-24) — другой предел, чем батч: батч — сколько сундуков
 # уйдёт на сервер разом (деньги), очередь — сколько кропов одновременно лежит на диске в ожидании OCR.
 # При достижении producer не кликает «Открыть» и не режет новые кропы, пока OCR не разгребёт хвост;
 # сбор при этом не завершается (в отличие от BATCH_LIMIT).
-QUEUE_LIMIT = 2000
+QUEUE_LIMIT = 4000   # владелец 2026-11-14: было 2000, вслед за батчем ×2
 
 
 def detect_dialog_bbox(frame):
@@ -752,6 +752,10 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
 
 
 EXPORT_MAX_ATTEMPTS = 2
+# Батч до 10000 сундуков уходит ОДНИМ запросом (владелец 2026-11-14). 75 с — запас над
+# дефолтным proxy_read_timeout nginx (60 с у location /): сервер обрабатывает батч за секунды,
+# но на длинном хвосте лучше получить 504 от nginx, чем рвать соединение раньше.
+EXPORT_TIMEOUT_S = 75
 
 
 def export_to_api(kingdom, clan, items):
@@ -771,7 +775,7 @@ def export_to_api(kingdom, clan, items):
     reason = None
     for _ in range(EXPORT_MAX_ATTEMPTS):
         try:
-            response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=45)
+            response = requests.post(SERVER_URL + API_IMPORT_PATH, json=payload, timeout=EXPORT_TIMEOUT_S)
         except requests.RequestException as exc:
             reason = f"{type(exc).__name__}: {exc}"
             continue

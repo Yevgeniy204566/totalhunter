@@ -1,7 +1,7 @@
 """
 Две полосы во вкладке «Сундуки» (владелец 2026-10-24): «Очередь сундуков» — кропы, ждущие OCR,
-шкала QUEUE_LIMIT (2000); «Батч сундуков» — распознанные неотправленные + очередь, шкала
-BATCH_LIMIT (5000). Раньше очередь мерилась лимитом батча — это разные пределы.
+шкала QUEUE_LIMIT (4000); «Батч сундуков» — распознанные неотправленные + очередь, шкала
+BATCH_LIMIT (10000). Раньше очередь мерилась лимитом батча — это разные пределы.
 """
 from unittest.mock import MagicMock, patch
 
@@ -24,8 +24,8 @@ def test_queue_bar_uses_queue_limit_not_batch_limit():
          patch("chest_reader.count_batch", return_value=500):
         app._refresh_chest_queue()
 
-    app.chest_queue_bar.set.assert_called_with(0.25)                       # 500 / 2000
-    assert app.chest_queue_count_lb.configure.call_args.kwargs["text"] == "500 / 2000"
+    app.chest_queue_bar.set.assert_called_with(0.125)                      # 500 / 4000
+    assert app.chest_queue_count_lb.configure.call_args.kwargs["text"] == "500 / 4000"
 
 
 def test_batch_bar_uses_batch_limit_and_counts_recognized_plus_queue():
@@ -34,14 +34,14 @@ def test_batch_bar_uses_batch_limit_and_counts_recognized_plus_queue():
          patch("chest_reader.count_batch", return_value=1250):
         app._refresh_chest_queue()
 
-    app.chest_batch_bar.set.assert_called_with(0.25)                       # 1250 / 5000
-    assert app.chest_batch_count_lb.configure.call_args.kwargs["text"] == "1250 / 5000"
+    app.chest_batch_bar.set.assert_called_with(0.125)                      # 1250 / 10000
+    assert app.chest_batch_count_lb.configure.call_args.kwargs["text"] == "1250 / 10000"
 
 
 def test_bars_do_not_overflow_past_full():
     app = _app()
-    with patch("chest_reader.count_pending", return_value=2500), \
-         patch("chest_reader.count_batch", return_value=6000):
+    with patch("chest_reader.count_pending", return_value=4500), \
+         patch("chest_reader.count_batch", return_value=11000):
         app._refresh_chest_queue()
 
     app.chest_queue_bar.set.assert_called_with(1.0)
