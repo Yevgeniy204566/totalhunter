@@ -182,8 +182,9 @@ def preprocess_for_ocr(roi):
     return binary
 
 
-# Владелец 2026-11-11: 30 с на картинку (было 5) — на слабом ПК в режиме Full 5 с не хватало.
-OCR_TIMEOUT_S = 30
+# Владелец 2026-11-14: 8 с на картинку (было 5). 30 отклонено: Tesseract, молчащий полминуты, значит
+# зависший ПК. Одиночный провал лечится повтором кропа (_chest_consumer_loop), а не длинным ожиданием.
+OCR_TIMEOUT_S = 8
 
 
 def ocr_text(roi, psm=7, lang='rus+eng', extra_config=''):
@@ -659,7 +660,12 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
             continue
 
         try:
-            chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
+            try:
+                chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
+            except Exception as first_exc:
+                chest_log.log("WARN", f"consumer: повтор кропа {os.path.basename(src)} после "
+                                      f"{type(first_exc).__name__}: {first_exc}")
+                chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
             timestamp = _unique_chest_timestamp()
             crop_kingdom, crop_clan = _pair_for_crop(src, pair_cache) or (kingdom, clan)
 

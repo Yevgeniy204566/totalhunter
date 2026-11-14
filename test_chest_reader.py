@@ -1446,7 +1446,7 @@ def test_consumer_survives_one_bad_crop_and_quarantines_it(tmp_path, monkeypatch
 
     def ocr(combined, full_lang=False):
         calls.append(1)
-        if len(calls) == 1:
+        if len(calls) <= 2:   # первый кроп падает и в повторе — тогда он уходит в failed/
             raise RuntimeError("Tesseract process timeout")
         return ("Тип", "Игрок")
 
@@ -1529,9 +1529,9 @@ def test_export_to_api_logs_attempts_and_result(tmp_path, monkeypatch):
     assert "Alice" not in text     # ники игроков в лог не пишем
 
 
-def test_ocr_timeout_is_30_seconds(monkeypatch):
-    """Владелец 2026-11-11: лимит Tesseract на одну картинку 30 с вместо 5 — на слабых ПК режим Full
-    не укладывался в 5 с, поток OCR падал и очередь стояла."""
+def test_ocr_timeout_is_8_seconds(monkeypatch):
+    """Владелец 2026-11-14: лимит Tesseract на одну картинку 8 с (было 5; 30 отклонено — Tesseract,
+    который молчит полминуты, означает зависший ПК, а не медленное распознавание)."""
     captured = {}
 
     def fake(image, config, lang, timeout):
@@ -1540,10 +1540,31 @@ def test_ocr_timeout_is_30_seconds(monkeypatch):
 
     monkeypatch.setattr(cr.pytesseract, "image_to_string", fake)
     cr.ocr_text(np.zeros((10, 10, 3), dtype=np.uint8))
-    assert captured['timeout'] == 30 == cr.OCR_TIMEOUT_S
+    assert captured['timeout'] == 8 == cr.OCR_TIMEOUT_S
 
 
 def test_queue_limit_is_5000():
     """Владелец 2026-11-14: в живом сборе очередь ~45% от батча — 4000 упиралось, поднято до 5000.
     Очередь — файлы на диске (~30–75 КБ на кроп), в памяти не лежит."""
     assert cr.QUEUE_LIMIT == 5000
+
+
+def test_consumer_retries_crop_once_before_quarantine(tmp_path, monkeypatch):
+    """Одиночный таймаут не должен стоить сундука: кроп повторяется 1 раз, и только второй провал
+    подряд на ТОМ ЖЕ кропе отправляет его в failed/."""
+    _write_crops(str(tmp_path / "pending"), 1)
+    calls = []
+
+    def ocr(combined, full_lang=False):
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("Tesseract process timeout")
+        return ("Тип", "Игрок")
+
+    pending, status = _run_consumer(tmp_path, monkeypatch, ocr)
+
+    assert len(calls) == 2
+    assert not os.path.isdir(os.path.join(pending, "failed"))
+    conn = cr.init_db(str(tmp_path / "b.db"))
+    assert sum(cr.get_unsynced_counts(conn).values()) == 1
+    conn.close()
