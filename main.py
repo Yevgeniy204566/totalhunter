@@ -446,6 +446,7 @@ LANGS = {
         "chest_not_enough_plain": "Не хватает алмазов для отправки",
         "chest_not_enough": "Не хватает алмазов для отправки: нужно {need}, у вас {have}",
         "chest_delete_batch_btn": "🗑 Удалить батч",
+        "chest_ocr_broken": 'Распознавание не работает (Tesseract). Проверьте папку tesseract_bin и антивирус; бот должен лежать в папке на диске, не на рабочем столе.', "chest_stalled": 'Распознавание не работает: очередь растёт, а записей нет. Остановите сбор и перезапустите бота.',
         "chest_abort_btn": "Остановить распознавание", "chest_recognize_btn": "Запустить распознавание", "chest_stopping": "Остановка…",
         "tab_ancient": "ДРЕВНИЙ", "ancient_status_running": "Сбор турнирной таблицы...", "ancient_status_sent": "Отправлено на сервер", "ancient_status_failed": "Сервер недоступен. Данные сохранены локально.",
         "ancient_desc": "Откройте диалог «Статистика» в игре перед запуском.",
@@ -529,6 +530,7 @@ LANGS = {
         "chest_not_enough_plain": "Not enough diamonds to send",
         "chest_not_enough": "Not enough diamonds to send: {need} needed, you have {have}",
         "chest_delete_batch_btn": "🗑 Delete batch",
+        "chest_ocr_broken": 'Recognition is not working (Tesseract). Check the tesseract_bin folder and your antivirus; the bot must be in a folder on a disk, not on the Desktop.', "chest_stalled": 'Recognition is not working: the queue grows but nothing is recognized. Stop and restart the bot.',
         "chest_abort_btn": "Stop recognition", "chest_recognize_btn": "Start recognition", "chest_stopping": "Stopping…",
         "tab_ancient": "ANCIENT", "ancient_status_running": "Collecting tournament data...", "ancient_status_sent": "Sent to server", "ancient_status_failed": "Server unavailable. Data saved locally.",
         "ancient_desc": "Open the in-game «Statistics» dialog before starting.",
@@ -610,6 +612,7 @@ LANGS = {
         "chest_not_enough_plain": "Nicht genug Diamanten zum Senden",
         "chest_not_enough": "Nicht genug Diamanten zum Senden: {need} nötig, Sie haben {have}",
         "chest_delete_batch_btn": "🗑 Batch löschen",
+        "chest_ocr_broken": 'Die Erkennung funktioniert nicht (Tesseract). Prüfen Sie den Ordner tesseract_bin und das Antivirenprogramm; der Bot muss in einem Ordner auf einem Laufwerk liegen, nicht auf dem Desktop.', "chest_stalled": 'Die Erkennung funktioniert nicht: Die Warteschlange wächst, aber nichts wird erkannt. Stoppen Sie und starten Sie den Bot neu.',
         "chest_abort_btn": "Erkennung stoppen", "chest_recognize_btn": "Erkennung starten", "chest_stopping": "Wird gestoppt…",
         "tab_ancient": "URALTER", "ancient_status_running": "Turnierdaten werden gesammelt...", "ancient_status_sent": "An Server gesendet", "ancient_status_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "ancient_desc": "Öffne den Dialog «Statistik» im Spiel, bevor du startest.",
@@ -680,6 +683,7 @@ LANGS = {
         "chest_not_enough_plain": "No hay suficientes diamantes para enviar",
         "chest_not_enough": "No hay suficientes diamantes para enviar: se necesitan {need}, tiene {have}",
         "chest_delete_batch_btn": "🗑 Eliminar lote",
+        "chest_ocr_broken": 'El reconocimiento no funciona (Tesseract). Revise la carpeta tesseract_bin y el antivirus; el bot debe estar en una carpeta de un disco, no en el Escritorio.', "chest_stalled": 'El reconocimiento no funciona: la cola crece pero no se reconoce nada. Detenga y reinicie el bot.',
         "chest_abort_btn": "Detener reconocimiento", "chest_recognize_btn": "Iniciar reconocimiento", "chest_stopping": "Deteniendo…",
         "tab_ancient": "ANTIGUO", "ancient_status_running": "Recolectando datos del torneo...", "ancient_status_sent": "Enviado al servidor", "ancient_status_failed": "Servidor no disponible. Datos guardados localmente.",
         "ancient_desc": "Abre el diálogo «Estadísticas» en el juego antes de empezar.",
@@ -750,6 +754,7 @@ LANGS = {
         "chest_not_enough_plain": "Pas assez de diamants pour envoyer",
         "chest_not_enough": "Pas assez de diamants pour envoyer : {need} requis, vous en avez {have}",
         "chest_delete_batch_btn": "🗑 Supprimer le lot",
+        "chest_ocr_broken": "La reconnaissance ne fonctionne pas (Tesseract). Vérifiez le dossier tesseract_bin et l'antivirus ; le bot doit être dans un dossier sur un disque, pas sur le Bureau.", "chest_stalled": "La reconnaissance ne fonctionne pas : la file grandit mais rien n'est reconnu. Arrêtez et redémarrez le bot.",
         "chest_abort_btn": "Arrêter la reconnaissance", "chest_recognize_btn": "Lancer la reconnaissance", "chest_stopping": "Arrêt en cours…",
         "tab_ancient": "ANCIEN", "ancient_status_running": "Collecte des données du tournoi...", "ancient_status_sent": "Envoyé au serveur", "ancient_status_failed": "Serveur indisponible. Données enregistrées localement.",
         "ancient_desc": "Ouvrez la boîte de dialogue «Statistiques» dans le jeu avant de démarrer.",
@@ -820,6 +825,7 @@ LANGS = {
         "chest_not_enough_plain": "Diamanti insufficienti per l'invio",
         "chest_not_enough": "Diamanti insufficienti per l'invio: ne servono {need}, ne hai {have}",
         "chest_delete_batch_btn": "🗑 Elimina il batch",
+        "chest_ocr_broken": "Il riconoscimento non funziona (Tesseract). Controlla la cartella tesseract_bin e l'antivirus; il bot deve stare in una cartella su un disco, non sul Desktop.", "chest_stalled": 'Il riconoscimento non funziona: la coda cresce ma nulla viene riconosciuto. Ferma e riavvia il bot.',
         "chest_abort_btn": "Ferma il riconoscimento", "chest_recognize_btn": "Avvia il riconoscimento", "chest_stopping": "Arresto in corso…",
         "tab_ancient": "ANTICO", "ancient_status_running": "Raccolta dati del torneo...", "ancient_status_sent": "Inviato al server", "ancient_status_failed": "Server non disponibile. Dati salvati localmente.",
         "ancient_desc": "Apri la finestra «Statistiche» nel gioco prima di avviare.",
@@ -890,6 +896,7 @@ LANGS = {
         "chest_not_enough_plain": "Niet genoeg diamanten om te verzenden",
         "chest_not_enough": "Niet genoeg diamanten om te verzenden: {need} nodig, u heeft er {have}",
         "chest_delete_batch_btn": "🗑 Batch verwijderen",
+        "chest_ocr_broken": 'Herkenning werkt niet (Tesseract). Controleer de map tesseract_bin en je antivirus; de bot moet in een map op een schijf staan, niet op het Bureaublad.', "chest_stalled": 'Herkenning werkt niet: de wachtrij groeit maar er wordt niets herkend. Stop en herstart de bot.',
         "chest_abort_btn": "Herkenning stoppen", "chest_recognize_btn": "Herkenning starten", "chest_stopping": "Stoppen…",
         "tab_ancient": "ALOUDE", "ancient_status_running": "Toernooigegevens verzamelen...", "ancient_status_sent": "Verzonden naar server", "ancient_status_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "ancient_desc": "Open het «Statistieken»-dialoogvenster in de game voordat je start.",
@@ -960,6 +967,7 @@ LANGS = {
         "chest_not_enough_plain": "Ikke nok diamanter til å sende",
         "chest_not_enough": "Ikke nok diamanter til å sende: {need} trengs, du har {have}",
         "chest_delete_batch_btn": "🗑 Slett batch",
+        "chest_ocr_broken": 'Gjenkjenning fungerer ikke (Tesseract). Sjekk mappen tesseract_bin og antivirus; boten må ligge i en mappe på en disk, ikke på skrivebordet.', "chest_stalled": 'Gjenkjenning fungerer ikke: køen vokser, men ingenting gjenkjennes. Stopp og start boten på nytt.',
         "chest_abort_btn": "Stopp gjenkjenning", "chest_recognize_btn": "Start gjenkjenning", "chest_stopping": "Stopper…",
         "tab_ancient": "URGAMMEL", "ancient_status_running": "Samler turneringsdata...", "ancient_status_sent": "Sendt til server", "ancient_status_failed": "Server utilgjengelig. Data lagret lokalt.",
         "ancient_desc": "Åpne «Statistikk»-dialogen i spillet før du starter.",
@@ -1030,6 +1038,7 @@ LANGS = {
         "chest_not_enough_plain": "Za mało diamentów do wysłania",
         "chest_not_enough": "Za mało diamentów do wysłania: potrzeba {need}, masz {have}",
         "chest_delete_batch_btn": "🗑 Usuń partię",
+        "chest_ocr_broken": 'Rozpoznawanie nie działa (Tesseract). Sprawdź folder tesseract_bin i antywirus; bot musi być w folderze na dysku, a nie na pulpicie.', "chest_stalled": 'Rozpoznawanie nie działa: kolejka rośnie, ale nic nie jest rozpoznawane. Zatrzymaj i uruchom bota ponownie.',
         "chest_abort_btn": "Zatrzymaj rozpoznawanie", "chest_recognize_btn": "Uruchom rozpoznawanie", "chest_stopping": "Zatrzymywanie…",
         "tab_ancient": "STARODAWNY", "ancient_status_running": "Zbieranie danych turniejowych...", "ancient_status_sent": "Wysłano na serwer", "ancient_status_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "ancient_desc": "Otwórz okno «Statystyki» w grze przed uruchomieniem.",
@@ -1100,6 +1109,7 @@ LANGS = {
         "chest_not_enough_plain": "Diamantes insuficientes para enviar",
         "chest_not_enough": "Diamantes insuficientes para enviar: são necessários {need}, você tem {have}",
         "chest_delete_batch_btn": "🗑 Excluir lote",
+        "chest_ocr_broken": 'O reconhecimento não está funcionando (Tesseract). Verifique a pasta tesseract_bin e o antivírus; o bot deve ficar em uma pasta de um disco, não na Área de Trabalho.', "chest_stalled": 'O reconhecimento não está funcionando: a fila cresce, mas nada é reconhecido. Pare e reinicie o bot.',
         "chest_abort_btn": "Parar reconhecimento", "chest_recognize_btn": "Iniciar reconhecimento", "chest_stopping": "Parando…",
         "tab_ancient": "ANCIÃO", "ancient_status_running": "Coletando dados do torneio...", "ancient_status_sent": "Enviado ao servidor", "ancient_status_failed": "Servidor indisponível. Dados salvos localmente.",
         "ancient_desc": "Abra a caixa de diálogo «Estatísticas» no jogo antes de iniciar.",
@@ -1170,6 +1180,7 @@ LANGS = {
         "chest_not_enough_plain": "Inte tillräckligt med diamanter för att skicka",
         "chest_not_enough": "Inte tillräckligt med diamanter för att skicka: {need} behövs, du har {have}",
         "chest_delete_batch_btn": "🗑 Ta bort batch",
+        "chest_ocr_broken": 'Igenkänningen fungerar inte (Tesseract). Kontrollera mappen tesseract_bin och antivirus; boten måste ligga i en mapp på en disk, inte på skrivbordet.', "chest_stalled": 'Igenkänningen fungerar inte: kön växer men inget känns igen. Stoppa och starta om boten.',
         "chest_abort_btn": "Stoppa igenkänning", "chest_recognize_btn": "Starta igenkänning", "chest_stopping": "Stoppar…",
         "tab_ancient": "FORNTIDA", "ancient_status_running": "Samlar turneringsdata...", "ancient_status_sent": "Skickat till server", "ancient_status_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "ancient_desc": "Öppna dialogrutan «Statistik» i spelet innan du startar.",
@@ -1240,6 +1251,7 @@ LANGS = {
         "chest_not_enough_plain": "Göndermek için yeterli elmas yok",
         "chest_not_enough": "Göndermek için yeterli elmas yok: {need} gerekli, sizde {have} var",
         "chest_delete_batch_btn": "🗑 Toplu işi sil",
+        "chest_ocr_broken": 'Tanıma çalışmıyor (Tesseract). tesseract_bin klasörünü ve antivirüsü kontrol edin; bot masaüstünde değil, bir diskteki klasörde olmalıdır.', "chest_stalled": 'Tanıma çalışmıyor: kuyruk büyüyor ama hiçbir şey tanınmıyor. Durdurup botu yeniden başlatın.',
         "chest_abort_btn": "Tanımayı durdur", "chest_recognize_btn": "Tanımayı başlat", "chest_stopping": "Durduruluyor…",
         "tab_ancient": "KADİM", "ancient_status_running": "Turnuva verileri toplanıyor...", "ancient_status_sent": "Sunucuya gönderildi", "ancient_status_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "ancient_desc": "Başlamadan önce oyundaki «İstatistik» penceresini açın.",
@@ -1310,6 +1322,7 @@ LANGS = {
         "chest_not_enough_plain": "لا توجد ألماسات كافية للإرسال",
         "chest_not_enough": "لا توجد ألماسات كافية للإرسال، المطلوب {need}، لديك {have}",
         "chest_delete_batch_btn": "🗑 حذف الدفعة",
+        "chest_ocr_broken": 'التعرّف لا يعمل (Tesseract). تحقق من المجلد tesseract_bin ومن برنامج مكافحة الفيروسات؛ يجب أن يكون البوت في مجلد على قرص وليس على سطح المكتب.', "chest_stalled": 'التعرّف لا يعمل: القائمة تكبر ولا يتم التعرّف على شيء. أوقف البوت ثم أعد تشغيله.',
         "chest_abort_btn": "إيقاف التعرّف", "chest_recognize_btn": "بدء التعرّف", "chest_stopping": "جارٍ الإيقاف…",
         "tab_ancient": "القديم", "ancient_status_running": "جمع بيانات البطولة...", "ancient_status_sent": "تم الإرسال إلى الخادم", "ancient_status_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "ancient_desc": "افتح نافذة «الإحصائيات» في اللعبة قبل البدء.",
@@ -1380,6 +1393,7 @@ LANGS = {
         "chest_not_enough_plain": "送信に必要なダイヤが足りません",
         "chest_not_enough": "送信に必要なダイヤが足りません：必要 {need}、所持 {have}",
         "chest_delete_batch_btn": "🗑 バッチを削除",
+        "chest_ocr_broken": '認識が動作していません（Tesseract）。tesseract_bin フォルダーとウイルス対策ソフトを確認してください。ボットはデスクトップではなく、ディスク上のフォルダーに置いてください。', "chest_stalled": '認識が動作していません：キューは増えていますが何も認識されていません。停止してボットを再起動してください。',
         "chest_abort_btn": "認識を停止", "chest_recognize_btn": "認識を開始", "chest_stopping": "停止中…",
         "tab_ancient": "古代の者", "ancient_status_running": "トーナメントデータを収集中...", "ancient_status_sent": "サーバーに送信しました", "ancient_status_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "ancient_desc": "開始する前にゲーム内の「統計」ダイアログを開いてください。",
@@ -1450,6 +1464,7 @@ LANGS = {
         "chest_not_enough_plain": "钻石不足，无法发送",
         "chest_not_enough": "钻石不足，无法发送：需要 {need}，当前有 {have}",
         "chest_delete_batch_btn": "🗑 删除批次",
+        "chest_ocr_broken": '识别无法工作（Tesseract）。请检查 tesseract_bin 文件夹和杀毒软件；机器人必须放在磁盘上的文件夹中，而不是桌面。', "chest_stalled": '识别无法工作：队列在增长但没有任何识别结果。请停止并重启机器人。',
         "chest_abort_btn": "停止识别", "chest_recognize_btn": "开始识别", "chest_stopping": "正在停止…",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集锦标赛数据...", "ancient_status_sent": "已发送到服务器", "ancient_status_failed": "服务器不可用，数据已保存到本地。",
         "ancient_desc": "开始前请打开游戏内的「统计」对话框。",
@@ -1520,6 +1535,7 @@ LANGS = {
         "chest_not_enough_plain": "鑽石不足，無法傳送",
         "chest_not_enough": "鑽石不足，無法傳送：需要 {need}，目前有 {have}",
         "chest_delete_batch_btn": "🗑 刪除批次",
+        "chest_ocr_broken": '辨識無法運作（Tesseract）。請檢查 tesseract_bin 資料夾和防毒軟體；機器人必須放在磁碟上的資料夾中，而不是桌面。', "chest_stalled": '辨識無法運作：佇列在增長但沒有任何辨識結果。請停止並重新啟動機器人。',
         "chest_abort_btn": "停止辨識", "chest_recognize_btn": "開始辨識", "chest_stopping": "正在停止…",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集錦標賽資料...", "ancient_status_sent": "已發送到伺服器", "ancient_status_failed": "伺服器無法連線，資料已儲存在本機。",
         "ancient_desc": "開始前請打開遊戲內的「統計」對話框。",
@@ -1590,6 +1606,7 @@ LANGS = {
         "chest_not_enough_plain": "전송에 필요한 다이아몬드가 부족합니다",
         "chest_not_enough": "전송에 필요한 다이아몬드가 부족합니다: 필요 {need}, 보유 {have}",
         "chest_delete_batch_btn": "🗑 배치 삭제",
+        "chest_ocr_broken": '인식이 작동하지 않습니다(Tesseract). tesseract_bin 폴더와 백신 프로그램을 확인하세요. 봇은 바탕화면이 아니라 디스크의 폴더에 있어야 합니다.', "chest_stalled": '인식이 작동하지 않습니다: 대기열은 늘어나지만 인식되는 것이 없습니다. 중지한 뒤 봇을 다시 시작하세요.',
         "chest_abort_btn": "인식 중지", "chest_recognize_btn": "인식 시작", "chest_stopping": "중지 중…",
         "tab_ancient": "고대의 존재", "ancient_status_running": "토너먼트 데이터 수집 중...", "ancient_status_sent": "서버로 전송됨", "ancient_status_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "ancient_desc": "시작하기 전에 게임 내 「통계」 대화상자를 여세요.",
@@ -1660,6 +1677,7 @@ LANGS = {
         "chest_not_enough_plain": "Не вистачає алмазів для відправки",
         "chest_not_enough": "Не вистачає алмазів для відправки: потрібно {need}, у вас {have}",
         "chest_delete_batch_btn": "🗑 Видалити батч",
+        "chest_ocr_broken": 'Розпізнавання не працює (Tesseract). Перевірте теку tesseract_bin та антивірус; бот має лежати в теці на диску, а не на робочому столі.', "chest_stalled": 'Розпізнавання не працює: черга росте, а записів немає. Зупиніть збір і перезапустіть бота.',
         "chest_abort_btn": "Зупинити розпізнавання", "chest_recognize_btn": "Запустити розпізнавання", "chest_stopping": "Зупинка…",
         "tab_ancient": "ДАВНІЙ", "ancient_status_running": "Збір турнірної таблиці...", "ancient_status_sent": "Відправлено на сервер", "ancient_status_failed": "Сервер недоступний. Дані збережено локально.",
         "ancient_desc": "Відкрийте діалог «Статистика» в грі перед запуском.",
@@ -1730,6 +1748,7 @@ LANGS = {
         "chest_not_enough_plain": "Berlian tidak cukup untuk mengirim",
         "chest_not_enough": "Berlian tidak cukup untuk mengirim, butuh {need}, Anda punya {have}",
         "chest_delete_batch_btn": "🗑 Hapus batch",
+        "chest_ocr_broken": 'Pengenalan tidak berfungsi (Tesseract). Periksa folder tesseract_bin dan antivirus; bot harus berada di folder pada disk, bukan di Desktop.', "chest_stalled": 'Pengenalan tidak berfungsi: antrean bertambah tetapi tidak ada yang dikenali. Hentikan dan mulai ulang bot.',
         "chest_abort_btn": "Hentikan pengenalan", "chest_recognize_btn": "Mulai pengenalan", "chest_stopping": "Menghentikan…",
         "tab_ancient": "KUNO", "ancient_status_running": "Mengumpulkan data turnamen...", "ancient_status_sent": "Terkirim ke server", "ancient_status_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "ancient_desc": "Buka dialog «Statistik» dalam game sebelum memulai.",
@@ -2223,6 +2242,9 @@ class TotalHunterApp(ctk.CTk):
         self._chest_elapsed = 0.0       # таймер сбора: накоплено секунд
         self._chest_t0 = None           # момент последнего запуска (None — стоит)
         self._chest_timer_job = None
+        self._chest_last_progress = None   # когда последний раз появилась распознанная запись
+        self._chest_stalled = False
+        self._chest_selfcheck_note = None
         saved_lang = {}
         if os.path.exists(GUI_CONFIG_PATH):
             try:
@@ -3457,6 +3479,48 @@ class TotalHunterApp(ctk.CTk):
                 on_countdown_callback=self.on_crypt_countdown,
             )
 
+    # ── Самопроверка OCR и «распознавание не работает» (сессия #167) ──────────────────────
+
+    CHEST_STALL_MIN_QUEUE = 30     # очередь не меньше стольких картинок…
+    CHEST_STALL_SECONDS = 60       # …и столько секунд ни одной новой записи → «не работает» (числа мои, 2026-11-14)
+
+    def _chest_ocr_ok(self, full_lang) -> bool:
+        """Перед стартом проверяет Tesseract; при сбое пишет понятный статус и лог, сбор не начинает."""
+        import chest_log
+        import chest_reader
+        res = chest_reader.selfcheck_ocr(full_lang)
+        if res["ok"]:
+            self._chest_selfcheck_note = f"OCR selfcheck ok: {res['seconds']:.2f} с"
+            return True
+        chest_log.start_run()
+        chest_log.report(f"OCR selfcheck FAIL: {res['error']} ({res['seconds']:.2f} с)", "ERROR")
+        L = LANGS[self.current_lang]
+        self.chest_status_label.configure(text=L["chest_ocr_broken"], text_color=MD3["error_text"])
+        return False
+
+    def _note_chest_progress(self) -> None:
+        self._chest_last_progress = time.monotonic()
+        if self._chest_stalled:
+            self._chest_stalled = False
+            L = LANGS[self.current_lang]
+            self.chest_status_label.configure(text=L["chest_status_running"], text_color=MD3["secondary"])
+
+    def _check_chest_stall(self) -> None:
+        if self._chest_stalled or self._chest_last_progress is None:
+            return
+        if time.monotonic() - self._chest_last_progress < self.CHEST_STALL_SECONDS:
+            return
+        import chest_log
+        import chest_reader
+        pending = chest_reader.count_pending()
+        if pending < self.CHEST_STALL_MIN_QUEUE:
+            return
+        self._chest_stalled = True
+        chest_log.report(f"распознавание стоит: в очереди {pending}, новых записей нет "
+                         f"{int(time.monotonic() - self._chest_last_progress)} с", "ERROR")
+        L = LANGS[self.current_lang]
+        self.chest_status_label.configure(text=L["chest_stalled"], text_color=MD3["error_text"])
+
     def _refresh_chest_recognition_btn(self):
         """Одна кнопка (владелец 2026-11-14): идёт сбор/распознавание — «Остановить распознавание»;
         иначе «Запустить распознавание» (активна, только если в очереди есть что распознавать)."""
@@ -3486,7 +3550,11 @@ class TotalHunterApp(ctk.CTk):
 
         run_kingdom = self.chest_kingdom_entry.get().strip()
         run_clan = self.chest_clan_entry.get().strip()
+        if not self._chest_ocr_ok(bool(self.chest_full_lang_var.get())):
+            return
         self._chest_running = True
+        self._chest_last_progress = time.monotonic()
+        self._chest_stalled = False
         self._chest_timer_start()
         self._chest_stop_event = threading.Event()
         self._chest_abort_event = threading.Event()
@@ -3502,7 +3570,9 @@ class TotalHunterApp(ctk.CTk):
         self._refresh_chest_recognition_btn()
 
         def _on_update(counts):
+            self._chest_last_progress = time.monotonic()
             self.after(0, lambda c=dict(counts): (
+                self._note_chest_progress(),
                 self._update_chest_counts_display(c), self._refresh_chest_queue()))
 
         last_send_status = {}
@@ -3517,7 +3587,8 @@ class TotalHunterApp(ctk.CTk):
                 result = chest_reader.collect_chests(
                     stop_now, on_update=_on_update, abort_flag=stop_now,
                     full_lang=full_lang, kingdom=run_kingdom or None, clan=run_clan or None,
-                    collect=False, on_batch_ready=_on_batch_ready)
+                    collect=False, on_batch_ready=_on_batch_ready,
+                    start_note=self._chest_selfcheck_note)
             except Exception as exc:
                 chest_log.log_exc("распознавание очереди: исключение")
                 chest_log.report(f"распознавание очереди: сбой {type(exc).__name__}: {exc}", "ERROR")
@@ -3563,7 +3634,12 @@ class TotalHunterApp(ctk.CTk):
                                               text_color=MD3["error_text"])
             return
 
+        if not self._chest_ocr_ok(bool(self.chest_full_lang_var.get())):
+            return
+
         self._chest_running = True
+        self._chest_last_progress = time.monotonic()
+        self._chest_stalled = False
         self._chest_timer_start()
         self._chest_stop_event = threading.Event()
         self._chest_abort_event = threading.Event()   # свежий на КАЖДЫЙ старт, иначе старый abort глушит сбор
@@ -3599,7 +3675,9 @@ class TotalHunterApp(ctk.CTk):
         last_send_status = {}
 
         def _on_update(counts):
+            self._chest_last_progress = time.monotonic()
             self.after(0, lambda c=dict(counts): (
+                self._note_chest_progress(),
                 self._update_chest_counts_display(c), self._refresh_chest_queue()))
 
         def _on_batch_ready(reason):
@@ -3614,6 +3692,7 @@ class TotalHunterApp(ctk.CTk):
                         pause_range=pause_range, full_lang=full_lang,
                         on_batch_ready=_on_batch_ready,
                         kingdom=run_kingdom, clan=run_clan,
+                        start_note=self._chest_selfcheck_note,
                     )
                 except Exception as exc:
                     import chest_log
@@ -3675,6 +3754,8 @@ class TotalHunterApp(ctk.CTk):
     def _chest_timer_tick(self) -> None:
         self._chest_timer_job = None
         self._chest_timer_render()
+        if self._chest_running:
+            self._check_chest_stall()
         if self._chest_t0 is not None:
             self._chest_timer_job = self.after(1000, self._chest_timer_tick)
 

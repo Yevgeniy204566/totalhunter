@@ -243,6 +243,22 @@ def crop_chest_type(frame):
     return crop_fixed_field(frame, SOURCE_REF_RECT, "chest_type")
 
 
+def selfcheck_ocr(full_lang=False) -> dict:
+    """Самопроверка OCR перед «Старт» (сессия #167): Tesseract + языковой набор, который будет
+    использован, на искусственной картинке. Ловит бота, распакованного в неудачное место (рабочий стол),
+    заблокированный антивирусом tesseract.exe, отсутствующие языковые файлы — раньше всё это молча
+    копило очередь. {'ok', 'seconds', 'error'}."""
+    img = np.full((60, 420, 3), 255, dtype=np.uint8)
+    cv2.putText(img, "TEST 123", (10, 44), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 0, 0), 3)
+    lang = FULL_SENDER_OCR_LANG if full_lang else LIGHT_SENDER_OCR_LANG
+    t0 = time.monotonic()
+    try:
+        ocr_text(img, lang=lang, extra_config=SENDER_OCR_CONFIG)
+    except Exception as exc:
+        return {'ok': False, 'seconds': time.monotonic() - t0, 'error': f"{type(exc).__name__}: {exc}"}
+    return {'ok': True, 'seconds': time.monotonic() - t0, 'error': None}
+
+
 def ocr_sender_name_crop(roi, full_lang=False):
     lang = FULL_SENDER_OCR_LANG if full_lang else LIGHT_SENDER_OCR_LANG
     return clean_name(ocr_text(roi, lang=lang, extra_config=SENDER_OCR_CONFIG))
@@ -715,7 +731,8 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                    pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False,
                    pending_dir=PENDING_DIR, batch_limit=BATCH_LIMIT, on_batch_ready=None,
-                   kingdom=None, clan=None, queue_limit=QUEUE_LIMIT, abort_flag=None, collect=True):
+                   kingdom=None, clan=None, queue_limit=QUEUE_LIMIT, abort_flag=None, collect=True,
+                   start_note=None):
     """Конвейер (сессия #149, входящие заметки п.D): клики по «Собрать» НЕ ждут OCR.
     Этот (producer) поток захватывает кадр, проверяет кнопку «Открыть» (find_open_button,
     как раньше), вырезает оба ROI (crop_top_row) и атомарно сохраняет кроп в pending_dir —
@@ -741,6 +758,8 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     run_id = _new_run_id()
     if kingdom and clan:
         _write_run_pair(pending_dir, run_id, kingdom, clan)
+    if start_note:
+        chest_log.log("INFO", start_note)
     chest_log.report(f"start: в очереди {count_pending(pending_dir)}, в БД не отправлено "
                      f"{_batch_size(pending_dir, db_path) - count_pending(pending_dir)}, "
                      f"full_lang={full_lang}, batch_limit={batch_limit}, queue_limit={queue_limit}")

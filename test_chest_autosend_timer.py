@@ -5,6 +5,8 @@
    стоит, при отправке батча сбрасывается."""
 import os
 import threading
+
+import pytest
 from unittest.mock import MagicMock
 
 import cv2
@@ -15,6 +17,14 @@ import main as _main_module
 from main import LANGS
 
 App = _main_module.TotalHunterApp
+
+
+@pytest.fixture(autouse=True)
+def _ocr_selfcheck_ok(monkeypatch):
+    import chest_reader
+    monkeypatch.setattr(chest_reader, "selfcheck_ocr",
+                        lambda full_lang=False: {"ok": True, "seconds": 0.1, "error": None})
+    yield
 
 
 def _write_crops(pending_dir, n):
@@ -79,6 +89,9 @@ def _app():
     app._chest_elapsed = 0.0
     app._chest_t0 = None
     app._chest_timer_job = None
+    app._chest_last_progress = None
+    app._chest_stalled = False
+    app._chest_selfcheck_note = None
     app.chest_kingdom_entry = MagicMock(); app.chest_kingdom_entry.get.return_value = "K"
     app.chest_clan_entry = MagicMock(); app.chest_clan_entry.get.return_value = "C"
     app.chest_full_lang_var = MagicMock(); app.chest_full_lang_var.get.return_value = False

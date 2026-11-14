@@ -2,12 +2,22 @@
 «Остановить распознавание», после остановки — «Запустить распознавание» (дорабатывает очередь без
 кликов по игре). Без значка, без поясняющих надписей про «СТАРТ продолжит»."""
 import threading
+
+import pytest
 from unittest.mock import MagicMock
 
 import main as _main_module
 from main import LANGS
 
 App = _main_module.TotalHunterApp
+
+
+@pytest.fixture(autouse=True)
+def _ocr_selfcheck_ok(monkeypatch):
+    import chest_reader
+    monkeypatch.setattr(chest_reader, "selfcheck_ocr",
+                        lambda full_lang=False: {"ok": True, "seconds": 0.1, "error": None})
+    yield
 
 
 class _SyncThread:
@@ -30,6 +40,9 @@ def _app(running=True):
     app._chest_elapsed = 0.0
     app._chest_t0 = None
     app._chest_timer_job = None
+    app._chest_last_progress = None
+    app._chest_stalled = False
+    app._chest_selfcheck_note = None
     app._update_chest_counts_display = MagicMock()
     app._refresh_chest_queue = MagicMock()
     app.after = lambda ms, fn=None, *a: fn() if (fn and ms == 0) else None
