@@ -715,7 +715,7 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                    pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False,
                    pending_dir=PENDING_DIR, batch_limit=BATCH_LIMIT, on_batch_ready=None,
-                   kingdom=None, clan=None, queue_limit=QUEUE_LIMIT, abort_flag=None):
+                   kingdom=None, clan=None, queue_limit=QUEUE_LIMIT, abort_flag=None, collect=True):
     """Конвейер (сессия #149, входящие заметки п.D): клики по «Собрать» НЕ ждут OCR.
     Этот (producer) поток захватывает кадр, проверяет кнопку «Открыть» (find_open_button,
     как раньше), вырезает оба ROI (crop_top_row) и атомарно сохраняет кроп в pending_dir —
@@ -761,8 +761,10 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     empty_streak = 0
     frame_id = 0
     stop_reason = 'stop_flag'
+    if not collect:
+        stop_reason = 'recognize_only'   # «Запустить распознавание»: только очередь, игру не трогаем
     try:
-        while not stop_flag():
+        while collect and not stop_flag():
             if abort_flag and abort_flag():
                 stop_reason = 'abort'
                 break

@@ -1628,3 +1628,23 @@ def test_collect_chests_abort_returns_fast_and_does_not_send(tmp_path, monkeypat
     assert holder["r"]["aborted"] is True
     assert sent == []         # аварийный стоп ничего не отправляет
     assert cr.count_pending(str(tmp_path / "p")) > 0   # необработанное осталось для следующего старта
+
+
+def test_collect_chests_recognition_only_processes_queue_without_clicking(tmp_path, monkeypatch):
+    """collect=False — режим «Запустить распознавание»: дорабатывает очередь, не трогает игру
+    (ни кадров, ни кликов) и ничего не отправляет."""
+    _write_crops(str(tmp_path / "p"), 3)
+    monkeypatch.setattr(cr, "ocr_top_row_crops", lambda combined, full_lang=False: ("Тип", "Игрок"))
+
+    def boom(*a, **k):
+        raise AssertionError("в режиме распознавания игра не трогается")
+    monkeypatch.setattr(cr, "grab_fullscreen", boom)
+    monkeypatch.setattr(cr, "click_open_button", boom)
+    sent = []
+
+    result = cr.collect_chests(lambda: False, db_path=str(tmp_path / "b.db"), pending_dir=str(tmp_path / "p"),
+                               collect=False, on_batch_ready=lambda r: sent.append(r))
+
+    assert cr.count_pending(str(tmp_path / "p")) == 0
+    assert sum(result["counts"].values()) == 3
+    assert sent == [] and not result["list_ended"] and not result["batch_full"]

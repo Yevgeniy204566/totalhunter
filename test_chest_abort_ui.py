@@ -1,12 +1,18 @@
-"""Экстренная кнопка «Остановить распознавание» (владелец 2026-11-14) и мгновенная обратная связь
-обычного «Стоп»."""
-from unittest.mock import MagicMock
+"""Одна кнопка распознавания сундуков (владелец 2026-11-14): пока идёт сбор/распознавание она
+«Остановить распознавание», после остановки — «Запустить распознавание» (дорабатывает очередь без
+кликов по игре). Без значка, без поясняющих надписей про «СТАРТ продолжит»."""
 import threading
+from unittest.mock import MagicMock
 
 import main as _main_module
 from main import LANGS
 
 App = _main_module.TotalHunterApp
+
+
+class _SyncThread:
+    def __init__(self, target=None, daemon=None, **kw): self._t = target
+    def start(self): self._t()
 
 
 def _app(running=True):
@@ -19,23 +25,81 @@ def _app(running=True):
     app.chest_start_btn = MagicMock()
     app.chest_send_btn = MagicMock()
     app._chest_delete_batch_btn = MagicMock()
-    app.chest_abort_btn = MagicMock()
+    app.chest_recog_btn = MagicMock()
     app._update_chest_counts_display = MagicMock()
     app._refresh_chest_queue = MagicMock()
+    app.after = lambda ms, fn=None, *a: fn() if fn else None
     return app
 
 
-def test_abort_sets_both_events_and_shows_stopping():
+def _pending(monkeypatch, n):
+    import chest_reader
+    monkeypatch.setattr(chest_reader, "count_pending", lambda *a, **k: n)
+
+
+def test_button_stops_when_running_and_shows_stopping():
     app = _app()
-    app.abort_chest_recognition()
+    app.toggle_chest_recognition()
     assert app._chest_abort_event.is_set() and app._chest_stop_event.is_set()
     assert app.chest_status_label.configure.call_args.kwargs["text"] == LANGS["RU"]["chest_stopping"]
 
 
-def test_abort_does_nothing_when_not_running():
+def test_button_label_while_running_is_stop():
+    app = _app(running=True)
+    app._refresh_chest_recognition_btn()
+    kw = app.chest_recog_btn.configure.call_args.kwargs
+    assert kw["text"] == LANGS["RU"]["chest_abort_btn"] and kw["state"] == "normal"
+
+
+def test_button_label_when_idle_with_queue_is_start_and_enabled(monkeypatch):
+    _pending(monkeypatch, 88)
     app = _app(running=False)
-    app.abort_chest_recognition()
-    assert not app._chest_abort_event.is_set()
+    app._refresh_chest_recognition_btn()
+    kw = app.chest_recog_btn.configure.call_args.kwargs
+    assert kw["text"] == LANGS["RU"]["chest_recognize_btn"] and kw["state"] == "normal"
+
+
+def test_button_disabled_when_idle_and_queue_empty(monkeypatch):
+    _pending(monkeypatch, 0)
+    app = _app(running=False)
+    app._refresh_chest_recognition_btn()
+    assert app.chest_recog_btn.configure.call_args.kwargs["state"] == "disabled"
+
+
+def test_button_starts_recognition_only_run_without_clicking_game(monkeypatch):
+    import chest_reader
+    _pending(monkeypatch, 88)
+    captured = {}
+
+    def fake_collect(stop_flag, **kw):
+        captured.update(kw)
+        captured["running_during"] = app._chest_running
+        return {"counts": {}, "items": []}
+    monkeypatch.setattr(chest_reader, "collect_chests", fake_collect)
+    monkeypatch.setattr(_main_module.threading, "Thread", _SyncThread)
+    app = _app(running=False)
+    app._other_automation_running = lambda exclude=None: False
+    app.chest_kingdom_entry = MagicMock(); app.chest_kingdom_entry.get.return_value = "K"
+    app.chest_clan_entry = MagicMock(); app.chest_clan_entry.get.return_value = "C"
+    app.chest_full_lang_var = MagicMock(); app.chest_full_lang_var.get.return_value = False
+
+    app.toggle_chest_recognition()
+
+    assert captured["collect"] is False
+    assert captured["running_during"] is True       # пока идёт — «СТАРТ» занят
+    assert captured["abort_flag"]() is False        # флаг свежий
+    assert app._chest_running is False              # по завершении снова свободно
+
+
+def test_button_does_nothing_when_idle_and_queue_empty(monkeypatch):
+    import chest_reader
+    _pending(monkeypatch, 0)
+    called = []
+    monkeypatch.setattr(chest_reader, "collect_chests", lambda *a, **k: called.append(1))
+    app = _app(running=False)
+    app._other_automation_running = lambda exclude=None: False
+    app.toggle_chest_recognition()
+    assert not called and app._chest_running is False
 
 
 def test_plain_stop_shows_stopping_immediately():
@@ -45,22 +109,21 @@ def test_plain_stop_shows_stopping_immediately():
     assert app.chest_status_label.configure.call_args.kwargs["text"] == LANGS["RU"]["chest_stopping"]
 
 
-def test_done_after_abort_tells_player_queue_is_kept(monkeypatch):
-    import chest_reader
-    monkeypatch.setattr(chest_reader, "count_pending", lambda *a, **k: 120)
+def test_done_after_abort_shows_plain_stopped_without_hints(monkeypatch):
+    _pending(monkeypatch, 120)
     app = _app()
     app._on_chest_collection_done({"counts": {}, "aborted": True})
     text = app.chest_status_label.configure.call_args.kwargs["text"]
-    assert "120" in text
+    assert text == LANGS["RU"]["chest_status_stopped"]
     assert app._chest_running is False
-    assert app.chest_abort_btn.configure.call_args.kwargs["state"] == "disabled"
 
 
-def test_every_language_has_abort_texts():
+def test_texts_all_languages_no_icon_no_hint():
     for code in LANGS:
-        for key in ("chest_abort_btn", "chest_stopping", "chest_aborted"):
+        for key in ("chest_abort_btn", "chest_recognize_btn", "chest_stopping"):
             assert LANGS[code].get(key), (code, key)
-        assert "{n}" in LANGS[code]["chest_aborted"], code
+        assert "⛔" not in LANGS[code]["chest_abort_btn"], code
+        assert "chest_aborted" not in LANGS[code], code
 
 
 def test_start_after_abort_uses_fresh_events(monkeypatch):
@@ -68,21 +131,17 @@ def test_start_after_abort_uses_fresh_events(monkeypatch):
     взведённым, и каждый следующий «СТАРТ» сразу прерывался (reason=abort, кадров=0)."""
     import chest_reader
     captured = {}
-
     monkeypatch.setattr(chest_reader, "grab_fullscreen", lambda: object())
     monkeypatch.setattr(chest_reader, "detect_dialog_bbox", lambda f: (0, 0, 10, 10))
     monkeypatch.setattr(chest_reader, "init_db", lambda *a, **k: MagicMock())
     monkeypatch.setattr(chest_reader, "get_unsynced_counts", lambda c: {})
+    _pending(monkeypatch, 0)
 
     def fake_collect(stop_flag, **kw):
         captured["abort_set_at_start"] = kw["abort_flag"]()
         captured["stop_set_at_start"] = stop_flag()
         return {"counts": {}, "items": []}
     monkeypatch.setattr(chest_reader, "collect_chests", fake_collect)
-
-    class _SyncThread:
-        def __init__(self, target=None, daemon=None, **kw): self._t = target
-        def start(self): self._t()
     monkeypatch.setattr(_main_module.threading, "Thread", _SyncThread)
 
     app = _app(running=False)
@@ -94,7 +153,7 @@ def test_start_after_abort_uses_fresh_events(monkeypatch):
     app.chest_full_lang_var = MagicMock(); app.chest_full_lang_var.get.return_value = False
     app.chest_auto_send_var = MagicMock(); app.chest_auto_send_var.get.return_value = False
 
-    app._chest_abort_event.set()          # прошлый запуск закончился экстренной остановкой
+    app._chest_abort_event.set()
     app._chest_stop_event.set()
     app.toggle_chest_bot()
 
