@@ -624,7 +624,7 @@ def _quarantine_crop(src: str, pending_dir: str) -> None:
 
 def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: bool,
                          producer_done: threading.Event, items_out: list,
-                         kingdom=None, clan=None, status=None) -> None:
+                         kingdom=None, clan=None, status=None, abort_flag=None) -> None:
     """Фоновый consumer: разбирает очередь кропов независимо от скорости producer'а (клики не
     ждут OCR). Останавливается, только когда очередь пуста И producer точно закончил (иначе
     кроп, записанный между проверками, был бы пропущен) — тот же порядок проверки, что и в
@@ -640,6 +640,12 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
     fails = 0
     processed = 0
     while True:
+        if abort_flag and abort_flag():
+            # Экстренная остановка распознавания (владелец 2026-11-14): остаток очереди НЕ теряется —
+            # лежит в pending_dir, следующий «Старт» его дообработает.
+            status['aborted'] = True
+            chest_log.report(f"consumer: экстренная остановка, в очереди осталось {count_pending(pending_dir)}")
+            return
         queue = _pending_queue(pending_dir)
         if not queue:
             if producer_done.is_set():
@@ -663,6 +669,8 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
             try:
                 chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
             except Exception as first_exc:
+                if abort_flag and abort_flag():
+                    continue   # аварийный стоп: кроп остаётся в очереди, наверху цикла выходим
                 chest_log.log("WARN", f"consumer: повтор кропа {os.path.basename(src)} после "
                                       f"{type(first_exc).__name__}: {first_exc}")
                 chest_type, sender = ocr_top_row_crops(combined, full_lang=full_lang)
@@ -707,7 +715,7 @@ def _chest_consumer_loop(pending_dir: str, db_path: str, on_update, full_lang: b
 def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
                    pause_range=ANTI_DETECT_PAUSE_RANGE, full_lang=False,
                    pending_dir=PENDING_DIR, batch_limit=BATCH_LIMIT, on_batch_ready=None,
-                   kingdom=None, clan=None, queue_limit=QUEUE_LIMIT):
+                   kingdom=None, clan=None, queue_limit=QUEUE_LIMIT, abort_flag=None):
     """Конвейер (сессия #149, входящие заметки п.D): клики по «Собрать» НЕ ждут OCR.
     Этот (producer) поток захватывает кадр, проверяет кнопку «Открыть» (find_open_button,
     как раньше), вырезает оба ROI (crop_top_row) и атомарно сохраняет кроп в pending_dir —
@@ -743,7 +751,7 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     consumer_thread = threading.Thread(
         target=_chest_consumer_loop,
         args=(pending_dir, db_path, on_update, full_lang, producer_done, items, kingdom, clan,
-              consumer_status),
+              consumer_status, abort_flag),
         daemon=True,
     )
     consumer_thread.start()
@@ -755,6 +763,9 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
     stop_reason = 'stop_flag'
     try:
         while not stop_flag():
+            if abort_flag and abort_flag():
+                stop_reason = 'abort'
+                break
             if consumer_status.get('dead') or not consumer_thread.is_alive():
                 stop_reason = 'consumer_dead'
                 break
@@ -805,7 +816,13 @@ def collect_chests(stop_flag, on_update=None, db_path=DB_PATH,
         chest_log.log("INFO", f"consumer join: {time.monotonic() - t_join:.1f} с")
         _cleanup_run_pairs(pending_dir)
 
+    aborted = bool(abort_flag and abort_flag())
+    if aborted:
+        # Аварийный стоп ничего не отправляет: ни «конец списка», ни «батч полон» не засчитываем.
+        batch_full = list_ended = False
     result = {'items': items, 'batch_full': batch_full, 'list_ended': list_ended}
+    if aborted:
+        result['aborted'] = True
     if consumer_status.get('dead'):
         result['error'] = f"OCR: {consumer_status.get('error')}"
 

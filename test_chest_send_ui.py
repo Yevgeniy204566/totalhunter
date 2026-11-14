@@ -45,6 +45,7 @@ def test_send_button_comes_back_when_send_raises(tmp_path):
 def test_collection_done_shows_error_instead_of_plain_stopped():
     app = _app()
     app.chest_start_btn = MagicMock()
+    app.chest_abort_btn = MagicMock()
     app._chest_delete_batch_btn = MagicMock()
     app._update_chest_counts_display = MagicMock()
     app._refresh_chest_queue = MagicMock()

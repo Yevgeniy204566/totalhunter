@@ -446,6 +446,7 @@ LANGS = {
         "chest_not_enough_plain": "Не хватает алмазов для отправки",
         "chest_not_enough": "Не хватает алмазов для отправки: нужно {need}, у вас {have}",
         "chest_delete_batch_btn": "🗑 Удалить батч",
+        "chest_abort_btn": "⛔ Остановить распознавание", "chest_stopping": "Остановка…", "chest_aborted": "Распознавание остановлено. В очереди: {n}. «СТАРТ» продолжит.",
         "tab_ancient": "ДРЕВНИЙ", "ancient_status_running": "Сбор турнирной таблицы...", "ancient_status_sent": "Отправлено на сервер", "ancient_status_failed": "Сервер недоступен. Данные сохранены локально.",
         "ancient_desc": "Откройте диалог «Статистика» в игре перед запуском.",
         "chest_total_lb": "Всего открыто:",
@@ -528,6 +529,7 @@ LANGS = {
         "chest_not_enough_plain": "Not enough diamonds to send",
         "chest_not_enough": "Not enough diamonds to send: {need} needed, you have {have}",
         "chest_delete_batch_btn": "🗑 Delete batch",
+        "chest_abort_btn": "⛔ Stop recognition", "chest_stopping": "Stopping…", "chest_aborted": "Recognition stopped. In queue: {n}. START will continue.",
         "tab_ancient": "ANCIENT", "ancient_status_running": "Collecting tournament data...", "ancient_status_sent": "Sent to server", "ancient_status_failed": "Server unavailable. Data saved locally.",
         "ancient_desc": "Open the in-game «Statistics» dialog before starting.",
         "chest_total_lb": "Total opened:",
@@ -608,6 +610,7 @@ LANGS = {
         "chest_not_enough_plain": "Nicht genug Diamanten zum Senden",
         "chest_not_enough": "Nicht genug Diamanten zum Senden: {need} nötig, Sie haben {have}",
         "chest_delete_batch_btn": "🗑 Batch löschen",
+        "chest_abort_btn": "⛔ Erkennung stoppen", "chest_stopping": "Wird gestoppt…", "chest_aborted": "Erkennung gestoppt. In der Warteschlange: {n}. START setzt fort.",
         "tab_ancient": "URALTER", "ancient_status_running": "Turnierdaten werden gesammelt...", "ancient_status_sent": "An Server gesendet", "ancient_status_failed": "Server nicht erreichbar. Daten lokal gespeichert.",
         "ancient_desc": "Öffne den Dialog «Statistik» im Spiel, bevor du startest.",
         "chest_total_lb": "Insgesamt geöffnet:",
@@ -677,6 +680,7 @@ LANGS = {
         "chest_not_enough_plain": "No hay suficientes diamantes para enviar",
         "chest_not_enough": "No hay suficientes diamantes para enviar: se necesitan {need}, tiene {have}",
         "chest_delete_batch_btn": "🗑 Eliminar lote",
+        "chest_abort_btn": "⛔ Detener reconocimiento", "chest_stopping": "Deteniendo…", "chest_aborted": "Reconocimiento detenido. En cola: {n}. INICIAR continuará.",
         "tab_ancient": "ANTIGUO", "ancient_status_running": "Recolectando datos del torneo...", "ancient_status_sent": "Enviado al servidor", "ancient_status_failed": "Servidor no disponible. Datos guardados localmente.",
         "ancient_desc": "Abre el diálogo «Estadísticas» en el juego antes de empezar.",
         "chest_total_lb": "Total abiertos:",
@@ -746,6 +750,7 @@ LANGS = {
         "chest_not_enough_plain": "Pas assez de diamants pour envoyer",
         "chest_not_enough": "Pas assez de diamants pour envoyer : {need} requis, vous en avez {have}",
         "chest_delete_batch_btn": "🗑 Supprimer le lot",
+        "chest_abort_btn": "⛔ Arrêter la reconnaissance", "chest_stopping": "Arrêt en cours…", "chest_aborted": "Reconnaissance arrêtée. En file : {n}. DÉMARRER reprendra.",
         "tab_ancient": "ANCIEN", "ancient_status_running": "Collecte des données du tournoi...", "ancient_status_sent": "Envoyé au serveur", "ancient_status_failed": "Serveur indisponible. Données enregistrées localement.",
         "ancient_desc": "Ouvrez la boîte de dialogue «Statistiques» dans le jeu avant de démarrer.",
         "chest_total_lb": "Total ouverts :",
@@ -815,6 +820,7 @@ LANGS = {
         "chest_not_enough_plain": "Diamanti insufficienti per l'invio",
         "chest_not_enough": "Diamanti insufficienti per l'invio: ne servono {need}, ne hai {have}",
         "chest_delete_batch_btn": "🗑 Elimina il batch",
+        "chest_abort_btn": "⛔ Ferma il riconoscimento", "chest_stopping": "Arresto in corso…", "chest_aborted": "Riconoscimento fermato. In coda: {n}. AVVIA riprenderà.",
         "tab_ancient": "ANTICO", "ancient_status_running": "Raccolta dati del torneo...", "ancient_status_sent": "Inviato al server", "ancient_status_failed": "Server non disponibile. Dati salvati localmente.",
         "ancient_desc": "Apri la finestra «Statistiche» nel gioco prima di avviare.",
         "chest_total_lb": "Totale aperti:",
@@ -884,6 +890,7 @@ LANGS = {
         "chest_not_enough_plain": "Niet genoeg diamanten om te verzenden",
         "chest_not_enough": "Niet genoeg diamanten om te verzenden: {need} nodig, u heeft er {have}",
         "chest_delete_batch_btn": "🗑 Batch verwijderen",
+        "chest_abort_btn": "⛔ Herkenning stoppen", "chest_stopping": "Stoppen…", "chest_aborted": "Herkenning gestopt. In wachtrij: {n}. START gaat verder.",
         "tab_ancient": "ALOUDE", "ancient_status_running": "Toernooigegevens verzamelen...", "ancient_status_sent": "Verzonden naar server", "ancient_status_failed": "Server niet bereikbaar. Gegevens lokaal opgeslagen.",
         "ancient_desc": "Open het «Statistieken»-dialoogvenster in de game voordat je start.",
         "chest_total_lb": "Totaal geopend:",
@@ -953,6 +960,7 @@ LANGS = {
         "chest_not_enough_plain": "Ikke nok diamanter til å sende",
         "chest_not_enough": "Ikke nok diamanter til å sende: {need} trengs, du har {have}",
         "chest_delete_batch_btn": "🗑 Slett batch",
+        "chest_abort_btn": "⛔ Stopp gjenkjenning", "chest_stopping": "Stopper…", "chest_aborted": "Gjenkjenning stoppet. I køen: {n}. START fortsetter.",
         "tab_ancient": "URGAMMEL", "ancient_status_running": "Samler turneringsdata...", "ancient_status_sent": "Sendt til server", "ancient_status_failed": "Server utilgjengelig. Data lagret lokalt.",
         "ancient_desc": "Åpne «Statistikk»-dialogen i spillet før du starter.",
         "chest_total_lb": "Totalt åpnet:",
@@ -1022,6 +1030,7 @@ LANGS = {
         "chest_not_enough_plain": "Za mało diamentów do wysłania",
         "chest_not_enough": "Za mało diamentów do wysłania: potrzeba {need}, masz {have}",
         "chest_delete_batch_btn": "🗑 Usuń partię",
+        "chest_abort_btn": "⛔ Zatrzymaj rozpoznawanie", "chest_stopping": "Zatrzymywanie…", "chest_aborted": "Rozpoznawanie zatrzymane. W kolejce: {n}. START wznowi.",
         "tab_ancient": "STARODAWNY", "ancient_status_running": "Zbieranie danych turniejowych...", "ancient_status_sent": "Wysłano na serwer", "ancient_status_failed": "Serwer niedostępny. Dane zapisane lokalnie.",
         "ancient_desc": "Otwórz okno «Statystyki» w grze przed uruchomieniem.",
         "chest_total_lb": "Łącznie otwarto:",
@@ -1091,6 +1100,7 @@ LANGS = {
         "chest_not_enough_plain": "Diamantes insuficientes para enviar",
         "chest_not_enough": "Diamantes insuficientes para enviar: são necessários {need}, você tem {have}",
         "chest_delete_batch_btn": "🗑 Excluir lote",
+        "chest_abort_btn": "⛔ Parar reconhecimento", "chest_stopping": "Parando…", "chest_aborted": "Reconhecimento parado. Na fila: {n}. INICIAR continuará.",
         "tab_ancient": "ANCIÃO", "ancient_status_running": "Coletando dados do torneio...", "ancient_status_sent": "Enviado ao servidor", "ancient_status_failed": "Servidor indisponível. Dados salvos localmente.",
         "ancient_desc": "Abra a caixa de diálogo «Estatísticas» no jogo antes de iniciar.",
         "chest_total_lb": "Total aberto:",
@@ -1160,6 +1170,7 @@ LANGS = {
         "chest_not_enough_plain": "Inte tillräckligt med diamanter för att skicka",
         "chest_not_enough": "Inte tillräckligt med diamanter för att skicka: {need} behövs, du har {have}",
         "chest_delete_batch_btn": "🗑 Ta bort batch",
+        "chest_abort_btn": "⛔ Stoppa igenkänning", "chest_stopping": "Stoppar…", "chest_aborted": "Igenkänning stoppad. I kön: {n}. START fortsätter.",
         "tab_ancient": "FORNTIDA", "ancient_status_running": "Samlar turneringsdata...", "ancient_status_sent": "Skickat till server", "ancient_status_failed": "Servern är inte tillgänglig. Data sparad lokalt.",
         "ancient_desc": "Öppna dialogrutan «Statistik» i spelet innan du startar.",
         "chest_total_lb": "Totalt öppnade:",
@@ -1229,6 +1240,7 @@ LANGS = {
         "chest_not_enough_plain": "Göndermek için yeterli elmas yok",
         "chest_not_enough": "Göndermek için yeterli elmas yok: {need} gerekli, sizde {have} var",
         "chest_delete_batch_btn": "🗑 Toplu işi sil",
+        "chest_abort_btn": "⛔ Tanımayı durdur", "chest_stopping": "Durduruluyor…", "chest_aborted": "Tanıma durduruldu. Kuyrukta: {n}. BAŞLAT devam eder.",
         "tab_ancient": "KADİM", "ancient_status_running": "Turnuva verileri toplanıyor...", "ancient_status_sent": "Sunucuya gönderildi", "ancient_status_failed": "Sunucuya erişilemiyor. Veriler yerel olarak kaydedildi.",
         "ancient_desc": "Başlamadan önce oyundaki «İstatistik» penceresini açın.",
         "chest_total_lb": "Toplam açılan:",
@@ -1298,6 +1310,7 @@ LANGS = {
         "chest_not_enough_plain": "لا توجد ألماسات كافية للإرسال",
         "chest_not_enough": "لا توجد ألماسات كافية للإرسال، المطلوب {need}، لديك {have}",
         "chest_delete_batch_btn": "🗑 حذف الدفعة",
+        "chest_abort_btn": "⛔ إيقاف التعرّف", "chest_stopping": "جارٍ الإيقاف…", "chest_aborted": "تم إيقاف التعرّف. في قائمة الانتظار: {n}. زر «بدء» سيتابع.",
         "tab_ancient": "القديم", "ancient_status_running": "جمع بيانات البطولة...", "ancient_status_sent": "تم الإرسال إلى الخادم", "ancient_status_failed": "الخادم غير متاح. تم حفظ البيانات محليًا.",
         "ancient_desc": "افتح نافذة «الإحصائيات» في اللعبة قبل البدء.",
         "chest_total_lb": "الإجمالي المفتوح:",
@@ -1367,6 +1380,7 @@ LANGS = {
         "chest_not_enough_plain": "送信に必要なダイヤが足りません",
         "chest_not_enough": "送信に必要なダイヤが足りません：必要 {need}、所持 {have}",
         "chest_delete_batch_btn": "🗑 バッチを削除",
+        "chest_abort_btn": "⛔ 認識を停止", "chest_stopping": "停止中…", "chest_aborted": "認識を停止しました。キュー内: {n}。「開始」で再開します。",
         "tab_ancient": "古代の者", "ancient_status_running": "トーナメントデータを収集中...", "ancient_status_sent": "サーバーに送信しました", "ancient_status_failed": "サーバーに接続できません。データはローカルに保存されました。",
         "ancient_desc": "開始する前にゲーム内の「統計」ダイアログを開いてください。",
         "chest_total_lb": "開封総数:",
@@ -1436,6 +1450,7 @@ LANGS = {
         "chest_not_enough_plain": "钻石不足，无法发送",
         "chest_not_enough": "钻石不足，无法发送：需要 {need}，当前有 {have}",
         "chest_delete_batch_btn": "🗑 删除批次",
+        "chest_abort_btn": "⛔ 停止识别", "chest_stopping": "正在停止…", "chest_aborted": "识别已停止。队列中：{n}。点击“开始”继续。",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集锦标赛数据...", "ancient_status_sent": "已发送到服务器", "ancient_status_failed": "服务器不可用，数据已保存到本地。",
         "ancient_desc": "开始前请打开游戏内的「统计」对话框。",
         "chest_total_lb": "已开启总数:",
@@ -1505,6 +1520,7 @@ LANGS = {
         "chest_not_enough_plain": "鑽石不足，無法傳送",
         "chest_not_enough": "鑽石不足，無法傳送：需要 {need}，目前有 {have}",
         "chest_delete_batch_btn": "🗑 刪除批次",
+        "chest_abort_btn": "⛔ 停止辨識", "chest_stopping": "正在停止…", "chest_aborted": "辨識已停止。佇列中：{n}。點擊「開始」繼續。",
         "tab_ancient": "古代生物", "ancient_status_running": "正在收集錦標賽資料...", "ancient_status_sent": "已發送到伺服器", "ancient_status_failed": "伺服器無法連線，資料已儲存在本機。",
         "ancient_desc": "開始前請打開遊戲內的「統計」對話框。",
         "chest_total_lb": "已開啟總數:",
@@ -1574,6 +1590,7 @@ LANGS = {
         "chest_not_enough_plain": "전송에 필요한 다이아몬드가 부족합니다",
         "chest_not_enough": "전송에 필요한 다이아몬드가 부족합니다: 필요 {need}, 보유 {have}",
         "chest_delete_batch_btn": "🗑 배치 삭제",
+        "chest_abort_btn": "⛔ 인식 중지", "chest_stopping": "중지 중…", "chest_aborted": "인식이 중지되었습니다. 대기열: {n}. 시작을 누르면 이어서 진행합니다.",
         "tab_ancient": "고대의 존재", "ancient_status_running": "토너먼트 데이터 수집 중...", "ancient_status_sent": "서버로 전송됨", "ancient_status_failed": "서버에 연결할 수 없습니다. 데이터는 로컬에 저장되었습니다.",
         "ancient_desc": "시작하기 전에 게임 내 「통계」 대화상자를 여세요.",
         "chest_total_lb": "총 개봉:",
@@ -1643,6 +1660,7 @@ LANGS = {
         "chest_not_enough_plain": "Не вистачає алмазів для відправки",
         "chest_not_enough": "Не вистачає алмазів для відправки: потрібно {need}, у вас {have}",
         "chest_delete_batch_btn": "🗑 Видалити батч",
+        "chest_abort_btn": "⛔ Зупинити розпізнавання", "chest_stopping": "Зупинка…", "chest_aborted": "Розпізнавання зупинено. У черзі: {n}. «СТАРТ» продовжить.",
         "tab_ancient": "ДАВНІЙ", "ancient_status_running": "Збір турнірної таблиці...", "ancient_status_sent": "Відправлено на сервер", "ancient_status_failed": "Сервер недоступний. Дані збережено локально.",
         "ancient_desc": "Відкрийте діалог «Статистика» в грі перед запуском.",
         "chest_total_lb": "Всього відкрито:",
@@ -1712,6 +1730,7 @@ LANGS = {
         "chest_not_enough_plain": "Berlian tidak cukup untuk mengirim",
         "chest_not_enough": "Berlian tidak cukup untuk mengirim, butuh {need}, Anda punya {have}",
         "chest_delete_batch_btn": "🗑 Hapus batch",
+        "chest_abort_btn": "⛔ Hentikan pengenalan", "chest_stopping": "Menghentikan…", "chest_aborted": "Pengenalan dihentikan. Dalam antrean: {n}. MULAI akan melanjutkan.",
         "tab_ancient": "KUNO", "ancient_status_running": "Mengumpulkan data turnamen...", "ancient_status_sent": "Terkirim ke server", "ancient_status_failed": "Server tidak tersedia. Data disimpan secara lokal.",
         "ancient_desc": "Buka dialog «Statistik» dalam game sebelum memulai.",
         "chest_total_lb": "Total dibuka:",
@@ -2200,6 +2219,7 @@ class TotalHunterApp(ctk.CTk):
         self._crypt_session_start = None
         self._chest_running = False
         self._chest_stop_event = threading.Event()
+        self._chest_abort_event = threading.Event()
         saved_lang = {}
         if os.path.exists(GUI_CONFIG_PATH):
             try:
@@ -3434,12 +3454,27 @@ class TotalHunterApp(ctk.CTk):
                 on_countdown_callback=self.on_crypt_countdown,
             )
 
+    def abort_chest_recognition(self):
+        """Экстренная остановка (владелец 2026-11-14): прекращает и клики, и распознавание сразу
+        после текущей картинки. Необработанное остаётся в очереди — «СТАРТ» продолжит с него.
+        Ничего не отправляет."""
+        if not self._chest_running:
+            return
+        import chest_log
+        chest_log.report("кнопка «Остановить распознавание» нажата")
+        self._chest_abort_event.set()
+        self._chest_stop_event.set()
+        self.chest_status_label.configure(text=LANGS[self.current_lang]["chest_stopping"],
+                                          text_color=MD3["on_surface2"])
+
     def toggle_chest_bot(self):
         L = LANGS[self.current_lang]
         if self._chest_running:
             import chest_log
             chest_log.log("INFO", "кнопка Стоп нажата")
             self._chest_stop_event.set()
+            # Мгновенная обратная связь: пока поток дообрабатывает очередь, кнопка не «молчит».
+            self.chest_status_label.configure(text=L["chest_stopping"], text_color=MD3["on_surface2"])
             return
 
         if self._other_automation_running(exclude="chest"):
@@ -3484,8 +3519,10 @@ class TotalHunterApp(ctk.CTk):
                                           text_color=MD3["secondary"])
         self.chest_send_btn.configure(state="disabled")
         self._chest_delete_batch_btn.configure(state="disabled")
+        self.chest_abort_btn.configure(state="normal")
 
         stop_event = self._chest_stop_event
+        abort_event = self._chest_abort_event
         # Владелец 2026-09-25: батч уходит на сервер сам — по концу списка сундуков в игре
         # ИЛИ по лимиту BATCH_LIMIT (chest_reader.py; сервер списывает 1◆ за 100 сундуков
         # (server/chests.py chest_import_cost), лимит ограничивает размер одной отправки). При
@@ -3536,7 +3573,7 @@ class TotalHunterApp(ctk.CTk):
             while True:
                 try:
                     result = chest_reader.collect_chests(
-                        stop_event.is_set, on_update=_on_update,
+                        stop_event.is_set, on_update=_on_update, abort_flag=abort_event.is_set,
                         pause_range=pause_range, full_lang=full_lang,
                         on_batch_ready=_on_batch_ready,
                         kingdom=run_kingdom, clan=run_clan,
@@ -3547,7 +3584,8 @@ class TotalHunterApp(ctk.CTk):
                     chest_log.report(f"collect: сбой {type(exc).__name__}: {exc}", "ERROR")
                     result = {"counts": {}, "error": f"{type(exc).__name__}: {exc}"}
                     break
-                if result.get("batch_full") and continue_after_send["value"] and not stop_event.is_set():
+                if (result.get("batch_full") and continue_after_send["value"]
+                        and not stop_event.is_set() and not result.get("aborted")):
                     continue_after_send["value"] = False
                     continue   # лимит батча, отправка удалась — собираем следующую порцию
                 break
@@ -3616,7 +3654,13 @@ class TotalHunterApp(ctk.CTk):
         # об успешной/частичной авто-отправке, показанное секундами раньше (_on_batch_ready) —
         # владелец не видел, что данные реально ушли на сервер. Показываем финальный
         # результат отправки, если она была; иначе — обычное «Остановлено».
-        if result.get("error"):
+        self.chest_abort_btn.configure(state="disabled")
+        if result.get("aborted"):
+            import chest_reader
+            self.chest_status_label.configure(
+                text=L["chest_aborted"].format(n=chest_reader.count_pending()),
+                text_color=MD3["on_surface2"])
+        elif result.get("error"):
             # Сессия #167: раньше result["error"] нигде не показывался — сбор «просто останавливался».
             self.chest_status_label.configure(
                 text=f"{L['chest_status_stopped']}: {str(result['error'])[:120]}",
@@ -5953,6 +5997,15 @@ class TotalHunterApp(ctk.CTk):
             command=self.toggle_chest_bot)
         self.chest_start_btn.pack(padx=20, pady=(4, 4), fill="x")
         self._i18n_labels.append((self.chest_start_btn, "chest_start_btn"))
+        # Экстренная остановка распознавания (владелец 2026-11-14): активна только пока идёт сбор.
+        self.chest_abort_btn = ctk.CTkButton(
+            self.tab_chest, text=L["chest_abort_btn"], height=32, corner_radius=8,
+            fg_color="transparent", border_width=1, border_color=MD3["error"],
+            hover_color=MD3["error_hover"], text_color=MD3["error_text"],
+            font=ctk.CTkFont(size=12, weight="bold"), state="disabled",
+            command=self.abort_chest_recognition)
+        self.chest_abort_btn.pack(padx=20, pady=(0, 4), fill="x")
+        self._i18n_labels.append((self.chest_abort_btn, "chest_abort_btn"))
         # Владелец 2026-09-28: сколько сундуков ушло на сервер в последнем батче
         self._chest_last_sent = None
         self.chest_sent_label = ctk.CTkLabel(self.tab_chest, text="",

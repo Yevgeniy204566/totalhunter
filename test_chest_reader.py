@@ -1568,3 +1568,63 @@ def test_consumer_retries_crop_once_before_quarantine(tmp_path, monkeypatch):
     conn = cr.init_db(str(tmp_path / "b.db"))
     assert sum(cr.get_unsynced_counts(conn).values()) == 1
     conn.close()
+
+
+# ── Экстренная остановка распознавания (владелец 2026-11-14) ────────────────────────────────
+
+def test_consumer_abort_leaves_remaining_crops_in_queue(tmp_path, monkeypatch):
+    """abort_flag прерывает OCR сразу после текущей картинки; остальные кропы НЕ теряются — следующий
+    «Старт» дообработает их."""
+    import chest_log
+    chest_log.start_run(log_dir=str(tmp_path / "logs"))
+    _write_crops(str(tmp_path / "pending"), 5)
+    calls = []
+
+    def ocr(combined, full_lang=False):
+        calls.append(1)
+        return ("Тип", "Игрок")
+
+    monkeypatch.setattr(cr, "ocr_top_row_crops", ocr)
+    done = threading.Event(); done.set()
+    status = {}
+    cr._chest_consumer_loop(str(tmp_path / "pending"), str(tmp_path / "b.db"), None, False, done, [],
+                            status=status, abort_flag=lambda: len(calls) >= 2)
+
+    assert len(calls) == 2
+    assert cr.count_pending(str(tmp_path / "pending")) == 3
+    assert status.get("aborted") is True
+
+
+def _patch_infinite_list(monkeypatch):
+    monkeypatch.setattr(cr, "grab_fullscreen", lambda: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "detect_dialog_bbox", lambda frame: (0, 0, 300, 300))
+    monkeypatch.setattr(cr, "crop_dialog", lambda frame, bbox: np.zeros((300, 300, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "find_open_button", lambda bbox, dialog: (10, 10))
+    monkeypatch.setattr(cr, "crop_top_row", lambda frame: np.zeros((10, 10, 3), dtype=np.uint8))
+    monkeypatch.setattr(cr, "click_open_button", lambda pause_range=cr.ANTI_DETECT_PAUSE_RANGE: None)
+
+
+def test_collect_chests_abort_returns_fast_and_does_not_send(tmp_path, monkeypatch):
+    _patch_infinite_list(monkeypatch)
+    abort = threading.Event()
+    sent = []
+
+    def slow_ocr(combined, full_lang=False):
+        time.sleep(0.05)
+        return ("Тип", "Игрок")
+    monkeypatch.setattr(cr, "ocr_top_row_crops", slow_ocr)
+
+    holder = {}
+    t = threading.Thread(target=lambda: holder.update(r=cr.collect_chests(
+        lambda: abort.is_set(), db_path=str(tmp_path / "b.db"), pending_dir=str(tmp_path / "p"),
+        pause_range=(0, 0), abort_flag=abort.is_set,
+        on_batch_ready=lambda reason: sent.append(reason))), daemon=True)
+    t.start()
+    time.sleep(0.6)           # очередь успела накопиться, OCR отстаёт от кликов
+    abort.set()
+    t.join(timeout=10)
+
+    assert not t.is_alive()
+    assert holder["r"]["aborted"] is True
+    assert sent == []         # аварийный стоп ничего не отправляет
+    assert cr.count_pending(str(tmp_path / "p")) > 0   # необработанное осталось для следующего старта
