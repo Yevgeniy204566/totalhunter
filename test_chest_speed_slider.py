@@ -40,3 +40,14 @@ def test_fast_slider_gives_shorter_pause_range_than_slow():
     fast = app._chest_pause_range(App._chest_pause_from_slider(1.0))
     slow = app._chest_pause_range(App._chest_pause_from_slider(0.0))
     assert fast[0] < slow[0]
+
+
+def test_full_language_switch_stays_on_chest_tab():
+    """Владелец 2026-11-14: Full ОСТАЁТСЯ (нужен корейским/арабским/китайским/японским именам).
+    Переключатель вкладки «Сундуки» и его сохранение в gui_config не убираем."""
+    app = App.__new__(App)
+    app.chest_full_lang_var = MagicMock()
+    app.chest_full_lang_var.get.return_value = True
+    app._save_gui_config_key = MagicMock()
+    app._on_chest_full_lang_change()
+    app._save_gui_config_key.assert_called_once_with("chest_full_lang_ocr", True)

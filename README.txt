@@ -104,6 +104,9 @@
 
    Click speed  - slider to the RIGHT = faster, to the LEFT = slower
                   (actual pause is always 0.3+ s due to recognition time)
+   Light / Full - OCR languages for player names
+                  Light = Latin + Cyrillic (fast)
+                  Full  = all 19 languages (slower, for non-Latin names)
 
    TUNING (if the bot clicks in the wrong place):
      Calibration tab -> Tuning -> select the item -> D-Pad arrows.
@@ -314,6 +317,9 @@ Support    : totalhunter.support@gmail.com
 
    Скорость клика — ползунок ВПРАВО = быстрее, ВЛЕВО = медленнее
                     (реальная пауза всегда 0.3+ с из-за времени распознавания)
+   Light / Full   — языки OCR для имён игроков
+                    Light = Латиница + Кириллица (быстро)
+                    Full  = все 19 языков (медленнее, для нелатинских имён)
 
    ТЮНИНГ (если бот кликает не туда):
      Вкладка Калибровка -> Тюнинг -> выбери пункт -> стрелки D-Pad.
