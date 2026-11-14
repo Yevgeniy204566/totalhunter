@@ -13,6 +13,7 @@ def _app():
     app.current_lang = "RU"
     app._chest_last_sent = None
     app.chest_sent_label = MagicMock()
+    app.after = lambda ms, fn=None, *a: None   # сброс таймера сбора планируется через after (окна в тесте нет)
     return app
 
 
