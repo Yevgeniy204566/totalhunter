@@ -3506,6 +3506,7 @@ class TotalHunterApp(ctk.CTk):
 
         self._chest_running = True
         self._chest_stop_event = threading.Event()
+        self._chest_abort_event = threading.Event()   # свежий на КАЖДЫЙ старт, иначе старый abort глушит сбор
         import chest_reader
         _conn = chest_reader.init_db()
         self._update_chest_counts_display(chest_reader.get_unsynced_counts(_conn))
