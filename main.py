@@ -2126,6 +2126,7 @@ def add_horizontal_scroll(sf, **scrollbar_colors):
     return hsb, fit_width
 
 
+CHEST_TIME_GREEN = "#4CD97B"   # таймер сбора сундуков (владелец 2026-11-14)
 SCROLLBAR_HIDE_DELAY_MS = 2000  # владелец 28.09: полосы гаснут через 2 с после изменения размера
 
 
@@ -3878,8 +3879,10 @@ class TotalHunterApp(ctk.CTk):
         self._render_chest_sent()
 
     def _render_chest_sent(self) -> None:
+        # Подпись серая, число — как цифры «Очередь сундуков» (синее, жирное; владелец 2026-11-14)
         count = "—" if self._chest_last_sent is None else self._chest_last_sent
-        self.chest_sent_label.configure(text=f"{LANGS[self.current_lang]['chest_sent_lb']} {count}")
+        self.chest_sent_label.configure(text=LANGS[self.current_lang]['chest_sent_lb'])
+        self.chest_sent_value_lb.configure(text=str(count))
 
     def send_chests_to_server(self):
         L = LANGS[self.current_lang]
@@ -6219,10 +6222,15 @@ class TotalHunterApp(ctk.CTk):
                                              font=ctk.CTkFont(size=14),
                                              text_color=MD3["on_surface2"])
         self.chest_sent_label.pack(side="left")
+        self.chest_sent_value_lb = ctk.CTkLabel(sent_row, text="—",
+                                                font=ctk.CTkFont(size=13, weight="bold"),
+                                                text_color=MD3["value_text"])
+        self.chest_sent_value_lb.pack(side="left", padx=(6, 0))
         # Таймер сбора (владелец 2026-11-14): справа от «Отправлено»; стоит на остановке, при отправке 0.
+        # Зелёный жирный (в темах нет зелёного цвета текста — фиксированный, читаем на всех тёмных темах).
         self.chest_time_label = ctk.CTkLabel(sent_row, text=self._fmt_elapsed(0),
-                                             font=ctk.CTkFont(size=14),
-                                             text_color=MD3["on_surface2"])
+                                             font=ctk.CTkFont(size=13, weight="bold"),
+                                             text_color=CHEST_TIME_GREEN)
         self.chest_time_label.pack(side="right")
         self._render_chest_sent()
 

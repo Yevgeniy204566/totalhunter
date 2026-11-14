@@ -23,6 +23,7 @@ def _app():
     app.chest_send_btn = MagicMock()
     app.chest_status_label = MagicMock()
     app.chest_sent_label = MagicMock()
+    app.chest_sent_value_lb = MagicMock()
     app._chest_last_sent = None
     app.after = lambda ms, fn=None, *a: fn() if fn else None
     return app

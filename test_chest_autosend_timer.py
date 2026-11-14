@@ -80,7 +80,7 @@ def _app():
     app._chest_stop_event = threading.Event()
     app._chest_abort_event = threading.Event()
     for name in ("chest_status_label", "chest_start_btn", "chest_send_btn", "_chest_delete_batch_btn",
-                 "chest_recog_btn", "chest_sent_label", "chest_time_label"):
+                 "chest_recog_btn", "chest_sent_label", "chest_sent_value_lb", "chest_time_label"):
         setattr(app, name, MagicMock())
     app._update_chest_counts_display = MagicMock()
     app._refresh_chest_queue = MagicMock()

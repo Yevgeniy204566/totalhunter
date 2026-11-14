@@ -13,6 +13,7 @@ def _app():
     app.current_lang = "RU"
     app._chest_last_sent = None
     app.chest_sent_label = MagicMock()
+    app.chest_sent_value_lb = MagicMock()
     app.after = lambda ms, fn=None, *a: None   # сброс таймера сбора планируется через after (окна в тесте нет)
     return app
 
@@ -46,9 +47,10 @@ def test_failed_pair_is_not_counted():
 def test_label_shows_dash_before_first_send_and_count_after():
     app = _app()
     app._render_chest_sent()
-    assert app.chest_sent_label.configure.call_args.kwargs["text"] == "Отправлено: —"
+    assert app.chest_sent_label.configure.call_args.kwargs["text"] == "Отправлено:"
+    assert app.chest_sent_value_lb.configure.call_args.kwargs["text"] == "—"
     app._show_chest_sent(12)
-    assert app.chest_sent_label.configure.call_args.kwargs["text"] == "Отправлено: 12"
+    assert app.chest_sent_value_lb.configure.call_args.kwargs["text"] == "12"
 
 
 def test_label_follows_language_switch():
@@ -56,7 +58,8 @@ def test_label_follows_language_switch():
     app._show_chest_sent(7)
     app.current_lang = "EN"
     app._render_chest_sent()
-    assert app.chest_sent_label.configure.call_args.kwargs["text"] == "Sent: 7"
+    assert app.chest_sent_label.configure.call_args.kwargs["text"] == "Sent:"
+    assert app.chest_sent_value_lb.configure.call_args.kwargs["text"] == "7"
 
 
 def test_every_language_has_the_label():

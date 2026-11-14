@@ -54,7 +54,7 @@ def _app(running=False):
     app._chest_stop_event = threading.Event()
     app._chest_abort_event = threading.Event()
     for name in ("chest_status_label", "chest_start_btn", "chest_send_btn", "_chest_delete_batch_btn",
-                 "chest_recog_btn", "chest_sent_label", "chest_time_label", "chest_speed_slider",
+                 "chest_recog_btn", "chest_sent_label", "chest_sent_value_lb", "chest_time_label", "chest_speed_slider",
                  "chest_full_lang_var", "chest_auto_send_var"):
         setattr(app, name, MagicMock())
     app.chest_speed_slider.get.return_value = 0.5
