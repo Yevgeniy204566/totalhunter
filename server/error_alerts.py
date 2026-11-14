@@ -15,6 +15,12 @@ COOLDOWN_SEC = 600
 _last_sent: dict[str, float] = {}
 _suppressed: dict[str, int] = {}
 
+# Те же ошибки пишем ещё и в таблицу logs (страница «Логи» админки): раньше 500 жили только в Telegram и
+# journalctl, и «знать обо всех проблемах» было нечем (2026-11-14). Лавина гасится отдельным, коротким окном.
+LOG_COOLDOWN_SEC = 60
+_last_logged: dict[str, float] = {}
+_logged_suppressed: dict[str, int] = {}
+
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 _BEARER = re.compile(r"(?i)bearer\s+[\w.~+/=-]+")
 _LONG_TOKEN = re.compile(r"\b[A-Za-z0-9_\-+/=]{32,}\b")
@@ -70,10 +76,40 @@ async def supervised_loop(name: str, sleep_sec: float, tick) -> None:
             await notify_server_error("BG", name, exc)
 
 
+async def _log_session():
+    from database import AsyncSessionLocal
+    return AsyncSessionLocal()
+
+
+async def persist_server_error(method: str, path: str, exc: BaseException, key: str) -> None:
+    """Запись ошибки 500 в logs (event_type=server_error). Не бросает исключений."""
+    try:
+        now = time.monotonic()
+        prev = _last_logged.get(key)
+        if prev is not None and now - prev < LOG_COOLDOWN_SEC:
+            _logged_suppressed[key] = _logged_suppressed.get(key, 0) + 1
+            return
+        _last_logged[key] = now
+        repeats = _logged_suppressed.pop(key, 0)
+        tb = scrub("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))[-1600:]
+        head = f"{method} {path}" + (f" (ещё {repeats} раз за последнюю минуту)" if repeats else "")
+        payload = f"{head}\n{type(exc).__name__}: {scrub(str(exc))[:300]}\n{tb}"[:2000]
+        from models import Log
+        session = await _log_session()
+        try:
+            session.add(Log(hwid=None, event_type="server_error", payload=payload))
+            await session.commit()
+        finally:
+            await session.close()
+    except Exception as err:  # noqa: BLE001
+        logger.warning("server error log failed: %s", err)
+
+
 async def notify_server_error(method: str, path: str, exc: BaseException) -> None:
     """Не бросает исключений: сбой уведомления не должен ломать ответ клиенту."""
     try:
         key = _key(method, path, exc)
+        await persist_server_error(method, path, exc, key)
         if not should_send(key):
             return
         repeats = _suppressed.pop(key, 0)

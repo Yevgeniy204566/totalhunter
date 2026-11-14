@@ -464,10 +464,22 @@ async def _get_collector_access(db: AsyncSession, slug: str, user: User) -> tupl
 
 
 
+def _lock_collector_stmt(collector_id: int):
+    return select(ChestCollector.id).where(ChestCollector.id == collector_id).with_for_update()
+
+
+async def _lock_collector(db: AsyncSession, collector_id: int) -> None:
+    """Сохранения «удалить всё и вставить заново» одного клана идут по очереди. Без этого серия
+    одновременных запросов (2026-11-13 22:10 UTC: три «Сохранить имена» в одну секунду) падала в
+    UniqueViolation (collector_id, raw_name): второй запрос удалял строки до того, как первый вставил свои."""
+    await db.execute(_lock_collector_stmt(collector_id))
+
+
 @router.post("/rows")
 async def post_dashboard_rows(payload: RowsPayload, user: User = Depends(get_web_user),
                               db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
+    await _lock_collector(db, collector.id)
 
     known_ids = await _load_known_catalog_ids(db)
     for row in payload.rows:
@@ -526,6 +538,7 @@ class PlayerAliasesPayload(BaseModel):
 async def post_player_aliases(payload: PlayerAliasesPayload, user: User = Depends(get_web_user),
                               db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
+    await _lock_collector(db, collector.id)
 
     # скрытые вручную и скрытые за 7 дней без сундуков в списке кабинета не видны — их записи не трогаем
     # Имя, которое владелец ввёл сейчас, не «скрытое»: правильное написание часто уже лежит в словаре
@@ -568,6 +581,7 @@ async def post_player_profiles(payload: PlayerProfilesPayload,
                                user: User = Depends(get_web_user),
                                db: AsyncSession = Depends(get_db)):
     collector, _ = await _get_collector_access(db, payload.collector_slug, user)
+    await _lock_collector(db, collector.id)
 
     # скрытые вручную и скрытые за 7 дней без сундуков в списке кабинета не видны — их записи не трогаем
     # то же, что в player-aliases: вводимое сейчас имя не считается скрытым

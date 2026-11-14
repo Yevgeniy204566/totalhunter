@@ -40,7 +40,16 @@ async def setup_test_db():
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
+
+    # Запись ошибок 500 в logs (error_alerts) в тестах идёт в тестовую SQLite, а не в localhost-Postgres.
+    import error_alerts
+    _orig_log_session = error_alerts._log_session
+
+    async def _test_log_session():
+        return AsyncTestSession()
+    error_alerts._log_session = _test_log_session
     yield
+    error_alerts._log_session = _orig_log_session
     app.dependency_overrides.clear()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

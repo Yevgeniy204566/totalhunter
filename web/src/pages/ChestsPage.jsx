@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from 'react'
+import { useEffect, useRef, useState, Fragment } from 'react'
 import { api } from '../api.js'
 import { useLang } from '../lang.js'
 import { DASHBOARD as D_RU } from '../dashboard_content.js'
@@ -8,6 +8,7 @@ import ChestSummaryTable from '../components/ChestSummaryTable.jsx'
 import ChestGuide from '../components/ChestGuide.jsx'
 import MixerTab from '../components/MixerTab.jsx'
 import { suggestNames } from '../lib/nameSuggest.js'
+import { createKeyedGuard } from '../lib/keyedGuard.js'
 import { DEFAULT_SETTINGS } from '../lib/emcQuota.js'
 import { chestGroup, groupColor, isEmcId, isEpicCryptId } from '../lib/chestGroups.js'
 
@@ -566,7 +567,21 @@ export default function ChestsPage() {
     } catch (e) { setMsg(e.message) }
   }
 
+  // Повторные клики по «Сохранить имена», пока запрос в пути, игнорируются (вчера три быстрых клика дали три
+  // одновременных запроса и 500 на последнем). Кнопки на это время неактивны.
+  const nameSaveGuard = useRef(createKeyedGuard()).current
+  const [savingNames, setSavingNames] = useState({})
+
   async function savePlayerAliases(slug) {
+    await nameSaveGuard.run(slug, async () => {
+      setSavingNames(prev => ({ ...prev, [slug]: true }))
+      try { await doSavePlayerAliases(slug) } finally {
+        setSavingNames(prev => ({ ...prev, [slug]: false }))
+      }
+    })
+  }
+
+  async function doSavePlayerAliases(slug) {
     try {
       await api.dashboardChestsPlayerAliases(slug, playerRowsByCollector[slug])
       // Save rank + troop_level profiles in the same action
@@ -1114,11 +1129,11 @@ export default function ChestsPage() {
               })
             return (
             <div className="players-tab" style={{ overflowX: 'auto' }}>
-              <button className="chest-pill-btn chest-pill-btn--primary chest-save-float" onClick={() => savePlayerAliases(collector.slug)}>
+              <button className="chest-pill-btn chest-pill-btn--primary chest-save-float" disabled={!!savingNames[collector.slug]} onClick={() => savePlayerAliases(collector.slug)}>
                 {cx.savePlayerAliases}
               </button>
               <div style={{ marginBottom: 8, textAlign: 'right' }}>
-                <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => savePlayerAliases(collector.slug)}>
+                <button className="chest-pill-btn chest-pill-btn--primary" disabled={!!savingNames[collector.slug]} onClick={() => savePlayerAliases(collector.slug)}>
                   {cx.savePlayerAliases}
                 </button>
               </div>
@@ -1285,7 +1300,7 @@ export default function ChestsPage() {
               <button className="chest-pill-btn" onClick={() => addPlayerRow(collector.slug)} style={{ marginTop: 12 }}>
                 {cx.addPlayerRow}
               </button>
-              <button className="chest-pill-btn chest-pill-btn--primary" onClick={() => savePlayerAliases(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
+              <button className="chest-pill-btn chest-pill-btn--primary" disabled={!!savingNames[collector.slug]} onClick={() => savePlayerAliases(collector.slug)} style={{ marginTop: 12, marginLeft: 8 }}>
                 {cx.savePlayerAliases}
               </button>
             </div>
