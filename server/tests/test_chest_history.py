@@ -447,3 +447,59 @@ async def test_supervised_loop_run_first_ticks_before_sleeping():
     await asyncio.sleep(0.05)
     task.cancel()
     assert calls == [1]
+
+
+@pytest.mark.asyncio
+async def test_seconds_until_next_close_no_seasons_returns_hourly_fallback(db_session):
+    from chest_history import seconds_until_next_close, ARCHIVE_MAX_SLEEP_SEC
+    await _make_collector(db_session, slug="no-season-alarm", period_end=None)
+    await db_session.commit()
+    assert await seconds_until_next_close(db_session) == ARCHIVE_MAX_SLEEP_SEC
+
+
+@pytest.mark.asyncio
+async def test_seconds_until_next_close_uses_nearest_end_and_clan_timezone(db_session):
+    from chest_history import seconds_until_next_close
+    now = datetime.utcnow()
+    # период клана в буквальных цифрах: конец «через 20 мин по времени клана» при UTC+3
+    # наступит через 20 мин; другой клан через 10 ч — берём ближайший
+    await _make_collector(db_session, slug="alarm-near", clan="N",
+                          timezone_offset_minutes=180,
+                          period_start=now - timedelta(days=1),
+                          period_end=now + timedelta(hours=3, minutes=20))
+    await _make_collector(db_session, slug="alarm-far", clan="F",
+                          period_start=now - timedelta(days=1),
+                          period_end=now + timedelta(hours=10))
+    await db_session.commit()
+    secs = await seconds_until_next_close(db_session)
+    assert 20 * 60 - 5 <= secs <= 20 * 60 + 5
+
+
+@pytest.mark.asyncio
+async def test_seconds_until_next_close_is_capped_at_one_hour(db_session):
+    from chest_history import seconds_until_next_close, ARCHIVE_MAX_SLEEP_SEC
+    now = datetime.utcnow()
+    await _make_collector(db_session, slug="alarm-capped",
+                          period_start=now - timedelta(days=1), period_end=now + timedelta(days=5))
+    await db_session.commit()
+    assert await seconds_until_next_close(db_session) == ARCHIVE_MAX_SLEEP_SEC
+
+
+@pytest.mark.asyncio
+async def test_seconds_until_next_close_overdue_is_almost_immediate(db_session):
+    from chest_history import seconds_until_next_close
+    now = datetime.utcnow()
+    await _make_collector(db_session, slug="alarm-overdue",
+                          period_start=now - timedelta(days=8), period_end=now - timedelta(days=1))
+    await db_session.commit()
+    assert await seconds_until_next_close(db_session) <= 5
+
+
+@pytest.mark.asyncio
+async def test_poke_archive_wakes_the_sleeping_alarm():
+    import asyncio
+    import chest_history
+    asyncio.get_running_loop().call_later(0.05, chest_history.poke_archive)
+    started = asyncio.get_running_loop().time()
+    await chest_history._sleep_or_wake(30)
+    assert asyncio.get_running_loop().time() - started < 2

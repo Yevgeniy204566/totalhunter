@@ -61,7 +61,7 @@ def build_text(method: str, path: str, exc: BaseException, repeats: int = 0) -> 
     return head + tb
 
 
-async def supervised_loop(name: str, sleep_sec: float, tick, run_first: bool = False) -> None:
+async def supervised_loop(name: str, sleep_sec: float, tick, run_first: bool = False, waiter=None) -> None:
     """Бесконечный фоновый цикл: tick() вызывается раз в sleep_sec. Исключение в тике логируется, уходит владельцу в
     Telegram (с подавлением повторов, как у 500) и цикл ПРОДОЛЖАЕТСЯ — раньше любое исключение молча убивало
     задачу до перезапуска сервиса (аудит 2026-10-23: архивация сезонов и автоудаление кланов переставали работать)."""
@@ -70,7 +70,17 @@ async def supervised_loop(name: str, sleep_sec: float, tick, run_first: bool = F
     first = run_first
     while True:
         if not first:
-            await asyncio.sleep(sleep_sec)
+            if waiter is not None:
+                # waiter — «будильник» вместо фиксированного сна; его сбой не должен убивать цикл
+                try:
+                    await waiter()
+                except asyncio.CancelledError:
+                    raise
+                except Exception:  # noqa: BLE001
+                    logger.exception("background loop %s waiter failed", name)
+                    await asyncio.sleep(sleep_sec)
+            else:
+                await asyncio.sleep(sleep_sec)
         first = False
         try:
             await tick()

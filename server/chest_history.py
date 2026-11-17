@@ -34,7 +34,8 @@ from models import (
     ChestSeasonHistory, ChestTypeAlias, ClanRosterEntry, PlayerAlias, PlayerProfile,
 )
 
-ARCHIVE_TICK_SEC             = 300    # раз в 5 мин: сезон закрывается сразу по окончании; проверка — один лёгкий SELECT
+ARCHIVE_MAX_SLEEP_SEC        = 3600   # предохранитель: будильник перечитывает БД не реже раза в час
+ARCHIVE_ALARM_MARGIN_SEC     = 2      # будим чуть ПОСЛЕ конца сезона, чтобы is_due точно был True
 MAX_CATCHUP_PERIODS          = 60     # предохранитель от бесконечного цикла догона просроченных периодов
 RETENTION_DAYS               = 90     # 3 месяца хранения истории
 RETENTION_TICK_SEC           = 86400  # раз в сутки
@@ -53,6 +54,57 @@ def _clan_now(timezone_offset_minutes: int | None) -> datetime:
 
 def _strip_tz(dt: datetime) -> datetime:
     return dt.replace(tzinfo=None) if dt.tzinfo else dt
+
+
+_archive_wake: asyncio.Event | None = None
+
+
+def poke_archive() -> None:
+    """Сообщить будильнику, что настройки сезона изменились — он пересчитает ближайший конец сезона."""
+    if _archive_wake is not None:
+        _archive_wake.set()
+
+
+async def seconds_until_next_close(db: AsyncSession) -> float:
+    """Через сколько секунд закончится ближайший сезон любого клана (не больше ARCHIVE_MAX_SLEEP_SEC).
+    Один лёгкий SELECT на пробуждение; конец сезона — буквальные цифры времени клана, поэтому
+    момент в UTC = period_end − timezone_offset (так же, как в is_due)."""
+    rows = (await db.execute(
+        select(ChestCollector.period_end, ChestCollector.timezone_offset_minutes)
+        .where(ChestCollector.period_end.is_not(None), ChestCollector.period_start.is_not(None))
+    )).all()
+    now = datetime.utcnow()
+    best = float(ARCHIVE_MAX_SLEEP_SEC)
+    for period_end, tz_offset in rows:
+        due_utc = _strip_tz(period_end) - timedelta(minutes=tz_offset or 0)
+        best = min(best, (due_utc - now).total_seconds() + ARCHIVE_ALARM_MARGIN_SEC)
+    return max(best, 1.0)
+
+
+async def _sleep_or_wake(delay: float) -> None:
+    global _archive_wake
+    if _archive_wake is None:
+        _archive_wake = asyncio.Event()
+    try:
+        await asyncio.wait_for(_archive_wake.wait(), timeout=delay)
+    except asyncio.TimeoutError:
+        pass
+
+
+async def _wait_for_next_close() -> None:
+    """Будильник: спим до ближайшего конца сезона; смена настроек (poke_archive) будит раньше."""
+    global _archive_wake
+    if _archive_wake is None:
+        _archive_wake = asyncio.Event()
+    # clear ДО чтения БД: poke, пришедший во время расчёта, не потеряется (после commit настроек)
+    _archive_wake.clear()
+    try:
+        async with AsyncSessionLocal() as db:
+            delay = await seconds_until_next_close(db)
+    except Exception:  # noqa: BLE001
+        logger.exception("chest_history: alarm calc failed, fallback sleep")
+        delay = ARCHIVE_MAX_SLEEP_SEC
+    await _sleep_or_wake(delay)
 
 
 def is_due(collector: ChestCollector) -> bool:
@@ -227,7 +279,8 @@ async def _archive_loop() -> None:
     async def tick() -> None:
         async with AsyncSessionLocal() as db:
             await run_archive_tick(db)
-    await supervised_loop("chest_history.archive", ARCHIVE_TICK_SEC, tick, run_first=True)
+    await supervised_loop("chest_history.archive", ARCHIVE_MAX_SLEEP_SEC, tick,
+                          run_first=True, waiter=_wait_for_next_close)
 
 
 async def _retention_loop() -> None:

@@ -991,6 +991,9 @@ async def update_season_settings(slug: str, payload: SeasonSettingsPayload,
         collector.stopped_at = None
 
     await db.commit()
+    # будильник закрытия сезонов пересчитывает ближайший конец (после commit, чтобы он увидел новые даты)
+    import chest_history
+    chest_history.poke_archive()
     return {"ok": True}
 
 
