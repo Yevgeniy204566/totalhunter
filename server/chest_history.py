@@ -34,7 +34,8 @@ from models import (
     ChestSeasonHistory, ChestTypeAlias, ClanRosterEntry, PlayerAlias, PlayerProfile,
 )
 
-ARCHIVE_TICK_SEC             = 86400  # раз в сутки — сезоны измеряются неделями, чаще не нужно
+ARCHIVE_TICK_SEC             = 300    # раз в 5 мин: сезон закрывается сразу по окончании; проверка — один лёгкий SELECT
+MAX_CATCHUP_PERIODS          = 60     # предохранитель от бесконечного цикла догона просроченных периодов
 RETENTION_DAYS               = 90     # 3 месяца хранения истории
 RETENTION_TICK_SEC           = 86400  # раз в сутки
 INACTIVE_COLLECTOR_DAYS      = 90     # клан удаляется через 90 дней без заливок сундуков
@@ -105,9 +106,16 @@ async def run_archive_tick(db: AsyncSession) -> int:
         if not is_due(collector):
             continue
         try:
-            await archive_one(db, collector)
-            await db.commit()
-            archived += 1
+            # Догон: если просрочено несколько периодов (простой сервера), закрываем все, чтобы новый сезон
+            # встал в будущее с той же длительностью.
+            for _ in range(MAX_CATCHUP_PERIODS):
+                # длительность ≤ 0 (кривые данные) не сдвигает период вперёд — повтор бессмыслен, ровно один шаг
+                positive = collector.period_end > collector.period_start
+                await archive_one(db, collector)
+                await db.commit()
+                archived += 1
+                if not positive or not is_due(collector):
+                    break
         except Exception:
             await db.rollback()
             logger.exception(
@@ -219,7 +227,7 @@ async def _archive_loop() -> None:
     async def tick() -> None:
         async with AsyncSessionLocal() as db:
             await run_archive_tick(db)
-    await supervised_loop("chest_history.archive", ARCHIVE_TICK_SEC, tick)
+    await supervised_loop("chest_history.archive", ARCHIVE_TICK_SEC, tick, run_first=True)
 
 
 async def _retention_loop() -> None:

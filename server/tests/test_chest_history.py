@@ -411,3 +411,39 @@ def test_app_startup_schedules_archive_background_tasks(monkeypatch):
         client.get("/version/latest")
 
     assert calls == [True]
+
+
+@pytest.mark.asyncio
+async def test_run_archive_tick_catches_up_all_overdue_periods(db_session):
+    # Сервер лежал/сезон просрочен на несколько периодов: после одного тика новый сезон
+    # обязан стоять в будущем с той же длительностью, а не отставать на один период.
+    start = datetime.utcnow() - timedelta(days=22)
+    c = await _make_collector(
+        db_session, slug="catchup", clan="ClanCatchup",
+        period_start=start, period_end=start + timedelta(days=7),
+    )
+    await db_session.commit()
+
+    await run_archive_tick(db_session)
+
+    await db_session.refresh(c)
+    assert c.period_end > datetime.utcnow()
+    assert c.period_end - c.period_start == timedelta(days=7)
+    history = (await db_session.execute(select(ChestSeasonHistory))).scalars().all()
+    assert len(history) == 3
+
+
+@pytest.mark.asyncio
+async def test_supervised_loop_run_first_ticks_before_sleeping():
+    import asyncio
+    import error_alerts
+
+    calls = []
+
+    async def tick():
+        calls.append(1)
+
+    task = asyncio.create_task(error_alerts.supervised_loop("t.first", 3600, tick, run_first=True))
+    await asyncio.sleep(0.05)
+    task.cancel()
+    assert calls == [1]

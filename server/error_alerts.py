@@ -61,12 +61,17 @@ def build_text(method: str, path: str, exc: BaseException, repeats: int = 0) -> 
     return head + tb
 
 
-async def supervised_loop(name: str, sleep_sec: float, tick) -> None:
+async def supervised_loop(name: str, sleep_sec: float, tick, run_first: bool = False) -> None:
     """Бесконечный фоновый цикл: tick() вызывается раз в sleep_sec. Исключение в тике логируется, уходит владельцу в
     Telegram (с подавлением повторов, как у 500) и цикл ПРОДОЛЖАЕТСЯ — раньше любое исключение молча убивало
     задачу до перезапуска сервиса (аудит 2026-10-23: архивация сезонов и автоудаление кланов переставали работать)."""
+    # run_first: без него первый тик — через sleep_sec после КАЖДОГО рестарта; при суточном периоде и частых деплоях
+    # тик мог не срабатывать днями (сезоны кланов не закрывались вовремя).
+    first = run_first
     while True:
-        await asyncio.sleep(sleep_sec)
+        if not first:
+            await asyncio.sleep(sleep_sec)
+        first = False
         try:
             await tick()
         except asyncio.CancelledError:
